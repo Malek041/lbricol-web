@@ -373,6 +373,24 @@ const SERVICES: ServiceEntry[] = [
         ],
         heroImage: '/Images/Job Cards Images/Moving Help_job_card.png',
     },
+    {
+        id: 'private_driver',
+        label: 'Private Driver',
+        labelFr: 'Chauffeur Privé',
+        labelAr: 'سائق خاص',
+        iconPath: '/Images/Vectors Illu/Personal driver.png',
+        subServices: [
+            { en: 'Half-Day City Driver', fr: 'Chauffeur Demi-journée (Ville)', ar: 'سائق نصف يوم (بالمدينة)' },
+            { en: 'Full-Day City Driver', fr: 'Chauffeur Journée Complète (Ville)', ar: 'سائق يوم كامل (بالمدينة)' },
+            { en: 'VIP Airport Transfer', fr: 'Transfert Aéroport VIP', ar: 'نقل من/إلى المطار VIP' },
+            { en: 'Intercity Trip Driver', fr: 'Trajet Interurbain', ar: 'سائق رحلات بين المدن' }
+        ],
+        bullets: [
+            { en: 'Professional, verified drivers for your personal or business trips.', fr: 'Des chauffeurs professionnels et vérifiés pour vos trajets personnels ou professionnels.', ar: 'سائقون محترفون ومدققون لرحلاتك الشخصية أو العملية.' },
+            { en: 'Comfortable rides customized to your schedule and needs.', fr: 'Trajets confortables adaptés à votre emploi du temps et à vos besoins.', ar: 'رحلات مريحة مخصصة لجدولك واحتياجاتك.' },
+        ],
+        heroImage: '/Images/Job Cards Images/Moving Help_job_card.png',
+    },
 ];
 
 // ── Props ──────────────────────────────────────────────────────────────────
@@ -610,11 +628,11 @@ const ClientHome: React.FC<ClientHomeProps> = ({
                             animate={{ opacity: 1, y: 0, scale: 1 }}
                             exit={{ opacity: 0, height: 0, scale: 0.9, marginTop: 0, marginBottom: 0 }}
                             onClick={handleReferralClick}
-                            className="mt-8 w-full max-w-[400px] rounded-[24px] p-5 flex items-center justify-between cursor-pointer relative overflow-hidden shadow-sm active:scale-95 transition-transform"
-                            style={{ backgroundColor: '#FEA1CD' }}
+                            className="mt-8 w-full max-w-[400px] rounded-[5px] p-5 flex items-center justify-between cursor-pointer relative overflow-hidden shadow-sm active:scale-95 transition-transform"
+                            style={{ backgroundColor: '#027C3E' }}
                         >
                             <div className="flex-1 text-left pr-2 z-10">
-                                <h3 className="text-[18px] font-black text-white leading-tight mb-1.5">
+                                <h3 className="text-[25px] font-black text-white leading-tight mb-1.5">
                                     {t({ en: 'Refer friends, win 20 DH', fr: 'Parrainez, gagnez 20 DH', ar: 'أحِل أصدقائك واربح 20 درهم' })}
                                 </h3>
                                 <p className="text-[13px] font-semibold text-white/90 leading-tight">
