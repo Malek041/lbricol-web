@@ -387,6 +387,7 @@ interface ClientHomeProps {
     popularServiceIds?: string[]; // ordered list of service ids by popularity
     onSelectService: (service: string, subService?: string) => void;
     onChangeLocation: () => void;
+    onNavigateToShare?: () => void;
 }
 
 // ── Component ──────────────────────────────────────────────────────────────
@@ -398,18 +399,29 @@ const ClientHome: React.FC<ClientHomeProps> = ({
     popularServiceIds = [],
     selectedCity,
     selectedArea,
-    onChangeLocation
+    onChangeLocation,
+    onNavigateToShare
 }) => {
     const { t, language } = useLanguage();
 
     const [lastCategoryId, setLastCategoryId] = useState<string | null>(null);
     const [searchQuery, setSearchQuery] = useState('');
+    const [showReferralBanner, setShowReferralBanner] = useState(false);
 
-    // Load last category from localStorage on mount
+    // Initial load
     useEffect(() => {
         const stored = localStorage.getItem('last_service_category');
         if (stored) setLastCategoryId(stored);
+
+        const hideReferral = localStorage.getItem('hide_referral_banner');
+        if (!hideReferral) setShowReferralBanner(true);
     }, []);
+
+    const handleReferralClick = () => {
+        localStorage.setItem('hide_referral_banner', 'true');
+        setShowReferralBanner(false);
+        if (onNavigateToShare) onNavigateToShare();
+    };
 
     const localizePlace = (name: string | null | undefined) => {
         if (!name) return '';
@@ -503,8 +515,8 @@ const ClientHome: React.FC<ClientHomeProps> = ({
         return base;
     }, [availableServiceIds, trendingSubServiceIds, lastCategoryId, popularServiceIds]);
 
-    // Use the first one (at the left) as default
-    const [activeId, setActiveId] = useState<string>(visibleServices[0]?.id || SERVICES[0].id);
+    const [activeId, setActiveId] = useState<string>('');
+    const [hasManuallySelected, setHasManuallySelected] = useState(false);
 
     // Filter by search query
     const filteredServices = searchQuery.trim()
@@ -524,15 +536,18 @@ const ClientHome: React.FC<ClientHomeProps> = ({
     useEffect(() => {
         if (searchQuery && filteredServices.length > 0) {
             setActiveId(filteredServices[0].id);
+            setHasManuallySelected(false);
         }
     }, [searchQuery]);
 
-    // Only reset activeId if it's no longer in the visible list, or on initial load when the list populates
+    // Resync activeId to the top of the list if user hasn't made a manual choice or current choice vanished
     useEffect(() => {
-        if (visibleServices.length > 0 && (!activeId || !visibleServices.find(s => s.id === activeId))) {
-            setActiveId(visibleServices[0].id);
+        if (visibleServices.length > 0) {
+            if (!activeId || (!hasManuallySelected && visibleServices[0].id !== activeId) || !visibleServices.find(s => s.id === activeId)) {
+                setActiveId(visibleServices[0].id);
+            }
         }
-    }, [visibleServices, activeId]);
+    }, [visibleServices, activeId, hasManuallySelected]);
     const active = filteredServices.find(s => s.id === activeId) || filteredServices[0] || visibleServices[0] || SERVICES[0];
 
     return (
@@ -586,6 +601,39 @@ const ClientHome: React.FC<ClientHomeProps> = ({
                         }}
                     />
                 </motion.h1>
+
+                {/* Referral Banner */}
+                <AnimatePresence>
+                    {showReferralBanner && (
+                        <motion.div
+                            initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            exit={{ opacity: 0, height: 0, scale: 0.9, marginTop: 0, marginBottom: 0 }}
+                            onClick={handleReferralClick}
+                            className="mt-8 w-full max-w-[400px] rounded-[24px] p-5 flex items-center justify-between cursor-pointer relative overflow-hidden shadow-sm active:scale-95 transition-transform"
+                            style={{ backgroundColor: '#FEA1CD' }}
+                        >
+                            <div className="flex-1 text-left pr-2 z-10">
+                                <h3 className="text-[18px] font-black text-white leading-tight mb-1.5">
+                                    {t({ en: 'Refer friends, win 20 DH', fr: 'Parrainez, gagnez 20 DH', ar: 'أحِل أصدقائك واربح 20 درهم' })}
+                                </h3>
+                                <p className="text-[13px] font-semibold text-white/90 leading-tight">
+                                    {t({
+                                        en: 'Invite your friends to Lbricol and win 20dh for each successful referral!',
+                                        fr: 'Invitez vos amis sur Lbricol et gagnez 20dh pour chaque parrainage réussi !',
+                                        ar: 'قم بدعوة أصدقائك إلى Lbricol واربح 20 درهم عن كل دعوة ناجحة!'
+                                    })}
+                                </p>
+                            </div>
+                            <div className="w-24 h-24 flex-shrink-0 z-10 relative -my-4 -mr-2">
+                                <img src="/Images/Vectors Illu/gifts.png" alt="Gifts" className="w-full h-full object-contain" />
+                            </div>
+
+                            {/* Decorative background shape */}
+                            <div className="absolute top-0 right-0 w-32 h-32 bg-white/20 rounded-full blur-2xl select-none pointer-events-none" />
+                        </motion.div>
+                    )}
+                </AnimatePresence>
             </div>
 
             {/* ── Category tabs ───────────────────────────────────────── */}
@@ -638,7 +686,10 @@ const ClientHome: React.FC<ClientHomeProps> = ({
                                 stiffness: 200,
                                 delay: idx * 0.08
                             }}
-                            onClick={() => setActiveId(svc.id)}
+                            onClick={() => {
+                                setActiveId(svc.id);
+                                setHasManuallySelected(true);
+                            }}
                             className="flex flex-col items-center gap-3 px-1 pt-4 pb-3 flex-shrink-0 relative transition-all"
                         >
                             {/* Icon circle */}

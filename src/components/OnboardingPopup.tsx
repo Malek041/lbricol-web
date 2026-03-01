@@ -1358,8 +1358,49 @@ const OnboardingPopup = ({ isOpen, onClose, onComplete, mode = 'onboarding', ini
                                                         </div>
 
                                                         {tierInfo && (
-                                                            <div className="px-6 py-3 bg-[#00A082] text-white rounded-full text-[14px] font-bold shadow-lg shadow-[#00A082]/20 mt-2">
-                                                                {t({ en: `Suggested Market Rate: ${tierInfo.suggestedMin} - ${tierInfo.suggestedMax} MAD`, fr: `Suggéré sur le marché : ${tierInfo.suggestedMin} - ${tierInfo.suggestedMax} MAD`, ar: `سعر السوق المقترح: ${tierInfo.suggestedMin} - ${tierInfo.suggestedMax} درهم` })}
+                                                            <div className="w-full mt-2 space-y-4 border-t border-neutral-100 pt-6">
+                                                                <div className="flex items-center justify-between">
+                                                                    <h4 className="text-[14px] font-bold text-neutral-600">
+                                                                        {t({
+                                                                            en: 'Other Bricolers\' Rates in your city',
+                                                                            fr: 'Tarifs d\'autres Pros dans votre ville',
+                                                                            ar: 'أسعار محترفين آخرين في مدينتك'
+                                                                        })}
+                                                                    </h4>
+                                                                    <span className="text-[12px] font-bold text-[#00A082] bg-[#E6F6F2] px-2 py-0.5 rounded-md">
+                                                                        {t({ en: 'Suggested', fr: 'Suggéré', ar: 'مقترح' })}
+                                                                    </span>
+                                                                </div>
+
+                                                                <div className="flex gap-3 overflow-x-auto no-scrollbar pb-2">
+                                                                    {[
+                                                                        { seed: 'Felix', rate: tierInfo.suggestedMin - 10, label: t({ en: 'Low', fr: 'Bas', ar: 'منخفض' }) },
+                                                                        { seed: 'Aneka', rate: tierInfo.suggestedMin + 15, label: t({ en: 'Average', fr: 'Moyen', ar: 'متوسط' }) },
+                                                                        { seed: 'Caleb', rate: tierInfo.suggestedMax, label: t({ en: 'Premium', fr: 'Premium', ar: 'ممتاز' }) }
+                                                                    ].map((mock, idx) => (
+                                                                        <div
+                                                                            key={idx}
+                                                                            onClick={() => updateCatEntry(currentCatId, 'hourlyRate', mock.rate)}
+                                                                            className="flex-shrink-0 bg-white border border-neutral-200 rounded-[20px] p-4 flex flex-col items-center gap-2 min-w-[110px] shadow-sm hover:border-[#008C74]/50 cursor-pointer active:scale-95 transition-all"
+                                                                        >
+                                                                            <div className="relative">
+                                                                                <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${mock.seed}&backgroundColor=e5e5e5`} alt="avatar" className="w-12 h-12 rounded-full border border-neutral-100" />
+                                                                                <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-[#00A082] rounded-full flex items-center justify-center border-2 border-white">
+                                                                                    <Check size={10} strokeWidth={4} className="text-white" />
+                                                                                </div>
+                                                                            </div>
+                                                                            <div className="flex flex-col items-center">
+                                                                                <span className="text-[18px] font-black text-neutral-900">{mock.rate}</span>
+                                                                                <span className="text-[11px] font-bold text-neutral-400">MAD/hr</span>
+                                                                            </div>
+                                                                        </div>
+                                                                    ))}
+                                                                </div>
+
+                                                                <div className="mx-auto px-6 py-3 bg-[#00A082] text-white rounded-full text-[14px] font-bold shadow-lg shadow-[#00A082]/20 text-center flex items-center justify-center gap-2 max-w-[fit-content]">
+                                                                    <Info size={16} />
+                                                                    {t({ en: `Market Average: ${tierInfo.suggestedMin} - ${tierInfo.suggestedMax} MAD`, fr: `Moyenne du marché : ${tierInfo.suggestedMin} - ${tierInfo.suggestedMax} MAD`, ar: `متوسط السوق: ${tierInfo.suggestedMin} - ${tierInfo.suggestedMax} درهم` })}
+                                                                </div>
                                                             </div>
                                                         )}
                                                     </motion.div>

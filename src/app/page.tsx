@@ -2472,6 +2472,7 @@ const Home = () => {
                 popularServiceIds={popularServiceIds}
 
                 onChangeLocation={() => setShowCityPopup(true)}
+                onNavigateToShare={() => setMobileNavTab('share')}
               />
             ) : (
 
