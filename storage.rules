@@ -1,0 +1,40 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // ── Avatar Uploads ─────────────────────────────────────────────────────
+    // Authenticated users can upload their own avatar
+    match /avatars/{userId}/{fileName} {
+      allow read: if true;
+      allow write: if request.auth != null && (request.auth.uid == userId || userId.matches('meta_.*'))
+                   && request.resource.size < 5 * 1024 * 1024  // max 5MB
+                   && request.resource.contentType.matches('image/.*');
+    }
+
+    // ── Portfolio Uploads ──────────────────────────────────────────────────
+    // Bricolers can upload their own portfolio images
+    match /portfolio/{userId}/{categoryId}/{fileName} {
+      allow read: if true;
+      allow write: if request.auth != null && (request.auth.uid == userId || userId.matches('meta_.*'))
+                   && request.resource.size < 10 * 1024 * 1024  // max 10MB
+                   && request.resource.contentType.matches('image/.*');
+    }
+
+    // ── Order Attachments ──────────────────────────────────────────────────
+    // Authenticated users can upload images attached to their orders
+    match /orders/{orderId}/{fileName} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null
+                   && request.resource.size < 10 * 1024 * 1024  // max 10MB
+                   && request.resource.contentType.matches('image/.*');
+    }
+
+    // ── Bank Receipts ──────────────────────────────────────────────────────
+    match /receipts/{userId}/{fileName} {
+      allow read: if request.auth != null && request.auth.uid == userId;
+      allow write: if request.auth != null && request.auth.uid == userId
+                   && request.resource.size < 10 * 1024 * 1024
+                   && request.resource.contentType.matches('image/.*');
+    }
+  }
+}

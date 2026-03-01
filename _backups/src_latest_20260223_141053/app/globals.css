@@ -1,0 +1,120 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Uber Move Text", "Uber Move", "Inclusive Sans", var(--font-outfit), "system-ui", "-apple-system", "BlinkMacSystemFont", "Segoe UI", "Roboto", "Helvetica Neue", "Arial", "sans-serif";
+  --color-primary: #000000;
+  --color-primary-hover: #333333;
+  --color-surface: #FFFFFF;
+  --color-background: #F6F6F6;
+  --color-border: #E2E2E2;
+  --color-text-main: #000000;
+  --color-text-muted: #545454;
+}
+
+:root {
+  --primary: #000000;
+  --primary-hover: #333333;
+}
+
+body {
+  color: #000000;
+  background-color: #FFFFFF;
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  zoom: 0.9;
+}
+
+@layer utilities {
+  .uber-shadow {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  }
+
+  .uber-shadow-hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  }
+
+  .animate-shimmer-gradient {
+    animation: shimmer-gradient 2s infinite linear;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    background-size: 200% 100%;
+  }
+
+  .animate-marquee {
+    animation: marquee 30s linear infinite;
+    display: flex;
+    width: max-content;
+  }
+
+  .animate-marquee:hover {
+    animation-play-state: paused;
+  }
+
+  .desktop-only {
+    display: flex !important;
+  }
+
+  @media (max-width: 968px) {
+    .desktop-only {
+      display: none !important;
+    }
+  }
+}
+
+@keyframes shimmer-gradient {
+  0% {
+    background-position: 200% 0;
+  }
+
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+@keyframes marquee {
+  0% {
+    transform: translateX(0);
+  }
+
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-pulsating-border {
+  position: relative;
+  z-index: 1;
+}
+
+.animate-pulsating-border::after {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  background: linear-gradient(90deg, #FF3B3B, #FF9500, #FF3B3B);
+  background-size: 200% 100%;
+  animation: border-pulsate 2s linear infinite;
+  z-index: -1;
+  border-radius: inherit;
+  filter: blur(2px);
+}
+
+@keyframes border-pulsate {
+  0% {
+    background-position: 200% 0;
+  }
+
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* Headings Typography */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: "Uber Move Text", "Uber Move", "Inclusive Sans", var(--font-sans);
+  font-weight: 500;
+  letter-spacing: -0.02em;
+}

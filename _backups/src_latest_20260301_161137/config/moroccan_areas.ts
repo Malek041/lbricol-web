@@ -1,0 +1,64 @@
+export const MOROCCAN_CITIES_AREAS: Record<string, string[]> = {
+    Casablanca: [
+        "Ain Chock", "Ain Sebaa", "Anfa", "Bernoussi", "Ben M'Sick", "Derb Sultan",
+        "El Fida", "Hay Hassani", "Hay Mohammadi", "Maarif", "Mers Sultan", "Moulay Rachid",
+        "Sidi Bernoussi", "Sidi Moumen", "Ain Diab", "Bourgogne", "CIL", "California",
+        "Gauthier", "Racine", "Val Fleuri", "Palmier", "Belvédère", "Roches Noires", "Zerktouni"
+    ],
+    Marrakech: [
+        "Guéliz", "Hivernage", "Mellah", "Médina", "Palmeraie", "Riad Zitoun", "Jemaa el-Fna",
+        "Bab Doukkala", "Daoudiate", "Massira", "Targa", "M'Hamid", "Sidi Ghanem",
+        "Annakhil", "Azli", "Sidi Youssef Ben Ali", "Arset Lmaach"
+    ],
+    Essaouira: [
+        "Al Fath", "Azlef", "Bouhaira", "Bab Doukkala", "Beach of Jrayfat", "Diabat",
+        "Douar Laarab", "El Borj 1", "El Borj 2", "Essaouira Fishing Port",
+        "Ghazoua (El Ghazoua)", "Iderk", "Kasbah District", "Lagune",
+        "Lotissement Al Matar", "Lotissement Laftihat", "Médina",
+        "Mellah (Jewish Quarter)", "Quartier As-Salam", "Quartier binlaârassi",
+        "Quartier des Dunes", "Quartier Industriel", "Quartier Nouvelle Saqqalah",
+        "Rawnak", "Skala", "The Bay"
+    ],
+    Agadir: [
+        "Hay Mohammadi", "Tikiouine", "Dakhla", "Ait Melloul", "Founty", "Charaf",
+        "Hay Salam", "Nouvelle Ville", "Bensergao", "Tilila", "Cité Dakhla", "Secteur 5", "Secteur 7"
+    ],
+    Tangier: [
+        "Médina", "Beni Makada", "Val Fleuri", "Malabata", "Centre Ville",
+        "Marshan", "Marchane", "Hay Andalous", "Charf", "Gzenneya"
+    ],
+    Rabat: [
+        "Agdal", "Hassan", "Hay Riad", "Souissi", "Diour Jamaa",
+        "Yaacoub El Mansour", "Akkari", "Massira"
+    ],
+    Fes: [
+        "Fès el-Bali", "Fès El-Jdid", "Zouagha", "Bensouda", "Saiss", "Akolay", "Dokkarat", "Sidi Brahim"
+    ],
+};
+
+export const MOROCCAN_CITIES = Object.keys(MOROCCAN_CITIES_AREAS);
+
+// Pricing guidance per skill tier
+export const SERVICE_TIER_RATES: Record<string, { tier: 'low' | 'medium' | 'high'; suggestedMin: number; suggestedMax: number }> = {
+    cleaning: { tier: 'low', suggestedMin: 80, suggestedMax: 150 },
+    errands: { tier: 'low', suggestedMin: 80, suggestedMax: 120 },
+    babysitting: { tier: 'low', suggestedMin: 80, suggestedMax: 140 },
+    gardening: { tier: 'low', suggestedMin: 90, suggestedMax: 150 },
+    furniture_assembly: { tier: 'medium', suggestedMin: 150, suggestedMax: 250 },
+    handyman: { tier: 'medium', suggestedMin: 150, suggestedMax: 250 },
+    moving: { tier: 'medium', suggestedMin: 150, suggestedMax: 280 },
+    mounting: { tier: 'medium', suggestedMin: 150, suggestedMax: 250 },
+    painting: { tier: 'medium', suggestedMin: 150, suggestedMax: 300 },
+    elderly_care: { tier: 'medium', suggestedMin: 120, suggestedMax: 200 },
+    appliance_installation: { tier: 'high', suggestedMin: 250, suggestedMax: 400 },
+    plumbing: { tier: 'high', suggestedMin: 250, suggestedMax: 450 },
+    electricity: { tier: 'high', suggestedMin: 250, suggestedMax: 500 },
+    driver: { tier: 'medium', suggestedMin: 120, suggestedMax: 250 },
+    car_rental: { tier: 'medium', suggestedMin: 200, suggestedMax: 500 },
+    courier: { tier: 'low', suggestedMin: 80, suggestedMax: 150 },
+    airport: { tier: 'medium', suggestedMin: 150, suggestedMax: 300 },
+    transport_intercity: { tier: 'medium', suggestedMin: 200, suggestedMax: 500 },
+    cooking: { tier: 'high', suggestedMin: 200, suggestedMax: 400 },
+    private_driver: { tier: 'medium', suggestedMin: 150, suggestedMax: 350 },
+    learn_arabic: { tier: 'high', suggestedMin: 150, suggestedMax: 300 },
+};
