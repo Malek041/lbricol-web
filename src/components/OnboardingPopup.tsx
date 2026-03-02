@@ -1375,9 +1375,9 @@ const OnboardingPopup = ({ isOpen, onClose, onComplete, mode = 'onboarding', ini
                                                                 <div className="flex w-full overflow-x-auto no-scrollbar pb-4 -mx-1 px-1">
                                                                     <div className="flex gap-4">
                                                                         {[
-                                                                            { img: '/Images/Users Pictures/profile1.jpg', rate: tierInfo.suggestedMin - 10, label: t({ en: 'Low', fr: 'Bas', ar: 'منخفض' }) },
-                                                                            { img: '/Images/Users Pictures/profile2.webp', rate: tierInfo.suggestedMin + 15, label: t({ en: 'Average', fr: 'Moyen', ar: 'متوسط' }) },
-                                                                            { img: '/Images/Users Pictures/profile3.jpg', rate: tierInfo.suggestedMax, label: t({ en: 'Premium', fr: 'Premium', ar: 'ممتاز' }) }
+                                                                            { seed: 'Felix', style: 'micah', rate: tierInfo.suggestedMin - 10, label: t({ en: 'Low', fr: 'Bas', ar: 'منخفض' }) },
+                                                                            { seed: 'Aneka', style: 'notionists', rate: tierInfo.suggestedMin + 15, label: t({ en: 'Average', fr: 'Moyen', ar: 'متوسط' }) },
+                                                                            { seed: 'Caleb', style: 'adventurer', rate: tierInfo.suggestedMax, label: t({ en: 'Premium', fr: 'Premium', ar: 'ممتاز' }) }
                                                                         ].map((mock, idx) => (
                                                                             <div
                                                                                 key={idx}
@@ -1385,7 +1385,7 @@ const OnboardingPopup = ({ isOpen, onClose, onComplete, mode = 'onboarding', ini
                                                                                 className="flex-shrink-0 bg-white border border-neutral-200 rounded-[24px] p-5 flex flex-col items-center gap-3 w-[140px] shadow-sm hover:border-[#008C74]/50 hover:shadow-md cursor-pointer active:scale-95 transition-all"
                                                                             >
                                                                                 <div className="relative">
-                                                                                    <img src={mock.img} alt="avatar" className="w-[60px] h-[60px] rounded-full object-cover border-2 border-white shadow-sm" />
+                                                                                    <img src={`https://api.dicebear.com/7.x/${mock.style}/svg?seed=${mock.seed}&backgroundColor=e5e5e5`} alt="avatar" className="w-[60px] h-[60px] rounded-full object-cover border-2 border-white shadow-sm" />
                                                                                     <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-[#00A082] rounded-full flex items-center justify-center border-[3px] border-white">
                                                                                         <Check size={12} strokeWidth={4} className="text-white" />
                                                                                     </div>
