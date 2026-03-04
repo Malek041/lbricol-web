@@ -234,6 +234,16 @@ const OnboardingPopup = ({ isOpen, onClose, onComplete, mode = 'onboarding', ini
     const [activationCode, setActivationCode] = useState('');
     const [localUserData, setLocalUserData] = useState<any>(userData || null);
 
+    // Sync with auth user if logged in
+    useEffect(() => {
+        if (!fullName && auth.currentUser?.displayName) {
+            setFullName(auth.currentUser.displayName);
+        }
+        if (!profileImagePreview && auth.currentUser?.photoURL) {
+            setProfileImagePreview(auth.currentUser.photoURL);
+        }
+    }, [auth.currentUser]);
+
     // ── Steps (no Availability — bricoler sets it in their dashboard) ────────
     const STEPS = useMemo(() => {
         if (mode === 'edit' || mode === 'add') {
@@ -803,15 +813,22 @@ const OnboardingPopup = ({ isOpen, onClose, onComplete, mode = 'onboarding', ini
         }
     };
 
-    const handleGoogleSignup = async () => {
-        const provider = new GoogleAuthProvider();
+    const handleBricolerSignup = async () => {
         setIsSubmitting(true);
-        setSubmittingStatus("Authenticating...");
+        setSubmittingStatus("Preparing...");
 
         try {
-            console.log("Starting Google Signup...");
-            const result = await signInWithPopup(auth, provider);
-            const user = result.user;
+            let user = auth.currentUser;
+
+            if (!user) {
+                console.log("No user found, starting Google Sign-in...");
+                setSubmittingStatus("Authenticating...");
+                const provider = new GoogleAuthProvider();
+                const result = await signInWithPopup(auth, provider);
+                user = result.user;
+            }
+
+            console.log("Processing onboarding for user:", user.uid);
             setSubmittingStatus("Preparing profile...");
 
             // Map selected services to entry format
@@ -2051,13 +2068,15 @@ const OnboardingPopup = ({ isOpen, onClose, onComplete, mode = 'onboarding', ini
                                                 </h2>
                                                 <p className="text-neutral-500 text-[15px] font-medium leading-relaxed px-4">
                                                     {mode === 'onboarding'
-                                                        ? t({ en: 'Connect Google to save your profile.', fr: 'Connectez Google pour enregistrer votre profil.', ar: 'اربط حساب جوجل لحفظ ملفك الشخصي.' })
+                                                        ? (auth.currentUser
+                                                            ? t({ en: 'You are all set! Save your profile to start.', fr: 'Vous êtes prêt ! Enregistrez votre profil pour commencer.', ar: 'أنت جاهز تمامًا! احفظ ملفك الشخصي للبدء.' })
+                                                            : t({ en: 'Connect Google to save your profile.', fr: 'Connectez Google pour enregistrer votre profile.', ar: 'اربط حساب جوجل لحفظ ملفك الشخصي.' }))
                                                         : t({ en: 'Save your updated service details.', fr: 'Enregistrez vos informations de service mises à jour.', ar: 'حفظ تفاصيل الخدمة المحدثة.' })}
                                                 </p>
                                             </div>
                                             <motion.button
                                                 whileTap={{ scale: 0.98 }}
-                                                onClick={(mode === 'onboarding' || (mode === 'edit' && !userData?.uid)) ? handleGoogleSignup : (mode === 'admin_add' || mode === 'admin_edit') ? handleAdminSubmit : handleUpdateProfile}
+                                                onClick={(mode === 'onboarding' || (mode === 'edit' && !userData?.uid)) ? handleBricolerSignup : (mode === 'admin_add' || mode === 'admin_edit') ? handleAdminSubmit : handleUpdateProfile}
                                                 disabled={isSubmitting}
                                                 className="w-full h-[64px] bg-[#0CB380] hover:bg-[#008C74] text-white rounded-[16px] text-[18px] font-bold flex flex-col items-center justify-center gap-1 transition-all disabled:opacity-60"
                                             >
@@ -2072,8 +2091,10 @@ const OnboardingPopup = ({ isOpen, onClose, onComplete, mode = 'onboarding', ini
                                                     <div className="flex items-center gap-3">
                                                         {(mode === 'onboarding' || (mode === 'edit' && !userData?.uid)) ? (
                                                             <>
-                                                                <FcGoogle size={28} className="bg-white rounded-full p-1" />
-                                                                {t({ en: 'Continue with Google', fr: 'Continuer avec Google', ar: 'المتابعة باستخدام جوجل' })}
+                                                                {!auth.currentUser && <FcGoogle size={28} className="bg-white rounded-full p-1" />}
+                                                                {auth.currentUser
+                                                                    ? t({ en: 'Start your journey', fr: 'Commencez votre voyage', ar: 'ابدأ رحلتك' })
+                                                                    : t({ en: 'Continue with Google', fr: 'Continuer avec Google', ar: 'المتابعة باستخدام جوجل' })}
                                                             </>
                                                         ) : (mode === 'admin_add' || mode === 'admin_edit') ? (
                                                             <>

@@ -404,15 +404,12 @@ const Header = ({ activeTab, onTabChange, isBricoler = false, user = null }: Hea
                 </div>
             </div>
 
-            {/* Onboarding Popup */}
             <OnboardingPopup
                 isOpen={showOnboarding}
                 onClose={() => setShowOnboarding(false)}
                 onComplete={(data) => {
                     setShowOnboarding(false);
-                    // Redirect to provider page with data
-                    const serviceIds = data.services.map((s: any) => s.serviceId).join(',');
-                    window.location.href = `/provider?services=${serviceIds}&city=${data.city}`;
+                    router.push('/provider');
                 }}
             />
 
