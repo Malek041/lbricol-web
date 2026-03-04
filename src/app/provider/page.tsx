@@ -6,13 +6,13 @@ import Lottie from 'lottie-react';
 import radarAnimation from '../../../public/Lottifiles Animation/Radar.json';
 import { useLanguage } from '@/context/LanguageContext';
 import confetti from 'canvas-confetti';
-import OrderCard, { OrderDetails } from '@/components/OrderCard';
-import WeekCalendar from '@/components/WeekCalendar';
-import ProfileView from '@/components/ProfileView';
-import MobileBottomNav from '@/components/MobileBottomNav';
-import ProviderOrdersView from '@/components/ProviderOrdersView';
-import PromoteYourselfView from '@/components/PromoteYourselfView';
-import PromocodesView from '@/components/PromocodesView';
+import OrderCard, { OrderDetails } from '@/features/orders/components/OrderCard';
+import WeekCalendar from '@/features/calendar/components/WeekCalendar';
+import ProfileView from '@/features/provider/components/ProfileView';
+import MobileBottomNav from '@/components/layout/MobileBottomNav';
+import ProviderOrdersView from '@/features/orders/components/ProviderOrdersView';
+import PromoteYourselfView from '@/features/provider/components/PromoteYourselfView';
+import PromocodesView from '@/features/client/components/PromocodesView';
 import { isToday, isThisWeek, parseISO, startOfDay, addDays, format } from 'date-fns';
 import { getAllServices, getServiceById, getServiceVector, getSubServiceName } from '@/config/services_config';
 import { useIsMobileViewport } from '@/lib/mobileOnly';
@@ -108,8 +108,8 @@ import {
     increment
 } from 'firebase/firestore';
 import { MOROCCAN_CITIES, MOROCCAN_CITIES_AREAS, SERVICE_TIER_RATES } from '@/config/moroccan_areas';
-import SplashScreen from '@/components/SplashScreen';
-import LanguagePreferencePopup from '@/components/LanguagePreferencePopup';
+import SplashScreen from '@/components/layout/SplashScreen';
+import LanguagePreferencePopup from '@/features/onboarding/components/LanguagePreferencePopup';
 
 // --- Types & Interfaces ---
 
@@ -1159,7 +1159,7 @@ export default function ProviderPage() {
                             if (pData.referredBricolerBy && !pData.bricolerRewardIssued) {
                                 const pReferrerRef = doc(db, 'users', pData.referredBricolerBy);
                                 await updateDoc(pReferrerRef, {
-                                    bricolerReferralBalance: increment(50)
+                                    bricolerReferralBalance: increment(20)
                                 }).catch(console.error);
                                 await updateDoc(providerRef, {
                                     bricolerRewardIssued: true
@@ -1269,7 +1269,7 @@ export default function ProviderPage() {
                 // Notify Client
                 if (jobData.clientId) {
                     const bricolerName = userData?.name || auth.currentUser?.displayName || t({ en: 'The provider', fr: 'Le bricoleur', ar: 'المحترف' });
-                    const { sendClientNotification } = await import('@/components/ClientNotificationsView');
+                    const { sendClientNotification } = await import('@/features/client/components/ClientNotificationsView');
                     await sendClientNotification({
                         clientId: jobData.clientId,
                         type: 'order_confirmed',
@@ -1649,7 +1649,7 @@ export default function ProviderPage() {
                 <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between mb-0.5">
                         <h4 className="text-[17px] font-black text-neutral-900 truncate tracking-tight">{job.service}</h4>
-                        <span className="text-[15px] font-black text-[#00A082]">MAD {job.priceLabel}</span>
+                        <span className="text-[15px] font-black text-[#00A082] uppercase">{t({ en: 'MAD', fr: 'MAD' })} {job.priceLabel}</span>
                     </div>
                     <div className="flex items-center gap-2 text-neutral-400 text-[12px] font-bold">
                         <span className="truncate">{job.clientName}</span>
@@ -1712,7 +1712,7 @@ export default function ProviderPage() {
                 </div>
 
                 <div className="mt-4 flex flex-col items-start gap-1">
-                    <span className="text-[32px] md:text-[54px] font-black tracking-tight text-[#BDBDBD] leading-none">MAD {cardPrice}</span>
+                    <span className="text-[32px] md:text-[54px] font-black tracking-tight text-[#BDBDBD] leading-none uppercase">{t({ en: 'MAD', fr: 'MAD' })} {cardPrice}</span>
                     <span className="text-[13px] font-bold text-neutral-400 uppercase tracking-widest">{t({ en: 'Estimated Payout', fr: 'Paiement estimé' })}</span>
                 </div>
 
@@ -1840,15 +1840,33 @@ export default function ProviderPage() {
             : '0.0';
 
     // Total revenue: sum of prices for done jobs in the selected month
-    const COMMISSION_RATE_MOBILE = 0.40;
-    const monthRevenueNum = monthDoneJobs.reduce((acc, job: any) => {
+    const COMMISSION_RATE = 0.15;
+    const monthRevenueNum = (monthDoneJobs.reduce((acc, job: any) => {
+        const cleanVal = (val: any) => {
+            if (typeof val === 'number') return val;
+            // Handle Moroccan numbers: "250,50" -> "250.50", strip thousand separators if they match common patterns
+            let s = String(val || '0').replace(',', '.');
+            // If there's more than one dot, the earlier ones are likely thousand separators
+            const dots = s.split('.');
+            if (dots.length > 2) {
+                // Keep only the last one as decimal
+                s = dots.slice(0, -1).join('') + '.' + dots.slice(-1);
+            }
+            return parseFloat(s.replace(/[^0-9.]/g, '')) || 0;
+        };
+
         const baseVal = job.basePrice ? Number(job.basePrice) : undefined;
         if (baseVal !== undefined && !isNaN(baseVal)) return acc + baseVal;
 
-        const priceStr = typeof job.price === 'string' ? job.price : String(job.price || '0');
-        return acc + (parseInt(priceStr.replace(/[^\d]/g, ''), 10) || 0) * (1 - COMMISSION_RATE_MOBILE);
-    }, 0);
-    const monthNetEarnings = Math.round(monthRevenueNum);
+        const priceNum = cleanVal(job.price);
+        return acc + priceNum;
+    }, 0));
+
+    const monthReferralBonus = (userData as any)?.bricolerReferralBalance || 0;
+    // Note: monthNetEarnings here is a helper, but the final display in Performance view 
+    // calculates it as (totalEarnings * 0.85) + monthReferralBonus or similar.
+    // For consistency with line 3160, we set monthRevenueNum as the Gross.
+    const monthNetEarnings = Math.round(monthRevenueNum * 0.85 + monthReferralBonus);
 
     // Capacity of 2 jobs per day x Number of Days in that month
     const daysInMonth = new Date(selectedMonthDt.getFullYear(), selectedMonthDt.getMonth() + 1, 0).getDate();
@@ -1998,7 +2016,7 @@ export default function ProviderPage() {
                                         </div>
                                         <div className="flex flex-col">
                                             <span className="text-[12px] font-bold text-neutral-400 uppercase tracking-wider">{t({ en: 'Your Earnings', fr: 'Tes Gains (NET)' })}</span>
-                                            <span className="text-[16px] font-black text-black">{(parseFloat(job.priceLabel) * (1 - COMMISSION_RATE_MOBILE)).toFixed(0)} MAD</span>
+                                            <span className="text-[16px] font-black text-black">{(parseFloat(job.priceLabel) * (1 - COMMISSION_RATE)).toFixed(0)} {t({ en: 'MAD', fr: 'MAD' })}</span>
                                         </div>
                                     </div>
                                     <div className="bg-neutral-50 rounded-2xl p-4 flex items-center gap-4 border border-neutral-100/50">
@@ -2260,18 +2278,18 @@ export default function ProviderPage() {
                                                     <span className="text-[16px] font-semibold text-black">{t({ en: 'Mission Fee', fr: 'Frais de mission' })}</span>
                                                     <span className="text-[14px] font-light text-black">≈ {job.rawAccepted?.duration || '2h-3h'}</span>
                                                 </div>
-                                                <span className="text-[16px] font-bold text-black tracking-tight">{job.priceLabel} MAD</span>
+                                                <span className="text-[16px] font-bold text-black tracking-tight">{job.priceLabel} {t({ en: 'MAD', fr: 'MAD' })}</span>
                                             </div>
                                             <div className="flex justify-between items-center">
                                                 <div className="flex items-center gap-4">
                                                     <span className="text-[16px] font-semibold text-black">{t({ en: 'Lbricol Fee', fr: 'Frais Lbricol' })}</span>
                                                     <span className="text-[14px] font-light text-black">15%</span>
                                                 </div>
-                                                <span className="text-[16px] font-bold text-black tracking-tight">- {(parseFloat(job.priceLabel) * 0.15).toFixed(0)} MAD</span>
+                                                <span className="text-[16px] font-bold text-black tracking-tight">- {(parseFloat(job.priceLabel) * 0.15).toFixed(0)} {t({ en: 'MAD', fr: 'MAD' })}</span>
                                             </div>
                                             <div className="pt-4 border-t border-neutral-100 flex justify-between items-center">
                                                 <span className="text-[18px] font-black text-[#00A082]">{t({ en: 'Final Earnings', fr: 'Gains Nets' })}</span>
-                                                <span className="text-[20px] font-black text-[#00A082] tracking-tight">{(parseFloat(job.priceLabel) * 0.85).toFixed(0)} MAD</span>
+                                                <span className="text-[20px] font-black text-[#00A082] tracking-tight">{(parseFloat(job.priceLabel) * (1 - COMMISSION_RATE)).toFixed(0)} {t({ en: 'MAD', fr: 'MAD' })}</span>
                                             </div>
                                         </div>
                                     </div>
@@ -2284,7 +2302,7 @@ export default function ProviderPage() {
                     <div className="px-12 py-8 bg-white border-t border-neutral-100 shadow-[0_-10px_40px_rgba(0,0,0,0.05)] z-[4001]">
                         <div className="flex justify-between items-center">
                             <span className="text-[32px] font-black text-[#00A082]">{t({ en: 'Your Net Payout', fr: 'Tes Gains Nets' })}</span>
-                            <span className="text-[32px] font-black text-[#00A082] tracking-tighter">{(parseFloat(job.priceLabel) * 0.85).toFixed(0)} MAD</span>
+                            <span className="text-[32px] font-black text-[#00A082] tracking-tighter">{(parseFloat(job.priceLabel) * (1 - COMMISSION_RATE)).toFixed(0)} {t({ en: 'MAD', fr: 'MAD' })}</span>
                         </div>
                     </div>
                 </motion.div>
@@ -2447,7 +2465,7 @@ export default function ProviderPage() {
                                                 </div>
                                                 <div className="h-[34px] px-8 flex-1 bg-[#F9F9F9] rounded-full flex items-center justify-center shadow-[inset_0_1px_2px_rgba(255,255,255,0.8),0_1px_2px_rgba(0,0,0,0.02)]">
                                                     <span className="text-[13px] font-bold text-black mt-0.5 tracking-wide" style={{ fontFamily: 'Uber Move, var(--font-sans)' }}>
-                                                        MAD {monthRevenueNum >= 1000 ? `${(monthRevenueNum / 1000).toFixed(0)}K` : monthRevenueNum}
+                                                        {t({ en: 'MAD', fr: 'MAD' })} {monthRevenueNum >= 1000 ? `${(monthRevenueNum / 1000).toFixed(0)}K` : monthRevenueNum}
                                                     </span>
                                                 </div>
                                             </div>
@@ -2558,7 +2576,7 @@ export default function ProviderPage() {
                                                                     </div>
                                                                     <div className="text-right">
                                                                         <p className="text-[10px] font-black text-neutral-400 uppercase tracking-widest mb-0.5">{t({ en: 'Budget', fr: 'Budget' })}</p>
-                                                                        <span className="text-[20px] font-black text-black" style={{ fontFamily: 'Uber Move, var(--font-sans)' }}>MAD {job.priceLabel}</span>
+                                                                        <span className="text-[20px] font-black text-black uppercase" style={{ fontFamily: 'Uber Move, var(--font-sans)' }}>{t({ en: 'MAD', fr: 'MAD' })} {job.priceLabel}</span>
                                                                     </div>
                                                                 </div>
 
@@ -2767,7 +2785,7 @@ export default function ProviderPage() {
                                                                                     <span>{job.timeLabel}</span>
                                                                                 </div>
                                                                                 <span className="text-[16px] font-medium text-black">
-                                                                                    MAD {job.priceLabel}
+                                                                                    {job.priceLabel} {t({ en: 'MAD', fr: 'MAD' })}
                                                                                 </span>
                                                                             </div>
                                                                         </div>
@@ -2911,7 +2929,7 @@ export default function ProviderPage() {
                                                                 <h4 className="text-[18px] font-black text-black leading-tight" style={{ fontFamily: 'Uber Move, var(--font-sans)' }}>{job.service}</h4>
                                                                 <p className="text-[12px] text-neutral-500 font-medium">{job.subService}</p>
                                                             </div>
-                                                            <span className="text-[16px] font-black text-black">MAD {job.priceLabel}</span>
+                                                            <span className="text-[16px] font-black text-black uppercase">{t({ en: 'MAD', fr: 'MAD' })} {job.priceLabel}</span>
                                                         </div>
                                                         <div className="flex items-center gap-2 mt-2 text-[12px] text-neutral-500 font-medium">
                                                             <Clock size={11} />
@@ -3155,9 +3173,10 @@ export default function ProviderPage() {
                                         const COMMISSION_RATE = 0.15;
 
                                         // ── All figures are month-scoped via selectedMonthDt ──
+                                        const referralBonus = (userData as any)?.bricolerReferralBalance || 0;
                                         const totalEarnings = monthRevenueNum;
                                         const lbricolCommission = Math.round(totalEarnings * COMMISSION_RATE);
-                                        const netEarnings = totalEarnings - lbricolCommission;
+                                        const netEarnings = totalEarnings - lbricolCommission + referralBonus;
 
                                         // Rating: month-scoped AVG; fallback to all-time
                                         const avgRating = monthAvgRating;
@@ -3275,7 +3294,7 @@ export default function ProviderPage() {
                                                                             <p className="text-[11px] font-black text-neutral-400 uppercase tracking-widest leading-none mb-1">{t({ en: 'Net Earnings', fr: 'Gains Nets' })}</p>
                                                                             <div className="flex items-baseline gap-1">
                                                                                 <span className="text-[20px] font-black text-black">{netEarnings.toFixed(0)}</span>
-                                                                                <span className="text-[12px] font-black text-neutral-300">MAD</span>
+                                                                                <span className="text-[12px] font-black text-neutral-300 uppercase">{t({ en: 'MAD', fr: 'MAD' })}</span>
                                                                             </div>
                                                                         </div>
                                                                     </div>
@@ -3380,11 +3399,18 @@ export default function ProviderPage() {
                                                                         <div className="grid grid-cols-2 gap-4">
                                                                             <div className="p-6 rounded-[10px] border border-black flex flex-col justify-between h-[120px]">
                                                                                 <p className="text-[11px] font-black text-black uppercase tracking-widest">{t({ en: 'Total Gross', fr: 'Brut Total' })}</p>
-                                                                                <p className="text-[24px] font-black text-black leading-none">{totalEarnings.toFixed(0)} <span className="text-[14px] text-neutral-300">MAD</span></p>
+                                                                                <p className="text-[24px] font-black text-black leading-none">{(totalEarnings - ((userData as any)?.bricolerReferralBalance || 0)).toFixed(0)} <span className="text-[14px] text-neutral-300 uppercase">{t({ en: 'MAD', fr: 'MAD' })}</span></p>
                                                                             </div>
                                                                             <div className="p-6 rounded-[10px] border border-black flex flex-col justify-between h-[120px]">
+                                                                                <p className="text-[11px] font-black text-black uppercase tracking-widest">{t({ en: 'Referral Bonus', fr: 'Bonus Parrainage' })}</p>
+                                                                                <p className="text-[24px] font-black text-[#00A082] leading-none">+{(userData as any)?.bricolerReferralBalance || 0} <span className="text-[14px] text-[#00A082]/50 uppercase">{t({ en: 'MAD', fr: 'MAD' })}</span></p>
+                                                                            </div>
+                                                                        </div>
+
+                                                                        <div className="grid grid-cols-1 gap-4">
+                                                                            <div className="p-6 rounded-[10px] border border-black flex flex-col justify-between h-[100px]">
                                                                                 <p className="text-[11px] font-black text-black uppercase tracking-widest">{t({ en: 'Platform Fee', fr: 'Frais Plateforme' })}</p>
-                                                                                <p className="text-[24px] font-black text-red-500 leading-none">-{lbricolCommission} <span className="text-[14px] text-red-200">MAD</span></p>
+                                                                                <p className="text-[24px] font-black text-red-500 leading-none">-{lbricolCommission} <span className="text-[14px] text-red-200 uppercase">{t({ en: 'MAD', fr: 'MAD' })}</span></p>
                                                                             </div>
                                                                         </div>
 
@@ -3392,7 +3418,7 @@ export default function ProviderPage() {
                                                                             <div className="relative z-10">
                                                                                 <p className="text-black text-[11px] font-black uppercase tracking-widest mb-2">{t({ en: 'Personal Profits', fr: 'Bénéfices Personnels' })}</p>
                                                                                 <div className="flex items-center gap-3">
-                                                                                    <p className="text-black text-[32px] font-[900] tracking-tighter">{netEarnings.toFixed(0)} MAD</p>
+                                                                                    <p className="text-black text-[32px] font-[900] tracking-tighter">{netEarnings.toFixed(0)} {t({ en: 'MAD', fr: 'MAD' })}</p>
                                                                                     <div className="px-2 py-1 bg-white/20 backdrop-blur-md rounded-lg text-[10px] font-black text-white uppercase tracking-tighter">{t({ en: 'Live', fr: 'En direct' })}</div>
                                                                                 </div>
                                                                                 <p className="text-black text-[13px] font-medium mt-4 leading-relaxed">
@@ -3414,7 +3440,7 @@ export default function ProviderPage() {
                                                                                         <span className="text-[10px] font-black text-red-500 uppercase">{t({ en: 'Pending', fr: 'En attente' })}</span>
                                                                                     </div>
                                                                                 </div>
-                                                                                <p className="text-[36px] font-[1000] tracking-tighter">{lbricolCommission} MAD</p>
+                                                                                <p className="text-[36px] font-[1000] tracking-tighter">{lbricolCommission} {t({ en: 'MAD', fr: 'MAD' })}</p>
                                                                             </div>
 
                                                                             <div className="pt-4 space-y-4 border-t border-white/10 relative z-10">
@@ -3422,15 +3448,15 @@ export default function ProviderPage() {
                                                                                 <div className="space-y-3 bg-white/5 rounded-xl p-4">
                                                                                     <div className="grid grid-cols-[80px_1fr] gap-2 items-start">
                                                                                         <span className="text-[11px] font-black text-neutral-500 uppercase">{t({ en: 'Name', fr: 'Nom' })}</span>
-                                                                                        <span className="text-[14px] font-bold">Abdelmalek Tahri</span>
+                                                                                        <span className="text-[14px] font-bold">{t({ en: 'Abdelmalek Tahri', fr: 'Abdelmalek Tahri' })}</span>
                                                                                     </div>
                                                                                     <div className="grid grid-cols-[80px_1fr] gap-2 items-start">
                                                                                         <span className="text-[11px] font-black text-neutral-500 uppercase">{t({ en: 'Bank', fr: 'Banque' })}</span>
-                                                                                        <span className="text-[14px] font-bold">Al Barid Bank</span>
+                                                                                        <span className="text-[14px] font-bold">{t({ en: 'Al Barid Bank', fr: 'Al Barid Bank' })}</span>
                                                                                     </div>
                                                                                     <div className="grid grid-cols-[80px_1fr] gap-2 items-center">
                                                                                         <span className="text-[11px] font-black text-neutral-500 uppercase">RIB</span>
-                                                                                        <div className="flex items-center justify-between gap-2 bg-black/40 px-3 py-2 rounded-lg border border-white/10 group cursor-pointer" onClick={() => { navigator.clipboard.writeText('350810000000000880844466'); alert('Copied!'); }}>
+                                                                                        <div className="flex items-center justify-between gap-2 bg-black/40 px-3 py-2 rounded-lg border border-white/10 group cursor-pointer" onClick={() => { navigator.clipboard.writeText('350810000000000880844466'); alert(t({ en: 'Copied!', fr: 'Copié !' })); }}>
                                                                                             <span className="text-[12px] font-black font-mono tracking-tight text-neutral-200">35081000...4466</span>
                                                                                             <Copy size={12} className="text-neutral-500" />
                                                                                         </div>
@@ -3480,7 +3506,7 @@ export default function ProviderPage() {
                                                                                                     if (!auth.currentUser) return;
                                                                                                     setIsSubmittingSettlement(true);
                                                                                                     try {
-                                                                                                        await addDoc(collection(db, 'commission_settlements'), {
+                                                                                                        const settlementDoc = await addDoc(collection(db, 'commission_settlements'), {
                                                                                                             bricolerId: auth.currentUser.uid,
                                                                                                             bricolerName: userData?.name || auth.currentUser.displayName || 'Unknown',
                                                                                                             amount: settlementAmount,
@@ -3489,6 +3515,17 @@ export default function ProviderPage() {
                                                                                                             month: format(selectedMonthDt, 'yyyy-MM'),
                                                                                                             timestamp: serverTimestamp()
                                                                                                         });
+
+                                                                                                        await addDoc(collection(db, 'admin_notifications'), {
+                                                                                                            type: 'commission_paid',
+                                                                                                            settlementId: settlementDoc.id,
+                                                                                                            bricolerId: auth.currentUser.uid,
+                                                                                                            bricolerName: userData?.name || auth.currentUser.displayName || 'Unknown',
+                                                                                                            amount: settlementAmount,
+                                                                                                            read: false,
+                                                                                                            createdAt: serverTimestamp()
+                                                                                                        });
+
                                                                                                         setSettlementReceipt(null);
                                                                                                         showToast({
                                                                                                             variant: 'success',
@@ -3932,7 +3969,7 @@ export default function ProviderPage() {
                                                                 <span className="text-[12px] font-bold text-neutral-400">18/02</span>
                                                             </div>
                                                             <p className="text-[14px] font-medium text-neutral-500 truncate mb-3">
-                                                                Click to check messages regarding this order...
+                                                                {t({ en: 'Click to check messages regarding this order...', fr: 'Cliquez pour voir les messages concernant cette commande...' })}
                                                             </p>
                                                             <div className="flex items-center gap-2">
                                                                 <span className="px-2 py-0.5 bg-blue-50 text-blue-600 rounded-md text-[10px] font-black uppercase tracking-wider">
@@ -4057,13 +4094,30 @@ export default function ProviderPage() {
                                                 setIsRedistributing(true);
                                                 try {
                                                     await handleUpdateJob(redistributeJob.id, {
-                                                        status: 'new',
-                                                        bricolerId: null,
+                                                        status: 'redistributed_by_provider',
                                                         redistributedBy: user?.uid,
                                                         redistributeReason,
                                                         penaltyApplied: true,
                                                         redistributedAt: new Date().toISOString(),
                                                     });
+
+                                                    // Send notification to client
+                                                    try {
+                                                        const { sendClientNotification } = await import('@/features/client/components/ClientNotificationsView');
+                                                        await sendClientNotification({
+                                                            clientId: redistributeJob.clientId!,
+                                                            type: 'job_status_update',
+                                                            title: t({ en: 'Order Redistributed', fr: 'Commande redistribuée' }),
+                                                            body: t({
+                                                                en: `${userData?.name || 'Your professional'} had to redistribute your job. Please choose someone else or cancel.`,
+                                                                fr: `${userData?.name || 'Votre professionnel'} a dû redistribuer votre mission. Veuillez choisir quelqu'un d'autre ou annuler.`
+                                                            }),
+                                                            orderId: redistributeJob.id
+                                                        });
+                                                    } catch (notifErr) {
+                                                        console.warn("Failed to notify client about redistribution:", notifErr);
+                                                    }
+
                                                     showToast({ variant: 'info', title: t({ en: 'Job redistributed', fr: 'Mission redistribuée' }), description: t({ en: 'A penalty has been applied to your earnings.', fr: 'Une pénalité a été appliquée à vos revenus.' }) });
                                                     setShowRedistributeModal(false);
                                                     setRedistributeReason('');
@@ -4210,7 +4264,7 @@ export default function ProviderPage() {
                                         </div>
                                         <div className="text-right">
                                             <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest">{t({ en: 'Agreed Price', fr: 'Prix convenu' })}</p>
-                                            <p className="text-xs font-bold text-black">{selectedChat.price} MAD</p>
+                                            <p className="text-xs font-bold text-black">{selectedChat.price} {t({ en: 'MAD', fr: 'MAD' })}</p>
                                         </div>
                                     </div>
 
@@ -4548,7 +4602,7 @@ export default function ProviderPage() {
                                                 {getAllServices().filter(s => !selectedServices.includes(s.id)).map(s => (
                                                     <button
                                                         key={s.id}
-                                                        onClick={() => setNewServiceData({ ...newServiceData, id: s.id, rate: SERVICE_TIER_RATES[s.id]?.suggestedMin || 100 })}
+                                                        onClick={() => setNewServiceData({ ...newServiceData, id: s.id, rate: SERVICE_TIER_RATES[s.id]?.suggestedMin || 75 })}
                                                         className={cn(
                                                             "p-4 rounded-2xl border-2 transition-all text-left flex flex-col gap-3",
                                                             newServiceData.id === s.id ? "border-black bg-neutral-50 shadow-sm" : "border-neutral-100 hover:border-neutral-200"
@@ -4572,7 +4626,7 @@ export default function ProviderPage() {
                                                         <div className="flex-1">
                                                             <div className="flex items-center justify-between mb-2">
                                                                 <span className="text-[12px] font-bold text-neutral-400">{t({ en: 'Low', fr: 'Bas' })}</span>
-                                                                <span className="text-[12px] font-black text-black">{newServiceData.rate} MAD</span>
+                                                                <span className="text-[12px] font-black text-black">{newServiceData.rate} {t({ en: 'MAD', fr: 'MAD' })}</span>
                                                                 <span className="text-[12px] font-bold text-neutral-400">{t({ en: 'High', fr: 'Élevé' })}</span>
                                                             </div>
                                                             <input
@@ -4644,7 +4698,7 @@ export default function ProviderPage() {
 
                                     <div className="mb-10">
                                         <div className="relative flex items-baseline gap-3 pb-3 border-b border-neutral-200">
-                                            <span className="text-[40px] font-black text-[#BFBFBF]">MAD</span>
+                                            <span className="text-[40px] font-black text-[#BFBFBF] uppercase">{t({ en: 'MAD', fr: 'MAD' })}</span>
                                             <input
                                                 type="number"
                                                 value={counterPrice}
@@ -4724,7 +4778,7 @@ export default function ProviderPage() {
                                             </div>
                                             <div className="text-right">
                                                 <p className="text-[10px] font-black text-neutral-500 uppercase tracking-widest">{t({ en: 'Offer', fr: 'Offre' })}</p>
-                                                <p className="text-xl font-black text-white">{latestJob.price} MAD</p>
+                                                <p className="text-xl font-black text-white">{latestJob.price} {t({ en: 'MAD', fr: 'MAD' })}</p>
                                             </div>
                                         </div>
 
@@ -4867,7 +4921,7 @@ export default function ProviderPage() {
                                                             : t({ en: 'Notification', fr: 'Notification' });
 
                                         const body = isNewJob
-                                            ? `${noti.city || ''} · MAD ${noti.price || '?'}`
+                                            ? `${noti.city || ''} · ${t({ en: 'MAD', fr: 'MAD' })} ${noti.price || '?'}`
                                             : isAccepted
                                                 ? t({ en: `Your offer for ${noti.serviceName || 'a job'} was accepted!`, fr: `Votre offre pour ${noti.serviceName || 'une mission'} a été acceptée !` })
                                                 : isDeclined

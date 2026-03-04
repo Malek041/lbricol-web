@@ -1,35 +1,38 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
-import Header from '@/components/Header';
+import Header from '@/components/layout/Header';
 import confetti from 'canvas-confetti';
-import SearchBox from '@/components/SearchBox';
-import CitySelectionPopup from '@/components/CitySelectionPopup';
-import Footer from '@/components/Footer';
-import AuthPopup from '@/components/AuthPopup';
-import ClientWhatsAppPopup from '@/components/ClientWhatsAppPopup';
-import OrderCard, { OrderDetails } from '@/components/OrderCard';
-import WeekCalendar from '@/components/WeekCalendar';
-import ClientOrdersView from '@/components/ClientOrdersView';
-import HeroesView from '@/components/HeroesView';
-import ShareAndEarnView from '@/components/ShareAndEarnView';
-import PromocodesView from '@/components/PromocodesView';
-import OrderHistoryCarousel from '@/components/OrderHistoryCarousel';
-import LanguagePreferencePopup from '@/components/LanguagePreferencePopup';
-import MobileBottomNav from '@/components/MobileBottomNav';
-import MessagesView from '@/components/MessagesView';
-import ProfileView from '@/components/ProfileView';
-import ClientHome from '@/components/ClientHome';
-import OnboardingPopup from '@/components/OnboardingPopup';
-import OrderSubmissionFlow, { DraftOrder } from '@/components/OrderSubmissionFlow';
-import AdminDashboard from '@/components/AdminDashboard';
-import AdminOrdersView from '@/components/AdminOrdersView';
-import AdminBricolerCreator from '@/components/AdminBricolerCreator';
-import AdminBricolersView from '@/components/AdminBricolersView';
-import SplashScreen from '@/components/SplashScreen';
-import BecomeBricolerPopup from '@/components/BecomeBricolerPopup';
-import RatingPopup from '@/components/RatingPopup';
-import ClientNotificationsView from '@/components/ClientNotificationsView';
+import SearchBox from '@/components/shared/SearchBox';
+import CitySelectionPopup from '@/features/client/components/CitySelectionPopup';
+import Footer from '@/components/layout/Footer';
+import AuthPopup from '@/features/onboarding/components/AuthPopup';
+import ClientWhatsAppPopup from '@/features/client/components/ClientWhatsAppPopup';
+import OrderCard, { OrderDetails } from '@/features/orders/components/OrderCard';
+import WeekCalendar from '@/features/calendar/components/WeekCalendar';
+import ClientOrdersView from '@/features/orders/components/ClientOrdersView';
+import HeroesView from '@/features/client/components/HeroesView';
+import ShareAndEarnView from '@/features/client/components/ShareAndEarnView';
+import PromocodesView from '@/features/client/components/PromocodesView';
+import { DesktopHeroScroll } from '@/components/shared/DesktopHeroScroll';
+import { MoroccoServiceMap } from '@/components/shared/MoroccoServiceMap';
+import OrderHistoryCarousel from '@/features/orders/components/OrderHistoryCarousel';
+import LanguagePreferencePopup from '@/features/onboarding/components/LanguagePreferencePopup';
+import MobileBottomNav from '@/components/layout/MobileBottomNav';
+import MessagesView from '@/features/messages/components/MessagesView';
+import ProfileView from '@/features/provider/components/ProfileView';
+import ClientHome from '@/features/client/components/ClientHome';
+import OnboardingPopup from '@/features/onboarding/components/OnboardingPopup';
+import OrderSubmissionFlow, { DraftOrder } from '@/features/orders/components/OrderSubmissionFlow';
+import AdminDashboard from '@/features/admin/components/AdminDashboard';
+import AdminOrdersView from '@/features/orders/components/AdminOrdersView';
+import AdminBricolerCreator from '@/features/admin/components/AdminBricolerCreator';
+import AdminBricolersView from '@/features/admin/components/AdminBricolersView';
+import SplashScreen from '@/components/layout/SplashScreen';
+import RatingPopup from '@/features/orders/components/RatingPopup';
+import ClientNotificationsView from '@/features/client/components/ClientNotificationsView';
+import AdminNotificationsView from '@/features/admin/components/AdminNotificationsView';
+import AdminReceivablesView from '@/features/admin/components/AdminReceivablesView';
 import {
   MapPin,
   ChevronDown,
@@ -84,7 +87,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useLanguage } from '@/context/LanguageContext';
 import { useTheme } from '@/context/ThemeContext';
 import { useToast } from '@/context/ToastContext';
-import MillionsImpactSection from '@/components/MillionsImpactSection';
+import MillionsImpactSection from '@/components/shared/MillionsImpactSection';
 import { auth, db } from '@/lib/firebase';
 import {
   onAuthStateChanged,
@@ -263,13 +266,19 @@ const Home = () => {
   const [showOrderFlow, setShowOrderFlow] = useState(false);
   const [availableServices, setAvailableServices] = useState<string[]>([]);
   const [availableSubServices, setAvailableSubServices] = useState<string[]>([]);
-  const [trendingSubServices, setTrendingSubServices] = useState<string[]>([]);
+  const [isBricoler, setIsBricoler] = useState(false);
   const [isAdminMode, setIsAdminMode] = useState(false);
+  const [isProgramming, setIsProgramming] = useState(false);
+  const [trendingSubServices, setTrendingSubServices] = useState<string[]>([]);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [shadowProfileData, setShadowProfileData] = useState<any | null>(null);
+  const [impersonatedBricoler, setImpersonatedBricoler] = useState<{ id: string; name: string } | null>(null);
   const [showAdminBricolerCreator, setShowAdminBricolerCreator] = useState(false);
   const [showSplash, setShowSplash] = useState(true);
   const [jobToRate, setJobToRate] = useState<OrderDetails | null>(null);
   const [showClientNotifications, setShowClientNotifications] = useState(false);
+  const [showAdminNotifications, setShowAdminNotifications] = useState(false);
+  const [showAdminReceivables, setShowAdminReceivables] = useState(false);
   const [unreadNotifsCount, setUnreadNotifsCount] = useState(0);
 
 
@@ -363,7 +372,6 @@ const Home = () => {
   const [showAuthPopup, setShowAuthPopup] = useState(false);
   const [showClientWhatsAppPopup, setShowClientWhatsAppPopup] = useState(false);
   const [pendingQuickOrder, setPendingQuickOrder] = useState<any>(null);
-  const [isProgramming, setIsProgramming] = useState(false);
   const [cityServices, setCityServices] = useState<string[]>([]);
   const [citySubServices, setCitySubServices] = useState<string[]>([]);
   const [popularServiceIds, setPopularServiceIds] = useState<string[]>([]);
@@ -465,6 +473,16 @@ const Home = () => {
         setDismissedOffers(JSON.parse(savedDismissedOffers));
       } catch (e) {
         console.error("Error parsing dismissed offers:", e);
+      }
+    }
+
+    const savedNotifiedIds = localStorage.getItem('lbricol_notified_notif_ids');
+    if (savedNotifiedIds) {
+      try {
+        const parsed = JSON.parse(savedNotifiedIds);
+        parsed.forEach((id: string) => notifiedNotificationIds.current.add(id));
+      } catch (e) {
+        console.error("Error parsing notified IDs:", e);
       }
     }
 
@@ -613,7 +631,7 @@ const Home = () => {
     { en: "Driver", fr: "Chauffeur" },
     { en: "Courier", fr: "Coursier" },
   ];
-  const [isBricoler, setIsBricoler] = useState(false);
+  // const [isBricoler, setIsBricoler] = useState(false); // Already declared above
 
   const handleProfileBricolerAction = () => {
     if (isBricoler) {
@@ -743,19 +761,21 @@ const Home = () => {
           const id = change.doc.id;
 
           if (!notifiedNotificationIds.current.has(id)) {
-            notifiedNotificationIds.current.add(id);
-
             // Only chime/toast if it's very recent (to avoid noise on initial load)
-            // Note: serverTimestamp might be null briefly on local add
             const createdAtMillis = data.createdAt?.toMillis ? data.createdAt.toMillis() : (data.createdAt ? new Date(data.createdAt).getTime() : Date.now());
             const isFresh = (Date.now() - createdAtMillis) < 60000; // Within 1 minute
 
             if (isFresh) {
+              notifiedNotificationIds.current.add(id);
+              // Save to localStorage to persist across refreshes
+              const currentIds = Array.from(notifiedNotificationIds.current);
+              localStorage.setItem('lbricol_notified_notif_ids', JSON.stringify(currentIds));
+
               // Play Sound
               try {
                 const soundUrl = data.type === 'order_confirmed'
-                  ? 'https://assets.mixkit.co/active_storage/sfx/2000/2000-preview.mp3' // Pleasant chime for confirmation
-                  : 'https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3'; // Standard pop for others
+                  ? 'https://assets.mixkit.co/active_storage/sfx/2000/2000-preview.mp3'
+                  : 'https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3';
 
                 const audio = new Audio(soundUrl);
                 audio.volume = 0.5;
@@ -771,6 +791,11 @@ const Home = () => {
                 variant: data.type === 'order_confirmed' ? 'success' : 'info',
                 duration: 5000
               });
+            } else {
+              // Even if not fresh, mark as notified so it doesn't toast if it becomes "fresh" later (unlikely but safe)
+              notifiedNotificationIds.current.add(id);
+              const currentIds = Array.from(notifiedNotificationIds.current);
+              localStorage.setItem('lbricol_notified_notif_ids', JSON.stringify(currentIds));
             }
           }
         }
@@ -798,10 +823,35 @@ const Home = () => {
     return unsub;
   }, [currentUser]);
 
+  const handleCodeEntered = async (code: string) => {
+    try {
+      const q = query(collection(db, 'bricolers'), where('claimCode', '==', code.toUpperCase()), limit(1));
+      const s = await getDocs(q);
+      if (!s.empty) {
+        const data = s.docs[0].data();
+        setShadowProfileData({ ...data, id: s.docs[0].id });
+        setShowMobileOnboarding(true);
+      } else {
+        showToast({
+          variant: 'error',
+          title: t({ en: 'Invalid code', fr: 'Code invalide' }),
+          description: t({ en: 'This activation code does not exist.', fr: 'Ce code d\'activation n\'existe pas.' })
+        });
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   const handleAdminAction = async (code?: string) => {
     if (isAdmin) {
-      setIsAdminMode(!isAdminMode);
-      setMobileNavTab('performance');
+      if (isAdminMode) {
+        setIsAdminMode(false);
+        setMobileNavTab('home');
+      } else {
+        setIsAdminMode(true);
+        setMobileNavTab('performance');
+      }
       return;
     }
 
@@ -813,7 +863,7 @@ const Home = () => {
 
       try {
         const clientRef = doc(db, 'clients', currentUser.uid);
-        await updateDoc(clientRef, { role: 'admin' });
+        await setDoc(clientRef, { role: 'admin' }, { merge: true });
         setIsAdmin(true);
         setIsAdminMode(true);
         setMobileNavTab('performance');
@@ -854,23 +904,23 @@ const Home = () => {
         console.log("🔐 Auth state changed:", user ? `Logged in as ${user.email}` : "Not logged in");
 
         if (user) {
-          // 1. Real-time User Data (Client profile)
-          const clientRef = doc(db, 'clients', user.uid);
-          unsubscribeUserData = onSnapshot(clientRef, (snap) => {
+          // 1. Real-time User Data (Global profile)
+          const userRef = doc(db, 'users', user.uid);
+          unsubscribeUserData = onSnapshot(userRef, (snap) => {
             if (snap.exists()) {
               const data = snap.data();
               setUserData(data);
               setIsAdmin(data.role === 'admin');
             } else {
-              // Initialize client profile if new
-              const newClient = {
+              // Initialize global user profile if new
+              const newUser = {
                 uid: user.uid,
                 name: user.displayName,
                 email: user.email,
                 createdAt: serverTimestamp()
               };
-              setDoc(clientRef, newClient, { merge: true })
-                .catch(err => console.error("Error creating client profile:", err));
+              setDoc(userRef, newUser, { merge: true })
+                .catch(err => console.error("Error creating global user profile:", err));
             }
           });
 
@@ -1552,6 +1602,7 @@ const Home = () => {
         const userSnap = await getDoc(userRef);
         if (userSnap.exists() && userSnap.data().referralDiscountAvailable) {
           const disc = userSnap.data().referralDiscountAvailable;
+          // In handleProgramOrder, we always apply the discount if available
           finalPrice = Math.max(0, finalPrice - disc);
           await updateDoc(userRef, { referralDiscountAvailable: 0 });
 
@@ -1562,17 +1613,19 @@ const Home = () => {
             if (referrerSnap.exists()) {
               const rData = referrerSnap.data();
               if (rData.isProvider) {
-                await updateDoc(referrerRef, { bricolerReferralBalance: increment(50) });
+                await updateDoc(referrerRef, { bricolerReferralBalance: increment(20) });
               } else {
-                await updateDoc(referrerRef, { referralBalance: increment(50) });
+                await updateDoc(referrerRef, { referralBalance: increment(20) });
               }
             }
           }
+          // Mark as issued so delivery logic doesn't double-award
+          await updateDoc(userRef, { referralRewardIssued: true });
 
           showToast({
             variant: 'success',
             title: t({ en: "Referral applied!", fr: "Parrainage appliqué !" }),
-            description: t({ en: "50 MAD discount applied to your order.", fr: "Réduction de 50 MAD appliquée à votre commande." })
+            description: t({ en: "20 MAD discount applied to your order.", fr: "Réduction de 20 MAD appliquée à votre commande." })
           });
         }
       } catch (e) {
@@ -1640,6 +1693,15 @@ const Home = () => {
 
         const docRef = await addDoc(collection(db, 'jobs'), jobData);
         console.log("Job saved with ID: ", docRef.id);
+
+        // GUARANTEE CLIENT STATUS
+        await setDoc(doc(db, 'clients', effectiveUser.uid), {
+          uid: effectiveUser.uid,
+          name: effectiveUser.displayName,
+          email: effectiveUser.email,
+          whatsappNumber: effectiveWhatsApp,
+          createdAt: serverTimestamp()
+        }, { merge: true });
 
         savedOrders.push({ ...order, id: docRef.id });
 
@@ -2012,7 +2074,9 @@ const Home = () => {
         const userSnap = await getDoc(userRef);
         if (userSnap.exists() && userSnap.data().referralDiscountAvailable) {
           usedDiscount = userSnap.data().referralDiscountAvailable;
-          finalTotalPrice = Math.max(0, finalTotalPrice - usedDiscount);
+          if (!data.referralApplied) {
+            finalTotalPrice = Math.max(0, finalTotalPrice - usedDiscount);
+          }
           await updateDoc(userRef, { referralDiscountAvailable: 0 });
 
           const referrerId = userSnap.data().referredBy;
@@ -2028,6 +2092,8 @@ const Home = () => {
               }
             }
           }
+          await updateDoc(userRef, { referralRewardIssued: true });
+
         }
       } catch (e) {
         console.warn("Could not check referral discount in quick order:", e);
@@ -2108,6 +2174,15 @@ const Home = () => {
       setShowOrderFlow(false);
       setSelectedOrderId(docRef.id);
 
+      // GUARANTEE CLIENT STATUS
+      await setDoc(doc(db, 'clients', effectiveUser.uid), {
+        uid: effectiveUser.uid,
+        name: effectiveUser.displayName,
+        email: effectiveUser.email,
+        whatsappNumber: effectiveWhatsApp,
+        createdAt: serverTimestamp()
+      }, { merge: true });
+
       if (isMobile) {
         setMobileNavTab('calendar');
       } else {
@@ -2137,24 +2212,23 @@ const Home = () => {
       const result = await signInWithPopup(auth, provider);
       const user = result.user;
 
-      // Fetch existing client data first to get WhatsApp number if it exists
-      const clientRef = doc(db, 'clients', user.uid);
-      const clientSnap = await getDoc(clientRef);
+      // Fetch existing user data first to get WhatsApp number if it exists
+      const userRef = doc(db, 'users', user.uid);
+      const userSnap = await getDoc(userRef);
 
       let existingData: any = {};
-      if (clientSnap.exists()) {
-        existingData = clientSnap.data();
+      if (userSnap.exists()) {
+        existingData = userSnap.data();
         setUserData(existingData);
       }
 
-      // Create/update client profile
-      await setDoc(clientRef, {
+      // Create/update user profile globally
+      await setDoc(userRef, {
         uid: user.uid,
         name: user.displayName,
         email: user.email,
         createdAt: serverTimestamp(),
-        ...existingData // Ensure we don't overwrite if not needed, though merge handles it. mainly to keep local state in sync?
-        // Actually merge: true handles preservation. We just needed to READ it.
+        ...existingData
       }, { merge: true });
 
       // If we just read it, userData is set. If it was new, existingData is empty.
@@ -2231,7 +2305,7 @@ const Home = () => {
         {(showSplash || isProgramming) && <SplashScreen key="splash" />}
       </AnimatePresence>
 
-      <BecomeBricolerPopup onStartOnboarding={() => setShowMobileOnboarding(true)} isBricoler={isBricoler} />
+
 
       <RatingPopup
         isOpen={!!jobToRate}
@@ -2248,13 +2322,16 @@ const Home = () => {
       />
 
       {!isFullscreenMobileTab && (
-        <Header
-          activeTab={activeTab}
-          onTabChange={setActiveTab}
-          isBricoler={isBricoler}
-          user={currentUser}
-        />
+        <div className="md:hidden">
+          <Header
+            activeTab={activeTab}
+            onTabChange={setActiveTab}
+            isBricoler={isBricoler}
+            user={currentUser}
+          />
+        </div>
       )}
+
       <input
         type="file"
         ref={fileInputRef}
@@ -2274,7 +2351,18 @@ const Home = () => {
           <>
             {mobileNavTab === 'calendar' && (
               isAdminMode ? (
-                <AdminOrdersView t={t} />
+                <AdminOrdersView
+                  t={t}
+                  onViewMessages={(jobId) => {
+                    setMobileNavTab('messages');
+                    setSelectedOrderId(jobId);
+                  }}
+                  onChat={(jobId, bricolerId, bricolerName) => {
+                    setImpersonatedBricoler({ id: bricolerId, name: bricolerName });
+                    setMobileNavTab('messages');
+                    setSelectedOrderId(jobId);
+                  }}
+                />
               ) : (
                 <ClientOrdersView
                   orders={orders}
@@ -2300,9 +2388,11 @@ const Home = () => {
                 orders={orders}
                 currentUser={currentUser}
                 initialSelectedJobId={selectedOrderId}
+                impersonateBricoler={impersonatedBricoler || undefined}
                 onBackToOrders={() => {
                   setMobileNavTab('calendar');
                   setShowHistoryInOrders(false);
+                  setImpersonatedBricoler(null);
                 }}
               />
             )}
@@ -2405,7 +2495,6 @@ const Home = () => {
                 onBack={() => setShowClientNotifications(false)}
                 onNavigateToOrder={(jobId) => {
                   setShowClientNotifications(false);
-                  // Optionally highlight order but switching to calendar shows the list
                   setMobileNavTab('calendar');
                 }}
                 onNavigateToMessages={(jobId) => {
@@ -2413,6 +2502,24 @@ const Home = () => {
                   setSelectedOrderId(jobId);
                   setMobileNavTab('messages');
                 }}
+              />
+            </div>
+          )}
+          {showAdminNotifications && isAdminMode && (
+            <div className="fixed inset-0 z-[1001] bg-white">
+              <AdminNotificationsView
+                onBack={() => setShowAdminNotifications(false)}
+                onNavigateToReceivables={() => {
+                  setShowAdminNotifications(false);
+                  setShowAdminReceivables(true);
+                }}
+              />
+            </div>
+          )}
+          {showAdminReceivables && isAdminMode && (
+            <div className="fixed inset-0 z-[1001] bg-white">
+              <AdminReceivablesView
+                onBack={() => setShowAdminReceivables(false)}
               />
             </div>
           )}
@@ -2427,7 +2534,7 @@ const Home = () => {
             className="flex-1 flex flex-col"
           >
             {/* On mobile: Glovo-style flash home; on desktop: full hero */}
-            {isMobile && mobileNavTab === 'home' && (
+            {isMobile && mobileNavTab === 'home' && !isAdminMode && (
               <div className="fixed top-8 right-6 z-[110]">
                 <button
                   onClick={() => setShowClientNotifications(true)}
@@ -2447,12 +2554,27 @@ const Home = () => {
               </div>
             )}
 
+            {/* Admin Notifications Bell (Floating) */}
+            {isAdminMode && (
+              <div className="fixed top-8 right-6 z-[110]">
+                <button
+                  onClick={() => setShowAdminNotifications(true)}
+                  className="w-12 h-12 flex items-center justify-center bg-white rounded-2xl shadow-lg border border-neutral-100 relative active:scale-90 transition-transform"
+                >
+                  <Bell size={24} strokeWidth={2.5} className="text-black" />
+                  <div className="absolute top-2 right-2 w-4 h-4 bg-red-500 rounded-full border-2 border-white flex items-center justify-center">
+                    <span className="text-[9px] font-black text-white">!</span>
+                  </div>
+                </button>
+              </div>
+            )}
+
             {isMobile ? (
               <ClientHome
                 userName={currentUser?.displayName || undefined}
                 selectedCity={selectedCity}
                 selectedArea={selectedArea}
-                recentOrders={orders.filter(o => o.status === 'done').slice(0, 3)}
+                recentOrders={orders.filter(o => o.status !== 'cancelled')}
                 onSelectService={(serviceName, sub) => {
                   const cfg = getServiceById(serviceName);
                   const finalSvc = cfg?.id || serviceName;
@@ -2479,1081 +2601,23 @@ const Home = () => {
               <>
 
                 {/* Hero Section */}
-                <section style={{
-                  position: 'relative',
-                  padding: isMobile ? '2rem 0 4rem' : '5rem 0 5rem',
-                  minHeight: isMobile ? '100dvh' : 'auto',
-                  display: isMobile ? 'flex' : 'block',
-                  flexDirection: 'column',
-                  overflow: 'hidden'
-                }}>
-                  {/* Subtle Ambient Background */}
-                  <div style={{
-                    position: 'absolute',
-                    top: '-20%',
-                    right: '-10%',
-                    width: '800px',
-                    height: '800px',
-                    filter: 'blur(80px)',
-                    zIndex: 0,
-                    pointerEvents: 'none'
-                  }} />
-                  <div style={{ maxWidth: '1270px', margin: '0 auto', padding: '0 1.5rem', position: 'relative', zIndex: 10 }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4rem' }}>
-                      <div style={{ maxWidth: '600px' }}>
-                        <button
-                          onClick={() => setShowCityPopup(true)}
-                          style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '8px',
-                            marginBottom: '3rem',
-                            padding: '8px 12px',
-                            borderRadius: '10px',
-                            backgroundColor: c.surface,
-                            border: 'none',
-                            cursor: 'pointer',
-                            fontSize: '14px',
-                            fontWeight: 500,
-                            color: c.text,
-                          }}
-                        >
-                          <MapPin size={16} />
-                          <span>{cleanCityName(selectedCity) || t({ en: "Select your city", fr: "Sélectionnez votre ville" })}</span>
-                          <ChevronDown size={16} />
-                        </button>
-
-                        <motion.h1
-                          variants={heroVariants}
-                          initial="hidden"
-                          animate="visible"
-                          style={{
-                            fontSize: isMobile ? '3rem' : '4rem',
-                            fontWeight: 400,
-                            lineHeight: 1.1,
-                            letterSpacing: '-0.04em',
-                            color: '#000000ff',
-                            marginBottom: '-1rem',
-                            fontFamily: 'Uber Move, var(--font-sans)',
-                            display: 'flex',
-                            alignItems: 'baseline',
-                            columnGap: '1rem',
-                            rowGap: '0.2rem',
-                            flexWrap: 'wrap'
-                          }}
-                        >
-                          <motion.span variants={heroItemVariants} style={{ display: 'block' }}>
-                            {t({ en: "Find", fr: "Trouvez" })}
-                          </motion.span>
-
-                          <motion.span
-                            variants={heroItemVariants}
-                            style={{
-                              color: '#000000ff',
-                              display: 'block',
-                              fontWeight: 800,
-                            }}
-                          >
-                            {t({ en: "Professionals", fr: "des professionnels" })}
-                          </motion.span>
-
-                          <motion.span variants={heroItemVariants} style={{ display: 'block' }}>
-                            {selectedCity
-                              ? t({ en: `in ${cleanCityName(selectedCity)}`, fr: `à ${cleanCityName(selectedCity)}` })
-                              : t({ en: "in your City", fr: "dans votre ville" })
-                            }
-                          </motion.span>
-                        </motion.h1>
-                      </div>
-
-
-                    </div>
-
-                    <motion.div
-                      initial={{ opacity: 0, y: 40, filter: 'blur(10px)' }}
-                      animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
-                      transition={{ duration: 1, delay: 0.5, ease: [0.16, 1, 0.3, 1] }}
-                      ref={searchAreaRef}
-                      style={{ position: 'relative', zIndex: 30 }}
-                    >
-                      {/* Vertical Stack Input Layout */}
-                      {/* SPLIT LAYOUT CONTAINER */}
-                      <div style={{
-                        display: 'flex',
-                        gap: isMobile ? '1rem' : '4rem',
-                        alignItems: 'flex-start',
-                        width: '100%',
-                        flexDirection: isMobile ? 'column' : 'row',
-                        flexWrap: isMobile ? 'wrap' : 'nowrap'
-                      }}>
-                        {/* LEFT PANEL */}
-                        <div style={{
-                          display: 'flex',
-                          flexDirection: 'column',
-                          gap: '0.75rem',
-                          width: '100%',
-                          maxWidth: isMobile ? '100%' : '380px',
-                          flexShrink: 0,
-                          minWidth: 0
-                        }}>
-
-                          {/* WHAT Component (Uber Style) */}
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                            <motion.div
-                              whileHover={{ backgroundColor: '#EDEDED' }}
-                              onClick={() => setActiveSearchSection(activeSearchSection === 'what' ? null : 'what')}
-                              style={{
-                                width: '100%',
-                                padding: isMobile ? '14px 16px' : '16px 20px',
-                                backgroundColor: theme === 'light' ? '#F3F3F3' : '#1a1a1a',
-                                borderRadius: '10px',
-                                cursor: 'pointer',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: isMobile ? '12px' : '16px',
-                                border: activeSearchSection === 'what' ? '2px solid black' : '2px solid transparent',
-                                boxShadow: isMobile && activeSearchSection === 'what' ? '0 4px 12px rgba(0,0,0,0.1)' : 'none',
-                                transition: 'all 0.2s ease',
-                              }}
-                            >
-                              <div style={{ minWidth: '24px', display: 'flex', justifyContent: 'center' }}>
-                                <div style={{ width: '8px', height: '8px', backgroundColor: 'black', borderRadius: '50%' }}></div>
-                              </div>
-
-                              <div style={{ fontSize: '16px', fontWeight: 500, color: service ? '#000' : '#5E5E5E', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                                {subService
-                                  ? `${getServiceName(service)} › ${getSubServiceName(service, subService) || subService}`
-                                  : (service ? getServiceName(service) : t({ en: 'Select Service', fr: 'Choisir Service' }))
-                                }
-                              </div>
-                            </motion.div>
-
-                            <AnimatePresence>
-                              {isMobile && activeSearchSection === 'what' && (
-                                <motion.div
-                                  initial={{ height: 0, opacity: 0 }}
-                                  animate={{ height: 'auto', opacity: 1 }}
-                                  exit={{ height: 0, opacity: 0 }}
-                                  style={{ overflow: 'hidden' }}
-                                >
-                                  <div style={{ padding: '10px 0 20px' }}>
-                                    {/* WHAT PREVIEW CONTENT (EXTRACTED) */}
-                                    {(() => {
-                                      const services_list = activeTab === 'domestic' ? [
-                                        'Handyman / small repairs', 'Furniture assembly', 'Cleaning', 'Glass cleaning', 'Plumbing', 'Electricity', 'Painting', 'Moving help', 'Appliance installation', 'Mounting (TV, shelves, curtains)', 'Errands & small deliveries', 'Gardening', 'Babysitting', 'Elderly assistance', 'Cooking'
-                                      ] : [
-                                        'Car with driver', 'Car rental', 'Courier / delivery', 'Airport pickup', 'Intercity transport', 'Private Driver', 'Learn Arabic', 'Tour Guide'
-                                      ];
-
-                                      const sortedServices = [...services_list].sort((a, b) => {
-                                        const aId = getServiceById(a)?.id || a;
-                                        const bId = getServiceById(b)?.id || b;
-                                        const isAvailA = availableServices.includes(aId);
-                                        const isAvailB = availableServices.includes(bId);
-                                        return (isAvailB ? 1 : 0) - (isAvailA ? 1 : 0);
-                                      });
-
-                                      return (
-                                        <div style={{ width: '100%' }}>
-                                          <h3 style={{ fontSize: '12px', fontWeight: 900, textTransform: 'uppercase', color: c.textMuted, marginBottom: '1rem', fontFamily: 'Uber Move, var(--font-sans)' }}>
-                                            {t({ en: 'Available Services', fr: 'Services Disponibles' })}
-                                          </h3>
-                                          {loadingServices ? (
-                                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px' }}>
-                                              {[1, 2, 3, 4].map((i) => (
-                                                <div key={i} style={{ backgroundColor: '#F5F5F5', borderRadius: '12px', height: '60px' }} />
-                                              ))}
-                                            </div>
-                                          ) : (
-                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                                              <div style={{ marginBottom: '8px', padding: isMobile ? '0' : '0' }}>
-                                                <div style={{
-                                                  display: 'flex',
-                                                  alignItems: 'center',
-                                                  backgroundColor: c.surface,
-                                                  borderRadius: '12px',
-                                                  padding: '10px 14px',
-                                                  border: `1px solid ${c.border}`
-                                                }}>
-                                                  <Search size={18} color={c.textMuted} />
-                                                  <input
-                                                    type="text"
-                                                    placeholder={t({ en: 'Search services...', fr: 'Rechercher des services...' })}
-                                                    value={serviceSearchQuery}
-                                                    onChange={(e) => setServiceSearchQuery(e.target.value)}
-                                                    style={{
-                                                      border: 'none',
-                                                      background: 'transparent',
-                                                      outline: 'none',
-                                                      marginLeft: '8px',
-                                                      width: '100%',
-                                                      fontSize: '14px',
-                                                      color: c.text
-                                                    }}
-                                                  />
-                                                </div>
-                                              </div>
-                                              {(service && (getServiceById(service)?.subServices?.filter(sub => availableSubServices.includes(sub.id)).length || 0) > 0 && !subService) ? (
-                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                                                  <button
-                                                    onClick={() => setService('')}
-                                                    style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem', fontSize: '14px', color: c.textMuted, cursor: 'pointer', border: 'none', background: 'transparent' }}
-                                                  >
-                                                    <ChevronDown style={{ transform: 'rotate(90deg)' }} size={16} />
-                                                    {t({ en: 'Back to services', fr: 'Retour aux services' })}
-                                                  </button>
-                                                  <motion.div
-                                                    initial={{ opacity: 0, y: 15 }}
-                                                    animate={{ opacity: 1, y: 0 }}
-                                                    style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '8px' }}
-                                                  >
-                                                    {getServiceById(service)?.subServices
-                                                      .filter(sub => availableSubServices.includes(sub.id))
-                                                      .map((sub, sidx) => (
-                                                        <motion.button
-                                                          key={sub.id}
-                                                          initial={{ opacity: 0, x: -10 }}
-                                                          animate={{ opacity: 1, x: 0 }}
-                                                          transition={{ delay: sidx * 0.05 }}
-                                                          onClick={() => { setSubService(sub.id); setActiveSearchSection('when'); }}
-                                                          style={{
-                                                            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                                                            backgroundColor: subService === sub.id ? '#00A082' : '#FFF',
-                                                            border: `1px solid ${subService === sub.id ? '#00A082' : c.border}`,
-                                                            borderRadius: '10px',
-                                                            padding: isMobile ? '12px 14px' : '14px 18px', cursor: 'pointer', width: '100%'
-                                                          }}
-                                                        >
-                                                          <span style={{ fontWeight: 500, fontSize: '14px', color: subService === sub.id ? '#FFF' : '#000' }}>{sub.name}</span>
-                                                          <ChevronDown style={{ transform: 'rotate(-90deg)', color: subService === sub.id ? '#FFF' : '#000' }} size={16} />
-                                                        </motion.button>
-                                                      ))}
-                                                  </motion.div>
-                                                </div>
-                                              ) : (
-                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                                                  {sortedServices
-                                                    .filter(s => getServiceName(s).toLowerCase().includes(serviceSearchQuery.toLowerCase()))
-                                                    .slice(0, showAllServices ? undefined : (serviceSearchQuery ? undefined : 4))
-                                                    .map((s, idx) => {
-                                                      const svcId = getServiceById(s)?.id || s;
-                                                      const isAvailable = availableServices.includes(svcId);
-
-                                                      const serviceIcons: Record<string, React.ReactNode> = {
-                                                        'Handyman / small repairs': <FaHammer />,
-                                                        'Furniture assembly': <FaBoxOpen />,
-                                                        'Cleaning': <FaBroom />,
-                                                        'Plumbing': <FaFaucet />,
-                                                        'Electricity': <FaBolt />,
-                                                        'Painting': <FaPaintRoller />,
-                                                        'Moving help': <FaTruck />,
-                                                        'Appliance installation': <FaPlug />,
-                                                        'Mounting (TV, shelves, curtains)': <FaTv />,
-                                                        'Errands & small deliveries': <FaBasketShopping />,
-                                                        'Gardening': <FaLeaf />,
-                                                        'Babysitting': <FaBaby />,
-                                                        'Elderly assistance': <FaHandHoldingHeart />,
-                                                        'Car with driver': <FaCar />,
-                                                        'Car rental': <FaKey />,
-                                                        'Courier / delivery': <FaMotorcycle />,
-                                                        'Airport pickup': <FaPlaneArrival />,
-                                                        'Intercity transport': <FaMapLocationDot />,
-                                                        'Glass cleaning': <FaWindowRestore />
-                                                      };
-
-                                                      return (
-                                                        <button
-                                                          key={`${s}-${idx}`}
-                                                          onClick={() => {
-                                                            if (!isAvailable) return;
-                                                            const config = getServiceById(s);
-                                                            if (config && config.subServices.some(sub => availableSubServices.includes(sub.id))) {
-                                                              setService(s);
-                                                              setSubService(null);
-                                                            } else {
-                                                              setService(s);
-                                                              setSubService(null);
-                                                              setActiveSearchSection('when');
-                                                            }
-                                                          }}
-                                                          style={{
-                                                            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                                                            backgroundColor: service === s ? '#00A082' : '#FFFFFF',
-                                                            border: `1px solid ${service === s ? '#00A082' : c.border}`,
-                                                            borderRadius: '10px',
-                                                            padding: isMobile ? '14px 16px' : '16px 20px', width: '100%',
-                                                            cursor: isAvailable ? 'pointer' : 'not-allowed',
-                                                            opacity: isAvailable ? 1 : 0.4
-                                                          }}
-                                                        >
-                                                          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                                                            <div style={{ fontSize: '18px', color: service === s ? '#FFF' : '#000' }}>{serviceIcons[s]}</div>
-                                                            <span style={{ fontSize: '15px', fontWeight: 600, color: service === s ? '#FFF' : '#000' }}>{getTranslatedName(s, t)}</span>
-                                                          </div>
-                                                          <ChevronDown style={{ transform: 'rotate(-90deg)', color: service === s ? '#FFF' : '#000' }} size={18} />
-                                                        </button>
-                                                      );
-                                                    })}
-                                                  {sortedServices.length > 4 && !showAllServices && (
-                                                    <div style={{
-                                                      display: 'flex',
-                                                      justifyContent: 'center',
-                                                      paddingTop: '8px',
-                                                      borderTop: `1px solid ${c.border}`,
-                                                      marginTop: '4px'
-                                                    }}>
-                                                      <button
-                                                        onClick={(e) => {
-                                                          e.stopPropagation();
-                                                          setShowAllServices(true);
-                                                        }}
-                                                        style={{
-                                                          background: 'none',
-                                                          border: 'none',
-                                                          cursor: 'pointer',
-                                                          color: '#000',
-                                                          display: 'flex',
-                                                          alignItems: 'center',
-                                                          justifyContent: 'center',
-                                                          padding: '10px',
-                                                          width: '100%'
-                                                        }}
-                                                      >
-                                                        <ChevronDown size={24} />
-                                                      </button>
-                                                    </div>
-                                                  )}
-                                                </div>
-                                              )}
-                                            </div>
-                                          )}
-                                        </div>
-                                      );
-                                    })()}
-                                  </div>
-                                </motion.div>
-                              )}
-                            </AnimatePresence>
-                          </div>
-
-                          {/* WHEN Component (Uber Style) */}
-                          <div ref={whenSectionRef} style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                            <motion.div
-                              whileHover={{ backgroundColor: '#EDEDED' }}
-                              onClick={() => setActiveSearchSection(activeSearchSection === 'when' ? null : 'when')}
-                              style={{
-                                width: '100%',
-                                padding: isMobile ? '14px 16px' : '16px 20px',
-                                backgroundColor: theme === 'light' ? '#F3F3F3' : '#1a1a1a',
-                                borderRadius: '10px',
-                                cursor: 'pointer',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: isMobile ? '12px' : '16px',
-                                border: activeSearchSection === 'when' ? '2px solid black' : '2px solid transparent',
-                                boxShadow: isMobile && activeSearchSection === 'when' ? '0 4px 12px rgba(0,0,0,0.1)' : 'none',
-                                transition: 'all 0.2s ease'
-                              }}
-                            >
-                              <div style={{ minWidth: '24px', display: 'flex', justifyContent: 'center' }}>
-                                <div style={{ width: '8px', height: '8px', backgroundColor: 'black' }}></div>
-                              </div>
-
-                              <div style={{ fontSize: '16px', fontWeight: 500, color: (selectedDates.length > 0 || rangeSelection.start) ? '#000' : '#5E5E5E' }}>
-                                {selectedDates.length > 0 || rangeSelection.start ? t({ en: 'Dates Selected', fr: 'Dates Sélectionnées' }) : t({ en: 'Date & time', fr: 'Date & heure' })}
-                              </div>
-                            </motion.div>
-
-                            <AnimatePresence>
-                              {isMobile && activeSearchSection === 'when' && (
-                                <motion.div
-                                  initial={{ height: 0, opacity: 0 }}
-                                  animate={{ height: 'auto', opacity: 1 }}
-                                  exit={{ height: 0, opacity: 0 }}
-                                  style={{ overflow: 'hidden' }}
-                                >
-                                  <div style={{ padding: '10px 0 20px' }}>
-                                    <div style={{
-                                      display: 'flex',
-                                      flexDirection: 'column',
-                                      gap: isMobile ? '0.75rem' : '1.5rem',
-                                      backgroundColor: '#FFF',
-                                      borderRadius: '16px',
-                                      border: `1px solid ${c.border}`,
-                                      padding: isMobile ? '12px' : '1.5rem'
-                                    }}>
-                                      {/* CALENDAR PANEL */}
-                                      <div style={{ width: '100%', minWidth: 0 }}>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem', alignItems: 'center' }}>
-                                          <h3 style={{ fontSize: '16px', fontWeight: 800, color: '#000', textTransform: 'uppercase', fontFamily: 'Uber Move, var(--font-sans)' }}>{mounted ? `${monthName} ${year}` : '--'}</h3>
-                                          <div style={{ display: 'flex', gap: '8px' }}>
-                                            <button onClick={prevMonth} style={{ width: '32px', height: '32px', borderRadius: '50%', border: 'none', background: '#F3F3F3', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><ChevronDown style={{ transform: 'rotate(90deg)' }} size={16} /></button>
-                                            <button onClick={nextMonth} style={{ width: '32px', height: '32px', borderRadius: '50%', border: 'none', background: '#F3F3F3', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><ChevronDown style={{ transform: 'rotate(-90deg)' }} size={16} /></button>
-                                          </div>
-                                        </div>
-                                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))', gap: isMobile ? '2px' : '6px', minWidth: 0 }}>
-                                          {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, i) => <div key={i} style={{ textAlign: 'center', fontSize: isMobile ? '11px' : '12px', fontWeight: 800, color: '#A0A0A0' }}>{day}</div>)}
-                                          {Array.from({ length: startDay }).map((_, i) => <div key={`e-${i}`} />)}
-                                          {Array.from({ length: daysInMonth }, (_, i) => i + 1).map(d => {
-                                            const dateObj = new Date(year, calendarDate.getMonth(), d);
-                                            const dateStr = `${monthName} ${d}, ${year}`;
-                                            let isSelected = selectedDates.includes(dateStr) || (rangeSelection.start && dateObj.getTime() === rangeSelection.start.getTime()) || (rangeSelection.end && dateObj.getTime() === rangeSelection.end.getTime());
-                                            let isInRange = rangeSelection.start && rangeSelection.end && dateObj > rangeSelection.start && dateObj < rangeSelection.end;
-                                            const isPast = dateObj < new Date(new Date().setHours(0, 0, 0, 0));
-                                            const today = new Date();
-                                            const isToday = dateObj.getDate() === today.getDate() && dateObj.getMonth() === today.getMonth() && dateObj.getFullYear() === today.getFullYear();
-
-                                            const isUnavailable = unavailableDates.includes(dateStr);
-
-                                            return (
-                                              <div
-                                                key={d}
-                                                onClick={() => !isPast && !isUnavailable && handleDateSelect(d)}
-                                                style={{
-                                                  aspectRatio: '1', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '8px', fontSize: isMobile ? '12px' : '13px', fontWeight: 600,
-                                                  cursor: (isPast || isUnavailable) ? 'not-allowed' : 'pointer',
-                                                  backgroundColor: isSelected ? '#00A082' : isInRange ? '#F0F0F0' : isToday ? '#F3F3F3' : 'transparent',
-                                                  color: isSelected ? '#FFF' : (isPast || isUnavailable) ? '#CCC' : '#000',
-                                                  opacity: (isPast || isUnavailable) ? 0.3 : 1,
-                                                  border: isToday && !isSelected ? '1px solid #E0E0E0' : 'none'
-                                                }}
-                                              >
-                                                {d}
-                                              </div>
-                                            );
-                                          })}
-                                        </div>
-                                      </div>
-
-                                      {/* TIME SELECTION */}
-                                      <AnimatePresence>
-                                        {selectedDates.length > 0 && (
-                                          <motion.div
-                                            initial={{ opacity: 0, y: 10, height: 0 }}
-                                            animate={{ opacity: 1, y: 0, height: 'auto' }}
-                                            exit={{ opacity: 0, y: 10, height: 0 }}
-                                            transition={{ duration: 0.3, ease: "circOut" }}
-                                            style={{ borderTop: `1px solid ${c.border}`, paddingTop: '1.5rem', overflow: 'hidden' }}
-                                          >
-                                            <h4 style={{ fontSize: '14px', fontWeight: 800, color: '#000', marginBottom: '0.25rem' }}>{t({ en: 'Pick Time', fr: 'Choisir Heure' })}</h4>
-                                            <div style={{ fontSize: '13px', fontWeight: 600, color: '#666', marginBottom: '1rem' }}>
-                                              {new Date(activeSchedulingDate || selectedDates[selectedDates.length - 1]).toLocaleDateString('en-US')}
-                                            </div>
-                                            <motion.div
-                                              style={{ display: 'flex', flexWrap: 'wrap', gap: isMobile ? '6px' : '8px' }}
-                                              variants={{
-                                                show: { transition: { staggerChildren: 0.05 } }
-                                              }}
-                                              initial="hidden"
-                                              animate="show"
-                                            >
-                                              {["09:00", "11:30", "14:00", "16:30", "19:00"].map(t_val => {
-                                                const isTimeUnavailable = dateUnavailableTimes[activeSchedulingDate || selectedDates[selectedDates.length - 1]]?.includes(t_val);
-                                                return (
-                                                  <motion.button
-                                                    key={t_val}
-                                                    variants={{
-                                                      hidden: { opacity: 0, scale: 0.9 },
-                                                      show: { opacity: 1, scale: 1 }
-                                                    }}
-                                                    onClick={() => !isTimeUnavailable && setSelectedTimes(prev => ({ ...prev, [activeSchedulingDate || selectedDates[0]]: t_val }))}
-                                                    style={{
-                                                      flex: isMobile ? '1 1 calc(33.333% - 4px)' : '1 1 calc(33.333% - 8px)',
-                                                      minWidth: isMobile ? '65px' : '75px',
-                                                      padding: '10px 0', borderRadius: '8px', fontSize: '12px', fontWeight: 700,
-                                                      backgroundColor: isTimeUnavailable ? '#EBEBEB' : (selectedTimes[activeSchedulingDate || selectedDates[0]] === t_val ? '#00A082' : '#F3F3F3'),
-                                                      color: isTimeUnavailable ? '#AAAAAA' : (selectedTimes[activeSchedulingDate || selectedDates[0]] === t_val ? '#FFF' : '#000'),
-                                                      border: isTimeUnavailable ? '1px dashed #D0D0D0' : 'none',
-                                                      cursor: isTimeUnavailable ? 'not-allowed' : 'pointer',
-                                                      transition: 'all 0.2s ease',
-                                                      textDecoration: isTimeUnavailable ? 'line-through' : 'none',
-                                                      opacity: isTimeUnavailable ? 0.7 : 1
-                                                    }}
-                                                  >
-                                                    {t_val}
-                                                  </motion.button>
-                                                );
-                                              })}
-                                            </motion.div>
-                                          </motion.div>
-                                        )}
-                                      </AnimatePresence>
-                                    </div>
-                                  </div>
-                                </motion.div>
-                              )}
-                            </AnimatePresence>
-                          </div>
-
-
-
-                          {/* PRICE Component (Uber Style) */}
-                          <motion.div
-                            ref={priceSectionRef}
-                            whileHover={{ backgroundColor: '#EDEDED' }}
-                            onClick={() => {
-                              setActiveSearchSection('price');
-                              setTimeout(() => priceInputRef.current?.focus(), 100);
-                            }}
-                            style={{
-                              width: '100%',
-                              padding: isMobile ? '14px 16px' : '16px 20px',
-                              backgroundColor: theme === 'light' ? '#F3F3F3' : '#1a1a1a',
-                              borderRadius: '10px',
-                              cursor: 'pointer',
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: isMobile ? '12px' : '16px',
-                              border: activeSearchSection === 'price' ? '2px solid black' : '2px solid transparent',
-                              boxShadow: isMobile && activeSearchSection === 'price' ? '0 4px 12px rgba(0,0,0,0.1)' : 'none',
-                              transition: 'all 0.2s ease'
-                            }}
-                          >
-                            <div style={{ minWidth: '32px', display: 'flex', justifyContent: 'center' }}>
-                              <span style={{ fontSize: isMobile ? '13px' : '12px', fontWeight: 900, color: '#000' }}>MAD</span>
-                            </div>
-
-                            <input
-                              ref={priceInputRef}
-                              type="number"
-                              value={price}
-                              onChange={(e) => setPrice(e.target.value)}
-                              onFocus={handleInputFocus}
-                              placeholder={t({ en: 'Suggest Price (MAD)', fr: 'Prix (MAD)' })}
-                              style={{
-                                width: '100%',
-                                background: 'transparent',
-                                border: 'none',
-                                fontSize: '16px',
-                                fontWeight: 500,
-                                color: '#000',
-                                outline: 'none',
-                                padding: 0
-                              }}
-                            />
-                          </motion.div>
-
-                          {/* BUTTONS ROW (Uber Style) */}
-                          <div style={{ marginTop: '0.5rem' }}>
-                            <motion.button
-                              onClick={() => handleProgramOrder()}
-                              disabled={isProgramming}
-                              whileHover={!isProgramming ? { scale: 1.02 } : {}}
-                              whileTap={!isProgramming ? { scale: 0.98 } : {}}
-                              style={{
-                                width: '100%',
-                                padding: '16px 24px',
-                                backgroundColor: '#000000',
-                                color: '#FFFFFF',
-                                border: 'none',
-                                borderRadius: '10px',
-                                fontSize: '18px',
-                                fontWeight: 700,
-                                cursor: isProgramming ? 'not-allowed' : 'pointer',
-                                transition: 'all 0.2s ease',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                gap: '12px'
-                              }}
-                            >
-                              {isProgramming ? (
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                  <motion.div
-                                    style={{ width: '22px', height: '22px', border: '2.5px solid #FFF', borderTopColor: 'transparent', borderRadius: '50%' }}
-                                    animate={{ rotate: 360 }}
-                                    transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-                                  />
-                                  <span>{t({ en: 'Programming...', fr: 'Programmation...' })}</span>
-                                </div>
-                              ) : (
-                                <span>{t({ en: 'Program', fr: 'Programmer' })}</span>
-                              )}
-                            </motion.button>
-
-                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', marginTop: '12px' }}>
-                              <button
-                                onClick={() => setShowExtraDetails(!showExtraDetails)}
-                                style={{
-                                  background: 'transparent',
-                                  border: 'none',
-                                  fontSize: '15px',
-                                  fontWeight: 800,
-                                  color: '#000000',
-                                  cursor: 'pointer',
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  gap: '6px',
-                                  padding: '8px 12px',
-                                  borderRadius: '8px',
-                                  transition: 'all 0.2s ease',
-                                  backgroundColor: 'rgba(0,0,0,0.02)'
-                                }}
-                              >
-                                <span style={{ textDecoration: 'underline', textUnderlineOffset: '4px' }}>{t({ en: 'Add more details', fr: 'Plus de détails' })}</span>
-                              </button>
-
-                              <AnimatePresence>
-                                {isMobile && showExtraDetails && (
-                                  <motion.div
-                                    initial={{ height: 0, opacity: 0 }}
-                                    animate={{ height: 'auto', opacity: 1 }}
-                                    exit={{ height: 0, opacity: 0 }}
-                                    style={{ overflow: 'hidden', width: '100%' }}
-                                  >
-                                    <div style={{
-                                      padding: '16px 0',
-                                      display: 'flex',
-                                      flexDirection: 'column',
-                                      gap: '0.75rem',
-                                      borderTop: `1px solid ${c.border}`,
-                                      marginTop: '12px'
-                                    }}>
-                                      {/* EXTRA DETAILS MINI-CARDS */}
-                                      <div style={{ backgroundColor: '#F3F3F3', borderRadius: '15px', padding: isMobile ? '1rem' : '1.25rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                        <div style={{ fontSize: isMobile ? '14px' : '16px', fontWeight: 800 }}>{bricolersCount} {getAgentType(service, bricolersCount, t)}</div>
-                                        <div style={{ display: 'flex', gap: '12px' }}>
-                                          <button onClick={() => setBricolersCount(Math.max(1, bricolersCount - 1))} style={{ width: '32px', height: '32px', borderRadius: '50%', border: 'none', background: '#FFF', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}><Minus size={14} /></button>
-                                          <button onClick={() => setBricolersCount(bricolersCount + 1)} style={{ width: '32px', height: '32px', borderRadius: '50%', border: 'none', background: '#FFF', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}><Plus size={14} /></button>
-                                        </div>
-                                      </div>
-
-                                      <div
-                                        onClick={() => fileInputRef.current?.click()}
-                                        style={{ backgroundColor: '#F3F3F3', borderRadius: '15px', padding: isMobile ? '1.25rem' : '1.5rem', textAlign: 'center', cursor: 'pointer' }}
-                                      >
-                                        <div style={{ marginBottom: '10px' }}>
-                                          {orderPictures.length > 0 ? (
-                                            <div style={{ display: 'flex', gap: '5px', justifyContent: 'center' }}>
-                                              {orderPictures.slice(0, 3).map((p, i) => <img key={i} src={p} style={{ width: '40px', height: '40px', borderRadius: '8px', objectFit: 'cover' }} />)}
-                                            </div>
-                                          ) : <ImageIcon size={24} color="#000" />}
-                                        </div>
-                                        <div style={{ fontSize: '14px', fontWeight: 700 }}>{t({ en: 'Add Pictures', fr: 'Ajouter des Photos' })}</div>
-                                      </div>
-
-                                      <div style={{ backgroundColor: '#F3F3F3', borderRadius: '15px', padding: '1.25rem' }}>
-                                        <textarea
-                                          value={orderComment}
-                                          onChange={(e) => setOrderComment(e.target.value)}
-                                          onFocus={handleInputFocus}
-                                          placeholder={t({ en: 'Type description here...', fr: 'Décrivez ici...' })}
-                                          style={{ width: '100%', background: 'transparent', border: 'none', borderBottom: '1px solid #CCC', outline: 'none', fontSize: isMobile ? '15px' : '14px', fontWeight: 500, color: '#000', resize: 'none', minHeight: '80px', padding: '4px 0' }}
-                                        />
-                                      </div>
-                                    </div>
-                                  </motion.div>
-                                )}
-                              </AnimatePresence>
-                            </div>
-
-
-                          </div>
-                        </div>
-
-                        {/* RIGHT PANEL (Desktop Preview) */}
-                        {!isMobile && <div className="desktop-only" style={{
-                          flex: 1,
-                          minHeight: '400px',
-                          backgroundColor: 'transparent',
-                          display: 'flex',
-                          flexDirection: 'column'
-                        }}>
-                          <AnimatePresence mode="wait">
-                            {activeSearchSection === 'what' ? (
-                              <motion.div
-                                key="what-preview"
-                                initial={{ opacity: 0, x: 20 }}
-                                animate={{ opacity: 1, x: 0 }}
-                                exit={{ opacity: 0, x: -20 }}
-                                transition={{ duration: 0.2 }}
-                                style={{ width: '100%' }}
-                              >
-                                {(() => {
-                                  const services_list = activeTab === 'domestic' ? [
-                                    'Handyman / small repairs', 'Furniture assembly', 'Cleaning', 'Glass cleaning', 'Plumbing', 'Electricity', 'Painting', 'Moving help', 'Appliance installation', 'Mounting (TV, shelves, curtains)', 'Errands & small deliveries', 'Gardening', 'Babysitting', 'Elderly assistance', 'Cooking'
-                                  ] : [
-                                    'Car with driver', 'Car rental', 'Courier / delivery', 'Airport pickup', 'Intercity transport', 'Private Driver', 'Learn Arabic', 'Tour Guide'
-                                  ];
-
-                                  const sortedServices = [...services_list].sort((a, b) => {
-                                    const aId = getServiceById(a)?.id || a;
-                                    const bId = getServiceById(b)?.id || b;
-                                    const isAvailA = availableServices.includes(aId);
-                                    const isAvailB = availableServices.includes(bId);
-                                    return (isAvailB ? 1 : 0) - (isAvailA ? 1 : 0);
-                                  });
-
-                                  return (
-                                    <div style={{ width: '100%' }}>
-                                      <h3 style={{ fontSize: '12px', fontWeight: 900, textTransform: 'uppercase', color: c.textMuted, marginBottom: '1rem', fontFamily: 'Uber Move, var(--font-sans)' }}>
-                                        {t({ en: 'Available Services', fr: 'Services Disponibles' })}
-                                      </h3>
-                                      {loadingServices ? (
-                                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px' }}>
-                                          {[1, 2, 3, 4, 5, 6].map((i) => (
-                                            <div key={i} style={{ backgroundColor: '#F5F5F3', borderRadius: '12px', height: '110px' }} />
-                                          ))}
-                                        </div>
-                                      ) : (
-                                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px' }}>
-                                          <div style={{ gridColumn: '1 / -1', marginBottom: '8px' }}>
-                                            <div style={{
-                                              display: 'flex',
-                                              alignItems: 'center',
-                                              backgroundColor: c.surface,
-                                              borderRadius: '12px',
-                                              padding: '12px 16px',
-                                              border: `1px solid ${c.border}`
-                                            }}>
-                                              <Search size={20} color={c.textMuted} />
-                                              <input
-                                                type="text"
-                                                placeholder={t({ en: 'Search services...', fr: 'Rechercher des services...' })}
-                                                value={serviceSearchQuery}
-                                                onChange={(e) => setServiceSearchQuery(e.target.value)}
-                                                style={{
-                                                  border: 'none',
-                                                  background: 'transparent',
-                                                  outline: 'none',
-                                                  marginLeft: '12px',
-                                                  width: '100%',
-                                                  fontSize: '16px',
-                                                  color: c.text
-                                                }}
-                                              />
-                                            </div>
-                                          </div>
-                                          {(service && (getServiceById(service)?.subServices?.filter(sub => availableSubServices.includes(sub.id)).length || 0) > 0 && !subService) ? (
-                                            <div style={{ gridColumn: '1 / -1', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                                              <button
-                                                onClick={() => setService('')}
-                                                style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem', fontSize: '14px', color: c.textMuted, cursor: 'pointer', border: 'none', background: 'transparent' }}
-                                              >
-                                                <ChevronDown style={{ transform: 'rotate(90deg)' }} size={16} />
-                                                {t({ en: 'Back to services', fr: 'Retour aux services' })}
-                                              </button>
-                                              <motion.div
-                                                initial={{ opacity: 0, y: 15 }}
-                                                animate={{ opacity: 1, y: 0 }}
-                                                transition={{ type: "spring", damping: 20, stiffness: 200 }}
-                                                style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px' }}
-                                              >
-                                                {getServiceById(service)?.subServices
-                                                  .filter(sub => availableSubServices.includes(sub.id))
-                                                  .map((sub, sidx) => (
-                                                    <motion.button
-                                                      key={sub.id}
-                                                      initial={{ opacity: 0, y: 10 }}
-                                                      animate={{ opacity: 1, y: 0 }}
-                                                      transition={{ delay: sidx * 0.05 }}
-                                                      onClick={() => { setSubService(sub.id); setActiveSearchSection('when'); }}
-                                                      style={{
-                                                        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                                                        backgroundColor: subService === sub.id ? '#00A082' : '#FFF',
-                                                        border: `1px solid ${subService === sub.id ? '#00A082' : c.border}`,
-                                                        borderRadius: '12px',
-                                                        padding: '20px', cursor: 'pointer', width: '100%', textAlign: 'left',
-                                                        boxShadow: '0 2px 8px rgba(0,0,0,0.04)'
-                                                      }}
-                                                    >
-                                                      <span style={{ fontWeight: 600, fontSize: '14px', color: subService === sub.id ? '#FFF' : '#000' }}>{sub.name}</span>
-                                                      <ChevronDown style={{ transform: 'rotate(-90deg)', color: subService === sub.id ? '#FFF' : '#000' }} size={16} />
-                                                    </motion.button>
-                                                  ))}
-                                              </motion.div>
-                                            </div>
-                                          ) : (
-                                            sortedServices.map((s, idx) => {
-                                              const svcId = getServiceById(s)?.id || s;
-                                              const isAvailable = availableServices.includes(svcId);
-
-                                              const serviceIcons: Record<string, React.ReactNode> = {
-                                                'Handyman / small repairs': <FaHammer />,
-                                                'Furniture assembly': <FaBoxOpen />,
-                                                'Cleaning': <FaBroom />,
-                                                'Plumbing': <FaFaucet />,
-                                                'Electricity': <FaBolt />,
-                                                'Painting': <FaPaintRoller />,
-                                                'Moving help': <FaTruck />,
-                                                'Appliance installation': <FaPlug />,
-                                                'Mounting (TV, shelves, curtains)': <FaTv />,
-                                                'Errands & small deliveries': <FaBasketShopping />,
-                                                'Gardening': <FaLeaf />,
-                                                'Babysitting': <FaBaby />,
-                                                'Elderly assistance': <FaHandHoldingHeart />,
-                                                'Car with driver': <FaCar />,
-                                                'Car rental': <FaKey />,
-                                                'Courier / delivery': <FaMotorcycle />,
-                                                'Airport pickup': <FaPlaneArrival />,
-                                                'Intercity transport': <FaMapLocationDot />,
-                                                'Glass cleaning': <FaWindowRestore />
-                                              };
-                                              return (
-                                                <button
-                                                  key={`${s}-${idx}`}
-                                                  onClick={() => {
-                                                    if (!isAvailable) return;
-                                                    const config = getServiceById(s);
-                                                    if (config && config.subServices.some(sub => availableSubServices.includes(sub.id))) {
-                                                      setService(s);
-                                                      setSubService(null);
-                                                    } else {
-                                                      setService(s);
-                                                      setSubService(null);
-                                                      setActiveSearchSection('when');
-                                                    }
-                                                  }}
-                                                  style={{
-                                                    display: 'flex', flexDirection: 'column', gap: '12px',
-                                                    backgroundColor: service === s ? '#00A082' : '#FFFFFF',
-                                                    border: `1px solid ${service === s ? '#00A082' : c.border}`,
-                                                    borderRadius: '16px',
-                                                    padding: '24px', width: '100%', textAlign: 'left',
-                                                    transition: 'all 0.2s ease',
-                                                    boxShadow: '0 2px 10px rgba(0,0,0,0.03)',
-                                                    cursor: isAvailable ? 'pointer' : 'not-allowed',
-                                                    opacity: isAvailable ? 1 : 0.4
-                                                  }}
-                                                >
-                                                  <div style={{ fontSize: '24px', color: service === s ? '#FFF' : '#000' }}>{serviceIcons[s]}</div>
-                                                  <span style={{ fontSize: '16px', fontWeight: 700, color: service === s ? '#FFF' : '#000' }}>{getTranslatedName(s, t)}</span>
-                                                </button>
-                                              );
-                                            })
-                                          )}
-                                        </div>
-                                      )}
-                                    </div>
-                                  );
-                                })()}
-                              </motion.div>
-                            ) : activeSearchSection === 'when' ? (
-                              <motion.div
-                                key="when-preview"
-                                initial={{ opacity: 0, x: 20 }}
-                                animate={{ opacity: 1, x: 0 }}
-                                exit={{ opacity: 0, x: -20 }}
-                                transition={{ duration: 0.2 }}
-                                style={{
-                                  display: 'flex',
-                                  flexDirection: 'row',
-                                  gap: '2rem',
-                                  alignItems: 'flex-start'
-                                }}
-                              >
-                                {/* Desktop Calendar Logic */}
-                                <div style={{
-                                  flex: '0 0 320px',
-                                  backgroundColor: '#FFFFFF',
-                                  borderRadius: '20px',
-                                  border: `1px solid ${c.border}`,
-                                  padding: '1.5rem',
-                                  boxShadow: '0 4px 20px rgba(0,0,0,0.04)'
-                                }}>
-                                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1.5rem', alignItems: 'center' }}>
-                                    <h3 style={{ fontSize: '16px', fontWeight: 800, color: '#000', textTransform: 'uppercase' }}>{mounted ? `${monthName} ${year}` : '--'}</h3>
-                                    <div style={{ display: 'flex', gap: '8px' }}>
-                                      <button onClick={prevMonth} style={{ width: '32px', height: '32px', borderRadius: '50%', border: 'none', background: '#F3F3F3', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><ChevronDown style={{ transform: 'rotate(90deg)' }} size={16} /></button>
-                                      <button onClick={nextMonth} style={{ width: '32px', height: '32px', borderRadius: '50%', border: 'none', background: '#F3F3F3', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><ChevronDown style={{ transform: 'rotate(-90deg)' }} size={16} /></button>
-                                    </div>
-                                  </div>
-                                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '4px' }}>
-                                    {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, i) => <div key={i} style={{ textAlign: 'center', fontSize: '11px', fontWeight: 800, color: '#A0A0A0' }}>{day}</div>)}
-                                    {Array.from({ length: startDay }).map((_, i) => <div key={`e-${i}`} />)}
-                                    {Array.from({ length: daysInMonth }, (_, i) => i + 1).map(d => {
-                                      const dateObj = new Date(year, calendarDate.getMonth(), d);
-                                      const dateStr = `${monthName} ${d}, ${year}`;
-                                      let isSelected = selectedDates.includes(dateStr) || (rangeSelection.start && dateObj.getTime() === rangeSelection.start.getTime()) || (rangeSelection.end && dateObj.getTime() === rangeSelection.end.getTime());
-                                      let isInRange = rangeSelection.start && rangeSelection.end && dateObj > rangeSelection.start && dateObj < rangeSelection.end;
-                                      const isPast = dateObj < new Date(new Date().setHours(0, 0, 0, 0));
-                                      const today = new Date();
-                                      const isToday = dateObj.getDate() === today.getDate() && dateObj.getMonth() === today.getMonth() && dateObj.getFullYear() === today.getFullYear();
-
-                                      const isUnavailable = unavailableDates.includes(dateStr);
-
-                                      return (
-                                        <div
-                                          key={d}
-                                          onClick={() => !isPast && !isUnavailable && handleDateSelect(d)}
-                                          style={{
-                                            aspectRatio: '1', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '8px', fontSize: '13px', fontWeight: 600,
-                                            cursor: (isPast || isUnavailable) ? 'not-allowed' : 'pointer',
-                                            backgroundColor: isSelected ? '#00A082' : isInRange ? '#F0F0F0' : isToday ? '#F3F3F3' : 'transparent',
-                                            color: isSelected ? '#FFF' : (isPast || isUnavailable) ? '#CCC' : '#000',
-                                            opacity: (isPast || isUnavailable) ? 0.3 : 1,
-                                            border: isToday && !isSelected ? '1px solid #E0E0E0' : 'none'
-                                          }}
-                                        >
-                                          {d}
-                                        </div>
-                                      );
-                                    })}
-                                  </div>
-                                </div>
-
-                                {/* Desktop Time Selection */}
-                                <AnimatePresence>
-                                  {selectedDates.length > 0 && (
-                                    <motion.div
-                                      initial={{ opacity: 0, x: 20 }}
-                                      animate={{ opacity: 1, x: 0 }}
-                                      exit={{ opacity: 0, x: 20 }}
-                                      transition={{ duration: 0.3, ease: "circOut" }}
-                                      style={{
-                                        flex: 1,
-                                        backgroundColor: '#FFFFFF',
-                                        borderRadius: '20px',
-                                        border: `1px solid ${c.border}`,
-                                        padding: '1.5rem',
-                                        boxShadow: '0 4px 20px rgba(0,0,0,0.04)',
-                                        overflow: 'hidden'
-                                      }}
-                                    >
-                                      <h4 style={{ fontSize: '14px', fontWeight: 800, color: '#000', marginBottom: '0.25rem' }}>{t({ en: 'Pick Time', fr: 'Choisir Heure' })}</h4>
-                                      <div style={{ fontSize: '13px', fontWeight: 600, color: '#666', marginBottom: '1rem' }}>
-                                        {new Date(activeSchedulingDate || selectedDates[selectedDates.length - 1]).toLocaleDateString('en-US')}
-                                      </div>
-                                      <motion.div
-                                        style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px' }}
-                                        variants={{
-                                          show: { transition: { staggerChildren: 0.05 } }
-                                        }}
-                                        initial="hidden"
-                                        animate="show"
-                                      >
-                                        {["09:00", "11:30", "14:00", "16:30", "19:00"].map(t_val => {
-                                          const isTimeUnavailable = dateUnavailableTimes[activeSchedulingDate || selectedDates[selectedDates.length - 1]]?.includes(t_val);
-                                          return (
-                                            <motion.button
-                                              key={t_val}
-                                              variants={{
-                                                hidden: { opacity: 0, scale: 0.9 },
-                                                show: { opacity: 1, scale: 1 }
-                                              }}
-                                              onClick={() => !isTimeUnavailable && setSelectedTimes(prev => ({ ...prev, [activeSchedulingDate || selectedDates[0]]: t_val }))}
-                                              style={{
-                                                padding: '12px 0', borderRadius: '10px', fontSize: '13px', fontWeight: 700,
-                                                backgroundColor: isTimeUnavailable ? '#EBEBEB' : (selectedTimes[activeSchedulingDate || selectedDates[0]] === t_val ? '#00A082' : '#F3F3F3'),
-                                                color: isTimeUnavailable ? '#AAAAAA' : (selectedTimes[activeSchedulingDate || selectedDates[0]] === t_val ? '#FFF' : '#000'),
-                                                border: isTimeUnavailable ? '1px dashed #D0D0D0' : 'none',
-                                                cursor: isTimeUnavailable ? 'not-allowed' : 'pointer',
-                                                transition: 'all 0.2s ease',
-                                                textDecoration: isTimeUnavailable ? 'line-through' : 'none',
-                                                opacity: isTimeUnavailable ? 0.7 : 1
-                                              }}
-                                            >
-                                              {t_val}
-                                            </motion.button>
-                                          );
-                                        })}
-                                      </motion.div>
-                                    </motion.div>
-                                  )}
-                                </AnimatePresence>
-                              </motion.div>
-                            ) : (!isMobile && showExtraDetails) ? (
-                              <motion.div
-                                key="extra-preview"
-                                initial={{ opacity: 0, x: 20 }}
-                                animate={{ opacity: 1, x: 0 }}
-                                exit={{ opacity: 0, x: -20 }}
-                                transition={{ duration: 0.2 }}
-                                style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}
-                              >
-                                <div style={{
-                                  backgroundColor: '#FFF',
-                                  borderRadius: '20px',
-                                  border: `1px solid ${c.border}`,
-                                  padding: '2rem',
-                                  boxShadow: '0 4px 20px rgba(0,0,0,0.04)',
-                                  display: 'flex',
-                                  justifyContent: 'space-between',
-                                  alignItems: 'center'
-                                }}>
-                                  <div>
-                                    <div style={{ fontSize: '18px', fontWeight: 800 }}>{bricolersCount} {getAgentType(service, bricolersCount, t)}</div>
-                                    <div style={{ fontSize: '14px', color: c.textMuted }}>{t({ en: 'How many people do you need?', fr: 'Combien de personnes?' })}</div>
-                                  </div>
-                                  <div style={{ display: 'flex', gap: '12px' }}>
-                                    <button onClick={() => setBricolersCount(Math.max(1, bricolersCount - 1))} style={{ width: '40px', height: '40px', borderRadius: '12px', border: 'none', background: '#F3F3F3', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}><Minus size={18} /></button>
-                                    <button onClick={() => setBricolersCount(bricolersCount + 1)} style={{ width: '40px', height: '40px', borderRadius: '12px', border: 'none', background: '#F3F3F3', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}><Plus size={18} /></button>
-                                  </div>
-                                </div>
-
-                                <div style={{
-                                  backgroundColor: '#FFF',
-                                  borderRadius: '20px',
-                                  border: `1px solid ${c.border}`,
-                                  padding: '2rem',
-                                  boxShadow: '0 4px 20px rgba(0,0,0,0.04)'
-                                }}>
-                                  <textarea
-                                    value={orderComment}
-                                    onChange={(e) => setOrderComment(e.target.value)}
-                                    placeholder={t({ en: 'Add instructions or details...', fr: 'Ajoutez des instructions...' })}
-                                    style={{ width: '100%', background: 'transparent', border: 'none', outline: 'none', fontSize: '16px', fontWeight: 500, color: '#000', resize: 'none', minHeight: '120px' }}
-                                  />
-                                </div>
-                              </motion.div>
-                            ) : (
-                              <motion.div
-                                key="hero-visual"
-                                initial={{ opacity: 0 }}
-                                animate={{ opacity: 1 }}
-                                exit={{ opacity: 0 }}
-                                style={{
-                                  position: 'relative',
-                                  width: '100%',
-                                  height: '500px',
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  justifyContent: 'center',
-                                  marginTop: isMobile ? '2rem' : '-60px'
-                                }}
-                              >
-                                {HERO_IMAGES.map((src, i) => {
-                                  const isTop = i === heroImageIndex;
-                                  const isStack = (i + 1) % HERO_IMAGES.length === heroImageIndex;
-                                  const isBottom = (i + 2) % HERO_IMAGES.length === heroImageIndex;
-
-                                  return (
-                                    <motion.img
-                                      key={src}
-                                      src={src}
-                                      initial={{ opacity: 0, scale: 0.8, x: 100, rotate: 15 }}
-                                      animate={{
-                                        opacity: isTop ? 1 : isStack ? 0.8 : 0.4,
-                                        scale: isTop ? 1 : isStack ? 0.9 : 0.8,
-                                        x: isTop ? 0 : isStack ? 30 : 60,
-                                        y: isTop ? 0 : isStack ? -15 : -30,
-                                        rotate: isTop ? 0 : isStack ? 5 : 10,
-                                        zIndex: isTop ? 30 : isStack ? 20 : 10,
-                                      }}
-                                      transition={{
-                                        duration: 1.2,
-                                        ease: [0.16, 1, 0.3, 1]
-                                      }}
-                                      style={{
-                                        position: 'absolute',
-                                        width: '460px',
-                                        height: 'auto',
-                                        borderRadius: '24px',
-                                        border: '12px solid #FFF',
-                                        boxShadow: '0 20px 50px rgba(0,0,0,0.12)',
-                                        objectFit: 'cover'
-                                      }}
-                                    />
-                                  );
-                                })}
-                              </motion.div>
-                            )}
-                          </AnimatePresence>
-                        </div>}
-                      </div>
-                    </motion.div>
-                  </div>
-                </section>
+                <DesktopHeroScroll
+                  onOrderClick={(serviceId) => {
+                    setService(serviceId || "");
+                    setSubService(null);
+                    setSelectedDraft(null);
+                    setShowOrderFlow(true);
+                  }}
+                  onBecomeBricolerClick={() => {
+                    if (currentUser && isBricoler) {
+                      window.location.href = '/provider';
+                    } else if (currentUser) {
+                      setShowMobileOnboarding(true);
+                    } else {
+                      setShowAuthPopup(true);
+                    }
+                  }}
+                />
 
 
                 {/* Recent Activity Carousel */}
@@ -3895,10 +2959,10 @@ const Home = () => {
                       fontWeight: 800,
                       marginBottom: '4rem',
                       color: c.text,
-                      textAlign: isMobile ? 'left' : 'left',
+                      textAlign: 'start',
                       fontFamily: 'Uber Move, var(--font-sans)'
                     }}>
-                      {t({ en: 'How it works', fr: 'Comment ça marche' })}
+                      {t({ en: 'How it works', fr: 'Comment ça marche', ar: 'كيف يعمل لبريكول' })}
                     </h2>
 
                     <div style={{
@@ -3922,34 +2986,20 @@ const Home = () => {
                       {[
                         {
                           img: "/Images/How to images/Step1-how_to_use.png",
-                          title: t({ en: '1. Program your order', fr: '1. Programmez votre commande' }),
+                          title: t({ en: '1. Program your order', fr: '1. Programmez votre commande', ar: '1. برمج طلبك' }),
                           desc: t({
-                            en: 'Pick a service, select your dates, and suggest a fair price. It only takes a minute.',
-                            fr: 'Choisissez un service, vos dates, et proposez un prix juste. Cela ne prend qu\'une minute.'
-                          })
-                        },
-                        {
-                          img: "/Images/How to images/Step2-how_to_use.png",
-                          title: t({ en: '2. Receive live offers', fr: '2. Recevez des offres en direct' }),
-                          desc: t({
-                            en: 'Local pros will send you offers in real-time. Compare prices, ratings, and profiles instantly.',
-                            fr: 'Les pros locaux vous envoient des offres en temps réel. Comparez prix, notes et profils instantanément.'
-                          })
-                        },
-                        {
-                          img: "/Images/How to images/Step3-how_to_use.png",
-                          title: t({ en: '3. Review & Accept', fr: '3. Examinez et Acceptez' }),
-                          desc: t({
-                            en: "Before you accept, click on the Bricoler's profile, see their reviews, then decide.",
-                            fr: "Avant d'accepter, cliquez sur le profil du Bricoleur, consultez ses avis, puis décidez."
+                            en: 'Pick a service, Confirm Location, Define the size of the task, review and choose a bricoler, pickup date & time slot and confirm. It only takes a minute.',
+                            fr: 'Choisissez un service, Confirmez l\'emplacement, Définissez la taille de la tâche, examinez et choisissez un bricoleur, choisissez la date et l\'heure et confirmez. Cela ne prend qu\'une minute.',
+                            ar: 'اختر الخدمة، قم بتأكيد الموقع، حدد حجم المهمة، راجع واختر مقدّم الخدمة، اختر التاريخ والوقت وأكد. يستغرق الأمر دقيقة واحدة فقط.'
                           })
                         },
                         {
                           img: "/Images/How to images/Step4-Chat in-app with Bricolers.png",
-                          title: t({ en: '4. Chat directly', fr: '4. Discutez en direct' }),
+                          title: t({ en: '2. Chat directly', fr: '2. Discutez en direct', ar: '2. تواصل مباشرة' }),
                           desc: t({
                             en: 'Once matched with a Bricoler, you can message them directly in the app to share your location and any additional details.',
-                            fr: 'Une fois mis en relation avec un Bricoler, vous pouvez lui envoyer un message directement dans l\'application pour partager votre localisation et tout autre détail.'
+                            fr: 'Une fois mis en relation avec un Bricoler, vous pouvez lui envoyer un message directement dans l\'application pour partager votre localisation et tout autre détail.',
+                            ar: 'بمجرد التوافق مع مقدم الخدمة، يمكنك مراسلته مباشرة في التطبيق لمشاركة موقعك وأي تفاصيل إضافية.'
                           })
                         }
                       ].map((item, i, arr) => (
@@ -4030,7 +3080,8 @@ const Home = () => {
                           <div style={{
                             flex: 1,
                             paddingTop: isMobile ? '0.5rem' : '15px',
-                            paddingBottom: i === arr.length - 1 ? '0' : (isMobile ? '0' : '100px')
+                            paddingBottom: i === arr.length - 1 ? '0' : (isMobile ? '0' : '100px'),
+                            textAlign: 'start'
                           }}>
                             <h3 style={{
                               fontSize: isMobile ? '1.25rem' : '1.5rem',
@@ -4056,16 +3107,18 @@ const Home = () => {
                         </div>
                       ))}
                     </div>
+
                   </div>
                 </section>
 
                 <MillionsImpactSection />
 
+                <MoroccoServiceMap />
 
 
 
+                <div className="md:hidden"><Footer /></div>
 
-                <Footer />
 
 
 
@@ -4346,9 +3399,15 @@ const Home = () => {
 
         <OnboardingPopup
           isOpen={showMobileOnboarding}
-          onClose={() => setShowMobileOnboarding(false)}
+          onClose={() => {
+            setShowMobileOnboarding(false);
+            setShadowProfileData(null);
+          }}
+          mode={shadowProfileData ? 'edit' : 'onboarding'}
+          userData={shadowProfileData}
           onComplete={async (data: { services: any[]; city: string }) => {
             setShowMobileOnboarding(false);
+            setShadowProfileData(null);
             setIsBricoler(true);
             window.location.href = '/provider';
           }}
@@ -4369,7 +3428,7 @@ const Home = () => {
         />
 
       </main>
-    </div >
+    </div>
   );
 };
 

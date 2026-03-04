@@ -28,6 +28,7 @@ import {
 export interface SubService {
     id: string;
     name: string;
+    desc?: { en: string; fr: string; ar: string };
 }
 
 export interface ServiceConfig {
@@ -44,8 +45,24 @@ export const SERVICES_HIERARCHY: Record<string, ServiceConfig> = {
         name: 'Furniture assembly',
         icon: Package,
         subServices: [
-            { id: 'general_assembly', name: 'General Furniture Assembly' },
-            { id: 'ikea_flatpack', name: 'IKEA / Flat-Pack Assembly' },
+            {
+                id: 'general_assembly',
+                name: 'General Furniture Assembly',
+                desc: {
+                    en: 'Assemble all types of furniture including dressers, beds, and tables.',
+                    fr: 'Assemblez tous types de meubles, y compris les commodes, les lits et les tables.',
+                    ar: 'تجميع جميع أنواع الأثاث بما في ذلك الخزائن والأسرة والطاولات.'
+                }
+            },
+            {
+                id: 'ikea_flatpack',
+                name: 'IKEA / Flat-Pack Assembly',
+                desc: {
+                    en: 'Specialized assembly for flat-pack furniture like IKEA products.',
+                    fr: 'Assemblage spécialisé pour les meubles en kit comme les produits IKEA.',
+                    ar: 'تجميع متخصص للأثاث المعبأ بشكل مسطح مثل منتجات ايكيا.'
+                }
+            },
             { id: 'crib_assembly', name: 'Crib Assembly' },
             { id: 'bookshelf_assembly', name: 'Bookshelf Assembly' },
             { id: 'desk_assembly', name: 'Desk Assembly' }
@@ -56,7 +73,15 @@ export const SERVICES_HIERARCHY: Record<string, ServiceConfig> = {
         name: 'Moving help',
         icon: Truck,
         subServices: [
-            { id: 'local_move', name: 'Local Moving' },
+            {
+                id: 'local_move',
+                name: 'Local Moving',
+                desc: {
+                    en: 'Help with moving boxes and furniture within the same city.',
+                    fr: 'Aide au déménagement de cartons et de meubles dans la même ville.',
+                    ar: 'المساعدة في نقل الصناديق والأثاث داخل نفس المدينة.'
+                }
+            },
             { id: 'packing', name: 'Packing Services' },
             { id: 'furniture_move', name: 'Furniture Moving Only' }
         ]
@@ -66,7 +91,15 @@ export const SERVICES_HIERARCHY: Record<string, ServiceConfig> = {
         name: 'Handyman',
         icon: Hammer,
         subServices: [
-            { id: 'general_repairs', name: 'General Repairs' },
+            {
+                id: 'general_repairs',
+                name: 'General Repairs',
+                desc: {
+                    en: 'Small fixes around the house like fixing a leaky roof or a squeaky door.',
+                    fr: 'Petites réparations dans la maison comme réparer un toit qui fuit ou une porte qui grince.',
+                    ar: 'إصلاحات صغيرة في جميع أنحاء المنزل مثل إصلاح سقف يسرب أو باب يصدر صريراً.'
+                }
+            },
             { id: 'door_lock', name: 'Door & Lock Repair' },
             { id: 'furniture_fix', name: 'Furniture Fixes' },
             { id: 'shelf_mounting', name: 'Shelf Mounting' },
@@ -78,7 +111,15 @@ export const SERVICES_HIERARCHY: Record<string, ServiceConfig> = {
         name: 'Mounting',
         icon: Monitor,
         subServices: [
-            { id: 'tv_mount', name: 'TV Mounting' },
+            {
+                id: 'tv_mount',
+                name: 'TV Mounting',
+                desc: {
+                    en: 'Securely mount TVs of all sizes onto any type of wall.',
+                    fr: 'Fixez solidement des téléviseurs de toutes tailles sur tout type de mur.',
+                    ar: 'تثبيت أجهزة التلفزيون من جميع الأحجام بأمان على أي نوع من الجدران.'
+                }
+            },
             { id: 'shelf_mount', name: 'Shelf Installation' },
             { id: 'curtain_mount', name: 'Curtain Rod Installation' },
             { id: 'mirror_hanging', name: 'Mirror Hanging' },
@@ -92,7 +133,15 @@ export const SERVICES_HIERARCHY: Record<string, ServiceConfig> = {
         name: 'Plumbing',
         icon: Droplets,
         subServices: [
-            { id: 'leak_repair', name: 'Leak Repair' },
+            {
+                id: 'leak_repair',
+                name: 'Leak Repair',
+                desc: {
+                    en: 'Identify and fix leaks in pipes, faucets, and toilets to prevent water damage.',
+                    fr: 'Identifiez et réparez les fuites dans les tuyaux, les robinets et les toilettes pour éviter les dégâts des eaux.',
+                    ar: 'تحديد وإصلاح التسريبات في الأنابيب والحنفيات والمراحيض لمنع أضرار المياه.'
+                }
+            },
             { id: 'pipe_install', name: 'Pipe Installation' },
             { id: 'drain_clean', name: 'Drain Cleaning' },
             { id: 'faucet_repair', name: 'Faucet Repair' },
@@ -104,7 +153,15 @@ export const SERVICES_HIERARCHY: Record<string, ServiceConfig> = {
         name: 'Electricity',
         icon: Lightbulb,
         subServices: [
-            { id: 'wiring', name: 'Wiring & Rewiring' },
+            {
+                id: 'wiring',
+                name: 'Wiring & Rewiring',
+                desc: {
+                    en: 'Safe installation or replacement of electrical wiring in residential buildings.',
+                    fr: 'Installation ou remplacement sécurisé du câblage électrique dans les bâtiments résidentiels.',
+                    ar: 'التركيب الآمن أو استبدال الأسلاك الكهربائية في المباني السكنية.'
+                }
+            },
             { id: 'outlet_install', name: 'Outlet Installation' },
             { id: 'light_install', name: 'Light Fixture Installation' },
             { id: 'circuit_repair', name: 'Circuit Breaker Repair' }
@@ -115,7 +172,15 @@ export const SERVICES_HIERARCHY: Record<string, ServiceConfig> = {
         name: 'Painting',
         icon: PenTool,
         subServices: [
-            { id: 'indoor_painting', name: 'Indoor Painting' },
+            {
+                id: 'indoor_painting',
+                name: 'Indoor Painting',
+                desc: {
+                    en: 'Professional interior painting for walls, ceilings, and trim.',
+                    fr: 'Peinture intérieure professionnelle pour les murs, les plafonds et les boiseries.',
+                    ar: 'دهان داخلي احترافي للجدران والأسقف والزخارف.'
+                }
+            },
             { id: 'wallpapering', name: 'Wallpapering' },
             { id: 'outdoor_painting', name: 'Outdoor Painting' },
             { id: 'concrete_brick_painting', name: 'Concrete & Brick Painting' },
@@ -147,7 +212,15 @@ export const SERVICES_HIERARCHY: Record<string, ServiceConfig> = {
         name: 'Cleaning',
         icon: Trash2,
         subServices: [
-            { id: 'family_home', name: 'Family Home Cleaning' },
+            {
+                id: 'family_home',
+                name: 'Family Home Cleaning',
+                desc: {
+                    en: 'Standard cleaning services for houses and apartments including dusting, vacuuming, and mopping.',
+                    fr: 'Services de nettoyage standard pour maisons et appartements, y compris l\'époussetage, l\'aspirateur et la serpillère.',
+                    ar: 'خدمات التنظيف القياسية للمنازل والشقق بما في ذلك نفض الغبار والكنس بالمكنسة الكهربائية والمسح.'
+                }
+            },
             { id: 'hospitality', name: 'Airbnb Cleaning' },
             { id: 'car_wash', name: 'Car Washing' },
             { id: 'car_detail', name: 'Car Detailing' },
@@ -195,7 +268,15 @@ export const SERVICES_HIERARCHY: Record<string, ServiceConfig> = {
         name: 'Babysitting',
         icon: Baby,
         subServices: [
-            { id: 'regular_babysitting', name: 'Regular Babysitting' },
+            {
+                id: 'regular_babysitting',
+                name: 'Regular Babysitting',
+                desc: {
+                    en: 'Day-to-day childcare services including playing, feeding, and basic care.',
+                    fr: 'Services de garde d\'enfants au quotidien, y compris les jeux, les repas et les soins de base.',
+                    ar: 'خدمات رعاية الأطفال اليومية بما في ذلك اللعب والتغذية والرعاية الأساسية.'
+                }
+            },
             { id: 'after_school_care', name: 'After-School Care' },
             { id: 'night_sitting', name: 'Night Sitting' },
             { id: 'day_out_supervision', name: 'Day Out Supervision' }
@@ -369,7 +450,7 @@ export const getServiceVector = (serviceIdOrName: string | undefined): string =>
     if (id.includes('handyman') || id.includes('repair')) return '/Images/Service Category vectors/HandymanVector.png';
     if (id.includes('assembly')) return '/Images/Service Category vectors/AsssemblyVector.png';
     if (id.includes('mounting')) return '/Images/Service Category vectors/MountingVector.png';
-    if (id.includes('moving')) return '/Images/Vectors Illu/moving help.png';
+    if (id.includes('moving')) return '/Images/Service Category vectors/MovingHelpVector.png';
     if (id.includes('pool')) return '/Images/Vectors Illu/Poolcleaning_VI.png';
     if (id.includes('pet')) return '/Images/Vectors Illu/petscare.png';
     if (id.includes('errand')) return '/Images/Vectors Illu/shoppingbag.png';
@@ -383,9 +464,9 @@ export const getServiceVector = (serviceIdOrName: string | undefined): string =>
     if (id.includes('babysitting')) return '/Images/Vectors Illu/babysetting.png';
     if (id.includes('appliance')) return '/Images/Service Category vectors/homerepairVector.png';
     if (id.includes('cooking')) return '/Images/Vectors Illu/cooking.png';
-    if (id.includes('driver')) return '/Images/Vectors Illu/Personal driver.png';
-    if (id.includes('arabic') || id.includes('learn')) return '/Images/Vectors Illu/LearnArabic.png';
-    if (id.includes('tour') || id.includes('guide')) return '/Images/Vectors Illu/LocationFlag_VI.png';
+    if (id.includes('driver')) return '/Images/Vectors Illu/BWCardirever.png';
+    if (id.includes('arabic') || id.includes('learn')) return '/Images/Vectors Illu/Arabic Letter.png';
+    if (id.includes('tour') || id.includes('guide')) return '/Images/Vectors Illu/de099bb06d30cd9d1c5744cc227c189f-Photoroom.png';
 
     return '/Images/Service Category vectors/HandymanVector.png'; // Fallback
 };

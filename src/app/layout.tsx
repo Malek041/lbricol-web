@@ -20,7 +20,7 @@ export const metadata: Metadata = {
   description: "Connect with local experts in Morocco | Connectez-vous avec des experts locaux au Maroc",
 };
 
-import { Providers } from "@/components/Providers";
+import { Providers } from "@/components/shared/Providers";
 
 export default function RootLayout({
   children,

@@ -1,6 +1,7 @@
 import { useSyncExternalStore } from 'react';
 
-export const MOBILE_ONLY_MODE = true;
+export const MOBILE_ONLY_MODE = false;
+
 
 type ViewportMode = 'lte' | 'lt';
 export type MobileTier = 'compact' | 'standard' | 'wide';

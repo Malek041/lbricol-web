@@ -1,4 +1,6 @@
+@import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&display=swap');
 @import "tailwindcss";
+
 
 @theme {
   --font-sans: "Uber Move Text", "Uber Move", "Inclusive Sans", var(--font-outfit), var(--font-arabic), "system-ui", "-apple-system", "BlinkMacSystemFont", "Segoe UI", "Roboto", "Helvetica Neue", "Arial", "sans-serif";

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { createContext, useCallback, useContext, useMemo, useState } from 'react';
-import ToastHost, { ToastItem, ToastVariant } from '@/components/ToastHost';
+import ToastHost, { ToastItem, ToastVariant } from '@/components/shared/ToastHost';
 
 interface ToastContextValue {
     showToast: (toast: Omit<ToastItem, 'id'> & { duration?: number }) => void;
