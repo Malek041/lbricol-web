@@ -9,7 +9,9 @@ import { useIsMobileViewport } from '@/lib/mobileOnly';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useData } from '@/context/DataContext';
 
-export default function MessagesPage() {
+import { Suspense } from 'react';
+
+function MessagesContent() {
     const { currentUser, isBricoler } = useAuth();
     const { orders } = useData();
     const isMobile = useIsMobileViewport(968);
@@ -41,5 +43,13 @@ export default function MessagesPage() {
 
             {isMobile && <MobileBottomNav variant={isBricoler ? 'provider' : 'client'} />}
         </div>
+    );
+}
+
+export default function MessagesPage() {
+    return (
+        <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-white"><div className="w-8 h-8 border-4 border-[#00A082] border-t-transparent rounded-full animate-spin" /></div>}>
+            <MessagesContent />
+        </Suspense>
     );
 }

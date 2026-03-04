@@ -8,10 +8,13 @@ import Header from '@/components/layout/Header';
 import MobileBottomNav from '@/components/layout/MobileBottomNav';
 import { useIsMobileViewport } from '@/lib/mobileOnly';
 
+import { useRouter } from 'next/navigation';
+
 export default function OrdersPage() {
     const { currentUser, isBricoler } = useAuth();
-    const { orders, loadingOrders } = useData();
+    const { orders } = useData();
     const isMobile = useIsMobileViewport(968);
+    const router = useRouter();
 
     return (
         <div className="min-h-screen bg-white">
@@ -25,8 +28,8 @@ export default function OrdersPage() {
             <main className="pb-24">
                 <ClientOrdersView
                     orders={orders}
-                    loading={loadingOrders}
-                    showHistory={false}
+                    onViewMessages={(jobId) => router.push(`/messages/?jobId=${jobId}`)}
+                    initialShowHistory={false}
                 />
             </main>
 

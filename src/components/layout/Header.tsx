@@ -1,5 +1,7 @@
 "use client";
 
+import { useRouter } from 'next/navigation';
+
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Moon, Sun, User, Menu, Globe, HelpCircle, Gift, LogIn, LogOut, Home, Truck } from 'lucide-react';
@@ -19,6 +21,7 @@ interface HeaderProps {
 }
 
 const Header = ({ activeTab, onTabChange, isBricoler = false, user = null }: HeaderProps) => {
+    const router = useRouter();
     const { language, setLanguage, t } = useLanguage();
     const { theme, toggleTheme } = useTheme();
     const isMobile = useIsMobileViewport(968);

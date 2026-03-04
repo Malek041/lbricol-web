@@ -11,7 +11,9 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { db } from '@/lib/firebase';
 import { doc, updateDoc } from 'firebase/firestore';
 
-export default function ProfilePage() {
+import { Suspense } from 'react';
+
+function ProfileContent() {
     const { currentUser, userData, isAdmin, isBricoler } = useAuth();
     const { t } = useLanguage();
     const isMobile = useIsMobileViewport(968);
@@ -58,5 +60,13 @@ export default function ProfilePage() {
 
             {isMobile && <MobileBottomNav variant={isBricoler ? 'provider' : 'client'} />}
         </div>
+    );
+}
+
+export default function ProfilePage() {
+    return (
+        <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-white"><div className="w-8 h-8 border-4 border-[#00A082] border-t-transparent rounded-full animate-spin" /></div>}>
+            <ProfileContent />
+        </Suspense>
     );
 }
