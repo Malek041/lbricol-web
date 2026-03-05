@@ -407,7 +407,7 @@ const BricolerProfileBottomSheet = ({ bricoler, isOpen, onClose, t }: any) => {
             animate={{ y: 0 }}
             exit={{ y: '100%' }}
             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-            className="fixed inset-x-0 bottom-0 bg-white rounded-t-[40px] z-[70] max-h-[90vh] flex flex-col shadow-2xl overflow-hidden"
+            className="fixed inset-x-0 bottom-0 bg-white rounded-t-[40px] z-[70] max-h-[90dvh] flex flex-col shadow-2xl"
           >
             {/* Handle */}
             <div className="flex justify-center pt-3 pb-1">
@@ -459,19 +459,34 @@ const BricolerProfileBottomSheet = ({ bricoler, isOpen, onClose, t }: any) => {
                 <div className="space-y-6">
                   {/* Basic Info */}
                   <div className="grid grid-cols-2 gap-4">
-                    <InfoItem label="Phone" value={bricoler.phone || bricoler.whatsappNumber || 'N/A'} icon={<Phone size={16} />} />
-                    <InfoItem label="Member Since" value={bricoler.createdAt ? new Date(bricoler.createdAt).toLocaleDateString() : 'N/A'} icon={<Calendar size={16} />} />
+                    <InfoItem label="Phone" value={bricoler.whatsappNumber || bricoler.phone || 'N/A'} icon={<Phone size={16} />} />
+                    <InfoItem label="Member Since" value={bricoler.createdAt ? new Date(typeof bricoler.createdAt === 'string' ? bricoler.createdAt : bricoler.createdAt?.toDate?.() || bricoler.createdAt).toLocaleDateString() : 'N/A'} icon={<Calendar size={16} />} />
                   </div>
 
                   {/* Services */}
                   <div>
                     <h3 className="text-sm font-black text-neutral-900 mb-3 uppercase tracking-wider">{t({ en: 'Services Offered', fr: 'Services proposés' })}</h3>
                     <div className="flex flex-wrap gap-2">
-                      {Array.isArray(bricoler.services) ? bricoler.services.map((s: string) => (
-                        <span key={s} className="px-3 py-1.5 bg-neutral-100 text-neutral-700 text-xs font-bold rounded-lg capitalize">
-                          {s.replace('_', ' ')}
-                        </span>
-                      )) : <p className="text-xs text-neutral-400">No services listed</p>}
+                      {(() => {
+                        const svcs = bricoler.services;
+                        if (!Array.isArray(svcs) || svcs.length === 0) {
+                          return <p className="text-xs text-neutral-400">No services listed</p>;
+                        }
+                        // Services can be array of objects or array of strings
+                        const chips: string[] = [];
+                        svcs.forEach((s: any) => {
+                          if (typeof s === 'string') chips.push(s.replace(/_/g, ' '));
+                          else if (s && typeof s === 'object') {
+                            const label = s.subServiceName || s.categoryName || s.subServiceId || s.categoryId || '';
+                            if (label && !chips.includes(label)) chips.push(label);
+                          }
+                        });
+                        return chips.map((chip) => (
+                          <span key={chip} className="px-3 py-1.5 bg-[#FFC244]/20 text-neutral-800 text-xs font-bold rounded-xl border border-[#FFC244]/30 capitalize">
+                            {chip}
+                          </span>
+                        ));
+                      })()}
                     </div>
                   </div>
 

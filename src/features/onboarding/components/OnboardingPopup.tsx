@@ -244,6 +244,8 @@ const OnboardingPopup = ({ isOpen, onClose, onComplete, mode = 'onboarding', ini
         }
     }, [auth.currentUser]);
 
+    const [hasGoogleSigned, setHasGoogleSigned] = useState(false);
+
     // ── Steps (no Availability — bricoler sets it in their dashboard) ────────
     const STEPS = useMemo(() => {
         if (mode === 'edit' || mode === 'add') {
@@ -263,7 +265,7 @@ const OnboardingPopup = ({ isOpen, onClose, onComplete, mode = 'onboarding', ini
                 { id: 'finish', label: t({ en: 'Save Bricoler', fr: 'Enregistrer', ar: 'حفظ' }) },
             ];
         }
-        return [
+        const baseSteps = [
             { id: 'activation', label: t({ en: 'Activation', fr: 'Activation', ar: 'تفعيل' }) },
             { id: 'services', label: t({ en: 'Services', fr: 'Services', ar: 'الخدمات' }) },
             { id: 'service_details', label: t({ en: 'Details', fr: 'Détails', ar: 'التفاصيل' }) },
@@ -272,7 +274,15 @@ const OnboardingPopup = ({ isOpen, onClose, onComplete, mode = 'onboarding', ini
             { id: 'profile', label: t({ en: 'Your Profile', fr: 'Profil', ar: 'ملفك الشخصي' }) },
             { id: 'finish', label: t({ en: 'Sign Up', fr: 'Inscription', ar: 'تسجيل' }) },
         ];
-    }, [t, mode]);
+
+        if (!auth.currentUser && !hasGoogleSigned) {
+            return [
+                { id: 'google_signin', label: t({ en: 'Sign In', fr: 'Connexion', ar: 'تسجيل الدخول' }) },
+                ...baseSteps
+            ];
+        }
+        return baseSteps;
+    }, [t, mode, auth.currentUser, hasGoogleSigned]);
 
     const [stepIndex, setStepIndex] = useState(mode === 'edit' ? 1 : 0);
     const step = STEPS[stepIndex]?.id || 'services';
@@ -619,8 +629,7 @@ const OnboardingPopup = ({ isOpen, onClose, onComplete, mode = 'onboarding', ini
                         const task = (async () => {
                             try {
                                 const storageRef = ref(storage, `portfolio/${user.uid}/${catId}/${Date.now()}_${Math.random().toString(36).slice(2)}.jpg`);
-                                const arrayBuffer = await file.arrayBuffer();
-                                const res = await uploadBytes(storageRef, arrayBuffer, { contentType: 'image/jpeg' });
+                                const res = await uploadBytes(storageRef, file, { contentType: 'image/jpeg' });
                                 const url = await getDownloadURL(res.ref);
                                 categoryUploadResults[catId].push(url);
                             } catch (e) {
@@ -746,15 +755,13 @@ const OnboardingPopup = ({ isOpen, onClose, onComplete, mode = 'onboarding', ini
             if (profileImageFile && !isEdit) {
                 try {
                     const storageRef = ref(storage, `avatars/${metaId}/${Date.now()}_profile.jpg`);
-                    const arrayBuffer = await profileImageFile.arrayBuffer();
-                    const uploadResult = await uploadBytes(storageRef, arrayBuffer, { contentType: 'image/jpeg' });
+                    const uploadResult = await uploadBytes(storageRef, profileImageFile, { contentType: 'image/jpeg' });
                     finalAvatarUrl = await getDownloadURL(uploadResult.ref);
                 } catch (err) { }
             } else if (profileImageFile && isEdit) {
                 try {
                     const storageRef = ref(storage, `avatars/${metaId}/${Date.now()}_profile.jpg`);
-                    const arrayBuffer = await profileImageFile.arrayBuffer();
-                    const uploadResult = await uploadBytes(storageRef, arrayBuffer, { contentType: 'image/jpeg' });
+                    const uploadResult = await uploadBytes(storageRef, profileImageFile, { contentType: 'image/jpeg' });
                     finalAvatarUrl = await getDownloadURL(uploadResult.ref);
                 } catch (err) { }
             }
@@ -864,8 +871,7 @@ const OnboardingPopup = ({ isOpen, onClose, onComplete, mode = 'onboarding', ini
                 avatarPromise = (async () => {
                     try {
                         const storageRef = ref(storage, `avatars/${user.uid}/${Date.now()}_profile.jpg`);
-                        const arrayBuffer = await profileImageFile.arrayBuffer();
-                        const uploadResult = await uploadBytes(storageRef, arrayBuffer, { contentType: 'image/jpeg' });
+                        const uploadResult = await uploadBytes(storageRef, profileImageFile, { contentType: 'image/jpeg' });
                         finalAvatarUrl = await getDownloadURL(uploadResult.ref);
                         console.log("Avatar uploaded successfully");
                         try { await updateProfile(user, { photoURL: finalAvatarUrl }); } catch (e) { }
@@ -889,8 +895,7 @@ const OnboardingPopup = ({ isOpen, onClose, onComplete, mode = 'onboarding', ini
                         const task = (async () => {
                             try {
                                 const storageRef = ref(storage, `portfolio/${user.uid}/${catId}/${Date.now()}_${Math.random().toString(36).slice(2)}.jpg`);
-                                const arrayBuffer = await file.arrayBuffer();
-                                const uploadResult = await uploadBytes(storageRef, arrayBuffer, { contentType: 'image/jpeg' });
+                                const uploadResult = await uploadBytes(storageRef, file, { contentType: 'image/jpeg' });
                                 const url = await getDownloadURL(uploadResult.ref);
                                 categoryUploadResults[catId].push(url);
                             } catch (e) {
@@ -958,8 +963,7 @@ const OnboardingPopup = ({ isOpen, onClose, onComplete, mode = 'onboarding', ini
                     try {
                         setSubmittingStatus("Uploading authorisation...");
                         const authRef = ref(storage, `portfolio/${user.uid}/tour_guide/${Date.now()}_authorization.jpg`);
-                        const arrayBuffer = await tourGuideAuthorizationFile.arrayBuffer();
-                        await uploadBytes(authRef, arrayBuffer);
+                        await uploadBytes(authRef, tourGuideAuthorizationFile);
                         finalTourGuideAuthUrl = await getDownloadURL(authRef);
                         setTourGuideAuthorizationUrl(finalTourGuideAuthUrl);
                     } catch (e) {
@@ -1140,10 +1144,51 @@ const OnboardingPopup = ({ isOpen, onClose, onComplete, mode = 'onboarding', ini
                         </div>
 
                         {/* Content */}
-                        <div className="flex-1 overflow-y-auto no-scrollbar" ref={scrollContainerRef}>
+                        <div ref={scrollContainerRef} className="flex-1 overflow-y-auto w-full relative z-[1]" style={{ paddingBottom: '70px', scrollbarWidth: 'none' }}>
                             <AnimatePresence mode="wait" custom={direction}>
+                                {/* ── STEP: Google Sign In ── */}
+                                {step === 'google_signin' && (
+                                    <motion.div
+                                        key="google_signin"
+                                        custom={direction}
+                                        variants={slideVariants}
+                                        initial="enter"
+                                        animate="center"
+                                        exit="exit"
+                                        className="p-6 md:p-10 space-y-8 pb-10 flex flex-col items-center justify-center min-h-[400px]"
+                                    >
+                                        <div className="flex flex-col items-center gap-4 text-center">
+                                            <div className="w-20 h-20 bg-neutral-100 rounded-full flex items-center justify-center mb-4">
+                                                <FcGoogle size={40} />
+                                            </div>
+                                            <h2 className="text-[28px] font-black tracking-tighter text-[#1D1D1D]">
+                                                {t({ en: 'Ready to Start?', fr: 'Prêt à commencer ?', ar: 'هل أنت جاهز للبدء؟' })}
+                                            </h2>
+                                            <p className="text-[15px] font-medium text-neutral-500 max-w-[280px]">
+                                                {t({ en: 'Connect Google to save your profile.', fr: 'Connectez Google pour enregistrer votre profil.', ar: 'اتصل بجوجل لحفظ ملفك الشخصي.' })}
+                                            </p>
+                                        </div>
 
-                                {/* ── STEP: Activation ── */}
+                                        <button
+                                            onClick={async () => {
+                                                const provider = new GoogleAuthProvider();
+                                                try {
+                                                    await signInWithPopup(auth, provider);
+                                                    setHasGoogleSigned(true);
+                                                    setStepIndex(s => s + 1);
+                                                } catch (e) {
+                                                    console.error(e);
+                                                }
+                                            }}
+                                            className="w-full h-16 bg-[#00A082] text-white rounded-[16px] text-[18px] font-bold flex items-center justify-center gap-3 active:scale-95 transition-all shadow-[0_8px_24px_rgba(0,160,130,0.2)]"
+                                        >
+                                            <FcGoogle size={28} className="bg-white rounded-full p-1" />
+                                            {t({ en: 'Continue with Google', fr: 'Continuer avec Google', ar: 'المتابعة باستخدام جوجل' })}
+                                        </button>
+                                    </motion.div>
+                                )}
+
+                                {/* ── STEP: Activation Code ── */}
                                 {step === 'activation' && (
                                     <motion.div key="activation" custom={direction} variants={slideVariants} initial="enter" animate="center" exit="exit" className="p-6 md:p-10 space-y-8">
                                         <motion.div variants={itemVariants} initial="hidden" animate="show" className="space-y-3">
@@ -1411,7 +1456,7 @@ const OnboardingPopup = ({ isOpen, onClose, onComplete, mode = 'onboarding', ini
                                             <label className="text-[20px] font-bold text-neutral-900 flex items-center gap-2">
                                                 {t({
                                                     en: `How many years of experience do you have in ${currentCatEntry.categoryName}?`,
-                                                    fr: `Combien d'années d'expérience avez-vous en ${currentCatEntry.categoryName} ?`,
+                                                    fr: `Combien d'années d'expérience avez-vous en ${t({ en: currentCatEntry.categoryName, fr: currentCatEntry.categoryName })} ?`,
                                                     ar: `كم عدد سنوات خبرتك في ${t({ en: currentCatEntry.categoryName, fr: currentCatEntry.categoryName })}؟`
                                                 })}
                                             </label>
@@ -2054,7 +2099,7 @@ const OnboardingPopup = ({ isOpen, onClose, onComplete, mode = 'onboarding', ini
                                                             >
                                                                 {t({ en: subServiceName, fr: subServiceName })} · {entry?.hourlyRate} {t({ en: 'MAD', fr: 'MAD', ar: 'درهم' })}
                                                             </span>
-                                                        )
+                                                        );
                                                     })}
                                                 </div>
                                             </div>
@@ -2091,9 +2136,9 @@ const OnboardingPopup = ({ isOpen, onClose, onComplete, mode = 'onboarding', ini
                                                     <div className="flex items-center gap-3">
                                                         {(mode === 'onboarding' || (mode === 'edit' && !userData?.uid)) ? (
                                                             <>
-                                                                {!auth.currentUser && <FcGoogle size={28} className="bg-white rounded-full p-1" />}
-                                                                {auth.currentUser
-                                                                    ? t({ en: 'Start your journey', fr: 'Commencez votre voyage', ar: 'ابدأ رحلتك' })
+                                                                {!auth.currentUser && !hasGoogleSigned && <FcGoogle size={28} className="bg-white rounded-full p-1" />}
+                                                                {(auth.currentUser || hasGoogleSigned)
+                                                                    ? t({ en: 'Start my business', fr: 'Démarrer mon activité', ar: 'ابدأ عملي' })
                                                                     : t({ en: 'Continue with Google', fr: 'Continuer avec Google', ar: 'المتابعة باستخدام جوجل' })}
                                                             </>
                                                         ) : (mode === 'admin_add' || mode === 'admin_edit') ? (
@@ -2132,8 +2177,8 @@ const OnboardingPopup = ({ isOpen, onClose, onComplete, mode = 'onboarding', ini
                         </div>
 
                         {/* Footer */}
-                        {step !== 'finish' && (
-                            <div className="p-6 md:p-10 bg-white border-t border-neutral-50 flex-shrink-0">
+                        {step !== 'finish' && step !== 'google_signin' && (
+                            <div className="p-4 md:p-6 pb-6 md:pb-8 bg-white border-t border-neutral-100 flex-shrink-0 shadow-[0_-8px_30px_rgba(0,0,0,0.04)]">
                                 <motion.button
                                     whileTap={{ scale: 0.98 }}
                                     onClick={goNext}

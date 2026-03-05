@@ -104,11 +104,6 @@ const ProfileView: React.FC<ProfileViewProps> = ({
                 action: () => onNavigate?.('/promocodes'),
             },
             {
-                icon: Bell,
-                label: t({ en: 'Notifications', fr: 'Notifications', ar: 'الإشعارات' }),
-                action: () => onNavigate?.('/notifications'),
-            },
-            {
                 icon: Globe,
                 label: t({ en: 'Languages and currency', fr: 'Langues et devise', ar: 'اللغات والعملة' }),
                 action: () => onOpenLanguage?.(),
@@ -121,6 +116,14 @@ const ProfileView: React.FC<ProfileViewProps> = ({
         ];
 
         const clientItems = [
+            ...(onBricolerAction ? [{
+                icon: Wrench,
+                label: isBricoler
+                    ? t({ en: 'Switch to Provider', fr: 'Passer en Mode Prestataire', ar: 'التحويل إلى وضع مقدم الخدمة' })
+                    : t({ en: 'Become a Bricoler!', fr: 'Devenir un Bricoleur !', ar: 'كن مقدم خدمة!' }),
+                action: onBricolerAction,
+                badge: isBricoler ? undefined : { text: t({ en: 'Recommended', fr: 'Recommandé', ar: 'موصى به' }), color: '#00A082' } as const
+            }] : []),
             {
                 icon: ShoppingBag,
                 label: t({ en: 'Orders History', fr: 'Historique des commandes', ar: 'سجل الطلبات' }),
@@ -131,14 +134,6 @@ const ProfileView: React.FC<ProfileViewProps> = ({
                 label: t({ en: 'My information', fr: 'Mes informations', ar: 'معلوماتي' }),
                 action: () => setView('info'),
             },
-            ...(onBricolerAction ? [{
-                icon: Wrench,
-                label: isBricoler
-                    ? t({ en: 'Switch to Provider', fr: 'Passer en Mode Prestataire', ar: 'التحويل إلى وضع مقدم الخدمة' })
-                    : t({ en: 'Become a Bricoler!', fr: 'Devenir un Bricoleur !', ar: 'كن مقدم خدمة!' }),
-                action: onBricolerAction,
-                badge: isBricoler ? undefined : { text: t({ en: 'Recommended', fr: 'Recommandé', ar: 'موصى به' }), color: '#00A082' } as const
-            }] : []),
             {
                 icon: Globe,
                 label: t({ en: 'Languages and currency', fr: 'Langues et devise', ar: 'اللغات والعملة' }),
@@ -159,11 +154,6 @@ const ProfileView: React.FC<ProfileViewProps> = ({
                 icon: CircleHelp,
                 label: t({ en: 'F.A.Q.', fr: 'F.A.Q.', ar: 'الأسئلة الشائعة' }),
                 action: handleHelp,
-            },
-            {
-                icon: Bell,
-                label: t({ en: 'Notifications', fr: 'Notifications', ar: 'الإشعارات' }),
-                action: () => onNavigate?.('/notifications'),
             },
             {
                 icon: Shield,
@@ -200,12 +190,6 @@ const ProfileView: React.FC<ProfileViewProps> = ({
             >
                 {/* Yellow Header (Glovo Style) - Fixed/Sticky Behind */}
                 <div className="bg-[#FFC244] pt-14 pb-20 px-6 sticky top-0 z-0 flex flex-col items-center overflow-hidden shrink-0 transition-all duration-300">
-                    {/* Subtle Background Pattern */}
-                    <div className="absolute inset-0 opacity-[0.07] pointer-events-none" style={{
-                        backgroundImage: 'radial-gradient(#000 1px, transparent 1px)',
-                        backgroundSize: '20px 20px'
-                    }} />
-
                     <div className="w-full flex justify-end mb-4 relative z-10">
                         {/* Help Button */}
                         <button

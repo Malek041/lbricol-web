@@ -1,68 +1,62 @@
 "use client";
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Star, Quote } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
-
-const REVIEWS = [
-    {
-        id: 1,
-        name: 'Fatima Zahra',
-        city: 'Casablanca',
-        service: 'Cleaning',
-        serviceFr: 'Ménage',
-        rating: 5,
-        comment: 'Service impeccable ! La dame était très ponctuelle et professionnelle. Ma maison brille.',
-        commentEn: 'Impeccable service! The lady was very punctual and professional. My house is shining.'
-    },
-    {
-        id: 2,
-        name: 'Mehdi Alami',
-        city: 'Rabat',
-        service: 'Plumbing',
-        serviceFr: 'Plomberie',
-        rating: 5,
-        comment: 'Réparation rapide d\'une fuite complexe. Très satisfait de la réactivité.',
-        commentEn: 'Quick repair of a complex leak. Very satisfied with the reactivity.'
-    },
-    {
-        id: 3,
-        name: 'Sofia Benani',
-        city: 'Marrakech',
-        service: 'Babysitting',
-        serviceFr: 'Garde d\'enfants',
-        rating: 5,
-        comment: 'Mes enfants ont adoré passer du temps avec elle. Je recommande vivement pour sa patience.',
-        commentEn: 'My children loved spending time with her. I highly recommend her for her patience.'
-    },
-    {
-        id: 4,
-        name: 'Youssef El Fassi',
-        city: 'Tangier',
-        service: 'Electricity',
-        serviceFr: 'Électricité',
-        rating: 4.8,
-        comment: 'Installation de luminaires faite proprement. Travail soigné et prix honnête.',
-        commentEn: 'Lighting installation done correctly. Neat work and honest price.'
-    },
-    {
-        id: 5,
-        name: 'Salma Mansouri',
-        city: 'Agadir',
-        service: 'Gardening',
-        serviceFr: 'Jardinage',
-        rating: 5,
-        comment: 'Mon jardin est transformé ! Un vrai pro qui connaît son métier.',
-        commentEn: 'My garden is transformed! A true pro who knows his trade.'
-    }
-];
+import { db } from '@/lib/firebase';
+import { collection, query, where, orderBy, limit, getDocs } from 'firebase/firestore';
 
 export const ReviewsScrollingSection = () => {
     const { t } = useLanguage();
+    const [reviews, setReviews] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchReviews = async () => {
+            try {
+                // Fetch up to 10 reviews with rating >= 4
+                const q = query(
+                    collection(db, 'reviews'),
+                    where('rating', '>=', 4),
+                    orderBy('rating', 'desc'),
+                    limit(10)
+                );
+                const snapshot = await getDocs(q);
+                const fetched: any[] = [];
+                snapshot.forEach(doc => {
+                    fetched.push({ id: doc.id, ...doc.data() });
+                });
+                setReviews(fetched);
+            } catch (error) {
+                console.error('Error fetching reviews:', error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchReviews();
+    }, []);
+
+    if (loading) return null;
+    if (reviews.length === 0) return null;
+
+    // Use fetched reviews
+    const displayReviews = reviews.map(r => ({
+        id: r.id,
+        name: r.clientName || t({ en: 'Client', fr: 'Client', ar: 'عميل' }),
+        city: r.city || '',
+        service: r.serviceName || 'Service',
+        serviceFr: r.serviceName || 'Service',
+        rating: r.rating || 5,
+        comment: r.comment || '',
+        commentEn: r.comment || ''
+    }));
 
     // Duplicate reviews for seamless looping
-    const duplicatedReviews = [...REVIEWS, ...REVIEWS];
+    const duplicatedReviews = displayReviews.length >= 4
+        ? [...displayReviews, ...displayReviews]
+        : [...displayReviews, ...displayReviews, ...displayReviews, ...displayReviews];
 
     return (
         <div className="w-full overflow-hidden py-10 bg-neutral-50/30">

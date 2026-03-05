@@ -26,7 +26,7 @@ const SplashScreen = () => {
 
             <div className="relative flex flex-col items-center justify-center z-10 w-full max-h-full">
                 {/* Waving Text Section */}
-                <div className="flex flex-wrap items-center justify-center gap-0 mb-8 sm:mb-12">
+                <div className="flex flex-wrap items-center justify-center gap-0 mb-8 sm:mb-12" dir="ltr">
                     {"Lbricol".split("").map((char, i) => (
                         <motion.span
                             key={i}
@@ -52,10 +52,7 @@ const SplashScreen = () => {
                             {char}
                         </motion.span>
                     ))}
-
                 </div>
-
-
             </div>
         </motion.div>
     );

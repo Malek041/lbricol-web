@@ -393,8 +393,9 @@ export default function ProviderPage() {
     // --- Filtered & Sorted Lists ---
     const filteredJobs = useMemo(() => availableJobs.filter((job) => {
         const matchCity = !providerCity || job.city.toLowerCase().includes(providerCity.toLowerCase());
-        return matchCity;
-    }), [availableJobs, providerCity]);
+        const matchCraft = activeCraftFilter === 'all' || job.serviceId === activeCraftFilter || job.craft === activeCraftFilter;
+        return matchCity && matchCraft;
+    }), [availableJobs, providerCity, activeCraftFilter]);
 
     const marketJobsSorted = useMemo(() => [...filteredJobs].sort((a, b) => parseDateTime(b.date, '', b.createdAt) - parseDateTime(a.date, '', a.createdAt)), [filteredJobs, parseDateTime]);
     const marketJobsOpen = useMemo(() => marketJobsSorted.filter((job) => !dismissedJobIds.includes(job.id)), [marketJobsSorted, dismissedJobIds]);
@@ -2318,7 +2319,10 @@ export default function ProviderPage() {
             {renderJobDetailsModal()}
             <AnimatePresence key="main-app-presence">
                 {isMobileLayout && ['calendar', 'jobs', 'messages', 'performance', 'services', 'profile'].includes(activeNav) && (
-                    <header key="bricoler-mobile-header" className="bg-white pt-10 pb-3 px-6 flex flex-col flex-none sticky top-0 z-[100] transition-all border-b border-neutral-100">
+                    <header key="bricoler-mobile-header" className={cn(
+                        "pt-10 pb-3 px-6 flex flex-col flex-none sticky top-0 z-[100] transition-colors duration-300",
+                        activeNav === 'profile' ? "bg-[#FFC244]" : "bg-white border-b border-neutral-100"
+                    )}>
                         <div className="flex items-center justify-between mb-4">
                             <h2 className="text-black text-[22px] font-black tracking-tight" style={{ fontFamily: 'Uber Move, var(--font-sans)' }}>
                                 {activeNav === 'calendar' ? t({ en: 'Missions', fr: 'Missions' }) :
@@ -2338,30 +2342,32 @@ export default function ProviderPage() {
                             </button>
                         </div>
 
-                        <div className="flex items-center gap-6 overflow-x-auto no-scrollbar">
-                            {[
-                                { id: 'activity', label: t({ en: 'Activity', fr: 'Activité' }) },
-                                { id: 'calendar', label: t({ en: 'Calendar', fr: 'Calendrier' }) },
-                                { id: 'availability', label: t({ en: 'Availability', fr: 'Disponibilité' }) }
-                            ].map((tab) => (
-                                <button
-                                    key={tab.id}
-                                    onClick={() => {
-                                        setOrdersActiveTab(tab.id as any);
-                                        if (activeNav !== 'calendar') setActiveNav('calendar');
-                                    }}
-                                    className={cn(
-                                        "pb-2 text-[15px] transition-all relative shrink-0",
-                                        ordersActiveTab === tab.id ? "font-black text-black" : "font-bold text-neutral-400"
-                                    )}
-                                >
-                                    {tab.label}
-                                    {ordersActiveTab === tab.id && (
-                                        <motion.div layoutId="orders-header-tab" className="absolute bottom-0 left-0 right-0 h-[3px] bg-[#00A082] rounded-t-full" />
-                                    )}
-                                </button>
-                            ))}
-                        </div>
+                        {activeNav === 'calendar' && (
+                            <div className="flex items-center gap-6 overflow-x-auto no-scrollbar">
+                                {[
+                                    { id: 'activity', label: t({ en: 'Activity', fr: 'Activité' }) },
+                                    { id: 'calendar', label: t({ en: 'Calendar', fr: 'Calendrier' }) },
+                                    { id: 'availability', label: t({ en: 'Availability', fr: 'Disponibilité' }) }
+                                ].map((tab) => (
+                                    <button
+                                        key={tab.id}
+                                        onClick={() => {
+                                            setOrdersActiveTab(tab.id as any);
+                                            if (activeNav !== 'calendar') setActiveNav('calendar');
+                                        }}
+                                        className={cn(
+                                            "pb-2 text-[15px] transition-all relative shrink-0",
+                                            ordersActiveTab === tab.id ? "font-black text-black" : "font-bold text-neutral-400"
+                                        )}
+                                    >
+                                        {tab.label}
+                                        {ordersActiveTab === tab.id && (
+                                            <motion.div layoutId="orders-header-tab" className="absolute bottom-0 left-0 right-0 h-[3px] bg-[#00A082] rounded-t-full" />
+                                        )}
+                                    </button>
+                                ))}
+                            </div>
+                        )}
                     </header>
                 )}
 
@@ -2486,6 +2492,39 @@ export default function ProviderPage() {
                                             </div>
                                         </div>
                                     </section>
+
+                                    {/* Craft Filter Chips */}
+                                    <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1 px-5 mb-4">
+                                        <button
+                                            onClick={() => setActiveCraftFilter('all')}
+                                            className={cn(
+                                                "px-5 py-2.5 rounded-full text-[13px] font-black transition-all whitespace-nowrap border-1.5",
+                                                activeCraftFilter === 'all'
+                                                    ? "bg-black border-black text-white"
+                                                    : "bg-[#F9F9F9] border-transparent text-neutral-900"
+                                            )}
+                                        >
+                                            {t({ en: 'All', fr: 'Tout' })}
+                                        </button>
+                                        {selectedServices.map(serviceId => {
+                                            const cat = SERVICE_CATEGORIES.find(c => c.id === serviceId);
+                                            if (!cat) return null;
+                                            return (
+                                                <button
+                                                    key={`filter-jobs-mobile-${serviceId}`}
+                                                    onClick={() => setActiveCraftFilter(serviceId)}
+                                                    className={cn(
+                                                        "px-5 py-2.5 rounded-full text-[13px] font-black transition-all whitespace-nowrap border-1.5",
+                                                        activeCraftFilter === serviceId
+                                                            ? "bg-black border-black text-white"
+                                                            : "bg-[#F9F9F9] border-transparent text-neutral-900"
+                                                    )}
+                                                >
+                                                    {t(cat.name)}
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
 
                                     <section className="bg-white pt-2 pb-6 shadow-[0_4px_24px_rgba(0,0,0,0.02)] mb-2 relative z-20">
                                         <div className="flex items-center gap-4 overflow-x-auto no-scrollbar snap-x px-5 mt-6 pb-4">
@@ -3070,6 +3109,38 @@ export default function ProviderPage() {
                                             >
                                                 Bricoles
                                             </h1>
+                                            {/* Deskop Craft Filter Chips */}
+                                            <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1 mt-6">
+                                                <button
+                                                    onClick={() => setActiveCraftFilter('all')}
+                                                    className={cn(
+                                                        "px-6 py-3 rounded-full text-[14px] font-black transition-all whitespace-nowrap border-2",
+                                                        activeCraftFilter === 'all'
+                                                            ? "bg-black border-black text-white"
+                                                            : "bg-white border-neutral-100 text-neutral-900 hover:border-neutral-200"
+                                                    )}
+                                                >
+                                                    {t({ en: 'All Missions', fr: 'Toutes les missions', ar: 'كل المهام' })}
+                                                </button>
+                                                {selectedServices.map(serviceId => {
+                                                    const cat = SERVICE_CATEGORIES.find(c => c.id === serviceId);
+                                                    if (!cat) return null;
+                                                    return (
+                                                        <button
+                                                            key={`filter-jobs-desktop-${serviceId}`}
+                                                            onClick={() => setActiveCraftFilter(serviceId)}
+                                                            className={cn(
+                                                                "px-6 py-3 rounded-full text-[14px] font-black transition-all whitespace-nowrap border-2",
+                                                                activeCraftFilter === serviceId
+                                                                    ? "bg-black border-black text-white"
+                                                                    : "bg-white border-neutral-100 text-neutral-900 hover:border-neutral-200"
+                                                            )}
+                                                        >
+                                                            {t(cat.name)}
+                                                        </button>
+                                                    );
+                                                })}
+                                            </div>
                                         </div>
                                         <div className="lg:col-span-8 flex items-end justify-between">
                                             <h2 className="text-[52px] md:text-[86px] font-black text-neutral-900 tracking-tight leading-none">
@@ -3454,17 +3525,17 @@ export default function ProviderPage() {
                                                                                         <span className="text-[11px] font-black text-neutral-500 uppercase">{t({ en: 'Bank', fr: 'Banque' })}</span>
                                                                                         <span className="text-[14px] font-bold">{t({ en: 'Al Barid Bank', fr: 'Al Barid Bank' })}</span>
                                                                                     </div>
-                                                                                    <div className="grid grid-cols-[80px_1fr] gap-2 items-center">
+                                                                                    <div className="grid grid-cols-1 sm:grid-cols-[100px_1fr] gap-2 items-center">
                                                                                         <span className="text-[11px] font-black text-neutral-500 uppercase">RIB</span>
                                                                                         <div className="flex items-center justify-between gap-2 bg-black/40 px-3 py-2 rounded-lg border border-white/10 group cursor-pointer" onClick={() => { navigator.clipboard.writeText('350810000000000880844466'); alert(t({ en: 'Copied!', fr: 'Copié !' })); }}>
-                                                                                            <span className="text-[12px] font-black font-mono tracking-tight text-neutral-200">35081000...4466</span>
-                                                                                            <Copy size={12} className="text-neutral-500" />
+                                                                                            <span className="text-[11px] sm:text-[12px] font-black font-mono tracking-tight text-neutral-200 break-all">350810000000000880844466</span>
+                                                                                            <Copy size={12} className="text-neutral-500 flex-shrink-0" />
                                                                                         </div>
                                                                                     </div>
                                                                                 </div>
 
                                                                                 <div className="pt-2">
-                                                                                    <div className="flex gap-3">
+                                                                                    <div className="flex flex-col sm:flex-row gap-3">
                                                                                         <button
                                                                                             onClick={() => {
                                                                                                 const input = document.createElement('input');
@@ -3495,10 +3566,9 @@ export default function ProviderPage() {
                                                                                                     : "bg-transparent text-white border-white/20 hover:border-white/40"
                                                                                             )}
                                                                                         >
-                                                                                            {settlementReceipt ? <Check size={18} /> : <Upload size={18} />}
-                                                                                            {settlementReceipt ? t({ en: 'Change Receipt', fr: 'Changer le reçu' }) : t({ en: 'Upload Receipt', fr: 'Télécharger le reçu' })}
+                                                                                            {settlementReceipt ? <PenTool size={18} /> : <CreditCard size={18} />}
+                                                                                            {settlementReceipt ? t({ en: 'Modifier', fr: 'Modifier' }) : t({ en: 'Payer cet Hero', fr: 'Payer cet Hero' })}
                                                                                         </button>
-
                                                                                         {settlementReceipt && (
                                                                                             <button
                                                                                                 disabled={isSubmittingSettlement}
@@ -3542,7 +3612,7 @@ export default function ProviderPage() {
                                                                                                 className="flex-1 py-4 bg-[#00A082] hover:bg-[#008C74] text-white rounded-xl font-black text-[14px] flex items-center justify-center gap-2 transition-all shadow-lg active:scale-95 disabled:opacity-50"
                                                                                             >
                                                                                                 {isSubmittingSettlement ? <RefreshCw className="animate-spin" size={18} /> : <Send size={18} />}
-                                                                                                {t({ en: 'Submit', fr: 'Envoyer' })}
+                                                                                                {t({ en: 'Envoyer', fr: 'Envoyer' })}
                                                                                             </button>
                                                                                         )}
                                                                                     </div>

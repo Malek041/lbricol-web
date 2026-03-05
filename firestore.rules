@@ -139,6 +139,18 @@ service cloud.firestore {
       allow update, delete: if isAdmin();
     }
 
+    match /commission_settlements/{settlementId} {
+      allow read: if isAdmin() || (isSignedIn() && request.auth.uid == request.resource.data.bricolerId);
+      allow create: if isSignedIn();
+      allow update, delete: if isAdmin();
+    }
+
+    match /admin_notifications/{notificationId} {
+      allow read: if isAdmin();
+      allow create: if isSignedIn();
+      allow update, delete: if isAdmin();
+    }
+
     // ── 5. Collection Group Rules ────────────────────────────────────────
     match /{path=**}/messages/{messageId} {
       allow read, write: if isSignedIn();

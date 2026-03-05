@@ -123,9 +123,15 @@ export const ClientOnboarding = ({ onComplete }: ClientOnboardingProps) => {
                     <AnimatePresence mode="wait">
                         <motion.div
                             key={currentStep}
-                            initial={{ opacity: 0, scale: 0.9, y: 10 }}
-                            animate={{ opacity: 1, scale: 1, y: 0 }}
-                            exit={{ opacity: 0, scale: 1.05, y: -10 }}
+                            initial={{ opacity: 0, x: 50 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0, x: -50 }}
+                            transition={{
+                                type: "spring",
+                                damping: 25,
+                                stiffness: 200,
+                                opacity: { duration: 0.2 }
+                            }}
                             className="min-h-[140px] flex flex-col justify-center"
                         >
                             <h2 className="text-[34px] font-black text-neutral-900 leading-[1.1] mb-2 tracking-tighter">
