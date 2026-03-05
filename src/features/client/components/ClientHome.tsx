@@ -429,6 +429,7 @@ interface ClientHomeProps {
     onNavigateToShare?: () => void;
     showOnboarding: boolean;
     onOnboardingComplete: () => void;
+    onBecomeBricoler?: () => void; // callback to launch the Bricoler onboarding
 }
 
 // ── Component ──────────────────────────────────────────────────────────────
@@ -444,13 +445,15 @@ const ClientHome: React.FC<ClientHomeProps> = ({
     onChangeLocation,
     onNavigateToShare,
     showOnboarding,
-    onOnboardingComplete
+    onOnboardingComplete,
+    onBecomeBricoler,
 }) => {
     const { t, language } = useLanguage();
 
     const [lastCategoryId, setLastCategoryId] = useState<string | null>(null);
     const [searchQuery, setSearchQuery] = useState('');
     const [showReferralBanner, setShowReferralBanner] = useState(false);
+    const [showBricolerUpsell, setShowBricolerUpsell] = useState(false);
 
     // Initial load
     useEffect(() => {
@@ -480,6 +483,16 @@ const ClientHome: React.FC<ClientHomeProps> = ({
             setShowReferralBanner(false);
         }
     }, [recentOrders]);
+
+    // Show bricoler upsell once after client onboarding
+    useEffect(() => {
+        const alreadyShown = localStorage.getItem('bricoler_upsell_shown');
+        if (!alreadyShown) {
+            // Small delay so the onboarding modal has fully closed first
+            const timer = setTimeout(() => setShowBricolerUpsell(true), 800);
+            return () => clearTimeout(timer);
+        }
+    }, []);
 
     const handleReferralClick = () => {
         localStorage.setItem('referral_banner_dismissed_at', Date.now().toString());
@@ -902,8 +915,75 @@ const ClientHome: React.FC<ClientHomeProps> = ({
             <AnimatePresence>
                 {showOnboarding && (
                     <ClientOnboarding
-                        onComplete={onOnboardingComplete}
+                        onComplete={() => {
+                            onOnboardingComplete();
+                            // After onboarding completes, trigger the upsell card if not shown
+                            const alreadyShown = localStorage.getItem('bricoler_upsell_shown');
+                            if (!alreadyShown) {
+                                setTimeout(() => setShowBricolerUpsell(true), 900);
+                            }
+                        }}
                     />
+                )}
+            </AnimatePresence>
+
+            {/* ── Bricoler Upsell Card (shown once after first visit/onboarding) ── */}
+            <AnimatePresence>
+                {showBricolerUpsell && (
+                    <motion.div
+                        initial={{ y: 120, opacity: 0 }}
+                        animate={{ y: 0, opacity: 1 }}
+                        exit={{ y: 120, opacity: 0 }}
+                        transition={{ type: 'spring', damping: 22, stiffness: 220 }}
+                        className="fixed bottom-24 left-4 right-4 z-[200]"
+                    >
+                        <div
+                            className="rounded-[24px] p-5 flex items-center gap-4 shadow-2xl relative overflow-hidden cursor-pointer active:scale-[0.98] transition-transform"
+                            style={{ backgroundColor: '#027C3E' }}
+                            onClick={() => {
+                                localStorage.setItem('bricoler_upsell_shown', 'true');
+                                setShowBricolerUpsell(false);
+                                onBecomeBricoler?.();
+                            }}
+                        >
+                            {/* Icon */}
+                            <div className="w-14 h-14 rounded-2xl bg-white/20 flex items-center justify-center flex-shrink-0">
+                                <img src="/Images/Vectors Illu/LbricolFaceOY.webp" alt="Bricoler" className="w-10 h-10 object-contain" />
+                            </div>
+
+                            {/* Text */}
+                            <div className="flex-1">
+                                <p className="text-white font-black text-[17px] leading-tight mb-0.5">
+                                    {t({ en: 'Earn money with your skills', fr: 'Gagnez de l\'argent avec vos compétences', ar: 'اربح المال بمهاراتك' })}
+                                </p>
+                                <p className="text-white/80 text-[13px] font-semibold leading-snug">
+                                    {t({ en: 'Become a Bricoler — set your own hours', fr: 'Devenez Bricoleur — choisissez vos horaires', ar: 'كن بريكولرًا — اختر ساعاتك' })}
+                                </p>
+                            </div>
+
+                            {/* Arrow */}
+                            <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0">
+                                <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="white" strokeWidth="3">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                                </svg>
+                            </div>
+
+                            {/* Dismiss button */}
+                            <button
+                                className="absolute top-3 right-3 w-6 h-6 rounded-full bg-white/20 flex items-center justify-center text-white active:scale-90 transition-transform"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    localStorage.setItem('bricoler_upsell_shown', 'true');
+                                    setShowBricolerUpsell(false);
+                                }}
+                            >
+                                <X size={12} />
+                            </button>
+
+                            {/* Decorative glow */}
+                            <div className="absolute -top-6 -right-6 w-24 h-24 bg-white/10 rounded-full blur-2xl pointer-events-none" />
+                        </div>
+                    </motion.div>
                 )}
             </AnimatePresence>
         </div>

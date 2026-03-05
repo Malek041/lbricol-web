@@ -2607,6 +2607,13 @@ const Home = () => {
                   localStorage.setItem('client_onboarding_shown', 'true');
                   setShowClientOnboarding(false);
                 }}
+                onBecomeBricoler={() => {
+                  if (currentUser) {
+                    setShowMobileOnboarding(true);
+                  } else {
+                    setShowAuthPopup(true);
+                  }
+                }}
               />
             ) : (
 
