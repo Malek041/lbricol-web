@@ -559,7 +559,7 @@ const OnboardingPopup = ({ isOpen, onClose, onComplete, mode = 'onboarding', ini
                     const canvas = document.createElement('canvas');
                     let width = img.width;
                     let height = img.height;
-                    const maxDim = 1024;
+                    const maxDim = 800; // Smaller for faster uploads
                     if (width > height) {
                         if (width > maxDim) { height = Math.round((height * maxDim) / width); width = maxDim; }
                     } else {
@@ -577,7 +577,7 @@ const OnboardingPopup = ({ isOpen, onClose, onComplete, mode = 'onboarding', ini
                         } else {
                             reject(new Error('Canvas toBlob failed'));
                         }
-                    }, 'image/jpeg', 0.8);
+                    }, 'image/jpeg', 0.7); // 0.7 quality for even smaller size
                 };
                 img.onerror = (err) => { clearTimeout(timeout); reject(err); };
             };
@@ -625,6 +625,7 @@ const OnboardingPopup = ({ isOpen, onClose, onComplete, mode = 'onboarding', ini
                 categoryUploadResults[catId] = [...existingUrls];
 
                 if (catData?.portfolioFiles && catData.portfolioFiles.length > 0) {
+                    let uploadedCount = 0;
                     for (const file of catData.portfolioFiles) {
                         const task = (async () => {
                             try {
@@ -632,11 +633,20 @@ const OnboardingPopup = ({ isOpen, onClose, onComplete, mode = 'onboarding', ini
                                 const res = await uploadBytes(storageRef, file, { contentType: 'image/jpeg' });
                                 const url = await getDownloadURL(res.ref);
                                 categoryUploadResults[catId].push(url);
+                                uploadedCount++;
+                                setSubmittingStatus(`Uploading media... (${uploadedCount}/${catData.portfolioFiles?.length || 0})`);
                             } catch (e) {
                                 console.warn(`Portfolio file upload failed for ${catId}:`, e);
                             }
                         })();
-                        uploadPromises.push(task);
+
+                        // Safety wrap each upload in a timeout to prevent hanging the whole process
+                        const timeoutTask = Promise.race([
+                            task,
+                            new Promise((_, reject) => setTimeout(() => reject(new Error("Upload timeout")), 30000))
+                        ]).catch(err => console.warn("Task timed out or failed:", err));
+
+                        uploadPromises.push(timeoutTask as Promise<void>);
                     }
                 }
             }
@@ -868,7 +878,7 @@ const OnboardingPopup = ({ isOpen, onClose, onComplete, mode = 'onboarding', ini
             let avatarPromise = Promise.resolve();
             if (profileImageFile) {
                 console.log("Preparing custom avatar upload...");
-                avatarPromise = (async () => {
+                const task = (async () => {
                     try {
                         const storageRef = ref(storage, `avatars/${user.uid}/${Date.now()}_profile.jpg`);
                         const uploadResult = await uploadBytes(storageRef, profileImageFile, { contentType: 'image/jpeg' });
@@ -879,6 +889,11 @@ const OnboardingPopup = ({ isOpen, onClose, onComplete, mode = 'onboarding', ini
                         console.warn("Avatar upload failed:", err);
                     }
                 })();
+
+                avatarPromise = (Promise.race([
+                    task,
+                    new Promise((_, reject) => setTimeout(() => reject(new Error("Avatar upload timeout")), 30000))
+                ]).catch(err => console.warn("Avatar task timed out or failed:", err))) as Promise<void>;
             }
 
             // 2. Upload Portfolio Images in parallel
@@ -891,6 +906,7 @@ const OnboardingPopup = ({ isOpen, onClose, onComplete, mode = 'onboarding', ini
                 categoryUploadResults[catId] = [...preExistingUrls];
 
                 if (catData?.portfolioFiles && catData.portfolioFiles.length > 0) {
+                    let uploadedCount = 0;
                     for (const file of catData.portfolioFiles) {
                         const task = (async () => {
                             try {
@@ -898,11 +914,20 @@ const OnboardingPopup = ({ isOpen, onClose, onComplete, mode = 'onboarding', ini
                                 const uploadResult = await uploadBytes(storageRef, file, { contentType: 'image/jpeg' });
                                 const url = await getDownloadURL(uploadResult.ref);
                                 categoryUploadResults[catId].push(url);
+                                uploadedCount++;
+                                setSubmittingStatus(`Uploading media... (${uploadedCount}/${catData.portfolioFiles?.length || 0})`);
                             } catch (e) {
                                 console.warn(`Portfolio upload failed for ${catId}:`, e);
                             }
                         })();
-                        uploadPromises.push(task);
+
+                        // Safety wrap each upload in a timeout to prevent hanging the whole process
+                        const timeoutTask = Promise.race([
+                            task,
+                            new Promise((_, reject) => setTimeout(() => reject(new Error("Upload timeout")), 30000))
+                        ]).catch(err => console.warn("Task timed out or failed:", err));
+
+                        uploadPromises.push(timeoutTask as Promise<void>);
                     }
                 }
             }
@@ -963,11 +988,20 @@ const OnboardingPopup = ({ isOpen, onClose, onComplete, mode = 'onboarding', ini
                     try {
                         setSubmittingStatus("Uploading authorisation...");
                         const authRef = ref(storage, `portfolio/${user.uid}/tour_guide/${Date.now()}_authorization.jpg`);
-                        await uploadBytes(authRef, tourGuideAuthorizationFile);
-                        finalTourGuideAuthUrl = await getDownloadURL(authRef);
+
+                        const uploadTask = uploadBytes(authRef, tourGuideAuthorizationFile);
+
+                        // Race against a 30s timeout
+                        const uploadResult = await Promise.race([
+                            uploadTask,
+                            new Promise((_, reject) => setTimeout(() => reject(new Error("Authorisation upload timeout")), 30000))
+                        ]);
+
+                        finalTourGuideAuthUrl = await getDownloadURL((uploadResult as any).ref);
                         setTourGuideAuthorizationUrl(finalTourGuideAuthUrl);
                     } catch (e) {
                         console.error('Tour guide authorisation upload failed', e);
+                        // We still continue or throw based on preference, but here we throw since it's required if offered
                         throw e;
                     }
                 }
@@ -1077,7 +1111,12 @@ const OnboardingPopup = ({ isOpen, onClose, onComplete, mode = 'onboarding', ini
         <>
             {/* Full-screen submission splash — separate AnimatePresence so keys never collide */}
             <AnimatePresence key="onboarding-splash-presence">
-                {isSubmitting && <SplashScreen key="onboarding-splash-indicator" />}
+                {isSubmitting && (
+                    <SplashScreen
+                        key="onboarding-splash-indicator"
+                        subStatus={submittingStatus}
+                    />
+                )}
             </AnimatePresence>
 
             <AnimatePresence key="onboarding-modal-presence">

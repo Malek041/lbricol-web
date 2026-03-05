@@ -961,12 +961,17 @@ const ClientHome: React.FC<ClientHomeProps> = ({
                                 </p>
                             </div>
 
-                            {/* Arrow */}
-                            <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0">
-                                <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="white" strokeWidth="3">
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-                                </svg>
-                            </div>
+                            {/* Remove button at top right */}
+                            <button
+                                className="absolute top-3 right-4 px-3 py-1 rounded-full bg-white/10 text-white text-[10px] font-black uppercase tracking-widest active:scale-95 transition-transform"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    localStorage.setItem('bricoler_upsell_shown', 'true');
+                                    setShowBricolerUpsell(false);
+                                }}
+                            >
+                                {t({ en: 'Remove', fr: 'Masquer', ar: 'إزالة' })}
+                            </button>
 
                             {/* Decorative glow */}
                             <div className="absolute -top-6 -right-6 w-24 h-24 bg-white/10 rounded-full blur-2xl pointer-events-none" />
