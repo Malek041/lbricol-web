@@ -948,7 +948,7 @@ const ClientHome: React.FC<ClientHomeProps> = ({
                         >
                             {/* Icon */}
                             <div className="w-14 h-14 rounded-2xl bg-white/20 flex items-center justify-center flex-shrink-0">
-                                <img src="/Images/Vectors Illu/LbricolFaceOY.webp" alt="Bricoler" className="w-10 h-10 object-contain" />
+                                <img src="/Images/4c456a03818b25032d0e4e80a711d569-Photoroom.png" alt="Bricoler" className="w-10 h-10 object-contain" />
                             </div>
 
                             {/* Text */}
@@ -967,18 +967,6 @@ const ClientHome: React.FC<ClientHomeProps> = ({
                                     <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
                                 </svg>
                             </div>
-
-                            {/* Dismiss button */}
-                            <button
-                                className="absolute top-3 right-3 w-6 h-6 rounded-full bg-white/20 flex items-center justify-center text-white active:scale-90 transition-transform"
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    localStorage.setItem('bricoler_upsell_shown', 'true');
-                                    setShowBricolerUpsell(false);
-                                }}
-                            >
-                                <X size={12} />
-                            </button>
 
                             {/* Decorative glow */}
                             <div className="absolute -top-6 -right-6 w-24 h-24 bg-white/10 rounded-full blur-2xl pointer-events-none" />
