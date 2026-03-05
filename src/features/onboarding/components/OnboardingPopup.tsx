@@ -652,28 +652,39 @@ const OnboardingPopup = ({ isOpen, onClose, onComplete, mode = 'onboarding', ini
 
             // 1.5. Upload Avatar if any
             let finalAvatarUrl = user.photoURL || '';
+            let avatarPromise = Promise.resolve(finalAvatarUrl);
+
             if (profileImageFile) {
                 const avatarTask = (async () => {
                     try {
                         const avatarStorageRef = ref(storage, `avatars/${user.uid}/${Date.now()}_profile.jpg`);
                         const uploadResult = await uploadBytes(avatarStorageRef, profileImageFile, { contentType: 'image/jpeg' });
-                        finalAvatarUrl = await getDownloadURL(uploadResult.ref);
-                        console.log("Avatar updated during edit:", finalAvatarUrl);
-                        try { await updateProfile(user, { photoURL: finalAvatarUrl }); } catch (e) { }
+                        const url = await getDownloadURL(uploadResult.ref);
+                        console.log("Avatar updated during edit:", url);
+                        try { await updateProfile(user, { photoURL: url }); } catch (e) { }
+                        return url;
                     } catch (err) {
                         console.warn("Avatar upload failed during edit:", err);
+                        return user.photoURL || '';
                     }
                 })();
 
-                const avatarTimeoutTask = Promise.race([
+                avatarPromise = Promise.race([
                     avatarTask,
-                    new Promise((_, reject) => setTimeout(() => reject(new Error("Avatar upload timeout")), 30000))
-                ]).catch(err => console.warn("Avatar task timed out or failed:", err));
+                    new Promise<string>((_, reject) => setTimeout(() => reject(new Error("Avatar upload timeout")), 30000))
+                ]).catch(err => {
+                    console.warn("Avatar task timed out or failed:", err);
+                    return user.photoURL || '';
+                });
 
-                uploadPromises.push(avatarTimeoutTask);
+                uploadPromises.push(avatarPromise);
             }
 
-            await Promise.all(uploadPromises);
+            const results = await Promise.all(uploadPromises);
+            // If the last one was the avatar, it will be in the results
+            if (profileImageFile) {
+                finalAvatarUrl = results[results.length - 1] || finalAvatarUrl;
+            }
 
             // Map results back to entries
             const finalCategoryEntries = currentEntries.map(entry => ({
@@ -896,30 +907,35 @@ const OnboardingPopup = ({ isOpen, onClose, onComplete, mode = 'onboarding', ini
             const categoryUploadResults: Record<string, string[]> = {};
 
             // 1. Upload Avatar
-            let avatarPromise = Promise.resolve();
+            let avatarPromise: Promise<string> = Promise.resolve(user.photoURL || '');
             if (profileImageFile) {
                 console.log("Preparing custom avatar upload...");
                 const task = (async () => {
                     try {
                         const storageRef = ref(storage, `avatars/${user.uid}/${Date.now()}_profile.jpg`);
                         const uploadResult = await uploadBytes(storageRef, profileImageFile, { contentType: 'image/jpeg' });
-                        finalAvatarUrl = await getDownloadURL(uploadResult.ref);
-                        console.log("Avatar uploaded successfully");
-                        try { await updateProfile(user, { photoURL: finalAvatarUrl }); } catch (e) { }
+                        const url = await getDownloadURL(uploadResult.ref);
+                        console.log("Avatar uploaded successfully:", url);
+                        try { await updateProfile(user, { photoURL: url }); } catch (e) { }
+                        return url;
                     } catch (err) {
                         console.warn("Avatar upload failed:", err);
+                        return user.photoURL || '';
                     }
                 })();
 
-                avatarPromise = (Promise.race([
+                avatarPromise = Promise.race([
                     task,
-                    new Promise((_, reject) => setTimeout(() => reject(new Error("Avatar upload timeout")), 30000))
-                ]).catch(err => console.warn("Avatar task timed out or failed:", err))) as Promise<void>;
+                    new Promise<string>((_, reject) => setTimeout(() => reject(new Error("Avatar upload timeout")), 30000))
+                ]).catch(err => {
+                    console.warn("Avatar task timed out or failed:", err);
+                    return user.photoURL || '';
+                });
             }
 
             // 2. Upload Portfolio Images in parallel
             const uniqueCategories = Array.from(new Set(initialEntries.map(e => e.categoryId)));
-            const uploadPromises: Promise<void>[] = [];
+            const uploadPromisesByCat: Promise<void>[] = [];
 
             for (const catId of uniqueCategories) {
                 const catData = categoryEntries[catId];
@@ -948,12 +964,16 @@ const OnboardingPopup = ({ isOpen, onClose, onComplete, mode = 'onboarding', ini
                             new Promise((_, reject) => setTimeout(() => reject(new Error("Upload timeout")), 30000))
                         ]).catch(err => console.warn("Task timed out or failed:", err));
 
-                        uploadPromises.push(timeoutTask as Promise<void>);
+                        uploadPromisesByCat.push(timeoutTask as Promise<void>);
                     }
                 }
             }
 
-            await Promise.all([...uploadPromises, avatarPromise]);
+            const [_, finalAvatarResult] = await Promise.all([
+                Promise.all(uploadPromisesByCat),
+                avatarPromise
+            ]);
+            finalAvatarUrl = (finalAvatarResult as string) || finalAvatarUrl;
 
             // Map results back to entries
             const finalCategoryEntries = initialEntries.map(entry => ({
@@ -1135,7 +1155,6 @@ const OnboardingPopup = ({ isOpen, onClose, onComplete, mode = 'onboarding', ini
                 {isSubmitting && (
                     <SplashScreen
                         key="onboarding-splash-indicator"
-                        subStatus={submittingStatus}
                     />
                 )}
             </AnimatePresence>
@@ -2196,10 +2215,8 @@ const OnboardingPopup = ({ isOpen, onClose, onComplete, mode = 'onboarding', ini
                                                     <div className="flex items-center gap-3">
                                                         {(mode === 'onboarding' || (mode === 'edit' && !userData?.uid)) ? (
                                                             <>
-                                                                {!auth.currentUser && !hasGoogleSigned && <FcGoogle size={28} className="bg-white rounded-full p-1" />}
-                                                                {(auth.currentUser || hasGoogleSigned)
-                                                                    ? t({ en: 'Start my business', fr: 'Démarrer mon activité', ar: 'ابدأ عملي' })
-                                                                    : t({ en: 'Continue with Google', fr: 'Continuer avec Google', ar: 'المتابعة باستخدام جوجل' })}
+                                                                <FcGoogle size={28} className="bg-white rounded-full p-1" />
+                                                                {t({ en: 'Continue with Google', fr: 'Continuer avec Google', ar: 'المتابعة باستخدام جوجل' })}
                                                             </>
                                                         ) : (mode === 'admin_add' || mode === 'admin_edit') ? (
                                                             <>
