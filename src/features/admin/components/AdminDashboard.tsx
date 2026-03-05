@@ -59,6 +59,8 @@ const AdminDashboard = memo(({ t }: AdminDashboardProps) => {
                 growthOrders: 0,
                 growthGmv: 0,
                 growthRevenue: 0,
+                categoryDemand: {},
+                areaDemand: {},
             };
         }
         return match;

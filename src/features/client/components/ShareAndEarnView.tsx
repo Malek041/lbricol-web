@@ -56,9 +56,9 @@ const ShareAndEarnView: React.FC<ShareAndEarnViewProps> = ({
         if (!currentUser) { onLogin(); return; }
         if (!referralCode) return;
         const message = t({
-            en: `Hey! Use my code ${referralCode} on Lbricol to get ${RWD_AMOUNT} off your first home service. Download the app: https://lbricol.ma`,
-            fr: `Hey ! Utilise mon code ${referralCode} sur Lbricol pour avoir ${RWD_AMOUNT} de réduction sur ton premier service à domicile. Télécharge l'appli : https://lbricol.ma`,
-            ar: `مرحباً! استخدم كود الإحالة ${referralCode} على لبريكول لتحصل على خصم ${RWD_AMOUNT} على أول خدمة منزلية. نزّل التطبيق: https://lbricol.ma`
+            en: `Hey! Use my code ${referralCode} on Lbricol to get ${RWD_AMOUNT} off your first home service. Download the app: https://lbricol.com`,
+            fr: `Hey ! Utilise mon code ${referralCode} sur Lbricol pour avoir ${RWD_AMOUNT} de réduction sur ton premier service à domicile. Télécharge l'appli : https://lbricol.com`,
+            ar: `مرحباً! استخدم كود الإحالة ${referralCode} على لبريكول لتحصل على خصم ${RWD_AMOUNT} على أول خدمة منزلية. نزّل التطبيق: https://lbricol.com`
         });
         navigator.clipboard.writeText(message).then(() => {
             setCopied(true);

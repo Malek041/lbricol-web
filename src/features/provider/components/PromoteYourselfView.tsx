@@ -76,10 +76,10 @@ const PromoteYourselfView: React.FC<PromoteYourselfViewProps> = ({
         if (!currentUser) { onLogin(); return; }
         if (!clientCode) return;
         const message = language === 'ar'
-            ? `مرحباً! استخدم كودي ${clientCode} في تطبيق Lbricol للحصول على خصم 20 درهم على أول خدمة منزلية لك. حمل التطبيق: https://lbricol.ma`
+            ? `مرحباً! استخدم كودي ${clientCode} في تطبيق Lbricol للحصول على خصم 20 درهم على أول خدمة منزلية لك. حمل التطبيق: https://lbricol.com`
             : t({
-                en: `Hey! Use my code ${clientCode} on Lbricol to get 20 MAD off your first home service. Download the app: https://lbricol.ma`,
-                fr: `Hey ! Utilise mon code ${clientCode} sur Lbricol pour avoir 20 MAD de réduction sur ton premier service à domicile. Télécharge l'appli : https://lbricol.ma`
+                en: `Hey! Use my code ${clientCode} on Lbricol to get 20 MAD off your first home service. Download the app: https://lbricol.com`,
+                fr: `Hey ! Utilise mon code ${clientCode} sur Lbricol pour avoir 20 MAD de réduction sur ton premier service à domicile. Télécharge l'appli : https://lbricol.com`
             });
         navigator.clipboard.writeText(message).then(() => {
             setCopiedClient(true);
@@ -91,10 +91,10 @@ const PromoteYourselfView: React.FC<PromoteYourselfViewProps> = ({
         if (!currentUser) { onLogin(); return; }
         if (!bricolerCode) return;
         const message = language === 'ar'
-            ? `هل أنت محترف؟ انضم إلى Lbricol باستخدام كودي ${bricolerCode} وسنربح كلانا 50 درهم! حمل التطبيق: https://lbricol.ma`
+            ? `هل أنت محترف؟ انضم إلى Lbricol باستخدام كودي ${bricolerCode} وسنربح كلانا 50 درهم! حمل التطبيق: https://lbricol.com`
             : t({
-                en: `Are you a professional? Join Lbricol using my code ${bricolerCode} and we both earn 50 MAD! Download the app: https://lbricol.ma`,
-                fr: `Vous êtes professionnel ? Rejoignez Lbricol avec le code ${bricolerCode} et nous gagnons chacun 50 MAD ! Télécharge l'appli : https://lbricol.ma`
+                en: `Are you a professional? Join Lbricol using my code ${bricolerCode} and we both earn 50 MAD! Download the app: https://lbricol.com`,
+                fr: `Vous êtes professionnel ? Rejoignez Lbricol avec le code ${bricolerCode} et nous gagnons chacun 50 MAD ! Télécharge l'appli : https://lbricol.com`
             });
         navigator.clipboard.writeText(message).then(() => {
             setCopiedBricoler(true);
