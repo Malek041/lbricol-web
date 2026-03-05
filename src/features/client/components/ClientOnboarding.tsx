@@ -77,7 +77,7 @@ const AutoScrollingBanner = () => {
                 {[...HERO_IMAGES, ...HERO_IMAGES].map((img, i) => (
                     <div
                         key={i}
-                        className="w-[180px] h-[240px] flex-shrink-0 rounded-[30px] overflow-hidden shadow-xl border-4 border-white"
+                        className="w-[180px] h-[240px] flex-shrink-0 rounded-[20px] overflow-hidden"
                     >
                         <img
                             src={img}
@@ -110,45 +110,53 @@ export const ClientOnboarding = ({ onComplete }: ClientOnboardingProps) => {
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-[9999] flex items-center justify-center bg-white safe-bottom"
         >
-            <div className="w-full h-full max-w-[500px] flex flex-col items-center justify-between py-12 px-6 relative overflow-hidden bg-[#FFFFFF]">
-
-                {/* Eggy Background Blobs */}
-                <motion.div
-                    animate={{ scale: [1, 1.1, 1], rotate: [0, 45, 0] }}
-                    transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
-                    className="absolute -top-20 -right-20 w-[400px] h-[400px] opacity-10 bg-[#FFC244]"
-                    style={{ borderRadius: '60% 40% 30% 70% / 60% 30% 70% 40%' }}
-                />
-                <motion.div
-                    animate={{ scale: [1.1, 1, 1.1], rotate: [0, -45, 0] }}
-                    transition={{ duration: 18, repeat: Infinity, ease: "linear" }}
-                    className="absolute -bottom-20 -left-20 w-[450px] h-[450px] opacity-10 bg-[#00A082]"
-                    style={{ borderRadius: '30% 60% 70% 40% / 50% 60% 30% 60%' }}
-                />
-
-                {/* Logo Section */}
-                <div className="z-10 flex flex-col items-center">
-                    <motion.div
-                        initial={{ y: -20, opacity: 0 }}
-                        animate={{ y: 0, opacity: 1 }}
-                        className="mb-2"
-                    >
-                        <Image
-                            src="/Images/Logo/theEggOfLB.png"
-                            alt="Lbricol Logo"
-                            width={80}
-                            height={80}
-                            className="drop-shadow-sm"
-                        />
-                    </motion.div>
-                    <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ delay: 0.2 }}
-                        className="text-[22px] font-black tracking-tighter text-black"
-                    >
-                        Lbricol<span className="text-[#00A082]">.com</span>
-                    </motion.div>
+            <div className="w-full h-full max-w-[500px] flex flex-col items-center justify-between py-12 px-6 relative overflow-hidden bg-[#FFFFFF]">                {/* Header Section: Wavering Text */}
+                <div className="z-10 flex flex-col items-center mt-4">
+                    <div className="flex items-center justify-center gap-0">
+                        {"Lbricol".split("").map((char, i) => (
+                            <motion.span
+                                key={i}
+                                animate={{
+                                    y: [0, -6, 0],
+                                }}
+                                transition={{
+                                    duration: 1.5,
+                                    repeat: Infinity,
+                                    ease: "easeInOut",
+                                    delay: i * 0.1
+                                }}
+                                style={{
+                                    fontSize: '24px',
+                                    fontWeight: 950,
+                                    color: '#111',
+                                    fontFamily: 'var(--font-outfit), sans-serif',
+                                    letterSpacing: '-0.05em',
+                                }}
+                            >
+                                {char}
+                            </motion.span>
+                        ))}
+                        <motion.span
+                            animate={{
+                                y: [0, -6, 0],
+                            }}
+                            transition={{
+                                duration: 1.5,
+                                repeat: Infinity,
+                                ease: "easeInOut",
+                                delay: 0.7
+                            }}
+                            style={{
+                                fontSize: '24px',
+                                fontWeight: 950,
+                                color: BRAND_GREEN,
+                                fontFamily: 'var(--font-outfit), sans-serif',
+                                letterSpacing: '-0.05em',
+                            }}
+                        >
+                            .com
+                        </motion.span>
+                    </div>
                 </div>
 
                 {/* Autoscrolling Hero Section */}
@@ -195,7 +203,7 @@ export const ClientOnboarding = ({ onComplete }: ClientOnboardingProps) => {
                     <motion.button
                         whileTap={{ scale: 0.98 }}
                         onClick={handleNext}
-                        className="w-full py-5 rounded-[22px] text-[18px] font-black text-white shadow-xl shadow-green-900/10 flex items-center justify-center gap-2 transition-all active:brightness-95"
+                        className="w-full py-5 rounded-[22px] text-[18px] font-black text-white flex items-center justify-center gap-2 transition-all active:brightness-95"
                         style={{ backgroundColor: BRAND_GREEN }}
                     >
                         {currentStep === STEPS.length - 1 ? t({ en: "Get Started", fr: "Commencer" }) : t({ en: "Next", fr: "Suivant" })}

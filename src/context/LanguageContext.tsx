@@ -984,6 +984,10 @@ export const LanguageProvider = ({ children }: { children: ReactNode }) => {
         const savedLang = localStorage.getItem('lbricol_language');
         if (savedLang === 'en' || savedLang === 'fr' || savedLang === 'ar') {
             setLanguage(savedLang as Language);
+        } else {
+            // Force French if no preference is saved
+            setLanguage('fr');
+            localStorage.setItem('lbricol_language', 'fr');
         }
     }, []);
 
