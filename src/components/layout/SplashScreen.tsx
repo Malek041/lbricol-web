@@ -7,7 +7,7 @@ interface SplashScreenProps {
     subStatus?: string | null;
 }
 
-const SplashScreen: React.FC<SplashScreenProps> = ({ subStatus }) => {
+const SplashScreen: React.FC<SplashScreenProps> = () => {
     return (
         <motion.div
             initial={{ opacity: 1 }}
@@ -43,7 +43,7 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ subStatus }) => {
                                 delay: i * 0.1
                             }}
                             style={{
-                                fontSize: 'clamp(48px, 18vw, 72px)',
+                                fontSize: 'clamp(48px, 22vw, 82px)',
                                 fontWeight: 500,
                                 color: '#00A082',
                                 fontFamily: 'var(--font-outfit), sans-serif',
@@ -55,27 +55,6 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ subStatus }) => {
                         </motion.span>
                     ))}
                 </div>
-
-                {/* Status Message */}
-                <AnimatePresence>
-                    {subStatus && (
-                        <motion.div
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -10 }}
-                            className="flex flex-col items-center gap-3"
-                        >
-                            <div className="flex items-center gap-2">
-                                <div className="w-1.5 h-1.5 bg-[#00A082] rounded-full animate-bounce" />
-                                <div className="w-1.5 h-1.5 bg-[#00A082] rounded-full animate-bounce [animation-delay:0.2s]" />
-                                <div className="w-1.5 h-1.5 bg-[#00A082] rounded-full animate-bounce [animation-delay:0.4s]" />
-                            </div>
-                            <span className="text-[#00A082] text-[13px] font-black uppercase tracking-[0.2em] text-center max-w-[280px]">
-                                {subStatus}
-                            </span>
-                        </motion.div>
-                    )}
-                </AnimatePresence>
             </div>
         </motion.div>
     );

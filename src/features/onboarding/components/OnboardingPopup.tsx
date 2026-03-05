@@ -615,7 +615,7 @@ const OnboardingPopup = ({ isOpen, onClose, onComplete, mode = 'onboarding', ini
 
             setSubmittingStatus("Uploading media...");
             const categoryUploadResults: Record<string, string[]> = {};
-            const uploadPromises: Promise<void>[] = [];
+            const uploadPromises: Promise<void | any>[] = [];
 
             // 1. Upload new Portfolio Images in parallel
             const uniqueCategories = Array.from(new Set(currentEntries.map(e => e.categoryId)));
@@ -634,21 +634,43 @@ const OnboardingPopup = ({ isOpen, onClose, onComplete, mode = 'onboarding', ini
                                 const url = await getDownloadURL(res.ref);
                                 categoryUploadResults[catId].push(url);
                                 uploadedCount++;
-                                setSubmittingStatus(`Uploading media... (${uploadedCount}/${catData.portfolioFiles?.length || 0})`);
                             } catch (e) {
                                 console.warn(`Portfolio file upload failed for ${catId}:`, e);
                             }
                         })();
 
-                        // Safety wrap each upload in a timeout to prevent hanging the whole process
+                        // Safety wrap each upload in a timeout
                         const timeoutTask = Promise.race([
                             task,
                             new Promise((_, reject) => setTimeout(() => reject(new Error("Upload timeout")), 30000))
-                        ]).catch(err => console.warn("Task timed out or failed:", err));
+                        ]).catch(err => console.warn("Portfolio task timed out or failed:", err));
 
-                        uploadPromises.push(timeoutTask as Promise<void>);
+                        uploadPromises.push(timeoutTask);
                     }
                 }
+            }
+
+            // 1.5. Upload Avatar if any
+            let finalAvatarUrl = user.photoURL || '';
+            if (profileImageFile) {
+                const avatarTask = (async () => {
+                    try {
+                        const avatarStorageRef = ref(storage, `avatars/${user.uid}/${Date.now()}_profile.jpg`);
+                        const uploadResult = await uploadBytes(avatarStorageRef, profileImageFile, { contentType: 'image/jpeg' });
+                        finalAvatarUrl = await getDownloadURL(uploadResult.ref);
+                        console.log("Avatar updated during edit:", finalAvatarUrl);
+                        try { await updateProfile(user, { photoURL: finalAvatarUrl }); } catch (e) { }
+                    } catch (err) {
+                        console.warn("Avatar upload failed during edit:", err);
+                    }
+                })();
+
+                const avatarTimeoutTask = Promise.race([
+                    avatarTask,
+                    new Promise((_, reject) => setTimeout(() => reject(new Error("Avatar upload timeout")), 30000))
+                ]).catch(err => console.warn("Avatar task timed out or failed:", err));
+
+                uploadPromises.push(avatarTimeoutTask);
             }
 
             await Promise.all(uploadPromises);
@@ -667,9 +689,9 @@ const OnboardingPopup = ({ isOpen, onClose, onComplete, mode = 'onboarding', ini
                 noEquipment: entry.noEquipment,
                 portfolioImages: categoryUploadResults[entry.categoryId] || []
             }));
+
             setSubmittingStatus("Syncing...");
             const bricolerRef = doc(db, 'bricolers', user.uid);
-
             const isClaimingShadow = localUserData && localUserData.metaId && localUserData.metaId !== user.uid;
 
             // Get current services to merge or replace
@@ -679,11 +701,9 @@ const OnboardingPopup = ({ isOpen, onClose, onComplete, mode = 'onboarding', ini
             if (docSnap.exists()) {
                 const existingServices = docSnap.data().services || [];
                 if (mode === 'edit') {
-                    // Update only relevant ones (those in categories we are currently touched), keep others
                     const otherServices = existingServices.filter((s: any) => !uniqueCategories.includes(s.categoryId));
                     updatedServices = [...otherServices, ...finalCategoryEntries];
                 } else {
-                    // Add mode: append to existing (prevent duplicates)
                     const existingIds = new Set(existingServices.map((s: any) => s.id));
                     const newOnes = finalCategoryEntries.filter(s => !existingIds.has(s.id));
                     updatedServices = [...existingServices, ...newOnes];
@@ -697,7 +717,8 @@ const OnboardingPopup = ({ isOpen, onClose, onComplete, mode = 'onboarding', ini
                 ...(tourGuideAuthorizationUrl ? { tourGuideAuthorizationUrl } : {}),
                 updatedAt: serverTimestamp(),
                 isActive: true,
-                photoURL: user.photoURL || undefined
+                photoURL: finalAvatarUrl || user.photoURL || undefined,
+                avatar: finalAvatarUrl || user.photoURL || undefined
             };
 
             if (isClaimingShadow) {
