@@ -1770,9 +1770,9 @@ const OnboardingPopup = ({ isOpen, onClose, onComplete, mode = 'onboarding', ini
                                                                 <Minus size={24} strokeWidth={3} />
                                                             </button>
                                                             <div className="flex flex-col items-center">
-                                                                <div className="flex items-baseline gap-1">
-                                                                    <span className="text-5xl font-black text-neutral-900 tracking-tighter">{currentCatEntry?.hourlyRate || 75}</span>
-                                                                    <span className="text-[15px] font-bold text-neutral-400">{t({ en: 'MAD/hr', fr: 'MAD/h', ar: 'درهم/ساعة' })}</span>
+                                                                <div className="flex items-baseline gap-1 whitespace-nowrap">
+                                                                    <span className="text-5xl font-black text-neutral-900 tracking-tighter leading-none">{currentCatEntry?.hourlyRate || 75}</span>
+                                                                    <span className="text-[14px] font-bold text-neutral-400">{t({ en: 'MAD/hr', fr: 'MAD/h', ar: 'درهم/ساعة' })}</span>
                                                                 </div>
                                                             </div>
                                                             <button

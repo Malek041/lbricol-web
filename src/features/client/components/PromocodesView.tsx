@@ -186,19 +186,19 @@ const PromocodesView: React.FC<PromocodesViewProps> = ({
                         {t({ en: 'Add a promo code', fr: 'Ajouter un code promo', ar: 'إضافة رمز ترويجي' })}
                     </h3>
 
-                    <div className="flex gap-3">
+                    <div className="flex gap-2">
                         <input
                             type="text"
                             value={code}
                             onChange={(e) => setCode(e.target.value)}
                             placeholder={t({ en: 'Enter code here', fr: 'Entrez le code ici', ar: 'أدخل الرمز هنا' })}
-                            className="flex-1 bg-[#F5F5F5] rounded-xl px-4 py-3.5 text-[15px] font-medium text-[#1D1D1D] border border-transparent focus:border-[#00A082] focus:bg-white outline-none transition-all"
+                            className="flex-1 min-w-0 bg-[#F5F5F5] rounded-xl px-4 py-3.5 text-[15px] font-medium text-[#1D1D1D] border border-transparent focus:border-[#00A082] focus:bg-white outline-none transition-all"
                             disabled={isLoading}
                         />
                         <button
                             onClick={handleApplyCode}
                             disabled={!code.trim() || isLoading}
-                            className="bg-[#FFC244] text-[#1D1D1D] px-6 py-3.5 rounded-xl font-bold text-[15px] disabled:opacity-50 transition-colors flex-shrink-0 whitespace-nowrap"
+                            className="bg-[#FFC244] text-[#1D1D1D] px-3 py-3.5 rounded-xl font-bold text-[14px] disabled:opacity-50 transition-colors flex-shrink-0 whitespace-nowrap"
                         >
                             {isLoading ? '...' : t({ en: 'Apply', fr: 'Appliquer', ar: 'تطبيق' })}
                         </button>
