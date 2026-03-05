@@ -1,68 +1,95 @@
-"use client";
-
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLanguage } from '@/context/LanguageContext';
-import { Sparkles, ArrowRight, X } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
+import Image from 'next/image';
 
 interface ClientOnboardingProps {
     onComplete: () => void;
 }
 
+const BRAND_YELLOW = "#FFC244";
+const BRAND_GREEN = "#00A082";
+
+const HERO_IMAGES = [
+    "/Images/Desktop hero section images/Driver.gif",
+    "/Images/Desktop hero section images/Errands.webp",
+    "/Images/Desktop hero section images/Gardening.webp",
+    "/Images/Desktop hero section images/baybsetting.webp",
+    "/Images/Desktop hero section images/petsCare.webp",
+    "/Images/Desktop hero section images/andMore.webp",
+];
+
 const STEPS = [
     {
         title: {
-            en: "Welcome to Lbricol.ma",
-            fr: "Bienvenue sur Lbricol.ma",
-            ar: "مرحبا بكم في Lbricol.ma"
+            en: "Welcome to Lbricol",
+            fr: "Bienvenue sur Lbricol",
+            ar: "مرحبا بكم في لبريكول"
         },
         subtitle: {
-            en: "Your new Home services partner",
-            fr: "Votre nouveau partenaire de services à domicile",
-            ar: "شريكك الجديد في خدمات المنزل"
+            en: "Your trusted partner for all home services in Morocco.",
+            fr: "Votre partenaire de confiance pour tous les services à domicile au Maroc.",
+            ar: "شريكك الموثوق لجميع خدمات المنزل في المغرب."
         },
-        color: "#00A082"
     },
     {
         title: {
-            en: "Simplified Search",
-            fr: "Recherche Simplifiée",
-            ar: "بحث مبسط"
+            en: "Service with a Smile",
+            fr: "Service avec le Sourire",
+            ar: "خدمة مع ابتسامة"
         },
         subtitle: {
-            en: "Finding the right pro for your home needs has never been easier",
-            fr: "Trouver le bon pro pour vos besoins n'a jamais été aussi simple",
-            ar: "العثور على المحترف المنان لمهمتك صار أسهل من أي وقت مضى"
+            en: "Handpicked professionals ready to handle your tasks today.",
+            fr: "Des professionnels sélectionnés pour s'occuper de vos tâches aujourd'hui.",
+            ar: "محترفون مختارون بعناية جاهزون للقيام بمهامك اليوم."
         },
-        color: "#FFC244"
     },
     {
         title: {
-            en: "Save Time",
-            fr: "Gagnez du Temps",
-            ar: "وفر وقتك"
+            en: "Ready to Explore?",
+            fr: "Prêt à explorer ?",
+            ar: "مستعد للاستكشاف؟"
         },
         subtitle: {
-            en: "Enjoy your free time while we handle your tasks",
-            fr: "Profitez de votre temps libre pendant que nous gérons vos tâches",
-            ar: "استمتع بوقت فراغك بينما نتولى نحن مهامك"
+            en: "Let's find the perfect helper for your needs!",
+            fr: "Trouvons l'aide parfaite pour vos besoins !",
+            ar: "لنبحث عن المساعد المثالي لاحتياجاتك!"
         },
-        color: "#9F7AEA"
-    },
-    {
-        title: {
-            en: "Ready?",
-            fr: "Prêt ?",
-            ar: "مستعد ؟"
-        },
-        subtitle: {
-            en: "Let's Get Started!",
-            fr: "C'est parti !",
-            ar: "لنبدأ !"
-        },
-        color: "#00A082"
     }
 ];
+
+const AutoScrollingBanner = () => {
+    return (
+        <div className="w-full overflow-hidden py-10 relative">
+            <motion.div
+                className="flex gap-4"
+                animate={{
+                    x: [0, -1000],
+                }}
+                transition={{
+                    duration: 30,
+                    repeat: Infinity,
+                    ease: "linear",
+                }}
+                style={{ width: "fit-content" }}
+            >
+                {[...HERO_IMAGES, ...HERO_IMAGES].map((img, i) => (
+                    <div
+                        key={i}
+                        className="w-[180px] h-[240px] flex-shrink-0 rounded-[30px] overflow-hidden shadow-xl border-4 border-white"
+                    >
+                        <img
+                            src={img}
+                            alt=""
+                            className="w-full h-full object-cover"
+                        />
+                    </div>
+                ))}
+            </motion.div>
+        </div>
+    );
+};
 
 export const ClientOnboarding = ({ onComplete }: ClientOnboardingProps) => {
     const [currentStep, setCurrentStep] = useState(0);
@@ -81,120 +108,98 @@ export const ClientOnboarding = ({ onComplete }: ClientOnboardingProps) => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[1000] flex items-center justify-center bg-white"
+            className="fixed inset-0 z-[9999] flex items-center justify-center bg-white safe-bottom"
         >
-            <div className="w-full h-full max-w-[500px] flex flex-col items-center justify-center p-8 relative overflow-hidden">
+            <div className="w-full h-full max-w-[500px] flex flex-col items-center justify-between py-12 px-6 relative overflow-hidden bg-[#FFFFFF]">
 
-                {/* Decorative Animated Circles */}
+                {/* Eggy Background Blobs */}
                 <motion.div
-                    animate={{
-                        scale: [1, 1.2, 1],
-                        rotate: [0, 90, 0],
-                    }}
-                    transition={{
-                        duration: 10,
-                        repeat: Infinity,
-                        ease: "linear"
-                    }}
-                    className="absolute top-[-10%] right-[-10%] w-64 h-64 rounded-full blur-3xl opacity-20"
-                    style={{ backgroundColor: STEPS[currentStep].color }}
+                    animate={{ scale: [1, 1.1, 1], rotate: [0, 45, 0] }}
+                    transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
+                    className="absolute -top-20 -right-20 w-[400px] h-[400px] opacity-10 bg-[#FFC244]"
+                    style={{ borderRadius: '60% 40% 30% 70% / 60% 30% 70% 40%' }}
                 />
                 <motion.div
-                    animate={{
-                        scale: [1.2, 1, 1.2],
-                        rotate: [0, -90, 0],
-                    }}
-                    transition={{
-                        duration: 12,
-                        repeat: Infinity,
-                        ease: "linear"
-                    }}
-                    className="absolute bottom-[-10%] left-[-10%] w-80 h-80 rounded-full blur-3xl opacity-10"
-                    style={{ backgroundColor: STEPS[currentStep].color }}
+                    animate={{ scale: [1.1, 1, 1.1], rotate: [0, -45, 0] }}
+                    transition={{ duration: 18, repeat: Infinity, ease: "linear" }}
+                    className="absolute -bottom-20 -left-20 w-[450px] h-[450px] opacity-10 bg-[#00A082]"
+                    style={{ borderRadius: '30% 60% 70% 40% / 50% 60% 30% 60%' }}
                 />
 
-                <button
-                    onClick={onComplete}
-                    className="absolute top-12 right-6 p-2 text-neutral-400 hover:text-neutral-900 transition-colors"
-                >
-                    <X size={24} />
-                </button>
+                {/* Logo Section */}
+                <div className="z-10 flex flex-col items-center">
+                    <motion.div
+                        initial={{ y: -20, opacity: 0 }}
+                        animate={{ y: 0, opacity: 1 }}
+                        className="mb-2"
+                    >
+                        <Image
+                            src="/Images/Logo/theEggOfLB.png"
+                            alt="Lbricol Logo"
+                            width={80}
+                            height={80}
+                            className="drop-shadow-sm"
+                        />
+                    </motion.div>
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: 0.2 }}
+                        className="text-[22px] font-black tracking-tighter text-black"
+                    >
+                        Lbricol<span className="text-[#00A082]">.com</span>
+                    </motion.div>
+                </div>
 
-                <div className="flex-1 flex flex-col items-center justify-center text-center space-y-8 z-10 w-full">
+                {/* Autoscrolling Hero Section */}
+                <div className="w-full z-10">
+                    <AutoScrollingBanner />
+                </div>
+
+                {/* Content Area */}
+                <div className="w-full text-center space-y-4 z-10 px-4">
                     <AnimatePresence mode="wait">
                         <motion.div
                             key={currentStep}
-                            initial={{ opacity: 0, scale: 0.8, y: 20 }}
+                            initial={{ opacity: 0, scale: 0.9, y: 10 }}
                             animate={{ opacity: 1, scale: 1, y: 0 }}
-                            exit={{ opacity: 0, scale: 1.1, y: -20 }}
-                            transition={{
-                                type: "spring",
-                                stiffness: 260,
-                                damping: 20
-                            }}
-                            className="space-y-4 px-4"
+                            exit={{ opacity: 0, scale: 1.05, y: -10 }}
+                            className="min-h-[140px] flex flex-col justify-center"
                         >
-                            <div
-                                className="w-16 h-16 rounded-3xl flex items-center justify-center mx-auto mb-8 shadow-lg"
-                                style={{ backgroundColor: `${STEPS[currentStep].color}20`, color: STEPS[currentStep].color }}
-                            >
-                                <Sparkles size={32} />
-                            </div>
-
-                            <motion.h2
-                                className="text-[32px] font-black text-neutral-900 leading-tight tracking-tighter"
-                                initial={{ opacity: 0, x: -20 }}
-                                animate={{ opacity: 1, x: 0 }}
-                                transition={{ delay: 0.1 }}
-                            >
+                            <h2 className="text-[34px] font-black text-neutral-900 leading-[1.1] mb-2 tracking-tighter">
                                 {t(STEPS[currentStep].title as any)}
-                            </motion.h2>
-
-                            <motion.p
-                                className="text-[18px] font-medium text-neutral-500 leading-relaxed max-w-[300px] mx-auto"
-                                initial={{ opacity: 0, x: 20 }}
-                                animate={{ opacity: 1, x: 0 }}
-                                transition={{ delay: 0.2 }}
-                            >
+                            </h2>
+                            <p className="text-[17px] font-medium text-neutral-500 leading-relaxed max-w-[320px] mx-auto">
                                 {t(STEPS[currentStep].subtitle as any)}
-                            </motion.p>
+                            </p>
                         </motion.div>
                     </AnimatePresence>
-                </div>
 
-                {/* Footer with progress and button */}
-                <div className="w-full space-y-8 z-10">
-                    {/* Progress Dots */}
-                    <div className="flex justify-center gap-2">
+                    {/* Simple Pagination Dots */}
+                    <div className="flex justify-center gap-1.5 pb-2">
                         {STEPS.map((_, idx) => (
                             <div
                                 key={idx}
-                                className="h-1.5 transition-all duration-300 rounded-full"
+                                className="h-1.5 rounded-full transition-all duration-300"
                                 style={{
-                                    width: idx === currentStep ? '24px' : '6px',
-                                    backgroundColor: idx === currentStep ? STEPS[currentStep].color : '#E5E5E5'
+                                    width: idx === currentStep ? '20px' : '6px',
+                                    backgroundColor: idx === currentStep ? BRAND_GREEN : '#EAEAEA'
                                 }}
                             />
                         ))}
                     </div>
+                </div>
 
+                {/* Action Button */}
+                <div className="w-full z-10 mt-auto pb-6">
                     <motion.button
-                        whileTap={{ scale: 0.95 }}
+                        whileTap={{ scale: 0.98 }}
                         onClick={handleNext}
-                        className="w-full py-5 rounded-[24px] text-[18px] font-black text-white shadow-xl shadow-black/5 flex items-center justify-center gap-2 group overflow-hidden relative"
-                        style={{ backgroundColor: STEPS[currentStep].color }}
+                        className="w-full py-5 rounded-[22px] text-[18px] font-black text-white shadow-xl shadow-green-900/10 flex items-center justify-center gap-2 transition-all active:brightness-95"
+                        style={{ backgroundColor: BRAND_GREEN }}
                     >
-                        <motion.span
-                            key={currentStep === STEPS.length - 1 ? 'start' : 'next'}
-                            initial={{ y: 20, opacity: 0 }}
-                            animate={{ y: 0, opacity: 1 }}
-                            className="flex items-center gap-2"
-                        >
-                            {currentStep === STEPS.length - 1 ? t({ en: "Let's Start", fr: "C'est parti !" }) : t({ en: "Next", fr: "Suivant" })}
-                            {currentStep < STEPS.length - 1 && (
-                                <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
-                            )}
-                        </motion.span>
+                        {currentStep === STEPS.length - 1 ? t({ en: "Get Started", fr: "Commencer" }) : t({ en: "Next", fr: "Suivant" })}
+                        <ArrowRight size={22} strokeWidth={3} />
                     </motion.button>
                 </div>
             </div>

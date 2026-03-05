@@ -275,6 +275,7 @@ const Home = () => {
   const [impersonatedBricoler, setImpersonatedBricoler] = useState<{ id: string; name: string } | null>(null);
   const [showAdminBricolerCreator, setShowAdminBricolerCreator] = useState(false);
   const [showSplash, setShowSplash] = useState(true);
+  const [showClientOnboarding, setShowClientOnboarding] = useState(false);
   const [jobToRate, setJobToRate] = useState<OrderDetails | null>(null);
   const [showClientNotifications, setShowClientNotifications] = useState(false);
   const [showAdminNotifications, setShowAdminNotifications] = useState(false);
@@ -484,6 +485,12 @@ const Home = () => {
       } catch (e) {
         console.error("Error parsing notified IDs:", e);
       }
+    }
+
+    // NEW: Check for Client Onboarding
+    const onboardingShown = localStorage.getItem('client_onboarding_shown');
+    if (!onboardingShown) {
+      setShowClientOnboarding(true);
     }
 
     if (!savedLang) {
@@ -2575,12 +2582,12 @@ const Home = () => {
                 selectedCity={selectedCity}
                 selectedArea={selectedArea}
                 recentOrders={orders.filter(o => o.status !== 'cancelled')}
-                onSelectService={(serviceName, sub) => {
+                onSelectService={(serviceName: string, sub?: string) => {
                   const cfg = getServiceById(serviceName);
                   const finalSvc = cfg?.id || serviceName;
                   let finalSub = sub || null;
                   if (cfg && sub) {
-                    const subCfg = cfg.subServices.find(ss => ss.name === sub || ss.id === sub);
+                    const subCfg = cfg.subServices.find(ss => ss.id === sub || ss.name === sub);
                     if (subCfg) finalSub = subCfg.id;
                   }
                   setService(finalSvc);
@@ -2595,6 +2602,11 @@ const Home = () => {
 
                 onChangeLocation={() => setShowCityPopup(true)}
                 onNavigateToShare={() => setMobileNavTab('share')}
+                showOnboarding={showClientOnboarding}
+                onOnboardingComplete={() => {
+                  localStorage.setItem('client_onboarding_shown', 'true');
+                  setShowClientOnboarding(false);
+                }}
               />
             ) : (
 
@@ -3368,7 +3380,7 @@ const Home = () => {
         </AnimatePresence>
 
         {/* Mobile Bottom Navigation - only show on mobile */}
-        {isMobile && <MobileBottomNav
+        {isMobile && !showSplash && !showClientOnboarding && <MobileBottomNav
           activeTab={mobileNavTab as any}
           onTabChange={(tab: any) => {
             if (tab === 'calendar' && mobileNavTab === 'calendar') {

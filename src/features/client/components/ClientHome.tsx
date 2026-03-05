@@ -427,6 +427,8 @@ interface ClientHomeProps {
     onSelectService: (service: string, subService?: string) => void;
     onChangeLocation: () => void;
     onNavigateToShare?: () => void;
+    showOnboarding: boolean;
+    onOnboardingComplete: () => void;
 }
 
 // ── Component ──────────────────────────────────────────────────────────────
@@ -440,22 +442,20 @@ const ClientHome: React.FC<ClientHomeProps> = ({
     selectedArea,
     recentOrders = [],
     onChangeLocation,
-    onNavigateToShare
+    onNavigateToShare,
+    showOnboarding,
+    onOnboardingComplete
 }) => {
     const { t, language } = useLanguage();
 
     const [lastCategoryId, setLastCategoryId] = useState<string | null>(null);
     const [searchQuery, setSearchQuery] = useState('');
     const [showReferralBanner, setShowReferralBanner] = useState(false);
-    const [showOnboarding, setShowOnboarding] = useState(false);
 
     // Initial load
     useEffect(() => {
         // Onboarding Check
-        const onboardingShown = localStorage.getItem('client_onboarding_shown');
-        if (!onboardingShown) {
-            setShowOnboarding(true);
-        }
+        // Onboarding logic is now handled in page.tsx
 
         const stored = localStorage.getItem('last_service_category');
         if (stored) setLastCategoryId(stored);
@@ -902,10 +902,7 @@ const ClientHome: React.FC<ClientHomeProps> = ({
             <AnimatePresence>
                 {showOnboarding && (
                     <ClientOnboarding
-                        onComplete={() => {
-                            localStorage.setItem('client_onboarding_shown', 'true');
-                            setShowOnboarding(false);
-                        }}
+                        onComplete={onOnboardingComplete}
                     />
                 )}
             </AnimatePresence>
