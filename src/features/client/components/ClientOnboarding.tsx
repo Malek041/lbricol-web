@@ -77,7 +77,7 @@ const AutoScrollingBanner = () => {
                 {[...HERO_IMAGES, ...HERO_IMAGES].map((img, i) => (
                     <div
                         key={i}
-                        className="w-[180px] h-[240px] flex-shrink-0 rounded-[20px] overflow-hidden"
+                        className="w-full h-[240px] flex-shrink-0 rounded-[20px] overflow-hidden"
                     >
                         <img
                             src={img}
@@ -111,53 +111,7 @@ export const ClientOnboarding = ({ onComplete }: ClientOnboardingProps) => {
             className="fixed inset-0 z-[9999] flex items-center justify-center bg-white safe-bottom"
         >
             <div className="w-full h-full max-w-[500px] flex flex-col items-center justify-between py-12 px-6 relative overflow-hidden bg-[#FFFFFF]">                {/* Header Section: Wavering Text */}
-                <div className="z-10 flex flex-col items-center mt-4">
-                    <div className="flex items-center justify-center gap-0">
-                        {"Lbricol".split("").map((char, i) => (
-                            <motion.span
-                                key={i}
-                                animate={{
-                                    y: [0, -6, 0],
-                                }}
-                                transition={{
-                                    duration: 1.5,
-                                    repeat: Infinity,
-                                    ease: "easeInOut",
-                                    delay: i * 0.1
-                                }}
-                                style={{
-                                    fontSize: '24px',
-                                    fontWeight: 950,
-                                    color: '#111',
-                                    fontFamily: 'var(--font-outfit), sans-serif',
-                                    letterSpacing: '-0.05em',
-                                }}
-                            >
-                                {char}
-                            </motion.span>
-                        ))}
-                        <motion.span
-                            animate={{
-                                y: [0, -6, 0],
-                            }}
-                            transition={{
-                                duration: 1.5,
-                                repeat: Infinity,
-                                ease: "easeInOut",
-                                delay: 0.7
-                            }}
-                            style={{
-                                fontSize: '24px',
-                                fontWeight: 950,
-                                color: BRAND_GREEN,
-                                fontFamily: 'var(--font-outfit), sans-serif',
-                                letterSpacing: '-0.05em',
-                            }}
-                        >
-                            .com
-                        </motion.span>
-                    </div>
-                </div>
+
 
                 {/* Autoscrolling Hero Section */}
                 <div className="w-full z-10">
