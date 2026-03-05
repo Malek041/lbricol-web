@@ -121,7 +121,7 @@ const ShareAndEarnView: React.FC<ShareAndEarnViewProps> = ({
                         <span className="absolute -bottom-2 right-2 text-[#FFC244] text-[13px] select-none">✦</span>
                         <div className="w-[200px] h-[200px] rounded-full flex items-center justify-center">
                             <Image
-                                src="/Images/Share & Earn Pics/Share&earnJar.png"
+                                src="/Images/Share & Earn Pics/Share&earnJar.webp"
                                 alt="Share and earn"
                                 width={200}
                                 height={200}

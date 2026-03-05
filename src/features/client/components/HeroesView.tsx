@@ -317,7 +317,7 @@ export default function HeroesView({ orders }: HeroesViewProps) {
                         >
                             <div className="flex items-center gap-4">
                                 <img
-                                    src={hero.avatar || "/Images/Logo/Black Lbricol Avatar Face.png"}
+                                    src={hero.avatar || "/Images/Logo/Black Lbricol Avatar Face.webp"}
                                     alt={hero.name}
                                     className="w-16 h-16 rounded-[14px] object-cover bg-neutral-100"
                                 />

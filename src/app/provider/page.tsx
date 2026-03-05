@@ -238,17 +238,17 @@ const normalizeServiceId = (input: any): string => {
 const getFallbackJobCardImage = (serviceName: string, craft?: string): string => {
     const source = `${serviceName} ${craft || ''}`.toLowerCase();
 
-    if (source.includes('pool') && source.includes('clean')) return '/Images/Job Cards Images/Pool%20Cleaning_job_card.png';
-    if (source.includes('paint')) return '/Images/Job Cards Images/Painting_job_card.png';
-    if (source.includes('plumb')) return '/Images/Job Cards Images/Plumbing_job_card.png';
-    if (source.includes('mov')) return '/Images/Job Cards Images/Moving%20Help_job_card.png';
-    if (source.includes('baby')) return '/Images/Job Cards Images/Babysetting_job_card.png';
-    if (source.includes('furniture') || source.includes('assembly')) return '/Images/Job Cards Images/Furniture_Assembly_job_card.png';
-    if (source.includes('garden')) return '/Images/Job Cards Images/Gardening_job_card.png';
-    if (source.includes('clean')) return '/Images/Job Cards Images/Cleaning_job_card.png';
-    if (source.includes('electr')) return '/Images/Job Cards Images/Electricity_job_card.png';
+    if (source.includes('pool') && source.includes('clean')) return '/Images/Job Cards Images/Pool%20Cleaning_job_card.webp';
+    if (source.includes('paint')) return '/Images/Job Cards Images/Painting_job_card.webp';
+    if (source.includes('plumb')) return '/Images/Job Cards Images/Plumbing_job_card.webp';
+    if (source.includes('mov')) return '/Images/Job Cards Images/Moving%20Help_job_card.webp';
+    if (source.includes('baby')) return '/Images/Job Cards Images/Babysetting_job_card.webp';
+    if (source.includes('furniture') || source.includes('assembly')) return '/Images/Job Cards Images/Furniture_Assembly_job_card.webp';
+    if (source.includes('garden')) return '/Images/Job Cards Images/Gardening_job_card.webp';
+    if (source.includes('clean')) return '/Images/Job Cards Images/Cleaning_job_card.webp';
+    if (source.includes('electr')) return '/Images/Job Cards Images/Electricity_job_card.webp';
 
-    return '/Images/Job Cards Images/Handyman_job_card.png';
+    return '/Images/Job Cards Images/Handyman_job_card.webp';
 };
 
 // --- Main Component ---
@@ -1976,7 +1976,7 @@ export default function ProviderPage() {
                             <div className="px-12 pt-10 pb-6 flex items-center gap-6">
                                 <div className="w-35 h-50 flex-shrink-0">
                                     <img
-                                        src="/Images/Vectors Illu/NewOrder.png"
+                                        src="/Images/Vectors Illu/NewOrder.webp"
                                         className="w-full h-full object-contain"
                                         alt="illustration"
                                     />
@@ -2232,7 +2232,7 @@ export default function ProviderPage() {
                                 <section className="space-y-4">
                                     <h3 className="text-[28px] font-black text-black flex items-center gap-2">
                                         <div className="w-10 h-10 flex-shrink-0">
-                                            <img src="/Images/Vectors Illu/Currency_VI.png" className="w-full h-full object-contain" alt="payment" />
+                                            <img src="/Images/Vectors Illu/Currency_VI.webp" className="w-full h-full object-contain" alt="payment" />
                                         </div>
                                         {t({ en: 'Payment Method', fr: 'Paiement' })}
                                     </h3>

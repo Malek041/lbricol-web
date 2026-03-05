@@ -145,9 +145,9 @@ const SERVICE_CRAFTS: string[] = [
 ];
 
 const HERO_IMAGES = [
-  "/Images/Hero Images/ChatGPT Image Feb 16, 2026, 11_36_11 PM.png",
-  "/Images/Hero Images/ChatGPT Image Feb 16, 2026, 11_30_17 PM.png",
-  "/Images/Hero Images/ChatGPT Image Feb 16, 2026, 11_20_23 PM.png"
+  "/Images/Hero Images/ChatGPT Image Feb 16, 2026, 11_36_11 PM.webp",
+  "/Images/Hero Images/ChatGPT Image Feb 16, 2026, 11_30_17 PM.webp",
+  "/Images/Hero Images/ChatGPT Image Feb 16, 2026, 11_20_23 PM.webp"
 ];
 
 const getAgentType = (s: string, count: number, t: (vals: { en: string, fr: string }) => string) => {
@@ -2985,7 +2985,7 @@ const Home = () => {
 
                       {[
                         {
-                          img: "/Images/How to images/Step1-how_to_use.png",
+                          img: "/Images/How to images/Step1-how_to_use.webp",
                           title: t({ en: '1. Program your order', fr: '1. Programmez votre commande', ar: '1. برمج طلبك' }),
                           desc: t({
                             en: 'Pick a service, Confirm Location, Define the size of the task, review and choose a bricoler, pickup date & time slot and confirm. It only takes a minute.',
@@ -2994,7 +2994,7 @@ const Home = () => {
                           })
                         },
                         {
-                          img: "/Images/How to images/Step4-Chat in-app with Bricolers.png",
+                          img: "/Images/How to images/Step4-Chat in-app with Bricolers.webp",
                           title: t({ en: '2. Chat directly', fr: '2. Discutez en direct', ar: '2. تواصل مباشرة' }),
                           desc: t({
                             en: 'Once matched with a Bricoler, you can message them directly in the app to share your location and any additional details.',

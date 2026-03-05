@@ -269,18 +269,18 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
 
     const getHeroImage = (service: string) => {
         const serviceMap: Record<string, string> = {
-            'cleaning': '/Images/Job Cards Images/Cleaning_job_card.png',
-            'electricity': '/Images/Job Cards Images/Electricity_job_card.png',
-            'plumbing': '/Images/Job Cards Images/Plumbing_job_card.png',
-            'painting': '/Images/Job Cards Images/Painting_job_card.png',
-            'handyman': '/Images/Job Cards Images/Handyman_job_card.png',
-            'furniture_assembly': '/Images/Job Cards Images/Furniture_Assembly_job_card.png',
-            'moving': '/Images/Job Cards Images/Moving Help_job_card.png',
-            'gardening': '/Images/Job Cards Images/Gardening_job_card.png',
-            'babysitting': '/Images/Job Cards Images/Babysetting_job_card.png',
-            'pool_cleaning': '/Images/Job Cards Images/Pool Cleaning_job_card.png',
+            'cleaning': '/Images/Job Cards Images/Cleaning_job_card.webp',
+            'electricity': '/Images/Job Cards Images/Electricity_job_card.webp',
+            'plumbing': '/Images/Job Cards Images/Plumbing_job_card.webp',
+            'painting': '/Images/Job Cards Images/Painting_job_card.webp',
+            'handyman': '/Images/Job Cards Images/Handyman_job_card.webp',
+            'furniture_assembly': '/Images/Job Cards Images/Furniture_Assembly_job_card.webp',
+            'moving': '/Images/Job Cards Images/Moving Help_job_card.webp',
+            'gardening': '/Images/Job Cards Images/Gardening_job_card.webp',
+            'babysitting': '/Images/Job Cards Images/Babysetting_job_card.webp',
+            'pool_cleaning': '/Images/Job Cards Images/Pool Cleaning_job_card.webp',
         };
-        return serviceMap[service] || '/Images/Job Cards Images/Handyman_job_card.png';
+        return serviceMap[service] || '/Images/Job Cards Images/Handyman_job_card.webp';
     };
 
     const handleRateBricoler = async (order: OrderDetails) => {
@@ -430,7 +430,7 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
                                 <div className="h-full flex flex-col items-center justify-center text-center pb-20">
                                     <div className="w-34 h-34 bg-neutral-50 rounded-full flex items-center justify-center mb-4">
                                         <img
-                                            src="/Images/Vectors Illu/NoOrdersYet.png"
+                                            src="/Images/Vectors Illu/NoOrdersYet.webp"
                                             alt="Lbricol"
                                             style={{ height: 230, objectFit: 'contain', paddingBottom: 20, paddingTop: 20 }}
                                         />
@@ -489,7 +489,7 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
                                 <div className="px-12 pt-10 pb-6 flex items-center gap-6">
                                     <div className="w-35 h-50 flex-shrink-0">
                                         <img
-                                            src="/Images/Vectors Illu/NewOrder.png"
+                                            src="/Images/Vectors Illu/NewOrder.webp"
                                             className="w-full h-full object-contain"
                                         />
                                     </div>
@@ -1229,7 +1229,7 @@ function ActivityTab({
                         {renderEmptyState(
                             t({ en: 'Track your orders', fr: 'Suivez vos commandes', ar: 'تابع طلباتك' }),
                             t({ en: 'Your ongoing orders will be listed here', fr: 'Vos commandes en cours seront affichées ici', ar: 'ستظهر هنا طلباتك الجارية' }),
-                            <img src="/Images/Vectors Illu/NewOrder.png" className="w-28 h-28 object-contain grayscale opacity-40" />
+                            <img src="/Images/Vectors Illu/NewOrder.webp" className="w-28 h-28 object-contain grayscale opacity-40" />
                         )}
                     </div>
                 )}
@@ -1248,7 +1248,7 @@ function ActivityTab({
                         {renderEmptyState(
                             t({ en: 'No carts yet', fr: 'Pas encore de paniers', ar: 'لا توجد سلات بعد' }),
                             t({ en: "Orders you don't complete will appear here", fr: 'Les commandes non terminées apparaîtront ici', ar: 'الطلبات التي لم تُكملها ستظهر هنا' }),
-                            <img src="/Images/Vectors Illu/DraftOrders2.png" className="w-28 h-28 object-contain grayscale opacity-40" />
+                            <img src="/Images/Vectors Illu/DraftOrders2.webp" className="w-28 h-28 object-contain grayscale opacity-40" />
                         )}
                     </div>
                 )}
@@ -1257,7 +1257,7 @@ function ActivityTab({
             {/* History Link */}
             <div className="bg-[#F2F2F2] rounded-[16px] p-6 flex items-center gap-5 mt-4">
                 <div className="flex items-center justify-center flex-shrink-0">
-                    <img src="/Images/Vectors Illu/OrdersHistory.png" className="w-20 h-20 object-contain" />
+                    <img src="/Images/Vectors Illu/OrdersHistory.webp" className="w-20 h-20 object-contain" />
                 </div>
                 <div className="flex flex-col">
                     <p className="text-[16px] font-light text-black leading-tight">{t({ en: 'Need to review past orders or reorder?', fr: 'Besoin de consulter vos commandes passées ?', ar: 'تريد مراجعة طلباتك السابقة أو إعادة الطلب؟' })}</p>

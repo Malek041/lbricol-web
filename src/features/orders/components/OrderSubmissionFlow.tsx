@@ -120,9 +120,9 @@ const TASK_SIZES = [
 
 const SuccessAnimation = ({ isVisible, onComplete }: { isVisible: boolean, onComplete: () => void }) => {
     const images = [
-        "/Images/Vectors Illu/LocationFlag_VI.png",
-        "/Images/Vectors Illu/matching3D.png",
-        "/Images/Vectors Illu/NewOrder.png"
+        "/Images/Vectors Illu/LocationFlag_VI.webp",
+        "/Images/Vectors Illu/matching3D.webp",
+        "/Images/Vectors Illu/NewOrder.webp"
     ];
 
     return (
@@ -264,7 +264,7 @@ const BricolerCard = ({ bricoler, onSelect, onOpenProfile, isSelected, serviceNa
                 {/* Avatar */}
                 <div className="relative flex-shrink-0">
                     <img
-                        src={bricoler.photoURL || "/Images/Logo/Black Lbricol Avatar Face.png"}
+                        src={bricoler.photoURL || "/Images/Logo/Black Lbricol Avatar Face.webp"}
                         alt={bricoler.displayName}
                         className="w-16 h-16 rounded-full object-cover border border-neutral-100 bg-neutral-50"
                     />
@@ -274,12 +274,12 @@ const BricolerCard = ({ bricoler, onSelect, onOpenProfile, isSelected, serviceNa
                 <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between">
                         <h4 className="text-[17px] font-bold text-neutral-900 truncate tracking-tight">{bricoler.displayName}</h4>
-                        <div className="flex items-center gap-1">
-                            <span className="text-[16px] font-semibold text-neutral-900 leading-none">
+                        <div className="flex items-center gap-1 flex-shrink-0 ml-auto pl-2">
+                            <span className="text-[16px] font-semibold text-neutral-900 leading-none whitespace-nowrap">
                                 MAD {bricoler.hourlyRate?.toFixed(2) || '105.93'}
                             </span>
-                            <span className="text-[12px] text-neutral-400 font-medium">/hr</span>
-                            <div className="w-4 h-4 rounded-full bg-[#00A082]/10 flex items-center justify-center ml-0.5">
+                            <span className="text-[12px] text-neutral-400 font-medium whitespace-nowrap">/hr</span>
+                            <div className="w-4 h-4 rounded-full bg-[#00A082]/10 flex-shrink-0 flex items-center justify-center ml-0.5">
                                 <Check size={10} className="text-[#00A082]" strokeWidth={4} />
                             </div>
                         </div>
@@ -386,7 +386,7 @@ const BricolerProfileModal = ({ bricoler, isOpen, onClose, onSelect, isSelected,
                         <div className="p-6">
                             {/* Profile Hero */}
                             <div className="flex gap-6 mb-8">
-                                <img src={bricoler.photoURL || "/Images/Logo/Black Lbricol Avatar Face.png"} className="w-24 h-24 rounded-[28px] object-cover border-4 border-neutral-50" />
+                                <img src={bricoler.photoURL || "/Images/Logo/Black Lbricol Avatar Face.webp"} className="w-24 h-24 rounded-[28px] object-cover border-4 border-neutral-50" />
                                 <div className="flex-1">
                                     <h2 className="text-[26px] font-bold text-neutral-900 leading-tight mb-1">{bricoler.displayName}</h2>
                                     <div className="flex items-center gap-2 mb-3">
@@ -684,27 +684,27 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                 return {
                     title: t({ en: "How large is the space?", fr: "Quelle est la taille de l'espace ?", ar: "ما هي مساحة المكان؟" }),
                     options: [
-                        { id: 'small', duration: 2, label: { en: 'Studio / 1 Bedroom', fr: 'Studio / 1 Chambre', ar: 'استوديو / غرفة واحدة' }, estTime: { en: 'Est: 2 hrs', fr: 'Est: 2h', ar: 'حوالي ساعتين' }, desc: { en: 'Basic cleaning for a small space.', fr: 'Nettoyage de base pour un petit espace.', ar: 'تنظيف أساسي لمساحة صغيرة.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/SmallTask.png' },
-                        { id: 'medium', duration: 4, label: { en: '2-3 Bedrooms', fr: '2-3 Chambres', ar: '2-3 غرف نوم' }, estTime: { en: 'Est: 4 hrs', fr: 'Est: 4h', ar: 'حوالي 4 ساعات' }, desc: { en: 'Standard cleaning for a medium home.', fr: 'Nettoyage standard pour une maison moyenne.', ar: 'تنظيف عادي لمنزل متوسط.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/MediumSize.png' },
-                        { id: 'large', duration: 6, label: { en: '4+ Bedrooms / Deep Clean', fr: '4+ Chambres / Nettoyage profond', ar: '+4 غرف / تنظيف عميق' }, estTime: { en: 'Est: 6+ hrs', fr: 'Est: 6h+', ar: 'أكثر من 6 ساعات' }, desc: { en: 'Extensive cleaning for large homes.', fr: 'Nettoyage complet pour grandes maisons.', ar: 'تنظيف شامل للمنازل الكبيرة.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/BigTask.png' },
+                        { id: 'small', duration: 2, label: { en: 'Studio / 1 Bedroom', fr: 'Studio / 1 Chambre', ar: 'استوديو / غرفة واحدة' }, estTime: { en: 'Est: 2 hrs', fr: 'Est: 2h', ar: 'حوالي ساعتين' }, desc: { en: 'Basic cleaning for a small space.', fr: 'Nettoyage de base pour un petit espace.', ar: 'تنظيف أساسي لمساحة صغيرة.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/SmallTask.webp' },
+                        { id: 'medium', duration: 4, label: { en: '2-3 Bedrooms', fr: '2-3 Chambres', ar: '2-3 غرف نوم' }, estTime: { en: 'Est: 4 hrs', fr: 'Est: 4h', ar: 'حوالي 4 ساعات' }, desc: { en: 'Standard cleaning for a medium home.', fr: 'Nettoyage standard pour une maison moyenne.', ar: 'تنظيف عادي لمنزل متوسط.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/MediumSize.webp' },
+                        { id: 'large', duration: 6, label: { en: '4+ Bedrooms / Deep Clean', fr: '4+ Chambres / Nettoyage profond', ar: '+4 غرف / تنظيف عميق' }, estTime: { en: 'Est: 6+ hrs', fr: 'Est: 6h+', ar: 'أكثر من 6 ساعات' }, desc: { en: 'Extensive cleaning for large homes.', fr: 'Nettoyage complet pour grandes maisons.', ar: 'تنظيف شامل للمنازل الكبيرة.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/BigTask.webp' },
                     ]
                 };
             case 'moving':
                 return {
                     title: t({ en: "What's the scope of the task?", fr: "Quelle est l'ampleur de la tâche ?", ar: "ما هو حجم المهمة؟" }),
                     options: [
-                        { id: 'small', duration: 2, label: { en: 'Few Items / Studio', fr: 'Quelques articles / Studio', ar: 'قطع قليلة / استوديو' }, estTime: { en: 'Est: 2 hrs', fr: 'Est: 2h', ar: 'حوالي ساعتين' }, desc: { en: 'Small move, boxes, or quick errand.', fr: 'Petit déménagement, cartons ou course rapide.', ar: 'نقل صغير، صناديق أو غرض سريع.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/SmallTask.png' },
-                        { id: 'medium', duration: 4, label: { en: '1-2 Bedroom Apartment', fr: 'Appartement 1-2 Chambres', ar: 'شقة 1-2 غرف نوم' }, estTime: { en: 'Est: 4 hrs', fr: 'Est: 4h', ar: 'حوالي 4 ساعات' }, desc: { en: 'Standard move requiring a van.', fr: 'Déménagement standard nécessitant une camionnette.', ar: 'نقل عادي يتطلب شاحنة صغيرة.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/MediumSize.png' },
-                        { id: 'large', duration: 8, label: { en: '3+ Bedroom / Full House', fr: '3+ Chambres / Maison entière', ar: '+3 غرف / منزل كامل' }, estTime: { en: 'Est: 8+ hrs', fr: 'Est: 8h+', ar: 'أكثر من 8 ساعات' }, desc: { en: 'Large scale move requiring multiple trips or large truck.', fr: 'Grand déménagement nécessitant un grand camion.', ar: 'نقل كبير يتطلب عدة رحلات أو شاحنة كبيرة.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/BigTask.png' },
+                        { id: 'small', duration: 2, label: { en: 'Few Items / Studio', fr: 'Quelques articles / Studio', ar: 'قطع قليلة / استوديو' }, estTime: { en: 'Est: 2 hrs', fr: 'Est: 2h', ar: 'حوالي ساعتين' }, desc: { en: 'Small move, boxes, or quick errand.', fr: 'Petit déménagement, cartons ou course rapide.', ar: 'نقل صغير، صناديق أو غرض سريع.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/SmallTask.webp' },
+                        { id: 'medium', duration: 4, label: { en: '1-2 Bedroom Apartment', fr: 'Appartement 1-2 Chambres', ar: 'شقة 1-2 غرف نوم' }, estTime: { en: 'Est: 4 hrs', fr: 'Est: 4h', ar: 'حوالي 4 ساعات' }, desc: { en: 'Standard move requiring a van.', fr: 'Déménagement standard nécessitant une camionnette.', ar: 'نقل عادي يتطلب شاحنة صغيرة.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/MediumSize.webp' },
+                        { id: 'large', duration: 8, label: { en: '3+ Bedroom / Full House', fr: '3+ Chambres / Maison entière', ar: '+3 غرف / منزل كامل' }, estTime: { en: 'Est: 8+ hrs', fr: 'Est: 8h+', ar: 'أكثر من 8 ساعات' }, desc: { en: 'Large scale move requiring multiple trips or large truck.', fr: 'Grand déménagement nécessitant un grand camion.', ar: 'نقل كبير يتطلب عدة رحلات أو شاحنة كبيرة.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/BigTask.webp' },
                     ]
                 };
             case 'errands':
                 return {
                     title: t({ en: "What's the scope of the errands?", fr: "Quelle est l'ampleur des courses ?", ar: "ما هو حجم المشاوير؟" }),
                     options: [
-                        { id: 'small', duration: 1, label: { en: 'Quick Errand (5 min)', fr: 'Course rapide (5 min)', ar: 'مشوار سريع (5 دقائق)' }, estTime: { en: '5 min', fr: '5 min', ar: '5 دقائق' }, desc: { en: 'Near pickup or very short task.', fr: 'Retrait proche ou tâche très courte.', ar: 'استلام قريب أو مهمة قصيرة جداً.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/SmallTask.png' },
-                        { id: 'medium', duration: 1.5, label: { en: 'Standard (15 min)', fr: 'Standard (15 min)', ar: 'عادي (15 دقيقة)' }, estTime: { en: '15 min', fr: '15 min', ar: '15 دقيقة' }, desc: { en: 'Typical errand or simple shopping.', fr: 'Course typique ou achat simple.', ar: 'مشوار عادي أو تسوق بسيط.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/MediumSize.png' },
-                        { id: 'large', duration: 2, label: { en: 'Extended (30 min)', fr: 'Prolongée (30 min)', ar: 'ممتدة (30 دقيقة)' }, estTime: { en: '30 min', fr: '30 min', ar: '30 دقيقة' }, desc: { en: 'Multiple tasks or waiting time.', fr: 'Plusieurs tâches ou temps d\'attente.', ar: 'مهام متعددة أو وقت انتظار.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/BigTask.png' },
+                        { id: 'small', duration: 1, label: { en: 'Quick Errand (5 min)', fr: 'Course rapide (5 min)', ar: 'مشوار سريع (5 دقائق)' }, estTime: { en: '5 min', fr: '5 min', ar: '5 دقائق' }, desc: { en: 'Near pickup or very short task.', fr: 'Retrait proche ou tâche très courte.', ar: 'استلام قريب أو مهمة قصيرة جداً.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/SmallTask.webp' },
+                        { id: 'medium', duration: 1.5, label: { en: 'Standard (15 min)', fr: 'Standard (15 min)', ar: 'عادي (15 دقيقة)' }, estTime: { en: '15 min', fr: '15 min', ar: '15 دقيقة' }, desc: { en: 'Typical errand or simple shopping.', fr: 'Course typique ou achat simple.', ar: 'مشوار عادي أو تسوق بسيط.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/MediumSize.webp' },
+                        { id: 'large', duration: 2, label: { en: 'Extended (30 min)', fr: 'Prolongée (30 min)', ar: 'ممتدة (30 دقيقة)' }, estTime: { en: '30 min', fr: '30 min', ar: '30 دقيقة' }, desc: { en: 'Multiple tasks or waiting time.', fr: 'Plusieurs tâches ou temps d\'attente.', ar: 'مهام متعددة أو وقت انتظار.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/BigTask.webp' },
                     ]
                 };
             case 'plumbing':
@@ -713,9 +713,9 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                 return {
                     title: t({ en: "What's the scope of the problem?", fr: "Quelle est l'ampleur du problème ?", ar: "ما هو حجم المشكلة؟" }),
                     options: [
-                        { id: 'small', duration: 1, label: { en: 'Minor Issue / Quick Fix', fr: 'Problème mineur / Rapide', ar: 'مشكلة بسيطة / إصلاح سريع' }, estTime: { en: 'Est: 1 hr', fr: 'Est: 1h', ar: 'حوالي ساعة' }, desc: { en: 'Simple fix like a small leak or replacing an outlet.', fr: 'Réparation simple comme une fuite ou prise.', ar: 'إصلاح بسيط مثل تسرب صغير أو تغيير مأخذ.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/SmallTask.png' },
-                        { id: 'medium', duration: 2, label: { en: 'Standard / Installation', fr: 'Standard / Installation', ar: 'عادي / تركيب' }, estTime: { en: 'Est: 2-3 hrs', fr: 'Est: 2-3h', ar: '2-3 ساعات' }, desc: { en: 'New installations or moderate repairs.', fr: 'Nouvelles installations ou réparations modérées.', ar: 'تركيبات جديدة أو إصلاحات متوسطة.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/MediumSize.png' },
-                        { id: 'large', duration: 4, label: { en: 'Major / Unknown', fr: 'Majeur / Inconnu', ar: 'مشكلة كبرى / غير معروف' }, estTime: { en: 'Est: 4+ hrs', fr: 'Est: 4h+', ar: 'أكثر من 4 ساعات' }, desc: { en: 'Complex issues or full system replacements.', fr: 'Problèmes complexes ou remplacements complets.', ar: 'مشاكل معقدة أو استبدال كامل للنظام.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/BigTask.png' },
+                        { id: 'small', duration: 1, label: { en: 'Minor Issue / Quick Fix', fr: 'Problème mineur / Rapide', ar: 'مشكلة بسيطة / إصلاح سريع' }, estTime: { en: 'Est: 1 hr', fr: 'Est: 1h', ar: 'حوالي ساعة' }, desc: { en: 'Simple fix like a small leak or replacing an outlet.', fr: 'Réparation simple comme une fuite ou prise.', ar: 'إصلاح بسيط مثل تسرب صغير أو تغيير مأخذ.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/SmallTask.webp' },
+                        { id: 'medium', duration: 2, label: { en: 'Standard / Installation', fr: 'Standard / Installation', ar: 'عادي / تركيب' }, estTime: { en: 'Est: 2-3 hrs', fr: 'Est: 2-3h', ar: '2-3 ساعات' }, desc: { en: 'New installations or moderate repairs.', fr: 'Nouvelles installations ou réparations modérées.', ar: 'تركيبات جديدة أو إصلاحات متوسطة.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/MediumSize.webp' },
+                        { id: 'large', duration: 4, label: { en: 'Major / Unknown', fr: 'Majeur / Inconnu', ar: 'مشكلة كبرى / غير معروف' }, estTime: { en: 'Est: 4+ hrs', fr: 'Est: 4h+', ar: 'أكثر من 4 ساعات' }, desc: { en: 'Complex issues or full system replacements.', fr: 'Problèmes complexes ou remplacements complets.', ar: 'مشاكل معقدة أو استبدال كامل للنظام.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/BigTask.webp' },
                     ]
                 };
             case 'babysitting':
@@ -723,81 +723,81 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                 return {
                     title: t({ en: "How long is the care needed?", fr: "Quelle est la durée de garde nécessaire ?", ar: "ما هي مدة الرعاية المطلوبة؟" }),
                     options: [
-                        { id: 'small', duration: 3, label: { en: 'Short Term (1-4 hrs)', fr: 'Court terme (1-4h)', ar: 'فترة قصيرة (1-4 ساعات)' }, estTime: { en: 'Est: 3 hrs', fr: 'Est: 3h', ar: 'حوالي 3 ساعات' }, desc: { en: 'Brief assistance or babysitting slot.', fr: 'Garde ou assistance de courte durée.', ar: 'مساعدة وجيزة أو جليسة أطفال لفترة قصيرة.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/SmallTask.png' },
-                        { id: 'medium', duration: 6, label: { en: 'Half Day (4-8 hrs)', fr: 'Demi-journée (4-8h)', ar: 'نصف يوم (4-8 ساعات)' }, estTime: { en: 'Est: 6 hrs', fr: 'Est: 6h', ar: 'حوالي 6 ساعات' }, desc: { en: 'Standard care for a morning, afternoon or evening.', fr: 'Garde standard pour une matinée, après-midi ou soirée.', ar: 'رعاية عادية للصباح أو المساء.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/MediumSize.png' },
-                        { id: 'large', duration: 10, label: { en: 'Full Day / Overnight', fr: 'Journée / Nuit', ar: 'يوم كامل / مبيت' }, estTime: { en: 'Est: 10 hrs', fr: 'Est: 10h', ar: 'حوالي 10 ساعات' }, desc: { en: 'Comprehensive care over an extended period.', fr: 'Soins complets sur une période prolongée.', ar: 'رعاية شاملة لفترة ممتدة.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/BigTask.png' },
+                        { id: 'small', duration: 3, label: { en: 'Short Term (1-4 hrs)', fr: 'Court terme (1-4h)', ar: 'فترة قصيرة (1-4 ساعات)' }, estTime: { en: 'Est: 3 hrs', fr: 'Est: 3h', ar: 'حوالي 3 ساعات' }, desc: { en: 'Brief assistance or babysitting slot.', fr: 'Garde ou assistance de courte durée.', ar: 'مساعدة وجيزة أو جليسة أطفال لفترة قصيرة.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/SmallTask.webp' },
+                        { id: 'medium', duration: 6, label: { en: 'Half Day (4-8 hrs)', fr: 'Demi-journée (4-8h)', ar: 'نصف يوم (4-8 ساعات)' }, estTime: { en: 'Est: 6 hrs', fr: 'Est: 6h', ar: 'حوالي 6 ساعات' }, desc: { en: 'Standard care for a morning, afternoon or evening.', fr: 'Garde standard pour une matinée, après-midi ou soirée.', ar: 'رعاية عادية للصباح أو المساء.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/MediumSize.webp' },
+                        { id: 'large', duration: 10, label: { en: 'Full Day / Overnight', fr: 'Journée / Nuit', ar: 'يوم كامل / مبيت' }, estTime: { en: 'Est: 10 hrs', fr: 'Est: 10h', ar: 'حوالي 10 ساعات' }, desc: { en: 'Comprehensive care over an extended period.', fr: 'Soins complets sur une période prolongée.', ar: 'رعاية شاملة لفترة ممتدة.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/BigTask.webp' },
                     ]
                 };
             case 'furniture_assembly':
                 return {
                     title: t({ en: "How much furniture needs assembly?", fr: "Combien de meubles à assembler ?", ar: "كم عدد الأثاث الذي يحتاج للتركيب؟" }),
                     options: [
-                        { id: 'small', duration: 1, label: { en: '1-2 Small Items', fr: '1-2 Petits Articles', ar: '1-2 قطع صغيرة' }, estTime: { en: 'Est: 1 hr', fr: 'Est: 1h', ar: 'حوالي ساعة' }, desc: { en: 'Quick assembly of simple items.', fr: 'Assemblage rapide d\'articles simples.', ar: 'تركيب سريع لقطع بسيطة.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/SmallTask.png' },
-                        { id: 'medium', duration: 3, label: { en: '1 Large / 3-4 Small Items', fr: '1 Grand / 3-4 Petits Articles', ar: 'قطعة كبيرة / 3-4 قطع صغيرة' }, estTime: { en: 'Est: 2-3 hrs', fr: 'Est: 2-3h', ar: '2-3 ساعات' }, desc: { en: 'Standard assembly like a bed frame or wardrobe.', fr: 'Assemblage standard (cadre de lit, grande armoire).', ar: 'تركيب عادي مثل سرير أو خزانة ملابس.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/MediumSize.png' },
-                        { id: 'large', duration: 5, label: { en: 'Full Room / Complex Items', fr: 'Pièce Complète / Articles Complexes', ar: 'غرفة كاملة / قطع معقدة' }, estTime: { en: 'Est: 4+ hrs', fr: 'Est: 4h+', ar: 'أكثر من 4 ساعات' }, desc: { en: 'Multiple large pieces or complex systems.', fr: 'Plusieurs grosses pièces ou systèmes complexes.', ar: 'عدة قطع كبيرة أو أنظمة معقدة.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/BigTask.png' },
+                        { id: 'small', duration: 1, label: { en: '1-2 Small Items', fr: '1-2 Petits Articles', ar: '1-2 قطع صغيرة' }, estTime: { en: 'Est: 1 hr', fr: 'Est: 1h', ar: 'حوالي ساعة' }, desc: { en: 'Quick assembly of simple items.', fr: 'Assemblage rapide d\'articles simples.', ar: 'تركيب سريع لقطع بسيطة.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/SmallTask.webp' },
+                        { id: 'medium', duration: 3, label: { en: '1 Large / 3-4 Small Items', fr: '1 Grand / 3-4 Petits Articles', ar: 'قطعة كبيرة / 3-4 قطع صغيرة' }, estTime: { en: 'Est: 2-3 hrs', fr: 'Est: 2-3h', ar: '2-3 ساعات' }, desc: { en: 'Standard assembly like a bed frame or wardrobe.', fr: 'Assemblage standard (cadre de lit, grande armoire).', ar: 'تركيب عادي مثل سرير أو خزانة ملابس.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/MediumSize.webp' },
+                        { id: 'large', duration: 5, label: { en: 'Full Room / Complex Items', fr: 'Pièce Complète / Articles Complexes', ar: 'غرفة كاملة / قطع معقدة' }, estTime: { en: 'Est: 4+ hrs', fr: 'Est: 4h+', ar: 'أكثر من 4 ساعات' }, desc: { en: 'Multiple large pieces or complex systems.', fr: 'Plusieurs grosses pièces ou systèmes complexes.', ar: 'عدة قطع كبيرة أو أنظمة معقدة.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/BigTask.webp' },
                     ]
                 };
             case 'handyman':
                 return {
                     title: t({ en: "What is the scope of the repairs?", fr: "Quelle est l'ampleur des réparations ?", ar: "ما هو حجم الإصلاحات؟" }),
                     options: [
-                        { id: 'small', duration: 1, label: { en: 'Minor Fix / Single Issue', fr: 'Petite Réparation / Problème Unique', ar: 'إصلاح بسيط / مشكلة واحدة' }, estTime: { en: 'Est: 1 hr', fr: 'Est: 1h', ar: 'حوالي ساعة' }, desc: { en: 'Quick repair or adjustment.', fr: 'Réparation ou ajustement rapide.', ar: 'إصلاح أو تعديل سريع.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/SmallTask.png' },
-                        { id: 'medium', duration: 3, label: { en: 'Standard Repair / Few Issues', fr: 'Réparation Standard / Quelques Problèmes', ar: 'إصلاح عادي / عدة مشاكل' }, estTime: { en: 'Est: 2-3 hrs', fr: 'Est: 2-3h', ar: '2-3 ساعات' }, desc: { en: 'Multiple small fixes or a standard project.', fr: 'Plusieurs petites réparations ou projet standard.', ar: 'عدة إصلاحات صغيرة أو مشروع عادي.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/MediumSize.png' },
-                        { id: 'large', duration: 5, label: { en: 'Multiple Repairs / Half Day', fr: 'Multiples Réparations / Demi-journée', ar: 'إصلاحات متعددة / نصف يوم' }, estTime: { en: 'Est: 4+ hrs', fr: 'Est: 4h+', ar: 'أكثر من 4 ساعات' }, desc: { en: 'Extensive repair work across the property.', fr: 'Travaux de réparation approfondis sur la propriété.', ar: 'أعمال إصلاح شاملة في العقار.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/BigTask.png' },
+                        { id: 'small', duration: 1, label: { en: 'Minor Fix / Single Issue', fr: 'Petite Réparation / Problème Unique', ar: 'إصلاح بسيط / مشكلة واحدة' }, estTime: { en: 'Est: 1 hr', fr: 'Est: 1h', ar: 'حوالي ساعة' }, desc: { en: 'Quick repair or adjustment.', fr: 'Réparation ou ajustement rapide.', ar: 'إصلاح أو تعديل سريع.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/SmallTask.webp' },
+                        { id: 'medium', duration: 3, label: { en: 'Standard Repair / Few Issues', fr: 'Réparation Standard / Quelques Problèmes', ar: 'إصلاح عادي / عدة مشاكل' }, estTime: { en: 'Est: 2-3 hrs', fr: 'Est: 2-3h', ar: '2-3 ساعات' }, desc: { en: 'Multiple small fixes or a standard project.', fr: 'Plusieurs petites réparations ou projet standard.', ar: 'عدة إصلاحات صغيرة أو مشروع عادي.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/MediumSize.webp' },
+                        { id: 'large', duration: 5, label: { en: 'Multiple Repairs / Half Day', fr: 'Multiples Réparations / Demi-journée', ar: 'إصلاحات متعددة / نصف يوم' }, estTime: { en: 'Est: 4+ hrs', fr: 'Est: 4h+', ar: 'أكثر من 4 ساعات' }, desc: { en: 'Extensive repair work across the property.', fr: 'Travaux de réparation approfondis sur la propriété.', ar: 'أعمال إصلاح شاملة في العقار.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/BigTask.webp' },
                     ]
                 };
             case 'mounting':
                 return {
                     title: t({ en: "What needs to be mounted?", fr: "Que faut-il fixer ?", ar: "ما الذي يجب تركيبه؟" }),
                     options: [
-                        { id: 'small', duration: 1, label: { en: '1-2 Items / Picture Frames', fr: '1-2 Articles / Cadres', ar: '1-2 قطع / إطارات صور' }, estTime: { en: 'Est: 1 hr', fr: 'Est: 1h', ar: 'حوالي ساعة' }, desc: { en: 'Hanging pictures, mirrors, or small shelves.', fr: 'Accrocher des tableaux, miroirs ou petites étagères.', ar: 'تعليق صور، مرايا أو رفوف صغيرة.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/SmallTask.png' },
-                        { id: 'medium', duration: 2, label: { en: 'TV / Multiple Shelves', fr: 'TV / Plusieurs Étagères', ar: 'تلفاز / عدة رفوف' }, estTime: { en: 'Est: 2 hrs', fr: 'Est: 2h', ar: 'حوالي ساعتين' }, desc: { en: 'Mounting a TV or several shelving units.', fr: 'Fixation d\'une télévision ou de plusieurs meubles.', ar: 'تركيب تلفاز أو عدة رفوف.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/MediumSize.png' },
-                        { id: 'large', duration: 4, label: { en: 'Complex / Heavy / Multiple Rooms', fr: 'Complexe / Lourd / Plusieurs Pièces', ar: 'معقد / ثقيل / عدة غرف' }, estTime: { en: 'Est: 4+ hrs', fr: 'Est: 4h+', ar: 'أكثر من 4 ساعات' }, desc: { en: 'Heavy mounting or covering multiple rooms.', fr: 'Fixation lourde ou couvrant plusieurs pièces.', ar: 'تركيب ثقيل أو يغطي عدة غرف.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/BigTask.png' },
+                        { id: 'small', duration: 1, label: { en: '1-2 Items / Picture Frames', fr: '1-2 Articles / Cadres', ar: '1-2 قطع / إطارات صور' }, estTime: { en: 'Est: 1 hr', fr: 'Est: 1h', ar: 'حوالي ساعة' }, desc: { en: 'Hanging pictures, mirrors, or small shelves.', fr: 'Accrocher des tableaux, miroirs ou petites étagères.', ar: 'تعليق صور، مرايا أو رفوف صغيرة.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/SmallTask.webp' },
+                        { id: 'medium', duration: 2, label: { en: 'TV / Multiple Shelves', fr: 'TV / Plusieurs Étagères', ar: 'تلفاز / عدة رفوف' }, estTime: { en: 'Est: 2 hrs', fr: 'Est: 2h', ar: 'حوالي ساعتين' }, desc: { en: 'Mounting a TV or several shelving units.', fr: 'Fixation d\'une télévision ou de plusieurs meubles.', ar: 'تركيب تلفاز أو عدة رفوف.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/MediumSize.webp' },
+                        { id: 'large', duration: 4, label: { en: 'Complex / Heavy / Multiple Rooms', fr: 'Complexe / Lourd / Plusieurs Pièces', ar: 'معقد / ثقيل / عدة غرف' }, estTime: { en: 'Est: 4+ hrs', fr: 'Est: 4h+', ar: 'أكثر من 4 ساعات' }, desc: { en: 'Heavy mounting or covering multiple rooms.', fr: 'Fixation lourde ou couvrant plusieurs pièces.', ar: 'تركيب ثقيل أو يغطي عدة غرف.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/BigTask.webp' },
                     ]
                 };
             case 'painting':
                 return {
                     title: t({ en: "What is the painting scope?", fr: "Quelle est l'ampleur de la peinture ?", ar: "ما هو حجم الصباغة؟" }),
                     options: [
-                        { id: 'small', duration: 2, label: { en: 'Touch-ups / Single Wall', fr: 'Retouches / Un Seul Mur', ar: 'رتوش / حائط واحد' }, estTime: { en: 'Est: 2 hrs', fr: 'Est: 2h', ar: 'حوالي ساعتين' }, desc: { en: 'Minor paint repairs or an accent wall.', fr: 'Petites retouches de peinture ou mur d\'accent.', ar: 'إصلاحات صباغة بسيطة أو حائط واحد.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/SmallTask.png' },
-                        { id: 'medium', duration: 5, label: { en: 'Single Room', fr: 'Une Seule Pièce', ar: 'غرفة واحدة' }, estTime: { en: 'Est: 4-6 hrs', fr: 'Est: 4-6h', ar: '4-6 ساعات' }, desc: { en: 'Painting walls of a standard bedroom or living room.', fr: 'Peinture de murs d\'une chambre standard ou salon.', ar: 'صباغة جدران غرفة نوم أو صالون.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/MediumSize.png' },
-                        { id: 'large', duration: 8, label: { en: 'Multiple Rooms / Exterior', fr: 'Plusieurs Pièces / Extérieur', ar: 'عدة غرف / واجهة خارجية' }, estTime: { en: 'Est: 8+ hrs', fr: 'Est: 8h+', ar: 'أكثر من 8 ساعات' }, desc: { en: 'Larger painting projects, multiple rooms or exterior work.', fr: 'Grands projets de peinture, plusieurs pièces ou extérieur.', ar: 'مشاريع صباغة كبيرة، عدة غرف أو عمل خارجي.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/BigTask.png' },
+                        { id: 'small', duration: 2, label: { en: 'Touch-ups / Single Wall', fr: 'Retouches / Un Seul Mur', ar: 'رتوش / حائط واحد' }, estTime: { en: 'Est: 2 hrs', fr: 'Est: 2h', ar: 'حوالي ساعتين' }, desc: { en: 'Minor paint repairs or an accent wall.', fr: 'Petites retouches de peinture ou mur d\'accent.', ar: 'إصلاحات صباغة بسيطة أو حائط واحد.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/SmallTask.webp' },
+                        { id: 'medium', duration: 5, label: { en: 'Single Room', fr: 'Une Seule Pièce', ar: 'غرفة واحدة' }, estTime: { en: 'Est: 4-6 hrs', fr: 'Est: 4-6h', ar: '4-6 ساعات' }, desc: { en: 'Painting walls of a standard bedroom or living room.', fr: 'Peinture de murs d\'une chambre standard ou salon.', ar: 'صباغة جدران غرفة نوم أو صالون.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/MediumSize.webp' },
+                        { id: 'large', duration: 8, label: { en: 'Multiple Rooms / Exterior', fr: 'Plusieurs Pièces / Extérieur', ar: 'عدة غرف / واجهة خارجية' }, estTime: { en: 'Est: 8+ hrs', fr: 'Est: 8h+', ar: 'أكثر من 8 ساعات' }, desc: { en: 'Larger painting projects, multiple rooms or exterior work.', fr: 'Grands projets de peinture, plusieurs pièces ou extérieur.', ar: 'مشاريع صباغة كبيرة، عدة غرف أو عمل خارجي.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/BigTask.webp' },
                     ]
                 };
             case 'gardening':
                 return {
                     title: t({ en: "What gardening work is required?", fr: "Quel travail de jardinage est nécessaire ?", ar: "ما هو عمل البستنة المطلوب؟" }),
                     options: [
-                        { id: 'small', duration: 2, label: { en: 'Basic Mowing / Weeding', fr: 'Tonte de Base / Désherbage', ar: 'قص عشب بسيط / إزالة أعشاب' }, estTime: { en: 'Est: 2 hrs', fr: 'Est: 2h', ar: 'حوالي ساعتين' }, desc: { en: 'Simple lawn maintenance and weed removal.', fr: 'Entretien de pelouse simple et désherbage.', ar: 'صيانة بسيطة للعشب وإزالة الأعشاب.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/SmallTask.png' },
-                        { id: 'medium', duration: 4, label: { en: 'Yard Cleanup / Trimming', fr: 'Nettoyage de Cour / Taille', ar: 'تنظيف الحديقة / تشذيب' }, estTime: { en: 'Est: 4 hrs', fr: 'Est: 4h', ar: 'حوالي 4 ساعات' }, desc: { en: 'Pruning trees/shrubs and general yard tidying.', fr: 'Élagage d\'arbres/arbustes et nettoyage général.', ar: 'تقليم الأشجار وتنظيف عام للحديقة.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/MediumSize.png' },
-                        { id: 'large', duration: 8, label: { en: 'Full Landscaping', fr: 'Aménagement Paysager Complet', ar: 'تنسيق كامل للحديقة' }, estTime: { en: 'Est: 8+ hrs', fr: 'Est: 8h+', ar: 'أكثر من 8 ساعات' }, desc: { en: 'Major yard overhaul, planting, or extensive clearing.', fr: 'Remise à neuf majeure, plantation ou nettoyage intensif.', ar: 'تجديد شامل للحديقة، زراعة أو تنظيف مكثف.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/BigTask.png' },
+                        { id: 'small', duration: 2, label: { en: 'Basic Mowing / Weeding', fr: 'Tonte de Base / Désherbage', ar: 'قص عشب بسيط / إزالة أعشاب' }, estTime: { en: 'Est: 2 hrs', fr: 'Est: 2h', ar: 'حوالي ساعتين' }, desc: { en: 'Simple lawn maintenance and weed removal.', fr: 'Entretien de pelouse simple et désherbage.', ar: 'صيانة بسيطة للعشب وإزالة الأعشاب.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/SmallTask.webp' },
+                        { id: 'medium', duration: 4, label: { en: 'Yard Cleanup / Trimming', fr: 'Nettoyage de Cour / Taille', ar: 'تنظيف الحديقة / تشذيب' }, estTime: { en: 'Est: 4 hrs', fr: 'Est: 4h', ar: 'حوالي 4 ساعات' }, desc: { en: 'Pruning trees/shrubs and general yard tidying.', fr: 'Élagage d\'arbres/arbustes et nettoyage général.', ar: 'تقليم الأشجار وتنظيف عام للحديقة.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/MediumSize.webp' },
+                        { id: 'large', duration: 8, label: { en: 'Full Landscaping', fr: 'Aménagement Paysager Complet', ar: 'تنسيق كامل للحديقة' }, estTime: { en: 'Est: 8+ hrs', fr: 'Est: 8h+', ar: 'أكثر من 8 ساعات' }, desc: { en: 'Major yard overhaul, planting, or extensive clearing.', fr: 'Remise à neuf majeure, plantation ou nettoyage intensif.', ar: 'تجديد شامل للحديقة، زراعة أو تنظيف مكثف.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/BigTask.webp' },
                     ]
                 };
             case 'glass_cleaning':
                 return {
                     title: t({ en: "How many windows/surfaces?", fr: "Combien de fenêtres/surfaces ?", ar: "كم عدد النوافذ/الأسطح؟" }),
                     options: [
-                        { id: 'small', duration: 2, label: { en: 'Few Windows / Minor', fr: 'Quelques Fenêtres / Mineur', ar: 'نوافذ قليلة / عمل بسيط' }, estTime: { en: 'Est: 1-2 hrs', fr: 'Est: 1-2h', ar: '1-2 ساعة' }, desc: { en: 'Cleaning glass in a small apartment or storefront.', fr: 'Nettoyage des vitres pour petit appartement ou vitrine.', ar: 'تنظيف الزجاج في شقة صغيرة أو محل تجاري.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/SmallTask.png' },
-                        { id: 'medium', duration: 4, label: { en: 'Standard House', fr: 'Maison Standard', ar: 'منزل عادي' }, estTime: { en: 'Est: 3-4 hrs', fr: 'Est: 3-4h', ar: '3-4 ساعات' }, desc: { en: 'Full interior/exterior window cleaning for a typical home.', fr: 'Nettoyage complet (intérieur/extérieur) pour maison typique.', ar: 'تنظيف كامل للنوافذ (داخلي/خارجي) لمنزل عادي.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/MediumSize.png' },
-                        { id: 'large', duration: 6, label: { en: 'Large House / High glass', fr: 'Grande Maison / Vitres Hautes', ar: 'منزل كبير / نوافذ عالية' }, estTime: { en: 'Est: 6+ hrs', fr: 'Est: 6h+', ar: 'أكثر من 6 ساعات' }, desc: { en: 'Extensive glass cleaning requiring ladders or specialized tools.', fr: 'Nettoyage intensif nécessitant échelle ou outils spéciaux.', ar: 'تنظيف زجاج شامل يتطلب سلالم أو أدوات خاصة.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/BigTask.png' },
+                        { id: 'small', duration: 2, label: { en: 'Few Windows / Minor', fr: 'Quelques Fenêtres / Mineur', ar: 'نوافذ قليلة / عمل بسيط' }, estTime: { en: 'Est: 1-2 hrs', fr: 'Est: 1-2h', ar: '1-2 ساعة' }, desc: { en: 'Cleaning glass in a small apartment or storefront.', fr: 'Nettoyage des vitres pour petit appartement ou vitrine.', ar: 'تنظيف الزجاج في شقة صغيرة أو محل تجاري.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/SmallTask.webp' },
+                        { id: 'medium', duration: 4, label: { en: 'Standard House', fr: 'Maison Standard', ar: 'منزل عادي' }, estTime: { en: 'Est: 3-4 hrs', fr: 'Est: 3-4h', ar: '3-4 ساعات' }, desc: { en: 'Full interior/exterior window cleaning for a typical home.', fr: 'Nettoyage complet (intérieur/extérieur) pour maison typique.', ar: 'تنظيف كامل للنوافذ (داخلي/خارجي) لمنزل عادي.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/MediumSize.webp' },
+                        { id: 'large', duration: 6, label: { en: 'Large House / High glass', fr: 'Grande Maison / Vitres Hautes', ar: 'منزل كبير / نوافذ عالية' }, estTime: { en: 'Est: 6+ hrs', fr: 'Est: 6h+', ar: 'أكثر من 6 ساعات' }, desc: { en: 'Extensive glass cleaning requiring ladders or specialized tools.', fr: 'Nettoyage intensif nécessitant échelle ou outils spéciaux.', ar: 'تنظيف زجاج شامل يتطلب سلالم أو أدوات خاصة.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/BigTask.webp' },
                     ]
                 };
             case 'pool_cleaning':
                 return {
                     title: t({ en: "How big is your pool?", fr: "Quelle est la taille de votre piscine ?", ar: "ما هو حجم المسبح؟" }),
                     options: [
-                        { id: 'small', duration: 1, label: { en: 'Small / Plunge Pool', fr: 'Petit / Bassin de trempage', ar: 'مسبح صغير / غطس' }, estTime: { en: 'Est: 1 hr', fr: 'Est: 1h', ar: 'حوالي ساعة' }, desc: { en: 'Chemical check and minor surface skimming.', fr: 'Contrôle chimique et léger écrémage de surface.', ar: 'فحص المواد الكيميائية وتنظيف سطحي بسيط.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/SmallTask.png' },
-                        { id: 'medium', duration: 3, label: { en: 'Standard In-ground', fr: 'Standard enterrée', ar: 'مسبح عادي محفور' }, estTime: { en: 'Est: 2-3 hrs', fr: 'Est: 2-3h', ar: '2-3 ساعات' }, desc: { en: 'Full vacuum, filter clean, and chemical balance.', fr: 'Aspiration complète, nettoyage du filtre et équilibre chimique.', ar: 'تنظيف كامل، تنظيف الفلتر وتوازن كيميائي.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/MediumSize.png' },
-                        { id: 'large', duration: 5, label: { en: 'Large / Green-to-Clean', fr: 'Grande / Remise en état', ar: 'مسبح كبير / معالجة' }, estTime: { en: 'Est: 5+ hrs', fr: 'Est: 5h+', ar: 'أكثر من 5 ساعات' }, desc: { en: 'Extensive cleaning for large pools or water restoration.', fr: 'Nettoyage intensif pour grandes piscines ou restauration de l\'eau.', ar: 'تنظيف شامل للمسابح الكبيرة أو معالجة المياه.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/BigTask.png' },
+                        { id: 'small', duration: 1, label: { en: 'Small / Plunge Pool', fr: 'Petit / Bassin de trempage', ar: 'مسبح صغير / غطس' }, estTime: { en: 'Est: 1 hr', fr: 'Est: 1h', ar: 'حوالي ساعة' }, desc: { en: 'Chemical check and minor surface skimming.', fr: 'Contrôle chimique et léger écrémage de surface.', ar: 'فحص المواد الكيميائية وتنظيف سطحي بسيط.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/SmallTask.webp' },
+                        { id: 'medium', duration: 3, label: { en: 'Standard In-ground', fr: 'Standard enterrée', ar: 'مسبح عادي محفور' }, estTime: { en: 'Est: 2-3 hrs', fr: 'Est: 2-3h', ar: '2-3 ساعات' }, desc: { en: 'Full vacuum, filter clean, and chemical balance.', fr: 'Aspiration complète, nettoyage du filtre et équilibre chimique.', ar: 'تنظيف كامل، تنظيف الفلتر وتوازن كيميائي.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/MediumSize.webp' },
+                        { id: 'large', duration: 5, label: { en: 'Large / Green-to-Clean', fr: 'Grande / Remise en état', ar: 'مسبح كبير / معالجة' }, estTime: { en: 'Est: 5+ hrs', fr: 'Est: 5h+', ar: 'أكثر من 5 ساعات' }, desc: { en: 'Extensive cleaning for large pools or water restoration.', fr: 'Nettoyage intensif pour grandes piscines ou restauration de l\'eau.', ar: 'تنظيف شامل للمسابح الكبيرة أو معالجة المياه.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/BigTask.webp' },
                     ]
                 };
             case 'pets_care':
                 return {
                     title: t({ en: "What level of care is needed?", fr: "Quel niveau de soin est nécessaire ?", ar: "ما هو مستوى الرعاية المطلوب؟" }),
                     options: [
-                        { id: 'small', duration: 1, label: { en: 'Walk / Quick Visit', fr: 'Promenade / Visite rapide', ar: 'نزهة / زيارة سريعة' }, estTime: { en: 'Est: 1 hr', fr: 'Est: 1h', ar: 'حوالي ساعة' }, desc: { en: '30-60 min walk or feeding check-in.', fr: 'Promenade de 30-60 min ou passage pour nourrir.', ar: 'نزهة 30-60 دقيقة أو فحص إطعام.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/SmallTask.png' },
-                        { id: 'medium', duration: 4, label: { en: 'Half Day Sitting', fr: 'Garde demi-journée', ar: 'رعاية نصف يوم' }, estTime: { en: 'Est: 4 hrs', fr: 'Est: 4h', ar: '4 ساعات' }, desc: { en: 'Pet sitting and companionship for a few hours.', fr: 'Garde d\'animaux et compagnie pendant quelques heures.', ar: 'رعاية ومرافقة للحيوان لعدة ساعات.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/MediumSize.png' },
-                        { id: 'large', duration: 8, label: { en: 'Full Day / Overnight', fr: 'Journée / Nuit', ar: 'يوم كامل / مبيت' }, estTime: { en: 'Est: 8+ hrs', fr: 'Est: 8h+', ar: 'أكثر من 8 ساعات' }, desc: { en: 'Comprehensive care for the entire day or night.', fr: 'Soins complets pour toute la journée ou la nuit.', ar: 'رعاية شاملة لليوم أو الليلة بالكامل.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/BigTask.png' },
+                        { id: 'small', duration: 1, label: { en: 'Walk / Quick Visit', fr: 'Promenade / Visite rapide', ar: 'نزهة / زيارة سريعة' }, estTime: { en: 'Est: 1 hr', fr: 'Est: 1h', ar: 'حوالي ساعة' }, desc: { en: '30-60 min walk or feeding check-in.', fr: 'Promenade de 30-60 min ou passage pour nourrir.', ar: 'نزهة 30-60 دقيقة أو فحص إطعام.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/SmallTask.webp' },
+                        { id: 'medium', duration: 4, label: { en: 'Half Day Sitting', fr: 'Garde demi-journée', ar: 'رعاية نصف يوم' }, estTime: { en: 'Est: 4 hrs', fr: 'Est: 4h', ar: '4 ساعات' }, desc: { en: 'Pet sitting and companionship for a few hours.', fr: 'Garde d\'animaux et compagnie pendant quelques heures.', ar: 'رعاية ومرافقة للحيوان لعدة ساعات.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/MediumSize.webp' },
+                        { id: 'large', duration: 8, label: { en: 'Full Day / Overnight', fr: 'Journée / Nuit', ar: 'يوم كامل / مبيت' }, estTime: { en: 'Est: 8+ hrs', fr: 'Est: 8h+', ar: 'أكثر من 8 ساعات' }, desc: { en: 'Comprehensive care for the entire day or night.', fr: 'Soins complets pour toute la journée ou la nuit.', ar: 'رعاية شاملة لليوم أو الليلة بالكامل.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/BigTask.webp' },
                     ]
                 };
             default:
@@ -805,9 +805,9 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                     title: t({ en: "What's the size of your Task?", fr: "Quelle est la taille de votre tâche ?", ar: "ما هو حجم المهمة؟" }),
                     options: TASK_SIZES.map(s => ({
                         ...s,
-                        icon: s.id === 'small' ? '/Images/Location&taskSize_OrderSetup/TaskSizes/SmallTask.png' :
-                            s.id === 'medium' ? '/Images/Location&taskSize_OrderSetup/TaskSizes/MediumSize.png' :
-                                '/Images/Location&taskSize_OrderSetup/TaskSizes/BigTask.png'
+                        icon: s.id === 'small' ? '/Images/Location&taskSize_OrderSetup/TaskSizes/SmallTask.webp' :
+                            s.id === 'medium' ? '/Images/Location&taskSize_OrderSetup/TaskSizes/MediumSize.webp' :
+                                '/Images/Location&taskSize_OrderSetup/TaskSizes/BigTask.webp'
                     }))
                 };
         }
@@ -1582,7 +1582,7 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                                                     className="flex items-center justify-between bg-[#FFFFFF] px-4 py-4 rounded-[12px] border border-[#00A082]/10"
                                                 >
                                                     <div className="flex items-center gap-3">
-                                                        <img src="/Images/LocationFlag_VI.png" className="w-[52px] h-auto object-contain" />
+                                                        <img src="/Images/LocationFlag_VI.webp" className="w-[52px] h-auto object-contain" />
                                                         <div className="flex flex-col">
                                                             <p className="text-[12px] font-medium text-neutral-500 leading-none mb-1">{t({ en: 'Location', fr: 'Lieu d\'intervention', ar: 'الموقع' })}</p>
                                                             <p className="text-[16px] font-semibold text-[#2D2D2D] leading-tight">
@@ -1834,7 +1834,7 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                                         </div>
 
                                         <div className="flex-shrink-0 flex items-center gap-2 bg-[#FCEBA4] px-4 py-2.5 rounded-full border border-[#DECD85]/50">
-                                            <img src="/Images/LocationFlag_VI.png" className="w-7 h-4.5 object-contain" />
+                                            <img src="/Images/LocationFlag_VI.webp" className="w-7 h-4.5 object-contain" />
 
                                             <span className="text-[13px] font-black text-neutral-900 whitespace-nowrap opacity-80">
                                                 {t({ en: currentCity, fr: currentCity })}, {t({ en: currentArea, fr: currentArea })} - {t(activeTaskSize?.label as any)}
@@ -1898,7 +1898,7 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                                         <div className="flex items-center gap-3">
                                             <div className="relative">
                                                 <img
-                                                    src={selectedPro?.photoURL || "/Images/Logo/Black Lbricol Avatar Face.png"}
+                                                    src={selectedPro?.photoURL || "/Images/Logo/Black Lbricol Avatar Face.webp"}
                                                     className="w-12 h-12 rounded-full object-cover bg-neutral-100"
                                                 />
                                             </div>
@@ -2095,7 +2095,7 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                                     {/* Success/Programmed Header — same as ClientOrdersView */}
                                     <div className="px-12 pt-10 pb-6 flex items-center gap-6">
                                         <div className="w-45 h-50 flex-shrink-0">
-                                            <img src="/Images/Vectors Illu/NewOrder.png" className="w-full h-full object-contain" />
+                                            <img src="/Images/Vectors Illu/NewOrder.webp" className="w-full h-full object-contain" />
                                         </div>
                                         <div className="flex flex-col">
                                             <h2 className="text-[35px] font-black text-black leading-[1.1] tracking-tighter">
@@ -2154,7 +2154,7 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                                             <div className="flex items-center gap-2">
                                                 <h3 className="text-[24px] font-black text-black">{t({ en: 'Payment', fr: 'Paiement', ar: 'الدفع' })}</h3>
                                                 <div className="w-14 h-14 flex-shrink-0">
-                                                    <img src="/Images/Vectors Illu/Currency_VI.png" className="w-full h-full object-contain" />
+                                                    <img src="/Images/Vectors Illu/Currency_VI.webp" className="w-full h-full object-contain" />
                                                 </div>
                                             </div>
                                             <p className="text-[15px] font-medium text-neutral-400 -mt-2">{t({ en: 'Choose your payment method', fr: 'Choisissez votre moyen de paiement', ar: 'اختر طريقة الدفع' })}</p>
@@ -2398,7 +2398,7 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                                             <h3 className="text-[24px] font-black text-black">{t({ en: 'Your Tasker', fr: 'Votre Pro', ar: 'المحترف الخاص بك' })}</h3>
                                             <div className="bg-white rounded-2xl p-4 flex items-center gap-4 border border-neutral-100 shadow-sm relative overflow-hidden">
                                                 <div className="relative">
-                                                    <img src={selectedPro.photoURL || "/Images/Logo/Black Lbricol Avatar Face.png"} className="w-16 h-16 rounded-full object-cover bg-neutral-100" />
+                                                    <img src={selectedPro.photoURL || "/Images/Logo/Black Lbricol Avatar Face.webp"} className="w-16 h-16 rounded-full object-cover bg-neutral-100" />
                                                 </div>
                                                 <div className="flex-1 min-w-0">
                                                     <h4 className="text-[17px] font-black text-black">{selectedPro.displayName}</h4>

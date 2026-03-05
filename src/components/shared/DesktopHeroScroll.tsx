@@ -12,7 +12,7 @@ const SLIDES = [
             fr: 'Courses, pharmacie ou dépôt rapide ? Commandez depuis votre canapé en quelques étapes.',
             ar: 'هل تحتاج إلى بقالة، أو اقتناء أدوية، أو توصيل سريع؟ اطلب ذلك وأنت مرتاح في منزلك.'
         },
-        img: '/Images/Desktop hero section images/Errands.jpg',
+        img: '/Images/Desktop hero section images/Errands.webp',
         titleColor: '#31735a',
         btnBg: '#31735a',
         btnTextColor: '#ffffff',
@@ -25,7 +25,7 @@ const SLIDES = [
             fr: 'Trouvez des baby-sitters de confiance disponibles aujourd\'hui. Réservez en quelques minutes.',
             ar: 'ابحث عن جليسات أطفال موثوقات ومدققات متوفرات اليوم. احجز في دقائق واسترخِ طوال اليوم.'
         },
-        img: '/Images/Desktop hero section images/baybsetting.jpg',
+        img: '/Images/Desktop hero section images/baybsetting.webp',
         titleColor: '#f24cb0',
         btnBg: '#f24cb0',
         btnTextColor: '#ffffff',
@@ -38,7 +38,7 @@ const SLIDES = [
             fr: 'Tonte, plantation, taille — votre jardin transformé par un expert local.',
             ar: 'قص العشب، الزراعة، التقليم — حديقتك تتحول على يد خبير محلي.'
         },
-        img: '/Images/Desktop hero section images/Gardening.jpg',
+        img: '/Images/Desktop hero section images/Gardening.webp',
         titleColor: '#76bbf8',
         btnBg: '#76bbf8',
         btnTextColor: '#ffffff',
@@ -64,7 +64,7 @@ const SLIDES = [
             fr: 'Promenades, garde, toilettage — des mains attentionnées pour vos animaux de compagnie.',
             ar: 'تمشية يومية، مجالسة الحيوانات، تنظيف وتجميل — أيدٍ حانية لأفراد عائلتك الأليفة.'
         },
-        img: '/Images/Desktop hero section images/petsCare.jpg',
+        img: '/Images/Desktop hero section images/petsCare.webp',
         titleColor: '#111111',
         btnBg: '#111111',
         btnTextColor: '#ffffff',
@@ -77,7 +77,7 @@ const SLIDES = [
             fr: 'Nettoyage, plomberie, cuisine, déménagement — une appli, tous vos services.',
             ar: 'تنظيف، سباكة، طبخ، نقل والمزيد — تطبيق واحد، لكل خدمة تحتاجها.'
         },
-        img: '/Images/Desktop hero section images/andMore.jpg',
+        img: '/Images/Desktop hero section images/andMore.webp',
         titleColor: '#ffffff',
         btnBg: '#ffffff',
         btnTextColor: '#111111',
@@ -160,7 +160,7 @@ export const DesktopHeroScroll = ({ onOrderClick, onBecomeBricolerClick }: Props
                         style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}
                         onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
                     >
-                        <img src="/Images/Logo/theEggOfLB.png" alt="Lbricol" style={{ height: '30px', width: 'auto' }} />
+                        <img src="/Images/Logo/theEggOfLB.webp" alt="Lbricol" style={{ height: '30px', width: 'auto' }} />
                         <span style={{
                             fontSize: '20px',
                             fontWeight: 800,

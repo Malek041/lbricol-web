@@ -387,7 +387,7 @@ const MessagesView: React.FC<MessagesViewProps> = ({
                                     <div style={{ display: 'flex', flexDirection: message.isOwn ? 'row-reverse' : 'row', gap: '8px', alignItems: 'flex-start', marginBottom: message.isOwn ? '4px' : '8px' }}>
                                         {!message.isOwn && (
                                             <div style={{ width: '28px', height: '28px', borderRadius: '50%', backgroundColor: '#FFC244', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', marginTop: '14px', flexShrink: 0 }}>
-                                                <img src="/Images/Logos/Lbricol_icon_black.png" style={{ width: '60%', height: '60%', objectFit: 'contain' }} />
+                                                <img src="/Images/Logos/Lbricol_icon_black.webp" style={{ width: '60%', height: '60%', objectFit: 'contain' }} />
                                             </div>
                                         )}
                                         <div style={{ maxWidth: '75%', display: 'flex', flexDirection: 'column', gap: '4px' }}>

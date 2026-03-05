@@ -82,7 +82,7 @@ const AuthPopup = ({ isOpen, onClose, onSuccess }: AuthPopupProps) => {
                         {/* Logo */}
                         <div style={{ marginBottom: isCompactPhone ? '24px' : '32px' }}>
                             <Image
-                                src="/Images/Logo/GYLogo.png"
+                                src="/Images/Logo/GYLogo.webp"
                                 alt="Lbricol"
                                 width={Math.round(fluidMobilePx(viewportWidth, 56, 72))}
                                 height={Math.round(fluidMobilePx(viewportWidth, 56, 72))}

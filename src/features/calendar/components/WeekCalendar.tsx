@@ -2312,7 +2312,7 @@ const WeekCalendar = ({
                                 }}>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                                         <img
-                                            src="/Images/Logo/Black Lbricol Avatar Face.png"
+                                            src="/Images/Logo/Black Lbricol Avatar Face.webp"
                                             alt="Lbricol Face"
                                             style={{ width: '40px', height: '40px', objectFit: 'contain' }}
                                         />

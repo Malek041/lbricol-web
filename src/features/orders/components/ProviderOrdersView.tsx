@@ -90,21 +90,21 @@ export default function ProviderOrdersView({
 
     const getHeroImage = (service: string) => {
         const serviceMap: Record<string, string> = {
-            'cleaning': '/Images/Job Cards Images/Cleaning_job_card.png',
-            'electricity': '/Images/Job Cards Images/Electricity_job_card.png',
-            'plumbing': '/Images/Job Cards Images/Plumbing_job_card.png',
-            'painting': '/Images/Job Cards Images/Painting_job_card.png',
-            'handyman': '/Images/Job Cards Images/Handyman_job_card.png',
-            'furniture_assembly': '/Images/Job Cards Images/Furniture_Assembly_job_card.png',
-            'moving': '/Images/Job Cards Images/Moving Help_job_card.png',
-            'gardening': '/Images/Job Cards Images/Gardening_job_card.png',
-            'babysitting': '/Images/Job Cards Images/Babysetting_job_card.png',
-            'pool_cleaning': '/Images/Vectors Illu/Poolcleaning_VI.png',
-            'pets_care': '/Images/Vectors Illu/PetsCare_VI.png',
-            'errands': '/Images/Vectors Illu/Errands_VI.png',
-            'elderly_care': '/Images/Vectors Illu/ElderlyCare_VI.png',
+            'cleaning': '/Images/Job Cards Images/Cleaning_job_card.webp',
+            'electricity': '/Images/Job Cards Images/Electricity_job_card.webp',
+            'plumbing': '/Images/Job Cards Images/Plumbing_job_card.webp',
+            'painting': '/Images/Job Cards Images/Painting_job_card.webp',
+            'handyman': '/Images/Job Cards Images/Handyman_job_card.webp',
+            'furniture_assembly': '/Images/Job Cards Images/Furniture_Assembly_job_card.webp',
+            'moving': '/Images/Job Cards Images/Moving Help_job_card.webp',
+            'gardening': '/Images/Job Cards Images/Gardening_job_card.webp',
+            'babysitting': '/Images/Job Cards Images/Babysetting_job_card.webp',
+            'pool_cleaning': '/Images/Vectors Illu/Poolcleaning_VI.webp',
+            'pets_care': '/Images/Vectors Illu/PetsCare_VI.webp',
+            'errands': '/Images/Vectors Illu/Errands_VI.webp',
+            'elderly_care': '/Images/Vectors Illu/ElderlyCare_VI.webp',
         };
-        return serviceMap[service] || '/Images/Job Cards Images/Handyman_job_card.png';
+        return serviceMap[service] || '/Images/Job Cards Images/Handyman_job_card.webp';
     };
 
     const renderHistoryCard = (order: OrderDetails, index: number) => (
@@ -204,7 +204,7 @@ export default function ProviderOrdersView({
                                 <div className="h-full flex flex-col items-center justify-center text-center pb-20">
                                     <div className="w-34 h-34 bg-neutral-50 rounded-full flex items-center justify-center mb-4">
                                         <img
-                                            src="/Images/Vectors Illu/NoOrdersYet.png"
+                                            src="/Images/Vectors Illu/NoOrdersYet.webp"
                                             alt="Lbricol"
                                             style={{ height: 230, objectFit: 'contain', paddingBottom: 20, paddingTop: 20 }}
                                         />
@@ -481,7 +481,7 @@ function ActivityTab({
                     >
                         <div className="flex items-center gap-5 relative z-10">
                             <div className="w-16 h-16 bg-transparent rounded-1xl flex items-center justify-center  shadow-md">
-                                <img src="/Images/Vectors Illu/LbricolFaceOY.png" className="w-full h-full object-contain rounded-1xl" />
+                                <img src="/Images/Vectors Illu/LbricolFaceOY.webp" className="w-full h-full object-contain rounded-1xl" />
                             </div>
                             <div className="flex-1">
                                 <h3 className="text-[20px] font-[1000] text-black leading-tight mb-1">{t({ en: 'Get Jobs Today!', fr: 'Trouvez une mission !' })}</h3>
@@ -517,7 +517,7 @@ function ActivityTab({
                         {renderEmptyState(
                             t({ en: 'No missions scheduled', fr: 'Aucune mission programmée' }),
                             t({ en: 'Your upcoming missions will be listed here', fr: 'Vos prochaines missions seront affichées ici' }),
-                            <img src="/Images/Vectors Illu/NewOrder.png" className="w-28 h-28 object-contain grayscale opacity-40" />
+                            <img src="/Images/Vectors Illu/NewOrder.webp" className="w-28 h-28 object-contain grayscale opacity-40" />
                         )}
                     </div>
                 )}
@@ -532,7 +532,7 @@ function ActivityTab({
                         {renderEmptyState(
                             t({ en: 'No jobs in progress', fr: 'Aucune mission en cours' }),
                             t({ en: 'Missions you are currently executing will appear here', fr: 'Les missions que vous exécutez actuellement apparaîtront ici' }),
-                            <img src="/Images/Vectors Illu/DraftOrders2.png" className="w-28 h-28 object-contain grayscale opacity-40" />
+                            <img src="/Images/Vectors Illu/DraftOrders2.webp" className="w-28 h-28 object-contain grayscale opacity-40" />
                         )}
                     </div>
                 )}
@@ -548,7 +548,7 @@ function ActivityTab({
                             t({ en: 'No jobs delivered yet', fr: 'Aucune mission livrée pour le moment' }),
                             t({ en: 'Missions you successfully complete will appear here', fr: 'Les missions que vous terminez avec succès apparaîtront ici' }),
                             <div className="w-28 h-28  rounded-full flex items-center justify-center">
-                                <img src="/Images/Vectors Illu/LocationFlag_VI.png" className="w-20 h-20 object-contain" />
+                                <img src="/Images/Vectors Illu/LocationFlag_VI.webp" className="w-20 h-20 object-contain" />
                             </div>
                         )}
                     </div>
@@ -557,7 +557,7 @@ function ActivityTab({
 
             <div className="bg-[#F2F2F2] rounded-[16px] p-6 flex items-center gap-5 mt-4">
                 <div className="flex items-center justify-center flex-shrink-0">
-                    <img src="/Images/Vectors Illu/OrdersHistory.png" className="w-20 h-20 object-contain" />
+                    <img src="/Images/Vectors Illu/OrdersHistory.webp" className="w-20 h-20 object-contain" />
                 </div>
                 <div className="flex flex-col">
                     <p className="text-[16px] font-light text-black leading-tight">{t({ en: 'Need to review past missions?', fr: 'Besoin de revoir vos missions passées ?' })}</p>

@@ -159,10 +159,10 @@ const OrderCard = ({ order, onCancel }: OrderCardProps) => {
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '12px' }}>
                             <div style={{ width: '32px', height: '32px', borderRadius: '50%', backgroundColor: c.border, overflow: 'hidden' }}>
                                 <img
-                                    src={order.bricolerAvatar || '/Images/DefaultAvatar.png'}
+                                    src={order.bricolerAvatar || '/Images/DefaultAvatar.webp'}
                                     alt={order.bricolerName}
                                     style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                                    onError={(e: any) => e.target.src = '/Images/DefaultAvatar.png'}
+                                    onError={(e: any) => e.target.src = '/Images/DefaultAvatar.webp'}
                                 />
                             </div>
                             <span style={{ fontSize: '14px', fontWeight: 700, color: c.text }}>

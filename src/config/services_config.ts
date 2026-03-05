@@ -444,29 +444,29 @@ export const getSubServiceName = (serviceIdOrName: string, subServiceIdOrName: s
 
 // Helper function to get the correct vector path for a service
 export const getServiceVector = (serviceIdOrName: string | undefined): string => {
-    if (!serviceIdOrName) return '/Images/Service Category vectors/HandymanVector.png';
+    if (!serviceIdOrName) return '/Images/Service Category vectors/HandymanVector.webp';
     const id = serviceIdOrName.toLowerCase();
 
-    if (id.includes('handyman') || id.includes('repair')) return '/Images/Service Category vectors/HandymanVector.png';
-    if (id.includes('assembly')) return '/Images/Service Category vectors/AsssemblyVector.png';
-    if (id.includes('mounting')) return '/Images/Service Category vectors/MountingVector.png';
-    if (id.includes('moving')) return '/Images/Service Category vectors/MovingHelpVector.png';
-    if (id.includes('pool')) return '/Images/Vectors Illu/Poolcleaning_VI.png';
-    if (id.includes('pet')) return '/Images/Vectors Illu/petscare.png';
-    if (id.includes('errand')) return '/Images/Vectors Illu/shoppingbag.png';
-    if (id.includes('elderly')) return '/Images/Vectors Illu/ElderlyCare_VI.png';
-    if (id.includes('glass')) return '/Images/Service Category vectors/Glass cleaning.png';
-    if (id.includes('cleaning')) return '/Images/Service Category vectors/CleaningVector.png';
-    if (id.includes('gardening')) return '/Images/Service Category vectors/GardeningVector.png';
-    if (id.includes('plumbing')) return '/Images/Service Category vectors/PlumbingVector.png';
-    if (id.includes('electricity')) return '/Images/Service Category vectors/ElectricityVector.png';
-    if (id.includes('painting')) return '/Images/Service Category vectors/Paintingvector.png';
-    if (id.includes('babysitting')) return '/Images/Vectors Illu/babysetting.png';
-    if (id.includes('appliance')) return '/Images/Service Category vectors/homerepairVector.png';
-    if (id.includes('cooking')) return '/Images/Vectors Illu/cooking.png';
-    if (id.includes('driver')) return '/Images/Vectors Illu/BWCardirever.png';
-    if (id.includes('arabic') || id.includes('learn')) return '/Images/Vectors Illu/Arabic Letter.png';
-    if (id.includes('tour') || id.includes('guide')) return '/Images/Vectors Illu/de099bb06d30cd9d1c5744cc227c189f-Photoroom.png';
+    if (id.includes('handyman') || id.includes('repair')) return '/Images/Service Category vectors/HandymanVector.webp';
+    if (id.includes('assembly')) return '/Images/Service Category vectors/AsssemblyVector.webp';
+    if (id.includes('mounting')) return '/Images/Service Category vectors/MountingVector.webp';
+    if (id.includes('moving')) return '/Images/Service Category vectors/MovingHelpVector.webp';
+    if (id.includes('pool')) return '/Images/Vectors Illu/Poolcleaning_VI.webp';
+    if (id.includes('pet')) return '/Images/Vectors Illu/petscare.webp';
+    if (id.includes('errand')) return '/Images/Vectors Illu/shoppingbag.webp';
+    if (id.includes('elderly')) return '/Images/Vectors Illu/ElderlyCare_VI.webp';
+    if (id.includes('glass')) return '/Images/Service Category vectors/Glass cleaning.webp';
+    if (id.includes('cleaning')) return '/Images/Service Category vectors/CleaningVector.webp';
+    if (id.includes('gardening')) return '/Images/Service Category vectors/GardeningVector.webp';
+    if (id.includes('plumbing')) return '/Images/Service Category vectors/PlumbingVector.webp';
+    if (id.includes('electricity')) return '/Images/Service Category vectors/ElectricityVector.webp';
+    if (id.includes('painting')) return '/Images/Service Category vectors/Paintingvector.webp';
+    if (id.includes('babysitting')) return '/Images/Vectors Illu/babysetting.webp';
+    if (id.includes('appliance')) return '/Images/Service Category vectors/homerepairVector.webp';
+    if (id.includes('cooking')) return '/Images/Vectors Illu/cooking.webp';
+    if (id.includes('driver')) return '/Images/Vectors Illu/BWCardirever.webp';
+    if (id.includes('arabic') || id.includes('learn')) return '/Images/Vectors Illu/Arabic Letter.webp';
+    if (id.includes('tour') || id.includes('guide')) return '/Images/Vectors Illu/de099bb06d30cd9d1c5744cc227c189f-Photoroom.webp';
 
-    return '/Images/Service Category vectors/HandymanVector.png'; // Fallback
+    return '/Images/Service Category vectors/HandymanVector.webp'; // Fallback
 };

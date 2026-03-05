@@ -198,7 +198,7 @@ const PromocodesView: React.FC<PromocodesViewProps> = ({
                         <button
                             onClick={handleApplyCode}
                             disabled={!code.trim() || isLoading}
-                            className="bg-[#FFC244] text-[#1D1D1D] px-6 py-3.5 rounded-xl font-bold text-[15px] disabled:opacity-50 transition-colors"
+                            className="bg-[#FFC244] text-[#1D1D1D] px-6 py-3.5 rounded-xl font-bold text-[15px] disabled:opacity-50 transition-colors flex-shrink-0 whitespace-nowrap"
                         >
                             {isLoading ? '...' : t({ en: 'Apply', fr: 'Appliquer', ar: 'تطبيق' })}
                         </button>

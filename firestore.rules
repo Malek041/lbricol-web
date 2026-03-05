@@ -13,8 +13,14 @@ service cloud.firestore {
     }
 
     function isAdmin() {
-      return isSignedIn() &&
-        get(/databases/$(database)/documents/clients/$(request.auth.uid)).data.role == 'admin';
+      // Improved Admin check: checks both clients and bricolers collections
+      return isSignedIn() && (
+        exists(/databases/$(database)/documents/clients/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/clients/$(request.auth.uid)).data.role == 'admin'
+      ) || (
+        exists(/databases/$(database)/documents/bricolers/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/bricolers/$(request.auth.uid)).data.role == 'admin'
+      );
     }
 
     // Only these fields can be changed by a client writing a review
@@ -27,7 +33,7 @@ service cloud.firestore {
     // ── 1. City Services (Publicly Readable) ───────────────────────────────
     match /city_services/{cityId} {
       allow read: if true;
-      allow write: if isSignedIn();
+      allow write: if isAdmin();
     }
 
     // ── 2. Jobs (Marketplace matching) ─────────────────────────────────────
@@ -35,8 +41,9 @@ service cloud.firestore {
       allow read: if true;
       allow create: if isSignedIn();
       allow update: if isSignedIn();
-      allow delete: if isSignedIn() &&
-        (resource.data.clientId == request.auth.uid || isAdmin());
+      allow delete: if isSignedIn() && (
+        resource.data.clientId == request.auth.uid || isAdmin()
+      );
 
       match /messages/{messageId} {
         allow read, write: if isSignedIn();
@@ -48,20 +55,23 @@ service cloud.firestore {
 
     // ── 3. Orders ──────────────────────────────────────────────────────────
     match /orders/{orderId} {
-      // Owner (client or bricoler), or admin can read
+      // Allow read if owner (client or bricoler), admin, or if it's an unassigned public order
       allow read: if isSignedIn() && (
+        !('clientId' in resource.data) || // Safely handle newly created orders
         resource.data.clientId == request.auth.uid ||
         resource.data.bricolerId == request.auth.uid ||
         isAdmin()
       );
-      // Any signed-in user can create an order (client placing order)
+      
       allow create: if isSignedIn();
-      // Client or assigned bricoler can update (status changes, offers, etc.)
+      
+      // Allow update if and (owner or admin)
       allow update: if isSignedIn() && (
         resource.data.clientId == request.auth.uid ||
         resource.data.bricolerId == request.auth.uid ||
         isAdmin()
       );
+      
       allow delete: if isAdmin();
 
       match /messages/{messageId} {
@@ -76,7 +86,6 @@ service cloud.firestore {
       allow update: if isSignedIn() && (
         isOwner(userId) ||
         isAdmin() ||
-        // Any signed-in client can submit a review
         isReviewUpdate()
       );
       allow delete: if isAdmin();
@@ -84,21 +93,21 @@ service cloud.firestore {
 
     // ── 5. Client Profiles ─────────────────────────────────────────────────
     match /clients/{userId} {
-      allow read: if isOwner(userId) || isAdmin();
+      allow read: if isOwner(userId) || isAdmin() || exists(/databases/$(database)/documents/bricolers/$(request.auth.uid));
       allow create: if isOwner(userId);
       allow update: if isOwner(userId) || isAdmin();
       allow delete: if isAdmin();
     }
 
-    // ── 6. Users (Referrals, promo balances) ───────────────────────────────
+    // ── 6. Users (Referrals, promo balances, etc.) ────────────────────────
     match /users/{userId} {
-      allow read: if true;   // Public: allows referral code lookups
+      allow read: if isSignedIn(); 
       allow create: if isSignedIn();
       allow update: if isSignedIn() && (
         isOwner(userId) ||
-        // Allow incrementing referralBalance for a referrer
-        request.resource.data.diff(resource.data)
-          .affectedKeys().hasOnly(['referralBalance'])
+        // Allow anyone to update another user's referralBalance (to reward a referrer)
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['referralBalance']) ||
+        isAdmin()
       );
       allow delete: if isAdmin();
     }
@@ -114,32 +123,44 @@ service cloud.firestore {
     match /bricoler_notifications/{notificationId} {
       allow read, update, delete: if isSignedIn() && (
         request.auth.uid == resource.data.bricolerId ||
-        request.auth.uid == resource.data.uid ||
+        request.auth.uid == (resource.data.uid ?? '') ||
         isAdmin()
       );
       allow create: if isSignedIn();
     }
 
-    // ── 9. Drafts (local order drafts saved to Firestore) ──────────────────
+    // ── 9. Drafts (local order drafts) ─────────────────────────────────────
     match /drafts/{draftId} {
-      allow read, write: if isSignedIn() &&
-        resource.data.clientId == request.auth.uid;
+      allow read: if isSignedIn() && (resource.data.clientId == request.auth.uid || isAdmin());
       allow create: if isSignedIn();
+      allow update: if isSignedIn() && (resource.data.clientId == request.auth.uid || isAdmin());
+      allow delete: if isSignedIn() && (resource.data.clientId == request.auth.uid || isAdmin());
     }
 
-    // ── 11. Client Notifications ──────────────────────────────────────────────
+    // ── 10. Reviews / Stats (if separate) ─────────────────────────────────
+    // Handled in bricolers match if nested but good to have a backup if root collection exists
+    match /reviews/{reviewId} {
+      allow read: if true;
+      allow create: if isSignedIn();
+      allow update, delete: if isAdmin();
+    }
+
+    // ── 11. Client Notifications ──────────────────────────────────────────
     match /client_notifications/{notificationId} {
       allow read, update, delete: if isSignedIn() && (
-        request.auth.uid == resource.data.clientId ||
+        request.auth.uid == (resource.data.clientId ?? '') ||
         isAdmin()
       );
       allow create: if isSignedIn();
     }
 
-    // ── 12. Collection Group: Messages (cross-collection reads) ────────────
+    // ── 12. Collection Group Rules ────────────────────────────────────────
     match /{path=**}/messages/{messageId} {
-      allow read: if isSignedIn();
-      allow write: if isSignedIn();
+      allow read, write: if isSignedIn();
+    }
+    
+    match /{path=**}/offers/{offerId} {
+      allow read, write: if isSignedIn();
     }
   }
 }

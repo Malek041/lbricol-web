@@ -31,7 +31,7 @@ const SERVICES: ServiceEntry[] = [
         label: 'Handyman',
         labelFr: 'Bricoleur',
         labelAr: 'بري كول',
-        iconPath: '/Images/Service Category vectors/HandymanVector.png',
+        iconPath: '/Images/Service Category vectors/HandymanVector.webp',
         subServices: [
             { en: 'General Repairs', fr: 'Réparations Générales', ar: 'إصلاحات عامة' },
             { en: 'Door & Lock Repair', fr: 'Réparation de Portes et Serrures', ar: 'إصلاح الأبواب والأقفال' },
@@ -43,14 +43,14 @@ const SERVICES: ServiceEntry[] = [
             { en: 'From leaky taps to broken hinges, we fix it all.', fr: 'Des robinets qui fuient aux charnières cassées, nous réparons tout.', ar: 'من الصنابير التي تسرب إلى المفصلات المكسورة، نصلح كل شيء.' },
             { en: 'Now Trending: Smart-home gadget installations.', fr: 'Tendance actuelle : Installations de gadgets pour maison intelligente.', ar: 'رائج الآن: تركيب أجهزة المنزل الذكي.' },
         ],
-        heroImage: '/Images/Job Cards Images/Handyman_job_card.png',
+        heroImage: '/Images/Job Cards Images/Handyman_job_card.webp',
     },
     {
         id: 'furniture_assembly',
         label: 'Assembly',
         labelFr: 'Montage',
         labelAr: 'تركيب الأثاث',
-        iconPath: '/Images/Service Category vectors/AsssemblyVector.png',
+        iconPath: '/Images/Service Category vectors/AsssemblyVector.webp',
         subServices: [
             { en: 'General Furniture Assembly', fr: 'Montage de Meubles Général', ar: 'تركيب أثاث عام' },
             { en: 'IKEA / Flat-Pack Assembly', fr: 'Montage IKEA / Kit', ar: 'تركيب أثاث ايكيا / أثاث جاهز' },
@@ -62,14 +62,14 @@ const SERVICES: ServiceEntry[] = [
             { en: 'Assemble or disassemble furniture items by unboxing, building, and any cleanup.', fr: 'Montez ou démontez des meubles en déballant, assemblant et nettoyant.', ar: 'تركيب أو فك الأثاث مع التفريغ والبناء والتنظيف.' },
             { en: 'Now Trending: Curved sofas, computer desks & sustainable materials.', fr: 'Tendance actuelle : Canapés courbés, bureaux d\'ordinateur et matériaux durables.', ar: 'رائج الآن: أرائك منحنية، مكاتب كمبيوتر ومواد مستدامة.' },
         ],
-        heroImage: '/Images/Job Cards Images/Furniture_Assembly_job_card.png',
+        heroImage: '/Images/Job Cards Images/Furniture_Assembly_job_card.webp',
     },
     {
         id: 'mounting',
         label: 'Mounting',
         labelFr: 'Fixation murale',
         labelAr: 'تعليق جداري',
-        iconPath: '/Images/Service Category vectors/MountingVector.png',
+        iconPath: '/Images/Service Category vectors/MountingVector.webp',
         subServices: [
             { en: 'TV Mounting', fr: 'Montage de TV', ar: 'تركيب التلفزيون' },
             { en: 'Shelf Installation', fr: 'Installation d\'Étagères', ar: 'تركيب الرفوف' },
@@ -81,14 +81,14 @@ const SERVICES: ServiceEntry[] = [
             { en: 'Securely mount your TV, shelves, art, mirrors, dressers, and more.', fr: 'Montez en toute sécurité votre TV, vos étagères, vos tableaux, vos miroirs, vos commodes et bien plus.', ar: 'تعليق التلفزيون، الرفوف، اللوحات، المرايا والمزيد بأمان.' },
             { en: 'Now Trending: Gallery walls, art TVs & wraparound bookcases.', fr: 'Tendance actuelle : Murs de galerie, TV artistiques et bibliothèques d\'angle.', ar: 'رائج الآن: جدران المعارض، أجهزة تلفزيون فنية ومكتبات زاوية.' },
         ],
-        heroImage: '/Images/Job Cards Images/Handyman_job_card.png', // closest match
+        heroImage: '/Images/Job Cards Images/Handyman_job_card.webp', // closest match
     },
     {
         id: 'moving',
         label: 'Moving',
         labelFr: 'Déménagement',
         labelAr: 'نقل وأثاث',
-        iconPath: '/Images/Service Category vectors/MovingHelpVector.png',
+        iconPath: '/Images/Service Category vectors/MovingHelpVector.webp',
         subServices: [
             { en: 'Local Moving', fr: 'Déménagement Local', ar: 'نقل محلي' },
             { en: 'Packing Services', fr: 'Services d\'Emballage', ar: 'خدمات التغليف' },
@@ -99,14 +99,14 @@ const SERVICES: ServiceEntry[] = [
             { en: 'Professional movers handle packing, loading and transport.', fr: 'Des déménageurs professionnels gèrent l\'emballage, le chargement et le transport.', ar: 'عمال محترفون يتعاملون مع التغليف والتحميل والنقل.' },
             { en: 'Now Trending: Same-day apartment moves in under 3 hours.', fr: 'Tendance actuelle : Déménagements d\'appartements le jour même en moins de 3 heures.', ar: 'رائج الآن: نقل الشقق في نفس اليوم في أقل من 3 ساعات.' },
         ],
-        heroImage: '/Images/Job Cards Images/Moving Help_job_card.png',
+        heroImage: '/Images/Job Cards Images/Moving Help_job_card.webp',
     },
     {
         id: 'cleaning',
         label: 'Cleaning',
         labelFr: 'Nettoyage',
         labelAr: 'خادمة / تنظيف',
-        iconPath: '/Images/Service Category vectors/CleaningVector.png',
+        iconPath: '/Images/Service Category vectors/CleaningVector.webp',
         subServices: [
             { en: 'Family Home Cleaning', fr: 'Nettoyage de Maison Familiale', ar: 'تنظيف منزل عائلي' },
             { en: 'Airbnb Cleaning', fr: 'Nettoyage Airbnb', ar: 'تنظيف شقق Airbnb' },
@@ -118,14 +118,14 @@ const SERVICES: ServiceEntry[] = [
             { en: 'Clean your home or office; deep-clean appliances and other spaces.', fr: 'Nettoyez votre maison ou votre bureau ; nettoyez en profondeur les appareils ménagers et d\'autres espaces.', ar: 'تنظيف منزلك أو مكتبك؛ تنظيف عميق للأجهزة والمساحات الأخرى.' },
             { en: 'Now Trending: Eco-friendly products, home cleaning checklists, and cleaning hacks.', fr: 'Tendance actuelle : Produits écologiques, listes de contrôle de nettoyage à domicile et astuces de nettoyage.', ar: 'رائج الآن: منتجات صديقة للبيئة، قوائم فحص التنظيف وحيل التنظيف.' },
         ],
-        heroImage: '/Images/Job Cards Images/Cleaning_job_card.png',
+        heroImage: '/Images/Job Cards Images/Cleaning_job_card.webp',
     },
     {
         id: 'glass_cleaning',
         label: 'Glass cleaning',
         labelFr: 'Nettoyage de vitres',
         labelAr: 'تنظيف الزجاج',
-        iconPath: '/Images/Service Category vectors/Glass cleaning.png',
+        iconPath: '/Images/Service Category vectors/Glass cleaning.webp',
         subServices: [
             { en: 'Residential Glass', fr: 'Vitres Résidentielles', ar: 'زجاج سكني' },
             { en: 'Commercial/Office Glass', fr: 'Vitres Commerciales / de Bureau', ar: 'زجاج تجاري / مكاتب' },
@@ -136,14 +136,14 @@ const SERVICES: ServiceEntry[] = [
             { en: 'Streak-free cleaning for windows, mirrors and specialty glass.', fr: 'Nettoyage sans traces pour les fenêtres, les miroirs et les vitres spéciales.', ar: 'تنظيف بدون أثر للنوافذ والمرايا والزجاج الخاص.' },
             { en: 'Now Trending: Eco-friendly streak-free formulas.', fr: 'Tendance actuelle : Formules écologiques sans traces.', ar: 'رائج الآن: تركيبات صديقة للبيئة بدون أثر.' },
         ],
-        heroImage: '/Images/Job Cards Images/Cleaning_job_card.png', // reusing cleaning image for now
+        heroImage: '/Images/Job Cards Images/Cleaning_job_card.webp', // reusing cleaning image for now
     },
     {
         id: 'gardening',
         label: 'Gardening',
         labelFr: 'Jardinage',
         labelAr: 'بستنة وحدائق',
-        iconPath: '/Images/Service Category vectors/GardeningVector.png',
+        iconPath: '/Images/Service Category vectors/GardeningVector.webp',
         subServices: [
             { en: 'Lawn Mowing', fr: 'Tonte de Pelouse', ar: 'قص العشب' },
             { en: 'Tree Trimming', fr: 'Taille d\'Arbres', ar: 'تقليم الأشجار' },
@@ -155,14 +155,14 @@ const SERVICES: ServiceEntry[] = [
             { en: 'Keep your outdoor spaces green, tidy and beautiful.', fr: 'Gardez vos espaces extérieurs verts, bien rangés et beaux.', ar: 'حافظ على مساحاتك الخارجية خضراء ومرتبة وجميلة.' },
             { en: 'Now Trending: Vertical gardens and drought-resistant landscaping.', fr: 'Tendance actuelle : Jardins verticaux et aménagement paysager résistant à la sécheresse.', ar: 'رائج الآن: حدائق عمودية وتنسيق حدائق مقاوم للجفاف.' },
         ],
-        heroImage: '/Images/Job Cards Images/Gardening_job_card.png',
+        heroImage: '/Images/Job Cards Images/Gardening_job_card.webp',
     },
     {
         id: 'plumbing',
         label: 'Plumbing',
         labelFr: 'Plomberie',
         labelAr: 'سباك (بلومبي)',
-        iconPath: '/Images/Service Category vectors/PlumbingVector.png',
+        iconPath: '/Images/Service Category vectors/PlumbingVector.webp',
         subServices: [
             { en: 'Leak Repair', fr: 'Réparation de Fuites', ar: 'إصلاح التسريبات' },
             { en: 'Pipe Installation', fr: 'Installation de Tuyaux', ar: 'تركيب الأنابيب' },
@@ -174,14 +174,14 @@ const SERVICES: ServiceEntry[] = [
             { en: 'Fix leaks, install pipes and keep your water running smoothly.', fr: 'Réparez les fuites, installez des tuyaux et gardez votre eau qui coule en douceur.', ar: 'إصلاح التسريبات، تركيب الأنابيب والحفاظ على تدفق المياه بسلاسة.' },
             { en: 'Now Trending: Pressure-balanced shower fixtures.', fr: 'Tendance actuelle : Appareils de douche à pression équilibrée.', ar: 'رائج الآن: تركيبات دش متوازنة الضغط.' },
         ],
-        heroImage: '/Images/Job Cards Images/Plumbing_job_card.png',
+        heroImage: '/Images/Job Cards Images/Plumbing_job_card.webp',
     },
     {
         id: 'electricity',
         label: 'Electricity',
         labelFr: 'Électricité',
         labelAr: 'كهربائي (تريسيان)',
-        iconPath: '/Images/Service Category vectors/ElectricityVector.png',
+        iconPath: '/Images/Service Category vectors/ElectricityVector.webp',
         subServices: [
             { en: 'Wiring & Rewiring', fr: 'Câبلage et Recâبلage', ar: 'توصيل وتجديد الأسلاك' },
             { en: 'Outlet Installation', fr: 'Installation de Prises', ar: 'تركيب المقابس' },
@@ -193,14 +193,14 @@ const SERVICES: ServiceEntry[] = [
             { en: 'Safe, certified electrical work by verified professionals.', fr: 'Travaux électriques sûrs et certifiés par des professionnels vérifiés.', ar: 'أعمال كهربائية آمنة ومعتمدة من قبل محترفين موثوقين.' },
             { en: 'Now Trending: Smart lighting and USB outlet installations.', fr: 'Tendance actuelle : Éclairage intelligent et installations de prises USB.', ar: 'رائج الآن: إضاءة ذكية وتركيب مقابس USB.' },
         ],
-        heroImage: '/Images/Job Cards Images/Electricity_job_card.png',
+        heroImage: '/Images/Job Cards Images/Electricity_job_card.webp',
     },
     {
         id: 'painting',
         label: 'Painting',
         labelFr: 'Peinture',
         labelAr: 'صباغ',
-        iconPath: '/Images/Service Category vectors/Paintingvector.png',
+        iconPath: '/Images/Service Category vectors/Paintingvector.webp',
         subServices: [
             { en: 'Indoor Painting', fr: 'Peinture Intérieure', ar: 'صباغة داخلية' },
             { en: 'Wallpapering', fr: 'Pose de Papier Peint', ar: 'تركيب ورق الجدران' },
@@ -213,14 +213,14 @@ const SERVICES: ServiceEntry[] = [
             { en: 'Transform your spaces with fresh, professional paint jobs.', fr: 'Transformez vos espaces avec des travaux de peinture frais et professionnels.', ar: 'حول مساحاتك بأعمال صباغة احترافية وجديدة.' },
             { en: 'Now Trending: Limewash, textured finishes & feature walls.', fr: 'Tendance actuelle : Peinture à la chaux, finitions texturées et murs caractéristiques.', ar: 'رائج الآن: صباغة جيرية، لمسات بارزة وجدران مميزة.' },
         ],
-        heroImage: '/Images/Job Cards Images/Painting_job_card.png',
+        heroImage: '/Images/Job Cards Images/Painting_job_card.webp',
     },
     {
         id: 'babysitting',
         label: 'Childcare',
         labelFr: 'Garde d\'enfants',
         labelAr: 'جليسة أطفال',
-        iconPath: '/Images/Vectors Illu/babysetting.png',
+        iconPath: '/Images/Vectors Illu/babysetting.webp',
         subServices: [
             { en: 'Regular Babysitting', fr: 'Garde Prévue', ar: 'جليسة أطفال عادية' },
             { en: 'After-School Care', fr: 'Garde Après l\'École', ar: 'رعاية بعد المدرسة' },
@@ -231,14 +231,14 @@ const SERVICES: ServiceEntry[] = [
             { en: 'Trusted, background-checked carers for your children.', fr: 'Garde d\'enfants de confiance et vérifiée pour vos enfants.', ar: 'مقدمو رعاية موثوقون ومدققون لأطفالك.' },
             { en: 'Now Trending: Bilingual carers and homework-help sessions.', fr: 'Tendance actuelle : Gardes bilingues et aide aux devoirs.', ar: 'رائج الآن: جليسات ثنائيات اللغة وجلسات مساعدة في الواجبات.' },
         ],
-        heroImage: '/Images/Job Cards Images/Babysetting_job_card.png',
+        heroImage: '/Images/Job Cards Images/Babysetting_job_card.webp',
     },
     {
         id: 'appliance_installation',
         label: 'Home Repair',
         labelFr: 'Réparations maison',
         labelAr: 'إصلاحات المنزل',
-        iconPath: '/Images/Service Category vectors/homerepairVector.png',
+        iconPath: '/Images/Service Category vectors/homerepairVector.webp',
         subServices: [
             { en: 'Door, Cabinet, & Furniture Repair', fr: 'Réparation Portes, Placards et Meubles', ar: 'إصلاح الأبواب والخزائن والأثاث' },
             { en: 'Wall Repair', fr: 'Réparation de Murs', ar: 'إصلاح الجدران' },
@@ -255,14 +255,14 @@ const SERVICES: ServiceEntry[] = [
             { en: 'From tiling to appliances, we handle it all.', fr: 'De la pose de carrelage aux appareils électroménagers, nous nous occupons de tout.', ar: 'من الزليج إلى الأجهزة، نتعامل مع كل شيء.' },
             { en: 'Now Trending: Feature-wall tiling and open-plan kitchen remodels.', fr: 'Tendance actuelle : Carrelage de murs accentués et rénovations de cuisines ouvertes.', ar: 'رائج الآن: زليج الجدران المميزة وتجديد المطابخ.' },
         ],
-        heroImage: '/Images/Job Cards Images/Painting_job_card.png',
+        heroImage: '/Images/Job Cards Images/Painting_job_card.webp',
     },
     {
         id: 'pool_cleaning',
         label: 'Pool cleaning',
         labelFr: 'Nettoyage de piscine',
         labelAr: 'تنظيف المسبح',
-        iconPath: '/Images/Vectors Illu/Poolcleaning_VI.png',
+        iconPath: '/Images/Vectors Illu/Poolcleaning_VI.webp',
         subServices: [
             { en: 'Chemical Balancing', fr: 'Équilibre Chimique', ar: 'توازن كيميائي' },
             { en: 'Skimming & Vacuuming', fr: 'Écrémage et Aspiration', ar: 'إزالة الشوائب والشفط' },
@@ -274,14 +274,14 @@ const SERVICES: ServiceEntry[] = [
             { en: 'Keep your pool crystal clear and safe for everyone.', fr: 'Gardez votre piscine cristalline et sûre pour tous.', ar: 'حافظ على مسبحك صافياً وآمناً للجميع.' },
             { en: 'Specialized chemical balancing for various pool types.', fr: 'Équilibrage chimique spécialisé pour divers types de piscines.', ar: 'توازن كيميائي متخصص لمختلف أنواع المسابح.' },
         ],
-        heroImage: '/Images/Job Cards Images/Pool Cleaning_job_card.png',
+        heroImage: '/Images/Job Cards Images/Pool Cleaning_job_card.webp',
     },
     {
         id: 'pets_care',
         label: 'Pets care',
         labelFr: 'Soins des animaux',
         labelAr: 'رعاية الحيوانات',
-        iconPath: '/Images/Vectors Illu/petscare.png',
+        iconPath: '/Images/Vectors Illu/petscare.webp',
         subServices: [
             { en: 'Dog Walking', fr: 'Promenade de Chien', ar: 'تمشية الكلاب' },
             { en: 'Pet Sitting', fr: 'Garde d\'Animaux', ar: 'رعاية الحيوانات' },
@@ -293,14 +293,14 @@ const SERVICES: ServiceEntry[] = [
             { en: 'Professional, background-checked handlers for your pets.', fr: 'Des gardiens professionnels et vérifiés pour vos animaux.', ar: 'مقدمو رعاية محترفون ومدققون لخدمة حيواناتك الأليفة.' },
             { en: 'GPS tracking and photo updates for dog walks.', fr: 'Suivi GPS et photos pendant les promenades.', ar: 'تتبع GPS وتحديثات بالصور أثناء تمشية الكلاب.' },
         ],
-        heroImage: '/Images/Job Cards Images/Babysetting_job_card.png',
+        heroImage: '/Images/Job Cards Images/Babysetting_job_card.webp',
     },
     {
         id: 'errands',
         label: 'Errands',
         labelFr: 'Courses',
         labelAr: 'مشاوير وقضاء أغراض',
-        iconPath: '/Images/Vectors Illu/shoppingbag.png',
+        iconPath: '/Images/Vectors Illu/shoppingbag.webp',
         subServices: [
             { en: 'Grocery Shopping', fr: 'Courses Alimentaires', ar: 'تسوق مواد غذائية' },
             { en: 'Pharmacy Pickup', fr: 'Pharmacie', ar: 'اقتناء أدوية من الصيدلية' },
@@ -312,14 +312,14 @@ const SERVICES: ServiceEntry[] = [
             { en: 'Save time by letting us handle your tasks and errands.', fr: 'Gagnez du temps en nous laissant gérer vos tâches et courses.', ar: 'وفر وقتك واترك لنا قضاء مشاويرك ومهامك.' },
             { en: 'Quick grocery shopping and delivery in under 60 min.', fr: 'Courses et livraison rapides en moins de 60 min.', ar: 'تسوق مواد غذائية سريع وتوصيل في أقل من 60 دقيقة.' },
         ],
-        heroImage: '/Images/Job Cards Images/Moving Help_job_card.png',
+        heroImage: '/Images/Job Cards Images/Moving Help_job_card.webp',
     },
     {
         id: 'elderly_care',
         label: 'Elderly care',
         labelFr: 'Aide aux seniors',
         labelAr: 'رعاية المسنين',
-        iconPath: '/Images/Vectors Illu/ElderlyCare_VI.png',
+        iconPath: '/Images/Vectors Illu/ElderlyCare_VI.webp',
         subServices: [
             { en: 'Companionship & Visits', fr: 'Compagnie et Visites', ar: 'مرافقة وزيارات' },
             { en: 'Personal Assistance', fr: 'Aide Personnelle', ar: 'مساعدة شخصية' },
@@ -332,14 +332,14 @@ const SERVICES: ServiceEntry[] = [
             { en: 'Compassionate, background-checked caregivers for your loved ones.', fr: 'Des aidants bienveillants et vérifiés pour vos proches.', ar: 'مقدمو رعاية رحماء ومدققون لأحبائك.' },
             { en: 'Regular visits, companionship, and practical daily support.', fr: 'Visites régulières, compagnie et soutien pratique au quotidien.', ar: 'زيارات منتظمة، رفقة ودعم عملي يومي.' },
         ],
-        heroImage: '/Images/Job Cards Images/Babysetting_job_card.png',
+        heroImage: '/Images/Job Cards Images/Babysetting_job_card.webp',
     },
     {
         id: 'cooking',
         label: 'Cooking',
         labelFr: 'Cuisine',
         labelAr: 'طبخ',
-        iconPath: '/Images/Vectors Illu/cooking.png',
+        iconPath: '/Images/Vectors Illu/cooking.webp',
         subServices: [
             { en: 'Breakfast', fr: 'Petit-déjeuner', ar: 'فطور' },
             { en: 'Lunch', fr: 'Déjeuner', ar: 'غداء' },
@@ -353,14 +353,14 @@ const SERVICES: ServiceEntry[] = [
             { en: 'Authentic home-cooked Moroccan meals by verified local cooks.', fr: 'Plats marocains faits maison par des cuisiniers locaux vérifiés.', ar: 'وجبات مغربية منزلية أصيلة من طباخين محليين موثوقين.' },
             { en: 'Now Trending: Moroccan cooking classes for tourists.', fr: 'Tendance actuelle : Cours de cuisine marocaine pour touristes.', ar: 'رائج الآن: دروس الطبخ المغربي للسياح.' },
         ],
-        heroImage: '/Images/Job Cards Images/Cleaning_job_card.png',
+        heroImage: '/Images/Job Cards Images/Cleaning_job_card.webp',
     },
     {
         id: 'tour_guide',
         label: 'Tour Guide',
         labelFr: 'Guide Touristique',
         labelAr: 'مرشد سياحي',
-        iconPath: '/Images/Vectors Illu/Traveler.png',
+        iconPath: '/Images/Vectors Illu/Traveler.webp',
         subServices: [
             { en: 'City Tour', fr: 'Tour de la Ville', ar: 'جولة في المدينة' },
             { en: 'Historical Sites Tour', fr: 'Visite des Sites Historiques', ar: 'جولة المواقع التاريخية' },
@@ -371,14 +371,14 @@ const SERVICES: ServiceEntry[] = [
             { en: 'Explore Morocco with a verified local guide who knows every corner.', fr: 'Explorez le Maroc avec un guide local vérifié qui connaît chaque recoin.', ar: 'استكشف المغرب مع مرشد محلي موثوق يعرف كل زاوية.' },
             { en: 'Now Trending: Medina walking tours and sunset desert trips.', fr: 'Tendance actuelle : Visites à pied de la médina et excursions désert au coucher du soleil.', ar: 'رائج الآن: جولات مشي في المدينة ورحلات الصحراء عند غروب الشمس.' },
         ],
-        heroImage: '/Images/Job Cards Images/Moving Help_job_card.png',
+        heroImage: '/Images/Job Cards Images/Moving Help_job_card.webp',
     },
     {
         id: 'private_driver',
         label: 'Private Driver',
         labelFr: 'Chauffeur Privé',
         labelAr: 'سائق خاص',
-        iconPath: '/Images/Vectors Illu/DriverCar.png',
+        iconPath: '/Images/Vectors Illu/DriverCar.webp',
         subServices: [
             { en: 'Half-Day City Driver', fr: 'Chauffeur Demi-journée (Ville)', ar: 'سائق نصف يوم (بالمدينة)' },
             { en: 'Full-Day City Driver', fr: 'Chauffeur Journée Complète (Ville)', ar: 'سائق يوم كامل (بالمدينة)' },
@@ -389,14 +389,14 @@ const SERVICES: ServiceEntry[] = [
             { en: 'Professional, verified drivers for your personal or business trips.', fr: 'Des chauffeurs professionnels et vérifiés pour vos trajets personnels ou professionnels.', ar: 'سائقون محترفون ومدققون لرحلاتك الشخصية أو العملية.' },
             { en: 'Comfortable rides customized to your schedule and needs.', fr: 'Trajets confortables adaptés à votre emploi du temps et à vos besoins.', ar: 'رحلات مريحة مخصصة لجدولك واحتياجاتك.' },
         ],
-        heroImage: '/Images/Job Cards Images/Moving Help_job_card.png',
+        heroImage: '/Images/Job Cards Images/Moving Help_job_card.webp',
     },
     {
         id: 'learn_arabic',
         label: 'Learn Arabic',
         labelFr: 'Apprendre l\'arabe',
         labelAr: 'تعلم العربية',
-        iconPath: '/Images/Vectors Illu/LearnArabic.png',
+        iconPath: '/Images/Vectors Illu/LearnArabic.webp',
         subServices: [
             { en: 'Intro to Moroccan Darija', fr: 'Intro à la Darija Marocaine', ar: 'مقدمة في الدارجة المغربية' },
             { en: 'Conversational Practice', fr: 'Pratique Conversationnelle', ar: 'ممارسة المحادثة' },
@@ -407,7 +407,7 @@ const SERVICES: ServiceEntry[] = [
             { en: 'Learn from local Moroccan native speakers.', fr: 'Apprenez avec des locuteurs natifs marocains.', ar: 'تعلم من متحدثين مغاربة أصليين.' },
             { en: 'Now Trending: Personalized Darija sessions for expats.', fr: 'Tendance actuelle : Sessions de Darija personnalisées pour les expatriés.', ar: 'رائج الآن: جلسات دارجة مخصصة للمغتربين.' },
         ],
-        heroImage: '/Images/Job Cards Images/Babysetting_job_card.png',
+        heroImage: '/Images/Job Cards Images/Babysetting_job_card.webp',
     },
 ];
 
@@ -681,7 +681,7 @@ const ClientHome: React.FC<ClientHomeProps> = ({
                                 </p>
                             </div>
                             <div className="w-24 h-24 flex-shrink-0 z-10 relative -my-4 -mr-2">
-                                <img src="/Images/Vectors Illu/gifts.png" alt="Gifts" className="w-full h-full object-contain" />
+                                <img src="/Images/Vectors Illu/gifts.webp" alt="Gifts" className="w-full h-full object-contain" />
                             </div>
 
                             {/* Decorative background shape */}

@@ -144,7 +144,7 @@ const Header = ({ activeTab, onTabChange, isBricoler = false, user = null }: Hea
                 }}>
                     {!isMobile && (
                         <img
-                            src={theme === 'light' ? "/Images/Logo/Black Lbrico Logo.png" : "/Images/Logo/White Lbrico Logo.png"}
+                            src={theme === 'light' ? "/Images/Logo/Black Lbrico Logo.webp" : "/Images/Logo/White Lbrico Logo.webp"}
                             alt="Lbricol"
                             style={{
                                 height: '2rem',
@@ -371,7 +371,7 @@ const Header = ({ activeTab, onTabChange, isBricoler = false, user = null }: Hea
                                                     }
                                                     setIsMenuOpen(false);
                                                 }}
-                                                image="/Images/Logo/Black Lbricol Avatar Face.png"
+                                                image="/Images/Logo/Black Lbricol Avatar Face.webp"
                                                 bordered
                                             />
 

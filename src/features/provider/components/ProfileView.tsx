@@ -225,7 +225,7 @@ const ProfileView: React.FC<ProfileViewProps> = ({
                                 className="w-28 h-28 rounded-[36px] overflow-hidden bg-white relative shadow-sm"
                             >
                                 <img
-                                    src="/Images/Vectors Illu/LbricolFaceOY.png"
+                                    src="/Images/Vectors Illu/LbricolFaceOY.webp"
                                     alt={displayName}
                                     className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                                 />
