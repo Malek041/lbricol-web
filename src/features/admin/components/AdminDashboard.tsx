@@ -63,8 +63,8 @@ const AdminDashboard = memo(({ t }: AdminDashboardProps) => {
                 areaDemand: {},
             };
         }
-        return match;
-    }, [selectedCity, global, cities]);
+        return match as any;
+    }, [selectedCity, global, cities]) as any;
 
     return (
         <div className="flex flex-col min-h-screen bg-[#FAFAFA] pb-24">
