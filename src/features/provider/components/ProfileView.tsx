@@ -209,7 +209,7 @@ const ProfileView: React.FC<ProfileViewProps> = ({
                                 className="w-28 h-28 rounded-[36px] overflow-hidden bg-white relative shadow-sm"
                             >
                                 <img
-                                    src="/Images/Vectors Illu/LbricolFaceOY.webp"
+                                    src={userAvatar || userData?.avatar || userData?.photoURL || "/Images/Vectors Illu/LbricolFaceOY.webp"}
                                     alt={displayName}
                                     className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                                 />
@@ -567,7 +567,7 @@ const ProfileView: React.FC<ProfileViewProps> = ({
             const categoryId = current.categoryId || current.serviceId || (typeof s === 'string' ? s : 'other');
 
             const existing = acc.find(g => g.categoryId === categoryId);
-            const currentPhotos = current.portfolioImages || current.portfolio || [];
+            const currentPhotos = current.portfolioImages || current.portfolio || current.images || current.portfolio_images || [];
             const isActive = current.isActive !== false;
 
             if (existing) {
@@ -613,40 +613,6 @@ const ProfileView: React.FC<ProfileViewProps> = ({
                                 <ArrowLeft size={24} className="text-black" />
                             </button>
                         ) : <div />}
-                        <button
-                            onClick={async () => {
-                                if (!auth.currentUser || !userData?.id) return;
-                                const currentServices = userData?.services || [];
-                                const allActive = currentServices.every((s: any) => s.isActive !== false);
-                                const newServices = currentServices.map((s: any) => ({ ...s, isActive: !allActive }));
-
-                                try {
-                                    if (!userData?.id || !setUserData) return;
-                                    const currentServices = userData?.services || [];
-                                    const allActive = currentServices.every((s: any) => {
-                                        if (typeof s === 'string') return true;
-                                        return s.isActive !== false;
-                                    });
-                                    const newServices = currentServices.map((s: any) => {
-                                        if (typeof s === 'string') return { categoryId: s, isActive: !allActive };
-                                        return { ...s, isActive: !allActive };
-                                    });
-
-                                    // Optimistic update
-                                    setUserData({ ...userData, services: newServices });
-
-                                    const providerRef = doc(db, 'bricolers', userData.id);
-                                    await updateDoc(providerRef, { services: newServices });
-                                } catch (e) {
-                                    console.error("Error toggling all services:", e);
-                                }
-                            }}
-                            className="text-[17px] font-bold text-[#00A082]"
-                        >
-                            {userData?.services?.every((s: any) => s.isActive !== false)
-                                ? t({ en: 'Unselect All', fr: 'Tout désélectionner', ar: 'إلغاء تحديد الكل' })
-                                : t({ en: 'Select All', fr: 'Tout sélectionner', ar: 'تحديد الكل' })}
-                        </button>
                     </div>
                     <h2 className="text-[32px] font-black text-[#1D1D1D] tracking-tighter leading-tight">
                         {t({ en: 'Work Portfolio', fr: 'Portfolio de réalisations', ar: 'معرض الأعمال' })}
@@ -687,46 +653,7 @@ const ProfileView: React.FC<ProfileViewProps> = ({
                                             </div>
                                         </div>
 
-                                        {/* Toggle Switch */}
-                                        <button
-                                            onClick={async (e) => {
-                                                e.stopPropagation();
-                                                if (!auth.currentUser || !userData?.id || !setUserData) return;
-
-                                                const currentServices = userData.services || [];
-                                                const targetIsActive = !group.isActive;
-
-                                                const newServices = currentServices.map((s: any) => {
-                                                    const serviceId = typeof s === 'string' ? s : (s.categoryId || s.serviceId);
-                                                    if (serviceId === group.categoryId) {
-                                                        if (typeof s === 'string') return { categoryId: s, isActive: targetIsActive };
-                                                        return { ...s, isActive: targetIsActive };
-                                                    }
-                                                    return s;
-                                                });
-
-                                                try {
-                                                    // Optimistic update
-                                                    setUserData({ ...userData, services: newServices });
-
-                                                    const providerRef = doc(db, 'bricolers', userData.id);
-                                                    await updateDoc(providerRef, { services: newServices });
-                                                } catch (e) {
-                                                    console.error("Error toggling service:", e);
-                                                    // Revert on error if needed
-                                                    setUserData({ ...userData, services: currentServices });
-                                                }
-                                            }}
-                                            className={cn(
-                                                "w-14 h-8 rounded-full transition-all relative flex items-center px-1",
-                                                group.isActive ? "bg-[#00A082]" : "bg-neutral-200"
-                                            )}
-                                        >
-                                            <motion.div
-                                                animate={{ x: group.isActive ? 24 : 0 }}
-                                                className="w-6 h-6 bg-white rounded-full shadow-sm"
-                                            />
-                                        </button>
+                                        <ChevronRight size={24} className="text-neutral-300" />
                                     </div>
 
                                     {/* Badges Layout */}

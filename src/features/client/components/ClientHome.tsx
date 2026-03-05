@@ -963,14 +963,14 @@ const ClientHome: React.FC<ClientHomeProps> = ({
 
                             {/* Remove button at top right */}
                             <button
-                                className="absolute top-3 right-4 px-3 py-1 rounded-full bg-white/10 text-white text-[10px] font-black uppercase tracking-widest active:scale-95 transition-transform"
+                                className="absolute top-3 right-4 w-8 h-8 rounded-full bg-white/20 text-white flex items-center justify-center active:scale-95 transition-transform z-10"
                                 onClick={(e) => {
                                     e.stopPropagation();
                                     localStorage.setItem('bricoler_upsell_shown', 'true');
                                     setShowBricolerUpsell(false);
                                 }}
                             >
-                                {t({ en: 'Remove', fr: 'Masquer', ar: 'إزالة' })}
+                                <X size={18} strokeWidth={3} />
                             </button>
 
                             {/* Decorative glow */}
