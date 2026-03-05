@@ -947,8 +947,8 @@ const ClientHome: React.FC<ClientHomeProps> = ({
                             }}
                         >
                             {/* Icon */}
-                            <div className="w-14 h-14 rounded-2xl bg-white/20 flex items-center justify-center flex-shrink-0">
-                                <img src="/Images/4c456a03818b25032d0e4e80a711d569-Photoroom.png" alt="Bricoler" className="w-10 h-10 object-contain" />
+                            <div className="w-24 h-24 rounded-2xl flex items-center justify-center flex-shrink-0">
+                                <img src="/Images/4c456a03818b25032d0e4e80a711d569-Photoroom.png" alt="Bricoler" className="w-50 h-50 object-contain" />
                             </div>
 
                             {/* Text */}
