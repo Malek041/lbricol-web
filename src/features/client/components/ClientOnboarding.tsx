@@ -65,7 +65,7 @@ const AutoScrollingBanner = () => {
             <motion.div
                 className="flex gap-4"
                 animate={{
-                    x: [0, -1000],
+                    x: [0, -1200],
                 }}
                 transition={{
                     duration: 30,
@@ -77,7 +77,7 @@ const AutoScrollingBanner = () => {
                 {[...HERO_IMAGES, ...HERO_IMAGES].map((img, i) => (
                     <div
                         key={i}
-                        className="w-full h-[240px] flex-shrink-0 rounded-[20px] overflow-hidden"
+                        className="w-[280px] h-[240px] flex-shrink-0 rounded-[24px] overflow-hidden"
                     >
                         <img
                             src={img}
@@ -110,7 +110,7 @@ export const ClientOnboarding = ({ onComplete }: ClientOnboardingProps) => {
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-[9999] flex items-center justify-center bg-white safe-bottom"
         >
-            <div className="w-full h-full max-w-[500px] flex flex-col items-center justify-between py-12 px-6 relative overflow-hidden bg-[#FFFFFF]">                {/* Header Section: Wavering Text */}
+            <div className="w-full h-full max-w-[500px] flex flex-col items-center justify-between py-12 relative overflow-hidden bg-[#FFFFFF]">                {/* Header Section: Wavering Text */}
 
 
                 {/* Autoscrolling Hero Section */}
@@ -119,7 +119,7 @@ export const ClientOnboarding = ({ onComplete }: ClientOnboardingProps) => {
                 </div>
 
                 {/* Content Area */}
-                <div className="w-full text-center space-y-4 z-10 px-4">
+                <div className="w-full text-center space-y-4 z-10 px-6">
                     <AnimatePresence mode="wait">
                         <motion.div
                             key={currentStep}
@@ -153,7 +153,7 @@ export const ClientOnboarding = ({ onComplete }: ClientOnboardingProps) => {
                 </div>
 
                 {/* Action Button */}
-                <div className="w-full z-10 mt-auto pb-6">
+                <div className="w-full z-10 mt-auto pb-6 px-6">
                     <motion.button
                         whileTap={{ scale: 0.98 }}
                         onClick={handleNext}
