@@ -119,7 +119,7 @@ service cloud.firestore {
     match /bricoler_notifications/{notificationId} {
       allow read: if isAdmin() || (isSignedIn() && (
         request.auth.uid == resource.data.get('bricolerId', '') || 
-        request.auth.uid == data.get('uid', '')
+        request.auth.uid == resource.data.get('uid', '')
       ));
       allow write: if isSignedIn();
     }
@@ -130,7 +130,10 @@ service cloud.firestore {
     }
 
     match /drafts/{draftId} {
-      allow read, write: if isAdmin() || (isSignedIn() && resource.data.get('clientId', '') == request.auth.uid);
+      allow read, write: if isAdmin() || (isSignedIn() && (
+        resource == null ||
+        resource.data.get('clientId', '') == request.auth.uid
+      ));
     }
 
     match /reviews/{reviewId} {
@@ -140,7 +143,7 @@ service cloud.firestore {
     }
 
     match /commission_settlements/{settlementId} {
-      allow read: if isAdmin() || (isSignedIn() && request.auth.uid == request.resource.data.bricolerId);
+      allow read: if isAdmin() || (isSignedIn() && resource.data.bricolerId == request.auth.uid);
       allow create: if isSignedIn();
       allow update, delete: if isAdmin();
     }
