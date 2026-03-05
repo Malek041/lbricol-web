@@ -2,7 +2,6 @@
 
 import React from 'react';
 import { ShoppingBag, Star, User, Home, Calendar, TrendingUp } from 'lucide-react';
-import { useRouter, usePathname } from 'next/navigation';
 import { useTheme } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { fluidMobilePx, useMobileTier, useViewportWidth } from '@/lib/mobileOnly';
@@ -10,20 +9,18 @@ import { fluidMobilePx, useMobileTier, useViewportWidth } from '@/lib/mobileOnly
 export type TabType = 'home' | 'heroes' | 'orders' | 'profile' | 'jobs' | 'calendar' | 'messages' | 'performance' | 'services';
 
 interface MobileBottomNavProps {
-    activeTab?: TabType;
-    onTabChange?: (tab: TabType) => void;
+    activeTab: TabType;
+    onTabChange: (tab: TabType) => void;
     variant?: 'client' | 'provider' | 'admin';
 }
 
 const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
-    activeTab: propActiveTab,
+    activeTab,
     onTabChange,
     variant = 'client'
 }) => {
     const { theme } = useTheme();
     const { t } = useLanguage();
-    const router = useRouter();
-    const pathname = usePathname();
     const mobileTier = useMobileTier();
     const viewportWidth = useViewportWidth();
     const isCompactPhone = mobileTier === 'compact';
@@ -36,9 +33,9 @@ const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
     const labelSize = `${Math.round(fluidMobilePx(viewportWidth, 10, 12))}px`;
 
     const providerTabs = [
-        { id: 'jobs' as TabType, icon: Home, label: t({ en: 'Market', fr: 'Marché', ar: 'السوق' }) },
         { id: 'calendar' as TabType, icon: ShoppingBag, label: t({ en: 'Orders', fr: 'Commandes', ar: 'الطلبات' }) },
         { id: 'performance' as TabType, icon: TrendingUp, label: t({ en: 'Performance', fr: 'Performance', ar: 'الأداء' }) },
+        { id: 'services' as TabType, icon: Star, label: t({ en: 'Services', fr: 'Services', ar: 'الخدمات' }) },
         { id: 'profile' as TabType, icon: User, label: t({ en: 'Profile', fr: 'Profil', ar: 'الملف الشخصي' }) },
     ];
 
@@ -58,55 +55,32 @@ const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
 
     const tabs = variant === 'provider' ? providerTabs : (variant === 'admin' ? adminTabs : clientTabs);
 
-    const getEffectiveActiveId = (id: string) => {
-        if (pathname === '/') return 'home';
-        if (pathname === '/heroes') return 'heroes';
-        if (pathname === '/orders') return 'calendar';
-        if (pathname === '/messages') return 'messages';
-        if (pathname === '/profile') return 'profile';
-
-        // Provider specific
-        if (pathname === '/provider') return 'calendar';
-        if (pathname === '/provider/jobs') return 'jobs';
-        if (pathname === '/provider/performance') return 'performance';
-        if (pathname === '/provider/services') return 'services';
-
-        // Admin specific
-        if (pathname === '/admin/performance') return 'performance';
-        if (pathname === '/admin/services') return 'services';
-        if (pathname === '/admin/orders') return 'calendar';
-
+    const getEffectiveActiveId = (id: TabType) => {
+        if (variant === 'provider') {
+            if (id === 'jobs') return 'jobs';
+            if (id === 'calendar') return 'calendar';
+            if (id === 'performance') return 'performance';
+            if (id === 'services') return 'services';
+            if (id === 'profile') return 'profile';
+        } else if (variant === 'admin') {
+            if (id === 'performance') return 'performance';
+            if (id === 'calendar') return 'calendar';
+            if (id === 'services') return 'services';
+            if (id === 'profile') return 'profile';
+        } else {
+            if (id === 'home') return 'home';
+            if (id === 'heroes') return 'heroes';
+            if (id === 'calendar') return 'calendar';
+            if (id === 'profile') return 'profile';
+        }
         return id;
     };
 
-    const effectiveActiveTab = getEffectiveActiveId(propActiveTab || '');
+    const effectiveActiveTab = getEffectiveActiveId(activeTab);
 
     const activeColor = '#000000';
     const inactiveColor = theme === 'light' ? '#717171' : '#B0B0B0';
     const activeBgColor = '#FFC244'; // Glovo-style yellow circular background
-
-    const handleTabClick = (tabId: TabType) => {
-        if (onTabChange) {
-            onTabChange(tabId);
-        }
-
-        const routes: Record<string, string> = {
-            'home': '/',
-            'heroes': '/heroes',
-            'calendar': variant === 'provider' ? '/provider' : (variant === 'admin' ? '/admin/orders' : '/orders'),
-            'orders': '/orders',
-            'profile': '/profile',
-            'messages': '/messages',
-            'jobs': '/provider/jobs',
-            'performance': variant === 'provider' ? '/provider/performance' : '/admin/performance',
-            'services': variant === 'provider' ? '/provider/services' : '/admin/services',
-        };
-
-        const target = routes[tabId];
-        if (target) {
-            router.push(target);
-        }
-    };
 
     return (
         <nav
@@ -132,7 +106,7 @@ const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
                 return (
                     <button
                         key={tab.id}
-                        onClick={() => handleTabClick(tab.id)}
+                        onClick={() => onTabChange(tab.id)}
                         style={{
                             display: 'flex',
                             flexDirection: 'column',

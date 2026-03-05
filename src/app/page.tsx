@@ -1271,13 +1271,7 @@ const Home = () => {
     localStorage.setItem('lbricol_preferred_city', city);
     localStorage.setItem('lbricol_preferred_area', area);
     setShowCityPopup(false);
-
-    // Force Auth if not logged in
-    if (!auth.currentUser) {
-      setShowAuthPopup(true);
-    } else {
-      setActiveSearchSection('what');
-    }
+    setActiveSearchSection('what');
   };
 
   const handleLanguageSelect = (lang: 'en' | 'fr' | 'ar') => {
@@ -1286,11 +1280,7 @@ const Home = () => {
     if (!selectedCity) {
       setShowCityPopup(true);
     } else {
-      if (!auth.currentUser) {
-        setShowAuthPopup(true);
-      } else {
-        setActiveSearchSection('what');
-      }
+      setActiveSearchSection('what');
     }
   };
 

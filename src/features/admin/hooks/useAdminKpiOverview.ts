@@ -33,7 +33,7 @@ const INITIAL_GLOBAL: GlobalKpis = {
   totalClients: 0,
 };
 
-export const useAdminKpiOverview = (providerId?: string): UseAdminKpiOverviewResult => {
+export const useAdminKpiOverview = (): UseAdminKpiOverviewResult => {
   const [loading, setLoading] = useState(true);
   const [jobs, setJobs] = useState<any[]>([]);
   const [bricolers, setBricolers] = useState<any[]>([]);
@@ -42,19 +42,11 @@ export const useAdminKpiOverview = (providerId?: string): UseAdminKpiOverviewRes
 
   useEffect(() => {
     const unsubJobs = onSnapshot(collection(db, 'jobs'), (snapshot) => {
-      let filtered = snapshot.docs.map((d) => ({ id: d.id, ...(d.data() as any) }));
-      if (providerId) {
-        filtered = filtered.filter(j => j.bricolerId === providerId || j.acceptedId === providerId);
-      }
-      setJobs(filtered);
+      setJobs(snapshot.docs.map((d) => ({ id: d.id, ...(d.data() as any) })));
     });
 
     const unsubBricolers = onSnapshot(collection(db, 'bricolers'), (snapshot) => {
-      let filtered = snapshot.docs.map((d) => ({ id: d.id, ...(d.data() as any) }));
-      if (providerId) {
-        filtered = filtered.filter(b => b.id === providerId);
-      }
-      setBricolers(filtered);
+      setBricolers(snapshot.docs.map((d) => ({ id: d.id, ...(d.data() as any) })));
     });
 
     const unsubCities = onSnapshot(collection(db, 'city_services'), (snapshot) => {
@@ -62,13 +54,7 @@ export const useAdminKpiOverview = (providerId?: string): UseAdminKpiOverviewRes
     });
 
     const unsubClients = onSnapshot(collection(db, 'clients'), (snapshot) => {
-      if (providerId) {
-        // For provider, we only count clients they've worked with
-        const uniqueClients = new Set(jobs.map(j => j.clientId).filter(Boolean));
-        setClientsCount(uniqueClients.size);
-      } else {
-        setClientsCount(snapshot.size);
-      }
+      setClientsCount(snapshot.size);
     });
 
     return () => {
@@ -77,8 +63,7 @@ export const useAdminKpiOverview = (providerId?: string): UseAdminKpiOverviewRes
       unsubCities();
       unsubClients();
     };
-  }, [providerId, jobs.length]); // jobs.length to re-calc unique clients if jobs change
-
+  }, []);
 
   const [global, setGlobal] = useState<GlobalKpis>(INITIAL_GLOBAL);
   const [cities, setCities] = useState<CityKpis[]>([]);

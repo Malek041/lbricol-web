@@ -1,7 +1,5 @@
 "use client";
 
-import { useRouter } from 'next/navigation';
-
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Moon, Sun, User, Menu, Globe, HelpCircle, Gift, LogIn, LogOut, Home, Truck } from 'lucide-react';
@@ -21,7 +19,6 @@ interface HeaderProps {
 }
 
 const Header = ({ activeTab, onTabChange, isBricoler = false, user = null }: HeaderProps) => {
-    const router = useRouter();
     const { language, setLanguage, t } = useLanguage();
     const { theme, toggleTheme } = useTheme();
     const isMobile = useIsMobileViewport(968);
@@ -407,12 +404,15 @@ const Header = ({ activeTab, onTabChange, isBricoler = false, user = null }: Hea
                 </div>
             </div>
 
+            {/* Onboarding Popup */}
             <OnboardingPopup
                 isOpen={showOnboarding}
                 onClose={() => setShowOnboarding(false)}
                 onComplete={(data) => {
                     setShowOnboarding(false);
-                    router.push('/provider');
+                    // Redirect to provider page with data
+                    const serviceIds = data.services.map((s: any) => s.serviceId).join(',');
+                    window.location.href = `/provider?services=${serviceIds}&city=${data.city}`;
                 }}
             />
 

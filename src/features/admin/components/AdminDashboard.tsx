@@ -9,8 +9,6 @@ import { useAdminKpiOverview } from '@/features/admin/hooks/useAdminKpiOverview'
 
 interface AdminDashboardProps {
     t: (vals: { en: string; fr: string; ar?: string }) => string;
-    isProviderView?: boolean;
-    providerId?: string;
 }
 
 const StatCard = memo(({ title, value, icon: Icon, growth, suffix = '', loading }: any) => (
@@ -35,19 +33,15 @@ const StatCard = memo(({ title, value, icon: Icon, growth, suffix = '', loading 
     </motion.div>
 ));
 
-const AdminDashboard = memo(({ t, isProviderView = false, providerId }: AdminDashboardProps) => {
+const AdminDashboard = memo(({ t }: AdminDashboardProps) => {
     const [selectedCity, setSelectedCity] = useState<string>('all');
-    const { loading, global, cities } = useAdminKpiOverview(providerId);
+    const { loading, global, cities } = useAdminKpiOverview();
 
     const cityOptions = useMemo(
-        () => {
-            const options = [
-                { id: 'all', name: t({ en: 'All Cities', fr: 'Toutes les villes', ar: 'كل المدن' }) },
-                ...cities.map((c) => ({ id: c.cityId, name: c.cityId })),
-            ];
-            // If provider view, we might only have one city or we keep all for now if they work in multiple
-            return options;
-        },
+        () => [
+            { id: 'all', name: t({ en: 'All Cities', fr: 'Toutes les villes', ar: 'كل المدن' }) },
+            ...cities.map((c) => ({ id: c.cityId, name: c.cityId })),
+        ],
         [cities, t],
     );
 
