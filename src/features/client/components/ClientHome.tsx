@@ -8,6 +8,9 @@ import {
 import { cn } from '@/lib/utils';
 import { getServiceById } from '@/config/services_config';
 import { useLanguage } from '@/context/LanguageContext';
+import { ReviewsScrollingSection } from './ReviewsScrollingSection';
+import { ClientOnboarding } from './ClientOnboarding';
+import SplashScreen from '@/components/layout/SplashScreen';
 
 // ── Palette ────────────────────────────────────────────────────────────────
 const G_GREEN = '#00A082';
@@ -444,9 +447,16 @@ const ClientHome: React.FC<ClientHomeProps> = ({
     const [lastCategoryId, setLastCategoryId] = useState<string | null>(null);
     const [searchQuery, setSearchQuery] = useState('');
     const [showReferralBanner, setShowReferralBanner] = useState(false);
+    const [showOnboarding, setShowOnboarding] = useState(false);
 
     // Initial load
     useEffect(() => {
+        // Onboarding Check
+        const onboardingShown = localStorage.getItem('client_onboarding_shown');
+        if (!onboardingShown) {
+            setShowOnboarding(true);
+        }
+
         const stored = localStorage.getItem('last_service_category');
         if (stored) setLastCategoryId(stored);
 
@@ -883,6 +893,21 @@ const ClientHome: React.FC<ClientHomeProps> = ({
                         ))}
                     </div>
                 </motion.div>
+            </AnimatePresence>
+
+            {/* Horizontal Auto-scrolling Client Reviews Section */}
+            <ReviewsScrollingSection />
+
+            {/* Premium Onboarding Overlay */}
+            <AnimatePresence>
+                {showOnboarding && (
+                    <ClientOnboarding
+                        onComplete={() => {
+                            localStorage.setItem('client_onboarding_shown', 'true');
+                            setShowOnboarding(false);
+                        }}
+                    />
+                )}
             </AnimatePresence>
         </div>
     );

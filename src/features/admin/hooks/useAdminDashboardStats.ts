@@ -10,6 +10,8 @@ export interface AdminStats {
   growthOrders: number;
   growthGmv: number;
   growthRevenue: number;
+  categoryDemand?: Record<string, number>;
+  areaDemand?: Record<string, number>;
 }
 
 const INITIAL_STATS: AdminStats = {
@@ -21,6 +23,8 @@ const INITIAL_STATS: AdminStats = {
   growthOrders: 12.5,
   growthGmv: 15.2,
   growthRevenue: 8.2,
+  categoryDemand: {},
+  areaDemand: {},
 };
 
 export const useAdminDashboardStats = (selectedCity: string) => {
@@ -59,11 +63,26 @@ export const useAdminDashboardStats = (selectedCity: string) => {
         return acc + (isNaN(val) ? 0 : val);
       }, 0);
 
+      // Aggregate category and area demand
+      const categoryDemand: Record<string, number> = {};
+      const areaDemand: Record<string, number> = {};
+
+      ordersData.forEach((order) => {
+        if (order.serviceId) {
+          categoryDemand[order.serviceId] = (categoryDemand[order.serviceId] || 0) + 1;
+        }
+        if (order.area) {
+          areaDemand[order.area] = (areaDemand[order.area] || 0) + 1;
+        }
+      });
+
       setStats((prev) => ({
         ...prev,
         totalOrders,
         totalGmv,
         totalRevenue,
+        categoryDemand,
+        areaDemand,
       }));
       setLoading(false);
     });

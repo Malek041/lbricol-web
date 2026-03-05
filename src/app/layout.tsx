@@ -18,6 +18,11 @@ const notoSansArabic = Noto_Sans_Arabic({
 export const metadata: Metadata = {
   title: "Lbricol | Expert Help, Right Away | Aide experte, tout de suite",
   description: "Connect with local experts in Morocco | Connectez-vous avec des experts locaux au Maroc",
+  icons: {
+    icon: "/Images/Logo/theEggOfLB.png",
+    shortcut: "/Images/Logo/theEggOfLB.png",
+    apple: "/Images/Logo/theEggOfLB.png",
+  },
 };
 
 import { Providers } from "@/components/shared/Providers";

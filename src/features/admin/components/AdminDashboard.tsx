@@ -186,6 +186,63 @@ const AdminDashboard = memo(({ t }: AdminDashboardProps) => {
                         ))}
                     </div>
                 </div>
+
+                {/* Service Category Performance */}
+                <div className="bg-white p-6 rounded-[32px] shadow-sm border border-neutral-100">
+                    <h3 className="text-lg font-black text-black mb-4">
+                        {t({ en: 'Service category performance', fr: 'Performance par catégorie', ar: 'أداء فئات الخدمات' })}
+                    </h3>
+                    <div className="space-y-4">
+                        {Object.entries(selectedStats.categoryDemand || {}).sort((a: any, b: any) => b[1] - a[1]).map(([cat, count]: any) => (
+                            <div key={cat} className="flex flex-col gap-2">
+                                <div className="flex justify-between items-center text-sm">
+                                    <span className="font-bold text-neutral-800 capitalize">{cat.replace('_', ' ')}</span>
+                                    <span className="text-neutral-500 font-medium">{count} {t({ en: 'orders', fr: 'commandes', ar: 'طلب' })}</span>
+                                </div>
+                                <div className="w-full h-2 bg-neutral-100 rounded-full overflow-hidden">
+                                    <motion.div
+                                        initial={{ width: 0 }}
+                                        animate={{ width: `${(count / (selectedStats.totalOrders || 1)) * 100}%` }}
+                                        className="h-full bg-[#00A082] rounded-full"
+                                    />
+                                </div>
+                            </div>
+                        ))}
+                        {!selectedStats.categoryDemand && (
+                            <p className="text-sm text-neutral-400">{t({ en: 'Loading details...', fr: 'Chargement des détails...', ar: 'جاري تحميل التفاصيل...' })}</p>
+                        )}
+                    </div>
+                </div>
+
+                {/* Demand Heatmap (Areas) */}
+                <div className="bg-white p-6 rounded-[32px] shadow-sm border border-neutral-100">
+                    <h3 className="text-lg font-black text-black mb-4">
+                        {t({ en: 'Demand Heatmap', fr: 'Carte de chaleur de la demande', ar: 'خريطة حرارة الطلب' })}
+                    </h3>
+                    <div className="space-y-3">
+                        {Object.entries(selectedStats.areaDemand || {}).sort((a: any, b: any) => b[1] - a[1]).map(([area, count]: any, idx) => {
+                            const intensity = Math.max(0.1, count / (selectedStats.totalOrders / 2 || 1));
+                            return (
+                                <div key={area} className="flex items-center gap-4 p-4 bg-neutral-50 rounded-2xl relative overflow-hidden">
+                                    <div
+                                        className="absolute inset-y-0 left-0 bg-[#00A082]"
+                                        style={{ width: '4px', opacity: intensity }}
+                                    />
+                                    <div className="flex-1">
+                                        <p className="text-sm font-black text-black">{area}</p>
+                                        <p className="text-xs text-neutral-500">{count} {t({ en: 'active requests', fr: 'demandes actives', ar: 'طلب نشط' })}</p>
+                                    </div>
+                                    <div className="w-12 h-12 rounded-xl flex items-center justify-center font-black text-sm" style={{ backgroundColor: `rgba(0, 160, 130, ${intensity * 0.2})`, color: '#00A082' }}>
+                                        #{idx + 1}
+                                    </div>
+                                </div>
+                            );
+                        })}
+                        {!selectedStats.areaDemand && (
+                            <p className="text-sm text-neutral-400">{t({ en: 'No data for this city yet.', fr: 'Aucune donnée pour cette ville.', ar: 'لا توجد بيانات لهذه المدينة بعد.' })}</p>
+                        )}
+                    </div>
+                </div>
             </div>
         </div>
     );

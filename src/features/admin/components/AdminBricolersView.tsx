@@ -17,6 +17,8 @@ interface AdminBricolersViewProps {
 const AdminBricolersView: React.FC<AdminBricolersViewProps> = ({ t }) => {
   const [selectedBricolerForSchedule, setSelectedBricolerForSchedule] = useState<any | null>(null);
   const [isAvailabilityOpen, setIsAvailabilityOpen] = useState(false);
+  const [selectedBricolerForProfile, setSelectedBricolerForProfile] = useState<any | null>(null);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
 
   const [bricolers, setBricolers] = useState<any[]>([]);
   const [selectedCity, setSelectedCity] = useState<string>('all');
@@ -181,6 +183,7 @@ const AdminBricolersView: React.FC<AdminBricolersViewProps> = ({ t }) => {
                 handleDelete={handleDelete}
                 onEdit={() => { setEditingBricoler(b); setShowPopup(true); }}
                 onSchedule={() => { setSelectedBricolerForSchedule(b); setIsAvailabilityOpen(true); }}
+                onViewProfile={() => { setSelectedBricolerForProfile(b); setIsProfileOpen(true); }}
               />
             ))
           )
@@ -224,11 +227,18 @@ const AdminBricolersView: React.FC<AdminBricolersViewProps> = ({ t }) => {
           onClose={() => setIsAvailabilityOpen(false)}
         />
       )}
+
+      <BricolerProfileBottomSheet
+        bricoler={selectedBricolerForProfile}
+        isOpen={isProfileOpen}
+        onClose={() => setIsProfileOpen(false)}
+        t={t}
+      />
     </div>
   );
 };
 
-const BricolerCard = ({ b, t, expandedId, setExpandedId, toggleStatus, handleDelete, onEdit, onSchedule }: any) => {
+const BricolerCard = ({ b, t, expandedId, setExpandedId, toggleStatus, handleDelete, onEdit, onSchedule, onViewProfile }: any) => {
   const isClaimed = !!b.uid;
   const rating = typeof b.rating === 'number' ? b.rating : 5.0;
   const jobs = b.numReviews || b.completedJobs || 0;
@@ -310,6 +320,7 @@ const BricolerCard = ({ b, t, expandedId, setExpandedId, toggleStatus, handleDel
                 </div>
               )}
               <div className="flex items-center gap-2">
+                <ActionBtn icon={<UserIcon size={16} />} label="Profile" onClick={onViewProfile} />
                 <ActionBtn icon={<Edit2 size={16} />} label="Edit" onClick={onEdit} />
                 <ActionBtn icon={<Calendar size={16} />} label="Dispo" onClick={onSchedule} />
                 <ActionBtn icon={b.isActive ? <EyeOff size={16} /> : <Eye size={16} />} label={b.isActive ? 'Unlist' : 'List'} onClick={(e: any) => toggleStatus(b, e)} />
@@ -364,6 +375,249 @@ const ReceivableCard = ({ b, t, onMarkAsPaid }: any) => (
       >
         {b.commissionPaid ? <><Check size={14} strokeWidth={3} /> Payé</> : 'Marquer comme payé'}
       </button>
+    </div>
+  </div>
+);
+
+const BricolerProfileBottomSheet = ({ bricoler, isOpen, onClose, t }: any) => {
+  const [activeTab, setActiveTab] = useState<'profile' | 'performance'>('profile');
+  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+
+  if (!bricoler) return null;
+
+  const months = [
+    'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December'
+  ];
+
+  return (
+    <AnimatePresence>
+      {isOpen && (
+        <>
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={onClose}
+            className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[60]"
+          />
+          <motion.div
+            initial={{ y: '100%' }}
+            animate={{ y: 0 }}
+            exit={{ y: '100%' }}
+            transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+            className="fixed inset-x-0 bottom-0 bg-white rounded-t-[40px] z-[70] max-h-[90vh] flex flex-col shadow-2xl overflow-hidden"
+          >
+            {/* Handle */}
+            <div className="flex justify-center pt-3 pb-1">
+              <div className="w-12 h-1.5 rounded-full bg-neutral-200" />
+            </div>
+
+            {/* Header */}
+            <div className="px-6 py-4 border-b border-neutral-100">
+              <div className="flex items-center gap-4">
+                <div className="w-16 h-16 rounded-2xl bg-neutral-100 flex items-center justify-center overflow-hidden border-2 border-white shadow-sm">
+                  {bricoler.photoURL || bricoler.avatar ? (
+                    <img src={bricoler.photoURL || bricoler.avatar} alt="Profile" className="w-full h-full object-cover" />
+                  ) : (
+                    <UserIcon size={32} className="text-neutral-400" />
+                  )}
+                </div>
+                <div>
+                  <h2 className="text-xl font-black text-neutral-900">{bricoler.name || bricoler.fullName}</h2>
+                  <p className="text-sm font-bold text-neutral-500">{bricoler.city} • {bricoler.area || 'All Areas'}</p>
+                </div>
+              </div>
+
+              {/* Tabs */}
+              <div className="flex bg-neutral-100 p-1.5 rounded-2xl mt-6">
+                <button
+                  onClick={() => setActiveTab('profile')}
+                  className={cn(
+                    "flex-1 py-2.5 text-xs font-black rounded-xl transition-all",
+                    activeTab === 'profile' ? "bg-white text-black shadow-sm" : "text-neutral-500 hover:text-neutral-700"
+                  )}
+                >
+                  {t({ en: 'Profile Info', fr: 'Infos Profil' })}
+                </button>
+                <button
+                  onClick={() => setActiveTab('performance')}
+                  className={cn(
+                    "flex-1 py-2.5 text-xs font-black rounded-xl transition-all",
+                    activeTab === 'performance' ? "bg-white text-black shadow-sm" : "text-neutral-500 hover:text-neutral-700"
+                  )}
+                >
+                  {t({ en: 'Performance', fr: 'Performance' })}
+                </button>
+              </div>
+            </div>
+
+            {/* Content */}
+            <div className="flex-1 overflow-y-auto px-6 py-6 pb-12 no-scrollbar">
+              {activeTab === 'profile' ? (
+                <div className="space-y-6">
+                  {/* Basic Info */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <InfoItem label="Phone" value={bricoler.phone || bricoler.whatsappNumber || 'N/A'} icon={<Phone size={16} />} />
+                    <InfoItem label="Member Since" value={bricoler.createdAt ? new Date(bricoler.createdAt).toLocaleDateString() : 'N/A'} icon={<Calendar size={16} />} />
+                  </div>
+
+                  {/* Services */}
+                  <div>
+                    <h3 className="text-sm font-black text-neutral-900 mb-3 uppercase tracking-wider">{t({ en: 'Services Offered', fr: 'Services proposés' })}</h3>
+                    <div className="flex flex-wrap gap-2">
+                      {Array.isArray(bricoler.services) ? bricoler.services.map((s: string) => (
+                        <span key={s} className="px-3 py-1.5 bg-neutral-100 text-neutral-700 text-xs font-bold rounded-lg capitalize">
+                          {s.replace('_', ' ')}
+                        </span>
+                      )) : <p className="text-xs text-neutral-400">No services listed</p>}
+                    </div>
+                  </div>
+
+                  {/* About/Description */}
+                  {bricoler.description && (
+                    <div>
+                      <h3 className="text-sm font-black text-neutral-900 mb-2 uppercase tracking-wider">{t({ en: 'About', fr: 'À propos' })}</h3>
+                      <p className="text-sm text-neutral-600 leading-relaxed font-medium">{bricoler.description}</p>
+                    </div>
+                  )}
+
+                  {/* Past Works Photos */}
+                  <div>
+                    <h3 className="text-sm font-black text-neutral-900 mb-3 uppercase tracking-wider">{t({ en: 'Past Works', fr: 'Réalisations passées' })}</h3>
+                    <div className="grid grid-cols-3 gap-2">
+                      {Array.isArray(bricoler.portfolio) && bricoler.portfolio.length > 0 ? (
+                        bricoler.portfolio.map((img: string, idx: number) => (
+                          <div key={idx} className="aspect-square rounded-xl bg-neutral-50 overflow-hidden border border-neutral-100">
+                            <img src={img} alt={`Work ${idx}`} className="w-full h-full object-cover" />
+                          </div>
+                        ))
+                      ) : (
+                        <p className="text-xs text-neutral-400 col-span-3 italic">No past works photos found.</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  {/* Month Filter */}
+                  <div className="flex items-center justify-between bg-neutral-50 p-4 rounded-[24px]">
+                    <div className="flex items-center gap-2">
+                      <Calendar size={18} className="text-[#00A082]" />
+                      <select
+                        value={selectedMonth}
+                        onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
+                        className="bg-transparent border-none text-sm font-black focus:ring-0 cursor-pointer"
+                      >
+                        {months.map((m, i) => <option key={m} value={i}>{m}</option>)}
+                      </select>
+                      <select
+                        value={selectedYear}
+                        onChange={(e) => setSelectedYear(parseInt(e.target.value))}
+                        className="bg-transparent border-none text-sm font-black focus:ring-0 cursor-pointer"
+                      >
+                        {[2024, 2025, 2026].map(y => <option key={y} value={y}>{y}</option>)}
+                      </select>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-[10px] font-black text-neutral-400 uppercase tracking-widest leading-none mb-1">{t({ en: 'Status', fr: 'Statut' })}</p>
+                      <span className="text-xs font-black text-[#00A082]">{t({ en: 'Active', fr: 'Actif' })}</span>
+                    </div>
+                  </div>
+
+                  {/* KPI Grid */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <KpiCard
+                      label="Score"
+                      value={bricoler.score || 0}
+                      icon={<Star size={16} className="text-[#FFC244] fill-[#FFC244]" />}
+                    />
+                    <KpiCard
+                      label="Stars"
+                      value={(bricoler.rating || 5.0).toFixed(1)}
+                      icon={<Star size={16} className="text-[#FFC244] fill-[#FFC244]" />}
+                    />
+                    <KpiCard
+                      label="Total Jobs"
+                      value={bricoler.numReviews || bricoler.completedJobs || 0}
+                      icon={<Check size={16} className="text-[#00A082]" />}
+                    />
+                    <KpiCard
+                      label="Pending"
+                      value={bricoler.pendingJobs || 0}
+                      icon={<Calendar size={16} className="text-blue-500" />}
+                    />
+                  </div>
+
+                  <div className="bg-black text-white p-6 rounded-[32px] space-y-4 shadow-xl">
+                    <div className="flex justify-between items-end">
+                      <div>
+                        <p className="text-xs font-bold text-white/60 mb-1">{t({ en: 'Total Revenue', fr: 'Revenu Total' })}</p>
+                        <h4 className="text-3xl font-black">{Math.round(bricoler.totalRevenue || 0)} MAD</h4>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-xs font-bold text-white/60 mb-1">{t({ en: 'Net Earnings', fr: 'Gains Nets' })}</p>
+                        <h4 className="text-xl font-black text-[#00A082]">{Math.round((bricoler.totalRevenue || 0) * 0.85)} MAD</h4>
+                      </div>
+                    </div>
+                    <div className="w-full h-1.5 bg-white/10 rounded-full overflow-hidden">
+                      <div className="w-3/4 h-full bg-[#00A082] rounded-full" />
+                    </div>
+                  </div>
+
+                  {/* Reviews Section */}
+                  <div>
+                    <h3 className="text-sm font-black text-neutral-900 mb-4 uppercase tracking-wider">{t({ en: 'Latest Reviews', fr: 'Derniers Avis' })}</h3>
+                    <div className="space-y-3">
+                      {Array.isArray(bricoler.latestReviews) && bricoler.latestReviews.length > 0 ? (
+                        bricoler.latestReviews.map((r: any, i: number) => (
+                          <div key={i} className="bg-neutral-50 p-4 rounded-2xl border border-neutral-100">
+                            <div className="flex justify-between items-center mb-1">
+                              <span className="text-xs font-black text-neutral-900">{r.clientName}</span>
+                              <div className="flex items-center gap-0.5">
+                                <Star size={10} className="text-[#FFC244] fill-[#FFC244]" />
+                                <span className="text-xs font-bold">{r.rating}</span>
+                              </div>
+                            </div>
+                            <p className="text-xs text-neutral-500 font-medium leading-relaxed italic">"{r.comment}"</p>
+                          </div>
+                        ))
+                      ) : (
+                        <p className="text-xs text-neutral-400 italic">No reviews yet.</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </motion.div>
+        </>
+      )}
+    </AnimatePresence>
+  );
+};
+
+const InfoItem = ({ label, value, icon }: any) => (
+  <div className="flex items-start gap-3">
+    <div className="w-9 h-9 rounded-xl bg-neutral-50 flex items-center justify-center text-neutral-400 border border-neutral-100">
+      {icon}
+    </div>
+    <div>
+      <p className="text-[10px] font-black text-neutral-400 uppercase tracking-widest mb-0.5">{label}</p>
+      <p className="text-sm font-bold text-neutral-800">{value}</p>
+    </div>
+  </div>
+);
+
+const KpiCard = ({ label, value, icon }: any) => (
+  <div className="bg-neutral-50 p-4 rounded-2xl border border-neutral-100 flex items-center gap-3">
+    <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center shadow-sm border border-neutral-100">
+      {icon}
+    </div>
+    <div>
+      <p className="text-[10px] font-black text-neutral-400 uppercase tracking-widest">{label}</p>
+      <p className="text-lg font-black text-neutral-900">{value}</p>
     </div>
   </div>
 );

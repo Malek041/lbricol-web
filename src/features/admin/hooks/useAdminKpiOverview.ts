@@ -31,6 +31,8 @@ const INITIAL_GLOBAL: GlobalKpis = {
   growthRevenue: 0,
   activeCities: 0,
   totalClients: 0,
+  categoryDemand: {},
+  areaDemand: {},
 };
 
 export const useAdminKpiOverview = (): UseAdminKpiOverviewResult => {
@@ -87,6 +89,8 @@ export const useAdminKpiOverview = (): UseAdminKpiOverviewResult => {
           activeServices: 0,
           totalProsDeclared: 0,
           avgRating: 0,
+          categoryDemand: {},
+          areaDemand: {},
         });
       }
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
@@ -116,6 +120,14 @@ export const useAdminKpiOverview = (): UseAdminKpiOverviewResult => {
 
         cityStats.totalGmv += safeGmv;
         cityStats.totalRevenue += safeRev;
+      }
+
+      // Aggregate category and area demand
+      if (job.serviceId) {
+        cityStats.categoryDemand![job.serviceId] = (cityStats.categoryDemand![job.serviceId] || 0) + 1;
+      }
+      if (job.area) {
+        cityStats.areaDemand![job.area] = (cityStats.areaDemand![job.area] || 0) + 1;
       }
     });
 
@@ -188,6 +200,14 @@ export const useAdminKpiOverview = (): UseAdminKpiOverviewResult => {
       growthRevenue: 0,
       activeCities: activeCitiesCount,
       totalClients: clientsCount,
+      categoryDemand: jobs.reduce((acc, j) => {
+        if (j.serviceId) acc[j.serviceId] = (acc[j.serviceId] || 0) + 1;
+        return acc;
+      }, {} as Record<string, number>),
+      areaDemand: jobs.reduce((acc, j) => {
+        if (j.area) acc[j.area] = (acc[j.area] || 0) + 1;
+        return acc;
+      }, {} as Record<string, number>),
     });
 
     setLoading(false);
