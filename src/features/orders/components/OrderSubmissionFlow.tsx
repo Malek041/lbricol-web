@@ -632,6 +632,7 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isMatchingAnimation, setIsMatchingAnimation] = useState(false);
     const [uploadedImages, setUploadedImages] = useState<string[]>([]);
+    const [isImageUploading, setIsImageUploading] = useState(false);
     const [paymentMethod, setPaymentMethod] = useState<'cash' | 'bank'>('cash');
     const [bankReceipt, setBankReceipt] = useState<string | null>(null);
     const [frequency, setFrequency] = useState<'once' | 'daily' | 'weekly' | 'biweekly' | 'monthly'>('once');
@@ -1040,31 +1041,32 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
         // Upload to Firebase Storage in background and replace previews with real URLs
         const user = auth.currentUser;
         if (!user) {
-            // Unauthenticated users will keep base64 previews in state for now
-            // But if they are too large, Firestore will reject them. 
-            // the compressToBlob function will be used later if they sign up.
             console.warn('Not authenticated; order images stored as previews only.');
             return;
         }
 
+        setIsImageUploading(true);
         try {
             const uploadedUrls = await Promise.all(
                 toUpload.map((file, i) => {
                     const path = `orders/${user.uid}/${Date.now()}_${i}_${Math.random().toString(36).slice(2)}.jpg`;
                     return uploadImageToStorage(file, path).catch(err => {
                         console.warn('Image upload failed:', err);
-                        return previews[i]; // fallback to base64 preview
+                        return null; // Don't fall back to base64 — return null and filter it out
                     });
                 })
             );
 
-            // Replace previews with actual storage URLs
+            // Replace previews with actual storage URLs (filter out any nulls)
             setUploadedImages(prev => {
                 const withoutPreviews = prev.slice(0, prev.length - previews.length);
-                return [...withoutPreviews, ...uploadedUrls].slice(0, 4);
+                const validUrls = uploadedUrls.filter((u): u is string => !!u && u.startsWith('http'));
+                return [...withoutPreviews, ...validUrls].slice(0, 4);
             });
         } catch (err) {
             console.error('Batch upload error:', err);
+        } finally {
+            setIsImageUploading(false);
         }
     };
 
@@ -1266,6 +1268,12 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
     const handleFinalSubmit = async () => {
         if (!taskSize || isSubmitting) return;
 
+        // Block submission if images are still being uploaded to Firebase Storage
+        if (isImageUploading) {
+            alert(t({ en: 'Please wait for images to finish uploading.', fr: 'Veuillez attendre la fin du chargement des images.', ar: 'يرجى الانتظار حتى انتهاء رفع الصور.' }));
+            return;
+        }
+
         if (paymentMethod === 'bank' && !bankReceipt) {
             alert(t({ en: 'Please upload your transfer receipt before programming the mission.', fr: 'Veuillez télécharger votre reçu de virement avant de programmer la mission.', ar: 'يرجى تحميل إيصال التحويل قبل برمجة المهمة.' }));
             return;
@@ -1338,7 +1346,7 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                 totalPrice: applyReferralDiscount && referralDiscountAvailable > 0 ? Math.max(0, totalPrice - referralDiscountAvailable) : totalPrice,
                 price: applyReferralDiscount && referralDiscountAvailable > 0 ? Math.max(0, totalPrice - referralDiscountAvailable) : totalPrice,
                 referralApplied: applyReferralDiscount && referralDiscountAvailable > 0,
-                images: uploadedImages,
+                images: uploadedImages.filter(u => u.startsWith('http')), // only persisted Storage URLs, not local previews
                 paymentMethod,
                 bankReceipt: paymentMethod === 'bank' ? bankReceipt : null,
                 frequency,
@@ -1778,13 +1786,23 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                                                                 whileTap={{ scale: 0.98 }}
                                                                 className="w-24 h-24 rounded-[14px] border-2 border-dashed border-neutral-200 bg-neutral-50/50 flex flex-col items-center justify-center cursor-pointer hover:bg-neutral-50 hover:border-[#008C74]/40 transition-all"
                                                             >
-                                                                <Camera size={26} className="text-neutral-400 mb-1" />
-                                                                <span className="text-[11px] font-bold text-neutral-400 uppercase tracking-wide">{t({ en: 'Add', fr: 'Ajouter', ar: 'إضافة' })}</span>
+                                                                {isImageUploading ? (
+                                                                    <>
+                                                                        <div className="w-5 h-5 border-2 border-[#00A082]/30 border-t-[#00A082] rounded-full animate-spin mb-1" />
+                                                                        <span className="text-[10px] font-bold text-[#00A082] uppercase tracking-wide">{t({ en: 'Uploading', fr: 'Envoi...', ar: 'جار الرفع' })}</span>
+                                                                    </>
+                                                                ) : (
+                                                                    <>
+                                                                        <Camera size={26} className="text-neutral-400 mb-1" />
+                                                                        <span className="text-[11px] font-bold text-neutral-400 uppercase tracking-wide">{t({ en: 'Add', fr: 'Ajouter', ar: 'إضافة' })}</span>
+                                                                    </>
+                                                                )}
                                                                 <input
                                                                     type="file"
                                                                     accept="image/*"
                                                                     multiple
                                                                     className="hidden"
+                                                                    disabled={isImageUploading}
                                                                     onChange={handleImageUpload}
                                                                 />
                                                             </motion.label>
@@ -2093,15 +2111,15 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                                     className="flex flex-col pb-24 -mx-6"
                                 >
                                     {/* Success/Programmed Header — same as ClientOrdersView */}
-                                    <div className="px-12 pt-10 pb-6 flex items-center gap-6">
-                                        <div className="w-45 h-50 flex-shrink-0">
+                                    <div className="px-6 md:px-12 pt-10 pb-6 flex flex-col md:flex-row items-center gap-6 text-center md:text-left">
+                                        <div className="w-32 h-32 md:w-35 md:h-50 flex-shrink-0">
                                             <img src="/Images/Vectors Illu/NewOrder.webp" className="w-full h-full object-contain" />
                                         </div>
                                         <div className="flex flex-col">
-                                            <h2 className="text-[35px] font-black text-black leading-[1.1] tracking-tighter">
+                                            <h2 className="text-[32px] md:text-[35px] font-black text-black leading-[1.1] tracking-tighter">
                                                 {t({ en: 'Your Bricol.ma Order', fr: 'Votre commande Bricol.ma', ar: 'طلبك من Bricol.ma' })}
                                             </h2>
-                                            <div className="flex items-center gap-2 text-[18px] font-semibold text-black mt-1">
+                                            <div className="flex items-center justify-center md:justify-start gap-2 text-[18px] font-semibold text-black mt-1">
                                                 <span>{selectedDate ? new Date(selectedDate).toLocaleDateString(t({ en: 'en-US', fr: 'fr-FR', ar: 'ar-MA' }), { day: 'numeric', month: 'short' }) : t({ en: 'Flexible', fr: 'Flexible', ar: 'مرن' })}</span>
                                                 <span className="text-neutral-200">|</span>
                                                 <span>{selectedTime}</span>
@@ -2313,7 +2331,7 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
 
                                         {/* Key Details Grid */}
                                         <div className="mb-4">
-                                            <div className="grid grid-cols-2 gap-3">
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                                 {/* City & Area */}
                                                 <div className="bg-neutral-50 rounded-2xl p-4 flex items-center gap-3 border border-neutral-100/50">
                                                     <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-sm">
@@ -2363,7 +2381,7 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                                                     </div>
                                                 </div>
                                                 {/* Instructions (Full width) */}
-                                                <div className="bg-neutral-50 rounded-2xl p-4 col-span-2 flex items-start gap-3 border border-neutral-100/50">
+                                                <div className="bg-neutral-50 rounded-2xl p-4 col-span-1 sm:col-span-2 flex items-start gap-3 border border-neutral-100/50">
                                                     <div className="w-10 h-10 rounded-full bg-white flex-shrink-0 flex items-center justify-center shadow-sm">
                                                         <Info size={20} className="text-[#00A082]" />
                                                     </div>

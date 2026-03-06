@@ -106,10 +106,10 @@ const ClientWhatsAppPopup = ({ isOpen, onClose, onSuccess }: ClientWhatsAppPopup
                             gap: isCompactPhone ? '8px' : '12px',
                             marginBottom: isCompactPhone ? '16px' : '20px'
                         }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', borderRight: '1px solid #E0DBCF', paddingRight: isCompactPhone ? '10px' : '12px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', borderRight: '1px solid #E0DBCF', paddingRight: isCompactPhone ? '10px' : '12px', flexShrink: 0 }}>
                                 <img src="https://flagcdn.com/w20/ma.png" width="20" alt="MA" style={{ borderRadius: '2px' }} />
-                                <span style={{ fontSize: inputFontSize, fontWeight: 600, color: '#1D1D1D' }}>+212</span>
-                                <div style={{ width: '0', height: '0', borderLeft: '5px solid transparent', borderRight: '5px solid transparent', borderTop: '5px solid #1D1D1D', marginLeft: '2px' }} />
+                                <span style={{ fontSize: inputFontSize, fontWeight: 600, color: '#1D1D1D', whiteSpace: 'nowrap' }}>+212</span>
+                                <div style={{ width: '0', height: '0', borderLeft: '5px solid transparent', borderRight: '5px solid transparent', borderTop: '5px solid #1D1D1D', marginLeft: '2px', flexShrink: 0 }} />
                             </div>
                             <input
                                 type="tel"

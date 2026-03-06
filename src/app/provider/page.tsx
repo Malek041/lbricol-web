@@ -1974,8 +1974,8 @@ export default function ProviderPage() {
                     {/* Content */}
                     <div className="flex-1 overflow-y-auto no-scrollbar">
                         <div className="pb-10">
-                            <div className="px-12 pt-10 pb-6 flex items-center gap-6">
-                                <div className="w-35 h-50 flex-shrink-0">
+                            <div className="px-6 md:px-12 pt-10 pb-6 flex flex-col sm:flex-row items-center gap-6 text-center sm:text-left">
+                                <div className="w-32 h-32 md:w-35 md:h-50 flex-shrink-0">
                                     <img
                                         src="/Images/Vectors Illu/NewOrder.webp"
                                         className="w-full h-full object-contain"
@@ -1983,7 +1983,7 @@ export default function ProviderPage() {
                                     />
                                 </div>
                                 <div className="flex flex-col">
-                                    <h2 className="text-[42px] font-black text-black leading-[1.1] tracking-tighter">
+                                    <h2 className="text-[32px] md:text-[42px] font-black text-black leading-[1.1] tracking-tighter">
                                         {job.status === 'done' ? t({ en: 'Completed', fr: 'Terminée' }) :
                                             (job.rawAccepted?.status === 'confirmed' || job.rawAccepted?.status === 'programmed') ? t({ en: 'Programmed', fr: 'Programmée' }) :
                                                 t({ en: 'Upcoming', fr: 'À venir' })}
@@ -2000,8 +2000,8 @@ export default function ProviderPage() {
                             </div>
 
                             {/* Key Details Grid */}
-                            <div className="px-12 mb-8">
-                                <div className="grid grid-cols-2 gap-4">
+                            <div className="px-6 md:px-12 mb-8">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                     <div className="bg-neutral-50 rounded-2xl p-4 flex items-center gap-4 border border-neutral-100/50">
                                         <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-sm">
                                             <Clock size={20} className="text-[#00A082]" />
@@ -2051,7 +2051,7 @@ export default function ProviderPage() {
                                         </div>
                                     </div>
                                     {/* Description */}
-                                    <div className="bg-neutral-50 rounded-2xl p-4 col-span-2 flex items-start gap-4 border border-neutral-100/50">
+                                    <div className="bg-neutral-50 rounded-2xl p-4 col-span-1 sm:col-span-2 flex items-start gap-4 border border-neutral-100/50">
                                         <div className="w-10 h-10 rounded-full bg-white flex-shrink-0 flex items-center justify-center shadow-sm">
                                             <Info size={20} className="text-[#00A082]" />
                                         </div>
@@ -2300,10 +2300,10 @@ export default function ProviderPage() {
                     </div>
 
                     {/* Fixed Total Footer */}
-                    <div className="px-12 py-8 bg-white border-t border-neutral-100 shadow-[0_-10px_40px_rgba(0,0,0,0.05)] z-[4001]">
-                        <div className="flex justify-between items-center">
-                            <span className="text-[32px] font-black text-[#00A082]">{t({ en: 'Your Net Payout', fr: 'Tes Gains Nets' })}</span>
-                            <span className="text-[32px] font-black text-[#00A082] tracking-tighter">{(parseFloat(job.priceLabel) * (1 - COMMISSION_RATE)).toFixed(0)} {t({ en: 'MAD', fr: 'MAD' })}</span>
+                    <div className="px-6 md:px-12 py-8 bg-white border-t border-neutral-100 shadow-[0_-10px_40px_rgba(0,0,0,0.05)] z-[4001]">
+                        <div className="flex items-center justify-between gap-4">
+                            <span className="text-[28px] md:text-[32px] font-black text-[#00A082] leading-tight">{t({ en: 'Your Net Payout', fr: 'Tes Gains Nets' })}</span>
+                            <span className="text-[28px] md:text-[32px] font-black text-[#00A082] tracking-tighter truncate">{(parseFloat(job.priceLabel) * (1 - COMMISSION_RATE)).toFixed(0)} {t({ en: 'MAD', fr: 'MAD' })}</span>
                         </div>
                     </div>
                 </motion.div>

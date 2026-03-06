@@ -486,15 +486,15 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
                         {/* Content */}
                         <div className="flex-1 overflow-y-auto no-scrollbar">
                             <div className="pb-10">
-                                <div className="px-12 pt-10 pb-6 flex items-center gap-6">
-                                    <div className="w-35 h-50 flex-shrink-0">
+                                <div className="px-6 md:px-12 pt-10 pb-6 flex flex-col sm:flex-row items-center gap-6 text-center sm:text-left">
+                                    <div className="w-32 h-32 md:w-35 md:h-50 flex-shrink-0">
                                         <img
                                             src="/Images/Vectors Illu/NewOrder.webp"
                                             className="w-full h-full object-contain"
                                         />
                                     </div>
                                     <div className="flex flex-col">
-                                        <h2 className="text-[42px] font-black text-black leading-[1.1] tracking-tighter">
+                                        <h2 className="text-[32px] md:text-[42px] font-black text-black leading-[1.1] tracking-tighter">
                                             {selectedOrder.status === 'done' ? t({ en: 'Completed', fr: 'Terminé', ar: 'مكتمل' }) :
                                                 selectedOrder.status === 'delivered' ? t({ en: 'Job Delivered', fr: 'Job Livré', ar: 'تم التسليم' }) :
                                                     selectedOrder.status === 'cancelled' ? t({ en: 'Cancelled', fr: 'Annulé', ar: 'ملغى' }) :
@@ -513,8 +513,8 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
                                 </div>
 
                                 {/* Key Details Grid */}
-                                <div className="px-12 mb-8">
-                                    <div className="grid grid-cols-2 gap-4">
+                                <div className="px-6 md:px-12 mb-8">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                         <div className="bg-neutral-50 rounded-2xl p-4 flex items-center gap-4 border border-neutral-100/50">
                                             <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-sm">
                                                 <Clock size={20} className="text-[#00A082]" />
@@ -580,7 +580,7 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
 
                                 {/* Bricoler Info Section moved higher for better visibility */}
                                 {(selectedOrder.bricolerId || selectedOrder.bricolerName) && (
-                                    <div className="px-12 mb-10">
+                                    <div className="px-6 md:px-12 mb-10">
                                         <div className="bg-white rounded-[28px] p-5 flex items-center justify-between border-2 border-neutral-50 shadow-sm transition-all hover:border-[#00A082]/10">
                                             <div className="flex items-center gap-4">
                                                 <div className="h-16 w-16 rounded-2xl overflow-hidden bg-neutral-100 shadow-sm border border-neutral-50">
@@ -781,10 +781,10 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
                         </div>
 
                         {/* Fixed Total Footer */}
-                        <div className="px-12 py-8 bg-white border-t border-neutral-100 shadow-[0_-10px_40px_rgba(0,0,0,0.05)] z-[4001]">
-                            <div className="flex justify-between items-center">
-                                <span className="text-[32px] font-black text-black">{t({ en: 'Total', fr: 'Total', ar: 'الإجمالي' })}</span>
-                                <span className="text-[32px] font-black text-black tracking-tighter">{((selectedOrder?.totalPrice || 0)).toFixed(0)} MAD</span>
+                        <div className="px-6 md:px-12 py-8 bg-white border-t border-neutral-100 shadow-[0_-10px_40px_rgba(0,0,0,0.05)] z-[4001]">
+                            <div className="flex items-center justify-between gap-4">
+                                <span className="text-[28px] md:text-[32px] font-black text-black">{t({ en: 'Total', fr: 'Total', ar: 'الإجمالي' })}</span>
+                                <span className="text-[28px] md:text-[32px] font-black text-black tracking-tighter truncate">{((selectedOrder?.totalPrice || 0)).toFixed(0)} MAD</span>
                             </div>
                         </div>
                     </motion.div>
