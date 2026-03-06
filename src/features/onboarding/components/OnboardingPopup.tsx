@@ -177,7 +177,8 @@ const SERVICE_EQUIPMENT_SUGGESTIONS: Record<string, string[]> = {
 // Services where equipment is not typically applicable
 const NO_EQUIPMENT_SERVICES = ['errands', 'driver', 'car_rental', 'courier', 'airport', 'transport_intercity', 'private_driver', 'learn_arabic'];
 
-const OnboardingPopup = ({ isOpen, onClose, onComplete, mode = 'onboarding', initialCategory, userData }: OnboardingPopupProps) => {
+const OnboardingPopup = (props: OnboardingPopupProps) => {
+    const { isOpen, onClose, onComplete, mode = 'onboarding', initialCategory, userData } = props;
     const { showToast } = useToast();
     const { t } = useLanguage();
     const isMobile = useIsMobileViewport(968);
@@ -363,17 +364,25 @@ const OnboardingPopup = ({ isOpen, onClose, onComplete, mode = 'onboarding', ini
 
     const migrateShadowJobs = async (targetUid: string, metaId: string) => {
         try {
+            console.log(`Starting job migration from ${metaId} to ${targetUid}...`);
             const jobsQuery = query(collection(db, 'jobs'), where('bricolerId', '==', metaId));
             const jobsSnap = await getDocs(jobsQuery);
+
             if (!jobsSnap.empty) {
-                const batch = writeBatch(db);
-                jobsSnap.forEach(docSnap => {
-                    batch.update(docSnap.ref, {
-                        bricolerId: targetUid,
+                // Chunk into batches of 500 (Firestore limit)
+                const docs = jobsSnap.docs;
+                for (let i = 0; i < docs.length; i += 500) {
+                    const chunk = docs.slice(i, i + 500);
+                    const batch = writeBatch(db);
+                    chunk.forEach(docSnap => {
+                        batch.update(docSnap.ref, {
+                            bricolerId: targetUid,
+                            updatedAt: serverTimestamp()
+                        });
                     });
-                });
-                await batch.commit();
-                console.log(`Migrated ${jobsSnap.size} jobs from metaId ${metaId} to uid ${targetUid}`);
+                    await batch.commit();
+                }
+                console.log(`Successfully migrated ${jobsSnap.size} jobs.`);
             }
         } catch (err) {
             console.error("Migration failed:", err);
@@ -391,52 +400,486 @@ const OnboardingPopup = ({ isOpen, onClose, onComplete, mode = 'onboarding', ini
                 const metaId = s.docs[0].id;
                 setLocalUserData({ ...data, id: metaId, metaId: metaId });
 
-                // Pre-fill states from fetched data
                 if (data.city) setSelectedCity(data.city);
                 if (data.workAreas) setSelectedAreas(data.workAreas);
                 if (data.services && Array.isArray(data.services)) {
                     const entries: Record<string, CategoryDetail> = {};
                     const subIds: string[] = [];
-                    data.services.forEach((s: any) => {
-                        const catId = s.categoryId;
-                        if (catId) {
-                            entries[catId] = s;
-                            if (s.subServiceId) subIds.push(s.subServiceId);
+                    data.services.forEach((service: any) => {
+                        const catId = service.categoryId;
+                        if (!entries[catId]) {
+                            entries[catId] = {
+                                categoryId: catId,
+                                categoryName: service.categoryName,
+                                hourlyRate: service.hourlyRate || 75,
+                                pitch: service.pitch || "",
+                                experience: service.experience || "",
+                                equipments: service.equipments || [],
+                                noEquipment: service.noEquipment || false,
+                                portfolioImages: service.portfolioImages || [],
+                                portfolioFiles: []
+                            };
                         }
+                        subIds.push(service.subServiceId);
                     });
                     setCategoryEntries(entries);
                     setSelectedSubServices(subIds);
-
-                    if (subIds.length > 0) {
-                        const firstSvc = ALL_SERVICES.find(cat => cat.subServices.some(ss => ss.id === subIds[0]) || cat.id === subIds[0]);
-                        if (firstSvc) setActiveCategoryId(firstSvc.id);
-                    }
                 }
                 if (data.name) setFullName(data.name);
-                if (data.displayName) setFullName(data.displayName);
                 if (data.whatsappNumber) setWhatsappNumber(data.whatsappNumber);
 
                 showToast({
                     variant: 'success',
                     title: t({ en: 'Code Verified!', fr: 'Code Vérifié !' }),
-                    description: t({ en: 'We found your profile. Let\'s complete it.', fr: 'Profil trouvé. Complétons-le.' })
+                    description: t({ en: 'Profile found. Let\'s continue.', fr: 'Profil trouvé. Continuons.' })
                 });
-                setHasCode(true); // Ensure it stays on 'Yes' view briefly or just move on
                 setStepIndex(s => s + 1);
             } else {
                 showToast({
                     variant: 'error',
                     title: t({ en: 'Invalid code', fr: 'Code invalide' }),
-                    description: t({ en: 'This activation code does not exist.', fr: 'Ce code d\'activation n\'existe pas.' })
+                    description: t({ en: 'Activation code not found.', fr: 'Code d\'activation non trouvé.' })
                 });
             }
         } catch (err) {
-            console.error(err);
+            console.error("Verification error:", err);
         } finally {
             setIsSubmitting(false);
         }
     };
 
+    const handleBricolerSignup = async () => {
+        setIsSubmitting(true);
+        setSubmittingStatus("Preparing...");
+
+        try {
+            let user = auth.currentUser;
+            if (!user) {
+                console.log("No user found, starting Google Sign-in...");
+                setSubmittingStatus("Authenticating...");
+                const provider = new GoogleAuthProvider();
+                const result = await signInWithPopup(auth, provider);
+                user = result.user;
+                await new Promise(resolve => setTimeout(resolve, 1500));
+            }
+
+            if (!user) throw new Error("AUTH_FAILED");
+            setSubmittingStatus("Preparing profile...");
+
+            const ALL_SVCS = getAllServices();
+            const initialEntries = selectedSubServices.map(subId => {
+                const svc = ALL_SVCS.find(s => s.subServices?.some(ss => ss.id === subId) || s.id === subId);
+                const catId = svc?.id || '';
+                const e = categoryEntries[catId];
+                return {
+                    categoryId: catId,
+                    categoryName: e?.categoryName || catId,
+                    subServiceId: subId,
+                    subServiceName: svc?.subServices?.find(ss => ss.id === subId)?.name || subId,
+                    hourlyRate: e?.hourlyRate || 75,
+                    pitch: (e?.pitch || "").trim(),
+                    experience: e?.experience || "",
+                    equipments: e?.noEquipment ? [] : (e?.equipments || []),
+                    noEquipment: e?.noEquipment || false,
+                    portfolioImages: e?.portfolioImages || [] as string[],
+                };
+            });
+
+            setSubmittingStatus("Uploading media...");
+            let finalAvatarUrl = user.photoURL || '';
+            const categoryUploadResults: Record<string, string[]> = {};
+
+            // 1. Avatar Upload
+            let avatarPromise: Promise<string> = Promise.resolve(user.photoURL || '');
+            if (profileImageFile) {
+                const task = (async () => {
+                    try {
+                        const fileName = `${Date.now()}_profile.jpg`;
+                        const res = await uploadBytes(ref(storage, `avatars/${user.uid}/${fileName}`), profileImageFile, {
+                            contentType: 'image/jpeg',
+                            customMetadata: { 'userId': user.uid, 'context': 'signup' }
+                        });
+                        const url = await getDownloadURL(res.ref);
+                        try { await updateProfile(user!, { photoURL: url }); } catch (e) { }
+                        return url;
+                    } catch (err) {
+                        console.warn("Avatar upload failed:", err);
+                        return user?.photoURL || '';
+                    }
+                })();
+                avatarPromise = Promise.race([
+                    task,
+                    new Promise<string>((_, reject) => setTimeout(() => reject(new Error("TIMEOUT")), 30000))
+                ]).catch(() => user?.photoURL || '');
+            }
+
+            // 1.5 Tour Guide Authorization Upload
+            let tourGuidePromise: Promise<string | null> = Promise.resolve(tourGuideAuthorizationUrl || null);
+            if (tourGuideAuthorizationFile && selectedSubServices.some(id => id.includes('tour_guide'))) {
+                const task = (async () => {
+                    try {
+                        const path = `verifications/${user.uid}/${Date.now()}_tour_guide_auth`;
+                        const res = await uploadBytes(ref(storage, path), tourGuideAuthorizationFile);
+                        return await getDownloadURL(res.ref);
+                    } catch (err) {
+                        console.warn("Tour guide auth upload failed:", err);
+                        return tourGuideAuthorizationUrl || null;
+                    }
+                })();
+                tourGuidePromise = Promise.race([
+                    task,
+                    new Promise<string | null>((_, reject) => setTimeout(() => reject(new Error("TIMEOUT")), 30000))
+                ]).catch(() => tourGuideAuthorizationUrl || null);
+            }
+
+            // 2. Portfolio Uploads
+            const uploadPromisesByCat: Promise<void>[] = [];
+            const uniqueCategories = Array.from(new Set(initialEntries.map(e => e.categoryId)));
+            for (const catId of uniqueCategories) {
+                const catData = categoryEntries[catId];
+                categoryUploadResults[catId] = (catData?.portfolioImages || []).filter(u => u.startsWith('http'));
+                if (catData?.portfolioFiles?.length) {
+                    let count = 0;
+                    for (const file of catData.portfolioFiles) {
+                        const task = (async () => {
+                            try {
+                                const path = `portfolio/${user.uid}/${catId}/${Date.now()}_${Math.random().toString(36).slice(2)}.jpg`;
+                                const res = await uploadBytes(ref(storage, path), file, { contentType: 'image/jpeg' });
+                                const url = await getDownloadURL(res.ref);
+                                categoryUploadResults[catId].push(url);
+                                count++;
+                                setSubmittingStatus(`Uploading media... (${count}/${catData.portfolioFiles?.length || 0})`);
+                            } catch (e) { console.warn(`Portfolio fail ${catId}:`, e); }
+                        })();
+                        uploadPromisesByCat.push(Promise.race([task, new Promise((_, reject) => setTimeout(() => reject(new Error("TIMEOUT")), 30000))]).catch(() => { }) as Promise<void>);
+                    }
+                }
+            }
+
+            const [_, uploadedAvatarUrl, uploadedTourGuideUrl] = await Promise.all([
+                Promise.all(uploadPromisesByCat),
+                avatarPromise,
+                tourGuidePromise
+            ]);
+
+            if (uploadedAvatarUrl) finalAvatarUrl = uploadedAvatarUrl;
+            const finalTourGuideUrl = uploadedTourGuideUrl;
+
+            const finalCategoryEntries = initialEntries.map(entry => ({
+                ...entry,
+                portfolioImages: categoryUploadResults[entry.categoryId] || []
+            }));
+            const allPortfolioUrls = Array.from(new Set(Object.values(categoryUploadResults).flat()));
+
+            // 3. Firestore Saves
+            setSubmittingStatus("Saving profile...");
+            const bricolerRef = doc(db, 'bricolers', user.uid);
+            const isClaimingShadow = localUserData && localUserData.id && !localUserData.uid;
+
+            // Timeout for Firestore initial read
+            const [bSnap, cSnap] = await Promise.race([
+                Promise.all([getDoc(bricolerRef), getDoc(doc(db, 'clients', user.uid))]),
+                new Promise<any>((_, reject) => setTimeout(() => reject(new Error("FIRESTORE_TIMEOUT")), 25000))
+            ]);
+            const existingBricoler = bSnap.exists() ? bSnap.data() : null;
+
+            const cleanObj = (obj: any) => {
+                const newObj: any = {};
+                Object.keys(obj).forEach(k => { if (obj[k] !== undefined) newObj[k] = obj[k]; });
+                return newObj;
+            };
+
+            const bricolerData = cleanObj({
+                uid: user.uid,
+                name: (fullName || user.displayName || "Bricoler").trim(),
+                displayName: (fullName || user.displayName || "Bricoler").trim(),
+                email: user.email || "",
+                photoURL: finalAvatarUrl || user.photoURL || "",
+                avatar: finalAvatarUrl || user.photoURL || "",
+                whatsappNumber: (whatsappNumber || '').trim(),
+                phone: (whatsappNumber || '').trim(),
+                bankName: (bankName || '').trim(),
+                bricolerBankCardName: (bricolerBankCardName || '').trim(),
+                ribIBAN: (ribIBAN || '').trim(),
+                services: finalCategoryEntries,
+                portfolio: allPortfolioUrls,
+                experience: finalCategoryEntries[0]?.experience || "",
+                city: selectedCity || "",
+                workAreas: selectedAreas || [],
+                updatedAt: serverTimestamp(),
+                createdAt: existingBricoler?.createdAt || (isClaimingShadow ? localUserData.createdAt : null) || serverTimestamp(),
+                isActive: true,
+                isVerified: existingBricoler?.isVerified || (isClaimingShadow ? localUserData.isVerified : false) || false,
+                rating: existingBricoler?.rating || (isClaimingShadow ? localUserData.rating : 5.0) || 5.0,
+                completedJobs: existingBricoler?.completedJobs || (isClaimingShadow ? localUserData.completedJobs : 0) || 0,
+                numReviews: existingBricoler?.numReviews || (isClaimingShadow ? localUserData.numReviews : 0) || 0,
+                isBricoler: true,
+                lastLoginAt: serverTimestamp(),
+                tourGuideAuthorizationUrl: finalTourGuideUrl || null
+            });
+
+            if (isClaimingShadow) {
+                setSubmittingStatus("Migrating data...");
+                await migrateShadowJobs(user.uid, localUserData.id);
+                try { await deleteDoc(doc(db, 'bricolers', localUserData.id)); } catch (e) { }
+            }
+
+            setSubmittingStatus("Finalizing...");
+            await Promise.race([
+                Promise.all([
+                    setDoc(bricolerRef, bricolerData, { merge: true }),
+                    setDoc(doc(db, 'clients', user.uid), {
+                        uid: user.uid,
+                        name: bricolerData.name,
+                        email: bricolerData.email,
+                        photoURL: bricolerData.photoURL,
+                        whatsappNumber: bricolerData.whatsappNumber,
+                        createdAt: cSnap.exists() ? cSnap.data().createdAt : serverTimestamp(),
+                        isBricoler: true
+                    }, { merge: true })
+                ]),
+                new Promise<any>((_, reject) => setTimeout(() => reject(new Error("FIRESTORE_TIMEOUT")), 25000))
+            ]);
+
+            if (selectedCity) {
+                const cityRef = doc(db, 'city_services', selectedCity);
+                const citySnap = await getDoc(cityRef);
+                const svcIds = [...new Set(finalCategoryEntries.map(e => e.categoryId))];
+                if (!citySnap.exists()) {
+                    await setDoc(cityRef, { active_services: svcIds, work_areas: selectedAreas, total_pros: 1, lastUpdated: serverTimestamp() });
+                } else {
+                    const data = citySnap.data();
+                    const updated = [...new Set([...(data.active_services || []), ...svcIds])];
+                    await updateDoc(cityRef, { active_services: updated, total_pros: (data.total_pros || 0) + 1, lastUpdated: serverTimestamp() });
+                }
+            }
+
+            setSubmittingStatus("Complete!");
+            onComplete({ services: finalCategoryEntries, city: selectedCity, availability });
+
+        } catch (error: any) {
+            console.error('Signup error:', error);
+            let msg = error.message || "An error occurred";
+            const isPopupClosed = error.code === 'auth/popup-closed-by-user' || error.message?.includes('popup-closed-by-user');
+
+            if (isPopupClosed) {
+                // User simply closed the popup, don't show a scary system error
+                showToast({
+                    variant: 'info',
+                    title: t({ en: 'Sign-in cancelled', fr: 'Connexion annulée', ar: 'تم إلغاء تسجيل الدخول' }),
+                    description: t({
+                        en: 'The Google sign-in popup was closed. Please try again to continue.',
+                        fr: 'La fenêtre Google a été fermée. Veuillez réessayer pour continuer.',
+                        ar: 'تم إغلاق نافذة جوجل. يرجى المحاولة مرة أخرى للاستمرار.'
+                    })
+                });
+            } else {
+                if (error.code === 'permission-denied') msg = "Security permission denied. Please try again.";
+                showToast({
+                    variant: 'error',
+                    title: t({ en: 'Sign-up failed', fr: 'Échec de l’inscription', ar: 'فشل التسجيل' }),
+                    description: msg
+                });
+            }
+            setSubmittingStatus(null);
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    const handleAdminSubmit = async () => {
+        setIsSubmitting(true);
+        setSubmittingStatus("Saving...");
+        try {
+            const isEdit = mode === 'admin_edit';
+            const metaId = isEdit && userData?.id ? userData.id : 'meta_' + Math.random().toString(36).substr(2, 9).toUpperCase();
+            const claimCode = isEdit && userData?.claimCode ? userData.claimCode : 'CLAIM-' + Math.random().toString(36).substr(2, 6).toUpperCase();
+
+            const ALL_SVCS = getAllServices();
+            const entries = selectedSubServices.map(subId => {
+                const svc = ALL_SVCS.find(s => s.subServices?.some(ss => ss.id === subId) || s.id === subId);
+                const catId = svc?.id || '';
+                const e = categoryEntries[catId];
+                return {
+                    categoryId: catId,
+                    categoryName: e?.categoryName || catId,
+                    subServiceId: subId,
+                    subServiceName: svc?.subServices?.find(ss => ss.id === subId)?.name || subId,
+                    hourlyRate: e?.hourlyRate || 75,
+                    pitch: (e?.pitch || "").trim(),
+                    experience: e?.experience || "",
+                    equipments: e?.noEquipment ? [] : (e?.equipments || []),
+                    noEquipment: e?.noEquipment || false,
+                    portfolioImages: e?.portfolioImages || [] as string[],
+                };
+            });
+
+            let finalAvatarUrl = userData?.photoURL || '';
+            if (profileImageFile) {
+                const res = await uploadBytes(ref(storage, `avatars/${metaId}/${Date.now()}_profile.jpg`), profileImageFile, { contentType: 'image/jpeg' });
+                finalAvatarUrl = await getDownloadURL(res.ref);
+            }
+
+            let finalTourGuideAuthUrl = tourGuideAuthorizationUrl || null;
+            if (tourGuideAuthorizationFile) {
+                const res = await uploadBytes(ref(storage, `verifications/${metaId}/${Date.now()}_tour_guide_auth`), tourGuideAuthorizationFile);
+                finalTourGuideAuthUrl = await getDownloadURL(res.ref);
+            }
+
+            const cleanObj = (obj: any) => {
+                const newObj: any = {};
+                Object.keys(obj).forEach(k => { if (obj[k] !== undefined) newObj[k] = obj[k]; });
+                return newObj;
+            };
+
+            const bricolerData = cleanObj({
+                uid: userData?.uid || null,
+                name: (fullName || "Bricoler").trim(),
+                displayName: (fullName || "Bricoler").trim(),
+                avatar: finalAvatarUrl,
+                photoURL: finalAvatarUrl,
+                whatsappNumber: (whatsappNumber || '').trim(),
+                phone: (whatsappNumber || '').trim(),
+                bankName: (bankName || '').trim(),
+                bricolerBankCardName: (bricolerBankCardName || '').trim(),
+                ribIBAN: (ribIBAN || '').trim(),
+                services: entries,
+                portfolio: Array.from(new Set(entries.flatMap(e => e.portfolioImages))),
+                city: selectedCity,
+                workAreas: selectedAreas,
+                isActive: true,
+                isBricoler: true,
+                metaId,
+                claimCode,
+                updatedAt: serverTimestamp(),
+                createdAt: userData?.createdAt || serverTimestamp(),
+                numReviews: userData?.numReviews || 0,
+                rating: userData?.rating || 5.0,
+                completedJobs: userData?.completedJobs || 0,
+                tourGuideAuthorizationUrl: finalTourGuideAuthUrl || null
+            });
+
+            await setDoc(doc(db, 'bricolers', metaId), bricolerData, { merge: true });
+            showToast({ title: isEdit ? 'Profile updated!' : 'Profile created!', variant: 'success' });
+            onComplete({ id: metaId, ...bricolerData });
+            onClose();
+        } catch (error: any) {
+            console.error("Admin save error:", error);
+            showToast({ title: error.message || "Save failed", variant: 'error' });
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    const handleUpdateProfile = async () => {
+        if (!auth.currentUser) return;
+        setIsSubmitting(true);
+        setSubmittingStatus("Saving changes...");
+
+        try {
+            const user = auth.currentUser;
+            const ALL_SVCS = getAllServices();
+            const currentEntries = selectedSubServices.map(subId => {
+                const svc = ALL_SVCS.find(s => s.subServices?.some(ss => ss.id === subId) || s.id === subId);
+                const catId = svc?.id || '';
+                const e = categoryEntries[catId];
+                return {
+                    categoryId: catId,
+                    categoryName: e?.categoryName || catId,
+                    subServiceId: subId,
+                    subServiceName: svc?.subServices?.find(ss => ss.id === subId)?.name || subId,
+                    hourlyRate: e?.hourlyRate || 75,
+                    pitch: (e?.pitch || "").trim(),
+                    experience: e?.experience || "",
+                    equipments: e?.noEquipment ? [] : (e?.equipments || []),
+                    noEquipment: e?.noEquipment || false,
+                    portfolioImages: e?.portfolioImages || [] as string[],
+                    portfolioFiles: e?.portfolioFiles || []
+                };
+            });
+
+            setSubmittingStatus("Uploading media...");
+            const categoryUploadResults: Record<string, string[]> = {};
+            const uploadPromises: Promise<any>[] = [];
+
+            for (const catId of Array.from(new Set(currentEntries.map(e => e.categoryId)))) {
+                const catData = categoryEntries[catId];
+                categoryUploadResults[catId] = (catData?.portfolioImages || []).filter(u => u.startsWith('http'));
+                if (catData?.portfolioFiles?.length) {
+                    for (const file of catData.portfolioFiles) {
+                        const task = (async () => {
+                            const path = `portfolio/${user.uid}/${catId}/${Date.now()}_${Math.random().toString(36).slice(2)}.jpg`;
+                            const res = await uploadBytes(ref(storage, path), file, { contentType: 'image/jpeg' });
+                            categoryUploadResults[catId].push(await getDownloadURL(res.ref));
+                        })();
+                        uploadPromises.push(Promise.race([task, new Promise((_, reject) => setTimeout(() => reject(new Error("TIMEOUT")), 30000))]).catch(() => { }));
+                    }
+                }
+            }
+
+            let finalAvatarUrl = user.photoURL || '';
+            if (profileImageFile) {
+                const task = (async () => {
+                    const res = await uploadBytes(ref(storage, `avatars/${user.uid}/${Date.now()}_profile.jpg`), profileImageFile, { contentType: 'image/jpeg' });
+                    finalAvatarUrl = await getDownloadURL(res.ref);
+                    try { await updateProfile(user, { photoURL: finalAvatarUrl }); } catch (e) { }
+                    return finalAvatarUrl;
+                })();
+                uploadPromises.push(Promise.race([task, new Promise((_, reject) => setTimeout(() => reject(new Error("TIMEOUT")), 30000))]).catch(() => user.photoURL || ''));
+            }
+
+            let finalTourGuideUrl = tourGuideAuthorizationUrl || null;
+            if (tourGuideAuthorizationFile) {
+                const task = (async () => {
+                    const res = await uploadBytes(ref(storage, `verifications/${user.uid}/${Date.now()}_tour_guide_auth`), tourGuideAuthorizationFile);
+                    finalTourGuideUrl = await getDownloadURL(res.ref);
+                    return finalTourGuideUrl;
+                })();
+                uploadPromises.push(Promise.race([task, new Promise((_, reject) => setTimeout(() => reject(new Error("TIMEOUT")), 30000))]).catch(() => tourGuideAuthorizationUrl || null));
+            }
+
+            const results = await Promise.all(uploadPromises);
+            // Index management since we might have avatar, tour guide, and portfolio
+            // Let's just use the state variables we updated inside the tasks or results
+            const avatarRes = profileImageFile ? (results.find(r => typeof r === 'string' && r.includes('avatars')) || finalAvatarUrl) : finalAvatarUrl;
+            const tourRes = tourGuideAuthorizationFile ? (results.find(r => typeof r === 'string' && r.includes('verifications')) || finalTourGuideUrl) : finalTourGuideUrl;
+
+            const finalCategoryEntries = currentEntries.map(e => ({
+                id: `${e.categoryId}_${e.subServiceId}`,
+                ...e,
+                portfolioImages: categoryUploadResults[e.categoryId] || []
+            }));
+
+            const bricolerRef = doc(db, 'bricolers', user.uid);
+            const bSnap = await getDoc(bricolerRef);
+            let updatedServices = finalCategoryEntries;
+            if (bSnap.exists()) {
+                const existing = bSnap.data().services || [];
+                const others = existing.filter((s: any) => !Array.from(new Set(currentEntries.map(e => e.categoryId))).includes(s.categoryId));
+                updatedServices = [...others, ...finalCategoryEntries];
+            }
+
+            const updateData = {
+                services: updatedServices,
+                updatedAt: serverTimestamp(),
+                isActive: true,
+                photoURL: avatarRes,
+                avatar: avatarRes,
+                tourGuideAuthorizationUrl: tourRes
+            };
+            await setDoc(bricolerRef, updateData, { merge: true });
+            await setDoc(doc(db, 'clients', user.uid), { isBricoler: true }, { merge: true });
+
+            showToast({ title: t({ en: 'Successfully updated!', fr: 'Mis à jour avec succès !' }), variant: 'success' });
+            onComplete({ services: updatedServices });
+            onClose();
+        } catch (error: any) {
+            console.error("Update error:", error);
+            showToast({ title: error.message || "Update failed", variant: 'error' });
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
     const canGoNext = () => {
         if (step === 'activation') return hasCode === false || (hasCode === true && localUserData !== null);
         if (step === 'services') return selectedSubServices.length > 0;
@@ -577,573 +1020,6 @@ const OnboardingPopup = ({ isOpen, onClose, onComplete, mode = 'onboarding', ini
             };
             reader.onerror = (err) => { clearTimeout(timeout); reject(err); };
         });
-    };
-
-    const handleUpdateProfile = async () => {
-        if (!auth.currentUser) return;
-        setIsSubmitting(true);
-        setSubmittingStatus("Saving changes...");
-
-        try {
-            const user = auth.currentUser;
-
-            // Map selected services to entry format
-            const currentEntries = selectedSubServices.map(subId => {
-                const svc = ALL_SERVICES.find(s => s.subServices?.some(ss => ss.id === subId) || s.id === subId);
-                const catId = svc?.id || '';
-                const e = categoryEntries[catId];
-                return {
-                    categoryId: catId,
-                    categoryName: e?.categoryName || catId,
-                    subServiceId: subId,
-                    subServiceName: svc?.subServices?.find(ss => ss.id === subId)?.name || subId,
-                    hourlyRate: e?.hourlyRate || 75,
-                    pitch: (e?.pitch || "").trim(),
-                    experience: e?.experience || "",
-                    equipments: e?.noEquipment ? [] : (e?.equipments || []),
-                    noEquipment: e?.noEquipment || false,
-                    portfolioImages: e?.portfolioImages || [],
-                    portfolioFiles: e?.portfolioFiles || []
-                };
-            });
-
-            setSubmittingStatus("Uploading media...");
-            const categoryUploadResults: Record<string, string[]> = {};
-            const uploadPromises: Promise<void | any>[] = [];
-
-            // 1. Upload new Portfolio Images in parallel
-            const uniqueCategories = Array.from(new Set(currentEntries.map(e => e.categoryId)));
-            for (const catId of uniqueCategories) {
-                const catData = categoryEntries[catId];
-                const existingUrls = catData?.portfolioImages?.filter(url => url.startsWith('http')) || [];
-                categoryUploadResults[catId] = [...existingUrls];
-
-                if (catData?.portfolioFiles && catData.portfolioFiles.length > 0) {
-                    let uploadedCount = 0;
-                    for (const file of catData.portfolioFiles) {
-                        const task = (async () => {
-                            try {
-                                const storageRef = ref(storage, `portfolio/${user.uid}/${catId}/${Date.now()}_${Math.random().toString(36).slice(2)}.jpg`);
-                                const res = await uploadBytes(storageRef, file, { contentType: 'image/jpeg' });
-                                const url = await getDownloadURL(res.ref);
-                                categoryUploadResults[catId].push(url);
-                                uploadedCount++;
-                            } catch (e) {
-                                console.warn(`Portfolio file upload failed for ${catId}:`, e);
-                            }
-                        })();
-
-                        // Safety wrap each upload in a timeout
-                        const timeoutTask = Promise.race([
-                            task,
-                            new Promise((_, reject) => setTimeout(() => reject(new Error("Upload timeout")), 30000))
-                        ]).catch(err => console.warn("Portfolio task timed out or failed:", err));
-
-                        uploadPromises.push(timeoutTask);
-                    }
-                }
-            }
-
-            // 1.5. Upload Avatar if any
-            let finalAvatarUrl = user.photoURL || '';
-            let avatarPromise = Promise.resolve(finalAvatarUrl);
-
-            if (profileImageFile) {
-                const avatarTask = (async () => {
-                    try {
-                        const avatarStorageRef = ref(storage, `avatars/${user.uid}/${Date.now()}_profile.jpg`);
-                        const uploadResult = await uploadBytes(avatarStorageRef, profileImageFile, { contentType: 'image/jpeg' });
-                        const url = await getDownloadURL(uploadResult.ref);
-                        console.log("Avatar updated during edit:", url);
-                        try { await updateProfile(user, { photoURL: url }); } catch (e) { }
-                        return url;
-                    } catch (err) {
-                        console.warn("Avatar upload failed during edit:", err);
-                        return user.photoURL || '';
-                    }
-                })();
-
-                avatarPromise = Promise.race([
-                    avatarTask,
-                    new Promise<string>((_, reject) => setTimeout(() => reject(new Error("Avatar upload timeout")), 30000))
-                ]).catch(err => {
-                    console.warn("Avatar task timed out or failed:", err);
-                    return user.photoURL || '';
-                });
-
-                uploadPromises.push(avatarPromise);
-            }
-
-            const results = await Promise.all(uploadPromises);
-            // If the last one was the avatar, it will be in the results
-            if (profileImageFile) {
-                finalAvatarUrl = results[results.length - 1] || finalAvatarUrl;
-            }
-
-            // Map results back to entries
-            const finalCategoryEntries = currentEntries.map(entry => ({
-                id: `${entry.categoryId}_${entry.subServiceId}`,
-                categoryId: entry.categoryId,
-                categoryName: entry.categoryName,
-                subServiceId: entry.subServiceId,
-                subServiceName: entry.subServiceName,
-                hourlyRate: entry.hourlyRate,
-                pitch: entry.pitch,
-                experience: entry.experience,
-                equipments: entry.equipments,
-                noEquipment: entry.noEquipment,
-                portfolioImages: categoryUploadResults[entry.categoryId] || []
-            }));
-
-            setSubmittingStatus("Syncing...");
-            const bricolerRef = doc(db, 'bricolers', user.uid);
-            const isClaimingShadow = localUserData && localUserData.metaId && localUserData.metaId !== user.uid;
-
-            // Get current services to merge or replace
-            const docSnap = await getDoc(bricolerRef);
-            let updatedServices = finalCategoryEntries;
-
-            if (docSnap.exists()) {
-                const existingServices = docSnap.data().services || [];
-                if (mode === 'edit') {
-                    const otherServices = existingServices.filter((s: any) => !uniqueCategories.includes(s.categoryId));
-                    updatedServices = [...otherServices, ...finalCategoryEntries];
-                } else {
-                    const existingIds = new Set(existingServices.map((s: any) => s.id));
-                    const newOnes = finalCategoryEntries.filter(s => !existingIds.has(s.id));
-                    updatedServices = [...existingServices, ...newOnes];
-                }
-            }
-
-            const updateData: any = {
-                services: updatedServices,
-                ...(errandsTransport ? { errandsTransport } : {}),
-                ...(movingTransport ? { movingTransport } : {}),
-                ...(tourGuideAuthorizationUrl ? { tourGuideAuthorizationUrl } : {}),
-                updatedAt: serverTimestamp(),
-                isActive: true,
-                photoURL: finalAvatarUrl || user.photoURL || undefined,
-                avatar: finalAvatarUrl || user.photoURL || undefined
-            };
-
-            if (isClaimingShadow) {
-                updateData.metaId = localUserData.metaId;
-                updateData.rating = localUserData.rating || 5.0;
-                updateData.completedJobs = localUserData.completedJobs || 0;
-                updateData.numReviews = localUserData.numReviews || 0;
-                // Move jobs
-                await migrateShadowJobs(user.uid, localUserData.metaId);
-            }
-
-            await setDoc(bricolerRef, updateData, { merge: true });
-
-            // Also update client mode if needed
-            const clientRef = doc(db, 'clients', user.uid);
-            await setDoc(clientRef, { isProvider: true, isBricoler: true }, { merge: true });
-
-            showToast({ title: t({ en: 'Successfully updated!', fr: 'Mis à jour avec succès !', ar: 'تم التحديث بنجاح!' }), variant: 'success' });
-            onComplete({ services: updatedServices });
-            onClose();
-
-        } catch (error: any) {
-            console.error("Update error:", error);
-            showToast({ title: error.message || "Update failed", variant: 'error' });
-        } finally {
-            setIsSubmitting(false);
-        }
-    };
-    const handleAdminSubmit = async () => {
-        setIsSubmitting(true);
-        setSubmittingStatus("Saving Bricoler...");
-
-        try {
-            const isEdit = mode === 'admin_edit';
-            const metaId = isEdit && userData?.id ? userData.id : 'meta_' + Math.random().toString(36).substr(2, 9).toUpperCase();
-            const claimCode = isEdit && userData?.claimCode ? userData.claimCode : 'CLAIM-' + Math.random().toString(36).substr(2, 6).toUpperCase();
-
-            // Map selected services
-            const entries = selectedSubServices.map(subId => {
-                const svc = ALL_SERVICES.find(s => s.subServices?.some(ss => ss.id === subId) || s.id === subId);
-                const catId = svc?.id || '';
-                const e = categoryEntries[catId];
-                return {
-                    categoryId: catId,
-                    categoryName: e?.categoryName || catId,
-                    subServiceId: subId,
-                    subServiceName: svc?.subServices?.find(ss => ss.id === subId)?.name || subId,
-                    hourlyRate: e?.hourlyRate || 75,
-                    pitch: (e?.pitch || "").trim(),
-                    experience: e?.experience || "",
-                    equipments: e?.noEquipment ? [] : (e?.equipments || []),
-                    noEquipment: e?.noEquipment || false,
-                    portfolioImages: [] as string[],
-                };
-            });
-
-            // For admin mode, we just collect existing portfolio images - full image upload omitted for brevity unless needed.
-            const finalCategoryEntries = entries.map(e => ({
-                ...e,
-                portfolioImages: categoryEntries[e.categoryId]?.portfolioImages || []
-            }));
-
-            // Upload Avatar if any
-            let finalAvatarUrl = userData?.photoURL || '';
-            if (profileImageFile && !isEdit) {
-                try {
-                    const storageRef = ref(storage, `avatars/${metaId}/${Date.now()}_profile.jpg`);
-                    const uploadResult = await uploadBytes(storageRef, profileImageFile, { contentType: 'image/jpeg' });
-                    finalAvatarUrl = await getDownloadURL(uploadResult.ref);
-                } catch (err) { }
-            } else if (profileImageFile && isEdit) {
-                try {
-                    const storageRef = ref(storage, `avatars/${metaId}/${Date.now()}_profile.jpg`);
-                    const uploadResult = await uploadBytes(storageRef, profileImageFile, { contentType: 'image/jpeg' });
-                    finalAvatarUrl = await getDownloadURL(uploadResult.ref);
-                } catch (err) { }
-            }
-
-            const cleanObj = (obj: any) => {
-                const newObj: any = {};
-                Object.keys(obj).forEach(key => {
-                    if (obj[key] !== undefined) newObj[key] = obj[key];
-                });
-                return newObj;
-            };
-
-            const allPortfolioUrls = Array.from(new Set(finalCategoryEntries.flatMap(e => e.portfolioImages)));
-
-            const bricolerData = cleanObj({
-                name: (fullName || "Bricoler").trim(),
-                displayName: (fullName || "Bricoler").trim(),
-                avatar: finalAvatarUrl,
-                photoURL: finalAvatarUrl,
-                whatsappNumber: (whatsappNumber || '').trim(),
-                phone: (whatsappNumber || '').trim(),
-                bankName: bankName.trim(),
-                bricolerBankCardName: bricolerBankCardName.trim(),
-                ribIBAN: ribIBAN.trim(),
-                services: finalCategoryEntries,
-                portfolio: allPortfolioUrls,
-                experience: finalCategoryEntries[0]?.experience || "",
-                glassCleaningEquipments: finalCategoryEntries.filter(e => e.categoryId === 'glass_cleaning').flatMap(e => e.equipments),
-                city: selectedCity || "",
-                workAreas: selectedAreas || [],
-                isActive: true,
-                isBricoler: true,
-                isClaimed: !!userData?.uid,
-                uid: userData?.uid || null,
-                metaId: metaId,
-                claimCode: claimCode,
-                createdAt: userData?.createdAt || serverTimestamp(),
-                updatedAt: serverTimestamp(),
-                numReviews: userData?.numReviews || 0,
-                rating: userData?.rating || 5.0,
-                completedJobs: userData?.completedJobs || 0,
-            });
-
-            const docRef = doc(db, 'bricolers', metaId);
-            await setDoc(docRef, bricolerData, { merge: true });
-
-            showToast({ title: isEdit ? 'Profile updated!' : 'Profile created successfully!', variant: 'success' });
-            onComplete({ id: metaId, ...bricolerData });
-            onClose();
-
-        } catch (error: any) {
-            console.error("Admin save error:", error);
-            showToast({ title: error.message || "Save failed", variant: 'error' });
-        } finally {
-            setIsSubmitting(false);
-        }
-    };
-
-    const handleBricolerSignup = async () => {
-        setIsSubmitting(true);
-        setSubmittingStatus("Preparing...");
-
-        try {
-            let user = auth.currentUser;
-            if (!user) {
-                console.log("No user found, starting Google Sign-in...");
-                setSubmittingStatus("Authenticating...");
-                const provider = new GoogleAuthProvider();
-                const result = await signInWithPopup(auth, provider);
-                user = result.user;
-
-                // Wait for a short moment to ensure Auth Token is propagation to Firestore context
-                await new Promise(resolve => setTimeout(resolve, 800));
-            }
-
-            console.log("Processing onboarding for user:", user?.uid);
-            if (!user) throw new Error("Authentication failed. Please try again.");
-            setSubmittingStatus("Preparing profile...");
-
-            // Map selected services to entry format
-            const initialEntries = selectedSubServices.map(subId => {
-                const svc = ALL_SERVICES.find(s => s.subServices?.some(ss => ss.id === subId) || s.id === subId);
-                const catId = svc?.id || '';
-                const e = categoryEntries[catId];
-                return {
-                    categoryId: catId,
-                    categoryName: e?.categoryName || catId,
-                    subServiceId: subId,
-                    subServiceName: svc?.subServices?.find(ss => ss.id === subId)?.name || subId,
-                    hourlyRate: e?.hourlyRate || 75,
-                    pitch: (e?.pitch || "").trim(),
-                    experience: e?.experience || "",
-                    equipments: e?.noEquipment ? [] : (e?.equipments || []),
-                    noEquipment: e?.noEquipment || false,
-                    portfolioImages: e?.portfolioImages || [] as string[],
-                };
-            });
-
-            // ── Upload Process ─────────────────────────────────────────────
-            setSubmittingStatus("Uploading media...");
-            console.log("Starting media upload for user:", user.uid);
-
-            let finalAvatarUrl = user.photoURL || '';
-            const categoryUploadResults: Record<string, string[]> = {};
-
-            // 1. Upload Avatar
-            let avatarPromise: Promise<string> = Promise.resolve(user.photoURL || '');
-            if (profileImageFile) {
-                console.log("Preparing custom avatar upload...");
-                const task = (async () => {
-                    try {
-                        const storageRef = ref(storage, `avatars/${user.uid}/${Date.now()}_profile.jpg`);
-                        const uploadResult = await uploadBytes(storageRef, profileImageFile, { contentType: 'image/jpeg' });
-                        const url = await getDownloadURL(uploadResult.ref);
-                        console.log("Avatar uploaded successfully:", url);
-                        try { await updateProfile(user, { photoURL: url }); } catch (e) { }
-                        return url;
-                    } catch (err) {
-                        console.warn("Avatar upload failed:", err);
-                        return user.photoURL || '';
-                    }
-                })();
-
-                avatarPromise = Promise.race([
-                    task,
-                    new Promise<string>((_, reject) => setTimeout(() => reject(new Error("Avatar upload timeout")), 30000))
-                ]).catch(err => {
-                    console.warn("Avatar task timed out or failed:", err);
-                    return user.photoURL || '';
-                });
-            }
-
-            // 2. Upload Portfolio Images in parallel
-            const uniqueCategories = Array.from(new Set(initialEntries.map(e => e.categoryId)));
-            const uploadPromisesByCat: Promise<void>[] = [];
-
-            for (const catId of uniqueCategories) {
-                const catData = categoryEntries[catId];
-                const preExistingUrls = catData?.portfolioImages?.filter((u: string) => u.startsWith('http')) || [];
-                categoryUploadResults[catId] = [...preExistingUrls];
-
-                if (catData?.portfolioFiles && catData.portfolioFiles.length > 0) {
-                    let uploadedCount = 0;
-                    for (const file of catData.portfolioFiles) {
-                        const task = (async () => {
-                            try {
-                                const storageRef = ref(storage, `portfolio/${user.uid}/${catId}/${Date.now()}_${Math.random().toString(36).slice(2)}.jpg`);
-                                const uploadResult = await uploadBytes(storageRef, file, { contentType: 'image/jpeg' });
-                                const url = await getDownloadURL(uploadResult.ref);
-                                categoryUploadResults[catId].push(url);
-                                uploadedCount++;
-                                setSubmittingStatus(`Uploading media... (${uploadedCount}/${catData.portfolioFiles?.length || 0})`);
-                            } catch (e) {
-                                console.warn(`Portfolio upload failed for ${catId}:`, e);
-                            }
-                        })();
-
-                        // Safety wrap each upload in a timeout to prevent hanging the whole process
-                        const timeoutTask = Promise.race([
-                            task,
-                            new Promise((_, reject) => setTimeout(() => reject(new Error("Upload timeout")), 30000))
-                        ]).catch(err => console.warn("Task timed out or failed:", err));
-
-                        uploadPromisesByCat.push(timeoutTask as Promise<void>);
-                    }
-                }
-            }
-
-            const [_, uploadedAvatarUrl] = await Promise.all([
-                Promise.all(uploadPromisesByCat),
-                avatarPromise
-            ]);
-
-            // Ensure we use the uploaded URL if it exists, otherwise fallback
-            if (uploadedAvatarUrl) {
-                finalAvatarUrl = uploadedAvatarUrl;
-                console.log("Final avatar URL set to:", finalAvatarUrl);
-            }
-
-            // Map results back to entries
-            const finalCategoryEntries = initialEntries.map(entry => ({
-                ...entry,
-                portfolioImages: categoryUploadResults[entry.categoryId] || []
-            }));
-
-            // Flatten for the global 'portfolio' field
-            const allPortfolioUrls = Array.from(new Set(Object.values(categoryUploadResults).flat()));
-
-            // 3. Save to Firestore
-            setSubmittingStatus("Saving profile...");
-            console.log("Generating Bricoler document data...");
-            const bricolerRef = doc(db, 'bricolers', user.uid);
-
-            // If we are claiming a shadow profile, we might want to carry over some stats
-            const isClaimingShadow = localUserData && localUserData.metaId && !localUserData.uid;
-
-            const bricolerSnap = await getDoc(bricolerRef);
-            const existingData = bricolerSnap.exists() ? bricolerSnap.data() : null;
-
-            const cleanObj = (obj: any) => {
-                const newObj: any = {};
-                Object.keys(obj).forEach(key => {
-                    if (obj[key] !== undefined) newObj[key] = obj[key];
-                });
-                return newObj;
-            };
-
-            // Upload Tour Guide authorisation if required and not yet uploaded
-            const offersTourGuide = (finalCategoryEntries as CategoryDetail[]).some(
-                (e) => e.categoryId === 'tour_guide',
-            );
-
-            if (offersTourGuide && !tourGuideAuthorizationUrl && !tourGuideAuthorizationFile) {
-                setSubmittingStatus(null);
-                setIsSubmitting(false);
-                showToast({
-                    variant: 'error',
-                    title: t({ en: 'Tour Guide document required', fr: 'Document de guide touristique requis', ar: 'وثيقة الترخيص للمرشد السياحي مطلوبة' }),
-                    description: t({
-                        en: 'Please upload your official Tour Guide authorisation before continuing.',
-                        fr: 'Veuillez télécharger votre autorisation officielle de guide touristique avant de continuer.',
-                        ar: 'يرجى تحميل ترخيصك القانوني كمرشد سياحي قبل المتابعة.'
-                    })
-                });
-                return;
-            }
-
-            let finalTourGuideAuthUrl = tourGuideAuthorizationUrl;
-            if (offersTourGuide && tourGuideAuthorizationFile && !tourGuideAuthorizationUrl) {
-                if (tourGuideAuthorizationFile) {
-                    try {
-                        setSubmittingStatus("Uploading authorisation...");
-                        const authRef = ref(storage, `portfolio/${user.uid}/tour_guide/${Date.now()}_authorization.jpg`);
-
-                        const uploadTask = uploadBytes(authRef, tourGuideAuthorizationFile);
-
-                        // Race against a 30s timeout
-                        const uploadResult = await Promise.race([
-                            uploadTask,
-                            new Promise((_, reject) => setTimeout(() => reject(new Error("Authorisation upload timeout")), 30000))
-                        ]);
-
-                        finalTourGuideAuthUrl = await getDownloadURL((uploadResult as any).ref);
-                        setTourGuideAuthorizationUrl(finalTourGuideAuthUrl);
-                    } catch (e) {
-                        console.error('Tour guide authorisation upload failed', e);
-                        // We still continue or throw based on preference, but here we throw since it's required if offered
-                        throw e;
-                    }
-                }
-            }
-
-            const bricolerData = cleanObj({
-                uid: user.uid,
-                displayName: (fullName || user.displayName || "Bricoler").trim(),
-                name: (fullName || user.displayName || "Bricoler").trim(),
-                email: user.email || "",
-                avatar: finalAvatarUrl || user.photoURL || "",
-                photoURL: finalAvatarUrl || user.photoURL || "",
-                nidNumber: '',
-                whatsappNumber: (whatsappNumber || '').trim(),
-                phone: (whatsappNumber || '').trim(),
-                bankName: bankName.trim(),
-                bricolerBankCardName: bricolerBankCardName.trim(),
-                ribIBAN: ribIBAN.trim(),
-                services: finalCategoryEntries,
-                portfolio: allPortfolioUrls,
-                experience: finalCategoryEntries[0]?.experience || "",
-                glassCleaningEquipments: finalCategoryEntries.filter(e => e.categoryId === 'glass_cleaning').flatMap(e => e.equipments),
-                city: selectedCity || "",
-                workAreas: selectedAreas || [],
-                errandsTransport: errandsTransport || '',
-                movingTransport: movingTransport || '',
-                tourGuideAuthorizationUrl: finalTourGuideAuthUrl || '',
-                updatedAt: serverTimestamp(),
-                createdAt: existingData?.createdAt || (isClaimingShadow ? localUserData.createdAt : null) || serverTimestamp(),
-                isActive: true,
-                isVerified: existingData?.isVerified || (isClaimingShadow ? localUserData.isVerified : false) || false,
-                rating: existingData?.rating || (isClaimingShadow ? localUserData.rating : 5.0) || 5.0,
-                completedJobs: existingData?.completedJobs || (isClaimingShadow ? localUserData.completedJobs : 0) || 0,
-                numReviews: existingData?.numReviews || (isClaimingShadow ? localUserData.numReviews : 0) || 0,
-                isBricoler: true,
-                claimCode: existingData?.claimCode || (isClaimingShadow ? localUserData.claimCode : null) || null,
-                metaId: existingData?.metaId || (isClaimingShadow ? (localUserData.metaId || localUserData.id) : null) || null,
-                calendarSlots: existingData?.calendarSlots || (isClaimingShadow ? (localUserData.calendarSlots || []) : []),
-                stats: existingData?.stats || (isClaimingShadow ? (localUserData.stats || { rating: 0, completedJobs: 0, clientHistory: [] }) : { rating: 0, completedJobs: 0, clientHistory: [] }),
-                lastLoginAt: serverTimestamp()
-            });
-
-            if (isClaimingShadow) {
-                await migrateShadowJobs(user.uid, localUserData.id);
-                // After migration, delete the original shadow profile so it doesn't duplicate in Admin view
-                try {
-                    await deleteDoc(doc(db, 'bricolers', localUserData.id));
-                    console.log(`Shadow profile ${localUserData.id} deleted after successful claim.`);
-                } catch (delErr) {
-                    console.error("Failed to delete shadow profile:", delErr);
-                }
-            }
-
-            await setDoc(bricolerRef, bricolerData, { merge: true });
-            console.log("Bricoler document written");
-
-            const clientRef = doc(db, 'clients', user.uid);
-            await setDoc(clientRef, {
-                uid: user.uid,
-                name: bricolerData.name,
-                email: bricolerData.email,
-                photoURL: finalAvatarUrl || user.photoURL || "",
-                whatsappNumber: bricolerData.whatsappNumber,
-                createdAt: existingData?.createdAt || serverTimestamp(),
-                isBricoler: true
-            }, { merge: true });
-            console.log("Client document written");
-
-            // 4. Update city stats
-            setSubmittingStatus("Finalizing...");
-            const cityRef = doc(db, 'city_services', selectedCity);
-            const citySnap = await getDoc(cityRef);
-            const serviceIds = [...new Set(finalCategoryEntries.map(e => e.categoryId))];
-            const subServiceIds = selectedSubServices;
-
-            if (!citySnap.exists()) {
-                await setDoc(cityRef, { active_services: serviceIds, active_sub_services: subServiceIds, work_areas: selectedAreas, total_pros: 1, lastUpdated: serverTimestamp() });
-            } else {
-                const existingCityData = citySnap.data();
-                const updatedServices = [...new Set([...(existingCityData.active_services || []), ...serviceIds])];
-                const updatedSubServices = [...new Set([...(existingCityData.active_sub_services || []), ...subServiceIds])];
-                const updatedAreas = [...new Set([...(existingCityData.work_areas || []), ...selectedAreas])];
-                await updateDoc(cityRef, { active_services: updatedServices, active_sub_services: updatedSubServices, work_areas: updatedAreas, total_pros: (existingCityData.total_pros || 0) + 1, lastUpdated: serverTimestamp() });
-            }
-
-            console.log("Signup complete, redirecting...");
-            setSubmittingStatus("Redirecting...");
-            onComplete({ services: finalCategoryEntries, city: selectedCity, availability });
-        } catch (error: any) {
-            console.error('Signup error:', error);
-            showToast({
-                variant: 'error',
-                title: t({ en: 'Sign-up failed', fr: 'Échec de l’inscription', ar: 'فشل التسجيل' }),
-                description: error.message || t({ en: 'An error occurred during signup.', fr: 'Une erreur est survenue pendant l’inscription.', ar: 'حدث خطأ أثناء التسجيل.' })
-            });
-            setSubmittingStatus(null);
-        } finally {
-            setIsSubmitting(false);
-        }
     };
 
     if (!isOpen) return null;
