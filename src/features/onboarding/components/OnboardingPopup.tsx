@@ -275,12 +275,6 @@ const OnboardingPopup = ({ isOpen, onClose, onComplete, mode = 'onboarding', ini
             { id: 'finish', label: t({ en: 'Sign Up', fr: 'Inscription', ar: 'تسجيل' }) },
         ];
 
-        if (!auth.currentUser && !hasGoogleSigned) {
-            return [
-                { id: 'google_signin', label: t({ en: 'Sign In', fr: 'Connexion', ar: 'تسجيل الدخول' }) },
-                ...baseSteps
-            ];
-        }
         return baseSteps;
     }, [t, mode, auth.currentUser, hasGoogleSigned]);
 
@@ -1225,48 +1219,6 @@ const OnboardingPopup = ({ isOpen, onClose, onComplete, mode = 'onboarding', ini
                         {/* Content */}
                         <div ref={scrollContainerRef} className="flex-1 overflow-y-auto w-full relative z-[1]" style={{ paddingBottom: '70px', scrollbarWidth: 'none' }}>
                             <AnimatePresence mode="wait" custom={direction}>
-                                {/* ── STEP: Google Sign In ── */}
-                                {step === 'google_signin' && (
-                                    <motion.div
-                                        key="google_signin"
-                                        custom={direction}
-                                        variants={slideVariants}
-                                        initial="enter"
-                                        animate="center"
-                                        exit="exit"
-                                        className="p-6 md:p-10 space-y-8 pb-10 flex flex-col items-center justify-center min-h-[400px]"
-                                    >
-                                        <div className="flex flex-col items-center gap-4 text-center">
-                                            <div className="w-20 h-20 bg-neutral-100 rounded-full flex items-center justify-center mb-4">
-                                                <FcGoogle size={40} />
-                                            </div>
-                                            <h2 className="text-[28px] font-black tracking-tighter text-[#1D1D1D]">
-                                                {t({ en: 'Ready to Start?', fr: 'Prêt à commencer ?', ar: 'هل أنت جاهز للبدء؟' })}
-                                            </h2>
-                                            <p className="text-[15px] font-medium text-neutral-500 max-w-[280px]">
-                                                {t({ en: 'Connect Google to save your profile.', fr: 'Connectez Google pour enregistrer votre profil.', ar: 'اتصل بجوجل لحفظ ملفك الشخصي.' })}
-                                            </p>
-                                        </div>
-
-                                        <button
-                                            onClick={async () => {
-                                                const provider = new GoogleAuthProvider();
-                                                try {
-                                                    await signInWithPopup(auth, provider);
-                                                    setHasGoogleSigned(true);
-                                                    setStepIndex(s => s + 1);
-                                                } catch (e) {
-                                                    console.error(e);
-                                                }
-                                            }}
-                                            className="w-full h-16 bg-[#00A082] text-white rounded-[16px] text-[18px] font-bold flex items-center justify-center gap-3 active:scale-95 transition-all shadow-[0_8px_24px_rgba(0,160,130,0.2)]"
-                                        >
-                                            <FcGoogle size={28} className="bg-white rounded-full p-1" />
-                                            {t({ en: 'Continue with Google', fr: 'Continuer avec Google', ar: 'المتابعة باستخدام جوجل' })}
-                                        </button>
-                                    </motion.div>
-                                )}
-
                                 {/* ── STEP: Activation Code ── */}
                                 {step === 'activation' && (
                                     <motion.div key="activation" custom={direction} variants={slideVariants} initial="enter" animate="center" exit="exit" className="p-6 md:p-10 space-y-8">
