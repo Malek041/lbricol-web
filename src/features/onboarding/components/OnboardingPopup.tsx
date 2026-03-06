@@ -177,6 +177,12 @@ const SERVICE_EQUIPMENT_SUGGESTIONS: Record<string, string[]> = {
 // Services where equipment is not typically applicable
 const NO_EQUIPMENT_SERVICES = ['errands', 'driver', 'car_rental', 'courier', 'airport', 'transport_intercity', 'private_driver', 'learn_arabic'];
 
+const safeUploadBlob = async (storageRef: any, fileOrBlob: Blob | File, metadata?: any) => {
+    const arrayBuffer = await fileOrBlob.arrayBuffer();
+    const { uploadBytes } = await import('firebase/storage');
+    return await uploadBytes(storageRef, arrayBuffer, metadata);
+};
+
 const OnboardingPopup = (props: OnboardingPopupProps) => {
     const { isOpen, onClose, onComplete, mode = 'onboarding', initialCategory, userData } = props;
     const { showToast } = useToast();
@@ -495,7 +501,7 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                 const task = (async () => {
                     try {
                         const fileName = `${Date.now()}_profile.jpg`;
-                        const res = await uploadBytes(ref(storage, `avatars/${user.uid}/${fileName}`), profileImageFile, {
+                        const res = await safeUploadBlob(ref(storage, `avatars/${user.uid}/${fileName}`), profileImageFile, {
                             contentType: 'image/jpeg',
                             customMetadata: { 'userId': user.uid, 'context': 'signup' }
                         });
@@ -522,7 +528,7 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                 const task = (async () => {
                     try {
                         const path = `verifications/${user.uid}/${Date.now()}_tour_guide_auth`;
-                        const res = await uploadBytes(ref(storage, path), tourGuideAuthorizationFile);
+                        const res = await safeUploadBlob(ref(storage, path), tourGuideAuthorizationFile);
                         return await getDownloadURL(res.ref);
                     } catch (err) {
                         console.warn("Tour guide auth upload failed:", err);
@@ -546,22 +552,32 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                 categoryUploadResults[catId] = (catData?.portfolioImages || []).filter(u => u.startsWith('http'));
                 if (catData?.portfolioFiles?.length) {
                     let count = 0;
-                    for (const file of catData.portfolioFiles) {
+                    for (let i = 0; i < catData.portfolioFiles.length; i++) {
+                        const file = catData.portfolioFiles[i];
+                        const previewUrl = catData.portfolioImages[i];
                         const task = (async () => {
                             try {
                                 const path = `portfolio/${user.uid}/${catId}/${Date.now()}_${Math.random().toString(36).slice(2)}.jpg`;
-                                const res = await uploadBytes(ref(storage, path), file, { contentType: 'image/jpeg' });
+                                const res = await safeUploadBlob(ref(storage, path), file, { contentType: 'image/jpeg' });
                                 const url = await getDownloadURL(res.ref);
                                 categoryUploadResults[catId].push(url);
                                 count++;
                                 setSubmittingStatus(`Uploading media... (${count}/${catData.portfolioFiles?.length || 0})`);
-                            } catch (e) { console.warn(`Portfolio fail ${catId}:`, e); }
+                            } catch (e) {
+                                console.warn(`Portfolio fail ${catId}:`, e);
+                                if (previewUrl && previewUrl.startsWith('data:image')) {
+                                    categoryUploadResults[catId].push(previewUrl);
+                                }
+                            }
                         })();
                         uploadPromisesByCat.push(Promise.race([
                             task,
                             new Promise((_, reject) => setTimeout(() => reject(new Error("TIMEOUT")), 60000))
                         ]).catch((err) => {
                             console.warn(`Portfolio image upload timed out or failed for ${catId}:`, err);
+                            if (previewUrl && previewUrl.startsWith('data:image')) {
+                                categoryUploadResults[catId].push(previewUrl);
+                            }
                         }) as Promise<void>);
                     }
                 }
@@ -734,13 +750,22 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                 const catData = categoryEntries[catId];
                 categoryUploadResults[catId] = (catData?.portfolioImages || []).filter(u => u.startsWith('http'));
                 if (catData?.portfolioFiles?.length) {
-                    for (const file of catData.portfolioFiles) {
+                    for (let i = 0; i < catData.portfolioFiles.length; i++) {
+                        const file = catData.portfolioFiles[i];
+                        const previewUrl = catData.portfolioImages[i];
                         const task = (async () => {
                             const path = `portfolio/${metaId}/${catId}/${Date.now()}_${Math.random().toString(36).slice(2)}.jpg`;
-                            const res = await uploadBytes(ref(storage, path), file, { contentType: 'image/jpeg' });
-                            categoryUploadResults[catId].push(await getDownloadURL(res.ref));
+                            try {
+                                const arrayBuffer = await file.arrayBuffer();
+                                const res = await uploadBytes(ref(storage, path), arrayBuffer, { contentType: 'image/jpeg' });
+                                categoryUploadResults[catId].push(await getDownloadURL(res.ref));
+                            } catch (e) {
+                                if (previewUrl && previewUrl.startsWith('data:image')) categoryUploadResults[catId].push(previewUrl);
+                            }
                         })();
-                        uploadPromises.push(Promise.race([task, new Promise((_, reject) => setTimeout(() => reject(new Error("TIMEOUT")), 60000))]).catch(console.warn));
+                        uploadPromises.push(Promise.race([task, new Promise((_, reject) => setTimeout(() => reject(new Error("TIMEOUT")), 60000))]).catch((e) => {
+                            if (previewUrl && previewUrl.startsWith('data:image')) categoryUploadResults[catId].push(previewUrl);
+                        }));
                     }
                 }
             }
@@ -748,7 +773,8 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
             let finalAvatarUrl = userData?.photoURL || '';
             if (profileImageFile) {
                 const task = (async () => {
-                    const res = await uploadBytes(ref(storage, `avatars/${metaId}/${Date.now()}_profile.jpg`), profileImageFile, { contentType: 'image/jpeg' });
+                    const arrayBuffer = await profileImageFile.arrayBuffer();
+                    const res = await uploadBytes(ref(storage, `avatars/${metaId}/${Date.now()}_profile.jpg`), arrayBuffer, { contentType: 'image/jpeg' });
                     finalAvatarUrl = await getDownloadURL(res.ref);
                 })();
                 uploadPromises.push(Promise.race([task, new Promise((_, reject) => setTimeout(() => reject(new Error("TIMEOUT")), 60000))]).catch(console.warn));
@@ -757,7 +783,8 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
             let finalTourGuideAuthUrl = tourGuideAuthorizationUrl || null;
             if (tourGuideAuthorizationFile) {
                 const task = (async () => {
-                    const res = await uploadBytes(ref(storage, `verifications/${metaId}/${Date.now()}_tour_guide_auth`), tourGuideAuthorizationFile);
+                    const arrayBuffer = await tourGuideAuthorizationFile.arrayBuffer();
+                    const res = await uploadBytes(ref(storage, `verifications/${metaId}/${Date.now()}_tour_guide_auth`), arrayBuffer);
                     finalTourGuideAuthUrl = await getDownloadURL(res.ref);
                 })();
                 uploadPromises.push(Promise.race([task, new Promise((_, reject) => setTimeout(() => reject(new Error("TIMEOUT")), 60000))]).catch(console.warn));
@@ -824,6 +851,8 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
 
         try {
             const user = auth.currentUser;
+            await setDoc(doc(db, 'bricolers', user.uid), { isBricoler: true }, { merge: true });
+
             const ALL_SVCS = getAllServices();
             const currentEntries = selectedSubServices.map(subId => {
                 const svc = ALL_SVCS.find(s => s.subServices?.some(ss => ss.id === subId) || s.id === subId);
@@ -851,17 +880,24 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                 const catData = categoryEntries[catId];
                 categoryUploadResults[catId] = (catData?.portfolioImages || []).filter(u => u.startsWith('http'));
                 if (catData?.portfolioFiles?.length) {
-                    for (const file of catData.portfolioFiles) {
+                    for (let i = 0; i < catData.portfolioFiles.length; i++) {
+                        const file = catData.portfolioFiles[i];
+                        const previewUrl = catData.portfolioImages[i];
                         const task = (async () => {
                             const path = `portfolio/${user.uid}/${catId}/${Date.now()}_${Math.random().toString(36).slice(2)}.jpg`;
-                            const res = await uploadBytes(ref(storage, path), file, { contentType: 'image/jpeg' });
-                            categoryUploadResults[catId].push(await getDownloadURL(res.ref));
+                            try {
+                                const res = await safeUploadBlob(ref(storage, path), file, { contentType: 'image/jpeg' });
+                                categoryUploadResults[catId].push(await getDownloadURL(res.ref));
+                            } catch (e) {
+                                if (previewUrl && previewUrl.startsWith('data:image')) categoryUploadResults[catId].push(previewUrl);
+                            }
                         })();
                         uploadPromises.push(Promise.race([
                             task,
                             new Promise((_, reject) => setTimeout(() => reject(new Error("TIMEOUT")), 60000))
                         ]).catch((err) => {
                             console.warn(`Portfolio image update timed out or failed for ${catId}:`, err);
+                            if (previewUrl && previewUrl.startsWith('data:image')) categoryUploadResults[catId].push(previewUrl);
                         }));
                     }
                 }
@@ -870,7 +906,7 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
             let finalAvatarUrl = user.photoURL || '';
             if (profileImageFile) {
                 const task = (async () => {
-                    const res = await uploadBytes(ref(storage, `avatars/${user.uid}/${Date.now()}_profile.jpg`), profileImageFile, { contentType: 'image/jpeg' });
+                    const res = await safeUploadBlob(ref(storage, `avatars/${user.uid}/${Date.now()}_profile.jpg`), profileImageFile, { contentType: 'image/jpeg' });
                     finalAvatarUrl = await getDownloadURL(res.ref);
                     try { await updateProfile(user, { photoURL: finalAvatarUrl }); } catch (e) { }
                     return finalAvatarUrl;
@@ -884,12 +920,12 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                 }));
             }
 
-            let finalTourGuideUrl = tourGuideAuthorizationUrl || null;
+            let finalTourGuideAuthUrl = tourGuideAuthorizationUrl || null;
             if (tourGuideAuthorizationFile) {
                 const task = (async () => {
-                    const res = await uploadBytes(ref(storage, `verifications/${user.uid}/${Date.now()}_tour_guide_auth`), tourGuideAuthorizationFile);
-                    finalTourGuideUrl = await getDownloadURL(res.ref);
-                    return finalTourGuideUrl;
+                    const res = await safeUploadBlob(ref(storage, `verifications/${user.uid}/${Date.now()}_tour_guide_auth`), tourGuideAuthorizationFile);
+                    finalTourGuideAuthUrl = await getDownloadURL(res.ref);
+                    return finalTourGuideAuthUrl;
                 })();
                 uploadPromises.push(Promise.race([
                     task,
@@ -904,7 +940,7 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
             // Index management since we might have avatar, tour guide, and portfolio
             // Let's just use the state variables we updated inside the tasks or results
             const avatarRes = profileImageFile ? (results.find(r => typeof r === 'string' && r.includes('avatars')) || finalAvatarUrl) : finalAvatarUrl;
-            const tourRes = tourGuideAuthorizationFile ? (results.find(r => typeof r === 'string' && r.includes('verifications')) || finalTourGuideUrl) : finalTourGuideUrl;
+            const tourRes = tourGuideAuthorizationFile ? (results.find(r => typeof r === 'string' && r.includes('verifications')) || finalTourGuideAuthUrl) : finalTourGuideAuthUrl;
 
             const finalCategoryEntries = currentEntries.map(e => ({
                 id: `${e.categoryId}_${e.subServiceId}`,

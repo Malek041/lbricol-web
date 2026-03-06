@@ -437,7 +437,8 @@ const ProfileView: React.FC<ProfileViewProps> = ({
                     }
                 };
 
-                const uploadResult = await uploadBytes(storageRef, blob, metadata);
+                const arrayBuffer = await blob.arrayBuffer();
+                const uploadResult = await uploadBytes(storageRef, arrayBuffer, metadata);
                 console.log("Upload successful, getting download URL...");
                 const url = await getDownloadURL(uploadResult.ref);
                 return url;
