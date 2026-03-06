@@ -2318,11 +2318,8 @@ export default function ProviderPage() {
             </AnimatePresence>
             {renderJobDetailsModal()}
             <AnimatePresence key="main-app-presence">
-                {isMobileLayout && ['calendar', 'jobs', 'messages', 'performance', 'services', 'profile'].includes(activeNav) && (
-                    <header key="bricoler-mobile-header" className={cn(
-                        "pt-10 pb-3 px-6 flex flex-col flex-none sticky top-0 z-[100] transition-colors duration-300",
-                        activeNav === 'profile' ? "bg-[#FFC244]" : "bg-white border-b border-neutral-100"
-                    )}>
+                {isMobileLayout && activeNav === 'calendar' && (
+                    <header key="bricoler-mobile-header" className="pt-10 pb-3 px-6 flex flex-col flex-none sticky top-0 z-[100] transition-colors duration-300 bg-white border-b border-neutral-100">
                         <div className="flex items-center justify-between mb-4">
                             <h2 className="text-black text-[22px] font-black tracking-tight" style={{ fontFamily: 'Uber Move, var(--font-sans)' }}>
                                 {activeNav === 'calendar' ? t({ en: 'Missions', fr: 'Missions' }) :
