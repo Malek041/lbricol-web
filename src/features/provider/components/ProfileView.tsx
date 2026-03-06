@@ -402,12 +402,20 @@ const ProfileView: React.FC<ProfileViewProps> = ({
                     reader.onload = (ev) => {
                         const img = new Image();
                         img.onload = () => {
+                            const maxDim = 800;
+                            let { width, height } = img;
+                            // Resize proportionally so longest side ≤ 800px
+                            if (width > height) {
+                                if (width > maxDim) { height = Math.round(height * maxDim / width); width = maxDim; }
+                            } else {
+                                if (height > maxDim) { width = Math.round(width * maxDim / height); height = maxDim; }
+                            }
                             const canvas = document.createElement('canvas');
-                            canvas.width = img.width;
-                            canvas.height = img.height;
+                            canvas.width = width;
+                            canvas.height = height;
                             const ctx = canvas.getContext('2d');
-                            ctx?.drawImage(img, 0, 0);
-                            canvas.toBlob((blob) => blob ? resolve(blob) : reject(new Error('Canvas toBlob failed')), 'image/jpeg', 0.8);
+                            ctx?.drawImage(img, 0, 0, width, height);
+                            canvas.toBlob((blob) => blob ? resolve(blob) : reject(new Error('Canvas toBlob failed')), 'image/jpeg', 0.82);
                         };
                         img.onerror = () => reject(new Error('Image load failed'));
                         img.src = ev.target?.result as string;
