@@ -614,6 +614,7 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                 ribIBAN: (ribIBAN || '').trim(),
                 services: finalCategoryEntries,
                 portfolio: allPortfolioUrls,
+                images: allPortfolioUrls,
                 experience: finalCategoryEntries[0]?.experience || "",
                 city: selectedCity || "",
                 workAreas: selectedAreas || [],
@@ -725,17 +726,50 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                 };
             });
 
+            setSubmittingStatus("Uploading media...");
+            const categoryUploadResults: Record<string, string[]> = {};
+            const uploadPromises: Promise<any>[] = [];
+
+            for (const catId of Array.from(new Set(entries.map(e => e.categoryId)))) {
+                const catData = categoryEntries[catId];
+                categoryUploadResults[catId] = (catData?.portfolioImages || []).filter(u => u.startsWith('http'));
+                if (catData?.portfolioFiles?.length) {
+                    for (const file of catData.portfolioFiles) {
+                        const task = (async () => {
+                            const path = `portfolio/${metaId}/${catId}/${Date.now()}_${Math.random().toString(36).slice(2)}.jpg`;
+                            const res = await uploadBytes(ref(storage, path), file, { contentType: 'image/jpeg' });
+                            categoryUploadResults[catId].push(await getDownloadURL(res.ref));
+                        })();
+                        uploadPromises.push(Promise.race([task, new Promise((_, reject) => setTimeout(() => reject(new Error("TIMEOUT")), 60000))]).catch(console.warn));
+                    }
+                }
+            }
+
             let finalAvatarUrl = userData?.photoURL || '';
             if (profileImageFile) {
-                const res = await uploadBytes(ref(storage, `avatars/${metaId}/${Date.now()}_profile.jpg`), profileImageFile, { contentType: 'image/jpeg' });
-                finalAvatarUrl = await getDownloadURL(res.ref);
+                const task = (async () => {
+                    const res = await uploadBytes(ref(storage, `avatars/${metaId}/${Date.now()}_profile.jpg`), profileImageFile, { contentType: 'image/jpeg' });
+                    finalAvatarUrl = await getDownloadURL(res.ref);
+                })();
+                uploadPromises.push(Promise.race([task, new Promise((_, reject) => setTimeout(() => reject(new Error("TIMEOUT")), 60000))]).catch(console.warn));
             }
 
             let finalTourGuideAuthUrl = tourGuideAuthorizationUrl || null;
             if (tourGuideAuthorizationFile) {
-                const res = await uploadBytes(ref(storage, `verifications/${metaId}/${Date.now()}_tour_guide_auth`), tourGuideAuthorizationFile);
-                finalTourGuideAuthUrl = await getDownloadURL(res.ref);
+                const task = (async () => {
+                    const res = await uploadBytes(ref(storage, `verifications/${metaId}/${Date.now()}_tour_guide_auth`), tourGuideAuthorizationFile);
+                    finalTourGuideAuthUrl = await getDownloadURL(res.ref);
+                })();
+                uploadPromises.push(Promise.race([task, new Promise((_, reject) => setTimeout(() => reject(new Error("TIMEOUT")), 60000))]).catch(console.warn));
             }
+
+            await Promise.all(uploadPromises);
+
+            const finalAdminEntries = entries.map(e => ({
+                ...e,
+                portfolioImages: categoryUploadResults[e.categoryId] || []
+            }));
+            const allAdminPortfolioUrls = Array.from(new Set(Object.values(categoryUploadResults).flat()));
 
             const cleanObj = (obj: any) => {
                 const newObj: any = {};
@@ -754,8 +788,9 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                 bankName: (bankName || '').trim(),
                 bricolerBankCardName: (bricolerBankCardName || '').trim(),
                 ribIBAN: (ribIBAN || '').trim(),
-                services: entries,
-                portfolio: Array.from(new Set(entries.flatMap(e => e.portfolioImages))),
+                services: finalAdminEntries,
+                portfolio: allAdminPortfolioUrls,
+                images: allAdminPortfolioUrls,
                 city: selectedCity,
                 workAreas: selectedAreas,
                 isActive: true,
@@ -891,6 +926,7 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
             const updateData = {
                 services: updatedServices,
                 portfolio: allPortfolioUrls,
+                images: allPortfolioUrls,
                 updatedAt: serverTimestamp(),
                 isActive: true,
                 photoURL: avatarRes,
