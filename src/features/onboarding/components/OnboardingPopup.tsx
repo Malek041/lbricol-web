@@ -509,8 +509,11 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                 })();
                 avatarPromise = Promise.race([
                     task,
-                    new Promise<string>((_, reject) => setTimeout(() => reject(new Error("TIMEOUT")), 30000))
-                ]).catch(() => user?.photoURL || '');
+                    new Promise<string>((_, reject) => setTimeout(() => reject(new Error("TIMEOUT")), 60000))
+                ]).catch((err) => {
+                    console.warn("Avatar upload catch-all:", err);
+                    return user?.photoURL || '';
+                });
             }
 
             // 1.5 Tour Guide Authorization Upload
@@ -528,8 +531,11 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                 })();
                 tourGuidePromise = Promise.race([
                     task,
-                    new Promise<string | null>((_, reject) => setTimeout(() => reject(new Error("TIMEOUT")), 30000))
-                ]).catch(() => tourGuideAuthorizationUrl || null);
+                    new Promise<string | null>((_, reject) => setTimeout(() => reject(new Error("TIMEOUT")), 60000))
+                ]).catch((err) => {
+                    console.warn("Tour guide upload catch-all:", err);
+                    return tourGuideAuthorizationUrl || null;
+                });
             }
 
             // 2. Portfolio Uploads
@@ -551,7 +557,12 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                                 setSubmittingStatus(`Uploading media... (${count}/${catData.portfolioFiles?.length || 0})`);
                             } catch (e) { console.warn(`Portfolio fail ${catId}:`, e); }
                         })();
-                        uploadPromisesByCat.push(Promise.race([task, new Promise((_, reject) => setTimeout(() => reject(new Error("TIMEOUT")), 30000))]).catch(() => { }) as Promise<void>);
+                        uploadPromisesByCat.push(Promise.race([
+                            task,
+                            new Promise((_, reject) => setTimeout(() => reject(new Error("TIMEOUT")), 60000))
+                        ]).catch((err) => {
+                            console.warn(`Portfolio image upload timed out or failed for ${catId}:`, err);
+                        }) as Promise<void>);
                     }
                 }
             }
@@ -812,7 +823,12 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                             const res = await uploadBytes(ref(storage, path), file, { contentType: 'image/jpeg' });
                             categoryUploadResults[catId].push(await getDownloadURL(res.ref));
                         })();
-                        uploadPromises.push(Promise.race([task, new Promise((_, reject) => setTimeout(() => reject(new Error("TIMEOUT")), 30000))]).catch(() => { }));
+                        uploadPromises.push(Promise.race([
+                            task,
+                            new Promise((_, reject) => setTimeout(() => reject(new Error("TIMEOUT")), 60000))
+                        ]).catch((err) => {
+                            console.warn(`Portfolio image update timed out or failed for ${catId}:`, err);
+                        }));
                     }
                 }
             }
@@ -825,7 +841,13 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                     try { await updateProfile(user, { photoURL: finalAvatarUrl }); } catch (e) { }
                     return finalAvatarUrl;
                 })();
-                uploadPromises.push(Promise.race([task, new Promise((_, reject) => setTimeout(() => reject(new Error("TIMEOUT")), 30000))]).catch(() => user.photoURL || ''));
+                uploadPromises.push(Promise.race([
+                    task,
+                    new Promise((_, reject) => setTimeout(() => reject(new Error("TIMEOUT")), 60000))
+                ]).catch((err) => {
+                    console.warn("Avatar update timed out or failed:", err);
+                    return user.photoURL || '';
+                }));
             }
 
             let finalTourGuideUrl = tourGuideAuthorizationUrl || null;
@@ -835,7 +857,13 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                     finalTourGuideUrl = await getDownloadURL(res.ref);
                     return finalTourGuideUrl;
                 })();
-                uploadPromises.push(Promise.race([task, new Promise((_, reject) => setTimeout(() => reject(new Error("TIMEOUT")), 30000))]).catch(() => tourGuideAuthorizationUrl || null));
+                uploadPromises.push(Promise.race([
+                    task,
+                    new Promise((_, reject) => setTimeout(() => reject(new Error("TIMEOUT")), 60000))
+                ]).catch((err) => {
+                    console.warn("Tour guide auth update timed out or failed:", err);
+                    return tourGuideAuthorizationUrl || null;
+                }));
             }
 
             const results = await Promise.all(uploadPromises);
@@ -859,8 +887,11 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                 updatedServices = [...others, ...finalCategoryEntries];
             }
 
+            const allPortfolioUrls = Array.from(new Set(Object.values(categoryUploadResults).flat()));
+
             const updateData = {
                 services: updatedServices,
+                portfolio: allPortfolioUrls,
                 updatedAt: serverTimestamp(),
                 isActive: true,
                 photoURL: avatarRes,
@@ -868,7 +899,10 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                 tourGuideAuthorizationUrl: tourRes
             };
             await setDoc(bricolerRef, updateData, { merge: true });
-            await setDoc(doc(db, 'clients', user.uid), { isBricoler: true }, { merge: true });
+            await setDoc(doc(db, 'clients', user.uid), {
+                isBricoler: true,
+                photoURL: avatarRes
+            }, { merge: true });
 
             showToast({ title: t({ en: 'Successfully updated!', fr: 'Mis à jour avec succès !' }), variant: 'success' });
             onComplete({ services: updatedServices });
@@ -1774,8 +1808,7 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                                                                 // 2. Compress in background
                                                                 const compressionTasks = newFiles.map(async (file) => {
                                                                     try {
-                                                                        const blob = await compressImage(file);
-                                                                        return new File([blob], file.name, { type: 'image/jpeg' });
+                                                                        return await compressImage(file);
                                                                     } catch (err) {
                                                                         return file; // fallback
                                                                     }
