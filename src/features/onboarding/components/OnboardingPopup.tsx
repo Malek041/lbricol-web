@@ -691,21 +691,13 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
             const isPopupClosed = error.code === 'auth/popup-closed-by-user' || error.message?.includes('popup-closed-by-user');
 
             if (isPopupClosed) {
-                // User simply closed the popup, don't show a scary system error
-                showToast({
-                    variant: 'info',
-                    title: t({ en: 'Sign-in cancelled', fr: 'Connexion annulée', ar: 'تم إلغاء تسجيل الدخول' }),
-                    description: t({
-                        en: 'The Google sign-in popup was closed. Please try again to continue.',
-                        fr: 'La fenêtre Google a été fermée. Veuillez réessayer pour continuer.',
-                        ar: 'تم إغلاق نافذة جوجل. يرجى المحاولة مرة أخرى للاستمرار.'
-                    })
-                });
+                // User deliberately closed the popup — reset silently, no toast needed
+                setSubmittingStatus(null);
             } else {
                 if (error.code === 'permission-denied') msg = "Security permission denied. Please try again.";
                 showToast({
                     variant: 'error',
-                    title: t({ en: 'Sign-up failed', fr: 'Échec de l’inscription', ar: 'فشل التسجيل' }),
+                    title: t({ en: 'Sign-up failed', fr: 'Échec de l\'inscription', ar: 'فشل التسجيل' }),
                     description: msg
                 });
             }
