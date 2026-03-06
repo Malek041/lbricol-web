@@ -378,52 +378,124 @@ const ProfileView: React.FC<ProfileViewProps> = ({
 
     const handlePhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
-        const user = auth.currentUser;
-        if (!file || !user) return;
+        if (!file) return;
 
         setIsUploadingPhoto(true);
-        console.log("Starting photo upload for user:", user.uid);
-
-        // Timeout for the entire process
-        const timeoutPromise = new Promise((_, reject) =>
-            setTimeout(() => reject(new Error("Photo update timed out")), 45000)
-        );
+        console.log("Starting photo change for file:", file.name, "type:", file.type);
 
         try {
+            const { auth, db, storage } = await import('@/lib/firebase');
+            const { ref, uploadBytes, getDownloadURL } = await import('firebase/storage');
+            const { doc, updateDoc, getDoc } = await import('firebase/firestore');
+            const user = auth.currentUser;
+
+            if (!user) {
+                console.error("No authenticated user found for photo upload");
+                alert(t({ en: 'You must be signed in to change your photo.', fr: 'Vous devez être connecté pour changer votre photo.' }));
+                return;
+            }
+
+            // --- 1. Robust Blob Conversion (Fixes potential File object issues) ---
+            const convertToBlob = (file: File): Promise<Blob> => {
+                return new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = (ev) => {
+                        const img = new Image();
+                        img.onload = () => {
+                            const canvas = document.createElement('canvas');
+                            canvas.width = img.width;
+                            canvas.height = img.height;
+                            const ctx = canvas.getContext('2d');
+                            ctx?.drawImage(img, 0, 0);
+                            canvas.toBlob((blob) => blob ? resolve(blob) : reject(new Error('Canvas toBlob failed')), 'image/jpeg', 0.8);
+                        };
+                        img.onerror = () => reject(new Error('Image load failed'));
+                        img.src = ev.target?.result as string;
+                    };
+                    reader.onerror = () => reject(new Error('FileReader failed'));
+                    reader.readAsDataURL(file);
+                });
+            };
+
+            const blob = await convertToBlob(file);
+            console.log("Image converted to blob:", blob.size, "bytes");
+
             const uploadTask = async () => {
-                const storageRef = ref(storage, `avatars/${user.uid}/${Date.now()}_profile.jpg`);
-                const uploadResult = await uploadBytes(storageRef, file, { contentType: 'image/jpeg' });
+                const fileName = `${Date.now()}_profile.jpg`;
+                // Use a standard path: avatars/USER_UID/filename
+                const storagePath = `avatars/${user.uid}/${fileName}`;
+                console.log("Uploading to path:", storagePath);
+
+                const storageRef = ref(storage, storagePath);
+
+                // Explicitly send metadata
+                const metadata = {
+                    contentType: 'image/jpeg',
+                    customMetadata: {
+                        'userId': user.uid,
+                        'originalName': file.name
+                    }
+                };
+
+                const uploadResult = await uploadBytes(storageRef, blob, metadata);
+                console.log("Upload successful, getting download URL...");
                 const url = await getDownloadURL(uploadResult.ref);
-                console.log("Uploaded new avatar:", url);
-
-                // Update Auth
-                const { updateProfile } = await import('firebase/auth');
-                await updateProfile(user, { photoURL: url });
-
-                // Update Firestore
-                const updates = { avatar: url, photoURL: url, updatedAt: new Date().toISOString() };
-                const userRef = doc(db, 'users', user.uid);
-                await updateDoc(userRef, updates);
-
-                if (variant === 'provider') {
-                    await updateDoc(doc(db, 'bricolers', user.uid), updates);
-                } else {
-                    const clientRef = doc(db, 'clients', user.uid);
-                    const clientSnap = await getDoc(clientRef);
-                    if (clientSnap.exists()) await updateDoc(clientRef, updates);
-                }
-
-                if (setUserData) {
-                    setUserData({ ...userData, avatar: url, photoURL: url });
-                }
                 return url;
             };
 
-            await Promise.race([uploadTask(), timeoutPromise]);
-            console.log("Photo update successful");
-        } catch (err) {
-            console.error("Error updating photo:", err);
-            // Optionally show a toast here
+            // Wrapped the upload in a timeout to prevent indefinite hanging (45s)
+            const timeoutPromise = new Promise<string>((_, reject) =>
+                setTimeout(() => reject(new Error("NETWORK_TIMEOUT")), 45000)
+            );
+
+            const url = await Promise.race([uploadTask(), timeoutPromise]);
+            console.log("Received new photo URL:", url);
+
+            // 2. Update Auth
+            const { updateProfile } = await import('firebase/auth');
+            await updateProfile(user, { photoURL: url });
+            console.log("Auth profile updated");
+
+            // 3. Update Firestore
+            const updates = {
+                avatar: url,
+                photoURL: url,
+                updatedAt: new Date().toISOString()
+            };
+
+            const userRef = doc(db, 'users', user.uid);
+            await updateDoc(userRef, updates);
+            console.log("Firestore 'users' document updated");
+
+            if (variant === 'provider') {
+                const bricolerRef = doc(db, 'bricolers', user.uid);
+                await updateDoc(bricolerRef, updates);
+                console.log("Firestore 'bricolers' document updated");
+            } else {
+                const clientRef = doc(db, 'clients', user.uid);
+                const clientSnap = await getDoc(clientRef);
+                if (clientSnap.exists()) {
+                    await updateDoc(clientRef, updates);
+                    console.log("Firestore 'clients' document updated");
+                }
+            }
+
+            // Sync context/local state
+            if (setUserData) setUserData({ ...userData, ...updates });
+            alert(t({ en: 'Profile photo updated successfully!', fr: 'Photo de profil mise à jour avec succès !' }));
+
+        } catch (err: any) {
+            console.error("Photo upload/save failed:", err);
+            let msg = t({ en: 'Failed to update photo.', fr: 'Échec de la mise à jour de la photo.' });
+
+            if (err.message === "NETWORK_TIMEOUT") {
+                msg = t({ en: 'Upload timed out. Please check your connection.', fr: 'Le téléversement a expiré. Vérifiez votre connexion.' });
+            } else if (err.code === 'storage/unauthorized') {
+                msg = t({ en: 'Permission denied. Please try logging out and in again.', fr: 'Permission refusée. Essayez de vous déconnecter et vous reconnecter.' });
+            } else {
+                msg += ` (${err.message || 'Unknown error'})`;
+            }
+            alert(msg);
         } finally {
             setIsUploadingPhoto(false);
             // reset input

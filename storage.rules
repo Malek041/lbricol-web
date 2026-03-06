@@ -6,7 +6,7 @@ service firebase.storage {
     // Authenticated users can upload their own avatar
     match /avatars/{userId}/{fileName} {
       allow read: if true;
-      allow write: if request.auth != null && (request.auth.uid == userId || userId.matches('meta_.*'))
+      allow write: if request.auth != null
                    && request.resource.size < 5 * 1024 * 1024  // max 5MB
                    && request.resource.contentType.matches('image/.*');
     }
@@ -15,7 +15,7 @@ service firebase.storage {
     // Bricolers can upload their own portfolio images
     match /portfolio/{userId}/{categoryId}/{fileName} {
       allow read: if true;
-      allow write: if request.auth != null && (request.auth.uid == userId || userId.matches('meta_.*'))
+      allow write: if request.auth != null
                    && request.resource.size < 10 * 1024 * 1024  // max 10MB
                    && request.resource.contentType.matches('image/.*');
     }
