@@ -382,31 +382,52 @@ const ProfileView: React.FC<ProfileViewProps> = ({
         if (!file || !user) return;
 
         setIsUploadingPhoto(true);
+        console.log("Starting photo upload for user:", user.uid);
+
+        // Timeout for the entire process
+        const timeoutPromise = new Promise((_, reject) =>
+            setTimeout(() => reject(new Error("Photo update timed out")), 45000)
+        );
+
         try {
-            const storageRef = ref(storage, `avatars/${user.uid}/${Date.now()}_profile.jpg`);
-            const uploadResult = await uploadBytes(storageRef, file, { contentType: 'image/jpeg' });
-            const url = await getDownloadURL(uploadResult.ref);
+            const uploadTask = async () => {
+                const storageRef = ref(storage, `avatars/${user.uid}/${Date.now()}_profile.jpg`);
+                const uploadResult = await uploadBytes(storageRef, file, { contentType: 'image/jpeg' });
+                const url = await getDownloadURL(uploadResult.ref);
+                console.log("Uploaded new avatar:", url);
 
-            // Update Auth
-            const { updateProfile } = await import('firebase/auth');
-            await updateProfile(user, { photoURL: url });
+                // Update Auth
+                const { updateProfile } = await import('firebase/auth');
+                await updateProfile(user, { photoURL: url });
 
-            // Update Firestore
-            const updates = { avatar: url, photoURL: url };
-            await updateDoc(doc(db, 'users', user.uid), updates);
-            if (variant === 'provider') {
-                await updateDoc(doc(db, 'bricolers', user.uid), updates);
-            } else {
-                const clientRef = doc(db, 'clients', user.uid);
-                const clientSnap = await getDoc(clientRef);
-                if (clientSnap.exists()) await updateDoc(clientRef, updates);
-            }
+                // Update Firestore
+                const updates = { avatar: url, photoURL: url, updatedAt: new Date().toISOString() };
+                const userRef = doc(db, 'users', user.uid);
+                await updateDoc(userRef, updates);
 
-            if (setUserData) setUserData({ ...userData, avatar: url, photoURL: url });
+                if (variant === 'provider') {
+                    await updateDoc(doc(db, 'bricolers', user.uid), updates);
+                } else {
+                    const clientRef = doc(db, 'clients', user.uid);
+                    const clientSnap = await getDoc(clientRef);
+                    if (clientSnap.exists()) await updateDoc(clientRef, updates);
+                }
+
+                if (setUserData) {
+                    setUserData({ ...userData, avatar: url, photoURL: url });
+                }
+                return url;
+            };
+
+            await Promise.race([uploadTask(), timeoutPromise]);
+            console.log("Photo update successful");
         } catch (err) {
             console.error("Error updating photo:", err);
+            // Optionally show a toast here
         } finally {
             setIsUploadingPhoto(false);
+            // reset input
+            e.target.value = '';
         }
     };
 
@@ -430,7 +451,7 @@ const ProfileView: React.FC<ProfileViewProps> = ({
                     initial={{ opacity: 0, x: 20 }}
                     animate={{ opacity: 1, x: 0 }}
                     exit={{ opacity: 0, x: 20 }}
-                    className="flex flex-col min-h-[100dvh] bg-white relative pb-24"
+                    className="flex flex-col min-h-full bg-white relative pb-32"
                 >
                     <div className="pt-12 px-5 pb-4 bg-white sticky top-0 z-20 shadow-sm border-b border-neutral-100 flex items-center justify-between">
                         <div className="flex items-center gap-3">
@@ -900,19 +921,19 @@ const ProfileView: React.FC<ProfileViewProps> = ({
         <div className="w-full h-full bg-white relative">
             <AnimatePresence mode="wait">
                 {view === 'main' ? (
-                    <div key="main-view" className="w-full h-full absolute inset-0">
+                    <div key="main-view" className="w-full h-full absolute inset-0 overflow-y-auto no-scrollbar">
                         {renderMainView()}
                     </div>
                 ) : view === 'info' ? (
-                    <div key="info-view" className="w-full h-full absolute inset-0">
+                    <div key="info-view" className="w-full h-full absolute inset-0 overflow-y-auto no-scrollbar">
                         {renderInfoView()}
                     </div>
                 ) : view === 'portfolio' ? (
-                    <div key="portfolio-view" className="w-full h-full absolute inset-0">
+                    <div key="portfolio-view" className="w-full h-full absolute inset-0 overflow-y-auto no-scrollbar">
                         {renderPortfolioView()}
                     </div>
                 ) : (
-                    <div key="admin-code-view" className="w-full h-full absolute inset-0 z-50">
+                    <div key="admin-code-view" className="w-full h-full absolute inset-0 z-50 overflow-y-auto no-scrollbar">
                         {renderAdminCodeView()}
                     </div>
                 )}
