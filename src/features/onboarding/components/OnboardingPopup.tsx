@@ -908,15 +908,16 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                                 const res = await safeUploadBlob(ref(storage, path), file, { contentType: 'image/jpeg' });
                                 categoryUploadResults[catId].push(await getDownloadURL(res.ref));
                             } catch (e) {
-                                if (previewUrl && previewUrl.startsWith('data:image')) categoryUploadResults[catId].push(previewUrl);
+                                // Don't fall back to base64
+                                console.warn(`Portfolio upload failed for ${catId}, skipping image:`, e);
                             }
                         })();
                         uploadPromises.push(Promise.race([
                             task,
                             new Promise((_, reject) => setTimeout(() => reject(new Error("TIMEOUT")), 60000))
                         ]).catch((err) => {
-                            console.warn(`Portfolio image update timed out or failed for ${catId}:`, err);
-                            if (previewUrl && previewUrl.startsWith('data:image')) categoryUploadResults[catId].push(previewUrl);
+                            // Timeout happened — do not store base64
+                            console.warn(`Portfolio image update timed out for ${catId}, skipping image:`, err);
                         }));
                     }
                 }
