@@ -466,7 +466,10 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                 const provider = new GoogleAuthProvider();
                 const result = await signInWithPopup(auth, provider);
                 user = result.user;
-                await new Promise(resolve => setTimeout(resolve, 1500));
+                // Wait for the Firebase auth token to propagate to Firestore.
+                // On mobile/slow connections this can take 2-3 seconds.
+                setSubmittingStatus("Setting up your account...");
+                await new Promise(resolve => setTimeout(resolve, 3000));
             }
 
             if (!user) throw new Error("AUTH_FAILED");
@@ -603,11 +606,30 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
             const bricolerRef = doc(db, 'bricolers', user.uid);
             const isClaimingShadow = localUserData && localUserData.id && !localUserData.uid;
 
-            // Timeout for Firestore initial read
-            const [bSnap, cSnap] = await Promise.race([
-                Promise.all([getDoc(bricolerRef), getDoc(doc(db, 'clients', user.uid))]),
-                new Promise<any>((_, reject) => setTimeout(() => reject(new Error("FIRESTORE_TIMEOUT")), 25000))
-            ]);
+            // Retry Firestore reads up to 3 times with 2s backoff.
+            // On mobile, the auth token may not yet be accepted by Firestore
+            // immediately after signInWithPopup, causing permission-denied errors.
+            let bSnap: any = null;
+            let cSnap: any = null;
+            for (let attempt = 1; attempt <= 3; attempt++) {
+                try {
+                    const result = await Promise.race([
+                        Promise.all([getDoc(bricolerRef), getDoc(doc(db, 'clients', user.uid))]),
+                        new Promise<any>((_, reject) => setTimeout(() => reject(new Error("FIRESTORE_TIMEOUT")), 15000))
+                    ]);
+                    [bSnap, cSnap] = result;
+                    break; // success — exit retry loop
+                } catch (readErr: any) {
+                    const isPermDenied = readErr?.code === 'permission-denied' || readErr?.message?.includes('permission');
+                    console.warn(`Firestore read attempt ${attempt} failed:`, readErr?.code || readErr?.message);
+                    if (attempt < 3 && isPermDenied) {
+                        setSubmittingStatus(`Setting up account... (${attempt}/3)`);
+                        await new Promise(resolve => setTimeout(resolve, 2000));
+                    } else {
+                        throw readErr; // give up after 3 tries or non-permission errors
+                    }
+                }
+            }
             const existingBricoler = bSnap.exists() ? bSnap.data() : null;
 
             const cleanObj = (obj: any) => {
@@ -694,11 +716,16 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                 // User deliberately closed the popup — reset silently, no toast needed
                 setSubmittingStatus(null);
             } else {
-                if (error.code === 'permission-denied') msg = "Security permission denied. Please try again.";
+                // Show the actual error to help the bricoler understand what went wrong
+                const friendlyMsg = error.code === 'permission-denied'
+                    ? t({ en: 'Permission error. Please try again in a few seconds.', fr: 'Erreur de permission. Veuillez réessayer dans quelques secondes.', ar: 'خطأ في الصلاحيات. يرجى المحاولة مجدداً بعد لحظات.' })
+                    : error.code === 'FIRESTORE_TIMEOUT' || error.message === 'FIRESTORE_TIMEOUT'
+                        ? t({ en: 'Connection timed out. Please check your internet and try again.', fr: 'Délai de connexion dépassé. Vérifiez votre réseau et réessayez.', ar: 'انتهت مهلة الاتصال. يرجى التحقق من الإنترنت والمحاولة مجدداً.' })
+                        : msg;
                 showToast({
                     variant: 'error',
-                    title: t({ en: 'Sign-up failed', fr: 'Échec de l\'inscription', ar: 'فشل التسجيل' }),
-                    description: msg
+                    title: t({ en: 'Sign-up failed', fr: "Échec de l'inscription", ar: 'فشل التسجيل' }),
+                    description: friendlyMsg
                 });
             }
             setSubmittingStatus(null);
