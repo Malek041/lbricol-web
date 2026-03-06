@@ -7,8 +7,9 @@ import {
     Tag, Bell, LogOut, ArrowLeft, Globe, Wrench, LogIn, Plus, CircleHelp, Shield, UserPlus,
     Camera, Trash2, Image as ImageIcon, ToggleLeft, ToggleRight, Hash
 } from 'lucide-react';
-import { auth, db } from '@/lib/firebase';
+import { auth, db, storage } from '@/lib/firebase';
 import { doc, getDoc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { useLanguage } from '@/context/LanguageContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
@@ -58,9 +59,10 @@ const ProfileView: React.FC<ProfileViewProps> = ({
     const [portfolio, setPortfolio] = useState<string[]>([]);
     const [isUploading, setIsUploading] = useState(false);
     const [isVerifying, setIsVerifying] = useState(false);
-    const [editingField, setEditingField] = useState<'none' | 'name' | 'email' | 'bankName' | 'cardHolderName' | 'rib'>('none');
+    const [editingField, setEditingField] = useState<'none' | 'name' | 'email' | 'bankName' | 'cardHolderName' | 'rib' | 'phone'>('none');
     const [editValue, setEditValue] = useState('');
     const [isSaving, setIsSaving] = useState(false);
+    const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
 
     // Onboarding Mode Popup state
     const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
@@ -316,37 +318,95 @@ const ProfileView: React.FC<ProfileViewProps> = ({
                 if (editingField === 'bankName') bricolerUpdate.bankName = editValue.trim();
                 else if (editingField === 'cardHolderName') bricolerUpdate.cardHolderName = editValue.trim();
                 else if (editingField === 'rib') bricolerUpdate.rib = editValue.trim();
+                else if (editingField === 'name') {
+                    bricolerUpdate.name = editValue.trim();
+                    bricolerUpdate.displayName = editValue.trim();
+                }
+                else if (editingField === 'email') bricolerUpdate.email = editValue.trim();
+                else if (editingField === 'phone') {
+                    bricolerUpdate.phone = editValue.trim();
+                    bricolerUpdate.whatsappNumber = editValue.trim();
+                }
 
                 const providerRef = doc(db, 'bricolers', user.uid);
                 await updateDoc(providerRef, bricolerUpdate);
+
+                if (editingField === 'name' || editingField === 'email') {
+                    const userRef = doc(db, 'users', user.uid);
+                    await updateDoc(userRef, {
+                        name: editingField === 'name' ? editValue.trim() : (userData?.name || ''),
+                        email: editingField === 'email' ? editValue.trim() : (userData?.email || '')
+                    });
+                }
             } else {
                 const profileUpdate: any = {};
                 if (editingField === 'name') profileUpdate.name = editValue.trim();
                 else if (editingField === 'email') profileUpdate.email = editValue.trim();
 
-                // 1. Always update global users collection
                 const userRef = doc(db, 'users', user.uid);
                 await updateDoc(userRef, profileUpdate);
 
-                // 2. ONLY update clients if they have already placed an order (become a client)
                 const clientRef = doc(db, 'clients', user.uid);
                 const clientSnap = await getDoc(clientRef);
                 if (clientSnap.exists()) {
                     await updateDoc(clientRef, profileUpdate);
                 }
+            }
 
-                if (editingField === 'name') {
-                    const { updateProfile } = await import('firebase/auth');
-                    await updateProfile(user, { displayName: editValue.trim() });
-                }
+            if (editingField === 'name' || editingField === 'email') {
+                const { updateProfile } = await import('firebase/auth');
+                if (editingField === 'name') await updateProfile(user, { displayName: editValue.trim() });
+            }
+
+            if (setUserData) {
+                const newData = { ...userData };
+                if (editingField === 'name') newData.name = editValue.trim();
+                if (editingField === 'email') newData.email = editValue.trim();
+                if (editingField === 'phone') newData.phone = editValue.trim();
+                if (editingField === 'bankName') newData.bankName = editValue.trim();
+                if (editingField === 'rib') newData.rib = editValue.trim();
+                setUserData(newData);
             }
 
             setEditingField('none');
         } catch (err) {
             console.error("Error saving profile:", err);
-            alert(t({ en: 'Failed to save changes. Please try again.', fr: 'Échec de l’enregistrement. Veuillez réessayer.', ar: 'تعذر حفظ التعديلات. يرجى المحاولة مرة أخرى.' }));
         } finally {
             setIsSaving(false);
+        }
+    };
+
+    const handlePhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        const user = auth.currentUser;
+        if (!file || !user) return;
+
+        setIsUploadingPhoto(true);
+        try {
+            const storageRef = ref(storage, `avatars/${user.uid}/${Date.now()}_profile.jpg`);
+            const uploadResult = await uploadBytes(storageRef, file, { contentType: 'image/jpeg' });
+            const url = await getDownloadURL(uploadResult.ref);
+
+            // Update Auth
+            const { updateProfile } = await import('firebase/auth');
+            await updateProfile(user, { photoURL: url });
+
+            // Update Firestore
+            const updates = { avatar: url, photoURL: url };
+            await updateDoc(doc(db, 'users', user.uid), updates);
+            if (variant === 'provider') {
+                await updateDoc(doc(db, 'bricolers', user.uid), updates);
+            } else {
+                const clientRef = doc(db, 'clients', user.uid);
+                const clientSnap = await getDoc(clientRef);
+                if (clientSnap.exists()) await updateDoc(clientRef, updates);
+            }
+
+            if (setUserData) setUserData({ ...userData, avatar: url, photoURL: url });
+        } catch (err) {
+            console.error("Error updating photo:", err);
+        } finally {
+            setIsUploadingPhoto(false);
         }
     };
 
@@ -357,9 +417,9 @@ const ProfileView: React.FC<ProfileViewProps> = ({
             const ribVal = userData?.rib || '';
 
             const providerInfoItems = [
-                { icon: User, label: t({ en: 'Full Name', fr: 'Nom complet', ar: 'الاسم الكامل' }), value: displayName, editable: false, field: 'name' },
-                { icon: Mail, label: t({ en: 'Email address', fr: 'Adresse e-mail', ar: 'البريد الإلكتروني' }), value: userEmail || t({ en: 'N/A', fr: 'N/A', ar: 'غير متوفر' }), editable: false, field: 'email' },
-                { icon: Phone, label: t({ en: 'Phone number', fr: 'Numéro de téléphone', ar: 'رقم الهاتف' }), value: userData?.whatsapp || t({ en: 'N/A', fr: 'N/A', ar: 'غير متوفر' }), editable: false, field: 'phone' },
+                { icon: User, label: t({ en: 'Full Name', fr: 'Nom complet', ar: 'الاسم الكامل' }), value: displayName, editable: true, field: 'name' },
+                { icon: Mail, label: t({ en: 'Email address', fr: 'Adresse e-mail', ar: 'البريد الإلكتروني' }), value: userEmail || userData?.email || t({ en: 'N/A', fr: 'N/A', ar: 'غير متوفر' }), editable: true, field: 'email' },
+                { icon: Phone, label: t({ en: 'Phone number', fr: 'Numéro de téléphone', ar: 'رقم الهاتف' }), value: userData?.phone || userData?.whatsappNumber || userData?.whatsapp || t({ en: 'N/A', fr: 'N/A', ar: 'غير متوفر' }), editable: true, field: 'phone' },
                 { icon: FileText, label: t({ en: 'Bank Name', fr: 'Nom de la banque', ar: 'اسم البنك' }), value: bankNameVal || t({ en: 'Not set', fr: 'Non défini', ar: 'غير محدد' }), editable: true, field: 'bankName' },
                 { icon: CreditCard, label: t({ en: 'Cardholder Name', fr: 'Nom du titulaire de la carte', ar: 'اسم صاحب البطاقة' }), value: cardHolderVal || t({ en: 'Not set', fr: 'Non défini', ar: 'غير محدد' }), editable: true, field: 'cardHolderName' },
                 { icon: Hash, label: t({ en: 'RIB / IBAN', fr: 'RIB / IBAN', ar: 'RIB / IBAN' }), value: ribVal || t({ en: 'Not set', fr: 'Non défini', ar: 'غير محدد' }), editable: true, field: 'rib' },
@@ -372,14 +432,45 @@ const ProfileView: React.FC<ProfileViewProps> = ({
                     exit={{ opacity: 0, x: 20 }}
                     className="flex flex-col min-h-[100dvh] bg-white relative pb-24"
                 >
-                    <div className="pt-12 px-5 pb-4 bg-white sticky top-0 z-20 shadow-sm border-b border-neutral-100 flex items-center gap-3">
-                        <button
-                            onClick={() => setView('main')}
-                            className="w-10 h-10 -ml-2 rounded-full flex items-center justify-center hover:bg-black/5"
-                        >
-                            <ArrowLeft size={24} className="text-black" />
-                        </button>
-                        <h2 className="text-[20px] font-black">{t({ en: 'My information', fr: 'Mes informations', ar: 'معلوماتي' })}</h2>
+                    <div className="pt-12 px-5 pb-4 bg-white sticky top-0 z-20 shadow-sm border-b border-neutral-100 flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                            <button
+                                onClick={() => setView('main')}
+                                className="w-10 h-10 -ml-2 rounded-full flex items-center justify-center hover:bg-black/5"
+                            >
+                                <ArrowLeft size={24} className="text-black" />
+                            </button>
+                            <h2 className="text-[20px] font-black">{t({ en: 'My information', fr: 'Mes informations', ar: 'معلوماتي' })}</h2>
+                        </div>
+
+                        {/* Profile Pic Modify Button */}
+                        <label className="cursor-pointer relative group">
+                            <input
+                                type="file"
+                                accept="image/*"
+                                onChange={handlePhotoChange}
+                                className="hidden"
+                                disabled={isUploadingPhoto}
+                            />
+                            <div className="flex flex-col items-center">
+                                <div className="w-12 h-12 rounded-xl overflow-hidden bg-neutral-100 relative border-2 border-white shadow-sm transition-all group-hover:scale-105 active:scale-95">
+                                    <img
+                                        src={userAvatar || userData?.avatar || userData?.photoURL || "/Images/Vectors Illu/LbricolFaceOY.webp"}
+                                        className={cn("w-full h-full object-cover", isUploadingPhoto && "opacity-50")}
+                                        alt="Avatar"
+                                    />
+                                    {isUploadingPhoto && (
+                                        <div className="absolute inset-0 flex items-center justify-center">
+                                            <div className="w-4 h-4 border-2 border-[#00A082] border-t-transparent rounded-full animate-spin"></div>
+                                        </div>
+                                    )}
+                                    <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                                        <Camera size={16} className="text-white" />
+                                    </div>
+                                </div>
+                                <span className="text-[10px] font-black text-[#00A082] mt-1">{t({ en: 'Modify', fr: 'Modifier', ar: 'تعديل' })}</span>
+                            </div>
+                        </label>
                     </div>
 
                     <div className="px-5 space-y-2 mt-4">

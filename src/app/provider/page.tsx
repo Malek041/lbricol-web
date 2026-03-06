@@ -3913,6 +3913,7 @@ export default function ProviderPage() {
                                     setUserData={setUserData}
                                     userName={userData?.name || user?.displayName || 'Bricoler'}
                                     userAvatar={userData?.photoURL || user?.photoURL || undefined}
+                                    userEmail={userData?.email || user?.email || undefined}
                                     isBricoler={true}
                                     isAuthenticated={!!user}
                                     variant="provider"
@@ -4073,6 +4074,7 @@ export default function ProviderPage() {
                                     setUserData={setUserData}
                                     userName={userData?.name || user?.displayName || 'Bricoler'}
                                     userAvatar={userData?.photoURL || user?.photoURL || undefined}
+                                    userEmail={userData?.email || user?.email || undefined}
                                     isBricoler={true}
                                     isAuthenticated={!!user}
                                     variant="provider"

@@ -966,11 +966,16 @@ const OnboardingPopup = ({ isOpen, onClose, onComplete, mode = 'onboarding', ini
                 }
             }
 
-            const [_, finalAvatarResult] = await Promise.all([
+            const [_, uploadedAvatarUrl] = await Promise.all([
                 Promise.all(uploadPromisesByCat),
                 avatarPromise
             ]);
-            finalAvatarUrl = (finalAvatarResult as string) || finalAvatarUrl;
+
+            // Ensure we use the uploaded URL if it exists, otherwise fallback
+            if (uploadedAvatarUrl) {
+                finalAvatarUrl = uploadedAvatarUrl;
+                console.log("Final avatar URL set to:", finalAvatarUrl);
+            }
 
             // Map results back to entries
             const finalCategoryEntries = initialEntries.map(entry => ({
@@ -1054,6 +1059,7 @@ const OnboardingPopup = ({ isOpen, onClose, onComplete, mode = 'onboarding', ini
                 photoURL: finalAvatarUrl || user.photoURL || "",
                 nidNumber: '',
                 whatsappNumber: (whatsappNumber || '').trim(),
+                phone: (whatsappNumber || '').trim(),
                 bankName: bankName.trim(),
                 bricolerBankCardName: bricolerBankCardName.trim(),
                 ribIBAN: ribIBAN.trim(),
