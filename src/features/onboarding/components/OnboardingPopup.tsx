@@ -862,16 +862,19 @@ const OnboardingPopup = ({ isOpen, onClose, onComplete, mode = 'onboarding', ini
 
         try {
             let user = auth.currentUser;
-
             if (!user) {
                 console.log("No user found, starting Google Sign-in...");
                 setSubmittingStatus("Authenticating...");
                 const provider = new GoogleAuthProvider();
                 const result = await signInWithPopup(auth, provider);
                 user = result.user;
+
+                // Wait for a short moment to ensure Auth Token is propagation to Firestore context
+                await new Promise(resolve => setTimeout(resolve, 800));
             }
 
-            console.log("Processing onboarding for user:", user.uid);
+            console.log("Processing onboarding for user:", user?.uid);
+            if (!user) throw new Error("Authentication failed. Please try again.");
             setSubmittingStatus("Preparing profile...");
 
             // Map selected services to entry format

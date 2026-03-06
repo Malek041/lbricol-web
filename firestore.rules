@@ -1,5 +1,4 @@
 rules_version = '2';
-
 service cloud.firestore {
   match /databases/{database}/documents {
 
@@ -16,12 +15,12 @@ service cloud.firestore {
       // Improved Admin check: checks both clients and bricolers collections
       return isSignedIn() && (
         (exists(/databases/$(database)/documents/clients/$(request.auth.uid)) && 
-         get(/databases/$(database)/documents/clients/$(request.auth.uid)).data.role == 'admin') ||
+         get(/databases/$(database)/documents/clients/$(request.auth.uid)).data.get('role', '') == 'admin') ||
         (exists(/databases/$(database)/documents/bricolers/$(request.auth.uid)) && 
-         get(/databases/$(database)/documents/bricolers/$(request.auth.uid)).data.role == 'admin') ||
+         get(/databases/$(database)/documents/bricolers/$(request.auth.uid)).data.get('role', '') == 'admin') ||
         // Fallback for direct user collection if needed
         (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
-         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin')
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('role', '') == 'admin')
       );
     }
 
@@ -90,8 +89,12 @@ service cloud.firestore {
     match /bricolers/{userId} {
       allow read: if true;
       allow create: if isOwner(userId) || isAdmin();
-      allow update: if isAdmin() || isOwner(userId) || (isSignedIn() && isReviewUpdate());
-      allow delete: if isAdmin() || (isSignedIn() && (!('uid' in resource.data) || resource.data.uid == ''));
+      allow update: if isOwner(userId) || isAdmin() || (isSignedIn() && isReviewUpdate());
+      allow delete: if isAdmin() || (isSignedIn() && (
+        !('uid' in resource.data) || 
+        resource.data.uid == '' || 
+        resource.data.uid == null
+      ));
     }
 
     match /clients/{userId} {
@@ -104,8 +107,7 @@ service cloud.firestore {
     match /users/{userId} {
       allow read: if isSignedIn();
       allow create: if isOwner(userId) || isAdmin();
-      allow update: if isAdmin() || isOwner(userId) || 
-        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['referralBalance']);
+      allow update: if isOwner(userId) || isAdmin();
       allow delete: if isAdmin();
     }
 
@@ -164,4 +166,3 @@ service cloud.firestore {
     }
   }
 }
-
