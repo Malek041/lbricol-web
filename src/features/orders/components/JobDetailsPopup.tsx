@@ -32,6 +32,7 @@ export interface JobDetails {
     status: 'new' | 'accepted' | 'declined' | 'completed';
     description?: string;
     photos?: string[];
+    images?: string[];
     bricolerId?: string;
     bricolerName?: string;
 }
@@ -205,13 +206,13 @@ const JobDetailsPopup: React.FC<JobDetailsPopupProps> = ({ job, onClose, onAccep
                         )}
 
                         {/* Photos */}
-                        {job.photos && job.photos.length > 0 && (
+                        {((job.photos && job.photos.length > 0) || (job.images && job.images.length > 0)) && (
                             <div className="mb-6">
                                 <div className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-3">
-                                    {t({ en: `Photos (${job.photos.length})`, fr: `Photos (${job.photos.length})`, ar: `صور (${job.photos.length})` })}
+                                    {t({ en: `Photos (${(job.photos?.length || 0) + (job.images?.length || 0)})`, fr: `Photos (${(job.photos?.length || 0) + (job.images?.length || 0)})`, ar: `صور (${(job.photos?.length || 0) + (job.images?.length || 0)})` })}
                                 </div>
                                 <div className="grid grid-cols-3 gap-2">
-                                    {job.photos.map((photo, idx) => (
+                                    {[...(job.photos || []), ...(job.images || [])].map((photo, idx) => (
                                         <div key={idx} className="aspect-square rounded-lg overflow-hidden bg-neutral-100">
                                             <img src={photo} alt={t({ en: `Photo ${idx + 1}`, fr: `Photo ${idx + 1}`, ar: `صورة ${idx + 1}` })} className="w-full h-full object-cover" />
                                         </div>

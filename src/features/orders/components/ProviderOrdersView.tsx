@@ -118,11 +118,19 @@ export default function ProviderOrdersView({
             className="flex items-center gap-4 py-4 border-b border-[#F0F0F0] cursor-pointer"
         >
             <div className="w-20 h-20 rounded-xl overflow-hidden bg-neutral-100 flex-shrink-0">
-                <img
-                    src={getHeroImage(order.service)}
-                    alt={order.service}
-                    className="w-full h-full object-cover"
-                />
+                {order.images && order.images.length > 0 ? (
+                    <img
+                        src={order.images[0]}
+                        alt="Task photo"
+                        className="w-full h-full object-cover"
+                    />
+                ) : (
+                    <img
+                        src={getHeroImage(order.service)}
+                        alt={order.service}
+                        className="w-full h-full object-cover"
+                    />
+                )}
             </div>
             <div className="flex-1 min-w-0">
                 <h3 className="text-[17px] font-black text-black leading-tight truncate">
@@ -380,8 +388,12 @@ function ActivityTab({
                 onClick={() => onSelect(order)}
                 className="bg-white rounded-[16px] p-4 flex items-start gap-4 cursor-pointer transition-all mb-4 border border-transparent hover:border-neutral-100 shadow-sm"
             >
-                <div className="w-24 h-24 bg-[#F7F7F7] rounded-[16px] flex items-center justify-center flex-shrink-0 p-1 overflow-hidden">
-                    <img src={getServiceVector(order.service)} className="w-full h-full object-contain" />
+                <div className="w-24 h-24 bg-[#F7F7F7] rounded-[16px] flex items-center justify-center flex-shrink-0 p-0 overflow-hidden">
+                    {order.images && order.images.length > 0 ? (
+                        <img src={order.images[0]} className="w-full h-full object-cover" />
+                    ) : (
+                        <img src={getServiceVector(order.service)} className="w-full h-full object-contain p-1" />
+                    )}
                 </div>
                 <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
@@ -740,8 +752,12 @@ function CalendarTab({
                                         height: getTimeHeight(fromTime, toTime) - 4
                                     }}
                                 >
-                                    <div className="w-12 h-12 rounded-xl bg-neutral-50 flex items-center justify-center flex-shrink-0">
-                                        <img src={getServiceVector(order.service)} alt={order.service} className="w-8 h-8 object-contain" />
+                                    <div className="w-12 h-12 rounded-xl bg-neutral-50 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                                        {order.images && order.images.length > 0 ? (
+                                            <img src={order.images[0]} className="w-full h-full object-cover" />
+                                        ) : (
+                                            <img src={getServiceVector(order.service)} alt={order.service} className="w-8 h-8 object-contain" />
+                                        )}
                                     </div>
                                     <div className="flex-1 min-w-0">
                                         <div className="flex items-center justify-between mb-1">

@@ -3,7 +3,7 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-    X, Check, Search, ChevronLeft, ChevronRight, Upload, Info, Plus, Minus, Camera, MapPin, ArrowRight, TrendingUp, User, Wrench, Save, Star, Key, Sparkles
+    X, Check, Search, ChevronLeft, ChevronRight, Upload, Info, Plus, Minus, MapPin, ArrowRight, TrendingUp, User, Wrench, Save, Star, Key, Sparkles
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { auth, db, storage } from '@/lib/firebase';
@@ -23,7 +23,7 @@ import {
     serverTimestamp,
     Timestamp,
 } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { ref, uploadBytes, getDownloadURL, uploadString } from 'firebase/storage';
 import { FcGoogle } from 'react-icons/fc';
 import { getAllServices, getServiceVector, type ServiceConfig } from '@/config/services_config';
 import { MOROCCAN_CITIES, MOROCCAN_CITIES_AREAS, SERVICE_TIER_RATES } from '@/config/moroccan_areas';
@@ -31,6 +31,7 @@ import { useToast } from '@/context/ToastContext';
 import { useLanguage } from '@/context/LanguageContext';
 import SplashScreen from '@/components/layout/SplashScreen';
 import { useIsMobileViewport } from '@/lib/mobileOnly';
+import { compressImageFileToDataUrl, isImageDataUrl } from '@/lib/imageCompression';
 
 interface OnboardingPopupProps {
     isOpen: boolean;
@@ -50,7 +51,6 @@ interface CategoryDetail {
     equipments: string[];
     noEquipment: boolean;
     portfolioImages: string[];
-    portfolioFiles?: (File | Blob)[];
 }
 
 const ALL_SERVICES = getAllServices().filter(s => !['driver', 'car_rental', 'courier', 'airport', 'transport_intercity'].includes(s.id));
@@ -179,8 +179,13 @@ const NO_EQUIPMENT_SERVICES = ['errands', 'driver', 'car_rental', 'courier', 'ai
 
 const safeUploadBlob = async (storageRef: any, fileOrBlob: Blob | File, metadata?: any) => {
     const arrayBuffer = await fileOrBlob.arrayBuffer();
-    const { uploadBytes } = await import('firebase/storage');
     return await uploadBytes(storageRef, arrayBuffer, metadata);
+};
+
+const normalizeImageList = (value: any): string[] => {
+    if (!Array.isArray(value)) return [];
+    const cleaned = value.filter((item) => typeof item === 'string' && item.trim().length > 0);
+    return Array.from(new Set(cleaned));
 };
 
 const OnboardingPopup = (props: OnboardingPopupProps) => {
@@ -194,7 +199,20 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
         mode === 'edit' && initialCategory ? initialCategory.subServices || [] : []
     );
     const [categoryEntries, setCategoryEntries] = useState<Record<string, CategoryDetail>>(
-        mode === 'edit' && initialCategory ? { [initialCategory.categoryId]: initialCategory } : {}
+        mode === 'edit' && initialCategory ? {
+            [initialCategory.categoryId]: {
+                categoryId: initialCategory.categoryId,
+                categoryName: initialCategory.categoryName || initialCategory.categoryId,
+                hourlyRate: initialCategory.hourlyRate || 75,
+                pitch: initialCategory.pitch || '',
+                experience: initialCategory.experience || '',
+                equipments: initialCategory.equipments || [],
+                noEquipment: initialCategory.noEquipment || false,
+                portfolioImages: normalizeImageList(
+                    initialCategory.portfolioImages || initialCategory.portfolio || initialCategory.images || initialCategory.portfolio_images
+                ),
+            }
+        } : {}
     );
     const [activeCategoryId, setActiveCategoryId] = useState<string>(
         mode === 'edit' && initialCategory ? initialCategory.categoryId : (ALL_SERVICES[0]?.id || '')
@@ -221,8 +239,11 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
 
     const [fullName, setFullName] = useState(userData?.fullName || '');
     const [whatsappNumber, setWhatsappNumber] = useState(userData?.whatsappNumber || '');
-    const [profileImageFile, setProfileImageFile] = useState<File | Blob | null>(null);
-    const [profileImagePreview, setProfileImagePreview] = useState<string | null>(userData?.photoURL || null);
+    const [profilePhotoUrl, setProfilePhotoUrl] = useState<string>(
+        userData?.profilePhotoURL || userData?.avatar || userData?.photoURL || auth.currentUser?.photoURL || ''
+    );
+    const [isProcessingProfilePhoto, setIsProcessingProfilePhoto] = useState(false);
+    const [isProcessingPortfolioImages, setIsProcessingPortfolioImages] = useState(false);
 
     // Optional bank details
     const [bankName, setBankName] = useState(userData?.bankName || '');
@@ -241,15 +262,14 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
     const [activationCode, setActivationCode] = useState('');
     const [localUserData, setLocalUserData] = useState<any>(userData || null);
 
-    // Sync with auth user if logged in
     useEffect(() => {
         if (!fullName && auth.currentUser?.displayName) {
             setFullName(auth.currentUser.displayName);
         }
-        if (!profileImagePreview && auth.currentUser?.photoURL) {
-            setProfileImagePreview(auth.currentUser.photoURL);
+        if (!profilePhotoUrl && auth.currentUser?.photoURL) {
+            setProfilePhotoUrl(auth.currentUser.photoURL);
         }
-    }, [auth.currentUser]);
+    }, [auth.currentUser, fullName, profilePhotoUrl]);
 
     const [hasGoogleSigned, setHasGoogleSigned] = useState(false);
 
@@ -294,12 +314,12 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
         if (userData && (mode === 'admin_edit' || mode === 'edit')) {
             setFullName(userData.fullName || '');
             setWhatsappNumber(userData.whatsappNumber || '');
-            setProfileImagePreview(userData.photoURL || null);
             setBankName(userData.bankName || '');
             setBricolerBankCardName(userData.bricolerBankCardName || '');
             setRibIBAN(userData.ribIBAN || '');
             setSelectedCity(userData.city || '');
             setSelectedAreas(userData.areas || userData.selectedAreas || []);
+            setProfilePhotoUrl(userData.profilePhotoURL || userData.avatar || userData.photoURL || '');
 
             if (userData.services && Array.isArray(userData.services)) {
                 const subIds: string[] = [];
@@ -312,6 +332,9 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                     const svc = ALL_SERVICES.find(cat => cat.subServices.some(ss => ss.id === subId) || cat.id === subId);
                     if (svc) {
                         const catId = svc.id;
+                        const serviceImages = typeof s === 'object'
+                            ? normalizeImageList(s.portfolioImages || s.portfolio || s.images || s.portfolio_images)
+                            : [];
                         if (!entries[catId]) {
                             entries[catId] = {
                                 categoryId: catId,
@@ -321,8 +344,10 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                                 experience: typeof s === 'object' ? (s.experience || "") : "",
                                 equipments: typeof s === 'object' ? (s.equipments || []) : [],
                                 noEquipment: typeof s === 'object' ? (s.noEquipment || false) : false,
-                                portfolioImages: typeof s === 'object' ? (s.portfolioImages || []) : [],
+                                portfolioImages: serviceImages,
                             };
+                        } else if (serviceImages.length > 0) {
+                            entries[catId].portfolioImages = Array.from(new Set([...entries[catId].portfolioImages, ...serviceImages]));
                         }
                     }
                 });
@@ -408,11 +433,15 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
 
                 if (data.city) setSelectedCity(data.city);
                 if (data.workAreas) setSelectedAreas(data.workAreas);
+                if (data.profilePhotoURL || data.avatar || data.photoURL) {
+                    setProfilePhotoUrl(data.profilePhotoURL || data.avatar || data.photoURL);
+                }
                 if (data.services && Array.isArray(data.services)) {
                     const entries: Record<string, CategoryDetail> = {};
                     const subIds: string[] = [];
                     data.services.forEach((service: any) => {
                         const catId = service.categoryId;
+                        const serviceImages = normalizeImageList(service.portfolioImages || service.portfolio || service.images || service.portfolio_images);
                         if (!entries[catId]) {
                             entries[catId] = {
                                 categoryId: catId,
@@ -422,9 +451,10 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                                 experience: service.experience || "",
                                 equipments: service.equipments || [],
                                 noEquipment: service.noEquipment || false,
-                                portfolioImages: service.portfolioImages || [],
-                                portfolioFiles: []
+                                portfolioImages: serviceImages,
                             };
+                        } else if (serviceImages.length > 0) {
+                            entries[catId].portfolioImages = Array.from(new Set([...entries[catId].portfolioImages, ...serviceImages]));
                         }
                         subIds.push(service.subServiceId);
                     });
@@ -457,6 +487,23 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
     const handleBricolerSignup = async () => {
         setIsSubmitting(true);
         setSubmittingStatus("Preparing...");
+        let submitWatchdog: ReturnType<typeof setTimeout> | null = null;
+        let watchdogTriggered = false;
+
+        submitWatchdog = setTimeout(() => {
+            watchdogTriggered = true;
+            setIsSubmitting(false);
+            setSubmittingStatus(null);
+            showToast({
+                variant: 'error',
+                title: t({ en: 'Taking too long', fr: 'Cela prend trop de temps', ar: 'يستغرق وقتاً طويلاً' }),
+                description: t({
+                    en: 'We stopped waiting. Please check your connection and retry.',
+                    fr: 'Nous avons arrêté l’attente. Vérifiez votre connexion puis réessayez.',
+                    ar: 'توقفنا عن الانتظار. يرجى التحقق من الاتصال ثم إعادة المحاولة.'
+                })
+            });
+        }, 90000);
 
         try {
             let user = auth.currentUser;
@@ -490,115 +537,10 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                     experience: e?.experience || "",
                     equipments: e?.noEquipment ? [] : (e?.equipments || []),
                     noEquipment: e?.noEquipment || false,
-                    portfolioImages: e?.portfolioImages || [] as string[],
+                    portfolioImages: normalizeImageList(e?.portfolioImages || []),
                 };
             });
-
-            setSubmittingStatus("Uploading media...");
-            let finalAvatarUrl = user.photoURL || '';
-            const categoryUploadResults: Record<string, string[]> = {};
-
-            // 1. Avatar Upload
-            let avatarPromise: Promise<string> = Promise.resolve(user.photoURL || '');
-            if (profileImageFile) {
-                const task = (async () => {
-                    try {
-                        const fileName = `${Date.now()}_profile.jpg`;
-                        const res = await safeUploadBlob(ref(storage, `avatars/${user.uid}/${fileName}`), profileImageFile, {
-                            contentType: 'image/jpeg',
-                            customMetadata: { 'userId': user.uid, 'context': 'signup' }
-                        });
-                        const url = await getDownloadURL(res.ref);
-                        try { await updateProfile(user!, { photoURL: url }); } catch (e) { }
-                        return url;
-                    } catch (err) {
-                        console.warn("Avatar upload failed:", err);
-                        return user?.photoURL || '';
-                    }
-                })();
-                avatarPromise = Promise.race([
-                    task,
-                    new Promise<string>((_, reject) => setTimeout(() => reject(new Error("TIMEOUT")), 60000))
-                ]).catch((err) => {
-                    console.warn("Avatar upload catch-all:", err);
-                    return user?.photoURL || '';
-                });
-            }
-
-            // 1.5 Tour Guide Authorization Upload
-            let tourGuidePromise: Promise<string | null> = Promise.resolve(tourGuideAuthorizationUrl || null);
-            if (tourGuideAuthorizationFile && selectedSubServices.some(id => id.includes('tour_guide'))) {
-                const task = (async () => {
-                    try {
-                        const path = `verifications/${user.uid}/${Date.now()}_tour_guide_auth`;
-                        const res = await safeUploadBlob(ref(storage, path), tourGuideAuthorizationFile);
-                        return await getDownloadURL(res.ref);
-                    } catch (err) {
-                        console.warn("Tour guide auth upload failed:", err);
-                        return tourGuideAuthorizationUrl || null;
-                    }
-                })();
-                tourGuidePromise = Promise.race([
-                    task,
-                    new Promise<string | null>((_, reject) => setTimeout(() => reject(new Error("TIMEOUT")), 60000))
-                ]).catch((err) => {
-                    console.warn("Tour guide upload catch-all:", err);
-                    return tourGuideAuthorizationUrl || null;
-                });
-            }
-
-            // 2. Portfolio Uploads
-            const uploadPromisesByCat: Promise<void>[] = [];
-            const uniqueCategories = Array.from(new Set(initialEntries.map(e => e.categoryId)));
-            for (const catId of uniqueCategories) {
-                const catData = categoryEntries[catId];
-                categoryUploadResults[catId] = (catData?.portfolioImages || []).filter(u => u.startsWith('http'));
-                if (catData?.portfolioFiles?.length) {
-                    let count = 0;
-                    for (let i = 0; i < catData.portfolioFiles.length; i++) {
-                        const file = catData.portfolioFiles[i];
-                        const previewUrl = catData.portfolioImages[i];
-                        const task = (async () => {
-                            try {
-                                const path = `portfolio/${user.uid}/${catId}/${Date.now()}_${Math.random().toString(36).slice(2)}.jpg`;
-                                const res = await safeUploadBlob(ref(storage, path), file, { contentType: 'image/jpeg' });
-                                const url = await getDownloadURL(res.ref);
-                                categoryUploadResults[catId].push(url);
-                                count++;
-                                setSubmittingStatus(`Uploading media... (${count}/${catData.portfolioFiles?.length || 0})`);
-                            } catch (e) {
-                                // Don't fall back to base64 — it will exceed Firestore's 1MB doc limit
-                                console.warn(`Portfolio upload failed for ${catId}, skipping:`, e);
-                            }
-                        })();
-                        uploadPromisesByCat.push(Promise.race([
-                            task,
-                            new Promise((_, reject) => setTimeout(() => reject(new Error("TIMEOUT")), 60000))
-                        ]).catch((err) => {
-                            // Timeout or other error — skip this image, do NOT store base64
-                            console.warn(`Portfolio image upload timed out for ${catId}:`, err);
-                        }) as Promise<void>);
-                    }
-                }
-            }
-
-            const [_, uploadedAvatarUrl, uploadedTourGuideUrl] = await Promise.all([
-                Promise.all(uploadPromisesByCat),
-                avatarPromise,
-                tourGuidePromise
-            ]);
-
-            if (uploadedAvatarUrl) finalAvatarUrl = uploadedAvatarUrl;
-            const finalTourGuideUrl = uploadedTourGuideUrl;
-
-            const finalCategoryEntries = initialEntries.map(entry => ({
-                ...entry,
-                // Only persist confirmed Storage URLs — never base64 (would exceed Firestore 1MB limit)
-                portfolioImages: (categoryUploadResults[entry.categoryId] || []).filter(u => u.startsWith('http'))
-            }));
-            const allPortfolioUrls = Array.from(new Set(
-                Object.values(categoryUploadResults).flat().filter(u => u.startsWith('http'))
-            ));
+            const hasPendingTourGuideUpload = !!(tourGuideAuthorizationFile && selectedSubServices.some(id => id.includes('tour_guide')));
 
             // 3. Firestore Saves
             setSubmittingStatus("Saving profile...");
@@ -630,6 +572,62 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                 }
             }
             const existingBricoler = bSnap.exists() ? bSnap.data() : null;
+            const googlePhotoURL = user.photoURL || existingBricoler?.googlePhotoURL || '';
+            let finalTourGuideUrl =
+                tourGuideAuthorizationUrl ||
+                existingBricoler?.tourGuideAuthorizationUrl ||
+                localUserData?.tourGuideAuthorizationUrl ||
+                null;
+            const hasPendingProfileUpload = isImageDataUrl(profilePhotoUrl);
+            const hasPendingServiceUploads = initialEntries.some((entry) => entryHasPendingImageUploads(entry));
+            let finalProfilePhotoUrl = !hasPendingProfileUpload ? profilePhotoUrl : '';
+            let finalCategoryEntries = stripPendingImagesFromEntries(initialEntries);
+
+            if (hasPendingProfileUpload || hasPendingServiceUploads || hasPendingTourGuideUpload) {
+                setSubmittingStatus("Uploading media...");
+                try {
+                    await auth.currentUser?.getIdToken(true);
+                } catch (tokenError) {
+                    console.warn("Token warmup before media upload failed:", tokenError);
+                }
+            }
+
+            if (hasPendingProfileUpload) {
+                const uploadedProfile = await withTimeout(resolveProfilePhoto(user.uid, profilePhotoUrl), 30000, 'PROFILE_UPLOAD');
+                if (!uploadedProfile) {
+                    throw new Error('PROFILE_UPLOAD_FAILED');
+                }
+                finalProfilePhotoUrl = uploadedProfile;
+            }
+
+            if (hasPendingServiceUploads) {
+                finalCategoryEntries = await withTimeout(
+                    attachUploadedImagesToEntries(user.uid, initialEntries),
+                    45000,
+                    'PORTFOLIO_UPLOAD'
+                );
+
+                const uploadedCount = finalCategoryEntries
+                    .flatMap((entry) => normalizeImageList(entry.portfolioImages))
+                    .filter((img) => !isImageDataUrl(img)).length;
+
+                if (uploadedCount === 0) {
+                    throw new Error('PORTFOLIO_UPLOAD_FAILED');
+                }
+            }
+
+            if (hasPendingTourGuideUpload && tourGuideAuthorizationFile) {
+                const path = `verifications/${user.uid}/${Date.now()}_tour_guide_auth`;
+                const uploadRes = await withTimeout(
+                    safeUploadBlob(ref(storage, path), tourGuideAuthorizationFile),
+                    45000,
+                    'TOUR_GUIDE_UPLOAD'
+                );
+                finalTourGuideUrl = await withTimeout(getDownloadURL(uploadRes.ref), 15000, 'TOUR_GUIDE_URL');
+            }
+
+            finalProfilePhotoUrl = finalProfilePhotoUrl || existingBricoler?.profilePhotoURL || existingBricoler?.avatar || existingBricoler?.photoURL || googlePhotoURL || '';
+            const allPortfolioUrls = Array.from(new Set(finalCategoryEntries.flatMap((entry) => normalizeImageList(entry.portfolioImages))));
 
             const cleanObj = (obj: any) => {
                 const newObj: any = {};
@@ -642,8 +640,10 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                 name: (fullName || user.displayName || "Bricoler").trim(),
                 displayName: (fullName || user.displayName || "Bricoler").trim(),
                 email: user.email || "",
-                photoURL: finalAvatarUrl || user.photoURL || "",
-                avatar: finalAvatarUrl || user.photoURL || "",
+                photoURL: existingBricoler?.photoURL || googlePhotoURL || finalProfilePhotoUrl || "",
+                avatar: finalProfilePhotoUrl || existingBricoler?.avatar || googlePhotoURL || "",
+                profilePhotoURL: finalProfilePhotoUrl || "",
+                googlePhotoURL: googlePhotoURL || "",
                 whatsappNumber: (whatsappNumber || '').trim(),
                 phone: (whatsappNumber || '').trim(),
                 bankName: (bankName || '').trim(),
@@ -681,7 +681,7 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                         uid: user.uid,
                         name: bricolerData.name,
                         email: bricolerData.email,
-                        photoURL: bricolerData.photoURL,
+                        photoURL: bricolerData.profilePhotoURL || bricolerData.avatar || bricolerData.photoURL || "",
                         whatsappNumber: bricolerData.whatsappNumber,
                         createdAt: cSnap.exists() ? cSnap.data().createdAt : serverTimestamp(),
                         isBricoler: true
@@ -691,16 +691,23 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
             ]);
 
             if (selectedCity) {
-                const cityRef = doc(db, 'city_services', selectedCity);
-                const citySnap = await getDoc(cityRef);
-                const svcIds = [...new Set(finalCategoryEntries.map(e => e.categoryId))];
-                if (!citySnap.exists()) {
-                    await setDoc(cityRef, { active_services: svcIds, work_areas: selectedAreas, total_pros: 1, lastUpdated: serverTimestamp() });
-                } else {
-                    const data = citySnap.data();
-                    const updated = [...new Set([...(data.active_services || []), ...svcIds])];
-                    await updateDoc(cityRef, { active_services: updated, total_pros: (data.total_pros || 0) + 1, lastUpdated: serverTimestamp() });
-                }
+                await Promise.race([
+                    (async () => {
+                        const cityRef = doc(db, 'city_services', selectedCity);
+                        const citySnap = await getDoc(cityRef);
+                        const svcIds = [...new Set(finalCategoryEntries.map(e => e.categoryId))];
+                        if (!citySnap.exists()) {
+                            await setDoc(cityRef, { active_services: svcIds, work_areas: selectedAreas, total_pros: 1, lastUpdated: serverTimestamp() });
+                        } else {
+                            const data = citySnap.data();
+                            const updated = [...new Set([...(data.active_services || []), ...svcIds])];
+                            await updateDoc(cityRef, { active_services: updated, total_pros: (data.total_pros || 0) + 1, lastUpdated: serverTimestamp() });
+                        }
+                    })(),
+                    new Promise((_, reject) => setTimeout(() => reject(new Error("CITY_UPDATE_TIMEOUT")), 12000))
+                ]).catch((error) => {
+                    console.warn("City service index update skipped:", error);
+                });
             }
 
             setSubmittingStatus("Complete!");
@@ -718,6 +725,14 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                 // Show the actual error to help the bricoler understand what went wrong
                 const friendlyMsg = error.code === 'permission-denied'
                     ? t({ en: 'Permission error. Please try again in a few seconds.', fr: 'Erreur de permission. Veuillez réessayer dans quelques secondes.', ar: 'خطأ في الصلاحيات. يرجى المحاولة مجدداً بعد لحظات.' })
+                    : String(error?.message || '').includes('PORTFOLIO_UPLOAD_FAILED')
+                        ? t({ en: 'Portfolio photo upload failed. Please check connection and retry.', fr: 'Échec du téléversement des photos de réalisations. Vérifiez la connexion et réessayez.', ar: 'فشل رفع صور الأعمال. تحقق من الاتصال وأعد المحاولة.' })
+                        : String(error?.message || '').includes('PROFILE_UPLOAD_FAILED')
+                            ? t({ en: 'Profile photo upload failed. Please retry.', fr: 'Échec du téléversement de la photo de profil. Veuillez réessayer.', ar: 'فشل رفع صورة الملف الشخصي. يرجى المحاولة مجدداً.' })
+                        : String(error?.message || '').includes('IMAGE_UPLOAD_TIMEOUT') || String(error?.message || '').includes('IMAGE_UPLOAD_FAILED')
+                            ? t({ en: 'Image upload timed out. Please retry with a stable connection.', fr: 'Le téléversement des images a expiré. Réessayez avec une connexion stable.', ar: 'انتهت مهلة رفع الصور. أعد المحاولة مع اتصال مستقر.' })
+                            : String(error?.message || '').includes('DOWNLOAD_URL_TIMEOUT') || String(error?.message || '').includes('BLOB_CONVERSION_TIMEOUT')
+                                ? t({ en: 'Image processing took too long. Please retry.', fr: 'Le traitement des images a pris trop de temps. Veuillez réessayer.', ar: 'استغرقت معالجة الصور وقتاً طويلاً. يرجى المحاولة مجدداً.' })
                     : error.code === 'FIRESTORE_TIMEOUT' || error.message === 'FIRESTORE_TIMEOUT'
                         ? t({ en: 'Connection timed out. Please check your internet and try again.', fr: 'Délai de connexion dépassé. Vérifiez votre réseau et réessayez.', ar: 'انتهت مهلة الاتصال. يرجى التحقق من الإنترنت والمحاولة مجدداً.' })
                         : msg;
@@ -729,7 +744,12 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
             }
             setSubmittingStatus(null);
         } finally {
-            setIsSubmitting(false);
+            if (submitWatchdog) {
+                clearTimeout(submitWatchdog);
+            }
+            if (!watchdogTriggered) {
+                setIsSubmitting(false);
+            }
         }
     };
 
@@ -756,48 +776,11 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                     experience: e?.experience || "",
                     equipments: e?.noEquipment ? [] : (e?.equipments || []),
                     noEquipment: e?.noEquipment || false,
-                    portfolioImages: e?.portfolioImages || [] as string[],
+                    portfolioImages: normalizeImageList(e?.portfolioImages || []),
                 };
             });
 
             setSubmittingStatus("Uploading media...");
-            const categoryUploadResults: Record<string, string[]> = {};
-            const uploadPromises: Promise<any>[] = [];
-
-            for (const catId of Array.from(new Set(entries.map(e => e.categoryId)))) {
-                const catData = categoryEntries[catId];
-                categoryUploadResults[catId] = (catData?.portfolioImages || []).filter(u => u.startsWith('http'));
-                if (catData?.portfolioFiles?.length) {
-                    for (let i = 0; i < catData.portfolioFiles.length; i++) {
-                        const file = catData.portfolioFiles[i];
-                        const previewUrl = catData.portfolioImages[i];
-                        const task = (async () => {
-                            const path = `portfolio/${metaId}/${catId}/${Date.now()}_${Math.random().toString(36).slice(2)}.jpg`;
-                            try {
-                                const arrayBuffer = await file.arrayBuffer();
-                                const res = await uploadBytes(ref(storage, path), arrayBuffer, { contentType: 'image/jpeg' });
-                                categoryUploadResults[catId].push(await getDownloadURL(res.ref));
-                            } catch (e) {
-                                // Don't fall back to base64 — skip failed images
-                                console.warn(`Admin portfolio upload failed for ${catId}, skipping:`, e);
-                            }
-                        })();
-                        uploadPromises.push(Promise.race([task, new Promise((_, reject) => setTimeout(() => reject(new Error("TIMEOUT")), 60000))]).catch((e) => {
-                            console.warn(`Admin portfolio timed out for ${catId}:`, e);
-                        }));
-                    }
-                }
-            }
-
-            let finalAvatarUrl = userData?.photoURL || '';
-            if (profileImageFile) {
-                const task = (async () => {
-                    const arrayBuffer = await profileImageFile.arrayBuffer();
-                    const res = await uploadBytes(ref(storage, `avatars/${metaId}/${Date.now()}_profile.jpg`), arrayBuffer, { contentType: 'image/jpeg' });
-                    finalAvatarUrl = await getDownloadURL(res.ref);
-                })();
-                uploadPromises.push(Promise.race([task, new Promise((_, reject) => setTimeout(() => reject(new Error("TIMEOUT")), 60000))]).catch(console.warn));
-            }
 
             let finalTourGuideAuthUrl = tourGuideAuthorizationUrl || null;
             if (tourGuideAuthorizationFile) {
@@ -806,16 +789,20 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                     const res = await uploadBytes(ref(storage, `verifications/${metaId}/${Date.now()}_tour_guide_auth`), arrayBuffer);
                     finalTourGuideAuthUrl = await getDownloadURL(res.ref);
                 })();
-                uploadPromises.push(Promise.race([task, new Promise((_, reject) => setTimeout(() => reject(new Error("TIMEOUT")), 60000))]).catch(console.warn));
+                await Promise.race([task, new Promise((_, reject) => setTimeout(() => reject(new Error("TIMEOUT")), 120000))]).catch(console.warn);
             }
 
-            await Promise.all(uploadPromises);
-
-            const finalAdminEntries = entries.map(e => ({
-                ...e,
-                portfolioImages: categoryUploadResults[e.categoryId] || []
-            }));
-            const allAdminPortfolioUrls = Array.from(new Set(Object.values(categoryUploadResults).flat()));
+            try {
+                await auth.currentUser?.getIdToken(true);
+                await wait(500);
+            } catch (tokenError) {
+                console.warn("Token warmup before admin media upload failed:", tokenError);
+            }
+            const finalProfilePhotoUrl = await resolveProfilePhoto(metaId, profilePhotoUrl);
+            const finalAvatarUrl = finalProfilePhotoUrl || userData?.profilePhotoURL || userData?.avatar || userData?.photoURL || '';
+            const googlePhotoURL = userData?.googlePhotoURL || userData?.photoURL || '';
+            const finalizedEntries = await attachUploadedImagesToEntries(metaId, entries);
+            const allAdminPortfolioUrls = Array.from(new Set(finalizedEntries.flatMap((entry) => normalizeImageList(entry.portfolioImages))));
 
             const cleanObj = (obj: any) => {
                 const newObj: any = {};
@@ -828,13 +815,15 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                 name: (fullName || "Bricoler").trim(),
                 displayName: (fullName || "Bricoler").trim(),
                 avatar: finalAvatarUrl,
-                photoURL: finalAvatarUrl,
+                photoURL: userData?.photoURL || googlePhotoURL || finalAvatarUrl,
+                profilePhotoURL: finalAvatarUrl,
+                googlePhotoURL,
                 whatsappNumber: (whatsappNumber || '').trim(),
                 phone: (whatsappNumber || '').trim(),
                 bankName: (bankName || '').trim(),
                 bricolerBankCardName: (bricolerBankCardName || '').trim(),
                 ribIBAN: (ribIBAN || '').trim(),
-                services: finalAdminEntries,
+                services: finalizedEntries,
                 portfolio: allAdminPortfolioUrls,
                 images: allAdminPortfolioUrls,
                 city: selectedCity,
@@ -887,58 +876,11 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                     experience: e?.experience || "",
                     equipments: e?.noEquipment ? [] : (e?.equipments || []),
                     noEquipment: e?.noEquipment || false,
-                    portfolioImages: e?.portfolioImages || [] as string[],
+                    portfolioImages: normalizeImageList(e?.portfolioImages || []),
                 };
             });
 
             setSubmittingStatus("Uploading media...");
-            const categoryUploadResults: Record<string, string[]> = {};
-            const uploadPromises: Promise<any>[] = [];
-
-            for (const catId of Array.from(new Set(currentEntries.map(e => e.categoryId)))) {
-                const catData = categoryEntries[catId];
-                categoryUploadResults[catId] = (catData?.portfolioImages || []).filter(u => u.startsWith('http'));
-                if (catData?.portfolioFiles?.length) {
-                    for (let i = 0; i < catData.portfolioFiles.length; i++) {
-                        const file = catData.portfolioFiles[i];
-                        const previewUrl = catData.portfolioImages[i];
-                        const task = (async () => {
-                            const path = `portfolio/${user.uid}/${catId}/${Date.now()}_${Math.random().toString(36).slice(2)}.jpg`;
-                            try {
-                                const res = await safeUploadBlob(ref(storage, path), file, { contentType: 'image/jpeg' });
-                                categoryUploadResults[catId].push(await getDownloadURL(res.ref));
-                            } catch (e) {
-                                // Don't fall back to base64
-                                console.warn(`Portfolio upload failed for ${catId}, skipping image:`, e);
-                            }
-                        })();
-                        uploadPromises.push(Promise.race([
-                            task,
-                            new Promise((_, reject) => setTimeout(() => reject(new Error("TIMEOUT")), 60000))
-                        ]).catch((err) => {
-                            // Timeout happened — do not store base64
-                            console.warn(`Portfolio image update timed out for ${catId}, skipping image:`, err);
-                        }));
-                    }
-                }
-            }
-
-            let finalAvatarUrl = user.photoURL || '';
-            if (profileImageFile) {
-                const task = (async () => {
-                    const res = await safeUploadBlob(ref(storage, `avatars/${user.uid}/${Date.now()}_profile.jpg`), profileImageFile, { contentType: 'image/jpeg' });
-                    finalAvatarUrl = await getDownloadURL(res.ref);
-                    try { await updateProfile(user, { photoURL: finalAvatarUrl }); } catch (e) { }
-                    return finalAvatarUrl;
-                })();
-                uploadPromises.push(Promise.race([
-                    task,
-                    new Promise((_, reject) => setTimeout(() => reject(new Error("TIMEOUT")), 60000))
-                ]).catch((err) => {
-                    console.warn("Avatar update timed out or failed:", err);
-                    return user.photoURL || '';
-                }));
-            }
 
             let finalTourGuideAuthUrl = tourGuideAuthorizationUrl || null;
             if (tourGuideAuthorizationFile) {
@@ -947,38 +889,39 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                     finalTourGuideAuthUrl = await getDownloadURL(res.ref);
                     return finalTourGuideAuthUrl;
                 })();
-                uploadPromises.push(Promise.race([
+                await Promise.race([
                     task,
-                    new Promise((_, reject) => setTimeout(() => reject(new Error("TIMEOUT")), 60000))
+                    new Promise((_, reject) => setTimeout(() => reject(new Error("TIMEOUT")), 120000))
                 ]).catch((err) => {
                     console.warn("Tour guide auth update timed out or failed:", err);
                     return tourGuideAuthorizationUrl || null;
-                }));
+                });
             }
-
-            const results = await Promise.all(uploadPromises);
-            // Index management since we might have avatar, tour guide, and portfolio
-            // Let's just use the state variables we updated inside the tasks or results
-            const avatarRes = profileImageFile ? (results.find(r => typeof r === 'string' && r.includes('avatars')) || finalAvatarUrl) : finalAvatarUrl;
-            const tourRes = tourGuideAuthorizationFile ? (results.find(r => typeof r === 'string' && r.includes('verifications')) || finalTourGuideAuthUrl) : finalTourGuideAuthUrl;
-
-            const finalCategoryEntries = currentEntries.map(e => ({
-                id: `${e.categoryId}_${e.subServiceId}`,
-                ...e,
-                // Only persist confirmed Storage URLs — never base64 (would exceed Firestore 1MB limit)
-                portfolioImages: (categoryUploadResults[e.categoryId] || []).filter(u => u.startsWith('http'))
-            }));
 
             const bricolerRef = doc(db, 'bricolers', user.uid);
             const bSnap = await getDoc(bricolerRef);
-            let updatedServices = finalCategoryEntries;
+            const existingData = bSnap.exists() ? bSnap.data() : {};
+            try {
+                await auth.currentUser?.getIdToken(true);
+                await wait(500);
+            } catch (tokenError) {
+                console.warn("Token warmup before update media upload failed:", tokenError);
+            }
+            const finalizedCurrentEntries = await attachUploadedImagesToEntries(user.uid, currentEntries);
+            let updatedServices = finalizedCurrentEntries;
             if (bSnap.exists()) {
-                const existing = bSnap.data().services || [];
-                const others = existing.filter((s: any) => !Array.from(new Set(currentEntries.map(e => e.categoryId))).includes(s.categoryId));
-                updatedServices = [...others, ...finalCategoryEntries];
+                const existing = existingData.services || [];
+                const currentCategoryIds = Array.from(new Set(finalizedCurrentEntries.map(e => e.categoryId)));
+                const others = existing.filter((s: any) => !currentCategoryIds.includes(s.categoryId));
+                updatedServices = [...others, ...finalizedCurrentEntries];
             }
 
-            const allPortfolioUrls = Array.from(new Set(Object.values(categoryUploadResults).flat()));
+            const allPortfolioUrls = Array.from(new Set(
+                updatedServices.flatMap((entry: any) => normalizeImageList(entry.portfolioImages || entry.portfolio || entry.images || []))
+            ));
+            const googlePhotoURL = user.photoURL || existingData.googlePhotoURL || '';
+            const uploadedProfilePhotoUrl = await resolveProfilePhoto(user.uid, profilePhotoUrl);
+            const finalProfilePhotoUrl = uploadedProfilePhotoUrl || existingData.profilePhotoURL || existingData.avatar || existingData.photoURL || googlePhotoURL || '';
 
             const updateData = {
                 services: updatedServices,
@@ -986,14 +929,16 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                 images: allPortfolioUrls,
                 updatedAt: serverTimestamp(),
                 isActive: true,
-                photoURL: avatarRes,
-                avatar: avatarRes,
-                tourGuideAuthorizationUrl: tourRes
+                photoURL: existingData.photoURL || googlePhotoURL || finalProfilePhotoUrl,
+                avatar: finalProfilePhotoUrl,
+                profilePhotoURL: finalProfilePhotoUrl,
+                googlePhotoURL,
+                tourGuideAuthorizationUrl: finalTourGuideAuthUrl
             };
             await setDoc(bricolerRef, updateData, { merge: true });
             await setDoc(doc(db, 'clients', user.uid), {
                 isBricoler: true,
-                photoURL: avatarRes
+                photoURL: finalProfilePhotoUrl || updateData.photoURL || ""
             }, { merge: true });
 
             showToast({ title: t({ en: 'Successfully updated!', fr: 'Mis à jour avec succès !' }), variant: 'success' });
@@ -1060,7 +1005,7 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                         experience: '',
                         equipments: [],
                         noEquipment: NO_EQUIPMENT_SERVICES.includes(catId),
-                        portfolioImages: [] as string[],
+                        portfolioImages: [],
                     }
                 }));
             }
@@ -1087,71 +1032,216 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
         updateCatEntry(id, 'equipments', entry.equipments.filter(e => e !== eq));
     };
 
-    // ── Profile image ────────────────────────────────────────────────────────
-    const handleProfileImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (!file) return;
+    const withTimeout = async <T,>(promise: Promise<T>, timeoutMs: number, label: string): Promise<T> => {
+        return await Promise.race([
+            promise,
+            new Promise<T>((_, reject) => {
+                setTimeout(() => reject(new Error(`${label}_TIMEOUT`)), timeoutMs);
+            })
+        ]);
+    };
 
-        // Show preview immediately for better UX
-        const reader = new FileReader();
-        reader.onload = ev => setProfileImagePreview(ev.target?.result as string);
-        reader.readAsDataURL(file);
+    const wait = async (ms: number) => {
+        await new Promise((resolve) => setTimeout(resolve, ms));
+    };
 
+    const isRetryableStorageError = (error: any): boolean => {
+        const code = String(error?.code || '').toLowerCase();
+        const message = String(error?.message || '').toLowerCase();
+        return (
+            code.includes('storage/unauthorized') ||
+            code.includes('storage/unauthenticated') ||
+            code.includes('storage/retry-limit-exceeded') ||
+            code.includes('permission-denied') ||
+            message.includes('timeout') ||
+            message.includes('network') ||
+            message.includes('permission') ||
+            message.includes('unauthorized')
+        );
+    };
+
+    const uploadDataUrlToStorage = async (path: string, dataUrl: string): Promise<string> => {
+        const maxAttempts = 2;
+        for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+            try {
+                const uploadRes = await withTimeout(
+                    uploadString(ref(storage, path), dataUrl, 'data_url'),
+                    45000,
+                    'IMAGE_UPLOAD'
+                );
+                return await withTimeout(getDownloadURL(uploadRes.ref), 20000, 'DOWNLOAD_URL');
+            } catch (error) {
+                if (attempt < maxAttempts && isRetryableStorageError(error)) {
+                    try {
+                        await auth.currentUser?.getIdToken(true);
+                    } catch (tokenError) {
+                        console.warn("Token refresh failed before upload retry:", tokenError);
+                    }
+                    await wait(1200 * attempt);
+                    continue;
+                }
+                throw error;
+            }
+        }
+        throw new Error('IMAGE_UPLOAD_FAILED');
+    };
+
+    const resolveServiceImagesForCategory = async (ownerId: string, categoryId: string, images: string[]): Promise<string[]> => {
+        const normalized = normalizeImageList(images).slice(0, 6);
+        const safeCategoryId = (categoryId || '').trim() || 'general';
+        const resolved = await Promise.all(
+            normalized.map(async (image, i) => {
+                if (!isImageDataUrl(image)) {
+                    return image;
+                }
+                try {
+                    const path = `portfolio/${ownerId}/${safeCategoryId}/${Date.now()}_${i}.jpg`;
+                    return await uploadDataUrlToStorage(path, image);
+                } catch (error) {
+                    console.warn(`Skipping failed service image upload (${safeCategoryId} #${i + 1}):`, error);
+                    return null;
+                }
+            })
+        );
+
+        return Array.from(new Set(resolved.filter((item): item is string => typeof item === 'string' && item.trim().length > 0)));
+    };
+
+    const resolveProfilePhoto = async (ownerId: string, value: string): Promise<string> => {
+        if (!value) return '';
+        if (!isImageDataUrl(value)) return value;
         try {
-            // Compress in background
-            const compressedBlob = await compressImage(file);
-            // Upload Blob directly instead of wrapping in File for better Safari support
-            setProfileImageFile(compressedBlob);
-        } catch (err) {
-            console.error("Profile image compression failed:", err);
-            setProfileImageFile(file); // Fallback to original
+            const path = `avatars/${ownerId}/${Date.now()}_profile.jpg`;
+            return await uploadDataUrlToStorage(path, value);
+        } catch (error) {
+            console.warn("Skipping failed profile photo upload:", error);
+            return '';
         }
     };
 
+    const normalizeCategoryKey = (value?: string): string => {
+        return (value || '').trim() || 'general';
+    };
 
-    // ── Image Compression ───────────────────────────────────────────────────
-    const compressImage = (file: File): Promise<Blob> => {
-        return new Promise((resolve, reject) => {
-            const timeout = setTimeout(() => reject(new Error("Compression timeout")), 15000);
-            const reader = new FileReader();
-            reader.readAsDataURL(file);
-            reader.onload = (event) => {
-                const img = new Image();
-                img.src = event.target?.result as string;
-                img.onload = () => {
-                    const canvas = document.createElement('canvas');
-                    let width = img.width;
-                    let height = img.height;
-                    const maxDim = 800; // Smaller for faster uploads
-                    if (width > height) {
-                        if (width > maxDim) { height = Math.round((height * maxDim) / width); width = maxDim; }
-                    } else {
-                        if (height > maxDim) { width = Math.round((width * maxDim) / height); height = maxDim; }
-                    }
-                    canvas.width = width;
-                    canvas.height = height;
-                    const ctx = canvas.getContext('2d');
-                    ctx?.drawImage(img, 0, 0, width, height);
-                    canvas.toBlob((blob) => {
-                        clearTimeout(timeout);
-                        if (blob) {
-                            console.log(`Compressed ${file.name}: ${(file.size / 1024).toFixed(1)}KB -> ${(blob.size / 1024).toFixed(1)}KB`);
-                            resolve(blob);
-                        } else {
-                            reject(new Error('Canvas toBlob failed'));
-                        }
-                    }, 'image/jpeg', 0.7); // 0.7 quality for even smaller size
-                };
-                img.onerror = (err) => { clearTimeout(timeout); reject(err); };
+    const attachUploadedImagesToEntries = async (ownerId: string, entries: any[]): Promise<any[]> => {
+        const categoryIds = Array.from(new Set(entries.map((entry) => normalizeCategoryKey(entry?.categoryId))));
+        const uploadedByCategory = new Map<string, string[]>();
+
+        await Promise.all(categoryIds.map(async (categoryId) => {
+            const sourceEntry = entries.find((entry) => normalizeCategoryKey(entry?.categoryId) === categoryId);
+            const sourceImages = normalizeImageList(
+                sourceEntry?.portfolioImages || sourceEntry?.portfolio || sourceEntry?.images || []
+            );
+            const uploadedCategoryImages = await resolveServiceImagesForCategory(ownerId, categoryId, sourceImages);
+            uploadedByCategory.set(categoryId, uploadedCategoryImages);
+        }));
+
+        return entries.map((entry) => {
+            const categoryId = normalizeCategoryKey(entry?.categoryId);
+            const uploadedCategoryImages = uploadedByCategory.get(categoryId) || [];
+            return {
+                ...entry,
+                categoryId,
+                portfolioImages: uploadedCategoryImages,
+                portfolio: uploadedCategoryImages,
+                images: uploadedCategoryImages,
             };
-            reader.onerror = (err) => { clearTimeout(timeout); reject(err); };
         });
+    };
+
+    const entryHasPendingImageUploads = (entry: any): boolean => {
+        const images = normalizeImageList(entry?.portfolioImages || entry?.portfolio || entry?.images || []);
+        return images.some((img) => isImageDataUrl(img));
+    };
+
+    const stripPendingImagesFromEntries = (entries: any[]): any[] => {
+        return entries.map((entry) => {
+            const persistedImages = normalizeImageList(entry?.portfolioImages || entry?.portfolio || entry?.images || [])
+                .filter((img) => !isImageDataUrl(img));
+            return {
+                ...entry,
+                categoryId: normalizeCategoryKey(entry?.categoryId),
+                portfolioImages: persistedImages,
+                portfolio: persistedImages,
+                images: persistedImages,
+            };
+        });
+    };
+
+    const handlePortfolioSelection = async (categoryId: string, files: FileList | null) => {
+        if (!files || files.length === 0) return;
+        try {
+            setIsProcessingPortfolioImages(true);
+            const current = categoryEntries[categoryId];
+            const existing = normalizeImageList(current?.portfolioImages || []);
+            const remainingSlots = Math.max(0, 6 - existing.length);
+            if (remainingSlots === 0) {
+                showToast({
+                    variant: 'error',
+                    title: t({ en: 'Maximum reached', fr: 'Maximum atteint', ar: 'تم بلوغ الحد الأقصى' }),
+                    description: t({ en: 'You can upload up to 6 photos per service.', fr: 'Vous pouvez téléverser jusqu’à 6 photos par service.', ar: 'يمكنك رفع 6 صور كحد أقصى لكل خدمة.' })
+                });
+                return;
+            }
+
+            const selected = Array.from(files).slice(0, remainingSlots);
+            const compressedImages = await Promise.all(
+                selected.map((file) => compressImageFileToDataUrl(file, {
+                    maxWidth: 1600,
+                    maxHeight: 1600,
+                    quality: 0.72,
+                    mimeType: 'image/jpeg',
+                }))
+            );
+            updateCatEntry(categoryId, 'portfolioImages', [...existing, ...compressedImages]);
+        } catch (error) {
+            console.error("Failed to process portfolio images:", error);
+            showToast({
+                variant: 'error',
+                title: t({ en: 'Upload failed', fr: 'Échec du téléversement', ar: 'فشل الرفع' }),
+                description: t({ en: 'Could not process selected images.', fr: 'Impossible de traiter les images sélectionnées.', ar: 'تعذر معالجة الصور المحددة.' })
+            });
+        } finally {
+            setIsProcessingPortfolioImages(false);
+        }
+    };
+
+    const removePortfolioImage = (categoryId: string, imageIndex: number) => {
+        const entry = categoryEntries[categoryId];
+        if (!entry) return;
+        const next = entry.portfolioImages.filter((_, idx) => idx !== imageIndex);
+        updateCatEntry(categoryId, 'portfolioImages', next);
+    };
+
+    const handleProfilePhotoSelection = async (files: FileList | null) => {
+        if (!files || files.length === 0) return;
+        const file = files[0];
+        try {
+            setIsProcessingProfilePhoto(true);
+            const compressed = await compressImageFileToDataUrl(file, {
+                maxWidth: 1000,
+                maxHeight: 1000,
+                quality: 0.78,
+                mimeType: 'image/jpeg',
+            });
+            setProfilePhotoUrl(compressed);
+        } catch (error) {
+            console.error("Failed to process profile photo:", error);
+            showToast({
+                variant: 'error',
+                title: t({ en: 'Upload failed', fr: 'Échec du téléversement', ar: 'فشل الرفع' }),
+                description: t({ en: 'Could not process selected profile photo.', fr: 'Impossible de traiter la photo de profil sélectionnée.', ar: 'تعذر معالجة صورة الملف الشخصي المحددة.' })
+            });
+        } finally {
+            setIsProcessingProfilePhoto(false);
+        }
     };
 
     if (!isOpen) return null;
 
     const isLastCat = currentCatIdx === selectedCategoryIds.length - 1;
     const pitchLen = currentCatEntry?.pitch?.trim().length || 0;
+    const currentProfileAvatar = profilePhotoUrl || userData?.profilePhotoURL || userData?.avatar || userData?.photoURL || auth.currentUser?.photoURL || "/Images/Vectors Illu/LbricolFaceOY.webp";
 
     return (
         <>
@@ -1160,6 +1250,7 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                 {isSubmitting && (
                     <SplashScreen
                         key="onboarding-splash-indicator"
+                        subStatus={submittingStatus}
                     />
                 )}
             </AnimatePresence>
@@ -1852,65 +1943,55 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                                                         )}
                                                     />
 
-                                                    {/* 5. Past Work Photos — optional */}
                                                     <div className="space-y-3 pt-2">
-                                                        <label className="text-[14px] font-bold text-neutral-900 flex items-center gap-2">
-                                                            <div className="w-6 h-6 rounded-full bg-[#00A082] text-white flex items-center justify-center text-[10px] font-black">5</div>
-                                                            {t({ en: 'Past Work Photos', fr: 'Photos de travaux passés', ar: 'صور لأعمال سابقة' })}
-                                                            <span className="text-[11px] font-bold text-neutral-400">{t({ en: '(optional)', fr: '(optionnel)', ar: '(اختياري)' })}</span>
-                                                        </label>
-                                                        <p className="text-[13px] text-neutral-400 font-medium">{t({ en: 'Upload photos of your past work to showcase your expertise to clients.', fr: 'Téléversez des photos pour montrer votre expertise aux clients.', ar: 'قم بتحميل صور لأعمال سابقة لعرض خبرتك للعملاء.' })}</p>
-                                                        {(categoryEntries[currentCatId]?.portfolioImages || []).length > 0 && (
-                                                            <div className="grid grid-cols-3 gap-2">
-                                                                {(categoryEntries[currentCatId]?.portfolioImages || []).map((src, i) => (
-                                                                    <div key={i} className="relative aspect-square rounded-[12px] overflow-hidden bg-neutral-100">
-                                                                        <img src={src} alt="" className="w-full h-full object-cover" />
-                                                                        <button
-                                                                            onClick={() => {
-                                                                                const imgs = [...(categoryEntries[currentCatId]?.portfolioImages || [])];
-                                                                                imgs.splice(i, 1);
-                                                                                updateCatEntry(currentCatId, 'portfolioImages', imgs);
-                                                                            }}
-                                                                            className="absolute top-1 right-1 w-6 h-6 bg-black/50 rounded-full flex items-center justify-center"
-                                                                        ><X size={12} className="text-white" /></button>
-                                                                    </div>
-                                                                ))}
-                                                            </div>
-                                                        )}
-                                                        <label className="flex items-center justify-center gap-3 w-full py-5 border-2 border-dashed border-neutral-200 rounded-[16px] cursor-pointer hover:border-[#00A082] hover:bg-[#E6F6F2]/30 transition-all">
-                                                            <Upload size={20} className="text-neutral-400" />
-                                                            <span className="text-[14px] font-bold text-neutral-500">{t({ en: 'Upload photos', fr: 'Téléverser des photos', ar: 'تحميل الصور' })}</span>
-                                                            <input type="file" accept="image/*" multiple className="hidden" onChange={async (e) => {
-                                                                const files = e.target.files;
-                                                                if (!files || files.length === 0) return;
-                                                                const newFiles = Array.from(files);
-
-                                                                // 1. Prepare previews immediately
-                                                                const previewTasks = newFiles.map(file => new Promise<string>(resolve => {
-                                                                    const reader = new FileReader();
-                                                                    reader.onload = ev => resolve(ev.target?.result as string);
-                                                                    reader.readAsDataURL(file);
-                                                                }));
-                                                                const previews = await Promise.all(previewTasks);
-
-
-                                                                const existingImgs = categoryEntries[currentCatId]?.portfolioImages || [];
-                                                                updateCatEntry(currentCatId, 'portfolioImages', [...existingImgs, ...previews].slice(0, 10));
-
-                                                                // 2. Compress in background
-                                                                const compressionTasks = newFiles.map(async (file) => {
-                                                                    try {
-                                                                        return await compressImage(file);
-                                                                    } catch (err) {
-                                                                        return file; // fallback
-                                                                    }
-                                                                });
-
-                                                                const compressedFiles = await Promise.all(compressionTasks);
-                                                                const existingFiles = categoryEntries[currentCatId]?.portfolioFiles || [];
-                                                                updateCatEntry(currentCatId, 'portfolioFiles', [...existingFiles, ...compressedFiles].slice(0, 10));
-                                                            }} />
-                                                        </label>
+                                                        <div className="flex items-center justify-between">
+                                                            <h4 className="text-[15px] font-black text-neutral-900">
+                                                                {t({ en: 'Past work photos', fr: 'Photos de réalisations', ar: 'صور أعمالك السابقة' })}
+                                                            </h4>
+                                                            <span className="text-[12px] font-bold text-neutral-400">
+                                                                {(currentCatEntry?.portfolioImages || []).length}/6
+                                                            </span>
+                                                        </div>
+                                                        <p className="text-[12px] text-neutral-500">
+                                                            {t({
+                                                                en: 'Upload examples of your work. Photos are compressed before upload for fast loading.',
+                                                                fr: 'Ajoutez des exemples de vos réalisations. Les photos sont compressées pour un chargement rapide.',
+                                                                ar: 'أضف أمثلة من أعمالك. يتم ضغط الصور قبل الرفع لتسريع التحميل.'
+                                                            })}
+                                                        </p>
+                                                        <div className="grid grid-cols-3 gap-3">
+                                                            {(currentCatEntry?.portfolioImages || []).map((img, idx) => (
+                                                                <div key={`${img}-${idx}`} className="relative w-full aspect-square rounded-[14px] overflow-hidden border border-neutral-100 bg-neutral-50">
+                                                                    <img src={img} alt={`Portfolio ${idx + 1}`} className="w-full h-full object-cover" />
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => removePortfolioImage(currentCatId, idx)}
+                                                                        className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-black/65 text-white flex items-center justify-center"
+                                                                    >
+                                                                        <X size={14} />
+                                                                    </button>
+                                                                </div>
+                                                            ))}
+                                                            {(currentCatEntry?.portfolioImages || []).length < 6 && (
+                                                                <label className="w-full aspect-square rounded-[14px] border-2 border-dashed border-neutral-200 hover:border-[#00A082]/50 bg-neutral-50 flex flex-col items-center justify-center gap-2 text-neutral-500 cursor-pointer transition-all">
+                                                                    {isProcessingPortfolioImages ? (
+                                                                        <div className="w-5 h-5 border-2 border-neutral-300 border-t-[#00A082] rounded-full animate-spin" />
+                                                                    ) : (
+                                                                        <Upload size={18} />
+                                                                    )}
+                                                                    <span className="text-[11px] font-bold">
+                                                                        {t({ en: 'Add photo', fr: 'Ajouter', ar: 'إضافة صورة' })}
+                                                                    </span>
+                                                                    <input
+                                                                        type="file"
+                                                                        accept="image/*"
+                                                                        multiple
+                                                                        className="hidden"
+                                                                        onChange={(e) => handlePortfolioSelection(currentCatId, e.target.files)}
+                                                                    />
+                                                                </label>
+                                                            )}
+                                                        </div>
                                                     </div>
                                                 </motion.div>
                                             )}
@@ -2035,14 +2116,30 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                                             <p className="text-neutral-500 text-[15px] font-medium leading-relaxed">{t({ en: 'This is how clients see you.', fr: 'Voici comment les clients vous voient.', ar: 'هكذا يراك العملاء.' })}</p>
                                         </motion.div>
                                         <motion.div variants={itemVariants} initial="hidden" animate="show" className="flex flex-col items-center gap-4">
-                                            <label className="cursor-pointer group relative">
-                                                <div className="w-32 h-32 rounded-full bg-neutral-100 border-4 border-white overflow-hidden flex items-center justify-center group-hover:border-[#00A082] transition-all">
-                                                    {profileImagePreview ? <img src={profileImagePreview} alt="Profile" className="w-full h-full object-cover" /> : <Camera size={32} className="text-neutral-300" />}
-                                                    <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-[10px] font-black uppercase">{t({ en: 'Change', fr: 'Modifier', ar: 'تغيير' })}</div>
-                                                </div>
-                                                <div className="absolute bottom-1 right-1 w-10 h-10 bg-[#00A082] rounded-full flex items-center justify-center text-white border-[3px] border-white"><Plus size={20} strokeWidth={3} /></div>
-                                                <input type="file" accept="image/*" className="hidden" onChange={handleProfileImageChange} />
+                                            <div className="w-32 h-32 rounded-full bg-neutral-100 border-4 border-white overflow-hidden flex items-center justify-center">
+                                                <img src={currentProfileAvatar} alt="Profile" className="w-full h-full object-cover" />
+                                            </div>
+                                            <label className="inline-flex items-center gap-2 px-4 py-2 rounded-full border-2 border-dashed border-neutral-200 hover:border-[#00A082] cursor-pointer text-[13px] font-black text-neutral-700 bg-neutral-50 transition-all">
+                                                {isProcessingProfilePhoto ? (
+                                                    <div className="w-4 h-4 border-2 border-neutral-300 border-t-[#00A082] rounded-full animate-spin" />
+                                                ) : (
+                                                    <Upload size={15} />
+                                                )}
+                                                {t({ en: 'Upload profile photo', fr: 'Ajouter photo de profil', ar: 'رفع صورة الملف الشخصي' })}
+                                                <input
+                                                    type="file"
+                                                    accept="image/*"
+                                                    className="hidden"
+                                                    onChange={(e) => handleProfilePhotoSelection(e.target.files)}
+                                                />
                                             </label>
+                                            <p className="text-[12px] text-neutral-400 text-center max-w-[280px]">
+                                                {t({
+                                                    en: 'This image is used on your Bricoler profile and won’t replace your Google account photo.',
+                                                    fr: 'Cette image est utilisée sur votre profil Bricoler et ne remplace pas votre photo Google.',
+                                                    ar: 'تُستخدم هذه الصورة في ملفك كمقدم خدمة ولن تستبدل صورة حساب Google.'
+                                                })}
+                                            </p>
                                         </motion.div>
                                         <motion.div variants={itemVariants} initial="hidden" animate="show" className="space-y-6">
                                             <div className="space-y-2">
@@ -2107,7 +2204,7 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                                             <div className="absolute top-0 right-0 w-40 h-40 bg-[#00A082]/5 rounded-full -mr-20 -mt-20 blur-3xl" />
                                             <div className="flex items-center gap-4">
                                                 <div className="w-16 h-16 rounded-[12px] border-2 border-white overflow-hidden bg-white shadow-sm">
-                                                    {profileImagePreview ? <img src={profileImagePreview} alt="Profile" className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center bg-neutral-50 text-[#00A082]"><User size={28} /></div>}
+                                                    <img src={currentProfileAvatar} alt="Profile" className="w-full h-full object-cover" />
                                                 </div>
                                                 <div className="flex-1">
                                                     <div className="flex items-center gap-2">

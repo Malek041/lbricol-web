@@ -7,7 +7,7 @@ interface SplashScreenProps {
     subStatus?: string | null;
 }
 
-const SplashScreen: React.FC<SplashScreenProps> = () => {
+const SplashScreen: React.FC<SplashScreenProps> = ({ subStatus }) => {
     return (
         <motion.div
             initial={{ opacity: 1 }}
@@ -55,6 +55,22 @@ const SplashScreen: React.FC<SplashScreenProps> = () => {
                         </motion.span>
                     ))}
                 </div>
+                {subStatus ? (
+                    <motion.p
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ duration: 0.25 }}
+                        style={{
+                            color: '#0F7F71',
+                            fontSize: 'clamp(14px, 3vw, 18px)',
+                            fontWeight: 700,
+                            textAlign: 'center',
+                            maxWidth: '85vw'
+                        }}
+                    >
+                        {subStatus}
+                    </motion.p>
+                ) : null}
             </div>
         </motion.div>
     );

@@ -4,8 +4,8 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     X, ChevronLeft, ChevronRight, ChevronDown, MapPin,
-    Star, ShieldCheck, Briefcase, Camera, Upload,
-    Info, Clock, CheckCircle2, SlidersHorizontal, ArrowUpDown, Search, Check, Calendar, Trophy, FileText, Sparkles, Zap, Image as ImageIcon, Plus, Wrench, Banknote
+    Star, ShieldCheck, Briefcase, Upload,
+    Info, Clock, CheckCircle2, SlidersHorizontal, ArrowUpDown, Search, Check, Calendar, Trophy, FileText, Sparkles, Zap, Plus, Wrench, Banknote, AlertCircle
 } from 'lucide-react';
 import { auth, db, storage } from '@/lib/firebase';
 import { collection, query, where, getDocs, Timestamp, serverTimestamp, doc, getDoc } from 'firebase/firestore';
@@ -14,7 +14,9 @@ import { getServiceById, getSubServiceName, getServiceVector } from '@/config/se
 import { MOROCCAN_CITIES, MOROCCAN_CITIES_AREAS } from '@/config/moroccan_areas';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/context/LanguageContext';
+import { useToast } from '@/context/ToastContext';
 import SplashScreen from '@/components/layout/SplashScreen';
+import { compressImageFileToDataUrl, dataUrlToBlob, isImageDataUrl } from '@/lib/imageCompression';
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -58,9 +60,9 @@ export interface DraftOrder {
     selectedBricolerId: string | null;
     selectedDate: string | null;
     selectedTime: string | null;
-    uploadedImages: string[];
     paymentMethod: 'cash' | 'bank';
     bankReceipt: string | null;
+    clientNeedImages?: string[];
     frequency?: 'once' | 'daily' | 'weekly' | 'biweekly' | 'monthly';
     step: number;
     subStep1: 'location' | 'size' | 'description';
@@ -509,27 +511,6 @@ const BricolerProfileModal = ({ bricoler, isOpen, onClose, onSelect, isSelected,
                                 </div>
                             )}
 
-                            {/* Work Photos Section */}
-                            <div className="mb-8 overflow-hidden">
-                                <h4 className="text-[18px] font-black text-neutral-900 mb-4 flex items-center gap-2">
-                                    <ImageIcon size={20} className="text-neutral-400" />
-                                    {t({ en: 'Work Photos', fr: 'Photos de réalisations', ar: 'صور العمل' })}
-                                </h4>
-                                <div className="flex gap-3 overflow-x-auto no-scrollbar pb-2 pt-1 -mx-1 px-1">
-                                    {(bricoler.portfolio || []).length > 0 ? (
-                                        bricoler.portfolio?.map((url, i) => (
-                                            <div key={i} className="relative w-40 h-40 flex-shrink-0 rounded-[20px] overflow-hidden border border-neutral-100 group shadow-sm">
-                                                <img src={url} className="w-full h-full object-cover transition-transform group-hover:scale-105" alt="Work" />
-                                            </div>
-                                        ))
-                                    ) : (
-                                        <div className="w-full py-12 flex flex-col items-center justify-center bg-neutral-50 rounded-[24px] border-2 border-dashed border-neutral-200">
-                                            <ImageIcon size={32} className="text-neutral-300 mb-2" />
-                                            <p className="text-neutral-400 font-medium text-[14px]">{t({ en: 'No portfolio photos yet', fr: 'Pas encore de photos de réalisations', ar: 'لا توجد صور ملف أعمال بعد' })}</p>
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
 
 
                             {/* Recent Reviews — filtered to selected service */}
@@ -617,6 +598,7 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
     continueDraft
 }) => {
     const { t } = useLanguage();
+    const { showToast } = useToast();
     const [step, setStep] = useState(1);
     const [subStep1, setSubStep1] = useState<'location' | 'size' | 'description'>('location');
     const [descriptionDrafts, setDescriptionDrafts] = useState<string[]>([]);
@@ -631,10 +613,10 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
     const [selectedTime, setSelectedTime] = useState<string | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isMatchingAnimation, setIsMatchingAnimation] = useState(false);
-    const [uploadedImages, setUploadedImages] = useState<string[]>([]);
-    const [isImageUploading, setIsImageUploading] = useState(false);
     const [paymentMethod, setPaymentMethod] = useState<'cash' | 'bank'>('cash');
     const [bankReceipt, setBankReceipt] = useState<string | null>(null);
+    const [clientNeedImages, setClientNeedImages] = useState<string[]>([]);
+    const [isUploadingTaskImages, setIsUploadingTaskImages] = useState(false);
     const [frequency, setFrequency] = useState<'once' | 'daily' | 'weekly' | 'biweekly' | 'monthly'>('once');
     const [showSuccessAnimation, setShowSuccessAnimation] = useState(false);
 
@@ -833,9 +815,9 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                 setSelectedBricolerId(continueDraft.selectedBricolerId);
                 setSelectedDate(continueDraft.selectedDate);
                 setSelectedTime(continueDraft.selectedTime);
-                setUploadedImages(continueDraft.uploadedImages);
                 setPaymentMethod(continueDraft.paymentMethod);
                 setBankReceipt(continueDraft.bankReceipt);
+                setClientNeedImages(continueDraft.clientNeedImages || []);
                 setFrequency(continueDraft.frequency || 'once');
                 setCurrentCity(continueDraft.city);
                 setCurrentArea(continueDraft.area);
@@ -850,9 +832,9 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                 setViewedBricoler(null);
                 setSelectedDate(null);
                 setSelectedTime(null);
-                setUploadedImages([]);
                 setPaymentMethod('cash');
                 setBankReceipt(null);
+                setClientNeedImages([]);
                 setFrequency('once');
                 setIsSelectingLocation(false);
                 setCurrentCity(initialCity || '');
@@ -888,9 +870,9 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
             selectedBricolerId,
             selectedDate,
             selectedTime,
-            uploadedImages,
             paymentMethod,
             bankReceipt,
+            clientNeedImages,
             frequency,
             step,
             subStep1,
@@ -920,8 +902,7 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
     }, [
         isOpen, service, subService, currentCity, currentArea,
         taskSize, description, selectedBricolerId, selectedDate,
-        selectedTime, uploadedImages, paymentMethod, bankReceipt, frequency,
-        step, subStep1
+        step, subStep1, clientNeedImages, paymentMethod, bankReceipt, frequency, selectedTime
     ]);
 
     useEffect(() => {
@@ -986,93 +967,67 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
     };
 
     // ── Image helpers ─────────────────────────────────────────────────────────
-
-    const compressToBlob = (file: File, maxDim = 800, quality = 0.75): Promise<Blob> =>
-        new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onerror = reject;
-            reader.onload = (ev) => {
-                const img = new Image();
-                img.onerror = reject;
-                img.onload = () => {
-                    let { width, height } = img;
-                    if (width > height) {
-                        if (width > maxDim) { height = Math.round(height * maxDim / width); width = maxDim; }
-                    } else {
-                        if (height > maxDim) { width = Math.round(width * maxDim / height); height = maxDim; }
-                    }
-                    const canvas = document.createElement('canvas');
-                    canvas.width = width;
-                    canvas.height = height;
-                    canvas.getContext('2d')?.drawImage(img, 0, 0, width, height);
-                    canvas.toBlob(blob => blob ? resolve(blob) : reject(new Error('toBlob failed')), 'image/jpeg', quality);
-                };
-                img.src = ev.target?.result as string;
-            };
-            reader.readAsDataURL(file);
-        });
-
-    const uploadImageToStorage = async (file: File, path: string): Promise<string> => {
-        const blob = await compressToBlob(file);
-        const arrayBuffer = await blob.arrayBuffer();
+    const uploadImageToStorage = async (file: Blob | File, path: string) => {
         const storageRef = ref(storage, path);
-        const result = await uploadBytes(storageRef, arrayBuffer, { contentType: 'image/jpeg' });
-        return getDownloadURL(result.ref);
+        await uploadBytes(storageRef, file, { contentType: 'image/jpeg' });
+        return await getDownloadURL(storageRef);
     };
 
-    const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        const files = Array.from(e.target.files || []);
-        const remainingSlots = 4 - uploadedImages.length;
-        const toUpload = files.slice(0, remainingSlots);
-        if (toUpload.length === 0) return;
-
-        // Compress and show local previews immediately to avoid Firestore document limits (1MB) if they don't get uploaded
-        const previews = await Promise.all(toUpload.map(async file => {
-            const blob = await compressToBlob(file);
-            return new Promise<string>(resolve => {
-                const reader = new FileReader();
-                reader.onload = ev => resolve(ev.target?.result as string);
-                reader.readAsDataURL(blob);
+    const handleTaskImageSelection = async (files: FileList | null) => {
+        if (!files || files.length === 0) return;
+        const currentUser = auth.currentUser;
+        if (!currentUser) {
+            showToast({
+                variant: 'error',
+                title: t({ en: 'Login required', fr: 'Connexion requise', ar: 'تسجيل الدخول مطلوب' }),
+                description: t({ en: 'Please log in before uploading task photos.', fr: 'Veuillez vous connecter avant de téléverser des photos.', ar: 'يرجى تسجيل الدخول قبل رفع صور المهمة.' })
             });
-        }));
-        // Add compressed previews
-        setUploadedImages(prev => [...prev, ...previews].slice(0, 4));
-
-        // Upload to Firebase Storage in background and replace previews with real URLs
-        const user = auth.currentUser;
-        if (!user) {
-            console.warn('Not authenticated; order images stored as previews only.');
             return;
         }
 
-        setIsImageUploading(true);
+        const remainingSlots = Math.max(0, 6 - clientNeedImages.length);
+        if (remainingSlots === 0) {
+            showToast({
+                variant: 'error',
+                title: t({ en: 'Maximum reached', fr: 'Maximum atteint', ar: 'تم بلوغ الحد الأقصى' }),
+                description: t({ en: 'You can upload up to 6 photos.', fr: 'Vous pouvez téléverser jusqu’à 6 photos.', ar: 'يمكنك رفع 6 صور كحد أقصى.' })
+            });
+            return;
+        }
+
         try {
+            setIsUploadingTaskImages(true);
+            const selected = Array.from(files).slice(0, remainingSlots);
             const uploadedUrls = await Promise.all(
-                toUpload.map((file, i) => {
-                    const path = `orders/${user.uid}/${Date.now()}_${i}_${Math.random().toString(36).slice(2)}.jpg`;
-                    return uploadImageToStorage(file, path).catch(err => {
-                        console.warn('Image upload failed:', err);
-                        return null; // Don't fall back to base64 — return null and filter it out
+                selected.map(async (file, idx) => {
+                    const compressedDataUrl = await compressImageFileToDataUrl(file, {
+                        maxWidth: 1600,
+                        maxHeight: 1600,
+                        quality: 0.72,
+                        mimeType: 'image/jpeg',
                     });
+                    const compressedBlob = await dataUrlToBlob(compressedDataUrl);
+                    const path = `orders/${currentUser.uid}/${Date.now()}_${idx}.jpg`;
+                    return await uploadImageToStorage(compressedBlob, path);
                 })
             );
-
-            // Replace previews with actual storage URLs (filter out any nulls)
-            setUploadedImages(prev => {
-                const withoutPreviews = prev.slice(0, prev.length - previews.length);
-                const validUrls = uploadedUrls.filter((u): u is string => !!u && u.startsWith('http'));
-                return [...withoutPreviews, ...validUrls].slice(0, 4);
+            setClientNeedImages((prev) => [...prev, ...uploadedUrls]);
+        } catch (error) {
+            console.error("Task image upload failed:", error);
+            showToast({
+                variant: 'error',
+                title: t({ en: 'Upload failed', fr: 'Échec du téléversement', ar: 'فشل الرفع' }),
+                description: t({ en: 'Could not upload one or more photos.', fr: 'Impossible de téléverser une ou plusieurs photos.', ar: 'تعذر رفع صورة واحدة أو أكثر.' })
             });
-        } catch (err) {
-            console.error('Batch upload error:', err);
         } finally {
-            setIsImageUploading(false);
+            setIsUploadingTaskImages(false);
         }
     };
 
-    const removeImage = (index: number) => {
-        setUploadedImages(prev => prev.filter((_, i) => i !== index));
+    const removeTaskImage = (index: number) => {
+        setClientNeedImages((prev) => prev.filter((_, idx) => idx !== index));
     };
+
 
     const timeToMinutes = (t: string) => {
         const [h, m] = t.split(':').map(Number);
@@ -1211,7 +1166,7 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                     listMap.set(docSnap.id, {
                         id: docSnap.id,
                         displayName: data.displayName || 'Bricoler',
-                        photoURL: data.photoURL || data.avatar,
+                        photoURL: data.profilePhotoURL || data.avatar || data.photoURL,
                         rating: data.rating || 5,
                         completedJobs: data.completedJobs || 0,
                         hourlyRate: (typeof matchingService === 'object' ? matchingService.hourlyRate : null) || data.hourlyRate || 75,
@@ -1266,13 +1221,7 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
     };
 
     const handleFinalSubmit = async () => {
-        if (!taskSize || isSubmitting) return;
-
-        // Block submission if images are still being uploaded to Firebase Storage
-        if (isImageUploading) {
-            alert(t({ en: 'Please wait for images to finish uploading.', fr: 'Veuillez attendre la fin du chargement des images.', ar: 'يرجى الانتظار حتى انتهاء رفع الصور.' }));
-            return;
-        }
+        if (isSubmitting) return;
 
         if (paymentMethod === 'bank' && !bankReceipt) {
             alert(t({ en: 'Please upload your transfer receipt before programming the mission.', fr: 'Veuillez télécharger votre reçu de virement avant de programmer la mission.', ar: 'يرجى تحميل إيصال التحويل قبل برمجة المهمة.' }));
@@ -1346,7 +1295,8 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                 totalPrice: applyReferralDiscount && referralDiscountAvailable > 0 ? Math.max(0, totalPrice - referralDiscountAvailable) : totalPrice,
                 price: applyReferralDiscount && referralDiscountAvailable > 0 ? Math.max(0, totalPrice - referralDiscountAvailable) : totalPrice,
                 referralApplied: applyReferralDiscount && referralDiscountAvailable > 0,
-                images: uploadedImages.filter(u => u.startsWith('http')), // only persisted Storage URLs, not local previews
+                images: clientNeedImages.filter((img) => !isImageDataUrl(img)),
+                clientNeedImages: clientNeedImages.filter((img) => !isImageDataUrl(img)),
                 paymentMethod,
                 bankReceipt: paymentMethod === 'bank' ? bankReceipt : null,
                 frequency,
@@ -1600,7 +1550,7 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                                                     </div>
                                                     <button
                                                         onClick={() => { setTempCity(currentCity); setTempArea(currentArea); setIsSelectingLocation(true); setLocStep('city'); setAreaSearch(''); }}
-                                                        className="text-[25px] font-semibold text-[#00A082] px-1 hover:opacity-70 transition-opacity"
+                                                        className="text-[20px] font-semibold text-[#00A082] px-1 hover:opacity-70 transition-opacity"
                                                     >
                                                         {t({ en: 'Edit', fr: 'Modifier', ar: 'تعديل' })}
                                                     </button>
@@ -1743,72 +1693,60 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                                                             ))}
                                                         </motion.div>
                                                     )}
-                                                </motion.div>
 
-                                                {/* Images Upload */}
-                                                <motion.div
-                                                    initial={{ opacity: 0, y: 15 }}
-                                                    animate={{ opacity: 1, y: 0 }}
-                                                    transition={{ delay: 0.4 }}
-                                                    className="space-y-3 pt-2"
-                                                >
-                                                    <div className="flex items-center justify-between">
-                                                        <h4 className="text-[12px] font-black text-black uppercase tracking-widest px-1">
-                                                            {t({ en: 'Photos (Optional)', fr: 'Photos (Optionnel)', ar: 'الصور (اختياري)' })}
-                                                        </h4>
-                                                        <span className="text-[11px] font-bold text-neutral-300">{uploadedImages.length}/4</span>
-                                                    </div>
-
-                                                    <div className="flex flex-wrap gap-3">
-                                                        <AnimatePresence>
-                                                            {uploadedImages.map((img, idx) => (
-                                                                <motion.div
-                                                                    key={idx}
-                                                                    initial={{ opacity: 0, scale: 0.8, rotate: -5 }}
-                                                                    animate={{ opacity: 1, scale: 1, rotate: 0 }}
-                                                                    exit={{ opacity: 0, scale: 0.5, rotate: 10 }}
-                                                                    className="relative w-24 h-24 rounded-[14px] overflow-hidden group ring-1 ring-neutral-100 shadow-sm"
-                                                                >
-                                                                    <img src={img} className="w-full h-full object-cover" />
+                                                    <motion.div
+                                                        initial={{ opacity: 0 }}
+                                                        animate={{ opacity: 1 }}
+                                                        transition={{ delay: 0.35 }}
+                                                        className="space-y-3 pt-1"
+                                                    >
+                                                        <div className="flex items-center justify-between">
+                                                            <p className="text-[14px] font-black text-neutral-800">
+                                                                {t({ en: 'Task photos (optional)', fr: 'Photos de la tâche (optionnel)', ar: 'صور المهمة (اختياري)' })}
+                                                            </p>
+                                                            <span className="text-[12px] text-neutral-400 font-bold">{clientNeedImages.length}/6</span>
+                                                        </div>
+                                                        <p className="text-[12px] text-neutral-500">
+                                                            {t({
+                                                                en: 'Add photos to help the bricoler understand your need faster.',
+                                                                fr: 'Ajoutez des photos pour aider le bricoler à mieux comprendre votre besoin.',
+                                                                ar: 'أضف صورًا لمساعدة مقدم الخدمة على فهم طلبك بشكل أسرع.'
+                                                            })}
+                                                        </p>
+                                                        <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
+                                                            {clientNeedImages.map((img, idx) => (
+                                                                <div key={`${img}-${idx}`} className="relative w-24 h-24 rounded-[14px] overflow-hidden border border-neutral-100 flex-shrink-0">
+                                                                    <img src={img} alt={`Need ${idx + 1}`} className="w-full h-full object-cover" />
                                                                     <button
-                                                                        onClick={() => removeImage(idx)}
-                                                                        className="absolute top-1.5 right-1.5 w-7 h-7 bg-black/50 text-white rounded-full flex items-center justify-center backdrop-blur-md active:scale-90 transition-transform"
+                                                                        type="button"
+                                                                        onClick={() => removeTaskImage(idx)}
+                                                                        className="absolute top-1 right-1 w-5 h-5 rounded-full bg-black/70 text-white flex items-center justify-center"
                                                                     >
-                                                                        <X size={14} strokeWidth={3} />
+                                                                        <X size={12} />
                                                                     </button>
-                                                                </motion.div>
+                                                                </div>
                                                             ))}
-                                                        </AnimatePresence>
-
-                                                        {uploadedImages.length < 4 && (
-                                                            <motion.label
-                                                                whileHover={{ scale: 1.02 }}
-                                                                whileTap={{ scale: 0.98 }}
-                                                                className="w-24 h-24 rounded-[14px] border-2 border-dashed border-neutral-200 bg-neutral-50/50 flex flex-col items-center justify-center cursor-pointer hover:bg-neutral-50 hover:border-[#008C74]/40 transition-all"
-                                                            >
-                                                                {isImageUploading ? (
-                                                                    <>
-                                                                        <div className="w-5 h-5 border-2 border-[#00A082]/30 border-t-[#00A082] rounded-full animate-spin mb-1" />
-                                                                        <span className="text-[10px] font-bold text-[#00A082] uppercase tracking-wide">{t({ en: 'Uploading', fr: 'Envoi...', ar: 'جار الرفع' })}</span>
-                                                                    </>
-                                                                ) : (
-                                                                    <>
-                                                                        <Camera size={26} className="text-neutral-400 mb-1" />
-                                                                        <span className="text-[11px] font-bold text-neutral-400 uppercase tracking-wide">{t({ en: 'Add', fr: 'Ajouter', ar: 'إضافة' })}</span>
-                                                                    </>
-                                                                )}
-                                                                <input
-                                                                    type="file"
-                                                                    accept="image/*"
-                                                                    multiple
-                                                                    className="hidden"
-                                                                    disabled={isImageUploading}
-                                                                    onChange={handleImageUpload}
-                                                                />
-                                                            </motion.label>
-                                                        )}
-                                                    </div>
+                                                            {clientNeedImages.length < 6 && (
+                                                                <label className="w-24 h-24 rounded-[14px] border-2 border-dashed border-neutral-200 bg-neutral-50 hover:border-[#00A082]/50 transition-colors flex flex-col items-center justify-center gap-1.5 text-neutral-500 cursor-pointer flex-shrink-0">
+                                                                    {isUploadingTaskImages ? (
+                                                                        <div className="w-4 h-4 border-2 border-neutral-300 border-t-[#00A082] rounded-full animate-spin" />
+                                                                    ) : (
+                                                                        <Upload size={16} />
+                                                                    )}
+                                                                    <span className="text-[10px] font-black">{t({ en: 'Add', fr: 'Ajouter', ar: 'إضافة' })}</span>
+                                                                    <input
+                                                                        type="file"
+                                                                        accept="image/*"
+                                                                        multiple
+                                                                        className="hidden"
+                                                                        onChange={(e) => handleTaskImageSelection(e.target.files)}
+                                                                    />
+                                                                </label>
+                                                            )}
+                                                        </div>
+                                                    </motion.div>
                                                 </motion.div>
+
                                             </motion.div>
                                         )}
                                     </AnimatePresence>
@@ -2395,19 +2333,6 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                                             </div>
                                         </div>
 
-                                        {/* Task Photos preview */}
-                                        {uploadedImages.length > 0 && (
-                                            <div className="space-y-4">
-                                                <h3 className="text-[24px] font-black text-black">{t({ en: 'Photos', fr: 'Photos', ar: 'الصور' })}</h3>
-                                                <div className="flex gap-3 overflow-x-auto no-scrollbar pb-2">
-                                                    {uploadedImages.map((img, i) => (
-                                                        <div key={i} className="relative w-32 h-32 flex-shrink-0 rounded-[20px] overflow-hidden border border-neutral-100 shadow-sm">
-                                                            <img src={img} className="w-full h-full object-cover" />
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        )}
                                     </div>
 
                                     {/* Your Selected Bricoler */}
@@ -2581,8 +2506,8 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                                                         onClick={() => (taskSize && description.trim()) ? handleStartMatching() : null}
                                                         disabled={!description.trim()}
                                                         className={cn(
-                                                            "flex-1 h-14 rounded-full text-[19px] font-semibold active:scale-95 transition-all text-white",
-                                                            description.trim() ? "bg-[#00A082]" : "bg-neutral-100 text-neutral-400 cursor-not-allowed"
+                                                            "flex-1 h-14 rounded-full text-[19px] font-semibold active:scale-95 transition-all text-white flex items-center justify-center gap-2",
+                                                            (description.trim()) ? "bg-[#00A082]" : "bg-neutral-100 text-neutral-400 cursor-not-allowed"
                                                         )}
                                                     >
                                                         {t({ en: 'Find Bricolers', fr: 'Rechercher des Pros', ar: 'ابحث عن محترفين' })}

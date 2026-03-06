@@ -403,6 +403,7 @@ const AdminOrdersView: React.FC<AdminOrdersViewProps> = ({ t, onChat, onViewMess
                             bricolerId: selectedOrder.bricolerId,
                             bricolerName: selectedOrder.bricolerName,
                             photos: selectedOrder.photos || [],
+                            images: selectedOrder.images || [],
                         } as JobDetails
                         : null
                 }

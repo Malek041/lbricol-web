@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import Header from '@/components/layout/Header';
 import confetti from 'canvas-confetti';
 import SearchBox from '@/components/shared/SearchBox';
@@ -236,6 +237,7 @@ const getTranslatedName = (s: string, t: (vals: { en: string, fr: string }) => s
 const MASTER_ADMIN_CODE = "2026LB"; // You can change this or move to env
 
 const Home = () => {
+  const router = useRouter();
   const { t, setLanguage } = useLanguage();
   const { theme } = useTheme();
   const { showToast } = useToast();
@@ -3428,7 +3430,7 @@ const Home = () => {
             setShowMobileOnboarding(false);
             setShadowProfileData(null);
             setIsBricoler(true);
-            window.location.href = '/provider';
+            router.push('/provider');
           }}
         />
 

@@ -4,8 +4,7 @@ import React, { useState, useMemo } from 'react';
 import {
     X, ChevronRight, User, Mail, Lock, Phone,
     CreditCard, FileText, Megaphone, ShoppingBag, Gift,
-    Tag, Bell, LogOut, ArrowLeft, Globe, Wrench, LogIn, Plus, CircleHelp, Shield, UserPlus,
-    Camera, Trash2, Image as ImageIcon, ToggleLeft, ToggleRight, Hash
+    Tag, Bell, LogOut, ArrowLeft, Globe, Wrench, LogIn, Plus, CircleHelp, Shield, UserPlus, Hash
 } from 'lucide-react';
 import { auth, db, storage } from '@/lib/firebase';
 import { doc, getDoc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
@@ -62,7 +61,6 @@ const ProfileView: React.FC<ProfileViewProps> = ({
     const [editingField, setEditingField] = useState<'none' | 'name' | 'email' | 'bankName' | 'cardHolderName' | 'rib' | 'phone'>('none');
     const [editValue, setEditValue] = useState('');
     const [isSaving, setIsSaving] = useState(false);
-    const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
 
     // Onboarding Mode Popup state
     const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
@@ -211,7 +209,7 @@ const ProfileView: React.FC<ProfileViewProps> = ({
                                 className="w-28 h-28 rounded-[36px] overflow-hidden bg-white relative shadow-sm"
                             >
                                 <img
-                                    src={userAvatar || userData?.avatar || userData?.photoURL || "/Images/Vectors Illu/LbricolFaceOY.webp"}
+                                    src={userAvatar || userData?.profilePhotoURL || userData?.avatar || userData?.photoURL || "/Images/Vectors Illu/LbricolFaceOY.webp"}
                                     alt={displayName}
                                     className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                                 />
@@ -376,141 +374,6 @@ const ProfileView: React.FC<ProfileViewProps> = ({
         }
     };
 
-    const handlePhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (!file) return;
-
-        setIsUploadingPhoto(true);
-        console.log("Starting photo change for file:", file.name, "type:", file.type);
-
-        try {
-            const { auth, db, storage } = await import('@/lib/firebase');
-            const { ref, uploadBytes, getDownloadURL } = await import('firebase/storage');
-            const { doc, updateDoc, getDoc } = await import('firebase/firestore');
-            const user = auth.currentUser;
-
-            if (!user) {
-                console.error("No authenticated user found for photo upload");
-                alert(t({ en: 'You must be signed in to change your photo.', fr: 'Vous devez être connecté pour changer votre photo.' }));
-                return;
-            }
-
-            // --- 1. Robust Blob Conversion (Fixes potential File object issues) ---
-            const convertToBlob = (file: File): Promise<Blob> => {
-                return new Promise((resolve, reject) => {
-                    const reader = new FileReader();
-                    reader.onload = (ev) => {
-                        const img = new Image();
-                        img.onload = () => {
-                            const maxDim = 800;
-                            let { width, height } = img;
-                            // Resize proportionally so longest side ≤ 800px
-                            if (width > height) {
-                                if (width > maxDim) { height = Math.round(height * maxDim / width); width = maxDim; }
-                            } else {
-                                if (height > maxDim) { width = Math.round(width * maxDim / height); height = maxDim; }
-                            }
-                            const canvas = document.createElement('canvas');
-                            canvas.width = width;
-                            canvas.height = height;
-                            const ctx = canvas.getContext('2d');
-                            ctx?.drawImage(img, 0, 0, width, height);
-                            canvas.toBlob((blob) => blob ? resolve(blob) : reject(new Error('Canvas toBlob failed')), 'image/jpeg', 0.82);
-                        };
-                        img.onerror = () => reject(new Error('Image load failed'));
-                        img.src = ev.target?.result as string;
-                    };
-                    reader.onerror = () => reject(new Error('FileReader failed'));
-                    reader.readAsDataURL(file);
-                });
-            };
-
-            const blob = await convertToBlob(file);
-            console.log("Image converted to blob:", blob.size, "bytes");
-
-            const uploadTask = async () => {
-                const fileName = `${Date.now()}_profile.jpg`;
-                // Use a standard path: avatars/USER_UID/filename
-                const storagePath = `avatars/${user.uid}/${fileName}`;
-                console.log("Uploading to path:", storagePath);
-
-                const storageRef = ref(storage, storagePath);
-
-                // Explicitly send metadata
-                const metadata = {
-                    contentType: 'image/jpeg',
-                    customMetadata: {
-                        'userId': user.uid,
-                        'originalName': file.name
-                    }
-                };
-
-                const arrayBuffer = await blob.arrayBuffer();
-                const uploadResult = await uploadBytes(storageRef, arrayBuffer, metadata);
-                console.log("Upload successful, getting download URL...");
-                const url = await getDownloadURL(uploadResult.ref);
-                return url;
-            };
-
-            // Wrapped the upload in a timeout to prevent indefinite hanging (45s)
-            const timeoutPromise = new Promise<string>((_, reject) =>
-                setTimeout(() => reject(new Error("NETWORK_TIMEOUT")), 45000)
-            );
-
-            const url = await Promise.race([uploadTask(), timeoutPromise]);
-            console.log("Received new photo URL:", url);
-
-            // 2. Update Auth
-            const { updateProfile } = await import('firebase/auth');
-            await updateProfile(user, { photoURL: url });
-            console.log("Auth profile updated");
-
-            // 3. Update Firestore
-            const updates = {
-                avatar: url,
-                photoURL: url,
-                updatedAt: new Date().toISOString()
-            };
-
-            const userRef = doc(db, 'users', user.uid);
-            await updateDoc(userRef, updates);
-            console.log("Firestore 'users' document updated");
-
-            if (variant === 'provider') {
-                const bricolerRef = doc(db, 'bricolers', user.uid);
-                await updateDoc(bricolerRef, updates);
-                console.log("Firestore 'bricolers' document updated");
-            } else {
-                const clientRef = doc(db, 'clients', user.uid);
-                const clientSnap = await getDoc(clientRef);
-                if (clientSnap.exists()) {
-                    await updateDoc(clientRef, updates);
-                    console.log("Firestore 'clients' document updated");
-                }
-            }
-
-            // Sync context/local state
-            if (setUserData) setUserData({ ...userData, ...updates });
-            alert(t({ en: 'Profile photo updated successfully!', fr: 'Photo de profil mise à jour avec succès !' }));
-
-        } catch (err: any) {
-            console.error("Photo upload/save failed:", err);
-            let msg = t({ en: 'Failed to update photo.', fr: 'Échec de la mise à jour de la photo.' });
-
-            if (err.message === "NETWORK_TIMEOUT") {
-                msg = t({ en: 'Upload timed out. Please check your connection.', fr: 'Le téléversement a expiré. Vérifiez votre connexion.' });
-            } else if (err.code === 'storage/unauthorized') {
-                msg = t({ en: 'Permission denied. Please try logging out and in again.', fr: 'Permission refusée. Essayez de vous déconnecter et vous reconnecter.' });
-            } else {
-                msg += ` (${err.message || 'Unknown error'})`;
-            }
-            alert(msg);
-        } finally {
-            setIsUploadingPhoto(false);
-            // reset input
-            e.target.value = '';
-        }
-    };
 
     const renderInfoView = () => {
         if (variant === 'provider') {
@@ -545,34 +408,15 @@ const ProfileView: React.FC<ProfileViewProps> = ({
                             <h2 className="text-[20px] font-black">{t({ en: 'My information', fr: 'Mes informations', ar: 'معلوماتي' })}</h2>
                         </div>
 
-                        {/* Profile Pic Modify Button */}
-                        <label className="cursor-pointer relative group">
-                            <input
-                                type="file"
-                                accept="image/*"
-                                onChange={handlePhotoChange}
-                                className="hidden"
-                                disabled={isUploadingPhoto}
-                            />
-                            <div className="flex flex-col items-center">
-                                <div className="w-12 h-12 rounded-xl overflow-hidden bg-neutral-100 relative border-2 border-white shadow-sm transition-all group-hover:scale-105 active:scale-95">
-                                    <img
-                                        src={userAvatar || userData?.avatar || userData?.photoURL || "/Images/Vectors Illu/LbricolFaceOY.webp"}
-                                        className={cn("w-full h-full object-cover", isUploadingPhoto && "opacity-50")}
-                                        alt="Avatar"
-                                    />
-                                    {isUploadingPhoto && (
-                                        <div className="absolute inset-0 flex items-center justify-center">
-                                            <div className="w-4 h-4 border-2 border-[#00A082] border-t-transparent rounded-full animate-spin"></div>
-                                        </div>
-                                    )}
-                                    <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
-                                        <Camera size={16} className="text-white" />
-                                    </div>
-                                </div>
-                                <span className="text-[10px] font-black text-[#00A082] mt-1">{t({ en: 'Modify', fr: 'Modifier', ar: 'تعديل' })}</span>
+                        <div className="relative">
+                            <div className="w-12 h-12 rounded-xl overflow-hidden bg-neutral-100 relative border-2 border-white shadow-sm">
+                                <img
+                                    src={userAvatar || userData?.profilePhotoURL || userData?.avatar || userData?.photoURL || "/Images/Vectors Illu/LbricolFaceOY.webp"}
+                                    className="w-full h-full object-cover"
+                                    alt="Avatar"
+                                />
                             </div>
-                        </label>
+                        </div>
                     </div>
 
                     <div className="px-5 space-y-2 mt-4">

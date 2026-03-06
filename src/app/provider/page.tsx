@@ -76,7 +76,8 @@ import {
     Info,
     Tag,
     Gift,
-    Eye
+    Eye,
+    Image
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { auth, db } from '@/lib/firebase';
@@ -129,6 +130,9 @@ interface UserData {
     workAreas?: string[];
     calendarSlots?: Record<string, { from: string; to: string }[]>;
     photoURL?: string; // Added photoURL to UserData
+    avatar?: string;
+    profilePhotoURL?: string;
+    googlePhotoURL?: string;
 }
 
 export interface Job {
@@ -470,6 +474,7 @@ export default function ProviderPage() {
             clientReviewCount: isMarket ? (raw.clientReviewCount || 12) : (raw.clientReviewCount || 12),
             priceLabel: isMarket ? formatJobPrice(raw.basePrice || raw.price) : String(raw.basePrice || raw.price),
             image: raw.image || '',
+            images: raw.images || [],
             rawJob: isMarket ? raw : undefined,
             rawAccepted: !isMarket ? raw : undefined
         };
@@ -984,6 +989,8 @@ export default function ProviderPage() {
                             services: normalizedServices,
                             city: urlCity || '',
                             photoURL: firebaseUser.photoURL || undefined, // Prioritize Firebase Auth photoURL on initial creation
+                            profilePhotoURL: firebaseUser.photoURL || undefined,
+                            googlePhotoURL: firebaseUser.photoURL || undefined,
                         };
                         setDoc(bricolerRef, newData).then(() => {
                             setUserData(newData);
@@ -1016,6 +1023,15 @@ export default function ProviderPage() {
             if (unsubscribeProfile) unsubscribeProfile();
         };
     }, []);
+
+    useEffect(() => {
+        if (!isLoading) return;
+        const watchdog = setTimeout(() => {
+            console.warn("Provider loading watchdog released splash screen after timeout.");
+            setIsLoading(false);
+        }, 20000);
+        return () => clearTimeout(watchdog);
+    }, [isLoading]);
 
     // Message Sound Listener for Bricoler
     useEffect(() => {
@@ -1347,15 +1363,15 @@ export default function ProviderPage() {
         if (clientRating === 0 || isSubmittingRating || !job.id || !job.clientId) return;
         setIsSubmittingRating(true);
         try {
-            const reviewData = {
-                id: job.id,
-                rating: clientRating,
-                comment: clientRatingComment || clientReview,
-                serviceName: job.title || job.craft || 'Service',
-                date: new Date().toISOString(),
-                bricolerName: user?.displayName || 'Bricoler',
-                bricolerAvatar: user?.photoURL || null,
-            };
+                const reviewData = {
+                    id: job.id,
+                    rating: clientRating,
+                    comment: clientRatingComment || clientReview,
+                    serviceName: job.title || job.craft || 'Service',
+                    date: new Date().toISOString(),
+                    bricolerName: user?.displayName || 'Bricoler',
+                    bricolerAvatar: userData?.profilePhotoURL || userData?.avatar || userData?.photoURL || user?.photoURL || null,
+                };
 
             const clientRef = doc(db, 'clients', job.clientId);
             await updateDoc(clientRef, {
@@ -1443,7 +1459,7 @@ export default function ProviderPage() {
             const offer = {
                 bricolerId: user.uid,
                 bricolerName: user.displayName || 'Bricoler',
-                avatar: user.photoURL || '',
+                avatar: userData?.profilePhotoURL || userData?.avatar || userData?.photoURL || user.photoURL || '',
                 rating: userData?.rating || 0,
                 jobsCount: userData?.completedJobs || 0,
                 type: 'accept',
@@ -1534,7 +1550,7 @@ export default function ProviderPage() {
             const offer = {
                 bricolerId: user.uid,
                 bricolerName: user.displayName || 'Bricoler',
-                avatar: user.photoURL || '',
+                avatar: userData?.profilePhotoURL || userData?.avatar || userData?.photoURL || user.photoURL || '',
                 rating: userData?.rating || 0,
                 jobsCount: userData?.completedJobs || 0,
                 type: 'counter',
@@ -1975,12 +1991,20 @@ export default function ProviderPage() {
                     <div className="flex-1 overflow-y-auto no-scrollbar">
                         <div className="pb-10">
                             <div className="px-6 md:px-12 pt-10 pb-6 flex flex-col sm:flex-row items-center gap-6 text-center sm:text-left">
-                                <div className="w-32 h-32 md:w-35 md:h-50 flex-shrink-0">
-                                    <img
-                                        src="/Images/Vectors Illu/NewOrder.webp"
-                                        className="w-full h-full object-contain"
-                                        alt="illustration"
-                                    />
+                                <div className="w-32 h-32 md:w-35 md:h-50 flex-shrink-0 overflow-hidden rounded-2xl bg-neutral-100 flex items-center justify-center border border-neutral-100">
+                                    {job.images && job.images.length > 0 ? (
+                                        <img
+                                            src={job.images[0]}
+                                            className="w-full h-full object-cover"
+                                            alt="job highlight"
+                                        />
+                                    ) : (
+                                        <img
+                                            src="/Images/Vectors Illu/NewOrder.webp"
+                                            className="w-full h-full object-contain p-2"
+                                            alt="illustration"
+                                        />
+                                    )}
                                 </div>
                                 <div className="flex flex-col">
                                     <h2 className="text-[32px] md:text-[42px] font-black text-black leading-[1.1] tracking-tighter">
@@ -2062,6 +2086,30 @@ export default function ProviderPage() {
                                             </p>
                                         </div>
                                     </div>
+                                    {/* Images Gallery */}
+                                    {job.images && job.images.length > 0 && (
+                                        <div className="bg-neutral-50 rounded-2xl p-4 col-span-1 sm:col-span-2 border border-neutral-100/50">
+                                            <div className="flex items-center gap-4 mb-3">
+                                                <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-sm">
+                                                    <Image size={20} className="text-[#00A082]" />
+                                                </div>
+                                                <span className="text-[12px] font-bold text-neutral-400 uppercase tracking-wider">
+                                                    {t({ en: 'Photos Attachments', fr: 'Photos Jointes' })}
+                                                </span>
+                                            </div>
+                                            <div className="flex gap-3 overflow-x-auto no-scrollbar py-1">
+                                                {job.images.map((img, idx) => (
+                                                    <div
+                                                        key={`job-img-${idx}`}
+                                                        className="w-24 h-24 sm:w-32 sm:h-32 rounded-xl overflow-hidden flex-shrink-0 border border-neutral-200 cursor-pointer hover:opacity-90 active:scale-95 transition-all shadow-sm"
+                                                        onClick={() => window.open(img, '_blank')}
+                                                    >
+                                                        <img src={img} className="w-full h-full object-cover" />
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
 
@@ -3909,7 +3957,7 @@ export default function ProviderPage() {
                                     userData={userData}
                                     setUserData={setUserData}
                                     userName={userData?.name || user?.displayName || 'Bricoler'}
-                                    userAvatar={userData?.photoURL || user?.photoURL || undefined}
+                                    userAvatar={userData?.profilePhotoURL || userData?.avatar || userData?.photoURL || user?.photoURL || undefined}
                                     userEmail={userData?.email || user?.email || undefined}
                                     isBricoler={true}
                                     isAuthenticated={!!user}
@@ -4070,7 +4118,7 @@ export default function ProviderPage() {
                                     userData={userData}
                                     setUserData={setUserData}
                                     userName={userData?.name || user?.displayName || 'Bricoler'}
-                                    userAvatar={userData?.photoURL || user?.photoURL || undefined}
+                                    userAvatar={userData?.profilePhotoURL || userData?.avatar || userData?.photoURL || user?.photoURL || undefined}
                                     userEmail={userData?.email || user?.email || undefined}
                                     isBricoler={true}
                                     isAuthenticated={!!user}
