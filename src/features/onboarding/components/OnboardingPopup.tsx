@@ -805,7 +805,6 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                     equipments: e?.noEquipment ? [] : (e?.equipments || []),
                     noEquipment: e?.noEquipment || false,
                     portfolioImages: e?.portfolioImages || [] as string[],
-                    portfolioFiles: e?.portfolioFiles || []
                 };
             });
 
