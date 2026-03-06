@@ -567,20 +567,16 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                                 count++;
                                 setSubmittingStatus(`Uploading media... (${count}/${catData.portfolioFiles?.length || 0})`);
                             } catch (e) {
-                                console.warn(`Portfolio fail ${catId}:`, e);
-                                if (previewUrl && previewUrl.startsWith('data:image')) {
-                                    categoryUploadResults[catId].push(previewUrl);
-                                }
+                                // Don't fall back to base64 — it will exceed Firestore's 1MB doc limit
+                                console.warn(`Portfolio upload failed for ${catId}, skipping:`, e);
                             }
                         })();
                         uploadPromisesByCat.push(Promise.race([
                             task,
                             new Promise((_, reject) => setTimeout(() => reject(new Error("TIMEOUT")), 60000))
                         ]).catch((err) => {
-                            console.warn(`Portfolio image upload timed out or failed for ${catId}:`, err);
-                            if (previewUrl && previewUrl.startsWith('data:image')) {
-                                categoryUploadResults[catId].push(previewUrl);
-                            }
+                            // Timeout or other error — skip this image, do NOT store base64
+                            console.warn(`Portfolio image upload timed out for ${catId}:`, err);
                         }) as Promise<void>);
                     }
                 }
@@ -597,9 +593,12 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
 
             const finalCategoryEntries = initialEntries.map(entry => ({
                 ...entry,
-                portfolioImages: categoryUploadResults[entry.categoryId] || []
+                // Only persist confirmed Storage URLs — never base64 (would exceed Firestore 1MB limit)
+                portfolioImages: (categoryUploadResults[entry.categoryId] || []).filter(u => u.startsWith('http'))
             }));
-            const allPortfolioUrls = Array.from(new Set(Object.values(categoryUploadResults).flat()));
+            const allPortfolioUrls = Array.from(new Set(
+                Object.values(categoryUploadResults).flat().filter(u => u.startsWith('http'))
+            ));
 
             // 3. Firestore Saves
             setSubmittingStatus("Saving profile...");
@@ -779,11 +778,12 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                                 const res = await uploadBytes(ref(storage, path), arrayBuffer, { contentType: 'image/jpeg' });
                                 categoryUploadResults[catId].push(await getDownloadURL(res.ref));
                             } catch (e) {
-                                if (previewUrl && previewUrl.startsWith('data:image')) categoryUploadResults[catId].push(previewUrl);
+                                // Don't fall back to base64 — skip failed images
+                                console.warn(`Admin portfolio upload failed for ${catId}, skipping:`, e);
                             }
                         })();
                         uploadPromises.push(Promise.race([task, new Promise((_, reject) => setTimeout(() => reject(new Error("TIMEOUT")), 60000))]).catch((e) => {
-                            if (previewUrl && previewUrl.startsWith('data:image')) categoryUploadResults[catId].push(previewUrl);
+                            console.warn(`Admin portfolio timed out for ${catId}:`, e);
                         }));
                     }
                 }
@@ -964,7 +964,8 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
             const finalCategoryEntries = currentEntries.map(e => ({
                 id: `${e.categoryId}_${e.subServiceId}`,
                 ...e,
-                portfolioImages: categoryUploadResults[e.categoryId] || []
+                // Only persist confirmed Storage URLs — never base64 (would exceed Firestore 1MB limit)
+                portfolioImages: (categoryUploadResults[e.categoryId] || []).filter(u => u.startsWith('http'))
             }));
 
             const bricolerRef = doc(db, 'bricolers', user.uid);
