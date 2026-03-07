@@ -1900,7 +1900,7 @@ const Home = () => {
                 referralDiscountAvailable: 50
               }, { merge: true });
 
-              referralDiscountApplied = 20;
+              referralDiscountApplied = 50;
               showToast({
                 variant: 'success',
                 title: t({ en: "Referral applied!", fr: "Parrainage appliqué !" }),

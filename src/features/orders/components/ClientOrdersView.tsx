@@ -355,11 +355,37 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
             };
 
             const bricolerRef = doc(db, 'bricolers', order.bricolerId);
-            await updateDoc(bricolerRef, {
-                reviews: arrayUnion(reviewData),
-                totalRating: increment(rating),
-                jobsCompleted: increment(1),
-            });
+            const bricolerSnap = await getDoc(bricolerRef);
+
+            if (bricolerSnap.exists()) {
+                const data = bricolerSnap.data();
+                const newTotal = (data.totalRating || 0) + rating;
+                const newCount = (data.numReviews || 0) + 1;
+                const avgRating = newTotal / newCount;
+                const jobsCount = (data.completedJobs || data.jobsCompleted || 0) + 1;
+                // Score formula: (avg_rating × 10) + (completed_jobs × 5)
+                const newScore = Math.round((avgRating * 10) + (jobsCount * 5));
+
+                await updateDoc(bricolerRef, {
+                    reviews: arrayUnion(reviewData),
+                    totalRating: newTotal,
+                    numReviews: newCount,
+                    rating: avgRating,
+                    jobsCompleted: jobsCount,
+                    completedJobs: jobsCount,
+                    score: newScore,
+                });
+            } else {
+                await updateDoc(bricolerRef, {
+                    reviews: arrayUnion(reviewData),
+                    totalRating: increment(rating),
+                    numReviews: increment(1),
+                    rating: rating,
+                    jobsCompleted: increment(1),
+                    completedJobs: increment(1),
+                    score: increment(5),
+                });
+            }
 
             const jobRef = doc(db, 'jobs', order.id);
             await updateDoc(jobRef, { rated: true });
@@ -527,22 +553,16 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
                                 </button>
                                 <h1 className="text-[20px] font-black text-black">{t({ en: 'Order details', fr: 'Détails de la commande', ar: 'تفاصيل الطلب' })}</h1>
                             </div>
-                            <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-2">
                                 {selectedOrder.bricolerWhatsApp && (
                                     <button
                                         onClick={() => openWhatsApp(selectedOrder.bricolerWhatsApp)}
-                                        className="flex items-center gap-2 h-10 px-4 rounded-full bg-[#25D366] text-white font-black text-[14px] hover:bg-[#128C7E] active:scale-95 transition-all shadow-sm shadow-[#25D366]/30"
+                                        className="w-10 h-10 rounded-full flex items-center justify-center text-[#25D366] bg-[#25D366]/8 hover:bg-[#25D366]/15 active:scale-90 transition-all"
+                                        title={t({ en: 'Contact Bricoler via WhatsApp', fr: 'Contacter le Bricoler via WhatsApp', ar: 'اتصل بالبريكولر عبر واتساب' })}
                                     >
-                                        <WhatsAppBrandIcon size={18} fill="currentColor" />
-                                        {t({ en: 'Contact Bricoler', fr: 'Contacter le Bricoler', ar: 'اتصل بالبريكولر' })}
+                                        <WhatsAppBrandIcon size={22} fill="currentColor" />
                                     </button>
                                 )}
-                                <button
-                                    onClick={() => window.open('https://wa.me/212702814355', '_blank')}
-                                    className="text-[17px] font-black text-[#00A082] hover:opacity-80 transition-opacity"
-                                >
-                                    {t({ en: 'Help', fr: 'Aide', ar: 'مساعدة' })}
-                                </button>
                             </div>
                         </div>
 
@@ -587,6 +607,16 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
                                 {/* Key Details Grid */}
                                 <div className="px-6 md:px-12 mb-8">
                                     <div className="grid grid-cols-1 gap-4">
+                                        {/* Contact Bricoler CTA - shown when a bricoler is assigned */}
+                                        {selectedOrder.bricolerWhatsApp && (
+                                            <button
+                                                onClick={() => openWhatsApp(selectedOrder.bricolerWhatsApp)}
+                                                className="w-full flex items-center justify-center gap-3 py-4 rounded-2xl bg-[#25D366] text-white font-black text-[17px] hover:bg-[#128C7E] active:scale-95 transition-all shadow-lg shadow-[#25D366]/25"
+                                            >
+                                                <WhatsAppBrandIcon size={22} fill="currentColor" />
+                                                {t({ en: 'Contact Bricoler', fr: 'Contacter le Bricoler', ar: 'اتصل بالبريكولر' })}
+                                            </button>
+                                        )}
                                         <div className="bg-neutral-50 rounded-2xl p-4 flex items-center gap-4 border border-neutral-100/50">
                                             <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-sm">
                                                 <Clock size={20} className="text-[#00A082]" />
@@ -859,6 +889,14 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
                                     {t({ en: 'Cancel Order', fr: 'Annuler la commande', ar: 'إلغاء الطلب' })}
                                 </button>
                             )}
+
+                            {/* Help link at the bottom */}
+                            <button
+                                onClick={() => window.open('https://wa.me/212702814355', '_blank')}
+                                className="w-full text-center text-[15px] font-bold text-neutral-400 hover:text-[#00A082] transition-colors py-1"
+                            >
+                                {t({ en: '💬 Need help with this order?', fr: '💬 Besoin d\'aide pour cette commande ?', ar: '💬 تحتاج مساعدة في هذا الطلب؟' })}
+                            </button>
                         </div>
                     </motion.div>
                 )}
@@ -1056,8 +1094,19 @@ function ActivityTab({
     const getTimeRemaining = (order: OrderDetails) => {
         if (!order.date || !order.time) return null;
         try {
-            const timeStr = order.time.split('-')[0].trim();
-            const targetDate = parseISO(`${order.date}T${timeStr}:00`);
+            // Extract the start time from "HH:MM" or "HH:MM-HH:MM" or "HH:MM:SS"
+            const rawTime = order.time.split('-')[0].trim();
+            // Ensure we have HH:MM:SS format for parseISO
+            const timePart = rawTime.includes(':') && rawTime.split(':').length === 2
+                ? `${rawTime}:00`  // HH:MM → HH:MM:00
+                : rawTime;          // already has seconds or other form
+
+            // Try to parse the date — works for yyyy-MM-dd
+            // also handle dates like "2026-03-07" or "2026-3-7" 
+            const datePart = order.date.substring(0, 10); // take first 10 chars
+            const targetDate = new Date(`${datePart}T${timePart}`);
+            if (isNaN(targetDate.getTime())) return null;
+
             const diffMs = targetDate.getTime() - currentTime.getTime();
             if (diffMs < 0) return null;
 
@@ -1076,8 +1125,11 @@ function ActivityTab({
     const getProgress = (order: OrderDetails) => {
         if (!order.date || !order.time) return 10;
         try {
-            const timeStr = order.time.split('-')[0].trim();
-            const targetDate = parseISO(`${order.date}T${timeStr}:00`);
+            const rawTime = order.time.split('-')[0].trim();
+            const timePart = rawTime.includes(':') && rawTime.split(':').length === 2 ? `${rawTime}:00` : rawTime;
+            const datePart = order.date.substring(0, 10);
+            const targetDate = new Date(`${datePart}T${timePart}`);
+            if (isNaN(targetDate.getTime())) return 10;
             const diffMs = targetDate.getTime() - currentTime.getTime();
 
             // Window of 24 hours for filling

@@ -95,6 +95,10 @@ const RatingPopup: React.FC<RatingPopupProps> = ({
                 const averageRating = totalRating / numReviews;
                 const jobsCount = (data.completedJobs || data.jobsCompleted || 0) + 1;
 
+                // Compute the bricoler's score in sync with the distribution algorithm:
+                // score = (avg_rating × 10) + (completed_jobs × 5)
+                const newScore = Math.round((averageRating * 10) + (jobsCount * 5));
+
                 await updateDoc(bricolerRef, {
                     reviews: arrayUnion(reviewData),
                     totalRating: totalRating,
@@ -102,6 +106,7 @@ const RatingPopup: React.FC<RatingPopupProps> = ({
                     rating: averageRating,
                     jobsCompleted: jobsCount,
                     completedJobs: jobsCount,
+                    score: newScore,
                 });
             } else {
                 // Fallback for missing profile (should not happen for active bricolers)
@@ -112,6 +117,7 @@ const RatingPopup: React.FC<RatingPopupProps> = ({
                     rating: rating,
                     jobsCompleted: increment(1),
                     completedJobs: increment(1),
+                    score: increment(5), // minimal bump for fallback path
                 });
             }
 

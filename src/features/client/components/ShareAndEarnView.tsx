@@ -24,7 +24,8 @@ const ShareAndEarnView: React.FC<ShareAndEarnViewProps> = ({
     const [isLoading, setIsLoading] = useState(true);
     const [copied, setCopied] = useState(false);
 
-    const RWD_AMOUNT = "20 MAD";
+    const REFERRER_REWARD = "20 MAD";
+    const NEW_USER_DISCOUNT = "50 MAD";
 
     useEffect(() => {
         const fetchOrGenerateCode = async () => {
@@ -56,9 +57,9 @@ const ShareAndEarnView: React.FC<ShareAndEarnViewProps> = ({
         if (!currentUser) { onLogin(); return; }
         if (!referralCode) return;
         const message = t({
-            en: `Hey! Use my code ${referralCode} on Lbricol to get ${RWD_AMOUNT} off your first home service. Download the app: https://lbricol.com`,
-            fr: `Hey ! Utilise mon code ${referralCode} sur Lbricol pour avoir ${RWD_AMOUNT} de réduction sur ton premier service à domicile. Télécharge l'appli : https://lbricol.com`,
-            ar: `مرحباً! استخدم كود الإحالة ${referralCode} على لبريكول لتحصل على خصم ${RWD_AMOUNT} على أول خدمة منزلية. نزّل التطبيق: https://lbricol.com`
+            en: `Hey! Use my code ${referralCode} on Lbricol to get ${NEW_USER_DISCOUNT} off your first home service. Download the app: https://lbricol.com`,
+            fr: `Hey ! Utilise mon code ${referralCode} sur Lbricol pour avoir ${NEW_USER_DISCOUNT} de réduction sur ton premier service à domicile. Télécharge l'appli : https://lbricol.com`,
+            ar: `مرحباً! استخدم كود الإحالة ${referralCode} على لبريكول لتحصل على خصم ${NEW_USER_DISCOUNT} على أول خدمة منزلية. نزّل التطبيق: https://lbricol.com`
         });
         navigator.clipboard.writeText(message).then(() => {
             setCopied(true);
@@ -75,12 +76,12 @@ const ShareAndEarnView: React.FC<ShareAndEarnViewProps> = ({
         {
             emoji: '🛒',
             title: t({ en: 'Friend places an order', fr: 'L\'ami passe une commande', ar: 'الصديق يطلب خدمة' }),
-            desc: t({ en: 'They enter your code at checkout and get 20 MAD off', fr: 'Il entre votre code et obtient 20 MAD de réduction', ar: 'يدخل الكود عند الدفع ويحصل على خصم 20 درهم' })
+            desc: t({ en: `They enter your code at checkout and get ${NEW_USER_DISCOUNT} off their first order`, fr: `Il entre votre code et obtient ${NEW_USER_DISCOUNT} de réduction sur sa première commande`, ar: `يدخل الكود عند الدفع ويحصل على خصم ${NEW_USER_DISCOUNT} على أول طلب` })
         },
         {
             emoji: '💰',
-            title: t({ en: 'You both earn', fr: 'Vous gagnez tous les deux', ar: 'أنتم الاثنان تربحون' }),
-            desc: t({ en: 'You get 20 MAD credit for your next order too!', fr: 'Vous obtenez aussi 20 MAD de crédit pour votre prochaine commande !', ar: 'تحصل أنت أيضاً على رصيد 20 درهم لطلبك القادم!' })
+            title: t({ en: 'You earn credit', fr: 'Vous gagnez du crédit', ar: 'تربح رصيداً' }),
+            desc: t({ en: `You get ${REFERRER_REWARD} credit added to your account for every friend that orders!`, fr: `Vous recevez ${REFERRER_REWARD} de crédit sur votre compte pour chaque ami qui commande !`, ar: `تحصل على رصيد ${REFERRER_REWARD} في حسابك مقابل كل صديق يطلب خدمة!` })
         },
     ];
 
@@ -137,8 +138,10 @@ const ShareAndEarnView: React.FC<ShareAndEarnViewProps> = ({
                         transition={{ delay: 0.1, duration: 0.3 }}
                     >
                         {t({ en: 'Get ', fr: 'Obtenez ', ar: 'احصل على ' })}
-                        <strong className="font-black">{RWD_AMOUNT}</strong>
+                        <strong className="font-black">{REFERRER_REWARD}</strong>
                         {t({ en: ' for each friend you refer', fr: ' pour chaque ami parrainé', ar: ' مقابل كل صديق تدعوه' })}
+                        <br />
+                        <span className="text-[22px] font-light text-neutral-400">{t({ en: 'Your friend gets ', fr: 'Votre ami obtient ', ar: 'صديقك يحصل على ' })}<strong className="font-black text-[#00A082]">{NEW_USER_DISCOUNT}</strong>{t({ en: ' off their first order', fr: ' sur leur première commande', ar: ' خصماً على أول طلب' })}</span>
                     </motion.h1>
 
                     <motion.p
