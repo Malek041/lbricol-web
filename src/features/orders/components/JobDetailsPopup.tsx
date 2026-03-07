@@ -35,6 +35,7 @@ export interface JobDetails {
     images?: string[];
     bricolerId?: string;
     bricolerName?: string;
+    clientAvatar?: string;
 }
 
 interface JobDetailsPopupProps {
@@ -158,8 +159,12 @@ const JobDetailsPopup: React.FC<JobDetailsPopupProps> = ({ job, onClose, onAccep
 
                         {/* Client Info */}
                         <div className="flex items-center gap-4 p-4 bg-neutral-50 rounded-xl mb-6">
-                            <div className="w-12 h-12 rounded-full bg-neutral-200 flex items-center justify-center">
-                                <User size={24} className="text-neutral-500" />
+                            <div className="w-12 h-12 rounded-xl overflow-hidden bg-neutral-100 flex items-center justify-center border border-white shadow-sm">
+                                {job.clientAvatar ? (
+                                    <img src={job.clientAvatar} alt={job.clientName} className="w-full h-full object-cover" />
+                                ) : (
+                                    <User size={24} className="text-neutral-500" />
+                                )}
                             </div>
                             <div className="flex-1">
                                 <div className="font-bold text-neutral-900 text-base">{job.clientName}</div>

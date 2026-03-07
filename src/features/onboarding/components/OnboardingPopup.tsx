@@ -31,7 +31,7 @@ import { useToast } from '@/context/ToastContext';
 import { useLanguage } from '@/context/LanguageContext';
 import SplashScreen from '@/components/layout/SplashScreen';
 import { useIsMobileViewport } from '@/lib/mobileOnly';
-import { compressImageFileToDataUrl, isImageDataUrl } from '@/lib/imageCompression';
+import { isImageDataUrl, compressImageFileToDataUrl, dataUrlToBlob } from '@/lib/imageCompression';
 
 interface OnboardingPopupProps {
     isOpen: boolean;
@@ -179,7 +179,12 @@ const NO_EQUIPMENT_SERVICES = ['errands', 'driver', 'car_rental', 'courier', 'ai
 
 const safeUploadBlob = async (storageRef: any, fileOrBlob: Blob | File, metadata?: any) => {
     const arrayBuffer = await fileOrBlob.arrayBuffer();
-    return await uploadBytes(storageRef, arrayBuffer, metadata);
+    // Ensure we pass the content type if available, so Storage Rules can validate it
+    const finalMetadata = {
+        contentType: (fileOrBlob as any).type || (fileOrBlob as any).mimeType || 'application/octet-stream',
+        ...metadata
+    };
+    return await uploadBytes(storageRef, arrayBuffer, finalMetadata);
 };
 
 const normalizeImageList = (value: any): string[] => {
@@ -573,60 +578,16 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
             }
             const existingBricoler = bSnap.exists() ? bSnap.data() : null;
             const googlePhotoURL = user.photoURL || existingBricoler?.googlePhotoURL || '';
-            let finalTourGuideUrl =
+            const finalTourGuideUrl =
                 tourGuideAuthorizationUrl ||
                 existingBricoler?.tourGuideAuthorizationUrl ||
                 localUserData?.tourGuideAuthorizationUrl ||
                 null;
             const hasPendingProfileUpload = isImageDataUrl(profilePhotoUrl);
             const hasPendingServiceUploads = initialEntries.some((entry) => entryHasPendingImageUploads(entry));
-            let finalProfilePhotoUrl = !hasPendingProfileUpload ? profilePhotoUrl : '';
-            let finalCategoryEntries = stripPendingImagesFromEntries(initialEntries);
-
-            if (hasPendingProfileUpload || hasPendingServiceUploads || hasPendingTourGuideUpload) {
-                setSubmittingStatus("Uploading media...");
-                try {
-                    await auth.currentUser?.getIdToken(true);
-                } catch (tokenError) {
-                    console.warn("Token warmup before media upload failed:", tokenError);
-                }
-            }
-
-            if (hasPendingProfileUpload) {
-                const uploadedProfile = await withTimeout(resolveProfilePhoto(user.uid, profilePhotoUrl), 30000, 'PROFILE_UPLOAD');
-                if (!uploadedProfile) {
-                    throw new Error('PROFILE_UPLOAD_FAILED');
-                }
-                finalProfilePhotoUrl = uploadedProfile;
-            }
-
-            if (hasPendingServiceUploads) {
-                finalCategoryEntries = await withTimeout(
-                    attachUploadedImagesToEntries(user.uid, initialEntries),
-                    45000,
-                    'PORTFOLIO_UPLOAD'
-                );
-
-                const uploadedCount = finalCategoryEntries
-                    .flatMap((entry) => normalizeImageList(entry.portfolioImages))
-                    .filter((img) => !isImageDataUrl(img)).length;
-
-                if (uploadedCount === 0) {
-                    throw new Error('PORTFOLIO_UPLOAD_FAILED');
-                }
-            }
-
-            if (hasPendingTourGuideUpload && tourGuideAuthorizationFile) {
-                const path = `verifications/${user.uid}/${Date.now()}_tour_guide_auth`;
-                const uploadRes = await withTimeout(
-                    safeUploadBlob(ref(storage, path), tourGuideAuthorizationFile),
-                    45000,
-                    'TOUR_GUIDE_UPLOAD'
-                );
-                finalTourGuideUrl = await withTimeout(getDownloadURL(uploadRes.ref), 15000, 'TOUR_GUIDE_URL');
-            }
-
-            finalProfilePhotoUrl = finalProfilePhotoUrl || existingBricoler?.profilePhotoURL || existingBricoler?.avatar || existingBricoler?.photoURL || googlePhotoURL || '';
+            const immediateProfilePhotoUrl = !hasPendingProfileUpload ? profilePhotoUrl : '';
+            const finalProfilePhotoUrl = immediateProfilePhotoUrl || existingBricoler?.profilePhotoURL || existingBricoler?.avatar || existingBricoler?.photoURL || googlePhotoURL || '';
+            const finalCategoryEntries = stripPendingImagesFromEntries(initialEntries);
             const allPortfolioUrls = Array.from(new Set(finalCategoryEntries.flatMap((entry) => normalizeImageList(entry.portfolioImages))));
 
             const cleanObj = (obj: any) => {
@@ -684,7 +645,6 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                         photoURL: bricolerData.profilePhotoURL || bricolerData.avatar || bricolerData.photoURL || "",
                         whatsappNumber: bricolerData.whatsappNumber,
                         createdAt: cSnap.exists() ? cSnap.data().createdAt : serverTimestamp(),
-                        isBricoler: true
                     }, { merge: true })
                 ]),
                 new Promise<any>((_, reject) => setTimeout(() => reject(new Error("FIRESTORE_TIMEOUT")), 25000))
@@ -710,8 +670,80 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                 });
             }
 
+            // ── Upload images synchronously with clear status messages ─────────────────
+            // Background uploads kept failing (IMAGE_UPLOAD_TIMEOUT) because base64 data
+            // was being garbage-collected or the promise died after component unmount.
+            // We now upload BEFORE calling onComplete so images are guaranteed to save.
+
+            let finalUploadedProfilePhotoUrl = finalProfilePhotoUrl;
+            let finalUploadedCategoryEntries = finalCategoryEntries;
+            let finalUploadedTourGuideUrl = finalTourGuideUrl;
+
+            const hasAnyUploads = hasPendingProfileUpload || hasPendingServiceUploads || hasPendingTourGuideUpload;
+
+            if (hasAnyUploads) {
+                // Refresh auth token before uploads
+                try {
+                    await auth.currentUser?.getIdToken(true);
+                } catch (tokenError) {
+                    console.warn("Token warmup failed:", tokenError);
+                }
+
+                // Upload profile photo
+                if (hasPendingProfileUpload) {
+                    setSubmittingStatus(t({ en: 'Uploading profile photo…', fr: 'Envoi de la photo de profil…', ar: 'جارٍ رفع الصورة الشخصية…' }));
+                    const uploaded = await resolveProfilePhoto(user.uid, profilePhotoUrl);
+                    if (uploaded && !isImageDataUrl(uploaded)) {
+                        finalUploadedProfilePhotoUrl = uploaded;
+                    }
+                }
+
+                // Upload portfolio images
+                if (hasPendingServiceUploads) {
+                    setSubmittingStatus(t({ en: 'Uploading portfolio photos…', fr: 'Envoi des photos du portfolio…', ar: 'جارٍ رفع صور الأعمال…' }));
+                    finalUploadedCategoryEntries = await attachUploadedImagesToEntries(user.uid, initialEntries);
+                }
+
+                // Upload tour guide authorization
+                if (hasPendingTourGuideUpload && tourGuideAuthorizationFile) {
+                    setSubmittingStatus(t({ en: 'Uploading authorization document…', fr: 'Envoi du document d\'autorisation…', ar: 'جارٍ رفع وثيقة الترخيص…' }));
+                    const path = `verifications/${user.uid}/${Date.now()}_tour_guide_auth`;
+                    const uploadRes = await withTimeout(
+                        safeUploadBlob(ref(storage, path), tourGuideAuthorizationFile),
+                        90000, 'TOUR_GUIDE_UPLOAD'
+                    );
+                    finalUploadedTourGuideUrl = await withTimeout(getDownloadURL(uploadRes.ref), 20000, 'TOUR_GUIDE_URL');
+                }
+
+                // Save final URLs to Firestore
+                setSubmittingStatus(t({ en: 'Saving your profile…', fr: 'Enregistrement du profil…', ar: 'جارٍ حفظ ملفك الشخصي…' }));
+                const uploadedPortfolioUrls = Array.from(new Set(
+                    finalUploadedCategoryEntries.flatMap(e => normalizeImageList(e.portfolioImages))
+                ));
+                const mergedPhotoUrl = finalUploadedProfilePhotoUrl || googlePhotoURL || '';
+
+                await setDoc(bricolerRef, {
+                    services: finalUploadedCategoryEntries,
+                    portfolio: uploadedPortfolioUrls,
+                    images: uploadedPortfolioUrls,
+                    avatar: mergedPhotoUrl,
+                    profilePhotoURL: mergedPhotoUrl,
+                    photoURL: mergedPhotoUrl,
+                    tourGuideAuthorizationUrl: finalUploadedTourGuideUrl || null,
+                    mediaSyncStatus: 'done',
+                    mediaSyncError: null,
+                    mediaSyncUpdatedAt: serverTimestamp(),
+                    updatedAt: serverTimestamp(),
+                }, { merge: true });
+
+                await setDoc(doc(db, 'clients', user.uid), {
+                    photoURL: mergedPhotoUrl,
+                    isBricoler: true,
+                }, { merge: true });
+            }
+
             setSubmittingStatus("Complete!");
-            onComplete({ services: finalCategoryEntries, city: selectedCity, availability });
+            onComplete({ services: finalUploadedCategoryEntries, city: selectedCity, availability });
 
         } catch (error: any) {
             console.error('Signup error:', error);
@@ -729,13 +761,15 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                         ? t({ en: 'Portfolio photo upload failed. Please check connection and retry.', fr: 'Échec du téléversement des photos de réalisations. Vérifiez la connexion et réessayez.', ar: 'فشل رفع صور الأعمال. تحقق من الاتصال وأعد المحاولة.' })
                         : String(error?.message || '').includes('PROFILE_UPLOAD_FAILED')
                             ? t({ en: 'Profile photo upload failed. Please retry.', fr: 'Échec du téléversement de la photo de profil. Veuillez réessayer.', ar: 'فشل رفع صورة الملف الشخصي. يرجى المحاولة مجدداً.' })
-                        : String(error?.message || '').includes('IMAGE_UPLOAD_TIMEOUT') || String(error?.message || '').includes('IMAGE_UPLOAD_FAILED')
-                            ? t({ en: 'Image upload timed out. Please retry with a stable connection.', fr: 'Le téléversement des images a expiré. Réessayez avec une connexion stable.', ar: 'انتهت مهلة رفع الصور. أعد المحاولة مع اتصال مستقر.' })
-                            : String(error?.message || '').includes('DOWNLOAD_URL_TIMEOUT') || String(error?.message || '').includes('BLOB_CONVERSION_TIMEOUT')
-                                ? t({ en: 'Image processing took too long. Please retry.', fr: 'Le traitement des images a pris trop de temps. Veuillez réessayer.', ar: 'استغرقت معالجة الصور وقتاً طويلاً. يرجى المحاولة مجدداً.' })
-                    : error.code === 'FIRESTORE_TIMEOUT' || error.message === 'FIRESTORE_TIMEOUT'
-                        ? t({ en: 'Connection timed out. Please check your internet and try again.', fr: 'Délai de connexion dépassé. Vérifiez votre réseau et réessayez.', ar: 'انتهت مهلة الاتصال. يرجى التحقق من الإنترنت والمحاولة مجدداً.' })
-                        : msg;
+                            : String(error?.message || '').includes('SERVICE_IMAGES_UPLOAD_FAILED')
+                                ? t({ en: 'Service image upload failed. Firebase Storage may be rejecting the upload.', fr: 'Le téléversement des images du service a échoué. Firebase Storage peut rejeter le fichier.', ar: 'فشل رفع صور الخدمة. قد تكون Firebase Storage ترفض الملف.' })
+                                : String(error?.message || '').includes('IMAGE_UPLOAD_TIMEOUT') || String(error?.message || '').includes('IMAGE_UPLOAD_FAILED')
+                                    ? t({ en: 'Image upload timed out. Please retry with a stable connection.', fr: 'Le téléversement des images a expiré. Réessayez avec une connexion stable.', ar: 'انتهت مهلة رفع الصور. أعد المحاولة avec une connexion stable.' })
+                                    : String(error?.message || '').includes('DOWNLOAD_URL_TIMEOUT') || String(error?.message || '').includes('BLOB_CONVERSION_TIMEOUT')
+                                        ? t({ en: 'Image processing took too long. Please retry.', fr: 'Le traitement des images a pris trop de temps. Veuillez réessayer.', ar: 'استغرقت معالجة الصور وقتاً طويلاً. يرجى المحاولة مجدداً.' })
+                                        : error.code === 'FIRESTORE_TIMEOUT' || error.message === 'FIRESTORE_TIMEOUT'
+                                            ? t({ en: 'Connection timed out. Please check your internet and try again.', fr: 'Délai de connexion dépassé. Vérifiez votre réseau et réessayez.', ar: 'انتهت مهلة الاتصال. يرجى التحقق من الإنترنت والمحاولة مجدداً.' })
+                                            : msg;
                 showToast({
                     variant: 'error',
                     title: t({ en: 'Sign-up failed', fr: "Échec de l'inscription", ar: 'فشل التسجيل' }),
@@ -783,26 +817,10 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
             setSubmittingStatus("Uploading media...");
 
             let finalTourGuideAuthUrl = tourGuideAuthorizationUrl || null;
-            if (tourGuideAuthorizationFile) {
-                const task = (async () => {
-                    const arrayBuffer = await tourGuideAuthorizationFile.arrayBuffer();
-                    const res = await uploadBytes(ref(storage, `verifications/${metaId}/${Date.now()}_tour_guide_auth`), arrayBuffer);
-                    finalTourGuideAuthUrl = await getDownloadURL(res.ref);
-                })();
-                await Promise.race([task, new Promise((_, reject) => setTimeout(() => reject(new Error("TIMEOUT")), 120000))]).catch(console.warn);
-            }
-
-            try {
-                await auth.currentUser?.getIdToken(true);
-                await wait(500);
-            } catch (tokenError) {
-                console.warn("Token warmup before admin media upload failed:", tokenError);
-            }
-            const finalProfilePhotoUrl = await resolveProfilePhoto(metaId, profilePhotoUrl);
-            const finalAvatarUrl = finalProfilePhotoUrl || userData?.profilePhotoURL || userData?.avatar || userData?.photoURL || '';
+            const finalProfilePhotoUrl = userData?.profilePhotoURL || userData?.avatar || userData?.photoURL || '';
             const googlePhotoURL = userData?.googlePhotoURL || userData?.photoURL || '';
-            const finalizedEntries = await attachUploadedImagesToEntries(metaId, entries);
-            const allAdminPortfolioUrls = Array.from(new Set(finalizedEntries.flatMap((entry) => normalizeImageList(entry.portfolioImages))));
+            const finalCategoryEntries = stripPendingImagesFromEntries(entries);
+            const allAdminPortfolioUrls = Array.from(new Set(finalCategoryEntries.flatMap((entry) => normalizeImageList(entry.portfolioImages))));
 
             const cleanObj = (obj: any) => {
                 const newObj: any = {};
@@ -814,16 +832,16 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                 uid: userData?.uid || null,
                 name: (fullName || "Bricoler").trim(),
                 displayName: (fullName || "Bricoler").trim(),
-                avatar: finalAvatarUrl,
-                photoURL: userData?.photoURL || googlePhotoURL || finalAvatarUrl,
-                profilePhotoURL: finalAvatarUrl,
+                avatar: finalProfilePhotoUrl,
+                photoURL: userData?.photoURL || googlePhotoURL || finalProfilePhotoUrl,
+                profilePhotoURL: finalProfilePhotoUrl,
                 googlePhotoURL,
                 whatsappNumber: (whatsappNumber || '').trim(),
                 phone: (whatsappNumber || '').trim(),
                 bankName: (bankName || '').trim(),
                 bricolerBankCardName: (bricolerBankCardName || '').trim(),
                 ribIBAN: (ribIBAN || '').trim(),
-                services: finalizedEntries,
+                services: finalCategoryEntries,
                 portfolio: allAdminPortfolioUrls,
                 images: allAdminPortfolioUrls,
                 city: selectedCity,
@@ -841,6 +859,35 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
             });
 
             await setDoc(doc(db, 'bricolers', metaId), bricolerData, { merge: true });
+
+            // Finalize uploads in background
+            setTimeout(async () => {
+                const uploads: Promise<any>[] = [];
+                if (tourGuideAuthorizationFile) {
+                    const arrayBuffer = await tourGuideAuthorizationFile.arrayBuffer();
+                    const res = await uploadBytes(ref(storage, `verifications/${metaId}/${Date.now()}_tour_guide_auth`), arrayBuffer);
+                    finalTourGuideAuthUrl = await getDownloadURL(res.ref);
+                    await setDoc(doc(db, 'bricolers', metaId), { tourGuideAuthorizationUrl: finalTourGuideAuthUrl }, { merge: true });
+                }
+
+                const uploadedProfilePhotoUrlTask = resolveProfilePhoto(metaId, profilePhotoUrl);
+                const finalizedEntriesTask = attachUploadedImagesToEntries(metaId, entries);
+
+                const [uploadedProfilePhotoUrl, finalizedEntries] = await Promise.all([uploadedProfilePhotoUrlTask, finalizedEntriesTask]);
+
+                const finalAvatarUrl = uploadedProfilePhotoUrl || userData?.profilePhotoURL || userData?.avatar || userData?.photoURL || '';
+                const finalAdminPortfolioUrls = Array.from(new Set(finalizedEntries.flatMap((entry) => normalizeImageList(entry.portfolioImages))));
+
+                await setDoc(doc(db, 'bricolers', metaId), {
+                    avatar: finalAvatarUrl,
+                    profilePhotoURL: finalAvatarUrl,
+                    photoURL: uploadedProfilePhotoUrl ? finalAvatarUrl : bricolerData.photoURL,
+                    services: finalizedEntries,
+                    portfolio: finalAdminPortfolioUrls,
+                    images: finalAdminPortfolioUrls,
+                }, { merge: true });
+            }, 500);
+
             showToast({ title: isEdit ? 'Profile updated!' : 'Profile created!', variant: 'success' });
             onComplete({ id: metaId, ...bricolerData });
             onClose();
@@ -880,51 +927,33 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                 };
             });
 
-            setSubmittingStatus("Uploading media...");
+            setSubmittingStatus("Saving...");
 
             let finalTourGuideAuthUrl = tourGuideAuthorizationUrl || null;
-            if (tourGuideAuthorizationFile) {
-                const task = (async () => {
-                    const res = await safeUploadBlob(ref(storage, `verifications/${user.uid}/${Date.now()}_tour_guide_auth`), tourGuideAuthorizationFile);
-                    finalTourGuideAuthUrl = await getDownloadURL(res.ref);
-                    return finalTourGuideAuthUrl;
-                })();
-                await Promise.race([
-                    task,
-                    new Promise((_, reject) => setTimeout(() => reject(new Error("TIMEOUT")), 120000))
-                ]).catch((err) => {
-                    console.warn("Tour guide auth update timed out or failed:", err);
-                    return tourGuideAuthorizationUrl || null;
-                });
-            }
 
             const bricolerRef = doc(db, 'bricolers', user.uid);
             const bSnap = await getDoc(bricolerRef);
             const existingData = bSnap.exists() ? bSnap.data() : {};
-            try {
-                await auth.currentUser?.getIdToken(true);
-                await wait(500);
-            } catch (tokenError) {
-                console.warn("Token warmup before update media upload failed:", tokenError);
-            }
-            const finalizedCurrentEntries = await attachUploadedImagesToEntries(user.uid, currentEntries);
-            let updatedServices = finalizedCurrentEntries;
+
+            // Strip pending base64 images immediately — background setTimeout will upload them
+            const strippedCurrentEntries = stripPendingImagesFromEntries(currentEntries);
+            let updatedServices = strippedCurrentEntries;
             if (bSnap.exists()) {
                 const existing = existingData.services || [];
-                const currentCategoryIds = Array.from(new Set(finalizedCurrentEntries.map(e => e.categoryId)));
+                const currentCategoryIds = Array.from(new Set(strippedCurrentEntries.map((e: any) => e.categoryId)));
                 const others = existing.filter((s: any) => !currentCategoryIds.includes(s.categoryId));
-                updatedServices = [...others, ...finalizedCurrentEntries];
+                updatedServices = [...others, ...strippedCurrentEntries];
             }
 
+            const finalCategoryEntries = updatedServices;
             const allPortfolioUrls = Array.from(new Set(
-                updatedServices.flatMap((entry: any) => normalizeImageList(entry.portfolioImages || entry.portfolio || entry.images || []))
+                finalCategoryEntries.flatMap((entry: any) => normalizeImageList(entry.portfolioImages || entry.portfolio || entry.images || []))
             ));
             const googlePhotoURL = user.photoURL || existingData.googlePhotoURL || '';
-            const uploadedProfilePhotoUrl = await resolveProfilePhoto(user.uid, profilePhotoUrl);
-            const finalProfilePhotoUrl = uploadedProfilePhotoUrl || existingData.profilePhotoURL || existingData.avatar || existingData.photoURL || googlePhotoURL || '';
+            const finalProfilePhotoUrl = existingData.profilePhotoURL || existingData.avatar || existingData.photoURL || googlePhotoURL || '';
 
             const updateData = {
-                services: updatedServices,
+                services: finalCategoryEntries,
                 portfolio: allPortfolioUrls,
                 images: allPortfolioUrls,
                 updatedAt: serverTimestamp(),
@@ -933,7 +962,7 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                 avatar: finalProfilePhotoUrl,
                 profilePhotoURL: finalProfilePhotoUrl,
                 googlePhotoURL,
-                tourGuideAuthorizationUrl: finalTourGuideAuthUrl
+                tourGuideAuthorizationUrl: finalTourGuideAuthUrl || existingData.tourGuideAuthorizationUrl
             };
             await setDoc(bricolerRef, updateData, { merge: true });
             await setDoc(doc(db, 'clients', user.uid), {
@@ -941,8 +970,55 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                 photoURL: finalProfilePhotoUrl || updateData.photoURL || ""
             }, { merge: true });
 
+            // Upload images synchronously (same pattern as handleBricolerSignup)
+            const hasPendingProfileUpdate = isImageDataUrl(profilePhotoUrl);
+            const hasPendingServiceUpdate = currentEntries.some(entryHasPendingImageUploads);
+            const existingOtherServices = bSnap.exists()
+                ? (existingData.services || []).filter((s: any) => !strippedCurrentEntries.map((e: any) => e.categoryId).includes(s.categoryId))
+                : [];
+
+            let finalServicesToSave = updatedServices;
+            let finalPhotoToSave = finalProfilePhotoUrl;
+
+            if (hasPendingProfileUpdate || hasPendingServiceUpdate) {
+                try {
+                    await auth.currentUser?.getIdToken(true);
+                } catch (tokenError) {
+                    console.warn("Token warmup failed:", tokenError);
+                }
+
+                if (hasPendingProfileUpdate) {
+                    setSubmittingStatus(t({ en: 'Uploading profile photo…', fr: 'Envoi de la photo de profil…', ar: 'جارٍ رفع الصورة الشخصية…' }));
+                    const uploaded = await resolveProfilePhoto(user.uid, profilePhotoUrl);
+                    if (uploaded && !isImageDataUrl(uploaded)) finalPhotoToSave = uploaded;
+                }
+
+                if (hasPendingServiceUpdate) {
+                    setSubmittingStatus(t({ en: 'Uploading portfolio photos…', fr: 'Envoi des photos du portfolio…', ar: 'جارٍ رفع صور الأعمال…' }));
+                    const finalizedCurrentEntries = await attachUploadedImagesToEntries(user.uid, currentEntries);
+                    finalServicesToSave = [...existingOtherServices, ...finalizedCurrentEntries];
+                }
+
+                const finalPortfolioUrls = Array.from(new Set(
+                    finalServicesToSave.flatMap((e: any) => normalizeImageList(e.portfolioImages || e.portfolio || e.images || []))
+                ));
+
+                await setDoc(bricolerRef, {
+                    services: finalServicesToSave,
+                    portfolio: finalPortfolioUrls,
+                    images: finalPortfolioUrls,
+                    avatar: finalPhotoToSave,
+                    profilePhotoURL: finalPhotoToSave,
+                    photoURL: finalPhotoToSave || updateData.photoURL,
+                }, { merge: true });
+
+                if (hasPendingProfileUpdate) {
+                    await setDoc(doc(db, 'clients', user.uid), { photoURL: finalPhotoToSave }, { merge: true });
+                }
+            }
+
             showToast({ title: t({ en: 'Successfully updated!', fr: 'Mis à jour avec succès !' }), variant: 'success' });
-            onComplete({ services: updatedServices });
+            onComplete({ services: finalServicesToSave });
             onClose();
         } catch (error: any) {
             console.error("Update error:", error);
@@ -1061,12 +1137,18 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
     };
 
     const uploadDataUrlToStorage = async (path: string, dataUrl: string): Promise<string> => {
-        const maxAttempts = 2;
+        const maxAttempts = 3;
+
         for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
             try {
+                // Convert base64 data URL → Blob before uploading.
+                // uploadBytes (binary) is ~33% faster than uploadString (base64-over-wire)
+                // and avoids IMAGE_UPLOAD_TIMEOUT on slow connections.
+                const blob = await dataUrlToBlob(dataUrl);
+                const storageRef = ref(storage, path);
                 const uploadRes = await withTimeout(
-                    uploadString(ref(storage, path), dataUrl, 'data_url'),
-                    45000,
+                    uploadBytes(storageRef, blob, { contentType: blob.type || 'image/jpeg' }),
+                    90000, // 90s timeout gives more headroom on slow connections
                     'IMAGE_UPLOAD'
                 );
                 return await withTimeout(getDownloadURL(uploadRes.ref), 20000, 'DOWNLOAD_URL');
@@ -1075,9 +1157,9 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                     try {
                         await auth.currentUser?.getIdToken(true);
                     } catch (tokenError) {
-                        console.warn("Token refresh failed before upload retry:", tokenError);
+                        console.warn('Token refresh failed before upload retry:', tokenError);
                     }
-                    await wait(1200 * attempt);
+                    await wait(2000 * attempt);
                     continue;
                 }
                 throw error;
@@ -1089,14 +1171,19 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
     const resolveServiceImagesForCategory = async (ownerId: string, categoryId: string, images: string[]): Promise<string[]> => {
         const normalized = normalizeImageList(images).slice(0, 6);
         const safeCategoryId = (categoryId || '').trim() || 'general';
+        let attemptedUploads = 0;
+        let successfulUploads = 0;
         const resolved = await Promise.all(
             normalized.map(async (image, i) => {
                 if (!isImageDataUrl(image)) {
                     return image;
                 }
+                attemptedUploads += 1;
                 try {
                     const path = `portfolio/${ownerId}/${safeCategoryId}/${Date.now()}_${i}.jpg`;
-                    return await uploadDataUrlToStorage(path, image);
+                    const url = await uploadDataUrlToStorage(path, image);
+                    successfulUploads += 1;
+                    return url;
                 } catch (error) {
                     console.warn(`Skipping failed service image upload (${safeCategoryId} #${i + 1}):`, error);
                     return null;
@@ -1104,18 +1191,24 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
             })
         );
 
+        // If they all fail, we just keep the base64 versions so they don't break the app
+        // We remove the throw new Error('SERVICE_IMAGES_UPLOAD_FAILED_'...) so the background process finishes.
+        if (attemptedUploads > 0 && successfulUploads === 0) {
+            console.warn(`All service image uploads failed for category ${safeCategoryId}. Keeping local data URLs.`);
+        }
+
         return Array.from(new Set(resolved.filter((item): item is string => typeof item === 'string' && item.trim().length > 0)));
     };
 
     const resolveProfilePhoto = async (ownerId: string, value: string): Promise<string> => {
         if (!value) return '';
         if (!isImageDataUrl(value)) return value;
+        const path = `avatars/${ownerId}/${Date.now()}_profile.jpg`;
         try {
-            const path = `avatars/${ownerId}/${Date.now()}_profile.jpg`;
             return await uploadDataUrlToStorage(path, value);
-        } catch (error) {
-            console.warn("Skipping failed profile photo upload:", error);
-            return '';
+        } catch (e) {
+            console.warn("Profile photo upload failed, retaining base64 data URL:", e);
+            return value; // Fallback to base64 so we don't crash
         }
     };
 

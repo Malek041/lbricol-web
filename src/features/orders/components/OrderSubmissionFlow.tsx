@@ -617,6 +617,7 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
     const [bankReceipt, setBankReceipt] = useState<string | null>(null);
     const [clientNeedImages, setClientNeedImages] = useState<string[]>([]);
     const [isUploadingTaskImages, setIsUploadingTaskImages] = useState(false);
+    const [isUploadingReceipt, setIsUploadingReceipt] = useState(false);
     const [frequency, setFrequency] = useState<'once' | 'daily' | 'weekly' | 'biweekly' | 'monthly'>('once');
     const [showSuccessAnimation, setShowSuccessAnimation] = useState(false);
 
@@ -975,15 +976,6 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
 
     const handleTaskImageSelection = async (files: FileList | null) => {
         if (!files || files.length === 0) return;
-        const currentUser = auth.currentUser;
-        if (!currentUser) {
-            showToast({
-                variant: 'error',
-                title: t({ en: 'Login required', fr: 'Connexion requise', ar: 'تسجيل الدخول مطلوب' }),
-                description: t({ en: 'Please log in before uploading task photos.', fr: 'Veuillez vous connecter avant de téléverser des photos.', ar: 'يرجى تسجيل الدخول قبل رفع صور المهمة.' })
-            });
-            return;
-        }
 
         const remainingSlots = Math.max(0, 6 - clientNeedImages.length);
         if (remainingSlots === 0) {
@@ -998,30 +990,40 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
         try {
             setIsUploadingTaskImages(true);
             const selected = Array.from(files).slice(0, remainingSlots);
-            const uploadedUrls = await Promise.all(
-                selected.map(async (file, idx) => {
-                    const compressedDataUrl = await compressImageFileToDataUrl(file, {
-                        maxWidth: 1600,
-                        maxHeight: 1600,
-                        quality: 0.72,
-                        mimeType: 'image/jpeg',
-                    });
-                    const compressedBlob = await dataUrlToBlob(compressedDataUrl);
-                    const path = `orders/${currentUser.uid}/${Date.now()}_${idx}.jpg`;
-                    return await uploadImageToStorage(compressedBlob, path);
-                })
+
+            // Generate high quality data URLs for pending upload later
+            const highQualityDataUrls = await Promise.all(
+                selected.map(file => compressImageFileToDataUrl(file, { maxWidth: 1600, maxHeight: 1600, quality: 0.72, mimeType: 'image/jpeg' }))
             );
-            setClientNeedImages((prev) => [...prev, ...uploadedUrls]);
+
+            setClientNeedImages(prev => [...prev, ...highQualityDataUrls]);
+
+            const currentUser = auth.currentUser;
+            if (currentUser) {
+                // Background upload if logged in, do not block the UI state with isUploadingTaskImages.
+                highQualityDataUrls.forEach(async (compressedDataUrl, idx) => {
+                    try {
+                        const compressedBlob = await dataUrlToBlob(compressedDataUrl);
+                        const path = `orders/${currentUser.uid}/${Date.now()}_${idx}.jpg`;
+                        const uploadedUrl = await uploadImageToStorage(compressedBlob, path);
+
+                        setClientNeedImages(prev => prev.map(img => img === compressedDataUrl ? uploadedUrl : img));
+                    } catch (err) {
+                        console.error('Background image upload failed:', err);
+                    }
+                });
+            }
         } catch (error) {
-            console.error("Task image upload failed:", error);
+            console.error("Task image generation failed:", error);
             showToast({
                 variant: 'error',
-                title: t({ en: 'Upload failed', fr: 'Échec du téléversement', ar: 'فشل الرفع' }),
-                description: t({ en: 'Could not upload one or more photos.', fr: 'Impossible de téléverser une ou plusieurs photos.', ar: 'تعذر رفع صورة واحدة أو أكثر.' })
+                title: t({ en: 'Processing failed', fr: 'Échec du traitement', ar: 'فشل المعالجة' }),
+                description: t({ en: 'Could not process one or more photos.', fr: 'Impossible de traiter une ou plusieurs photos.', ar: 'تعذر معالجة صورة واحدة أو أكثر.' })
             });
-        } finally {
-            setIsUploadingTaskImages(false);
         }
+        // We intentionally removed the finally block that sets isUploadingTaskImages to false
+        // Because we set it to false immediately after generating the local base64 images so UI doesn't block.
+        setIsUploadingTaskImages(false);
     };
 
     const removeTaskImage = (index: number) => {
@@ -1223,6 +1225,12 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
     const handleFinalSubmit = async () => {
         if (isSubmitting) return;
 
+        // Note: Removed the isUploadingTaskImages block because uploads are now backgrounded.
+        if (isUploadingReceipt) {
+            alert(t({ en: 'Please wait for the receipt photo to finish uploading...', fr: 'Veuillez patienter pendant le téléchargement de la photo du reçu...', ar: 'يرجى الانتظار حتى يتم تحميل صورة الإيصال...' }));
+            return;
+        }
+
         if (paymentMethod === 'bank' && !bankReceipt) {
             alert(t({ en: 'Please upload your transfer receipt before programming the mission.', fr: 'Veuillez télécharger votre reçu de virement avant de programmer la mission.', ar: 'يرجى تحميل إيصال التحويل قبل برمجة المهمة.' }));
             return;
@@ -1295,8 +1303,8 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                 totalPrice: applyReferralDiscount && referralDiscountAvailable > 0 ? Math.max(0, totalPrice - referralDiscountAvailable) : totalPrice,
                 price: applyReferralDiscount && referralDiscountAvailable > 0 ? Math.max(0, totalPrice - referralDiscountAvailable) : totalPrice,
                 referralApplied: applyReferralDiscount && referralDiscountAvailable > 0,
-                images: clientNeedImages.filter((img) => !isImageDataUrl(img)),
-                clientNeedImages: clientNeedImages.filter((img) => !isImageDataUrl(img)),
+                images: clientNeedImages,
+                clientNeedImages: clientNeedImages,
                 paymentMethod,
                 bankReceipt: paymentMethod === 'bank' ? bankReceipt : null,
                 frequency,
@@ -2243,20 +2251,29 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                                                         <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
                                                             const f = e.target.files?.[0];
                                                             if (!f) return;
-                                                            // Show preview immediately
-                                                            const reader = new FileReader();
-                                                            reader.onload = (ev) => setBankReceipt(ev.target?.result as string);
-                                                            reader.readAsDataURL(f);
-                                                            // Upload to Storage
-                                                            const user = auth.currentUser;
-                                                            if (user) {
-                                                                try {
+
+                                                            try {
+                                                                setIsUploadingReceipt(true);
+                                                                // Generate high quality data URL for preview and pending upload
+                                                                const compressedDataUrl = await compressImageFileToDataUrl(f, {
+                                                                    maxWidth: 1600,
+                                                                    maxHeight: 1600,
+                                                                    quality: 0.72,
+                                                                    mimeType: 'image/jpeg'
+                                                                });
+                                                                setBankReceipt(compressedDataUrl);
+
+                                                                const user = auth.currentUser;
+                                                                if (user) {
+                                                                    const compressedBlob = await dataUrlToBlob(compressedDataUrl);
                                                                     const path = `receipts/${user.uid}/${Date.now()}_receipt.jpg`;
-                                                                    const url = await uploadImageToStorage(f, path);
+                                                                    const url = await uploadImageToStorage(compressedBlob, path);
                                                                     setBankReceipt(url);
-                                                                } catch (err) {
-                                                                    console.warn('Receipt upload failed, keeping preview:', err);
                                                                 }
+                                                            } catch (err) {
+                                                                console.warn('Receipt capture/upload failed:', err);
+                                                            } finally {
+                                                                setIsUploadingReceipt(false);
                                                             }
                                                         }} />
                                                     </label>

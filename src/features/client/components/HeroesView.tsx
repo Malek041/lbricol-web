@@ -16,6 +16,7 @@ import { db, auth, storage } from '@/lib/firebase';
 import { getServiceById, getSubServiceName, SERVICES_HIERARCHY, getServiceVector } from '@/config/services_config';
 import { OrderDetails } from '@/features/orders/components/OrderCard';
 import { cn } from '@/lib/utils';
+import { isImageDataUrl } from '@/lib/imageCompression';
 import { Banknote, Info, Wrench, Upload, Search, Check, Trash2 } from 'lucide-react';
 
 interface HeroesViewProps {
@@ -85,6 +86,7 @@ export default function HeroesView({ orders }: HeroesViewProps) {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [paymentMethod, setPaymentMethod] = useState<'cash' | 'bank'>('cash');
     const [bankReceipt, setBankReceipt] = useState<string | null>(null);
+    const [isUploadingReceipt, setIsUploadingReceipt] = useState(false);
 
     // PERSISTENCE: Allow removing heroes
     const [removedHeroIds, setRemovedHeroIds] = useState<string[]>(() => {
@@ -201,14 +203,23 @@ export default function HeroesView({ orders }: HeroesViewProps) {
     }, [heroProfile, selectedHero]);
 
     const uploadImageToStorage = async (file: File, path: string): Promise<string> => {
-        const arrayBuffer = await file.arrayBuffer();
         const storageRef = ref(storage, path);
-        const result = await uploadStorageBytes(storageRef, arrayBuffer, { contentType: 'image/jpeg' });
+        const result = await uploadStorageBytes(storageRef, file, { contentType: file.type || 'image/jpeg' });
         return getStorageDownloadURL(result.ref);
     };
 
     const handleConfirmBooking = async () => {
         if (!selectedHero || !selectedService || !taskSize || isSubmitting) return;
+
+        if (paymentMethod === 'bank' && !bankReceipt) {
+            alert(t({ en: 'Please upload your transfer receipt before programming the mission.', fr: 'Veuillez télécharger votre reçu de virement avant de programmer la mission.', ar: 'يرجى تحميل إيصال التحويل قبل برمجة المهمة.' }));
+            return;
+        }
+
+        if (isUploadingReceipt) {
+            alert(t({ en: 'Please wait for your receipt to finish uploading...', fr: 'Veuillez patienter pendant le téléchargement de votre reçu...', ar: 'يرجى الانتظار حتى يتم تحميل الإيصال...' }));
+            return;
+        }
 
         setIsSubmitting(true);
         try {
@@ -253,7 +264,7 @@ export default function HeroesView({ orders }: HeroesViewProps) {
                 serviceFee,
                 totalPrice,
                 paymentMethod,
-                bankReceipt,
+                bankReceipt: (paymentMethod === 'bank' && bankReceipt && !isImageDataUrl(bankReceipt)) ? bankReceipt : null,
                 createdAt: serverTimestamp()
             };
 
@@ -791,10 +802,15 @@ export default function HeroesView({ orders }: HeroesViewProps) {
                                                                     const user = auth.currentUser;
                                                                     if (user) {
                                                                         try {
+                                                                            setIsUploadingReceipt(true);
                                                                             const path = `receipts/${user.uid}/${Date.now()}_receipt.jpg`;
                                                                             const url = await uploadImageToStorage(f, path);
                                                                             setBankReceipt(url);
-                                                                        } catch (err) { console.warn('Receipt upload failed, keeping preview:', err); }
+                                                                        } catch (err) {
+                                                                            console.warn('Receipt upload failed, keeping preview:', err);
+                                                                        } finally {
+                                                                            setIsUploadingReceipt(false);
+                                                                        }
                                                                     }
                                                                 }} />
                                                             </label>

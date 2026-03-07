@@ -209,7 +209,7 @@ const ProfileView: React.FC<ProfileViewProps> = ({
                                 className="w-28 h-28 rounded-[36px] overflow-hidden bg-white relative shadow-sm"
                             >
                                 <img
-                                    src={userAvatar || userData?.profilePhotoURL || userData?.avatar || userData?.photoURL || "/Images/Vectors Illu/LbricolFaceOY.webp"}
+                                    src={userData?.profilePhotoURL || userData?.avatar || userAvatar || userData?.photoURL || "/Images/Vectors Illu/LbricolFaceOY.webp"}
                                     alt={displayName}
                                     className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                                 />
@@ -411,7 +411,7 @@ const ProfileView: React.FC<ProfileViewProps> = ({
                         <div className="relative">
                             <div className="w-12 h-12 rounded-xl overflow-hidden bg-neutral-100 relative border-2 border-white shadow-sm">
                                 <img
-                                    src={userAvatar || userData?.profilePhotoURL || userData?.avatar || userData?.photoURL || "/Images/Vectors Illu/LbricolFaceOY.webp"}
+                                    src={userData?.profilePhotoURL || userData?.avatar || userAvatar || userData?.photoURL || "/Images/Vectors Illu/LbricolFaceOY.webp"}
                                     className="w-full h-full object-cover"
                                     alt="Avatar"
                                 />

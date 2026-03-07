@@ -89,7 +89,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { useTheme } from '@/context/ThemeContext';
 import { useToast } from '@/context/ToastContext';
 import MillionsImpactSection from '@/components/shared/MillionsImpactSection';
-import { auth, db } from '@/lib/firebase';
+import { auth, db, storage } from '@/lib/firebase';
 import {
   onAuthStateChanged,
   signInWithPopup,
@@ -97,6 +97,8 @@ import {
   User as FirebaseUser,
   signOut
 } from 'firebase/auth';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { isImageDataUrl, dataUrlToBlob } from '@/lib/imageCompression';
 import {
   collection,
   addDoc,
@@ -1700,6 +1702,26 @@ const Home = () => {
 
         };
 
+        if (jobData.images && jobData.images.length > 0) {
+          const uploadPromises = jobData.images.map(async (img: string, idx: number) => {
+            if (isImageDataUrl(img)) {
+              try {
+                const blob = await dataUrlToBlob(img);
+                const path = `orders/${effectiveUser.uid}/${Date.now()}_${idx}.jpg`;
+                const storageRef = ref(storage, path);
+                await uploadBytes(storageRef, blob, { contentType: 'image/jpeg' });
+                return await getDownloadURL(storageRef);
+              } catch (err) {
+                console.error("Failed to upload pending data URL image", err);
+                return null; // Ignore failed uploads
+              }
+            }
+            return img;
+          });
+          const resolvedUrls = await Promise.all(uploadPromises);
+          jobData.images = resolvedUrls.filter(Boolean) as string[];
+        }
+
         const docRef = await addDoc(collection(db, 'jobs'), jobData);
         console.log("Job saved with ID: ", docRef.id);
 
@@ -2155,8 +2177,46 @@ const Home = () => {
         (jobData as any).nextRunDate = nextDate.toISOString();
       }
 
+      // Upload images synchronously before saving — isProgramming/SplashScreen is already showing.
+      // Each upload races against a 60s timeout so a single slow upload can't hang the flow.
+      if (jobData.images && jobData.images.length > 0) {
+        const uploadPromises = (jobData.images as string[]).map(async (img: string, idx: number) => {
+          if (!isImageDataUrl(img)) return img; // already a URL, keep as-is
+          try {
+            const blob = await dataUrlToBlob(img);
+            const path = `orders/${effectiveUser.uid}/${Date.now()}_${idx}.jpg`;
+            const storageRef = ref(storage, path);
+            const result = await Promise.race([
+              uploadBytes(storageRef, blob, { contentType: blob.type || 'image/jpeg' }).then(() => getDownloadURL(storageRef)),
+              new Promise<null>((_, reject) => setTimeout(() => reject(new Error('IMAGE_UPLOAD_TIMEOUT')), 60000))
+            ]);
+            return result;
+          } catch (err) {
+            console.error(`Order image upload failed (idx ${idx}):`, err);
+            return null; // skip failed images, don't block the order
+          }
+        });
+        const resolved = await Promise.all(uploadPromises);
+        jobData.images = resolved.filter(Boolean) as string[];
+      }
+
       const docRef = await addDoc(collection(db, 'jobs'), jobData);
-      console.log("Quick Job saved with ID: ", docRef.id);
+      console.log("Quick Job saved with ID:", docRef.id);
+      // Check and upload bank receipt if it's a data URL
+      if (jobData.bankReceipt && isImageDataUrl(jobData.bankReceipt)) {
+        try {
+          const blob = await dataUrlToBlob(jobData.bankReceipt);
+          const path = `receipts/${effectiveUser.uid}/${Date.now()}_receipt.jpg`;
+          const storageRef = ref(storage, path);
+          await uploadBytes(storageRef, blob, { contentType: 'image/jpeg' });
+          jobData.bankReceipt = await getDownloadURL(storageRef);
+        } catch (err) {
+          console.error("Failed to upload pending data URL receipt", err);
+          jobData.bankReceipt = null;
+        }
+      }
+
+      // Note: order was already saved above (before image uploads) so docRef is available
 
       // Activity Log
       await addDoc(collection(db, 'activity'), {
@@ -2420,7 +2480,7 @@ const Home = () => {
 
             {mobileNavTab === 'profile' && (
               <ProfileView
-                userAvatar={userData?.photoURL || currentUser?.photoURL || undefined}
+                userAvatar={userData?.profilePhotoURL || userData?.photoURL || currentUser?.photoURL || undefined}
                 userName={userData?.name || currentUser?.displayName || undefined}
                 userEmail={currentUser?.email || undefined}
                 isBricoler={isBricoler}
