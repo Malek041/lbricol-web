@@ -645,7 +645,7 @@ function CalendarTab({
     const getTimeHeight = (from: string, to: string) => {
         const start = getTimePosition(from);
         const end = getTimePosition(to);
-        return Math.max(end - start, 110); // Min height 110 for mission visibility
+        return Math.max(end - start, 135); // Increased min height for mission visibility
     };
 
     const dayMissions = useMemo(() => {
@@ -746,7 +746,7 @@ function CalendarTab({
                                     initial={{ opacity: 0, x: 20 }}
                                     animate={{ opacity: 1, x: 0 }}
                                     onClick={() => onSelectOrder(order)}
-                                    className="absolute left-6 right-8 rounded-2xl bg-white border border-neutral-100 p-4 shadow-lg z-20 cursor-pointer hover:shadow-xl active:scale-[0.98] transition-all flex items-start gap-4"
+                                    className="absolute left-6 right-8 rounded-2xl bg-white border border-neutral-100 p-4 pb-5 shadow-lg z-20 cursor-pointer hover:shadow-xl active:scale-[0.98] transition-all flex items-start gap-4 overflow-hidden"
                                     style={{
                                         top: getTimePosition(fromTime) + 2,
                                         height: getTimeHeight(fromTime, toTime) - 4

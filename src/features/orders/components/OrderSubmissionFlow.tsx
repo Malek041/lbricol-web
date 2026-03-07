@@ -1837,56 +1837,68 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                                         </div>
                                     </div>
 
-                                    {/* Time Selector Dropdown */}
-                                    <div className="mt-8 px-1">
-                                        <div className="relative">
-                                            <select
-                                                value={selectedTime || ''}
-                                                onChange={(e) => setSelectedTime(e.target.value)}
-                                                className="w-full h-[64px] bg-white border border-neutral-300 rounded-[32px] px-8 text-[18px] font-bold text-neutral-900 outline-none appearance-none flex items-center transition-all focus:border-[#008C74]"
-                                            >
-                                                <option value="">{t({ en: 'Select a time slot', fr: 'Choisir un créneau' })}</option>
-                                                {(() => {
-                                                    const generated = generateAvailableSlots();
-                                                    // Strict: only show generated if pro selected
-                                                    const finalSlots = (generated.length > 0)
-                                                        ? generated
-                                                        : (selectedBricolerId === 'open' ? ['08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00'] : []);
+                                    {/* Time Selector Grid */}
+                                    <div className="mt-8 px-1 space-y-8">
+                                        {(() => {
+                                            const generated = generateAvailableSlots();
+                                            // Strict: only show generated if pro selected
+                                            const finalSlotsRaw = (generated.length > 0)
+                                                ? generated
+                                                : (selectedBricolerId === 'open' ? ['08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00', '19:00', '20:00', '21:00'] : []);
 
-                                                    return finalSlots.map(slot => {
-                                                        const isCurrentlyBooked = isSlotBooked(slot);
-                                                        if (isCurrentlyBooked) return null;
+                                            const finalSlots = finalSlotsRaw.filter(slot => {
+                                                const isCurrentlyBooked = isSlotBooked(slot);
+                                                if (isCurrentlyBooked) return false;
 
-                                                        // Filter out past times if selected day is today (with 15 minute buffer)
-                                                        if (selectedDate) {
-                                                            const now = new Date();
-                                                            const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-                                                            const isSelectionToday = selectedDate === todayStr;
+                                                // Filter out past times if selected day is today (with 15 minute buffer)
+                                                if (selectedDate) {
+                                                    const now = new Date();
+                                                    const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+                                                    const isSelectionToday = selectedDate === todayStr;
 
-                                                            if (isSelectionToday) {
-                                                                const [h, m] = slot.split(':').map(Number);
-                                                                const now = new Date();
-                                                                const slotTimeInMins = h * 60 + m;
-                                                                const nowInMins = now.getHours() * 60 + now.getMinutes();
-                                                                if (slotTimeInMins <= nowInMins + 15) return null; // 15-minute buffer minimum
-                                                            }
-                                                        }
+                                                    if (isSelectionToday) {
+                                                        const [h, m] = slot.split(':').map(Number);
+                                                        const slotTimeInMins = h * 60 + m;
+                                                        const nowInMins = now.getHours() * 60 + now.getMinutes();
+                                                        if (slotTimeInMins <= nowInMins + 15) return false; // 15-minute buffer minimum
+                                                    }
+                                                }
+                                                return true;
+                                            });
 
-                                                        // Format to readable AM/PM
-                                                        const [h, m] = slot.split(':');
-                                                        const hh = parseInt(h);
-                                                        const period = hh >= 12 ? 'pm' : 'am';
-                                                        const displayH = hh > 12 ? hh - 12 : (hh === 0 ? 12 : hh);
-                                                        const displayTime = `${displayH}:${m}${period}`;
+                                            const categories = [
+                                                { label: t({ en: 'MORNING', fr: 'MATIN', ar: 'صباحاً' }), slots: finalSlots.filter(s => parseInt(s.split(':')[0]) < 13) },
+                                                { label: t({ en: 'AFTERNOON', fr: 'APRÈS-MIDI', ar: 'بعد الظهر' }), slots: finalSlots.filter(s => parseInt(s.split(':')[0]) >= 13 && parseInt(s.split(':')[0]) < 18) },
+                                                { label: t({ en: 'EVENING', fr: 'SOIR', ar: 'مساءً' }), slots: finalSlots.filter(s => parseInt(s.split(':')[0]) >= 18) },
+                                            ];
 
-                                                        return (
-                                                            <option key={slot} value={slot}>{displayTime}</option>
-                                                        );
-                                                    });
-                                                })()}
-                                            </select>
-                                            <ChevronDown size={22} className="absolute right-8 top-1/2 -translate-y-1/2 text-neutral-400 pointer-events-none" />
-                                        </div>
+                                            return categories.map((cat, catIdx) => (
+                                                cat.slots.length > 0 && (
+                                                    <div key={catIdx} className="space-y-4">
+                                                        <span className="text-[11px] font-black text-neutral-400 tracking-widest uppercase ml-1">{cat.label}</span>
+                                                        <div className="grid grid-cols-3 gap-3">
+                                                            {cat.slots.map(slot => {
+                                                                const isSelected = selectedTime === slot;
+                                                                return (
+                                                                    <button
+                                                                        key={slot}
+                                                                        onClick={() => setSelectedTime(slot)}
+                                                                        className={cn(
+                                                                            "h-[54px] rounded-[14px] border flex items-center justify-center text-[16px] font-black transition-all active:scale-95",
+                                                                            isSelected
+                                                                                ? "bg-[#00A082] border-[#00A082] text-white shadow-lg shadow-[#00A082]/20"
+                                                                                : "bg-[#F9F9F9]/50 border-neutral-100 text-neutral-900 hover:border-[#008C74]/30"
+                                                                        )}
+                                                                    >
+                                                                        {slot}
+                                                                    </button>
+                                                                );
+                                                            })}
+                                                        </div>
+                                                    </div>
+                                                )
+                                            ));
+                                        })()}
                                     </div>
 
                                     {/* Helper Information */}
