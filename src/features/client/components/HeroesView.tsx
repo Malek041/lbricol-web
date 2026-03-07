@@ -195,9 +195,11 @@ export default function HeroesView({ orders }: HeroesViewProps) {
             d.setDate(today.getDate() + i);
             const dateStr = d.toISOString().split('T')[0];
             const daySlots = Array.isArray(slotsMap[dateStr]) ? slotsMap[dateStr] : [];
-            if (daySlots.length > 0) {
+
+            // If they have slots OR we use the default 10-17 availability
+            if (daySlots.length > 0 || true) { // Always available by default
                 setSelectedDate(dateStr);
-                setSelectedTime(''); // reset time until user picks one in that day
+                setSelectedTime('');
                 return;
             }
         }
@@ -458,12 +460,13 @@ export default function HeroesView({ orders }: HeroesViewProps) {
                                                             const isSelected = selectedDate === dateStr;
                                                             const isTodayDate = i === 0;
 
-                                                            const daySlots = Array.isArray((heroProfile as any)?.calendarSlots?.[dateStr])
-                                                                ? (heroProfile as any).calendarSlots[dateStr]
-                                                                : [];
-                                                            const hasAvailability = daySlots.length > 0;
+                                                            const daySlotsRaw = (heroProfile as any)?.calendarSlots?.[dateStr];
+                                                            const daySlots = Array.isArray(daySlotsRaw) && daySlotsRaw.length > 0
+                                                                ? daySlotsRaw
+                                                                : [{ from: '10:00', to: '17:00' }];
+                                                            const hasAvailability = true;
 
-                                                            // Only days with declared availability should be selectable
+                                                            // Only days with declared availability should be selectable (Now always true because of default 10-17)
                                                             if (!hasAvailability) {
                                                                 return (
                                                                     <button
@@ -517,9 +520,10 @@ export default function HeroesView({ orders }: HeroesViewProps) {
                                                             const timeStr = `${hour.toString().padStart(2, '0')}:00`;
                                                             const isSelected = selectedTime === timeStr;
 
-                                                            const daySlots = Array.isArray((heroProfile as any)?.calendarSlots?.[selectedDate])
-                                                                ? (heroProfile as any).calendarSlots[selectedDate]
-                                                                : [];
+                                                            const daySlotsRaw = (heroProfile as any)?.calendarSlots?.[selectedDate];
+                                                            const daySlots = Array.isArray(daySlotsRaw) && daySlotsRaw.length > 0
+                                                                ? daySlotsRaw
+                                                                : [{ from: '10:00', to: '17:00' }];
 
                                                             const toMinutes = (hhmm: string) => {
                                                                 const [h, m] = hhmm.split(':').map(Number);

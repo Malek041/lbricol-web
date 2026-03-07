@@ -2754,55 +2754,7 @@ const Home = () => {
                             zIndex: 2000
                           }}>
                             {/* Floating Message Button */}
-                            {currentUser && (
-                              <motion.div
-                                initial={{ opacity: 0, scale: 0.8, y: 20 }}
-                                animate={{ opacity: 1, scale: 1, y: 0 }}
-                                exit={{ opacity: 0, scale: 0.8, y: 20 }}
-                                transition={{ delay: 0.05 }}
-                                whileHover={{ scale: 1.05, boxShadow: '0 12px 40px rgba(0,0,0,0.25)' }}
-                                whileTap={{ scale: 0.95 }}
-                                onClick={() => setShowMessagesModal(true)}
-                                style={{
-                                  width: '72px',
-                                  height: '72px',
-                                  backgroundColor: '#fff',
-                                  borderRadius: '24px',
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  justifyContent: 'center',
-                                  color: '#000',
-                                  boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
-                                  cursor: 'pointer',
-                                  border: '1.5px solid #E2E2E2',
-                                  position: 'relative'
-                                }}
-                              >
-                                <MessageSquare size={28} strokeWidth={2.5} />
-                                {/* Unread badge */}
-                                {orders.some(o => o.id && (o.bricolerId || o.clientId)) && (
-                                  <div style={{
-                                    position: 'absolute',
-                                    top: -5,
-                                    right: -5,
-                                    width: '20px',
-                                    height: '20px',
-                                    backgroundColor: '#007AFF',
-                                    borderRadius: '50%',
-                                    border: '3px solid #FFF',
-                                    fontSize: '10px',
-                                    fontWeight: 900,
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    boxShadow: '0 2px 8px rgba(0,122,255,0.3)',
-                                    color: '#FFF'
-                                  }}>
-                                    {orders.filter(o => o.id && (o.bricolerId || o.clientId)).length}
-                                  </div>
-                                )}
-                              </motion.div>
-                            )}
+                            {/* Chat Icon Removed - Using WhatsApp only */}
 
                             {/* Floating Calendar Button */}
                             <motion.div
@@ -3028,16 +2980,7 @@ const Home = () => {
                             </button>
                           </div>
 
-                          {/* Messages Content */}
-                          <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-                            <MessagesView
-                              orders={orders}
-                              currentUser={currentUser}
-                              initialSelectedJobId={messagesModalJobId}
-                              isModal={true}
-                              onBackToOrders={() => setShowMessagesModal(false)}
-                            />
-                          </div>
+                          {/* Messages Modal Removed - Using WhatsApp only */}
                         </motion.div>
                       </motion.div>
                     )}

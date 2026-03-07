@@ -12,7 +12,7 @@ import { arSA, fr } from 'date-fns/locale';
 
 export interface ClientNotification {
     id: string;
-    type: 'order_programmed' | 'order_confirmed' | 'order_delivered' | 'new_message' | 'referral_reward' | 'job_status_update' | 'bricoler_offer' | 'bricoler_counter_offer';
+    type: 'order_programmed' | 'order_confirmed' | 'order_delivered' | 'referral_reward' | 'job_status_update' | 'bricoler_offer' | 'bricoler_counter_offer';
     title?: string;
     body?: string;
     orderId?: string;
@@ -39,7 +39,7 @@ const TYPE_CONFIG: Record<ClientNotification['type'], { icon: React.ElementType;
     order_programmed: { icon: Package, color: '#00A082', bg: '#E6F7F4' },
     order_confirmed: { icon: CheckCircle2, color: '#00A082', bg: '#E6F7F4' },
     order_delivered: { icon: CheckCircle2, color: '#FFC244', bg: '#FFF9ED' },
-    new_message: { icon: MessageCircle, color: '#7C73E8', bg: '#F0EFFE' },
+    // new_message type removed - using WhatsApp only
     referral_reward: { icon: Gift, color: '#E91E8C', bg: '#FCE4F1' },
     job_status_update: { icon: Clock, color: '#00A082', bg: '#E6F7F4' },
     bricoler_offer: { icon: CheckCircle2, color: '#00A082', bg: '#E6F7F4' },
@@ -92,9 +92,7 @@ const ClientNotificationsView: React.FC<ClientNotificationsViewProps> = ({
 
     const handleTap = (notif: ClientNotification) => {
         const id = notif.orderId || notif.jobId;
-        if (notif.type === 'new_message' && id) {
-            onNavigateToMessages?.(id);
-        } else if (id) {
+        if (id) {
             onNavigateToOrder?.(id);
         }
     };
@@ -113,7 +111,7 @@ const ClientNotificationsView: React.FC<ClientNotificationsViewProps> = ({
     const getTitle = (notif: ClientNotification, t: any) => {
         if (notif.title) return notif.title;
         switch (notif.type) {
-            case 'new_message': return t({ en: 'New Message', fr: 'Nouveau Message', ar: 'رسالة جديدة' });
+            // new_message case removed
             case 'job_status_update': return t({ en: 'Order Status Update', fr: 'Mise à jour du statut', ar: 'تحديث حالة الطلب' });
             case 'bricoler_offer': return t({ en: 'New Offer Received', fr: 'Nouvelle offre reçue', ar: 'تم استلام عرض جديد' });
             case 'bricoler_counter_offer': return t({ en: 'New Counter Offer', fr: 'Nouvelle contre-offre', ar: 'عرض مقابل جديد' });
@@ -124,8 +122,7 @@ const ClientNotificationsView: React.FC<ClientNotificationsViewProps> = ({
     const getBody = (notif: ClientNotification, t: any) => {
         if (notif.body) return notif.body;
         switch (notif.type) {
-            case 'new_message':
-                return `${notif.senderName || t({ en: 'Someone', fr: 'Quelqu’un', ar: 'شخص ما' })}: ${notif.text}`;
+            // new_message case removed
             case 'job_status_update':
                 return t({
                     en: `${notif.serviceName} is now ${notif.status}`,

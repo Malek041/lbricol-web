@@ -917,27 +917,42 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        className="fixed inset-0 z-[5000] bg-black/60 backdrop-blur-sm flex items-center justify-center p-6"
+                        className="fixed inset-0 z-[5000] flex items-center justify-center"
                     >
+                        {/* Immersive Background */}
+                        <div className="absolute inset-0 bg-black/40 backdrop-blur-xl z-0" />
+                        <div
+                            className="absolute inset-0 opacity-40 z-[-1]"
+                            style={{
+                                backgroundImage: `url('https://images.unsplash.com/photo-1516733725897-1aa73b87c8e8?q=80&w=2070&auto=format&fit=crop')`,
+                                backgroundSize: 'cover',
+                                backgroundPosition: 'center'
+                            }}
+                        />
+
                         <motion.div
-                            initial={{ scale: 0.9, opacity: 0, y: 20 }}
+                            initial={{ scale: 0.9, opacity: 0, y: 30 }}
                             animate={{ scale: 1, opacity: 1, y: 0 }}
-                            exit={{ scale: 0.9, opacity: 0, y: 20 }}
-                            className="bg-white rounded-[32px] w-full max-w-md overflow-hidden shadow-2xl"
+                            exit={{ scale: 0.9, opacity: 0, y: 30 }}
+                            className="relative z-10 bg-white/95 backdrop-blur-md rounded-[40px] w-full max-w-lg overflow-hidden shadow-[0_32px_128px_rgba(0,0,0,0.5)] m-6"
                         >
-                            <div className="p-8">
-                                <h3 className="text-[24px] font-[1000] text-black leading-tight mb-2">
+                            <div className="p-10">
+                                <div className="w-16 h-16 bg-red-50 rounded-2xl flex items-center justify-center mb-8">
+                                    <Ban size={32} className="text-red-500" />
+                                </div>
+
+                                <h3 className="text-[32px] font-black text-black leading-tight mb-3 tracking-tight">
                                     {t({ en: 'Wait! Why cancel?', fr: 'Attendez ! Pourquoi annuler ?', ar: 'انتظر! لماذا الإلغاء؟' })}
                                 </h3>
-                                <p className="text-neutral-500 font-medium mb-6">
+                                <p className="text-neutral-500 font-bold text-[17px] mb-8 leading-relaxed">
                                     {t({
-                                        en: 'Please tell us why you want to cancel this mission. This helps us improve.',
-                                        fr: 'Veuillez nous dire pourquoi vous souhaitez annuler cette mission. Cela nous aide à nous améliorer.',
-                                        ar: 'يرجى إخبارنا ببيان سبب رغبتك في إلغاء هذه المهمة. هذا يساعدنا على التحسن.'
+                                        en: 'Your feedback helps us provide a better experience for everyone.',
+                                        fr: 'Vos commentaires nous aident à offrir une meilleure expérience à tous.',
+                                        ar: 'تساعدنا ملاحظاتك في تقديم تجربة أفضل للجميع.'
                                     })}
                                 </p>
 
-                                <div className="space-y-3 mb-8">
+                                <div className="space-y-3 mb-10 max-h-[40vh] overflow-y-auto pr-2 no-scrollbar">
                                     {[
                                         { en: 'Found another solution', fr: 'J\'ai trouvé une autre solution', ar: 'وجدت حلاً آخر' },
                                         { en: 'Personal reasons', fr: 'Raisons personnelles', ar: 'أسباب شخصية' },
@@ -949,13 +964,19 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
                                             key={idx}
                                             onClick={() => setCancelReason(t(reason))}
                                             className={cn(
-                                                "w-full p-4 rounded-2xl border-2 text-left font-bold transition-all active:scale-[0.98]",
+                                                "w-full p-5 rounded-2xl border-2 text-left font-bold transition-all active:scale-[0.99] flex items-center justify-between group",
                                                 cancelReason === t(reason)
-                                                    ? "border-[#00A082] bg-[#E6F6F2] text-[#00A082]"
-                                                    : "border-neutral-50 hover:border-neutral-100 text-neutral-600"
+                                                    ? "border-[#007AFF] bg-[#007AFF08] text-[#007AFF]"
+                                                    : "border-neutral-100 hover:border-neutral-200 text-neutral-600 bg-neutral-50/50"
                                             )}
                                         >
-                                            {t(reason)}
+                                            <span className="text-[16px]">{t(reason)}</span>
+                                            <div className={cn(
+                                                "w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all",
+                                                cancelReason === t(reason) ? "border-[#007AFF] bg-[#007AFF]" : "border-neutral-200"
+                                            )}>
+                                                {cancelReason === t(reason) && <Check size={14} className="text-white" strokeWidth={4} />}
+                                            </div>
                                         </button>
                                     ))}
 
@@ -969,31 +990,31 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
                                         ].includes(cancelReason) ? cancelReason : ''}
                                         onChange={(e) => setCancelReason(e.target.value)}
                                         placeholder={t({ en: 'Other reason...', fr: 'Autre raison...', ar: 'سبب آخر...' })}
-                                        className="w-full p-4 rounded-2xl bg-neutral-50 border-2 border-transparent focus:border-[#00A082] focus:bg-white outline-none transition-all font-bold text-black"
+                                        className="w-full p-5 rounded-2xl bg-neutral-50/50 border-2 border-dashed border-neutral-200 focus:border-[#007AFF] focus:bg-white outline-none transition-all font-bold text-black"
                                         rows={3}
                                     />
                                 </div>
 
-                                <div className="flex gap-4">
-                                    <button
-                                        onClick={() => setShowCancelModal(false)}
-                                        className="flex-1 py-4 rounded-2xl font-black text-neutral-400 hover:text-neutral-600 transition-colors"
-                                    >
-                                        {t({ en: 'Go back', fr: 'Retour', ar: 'الرجوع' })}
-                                    </button>
+                                <div className="flex flex-col gap-3">
                                     <button
                                         onClick={handleConfirmCancel}
                                         disabled={!cancelReason || isCancelling}
                                         className={cn(
-                                            "flex-1 py-4 rounded-2xl font-black text-white shadow-lg transition-all active:scale-95 flex items-center justify-center",
+                                            "w-full py-5 rounded-2xl font-black text-[18px] text-white shadow-xl transition-all active:scale-95 flex items-center justify-center h-16",
                                             cancelReason && !isCancelling ? "bg-red-500 shadow-red-200" : "bg-neutral-200 shadow-none pointer-events-none"
                                         )}
                                     >
                                         {isCancelling ? (
-                                            <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                            <RefreshCw className="animate-spin" size={24} />
                                         ) : (
-                                            t({ en: 'Confirm', fr: 'Confirmer', ar: 'تأكيد' })
+                                            t({ en: 'Confirm Cancellation', fr: 'Confirmer l\'annulation', ar: 'تأكيد الإلغاء' })
                                         )}
+                                    </button>
+                                    <button
+                                        onClick={() => setShowCancelModal(false)}
+                                        className="w-full py-4 rounded-2xl font-bold text-neutral-400 hover:text-neutral-600 transition-colors"
+                                    >
+                                        {t({ en: 'Go back', fr: 'Retour', ar: 'الرجوع' })}
                                     </button>
                                 </div>
                             </div>

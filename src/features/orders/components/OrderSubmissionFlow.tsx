@@ -990,8 +990,10 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
     const generateAvailableSlots = () => {
         if (!selectedDate || !selectedPro || !activeTaskSize) return [];
 
-        const blocks = (selectedPro as any).availability?.[selectedDate] || [];
-        if (!blocks.length) return [];
+        const blocksRaw = (selectedPro as any).availability?.[selectedDate];
+        const blocks = Array.isArray(blocksRaw) && blocksRaw.length > 0
+            ? blocksRaw
+            : [{ from: '10:00', to: '17:00' }];
 
         const duration = activeTaskSize.duration || 1;
         const durationMin = duration * 60;
