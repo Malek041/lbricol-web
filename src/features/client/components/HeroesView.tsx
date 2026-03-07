@@ -2,7 +2,8 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Star, Clock, Calendar, ChevronLeft, X, CheckCircle2, MessageCircle } from 'lucide-react';
+import { Star, Clock, Calendar, ChevronLeft, X, CheckCircle2 } from 'lucide-react';
+import { WhatsAppBrandIcon } from '@/components/shared/WhatsAppIcon';
 import { useLanguage } from '@/context/LanguageContext';
 import {
     collection,
@@ -785,7 +786,7 @@ export default function HeroesView({ orders }: HeroesViewProps) {
 
                                                             <div className="flex items-center gap-4 w-full p-5 rounded-[22px] border-2 border-[#00A082] bg-[#D9F2EC] border-dashed">
                                                                 <div className="w-12 h-12 rounded-2xl bg-white flex items-center justify-center shadow-sm">
-                                                                    <MessageCircle size={24} className="text-[#00A082]" />
+                                                                    <WhatsAppBrandIcon className="w-6 h-6" />
                                                                 </div>
                                                                 <div className="flex-1">
                                                                     <p className="text-[14px] font-black text-[#1D1D1D]">

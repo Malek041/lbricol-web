@@ -17,6 +17,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { useToast } from '@/context/ToastContext';
 import SplashScreen from '@/components/layout/SplashScreen';
 import { compressImageFileToDataUrl, dataUrlToBlob, isImageDataUrl } from '@/lib/imageCompression';
+import { WhatsAppBrandIcon } from '@/components/shared/WhatsAppIcon';
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -685,11 +686,11 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                 };
             case 'errands':
                 return {
-                    title: t({ en: "What's the scope of the errands?", fr: "Quelle est l'ampleur des courses ?", ar: "ما هو حجم المشاوير؟" }),
+                    title: t({ en: "What's the scope of the errands?", fr: "Quelle est l'ampleur des courses ?", ar: "ما هو حجم الغرض؟" }),
                     options: [
-                        { id: 'small', duration: 0.416, label: { en: '20-30min', fr: '20-30min', ar: '20-30 دقيقة' }, estTime: { en: '≈ 25 min', fr: '≈ 25 min', ar: 'حوالي 25 دقيقة' }, desc: { en: 'Pickup or very short task nearby.', fr: 'Retrait ou tâche très courte à proximité.', ar: 'استلام أو مهمة قصيرة جداً في الجوار.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/SmallTask.webp' },
-                        { id: 'medium', duration: 0.833, label: { en: '45-55min', fr: '45-55min', ar: '45-55 دقيقة' }, estTime: { en: '≈ 50 min', fr: '≈ 50 min', ar: 'حوالي 50 دقيقة' }, desc: { en: 'Typical errand or simple shopping.', fr: 'Course typique ou achat simple.', ar: 'مشوار عادي أو تسوق بسيط.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/MediumSize.webp' },
-                        { id: 'large', duration: 1.333, label: { en: '1h10min-1h30min', fr: '1h10min-1h30min', ar: '1 ساعة 10 دقائق - 1 ساعة 30 دقيقة' }, estTime: { en: '≈ 1h 20 min', fr: '≈ 1h 20 min', ar: 'حوالي ساعة و 20 دقيقة' }, desc: { en: 'Multiple tasks or waiting time.', fr: 'Plusieurs tâches ou temps d\'attente.', ar: 'مهام متعددة أو وقت انتظار.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/BigTask.webp' },
+                        { id: 'small', duration: 0.416, coefficient: 1.5, label: { en: '20-30min', fr: '20-30min', ar: '20-30 دقيقة' }, estTime: { en: '≈ 25 min', fr: '≈ 25 min', ar: 'حوالي 25 دقيقة' }, desc: { en: 'Pickup or very short task nearby.', fr: 'Retrait ou tâche très courte à proximité.', ar: 'استلام أو مهمة قصيرة جداً في الجوار.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/SmallTask.webp' },
+                        { id: 'medium', duration: 0.833, coefficient: 2.5, label: { en: '45-55min', fr: '45-55min', ar: '45-55 دقيقة' }, estTime: { en: '≈ 50 min', fr: '≈ 50 min', ar: 'حوالي 50 دقيقة' }, desc: { en: 'Typical errand or simple shopping.', fr: 'Course typique ou achat simple.', ar: 'مشوار عادي أو تسوق بسيط.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/MediumSize.webp' },
+                        { id: 'large', duration: 1.333, coefficient: 4.5, label: { en: '1h10min-1h30min', fr: '1h10min-1h30min', ar: '1 ساعة 10 دقائق - 1 ساعة 30 دقيقة' }, estTime: { en: '≈ 1h 20 min', fr: '≈ 1h 20 min', ar: 'حوالي ساعة و 20 دقيقة' }, desc: { en: 'Multiple tasks or waiting time.', fr: 'Plusieurs tâches ou temps d\'attente.', ar: 'مهام متعددة أو وقت انتظار.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/BigTask.webp' },
                     ]
                 };
             case 'plumbing':
@@ -1196,29 +1197,30 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
         setIsSubmitting(true);
         try {
             const hourlyRate = selectedPro?.hourlyRate || 75;
-            const duration = activeTaskSize?.duration || 1;
-            const basePrice = hourlyRate * duration;
+            const activeOption = serviceConfig.options.find(o => o.id === taskSize);
+            const duration = activeOption?.duration || 1;
+            const coefficient = (activeOption as any)?.coefficient || (service === 'errands' ? 1.5 : 1);
 
-            // Calculate option-based discount (default for most services)
+            let basePrice = hourlyRate * duration;
             let multiplier = 1;
             const sizeIndex = serviceConfig.options.findIndex(s => s.id === taskSize);
-            if (sizeIndex === 1) multiplier = 0.95; // 5% discount
-            else if (sizeIndex === 2) multiplier = 0.9; // 10% discount
+            if (sizeIndex === 1) multiplier = 0.95;
+            else if (sizeIndex === 2) multiplier = 0.9;
 
             let discountedBasePrice = basePrice * multiplier;
             let serviceFee = discountedBasePrice * 0.15;
             let totalPrice = discountedBasePrice + serviceFee;
 
-            // Special case: Errands (minute-based formula)
-            // ((Rate/60)*mins) * (1-15%)
+            // Special case: Errands 
+            // Total Price = (Min Rate * Coefficient) + Company Fee
             if (service === 'errands') {
-                const errandBase = basePrice; // already (rate * duration) where duration is mins/60
-                totalPrice = errandBase * 0.85;
-                serviceFee = totalPrice * 0.15;
-                discountedBasePrice = totalPrice * 0.85; // Task portion
+                const taskPortion = hourlyRate * coefficient;
+                serviceFee = taskPortion * 0.15;
+                totalPrice = taskPortion + serviceFee;
+                discountedBasePrice = taskPortion;
             }
 
-            const getBricolerRankLabel = (pro: any): 'New' | 'Pro' | 'Elite' => {
+            const getBricolerRankLabel = (pro: any): 'New' | 'Classic' | 'Pro' | 'Elite' => {
                 const jobs = Math.max(pro.completedJobs || 0, (pro.reviews || []).length);
                 const rating = (pro.rating && pro.rating > 0)
                     ? pro.rating
@@ -1227,8 +1229,11 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                         : 0);
 
                 const verified = pro.isVerified || false;
-                if (jobs > 40 && rating >= 4.5 && verified) return 'Elite';
+                const personalityPassed = (pro.servicePrideScore || 0) >= 80 && (pro.happyMakingScore || 0) >= 80;
+
+                if (jobs > 40 && rating >= 4.5 && verified && personalityPassed) return 'Elite';
                 if (jobs >= 20 && rating >= 4.4) return 'Pro';
+                if (jobs >= 10) return 'Classic';
                 return 'New';
             };
 
@@ -1773,7 +1778,7 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                                                 />
                                             </div>
                                             <h3 className="min-w-0 text-[16px] font-black leading-tight tracking-tight text-neutral-900 sm:text-[18px]">
-                                                {selectedPro?.displayName || t({ en: 'Tasker', fr: 'Pro', ar: 'محترف' })} — {t({ en: 'Availability', fr: 'Disponibilités', ar: 'التوفر' })}
+                                                {selectedPro?.displayName || t({ en: 'Tasker', fr: 'Pro', ar: 'محترف' })} — {t({ en: 'Availability', fr: 'Disponibilités', ar: 'ساعات العمل' })}
                                             </h3>
                                         </div>
                                         <div className="flex items-center gap-2">
@@ -2144,7 +2149,7 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                                                 >
                                                     <div className="flex w-full flex-col gap-4 rounded-[16px] border-2 border-dashed border-[#00A082] bg-[#E6F6F2]/30 p-5 min-[480px]:flex-row min-[480px]:items-center">
                                                         <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[12px] bg-white shadow-sm">
-                                                            <MessageCircle size={24} className="text-[#00A082]" />
+                                                            <WhatsAppBrandIcon size={24} className="text-[#00A082]" />
                                                         </div>
                                                         <div className="flex-1">
                                                             <p className="text-[14px] font-black text-[#00A082]">
@@ -2218,10 +2223,13 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                                                         <span className="text-[11px] font-bold text-neutral-400 uppercase tracking-wider">{t({ en: 'Total (Est.)', fr: 'Total (Est.)', ar: 'الإجمالي (تقريبي)' })}</span>
                                                         <span className="text-[15px] font-black text-black">
                                                             {(() => {
-                                                                const baseCalc = (selectedPro?.hourlyRate || 75) * (activeTaskSize?.duration || 1);
+                                                                const hourlyRate = selectedPro?.hourlyRate || 75;
                                                                 if (service === 'errands') {
-                                                                    return Math.round(baseCalc * 0.85);
+                                                                    const coefficient = (activeTaskSize as any)?.coefficient || 1.5;
+                                                                    const taskPortion = hourlyRate * coefficient;
+                                                                    return Math.round(taskPortion * 1.15);
                                                                 }
+                                                                const baseCalc = hourlyRate * (activeTaskSize?.duration || 1);
                                                                 const sizeIndex = serviceConfig.options.findIndex(s => s.id === taskSize);
                                                                 let multiplier = 1;
                                                                 if (sizeIndex === 1) multiplier = 0.95;
@@ -2489,13 +2497,18 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                                             <span className="text-[28px] font-black text-black">{t({ en: 'Total', fr: 'Total', ar: 'الإجمالي' })}</span>
                                             <div className="flex flex-col items-end">
                                                 {(() => {
-                                                    const baseCalc = (selectedPro?.hourlyRate || 75) * (activeTaskSize?.duration || 1);
+                                                    const hourlyRate = (selectedPro?.hourlyRate || 75);
+                                                    const activeOption = serviceConfig.options.find(o => o.id === taskSize);
+                                                    const duration = activeOption?.duration || 1;
+                                                    const coefficient = (activeOption as any)?.coefficient || (service === 'errands' ? 1.5 : 1);
+                                                    const baseCalc = hourlyRate * duration;
                                                     let finalCalc = 0;
                                                     let strikeCalc = 0;
 
                                                     if (service === 'errands') {
-                                                        finalCalc = Math.round(baseCalc * 0.85);
-                                                        strikeCalc = Math.round(baseCalc);
+                                                        const taskPortion = hourlyRate * coefficient;
+                                                        finalCalc = Math.round(taskPortion * 1.15);
+                                                        strikeCalc = finalCalc;
                                                     } else {
                                                         const sizeIndex = serviceConfig.options.findIndex(s => s.id === taskSize);
                                                         let multiplier = 1;

@@ -407,7 +407,7 @@ const BricolerProfileBottomSheet = ({ bricoler, isOpen, onClose, t }: any) => {
             animate={{ y: 0 }}
             exit={{ y: '100%' }}
             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-            className="fixed inset-x-0 bottom-0 bg-white rounded-t-[40px] z-[70] max-h-[90dvh] flex flex-col shadow-2xl"
+            className="fixed inset-x-0 bottom-0 bg-white rounded-t-[40px] z-[70] max-h-[90dvh] flex flex-col shadow-2xl overflow-y-auto overscroll-contain"
           >
             {/* Handle */}
             <div className="flex justify-center pt-3 pb-1">

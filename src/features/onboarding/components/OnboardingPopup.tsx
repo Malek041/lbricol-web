@@ -1280,7 +1280,7 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                                     : step === 'profile'
                                         ? t({ en: 'Your Profile', fr: 'Votre profil', ar: 'ملفك الشخصي' })
                                         : step === 'availability'
-                                            ? t({ en: 'Availability', fr: 'Disponibilité', ar: 'التوفر' })
+                                            ? t({ en: 'Availability', fr: 'Disponibilité', ar: 'ساعات العمل' })
                                             : t({ en: 'Onboarding', fr: 'Intégration', ar: 'الإعداد' })}
                             </h1>
 

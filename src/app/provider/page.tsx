@@ -51,7 +51,6 @@ import {
     Users,
     Plus,
     MessageSquare,
-    MessageCircle,
     Star,
     Zap,
     Clock,
@@ -77,8 +76,10 @@ import {
     Tag,
     Gift,
     Eye,
-    Image
+    Image,
+    MessageCircle
 } from 'lucide-react';
+import { WhatsAppBrandIcon } from '@/components/shared/WhatsAppIcon';
 import { cn } from '@/lib/utils';
 import { auth, db } from '@/lib/firebase';
 import { formatJobDate, formatJobPrice } from '@/lib/format';
@@ -1981,9 +1982,9 @@ export default function ProviderPage() {
                             {(job.rawAccepted?.status === 'confirmed' || job.rawAccepted?.status === 'programmed' || job.rawAccepted?.status === 'accepted') && (
                                 <button
                                     onClick={() => openWhatsApp(job.clientWhatsApp)}
-                                    className="w-10 h-10 rounded-full flex items-center justify-center text-[#25D366] hover:bg-neutral-50 active:scale-90 transition-all"
+                                    className="w-10 h-10 rounded-full flex items-center justify-center hover:bg-neutral-50 active:scale-90 transition-all"
                                 >
-                                    <MessageCircle size={24} strokeWidth={2.5} fill="currentColor" />
+                                    <WhatsAppBrandIcon className="w-6 h-6" />
                                 </button>
                             )}
                             <button
@@ -2111,8 +2112,8 @@ export default function ProviderPage() {
                                                 onClick={() => openWhatsApp(job.clientWhatsApp)}
                                                 className="w-full bg-[#25D366] text-white py-4 rounded-xl font-black text-[18px] flex items-center justify-center gap-3 hover:bg-[#128C7E] transition-all shadow-sm"
                                             >
-                                                <MessageCircle size={24} fill="currentColor" />
-                                                {t({ en: 'Contact via WhatsApp', fr: 'Contacter via WhatsApp' })}
+                                                <WhatsAppBrandIcon className="w-6 h-6" />
+                                                {t({ en: 'Contact Bricoler', fr: 'Contacter le Bricoler' })}
                                             </button>
                                         </div>
                                     )}

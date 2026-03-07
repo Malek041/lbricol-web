@@ -2448,7 +2448,7 @@ const Home = () => {
               ) : (
                 <ClientOrdersView
                   orders={orders}
-                  onViewMessages={(jobId) => {
+                  onViewMessages={(jobId: string) => {
                     setMobileNavTab('messages');
                     setSelectedOrderId(jobId);
                   }}

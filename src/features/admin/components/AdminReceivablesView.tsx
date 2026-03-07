@@ -2,7 +2,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Check, X, MessageCircle, FileText, Search, Filter, Calendar, ExternalLink, ChevronRight } from 'lucide-react';
+import { ArrowLeft, Check, X, FileText, Search, Filter, Calendar, ExternalLink, ChevronRight } from 'lucide-react';
+import { WhatsAppBrandIcon } from '@/components/shared/WhatsAppIcon';
 import { db } from '@/lib/firebase';
 import { collection, query, where, onSnapshot, updateDoc, doc, getDoc, orderBy } from 'firebase/firestore';
 import { useLanguage } from '@/context/LanguageContext';
@@ -176,7 +177,7 @@ const AdminReceivablesView: React.FC<AdminReceivablesViewProps> = ({ onBack }) =
                                             }}
                                             className="w-10 h-10 rounded-xl bg-[#25D366]/10 text-[#25D366] flex items-center justify-center"
                                         >
-                                            <MessageCircle size={20} />
+                                            <WhatsAppBrandIcon className="w-6 h-6" />
                                         </button>
                                     )}
                                     <div className="w-10 h-10 rounded-xl bg-neutral-50 flex items-center justify-center text-neutral-400 border border-neutral-100">
@@ -202,9 +203,9 @@ const AdminReceivablesView: React.FC<AdminReceivablesViewProps> = ({ onBack }) =
                             initial={{ y: '100dvh' }}
                             animate={{ y: 0 }}
                             exit={{ y: '100dvh' }}
-                            className="bg-white w-full max-w-xl rounded-t-[40px] sm:rounded-[32px] overflow-hidden flex flex-col max-h-[90dvh]"
+                            className="bg-white w-full max-w-xl rounded-t-[40px] sm:rounded-[32px] overflow-hidden flex flex-col max-h-[90dvh] overflow-y-auto overscroll-contain"
                         >
-                            <div className="p-8 border-b border-neutral-100 flex items-center justify-between">
+                            <div className="p-8 border-b border-neutral-100 flex items-center justify-between shrink-0">
                                 <h2 className="text-[24px] font-[1000] text-black">{t({ en: 'Settlement Details', fr: 'Détails du règlement' })}</h2>
                                 <button onClick={() => setSelectedSettlement(null)} className="w-12 h-12 rounded-full bg-neutral-50 flex items-center justify-center text-black">
                                     <X size={24} />

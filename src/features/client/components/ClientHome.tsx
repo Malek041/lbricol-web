@@ -302,7 +302,7 @@ const SERVICES: ServiceEntry[] = [
         id: 'errands',
         label: 'Errands',
         labelFr: 'Courses',
-        labelAr: 'مشاوير وقضاء أغراض',
+        labelAr: 'توصيل وقضاء أغراض',
         iconPath: '/Images/Vectors Illu/shoppingbag.webp',
         subServices: [
             { en: 'Grocery Shopping', fr: 'Courses Alimentaires', ar: 'تسوق مواد غذائية' },
@@ -632,7 +632,7 @@ const ClientHome: React.FC<ClientHomeProps> = ({
         <div className="min-h-screen bg-white flex flex-col pb-28">
 
             {/* ── Location selector ───────────────────────────────────── */}
-            <div className="flex items-center justify-center pt-20 px-10">
+            <div className="flex items-center justify-center pt-10 px-10">
                 <button
                     onClick={onChangeLocation}
                     className="flex items-center gap-1.5 px-4 py-2 rounded-full border border-neutral-100 bg-neutral-50/50 active:scale-95 transition-all shadow-sm"

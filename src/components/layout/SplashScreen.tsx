@@ -17,7 +17,7 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ subStatus }) => {
                 position: 'fixed',
                 inset: 0,
                 zIndex: 10000,
-                backgroundColor: '#FFC244',
+                backgroundColor: '#FFFFFF',
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',

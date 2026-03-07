@@ -5,8 +5,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { OrderDetails } from '@/features/orders/components/OrderCard';
 import { ChevronLeft, Info, MessageCircle, MessageSquare, Image, HelpCircle, X, MapPin, Clock, Calendar as CalendarIcon, Phone, User, Ban, Check, AlertTriangle, RefreshCw, CreditCard, Wrench, Banknote, Star } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
+import { WhatsAppBrandIcon } from '@/components/shared/WhatsAppIcon';
 import { db, auth } from '@/lib/firebase';
-import { doc, updateDoc, arrayUnion, increment, serverTimestamp, getDoc } from 'firebase/firestore';
+import { doc, updateDoc, arrayUnion, increment, serverTimestamp, getDoc, addDoc, collection } from 'firebase/firestore';
 import { cn } from '@/lib/utils';
 import { getServiceById, getSubServiceName, getServiceVector } from '@/config/services_config';
 import { format, isToday, isThisWeek, parseISO, startOfDay, addDays } from 'date-fns';
@@ -254,6 +255,7 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
             setLiveBricolerInfo(null);
         }
     }, [selectedOrder]);
+
     const [rating, setRating] = useState(0);
     const [hover, setHover] = useState(0);
     const [review, setReview] = useState('');
@@ -261,6 +263,9 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
     const [isRatedLocally, setIsRatedLocally] = useState<string[]>([]);
     const [showHistory, setShowHistory] = useState(initialShowHistory);
     const [horizontalSelectedDate, setHorizontalSelectedDate] = useState<Date>(new Date());
+    const [showCancelModal, setShowCancelModal] = useState(false);
+    const [cancelReason, setCancelReason] = useState('');
+    const [isCancelling, setIsCancelling] = useState(false);
 
     // Filter orders for history (done and cancelled)
     const historyOrders = useMemo(() => {
@@ -269,22 +274,52 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
     }, [orders]);
 
     // Cancel order
-    const handleCancelOrder = async (orderId: string) => {
-        if (!orderId) return;
-        const confirmResult = window.confirm(
-            t({
-                en: 'Are you sure you want to cancel this order?',
-                fr: 'Voulez-vous vraiment annuler cette commande ?',
-                ar: 'هل أنت متأكد أنك تريد إلغاء هذا الطلب؟'
-            })
-        );
-        if (!confirmResult) return;
+    const handleConfirmCancel = async () => {
+        if (!selectedOrder?.id || isCancelling) return;
+        if (!cancelReason.trim()) {
+            alert(t({ en: 'Please provide a reason for cancellation.', fr: 'Veuillez indiquer une raison pour l\'annulation.', ar: 'يرجى تقديم سبب للإلغاء.' }));
+            return;
+        }
+
+        setIsCancelling(true);
         try {
-            await updateDoc(doc(db, 'jobs', orderId), { status: 'cancelled' });
+            await updateDoc(doc(db, 'jobs', selectedOrder.id), {
+                status: 'cancelled',
+                cancelReason,
+                cancelledAt: serverTimestamp(),
+                cancelledBy: 'client'
+            });
+
+            // Notify Bricoler if assigned
+            if (selectedOrder.bricolerId) {
+                await addDoc(collection(db, 'bricoler_notifications'), {
+                    bricolerId: selectedOrder.bricolerId,
+                    type: 'order_cancelled',
+                    jobId: selectedOrder.id,
+                    serviceName: selectedOrder.service,
+                    text: t({
+                        en: `Order for ${selectedOrder.service} was cancelled by the client. Reason: ${cancelReason}`,
+                        fr: `La commande pour ${selectedOrder.service} a été annulée par le client. Raison : ${cancelReason}`,
+                        ar: `تم إلغاء طلب ${selectedOrder.service} من قبل العميل. السبب: ${cancelReason}`
+                    }),
+                    read: false,
+                    timestamp: serverTimestamp()
+                });
+            }
+
+            setShowCancelModal(false);
+            setCancelReason('');
             setSelectedOrder(null);
         } catch (error) {
             console.error('Error cancelling order:', error);
+            alert('Error cancelling order. Please try again.');
+        } finally {
+            setIsCancelling(false);
         }
+    };
+
+    const handleCancelOrder = (orderId: string) => {
+        setShowCancelModal(true);
     };
 
     const getHeroImage = (service: string) => {
@@ -492,13 +527,16 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
                                 </button>
                                 <h1 className="text-[20px] font-black text-black">{t({ en: 'Order details', fr: 'Détails de la commande', ar: 'تفاصيل الطلب' })}</h1>
                             </div>
-                            <div className="flex items-center gap-4">
-                                <button
-                                    onClick={() => openWhatsApp(selectedOrder.bricolerWhatsApp)}
-                                    className="w-10 h-10 rounded-full flex items-center justify-center text-[#25D366] hover:bg-neutral-50 active:scale-90 transition-all"
-                                >
-                                    <MessageCircle size={24} strokeWidth={2.5} fill="currentColor" />
-                                </button>
+                            <div className="flex items-center gap-3">
+                                {selectedOrder.bricolerWhatsApp && (
+                                    <button
+                                        onClick={() => openWhatsApp(selectedOrder.bricolerWhatsApp)}
+                                        className="flex items-center gap-2 h-10 px-4 rounded-full bg-[#25D366] text-white font-black text-[14px] hover:bg-[#128C7E] active:scale-95 transition-all shadow-sm shadow-[#25D366]/30"
+                                    >
+                                        <WhatsAppBrandIcon size={18} fill="currentColor" />
+                                        {t({ en: 'Contact Bricoler', fr: 'Contacter le Bricoler', ar: 'اتصل بالبريكولر' })}
+                                    </button>
+                                )}
                                 <button
                                     onClick={() => window.open('https://wa.me/212702814355', '_blank')}
                                     className="text-[17px] font-black text-[#00A082] hover:opacity-80 transition-opacity"
@@ -642,7 +680,7 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
                                                         onClick={() => openWhatsApp(selectedOrder.bricolerWhatsApp)}
                                                         className="w-12 h-12 rounded-full bg-neutral-50 flex items-center justify-center text-[#25D366] hover:bg-neutral-100 active:scale-90 transition-all border border-[#25D366]/10"
                                                     >
-                                                        <MessageCircle size={22} strokeWidth={2.5} fill="currentColor" />
+                                                        <WhatsAppBrandIcon size={22} fill="currentColor" />
                                                     </button>
                                                 )}
                                                 <button
@@ -697,20 +735,6 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
                                             {selectedOrder.description || selectedOrder.comment || t({ en: 'No specific instructions provided for this task.', fr: 'Aucune instruction spécifique fournie pour cette tâche.', ar: 'لم يتم تقديم تعليمات محددة لهذه المهمة.' })}
                                         </div>
                                     </div>
-
-                                    {/* Direct Contact Button */}
-                                    {selectedOrder.bricolerWhatsApp && (
-                                        <div className="space-y-4 pt-4">
-                                            <h3 className="text-[28px] font-black text-black">{t({ en: 'Direct Contact', fr: 'Contact Direct', ar: 'اتصال مباشر' })}</h3>
-                                            <button
-                                                onClick={() => openWhatsApp(selectedOrder.bricolerWhatsApp)}
-                                                className="w-full bg-[#25D366] text-white py-5 rounded-[24px] font-black text-[20px] flex items-center justify-center gap-4 hover:bg-[#128C7E] transition-all shadow-xl shadow-[#25D366]/20 active:scale-95 translate-y-0"
-                                            >
-                                                <MessageCircle size={28} fill="currentColor" />
-                                                {t({ en: 'Chat via WhatsApp', fr: 'Discuter sur WhatsApp' })}
-                                            </button>
-                                        </div>
-                                    )}
 
 
 
@@ -820,12 +844,114 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
                         </div>
 
                         {/* Fixed Total Footer */}
-                        <div className="px-6 md:px-12 py-8 bg-white border-t border-neutral-100 shadow-[0_-10px_40px_rgba(0,0,0,0.05)] z-[4001]">
+                        <div className="px-6 md:px-12 py-8 bg-white border-t border-neutral-100 shadow-[0_-10px_40px_rgba(0,0,0,0.05)] z-[4001] flex flex-col gap-4">
                             <div className="flex items-center justify-between gap-4">
                                 <span className="text-[28px] md:text-[32px] font-black text-black">{t({ en: 'Total', fr: 'Total', ar: 'الإجمالي' })}</span>
                                 <span className="text-[28px] md:text-[32px] font-black text-black tracking-tighter truncate">{((selectedOrder?.totalPrice || 0)).toFixed(0)} MAD</span>
                             </div>
+
+                            {/* Cancellation Button */}
+                            {selectedOrder && !['done', 'cancelled', 'delivered'].includes(selectedOrder.status || '') && (
+                                <button
+                                    onClick={() => handleCancelOrder(selectedOrder.id!)}
+                                    className="w-full py-4 rounded-xl border-2 border-red-50 text-red-500 font-bold text-[15px] hover:bg-red-50 transition-colors uppercase tracking-widest mt-2"
+                                >
+                                    {t({ en: 'Cancel Order', fr: 'Annuler la commande', ar: 'إلغاء الطلب' })}
+                                </button>
+                            )}
                         </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            {/* Cancellation Reason Modal */}
+            <AnimatePresence>
+                {showCancelModal && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-[5000] bg-black/60 backdrop-blur-sm flex items-center justify-center p-6"
+                    >
+                        <motion.div
+                            initial={{ scale: 0.9, opacity: 0, y: 20 }}
+                            animate={{ scale: 1, opacity: 1, y: 0 }}
+                            exit={{ scale: 0.9, opacity: 0, y: 20 }}
+                            className="bg-white rounded-[32px] w-full max-w-md overflow-hidden shadow-2xl"
+                        >
+                            <div className="p-8">
+                                <h3 className="text-[24px] font-[1000] text-black leading-tight mb-2">
+                                    {t({ en: 'Wait! Why cancel?', fr: 'Attendez ! Pourquoi annuler ?', ar: 'انتظر! لماذا الإلغاء؟' })}
+                                </h3>
+                                <p className="text-neutral-500 font-medium mb-6">
+                                    {t({
+                                        en: 'Please tell us why you want to cancel this mission. This helps us improve.',
+                                        fr: 'Veuillez nous dire pourquoi vous souhaitez annuler cette mission. Cela nous aide à nous améliorer.',
+                                        ar: 'يرجى إخبارنا ببيان سبب رغبتك في إلغاء هذه المهمة. هذا يساعدنا على التحسن.'
+                                    })}
+                                </p>
+
+                                <div className="space-y-3 mb-8">
+                                    {[
+                                        { en: 'Found another solution', fr: 'J\'ai trouvé une autre solution', ar: 'وجدت حلاً آخر' },
+                                        { en: 'Personal reasons', fr: 'Raisons personnelles', ar: 'أسباب شخصية' },
+                                        { en: 'Scheduled by mistake', fr: 'Planifié par erreur', ar: 'تمت الجدولة عن طريق الخطأ' },
+                                        { en: 'Professional didn\'t answer', fr: 'Le professionnel ne répond pas', ar: 'المحترف لا يرد' },
+                                        { en: 'Change of plans', fr: 'Changement de programme', ar: 'تغيير في الخطط' }
+                                    ].map((reason, idx) => (
+                                        <button
+                                            key={idx}
+                                            onClick={() => setCancelReason(t(reason))}
+                                            className={cn(
+                                                "w-full p-4 rounded-2xl border-2 text-left font-bold transition-all active:scale-[0.98]",
+                                                cancelReason === t(reason)
+                                                    ? "border-[#00A082] bg-[#E6F6F2] text-[#00A082]"
+                                                    : "border-neutral-50 hover:border-neutral-100 text-neutral-600"
+                                            )}
+                                        >
+                                            {t(reason)}
+                                        </button>
+                                    ))}
+
+                                    <textarea
+                                        value={cancelReason && ![
+                                            t({ en: 'Found another solution', fr: 'J\'ai trouvé une autre solution', ar: 'وجدت حلاً آخر' }),
+                                            t({ en: 'Personal reasons', fr: 'Raisons personnelles', ar: 'أسباب شخصية' }),
+                                            t({ en: 'Scheduled by mistake', fr: 'Planifié par erreur', ar: 'تمت الجدولة عن طريق الخطأ' }),
+                                            t({ en: 'Professional didn\'t answer', fr: 'Le professionnel ne répond pas', ar: 'المحترف لا يرد' }),
+                                            t({ en: 'Change of plans', fr: 'Changement de programme', ar: 'تغيير في الخطط' })
+                                        ].includes(cancelReason) ? cancelReason : ''}
+                                        onChange={(e) => setCancelReason(e.target.value)}
+                                        placeholder={t({ en: 'Other reason...', fr: 'Autre raison...', ar: 'سبب آخر...' })}
+                                        className="w-full p-4 rounded-2xl bg-neutral-50 border-2 border-transparent focus:border-[#00A082] focus:bg-white outline-none transition-all font-bold text-black"
+                                        rows={3}
+                                    />
+                                </div>
+
+                                <div className="flex gap-4">
+                                    <button
+                                        onClick={() => setShowCancelModal(false)}
+                                        className="flex-1 py-4 rounded-2xl font-black text-neutral-400 hover:text-neutral-600 transition-colors"
+                                    >
+                                        {t({ en: 'Go back', fr: 'Retour', ar: 'الرجوع' })}
+                                    </button>
+                                    <button
+                                        onClick={handleConfirmCancel}
+                                        disabled={!cancelReason || isCancelling}
+                                        className={cn(
+                                            "flex-1 py-4 rounded-2xl font-black text-white shadow-lg transition-all active:scale-95 flex items-center justify-center",
+                                            cancelReason && !isCancelling ? "bg-red-500 shadow-red-200" : "bg-neutral-200 shadow-none pointer-events-none"
+                                        )}
+                                    >
+                                        {isCancelling ? (
+                                            <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                        ) : (
+                                            t({ en: 'Confirm', fr: 'Confirmer', ar: 'تأكيد' })
+                                        )}
+                                    </button>
+                                </div>
+                            </div>
+                        </motion.div>
                     </motion.div>
                 )}
             </AnimatePresence>

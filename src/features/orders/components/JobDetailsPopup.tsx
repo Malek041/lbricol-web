@@ -12,12 +12,12 @@ import {
     Info,
     CheckCircle2,
     XCircle,
-    DollarSign,
-    MessageCircle
+    DollarSign
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useIsMobileViewport } from '@/lib/mobileOnly';
 import { useLanguage } from '@/context/LanguageContext';
+import { WhatsAppBrandIcon } from '@/components/shared/WhatsAppIcon';
 
 export interface JobDetails {
     id: string;
@@ -126,7 +126,7 @@ const JobDetailsPopup: React.FC<JobDetailsPopupProps> = ({ job, onClose, onAccep
                                 className="w-10 h-10 rounded-full hover:bg-neutral-100 flex items-center justify-center transition-colors"
                                 title={t({ en: 'Chat with Client', fr: 'Chatter avec le client' })}
                             >
-                                <MessageCircle size={20} className="text-[#00A082]" strokeWidth={2.5} />
+                                <WhatsAppBrandIcon className="w-6 h-6" />
                             </button>
                         )}
                         <button
@@ -228,8 +228,8 @@ const JobDetailsPopup: React.FC<JobDetailsPopupProps> = ({ job, onClose, onAccep
                                     onClick={() => openWhatsApp(job.bricolerWhatsApp || job.clientWhatsApp || '')}
                                     className="w-full py-4 bg-[#25D366] text-white rounded-xl font-bold text-base hover:bg-[#128C7E] transition-all active:scale-[0.98] flex items-center justify-center gap-2 shadow-sm"
                                 >
-                                    <MessageCircle size={20} fill="currentColor" />
-                                    {t({ en: 'Contact via WhatsApp', fr: 'Contacter via WhatsApp', ar: 'اتصل عبر الواتساب' })}
+                                    <WhatsAppBrandIcon size={20} fill="currentColor" />
+                                    {t({ en: 'Contact Bricoler', fr: 'Contacter le Bricoler', ar: 'اتصل بالبريكولر' })}
                                 </button>
                             </div>
                         )}
