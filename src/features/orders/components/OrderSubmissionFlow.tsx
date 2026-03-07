@@ -648,6 +648,15 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
         }
     }, [isOpen]);
 
+    // Auto-select today/first available date when entering step 3
+    useEffect(() => {
+        if (step === 3 && !selectedDate) {
+            const today = new Date();
+            const todayStr = today.toISOString().split('T')[0];
+            setSelectedDate(todayStr);
+        }
+    }, [step, selectedDate]);
+
     // Location Change State
     const [isSelectingLocation, setIsSelectingLocation] = useState(false);
     const [locStep, setLocStep] = useState<'city' | 'area'>('city');
@@ -1832,8 +1841,7 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                                                     const isPast = d < today;
 
                                                     // Availability check
-                                                    const hasAvailability = selectedPro?.availability && selectedPro.availability[dateStr] && selectedPro.availability[dateStr].length > 0;
-                                                    const isSelectable = !isPast && (selectedBricolerId === 'open' || hasAvailability);
+                                                    const isSelectable = !isPast;
 
                                                     days.push(
                                                         <button
