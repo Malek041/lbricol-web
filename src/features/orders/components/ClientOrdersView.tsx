@@ -557,10 +557,10 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
                                 {selectedOrder.bricolerWhatsApp && (
                                     <button
                                         onClick={() => openWhatsApp(selectedOrder.bricolerWhatsApp)}
-                                        className="w-10 h-10 rounded-full flex items-center justify-center text-[#25D366] bg-[#25D366]/8 hover:bg-[#25D366]/15 active:scale-90 transition-all"
+                                        className="w-12 h-12 md:w-14 md:h-14 rounded-full flex items-center justify-center text-[#25D366] hover:scale-110 active:scale-95 transition-all group"
                                         title={t({ en: 'Contact Bricoler via WhatsApp', fr: 'Contacter le Bricoler via WhatsApp', ar: 'اتصل بالبريكولر عبر واتساب' })}
                                     >
-                                        <WhatsAppBrandIcon size={22} fill="currentColor" />
+                                        <WhatsAppBrandIcon size={32} className="drop-shadow-sm" />
                                     </button>
                                 )}
                             </div>
@@ -611,10 +611,11 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
                                         {selectedOrder.bricolerWhatsApp && (
                                             <button
                                                 onClick={() => openWhatsApp(selectedOrder.bricolerWhatsApp)}
-                                                className="w-full flex items-center justify-center gap-3 py-4 rounded-2xl bg-[#25D366] text-white font-black text-[17px] hover:bg-[#128C7E] active:scale-95 transition-all shadow-lg shadow-[#25D366]/25"
+                                                className="w-full flex items-center justify-center gap-4 py-6 rounded-[24px] bg-[#25D366] text-white font-[1000] text-[18px] hover:bg-[#128C7E] active:scale-95 transition-all shadow-xl shadow-[#25D366]/20 group relative overflow-hidden"
                                             >
-                                                <WhatsAppBrandIcon size={22} fill="currentColor" />
-                                                {t({ en: 'Contact Bricoler', fr: 'Contacter le Bricoler', ar: 'اتصل بالبريكولر' })}
+                                                <div className="absolute inset-0 bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                                                <WhatsAppBrandIcon size={36} className="group-hover:scale-110 transition-transform drop-shadow-sm" />
+                                                <span className="tracking-tight">{t({ en: 'Contact Bricoler', fr: 'Contacter le Bricoler', ar: 'اتصل بالبريكولر' })}</span>
                                             </button>
                                         )}
                                         <div className="bg-neutral-50 rounded-2xl p-4 flex items-center gap-4 border border-neutral-100/50">
@@ -697,31 +698,38 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
                                                 <div>
                                                     <p className="text-[11px] font-black text-neutral-400 uppercase tracking-widest mb-0.5">{t({ en: 'Selected Professional', fr: 'Professionnel sélectionné', ar: 'المحترف المختار' })}</p>
                                                     <p className="text-[20px] font-[1000] text-black leading-tight">{selectedOrder.bricolerName || 'Bricoler'}</p>
-                                                    <div className="flex items-center gap-1.5 mt-1">
-                                                        <Star size={14} className="fill-[#FFC244] text-[#FFC244]" />
-                                                        <span className="text-[14px] font-black text-[#FFC244]">{liveBricolerInfo?.rating?.toFixed(1) || selectedOrder.bricolerRating || '5.0'}</span>
-                                                        <span className="text-[12px] text-neutral-400 font-bold">({liveBricolerInfo?.jobsCount ?? selectedOrder.bricolerJobsCount ?? 0} {t({ en: 'reviews', fr: 'avis', ar: 'تقييم' })})</span>
+                                                    <div className="flex items-center gap-2 mt-1.5">
+                                                        <div className="flex items-center gap-0.5">
+                                                            {[1, 2, 3, 4, 5].map((s) => {
+                                                                const r = liveBricolerInfo?.rating || Number(selectedOrder.bricolerRating) || 5;
+                                                                return (
+                                                                    <Star
+                                                                        key={s}
+                                                                        size={14}
+                                                                        className={cn(
+                                                                            "transition-all",
+                                                                            s <= Math.round(r)
+                                                                                ? "fill-[#FFC244] text-[#FFC244]"
+                                                                                : "fill-neutral-100 text-neutral-200"
+                                                                        )}
+                                                                    />
+                                                                );
+                                                            })}
+                                                        </div>
+                                                        <span className="text-[15px] font-black text-[#D89B1A] ml-1">{liveBricolerInfo?.rating?.toFixed(1) || Number(selectedOrder.bricolerRating).toFixed(1) || '5.0'}</span>
+                                                        <span className="text-[13px] text-neutral-400 font-bold ml-1">({liveBricolerInfo?.jobsCount ?? selectedOrder.bricolerJobsCount ?? 0} {t({ en: 'reviews', fr: 'avis', ar: 'تقييم' })})</span>
                                                     </div>
                                                 </div>
                                             </div>
-                                            <div className="flex items-center gap-2">
+                                            <div className="flex items-center gap-3">
                                                 {selectedOrder.bricolerWhatsApp && (
                                                     <button
                                                         onClick={() => openWhatsApp(selectedOrder.bricolerWhatsApp)}
-                                                        className="w-12 h-12 rounded-full bg-neutral-50 flex items-center justify-center text-[#25D366] hover:bg-neutral-100 active:scale-90 transition-all border border-[#25D366]/10"
+                                                        className="p-1 rounded-full flex items-center justify-center text-[#25D366] hover:scale-110 active:scale-90 transition-all group"
                                                     >
-                                                        <WhatsAppBrandIcon size={22} fill="currentColor" />
+                                                        <WhatsAppBrandIcon size={48} className="md:w-[56px] md:h-[56px]" />
                                                     </button>
                                                 )}
-                                                <button
-                                                    onClick={() => {
-                                                        selectedOrder.id && onViewMessages(selectedOrder.id);
-                                                        setSelectedOrder(null);
-                                                    }}
-                                                    className="w-12 h-12 rounded-full bg-neutral-50 flex items-center justify-center text-black hover:bg-neutral-100 active:scale-90 transition-all"
-                                                >
-                                                    <MessageSquare size={22} strokeWidth={2.5} />
-                                                </button>
                                             </div>
                                         </div>
                                     </div>
