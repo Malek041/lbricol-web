@@ -3,7 +3,7 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-    X, Check, Search, ChevronLeft, ChevronRight, Upload, Info, Plus, Minus, MapPin, ArrowRight, TrendingUp, User, Wrench, Save, Star, Key, Sparkles
+    X, Check, CheckCircle2, Search, ChevronLeft, ChevronRight, FileText, Info, Plus, Minus, MapPin, ArrowRight, TrendingUp, User, Wrench, Save, Star, Key, Sparkles, Image
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { auth, db, storage } from '@/lib/firebase';
@@ -679,69 +679,7 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
             let finalUploadedCategoryEntries = finalCategoryEntries;
             let finalUploadedTourGuideUrl = finalTourGuideUrl;
 
-            const hasAnyUploads = hasPendingProfileUpload || hasPendingServiceUploads || hasPendingTourGuideUpload;
-
-            if (hasAnyUploads) {
-                // Refresh auth token before uploads
-                try {
-                    await auth.currentUser?.getIdToken(true);
-                } catch (tokenError) {
-                    console.warn("Token warmup failed:", tokenError);
-                }
-
-                // Upload profile photo
-                if (hasPendingProfileUpload) {
-                    setSubmittingStatus(t({ en: 'Uploading profile photo…', fr: 'Envoi de la photo de profil…', ar: 'جارٍ رفع الصورة الشخصية…' }));
-                    const uploaded = await resolveProfilePhoto(user.uid, profilePhotoUrl);
-                    if (uploaded && !isImageDataUrl(uploaded)) {
-                        finalUploadedProfilePhotoUrl = uploaded;
-                    }
-                }
-
-                // Upload portfolio images
-                if (hasPendingServiceUploads) {
-                    setSubmittingStatus(t({ en: 'Uploading portfolio photos…', fr: 'Envoi des photos du portfolio…', ar: 'جارٍ رفع صور الأعمال…' }));
-                    finalUploadedCategoryEntries = await attachUploadedImagesToEntries(user.uid, initialEntries);
-                }
-
-                // Upload tour guide authorization
-                if (hasPendingTourGuideUpload && tourGuideAuthorizationFile) {
-                    setSubmittingStatus(t({ en: 'Uploading authorization document…', fr: 'Envoi du document d\'autorisation…', ar: 'جارٍ رفع وثيقة الترخيص…' }));
-                    const path = `verifications/${user.uid}/${Date.now()}_tour_guide_auth`;
-                    const uploadRes = await withTimeout(
-                        safeUploadBlob(ref(storage, path), tourGuideAuthorizationFile),
-                        90000, 'TOUR_GUIDE_UPLOAD'
-                    );
-                    finalUploadedTourGuideUrl = await withTimeout(getDownloadURL(uploadRes.ref), 20000, 'TOUR_GUIDE_URL');
-                }
-
-                // Save final URLs to Firestore
-                setSubmittingStatus(t({ en: 'Saving your profile…', fr: 'Enregistrement du profil…', ar: 'جارٍ حفظ ملفك الشخصي…' }));
-                const uploadedPortfolioUrls = Array.from(new Set(
-                    finalUploadedCategoryEntries.flatMap(e => normalizeImageList(e.portfolioImages))
-                ));
-                const mergedPhotoUrl = finalUploadedProfilePhotoUrl || googlePhotoURL || '';
-
-                await setDoc(bricolerRef, {
-                    services: finalUploadedCategoryEntries,
-                    portfolio: uploadedPortfolioUrls,
-                    images: uploadedPortfolioUrls,
-                    avatar: mergedPhotoUrl,
-                    profilePhotoURL: mergedPhotoUrl,
-                    photoURL: mergedPhotoUrl,
-                    tourGuideAuthorizationUrl: finalUploadedTourGuideUrl || null,
-                    mediaSyncStatus: 'done',
-                    mediaSyncError: null,
-                    mediaSyncUpdatedAt: serverTimestamp(),
-                    updatedAt: serverTimestamp(),
-                }, { merge: true });
-
-                await setDoc(doc(db, 'clients', user.uid), {
-                    photoURL: mergedPhotoUrl,
-                    isBricoler: true,
-                }, { merge: true });
-            }
-
+            // Note: Media uploads are now disabled. The initial setDoc already saved all information.
             setSubmittingStatus("Complete!");
             onComplete({ services: finalUploadedCategoryEntries, city: selectedCity, availability });
 
@@ -970,55 +908,10 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                 photoURL: finalProfilePhotoUrl || updateData.photoURL || ""
             }, { merge: true });
 
-            // Upload images synchronously (same pattern as handleBricolerSignup)
-            const hasPendingProfileUpdate = isImageDataUrl(profilePhotoUrl);
-            const hasPendingServiceUpdate = currentEntries.some(entryHasPendingImageUploads);
-            const existingOtherServices = bSnap.exists()
-                ? (existingData.services || []).filter((s: any) => !strippedCurrentEntries.map((e: any) => e.categoryId).includes(s.categoryId))
-                : [];
-
-            let finalServicesToSave = updatedServices;
-            let finalPhotoToSave = finalProfilePhotoUrl;
-
-            if (hasPendingProfileUpdate || hasPendingServiceUpdate) {
-                try {
-                    await auth.currentUser?.getIdToken(true);
-                } catch (tokenError) {
-                    console.warn("Token warmup failed:", tokenError);
-                }
-
-                if (hasPendingProfileUpdate) {
-                    setSubmittingStatus(t({ en: 'Uploading profile photo…', fr: 'Envoi de la photo de profil…', ar: 'جارٍ رفع الصورة الشخصية…' }));
-                    const uploaded = await resolveProfilePhoto(user.uid, profilePhotoUrl);
-                    if (uploaded && !isImageDataUrl(uploaded)) finalPhotoToSave = uploaded;
-                }
-
-                if (hasPendingServiceUpdate) {
-                    setSubmittingStatus(t({ en: 'Uploading portfolio photos…', fr: 'Envoi des photos du portfolio…', ar: 'جارٍ رفع صور الأعمال…' }));
-                    const finalizedCurrentEntries = await attachUploadedImagesToEntries(user.uid, currentEntries);
-                    finalServicesToSave = [...existingOtherServices, ...finalizedCurrentEntries];
-                }
-
-                const finalPortfolioUrls = Array.from(new Set(
-                    finalServicesToSave.flatMap((e: any) => normalizeImageList(e.portfolioImages || e.portfolio || e.images || []))
-                ));
-
-                await setDoc(bricolerRef, {
-                    services: finalServicesToSave,
-                    portfolio: finalPortfolioUrls,
-                    images: finalPortfolioUrls,
-                    avatar: finalPhotoToSave,
-                    profilePhotoURL: finalPhotoToSave,
-                    photoURL: finalPhotoToSave || updateData.photoURL,
-                }, { merge: true });
-
-                if (hasPendingProfileUpdate) {
-                    await setDoc(doc(db, 'clients', user.uid), { photoURL: finalPhotoToSave }, { merge: true });
-                }
-            }
+            // Note: Media uploads are now disabled. The initial setDoc already saved all information.
 
             showToast({ title: t({ en: 'Successfully updated!', fr: 'Mis à jour avec succès !' }), variant: 'success' });
-            onComplete({ services: finalServicesToSave });
+            onComplete({ services: finalCategoryEntries });
             onClose();
         } catch (error: any) {
             console.error("Update error:", error);
@@ -1857,30 +1750,17 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                                                         ar: 'هذا المستند إجباري إذا كنت تقدم خدمة المرشد السياحي، وسيظهر للزبائن داخل ملفك الشخصي.'
                                                     })}
                                                 </p>
-                                                <div className="flex items-center gap-3">
-                                                    <label className="inline-flex items-center gap-2 px-4 py-3 rounded-[12px] border-2 border-dashed border-neutral-200 cursor-pointer hover:border-[#00A082]/50 bg-neutral-50">
-                                                        <Upload size={18} className="text-neutral-500" />
-                                                        <span className="text-[14px] font-bold text-neutral-800">
-                                                            {tourGuideAuthorizationUrl || tourGuideAuthorizationFile
-                                                                ? t({ en: 'Replace document', fr: 'Remplacer le document', ar: 'استبدال المستند' })
-                                                                : t({ en: 'Select file (PDF or image)', fr: 'Sélectionner un fichier (PDF ou image)', ar: 'اختر ملفاً (PDF أو صورة)' })
-                                                            }
-                                                        </span>
-                                                        <input
-                                                            type="file"
-                                                            accept="image/*,application/pdf"
-                                                            className="hidden"
-                                                            onChange={(e) => {
-                                                                const file = e.target.files?.[0] || null;
-                                                                setTourGuideAuthorizationFile(file);
-                                                            }}
-                                                        />
-                                                    </label>
-                                                    {(tourGuideAuthorizationUrl || tourGuideAuthorizationFile) && (
-                                                        <span className="text-[13px] text-[#00A082] font-bold">
-                                                            {t({ en: 'Document attached', fr: 'Document attaché', ar: 'تم إرفاق المستند' })}
-                                                        </span>
-                                                    )}
+                                                <div className="p-6 rounded-[20px] bg-neutral-50 border-2 border-dashed border-neutral-100 flex flex-col items-center justify-center text-center gap-3">
+                                                    <div className="w-12 h-12 rounded-full bg-neutral-100 flex items-center justify-center text-neutral-400">
+                                                        <FileText size={24} />
+                                                    </div>
+                                                    <p className="text-[13px] font-medium text-neutral-500 max-w-[240px]">
+                                                        {t({
+                                                            en: 'Document uploads are currently disabled. You can complete your verification later.',
+                                                            fr: 'Les téléchargements de documents sont désactivés. Vous pourrez compléter votre vérification plus tard.',
+                                                            ar: 'رفع المستندات غير متاح حاليًا. يمكنك إكمال عملية التحقق لاحقًا.'
+                                                        })}
+                                                    </p>
                                                 </div>
                                             </motion.div>
                                         )}
@@ -2041,49 +1921,18 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                                                             <h4 className="text-[15px] font-black text-neutral-900">
                                                                 {t({ en: 'Past work photos', fr: 'Photos de réalisations', ar: 'صور أعمالك السابقة' })}
                                                             </h4>
-                                                            <span className="text-[12px] font-bold text-neutral-400">
-                                                                {(currentCatEntry?.portfolioImages || []).length}/6
-                                                            </span>
                                                         </div>
-                                                        <p className="text-[12px] text-neutral-500">
-                                                            {t({
-                                                                en: 'Upload examples of your work. Photos are compressed before upload for fast loading.',
-                                                                fr: 'Ajoutez des exemples de vos réalisations. Les photos sont compressées pour un chargement rapide.',
-                                                                ar: 'أضف أمثلة من أعمالك. يتم ضغط الصور قبل الرفع لتسريع التحميل.'
-                                                            })}
-                                                        </p>
-                                                        <div className="grid grid-cols-3 gap-3">
-                                                            {(currentCatEntry?.portfolioImages || []).map((img, idx) => (
-                                                                <div key={`${img}-${idx}`} className="relative w-full aspect-square rounded-[14px] overflow-hidden border border-neutral-100 bg-neutral-50">
-                                                                    <img src={img} alt={`Portfolio ${idx + 1}`} className="w-full h-full object-cover" />
-                                                                    <button
-                                                                        type="button"
-                                                                        onClick={() => removePortfolioImage(currentCatId, idx)}
-                                                                        className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-black/65 text-white flex items-center justify-center"
-                                                                    >
-                                                                        <X size={14} />
-                                                                    </button>
-                                                                </div>
-                                                            ))}
-                                                            {(currentCatEntry?.portfolioImages || []).length < 6 && (
-                                                                <label className="w-full aspect-square rounded-[14px] border-2 border-dashed border-neutral-200 hover:border-[#00A082]/50 bg-neutral-50 flex flex-col items-center justify-center gap-2 text-neutral-500 cursor-pointer transition-all">
-                                                                    {isProcessingPortfolioImages ? (
-                                                                        <div className="w-5 h-5 border-2 border-neutral-300 border-t-[#00A082] rounded-full animate-spin" />
-                                                                    ) : (
-                                                                        <Upload size={18} />
-                                                                    )}
-                                                                    <span className="text-[11px] font-bold">
-                                                                        {t({ en: 'Add photo', fr: 'Ajouter', ar: 'إضافة صورة' })}
-                                                                    </span>
-                                                                    <input
-                                                                        type="file"
-                                                                        accept="image/*"
-                                                                        multiple
-                                                                        className="hidden"
-                                                                        onChange={(e) => handlePortfolioSelection(currentCatId, e.target.files)}
-                                                                    />
-                                                                </label>
-                                                            )}
+                                                        <div className="p-6 rounded-[20px] bg-neutral-50 border-2 border-dashed border-neutral-100 flex flex-col items-center justify-center text-center gap-3">
+                                                            <div className="w-12 h-12 rounded-full bg-neutral-100 flex items-center justify-center text-neutral-400">
+                                                                <Image size={24} />
+                                                            </div>
+                                                            <p className="text-[13px] font-medium text-neutral-500 max-w-[240px]">
+                                                                {t({
+                                                                    en: 'Portfolio uploads are currently disabled. You can add your past work later via the dashboard.',
+                                                                    fr: 'Les téléchargements de portfolio sont actuellement désactivés. Vous pourrez ajouter vos réalisations plus tard via le tableau de bord.',
+                                                                    ar: 'رفع صور الأعمال غير متاح حاليًا. يمكنك إضافة أعمالك السابقة لاحقًا عبر لوحة التحكم.'
+                                                                })}
+                                                            </p>
                                                         </div>
                                                     </div>
                                                 </motion.div>
@@ -2209,28 +2058,20 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                                             <p className="text-neutral-500 text-[15px] font-medium leading-relaxed">{t({ en: 'This is how clients see you.', fr: 'Voici comment les clients vous voient.', ar: 'هكذا يراك العملاء.' })}</p>
                                         </motion.div>
                                         <motion.div variants={itemVariants} initial="hidden" animate="show" className="flex flex-col items-center gap-4">
-                                            <div className="w-32 h-32 rounded-full bg-neutral-100 border-4 border-white overflow-hidden flex items-center justify-center">
+                                            <div className="w-32 h-32 rounded-full bg-neutral-100 border-4 border-white shadow-lg overflow-hidden flex items-center justify-center">
                                                 <img src={currentProfileAvatar} alt="Profile" className="w-full h-full object-cover" />
                                             </div>
-                                            <label className="inline-flex items-center gap-2 px-4 py-2 rounded-full border-2 border-dashed border-neutral-200 hover:border-[#00A082] cursor-pointer text-[13px] font-black text-neutral-700 bg-neutral-50 transition-all">
-                                                {isProcessingProfilePhoto ? (
-                                                    <div className="w-4 h-4 border-2 border-neutral-300 border-t-[#00A082] rounded-full animate-spin" />
-                                                ) : (
-                                                    <Upload size={15} />
-                                                )}
-                                                {t({ en: 'Upload profile photo', fr: 'Ajouter photo de profil', ar: 'رفع صورة الملف الشخصي' })}
-                                                <input
-                                                    type="file"
-                                                    accept="image/*"
-                                                    className="hidden"
-                                                    onChange={(e) => handleProfilePhotoSelection(e.target.files)}
-                                                />
-                                            </label>
+                                            <div className="px-6 py-3 rounded-2xl bg-[#00A082]/5 border border-[#00A082]/10 flex flex-col items-center gap-2">
+                                                <div className="flex items-center gap-2 text-[#00A082] font-black text-[14px]">
+                                                    <CheckCircle2 size={16} />
+                                                    {t({ en: 'Photo Synced via Google', fr: 'Photo synchronisée via Google', ar: 'تمت مزامنة الصورة عبر Google' })}
+                                                </div>
+                                            </div>
                                             <p className="text-[12px] text-neutral-400 text-center max-w-[280px]">
                                                 {t({
-                                                    en: 'This image is used on your Bricoler profile and won’t replace your Google account photo.',
-                                                    fr: 'Cette image est utilisée sur votre profil Bricoler et ne remplace pas votre photo Google.',
-                                                    ar: 'تُستخدم هذه الصورة في ملفك كمقدم خدمة ولن تستبدل صورة حساب Google.'
+                                                    en: 'Your profile photo is automatically updated from your Google account. Direct uploads are currently disabled.',
+                                                    fr: 'Votre photo de profil est automatiquement mise à jour depuis votre compte Google. Les téléchargements directs sont actuellement désactivés.',
+                                                    ar: 'يتم تحديث صورة ملفك الشخصي تلقائيًا من حساب Google الخاص بك. الرفع المباشر غير مفعل حاليًا.'
                                                 })}
                                             </p>
                                         </motion.div>

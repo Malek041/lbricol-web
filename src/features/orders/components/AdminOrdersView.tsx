@@ -402,9 +402,9 @@ const AdminOrdersView: React.FC<AdminOrdersViewProps> = ({ t, onChat, onViewMess
                             status: selectedOrder.status as any,
                             bricolerId: selectedOrder.bricolerId,
                             bricolerName: selectedOrder.bricolerName,
-                            photos: selectedOrder.photos || [],
-                            images: selectedOrder.images || [],
                             clientAvatar: selectedOrder.clientAvatar,
+                            bricolerWhatsApp: selectedOrder.bricolerWhatsApp,
+                            clientWhatsApp: selectedOrder.clientWhatsApp,
                         } as JobDetails
                         : null
                 }

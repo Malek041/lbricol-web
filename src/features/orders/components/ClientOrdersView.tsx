@@ -3,7 +3,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { OrderDetails } from '@/features/orders/components/OrderCard';
-import { ChevronLeft, Info, MessageCircle, HelpCircle, X, MapPin, Clock, Calendar as CalendarIcon, Phone, User, Ban, Check, AlertTriangle, RefreshCw, CreditCard, Wrench, Banknote, Star } from 'lucide-react';
+import { ChevronLeft, Info, MessageCircle, MessageSquare, Image, HelpCircle, X, MapPin, Clock, Calendar as CalendarIcon, Phone, User, Ban, Check, AlertTriangle, RefreshCw, CreditCard, Wrench, Banknote, Star } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
 import { db, auth } from '@/lib/firebase';
 import { doc, updateDoc, arrayUnion, increment, serverTimestamp, getDoc } from 'firebase/firestore';
@@ -218,6 +218,13 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
     const [selectedOrder, setSelectedOrder] = useState<OrderDetails | null>(null);
     const [liveBricolerInfo, setLiveBricolerInfo] = useState<{ rating: number, jobsCount: number } | null>(null);
 
+    const openWhatsApp = (number?: string) => {
+        if (!number) return;
+        const cleanNumber = number.replace(/\D/g, '');
+        const finalNumber = cleanNumber.startsWith('212') ? cleanNumber : `212${cleanNumber.startsWith('0') ? cleanNumber.slice(1) : cleanNumber}`;
+        window.open(`https://wa.me/${finalNumber}`, '_blank');
+    };
+
     useEffect(() => {
         if (selectedOrder?.bricolerId) {
             const fetchLive = async () => {
@@ -226,9 +233,18 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
                     const snap = await getDoc(doc(db, 'bricolers', bricolerId));
                     if (snap.exists()) {
                         const d = snap.data();
+                        const reviews = d.reviews || [];
+                        const jobsCount = d.jobsCompleted || d.completedJobs || reviews.length || 0;
+                        let rating = d.rating;
+                        if (!rating && d.totalRating && reviews.length > 0) {
+                            rating = d.totalRating / reviews.length;
+                        } else if (!rating) {
+                            rating = 5.0;
+                        }
+
                         setLiveBricolerInfo({
-                            rating: typeof d.rating === 'number' ? d.rating : 5.0,
-                            jobsCount: d.completedJobs || d.numReviews || 0
+                            rating,
+                            jobsCount
                         });
                     }
                 } catch (e) { }
@@ -478,13 +494,10 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
                             </div>
                             <div className="flex items-center gap-4">
                                 <button
-                                    onClick={() => {
-                                        selectedOrder.id && onViewMessages(selectedOrder.id);
-                                        setSelectedOrder(null);
-                                    }}
-                                    className="w-10 h-10 rounded-full flex items-center justify-center text-[#00A082] hover:bg-neutral-50 active:scale-90 transition-all"
+                                    onClick={() => openWhatsApp(selectedOrder.bricolerWhatsApp)}
+                                    className="w-10 h-10 rounded-full flex items-center justify-center text-[#25D366] hover:bg-neutral-50 active:scale-90 transition-all"
                                 >
-                                    <MessageCircle size={24} strokeWidth={2.5} />
+                                    <MessageCircle size={24} strokeWidth={2.5} fill="currentColor" />
                                 </button>
                                 <button
                                     onClick={() => window.open('https://wa.me/212702814355', '_blank')}
@@ -535,7 +548,7 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
 
                                 {/* Key Details Grid */}
                                 <div className="px-6 md:px-12 mb-8">
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <div className="grid grid-cols-1 gap-4">
                                         <div className="bg-neutral-50 rounded-2xl p-4 flex items-center gap-4 border border-neutral-100/50">
                                             <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-sm">
                                                 <Clock size={20} className="text-[#00A082]" />
@@ -585,7 +598,7 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
                                             </div>
                                         </div>
                                         {/* Description */}
-                                        <div className="bg-neutral-50 rounded-2xl p-4 col-span-2 flex items-start gap-4 border border-neutral-100/50">
+                                        <div className="bg-neutral-50 rounded-2xl p-4 flex items-start gap-4 border border-neutral-100/50">
                                             <div className="w-10 h-10 rounded-full bg-white flex-shrink-0 flex items-center justify-center shadow-sm">
                                                 <Info size={20} className="text-[#00A082]" />
                                             </div>
@@ -623,15 +636,25 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
                                                     </div>
                                                 </div>
                                             </div>
-                                            <button
-                                                onClick={() => {
-                                                    selectedOrder.id && onViewMessages(selectedOrder.id);
-                                                    setSelectedOrder(null);
-                                                }}
-                                                className="w-12 h-12 rounded-full bg-neutral-50 flex items-center justify-center text-black hover:bg-neutral-100 active:scale-90 transition-all"
-                                            >
-                                                <MessageCircle size={22} strokeWidth={2.5} />
-                                            </button>
+                                            <div className="flex items-center gap-2">
+                                                {selectedOrder.bricolerWhatsApp && (
+                                                    <button
+                                                        onClick={() => openWhatsApp(selectedOrder.bricolerWhatsApp)}
+                                                        className="w-12 h-12 rounded-full bg-neutral-50 flex items-center justify-center text-[#25D366] hover:bg-neutral-100 active:scale-90 transition-all border border-[#25D366]/10"
+                                                    >
+                                                        <MessageCircle size={22} strokeWidth={2.5} fill="currentColor" />
+                                                    </button>
+                                                )}
+                                                <button
+                                                    onClick={() => {
+                                                        selectedOrder.id && onViewMessages(selectedOrder.id);
+                                                        setSelectedOrder(null);
+                                                    }}
+                                                    className="w-12 h-12 rounded-full bg-neutral-50 flex items-center justify-center text-black hover:bg-neutral-100 active:scale-90 transition-all"
+                                                >
+                                                    <MessageSquare size={22} strokeWidth={2.5} />
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
                                 )}
@@ -675,22 +698,17 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
                                         </div>
                                     </div>
 
-                                    {/* Task Photos */}
-                                    {selectedOrder.images && selectedOrder.images.length > 0 && (
-                                        <div className="space-y-3">
-                                            <h3 className="text-[28px] font-black text-black">{t({ en: 'Photos', fr: 'Photos', ar: 'الصور' })}</h3>
-                                            <div className="flex gap-3 overflow-x-auto no-scrollbar pb-2">
-                                                {selectedOrder.images.map((img, i) => (
-                                                    <div key={i} className="relative w-40 h-40 flex-shrink-0 rounded-[20px] overflow-hidden border border-neutral-100 shadow-sm">
-                                                        <img
-                                                            src={img}
-                                                            className="w-full h-full object-cover cursor-pointer hover:opacity-90 transition-opacity"
-                                                            alt="Task"
-                                                            onClick={() => window.open(img, '_blank')}
-                                                        />
-                                                    </div>
-                                                ))}
-                                            </div>
+                                    {/* Direct Contact Button */}
+                                    {selectedOrder.bricolerWhatsApp && (
+                                        <div className="space-y-4 pt-4">
+                                            <h3 className="text-[28px] font-black text-black">{t({ en: 'Direct Contact', fr: 'Contact Direct', ar: 'اتصال مباشر' })}</h3>
+                                            <button
+                                                onClick={() => openWhatsApp(selectedOrder.bricolerWhatsApp)}
+                                                className="w-full bg-[#25D366] text-white py-5 rounded-[24px] font-black text-[20px] flex items-center justify-center gap-4 hover:bg-[#128C7E] transition-all shadow-xl shadow-[#25D366]/20 active:scale-95 translate-y-0"
+                                            >
+                                                <MessageCircle size={28} fill="currentColor" />
+                                                {t({ en: 'Chat via WhatsApp', fr: 'Discuter sur WhatsApp' })}
+                                            </button>
                                         </div>
                                     )}
 

@@ -4,8 +4,8 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     X, ChevronLeft, ChevronRight, ChevronDown, MapPin,
-    Star, ShieldCheck, Briefcase, Upload,
-    Info, Clock, CheckCircle2, SlidersHorizontal, ArrowUpDown, Search, Check, Calendar, Trophy, FileText, Sparkles, Zap, Plus, Wrench, Banknote, AlertCircle
+    Star, ShieldCheck, Briefcase,
+    Info, Clock, CheckCircle2, SlidersHorizontal, ArrowUpDown, Search, Check, Calendar, Trophy, FileText, Sparkles, Zap, Plus, Wrench, Banknote, AlertCircle, MessageSquare, MessageCircle
 } from 'lucide-react';
 import { auth, db, storage } from '@/lib/firebase';
 import { collection, query, where, getDocs, Timestamp, serverTimestamp, doc, getDoc } from 'firebase/firestore';
@@ -47,6 +47,7 @@ interface Bricoler {
     happyMakingScore?: number;
     reviews?: any[];
     portfolio?: string[];
+    whatsappNumber?: string;
 }
 
 export interface DraftOrder {
@@ -615,8 +616,6 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
     const [isMatchingAnimation, setIsMatchingAnimation] = useState(false);
     const [paymentMethod, setPaymentMethod] = useState<'cash' | 'bank'>('cash');
     const [bankReceipt, setBankReceipt] = useState<string | null>(null);
-    const [clientNeedImages, setClientNeedImages] = useState<string[]>([]);
-    const [isUploadingTaskImages, setIsUploadingTaskImages] = useState(false);
     const [isUploadingReceipt, setIsUploadingReceipt] = useState(false);
     const [frequency, setFrequency] = useState<'once' | 'daily' | 'weekly' | 'biweekly' | 'monthly'>('once');
     const [showSuccessAnimation, setShowSuccessAnimation] = useState(false);
@@ -686,9 +685,9 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                 return {
                     title: t({ en: "What's the scope of the errands?", fr: "Quelle est l'ampleur des courses ?", ar: "ما هو حجم المشاوير؟" }),
                     options: [
-                        { id: 'small', duration: 1, label: { en: 'Quick Errand (5 min)', fr: 'Course rapide (5 min)', ar: 'مشوار سريع (5 دقائق)' }, estTime: { en: '5 min', fr: '5 min', ar: '5 دقائق' }, desc: { en: 'Near pickup or very short task.', fr: 'Retrait proche ou tâche très courte.', ar: 'استلام قريب أو مهمة قصيرة جداً.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/SmallTask.webp' },
-                        { id: 'medium', duration: 1.5, label: { en: 'Standard (15 min)', fr: 'Standard (15 min)', ar: 'عادي (15 دقيقة)' }, estTime: { en: '15 min', fr: '15 min', ar: '15 دقيقة' }, desc: { en: 'Typical errand or simple shopping.', fr: 'Course typique ou achat simple.', ar: 'مشوار عادي أو تسوق بسيط.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/MediumSize.webp' },
-                        { id: 'large', duration: 2, label: { en: 'Extended (30 min)', fr: 'Prolongée (30 min)', ar: 'ممتدة (30 دقيقة)' }, estTime: { en: '30 min', fr: '30 min', ar: '30 دقيقة' }, desc: { en: 'Multiple tasks or waiting time.', fr: 'Plusieurs tâches ou temps d\'attente.', ar: 'مهام متعددة أو وقت انتظار.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/BigTask.webp' },
+                        { id: 'small', duration: 0.5, label: { en: '20-30min', fr: '20-30min', ar: '20-30 دقيقة' }, estTime: { en: '20-30 min', fr: '20-30 min', ar: '20-30 دقيقة' }, desc: { en: 'Pickup or very short task nearby.', fr: 'Retrait ou tâche très courte à proximité.', ar: 'استلام أو مهمة قصيرة جداً في الجوار.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/SmallTask.webp' },
+                        { id: 'medium', duration: 1, label: { en: '45-55min', fr: '45-55min', ar: '45-55 دقيقة' }, estTime: { en: '45-55 min', fr: '45-55 min', ar: '45-55 دقيقة' }, desc: { en: 'Typical errand or simple shopping.', fr: 'Course typique ou achat simple.', ar: 'مشوار عادي أو تسوق بسيط.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/MediumSize.webp' },
+                        { id: 'large', duration: 1.5, label: { en: '1h10min-1h30min', fr: '1h10min-1h30min', ar: '1 ساعة 10 دقائق - 1 ساعة 30 دقيقة' }, estTime: { en: '1h 10min-30min', fr: '1h 10-30 min', ar: '1 ساعة 10-30 دقيقة' }, desc: { en: 'Multiple tasks or waiting time.', fr: 'Plusieurs tâches ou temps d\'attente.', ar: 'مهام متعددة أو وقت انتظار.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/BigTask.webp' },
                     ]
                 };
             case 'plumbing':
@@ -818,7 +817,6 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                 setSelectedTime(continueDraft.selectedTime);
                 setPaymentMethod(continueDraft.paymentMethod);
                 setBankReceipt(continueDraft.bankReceipt);
-                setClientNeedImages(continueDraft.clientNeedImages || []);
                 setFrequency(continueDraft.frequency || 'once');
                 setCurrentCity(continueDraft.city);
                 setCurrentArea(continueDraft.area);
@@ -835,7 +833,6 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                 setSelectedTime(null);
                 setPaymentMethod('cash');
                 setBankReceipt(null);
-                setClientNeedImages([]);
                 setFrequency('once');
                 setIsSelectingLocation(false);
                 setCurrentCity(initialCity || '');
@@ -873,7 +870,6 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
             selectedTime,
             paymentMethod,
             bankReceipt,
-            clientNeedImages,
             frequency,
             step,
             subStep1,
@@ -903,7 +899,7 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
     }, [
         isOpen, service, subService, currentCity, currentArea,
         taskSize, description, selectedBricolerId, selectedDate,
-        step, subStep1, clientNeedImages, paymentMethod, bankReceipt, frequency, selectedTime
+        step, subStep1, paymentMethod, bankReceipt, frequency, selectedTime
     ]);
 
     useEffect(() => {
@@ -974,61 +970,7 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
         return await getDownloadURL(storageRef);
     };
 
-    const handleTaskImageSelection = async (files: FileList | null) => {
-        if (!files || files.length === 0) return;
 
-        const remainingSlots = Math.max(0, 6 - clientNeedImages.length);
-        if (remainingSlots === 0) {
-            showToast({
-                variant: 'error',
-                title: t({ en: 'Maximum reached', fr: 'Maximum atteint', ar: 'تم بلوغ الحد الأقصى' }),
-                description: t({ en: 'You can upload up to 6 photos.', fr: 'Vous pouvez téléverser jusqu’à 6 photos.', ar: 'يمكنك رفع 6 صور كحد أقصى.' })
-            });
-            return;
-        }
-
-        try {
-            setIsUploadingTaskImages(true);
-            const selected = Array.from(files).slice(0, remainingSlots);
-
-            // Generate high quality data URLs for pending upload later
-            const highQualityDataUrls = await Promise.all(
-                selected.map(file => compressImageFileToDataUrl(file, { maxWidth: 1600, maxHeight: 1600, quality: 0.72, mimeType: 'image/jpeg' }))
-            );
-
-            setClientNeedImages(prev => [...prev, ...highQualityDataUrls]);
-
-            const currentUser = auth.currentUser;
-            if (currentUser) {
-                // Background upload if logged in, do not block the UI state with isUploadingTaskImages.
-                highQualityDataUrls.forEach(async (compressedDataUrl, idx) => {
-                    try {
-                        const compressedBlob = await dataUrlToBlob(compressedDataUrl);
-                        const path = `orders/${currentUser.uid}/${Date.now()}_${idx}.jpg`;
-                        const uploadedUrl = await uploadImageToStorage(compressedBlob, path);
-
-                        setClientNeedImages(prev => prev.map(img => img === compressedDataUrl ? uploadedUrl : img));
-                    } catch (err) {
-                        console.error('Background image upload failed:', err);
-                    }
-                });
-            }
-        } catch (error) {
-            console.error("Task image generation failed:", error);
-            showToast({
-                variant: 'error',
-                title: t({ en: 'Processing failed', fr: 'Échec du traitement', ar: 'فشل المعالجة' }),
-                description: t({ en: 'Could not process one or more photos.', fr: 'Impossible de traiter une ou plusieurs photos.', ar: 'تعذر معالجة صورة واحدة أو أكثر.' })
-            });
-        }
-        // We intentionally removed the finally block that sets isUploadingTaskImages to false
-        // Because we set it to false immediately after generating the local base64 images so UI doesn't block.
-        setIsUploadingTaskImages(false);
-    };
-
-    const removeTaskImage = (index: number) => {
-        setClientNeedImages((prev) => prev.filter((_, idx) => idx !== index));
-    };
 
 
     const timeToMinutes = (t: string) => {
@@ -1231,10 +1173,11 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
             return;
         }
 
-        if (paymentMethod === 'bank' && !bankReceipt) {
-            alert(t({ en: 'Please upload your transfer receipt before programming the mission.', fr: 'Veuillez télécharger votre reçu de virement avant de programmer la mission.', ar: 'يرجى تحميل إيصال التحويل قبل برمجة المهمة.' }));
-            return;
-        }
+        // Note: Removed bankReceipt requirement because uploads are disabled.
+        // if (paymentMethod === 'bank' && !bankReceipt) {
+        //     alert(t({ en: 'Please upload your transfer receipt before programming the mission.', fr: 'Veuillez télécharger votre reçu de virement avant de programmer la mission.', ar: 'يرجى تحميل إيصال التحويل قبل برمجة المهمة.' }));
+        //     return;
+        // }
 
         // Requirement: Must have whatsapp number
         const user = auth.currentUser;
@@ -1294,6 +1237,7 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                 bricolerRating: selectedPro?.rating || null,
                 bricolerRank: selectedPro ? getBricolerRankLabel(selectedPro) : null,
                 bricolerJobsCount: selectedPro?.completedJobs || null,
+                bricolerWhatsApp: selectedPro?.whatsappNumber || null,
                 status: 'pending',
                 date: selectedDate || 'Flexible',
                 time: selectedTime || 'Flexible',
@@ -1303,10 +1247,10 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                 totalPrice: applyReferralDiscount && referralDiscountAvailable > 0 ? Math.max(0, totalPrice - referralDiscountAvailable) : totalPrice,
                 price: applyReferralDiscount && referralDiscountAvailable > 0 ? Math.max(0, totalPrice - referralDiscountAvailable) : totalPrice,
                 referralApplied: applyReferralDiscount && referralDiscountAvailable > 0,
-                images: clientNeedImages,
-                clientNeedImages: clientNeedImages,
+                images: [],
+                clientNeedImages: [],
                 paymentMethod,
-                bankReceipt: paymentMethod === 'bank' ? bankReceipt : null,
+                bankReceipt: null,
                 frequency,
                 createdAt: serverTimestamp()
             };
@@ -1702,57 +1646,7 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                                                         </motion.div>
                                                     )}
 
-                                                    <motion.div
-                                                        initial={{ opacity: 0 }}
-                                                        animate={{ opacity: 1 }}
-                                                        transition={{ delay: 0.35 }}
-                                                        className="space-y-3 pt-1"
-                                                    >
-                                                        <div className="flex items-center justify-between">
-                                                            <p className="text-[14px] font-black text-neutral-800">
-                                                                {t({ en: 'Task photos (optional)', fr: 'Photos de la tâche (optionnel)', ar: 'صور المهمة (اختياري)' })}
-                                                            </p>
-                                                            <span className="text-[12px] text-neutral-400 font-bold">{clientNeedImages.length}/6</span>
-                                                        </div>
-                                                        <p className="text-[12px] text-neutral-500">
-                                                            {t({
-                                                                en: 'Add photos to help the bricoler understand your need faster.',
-                                                                fr: 'Ajoutez des photos pour aider le bricoler à mieux comprendre votre besoin.',
-                                                                ar: 'أضف صورًا لمساعدة مقدم الخدمة على فهم طلبك بشكل أسرع.'
-                                                            })}
-                                                        </p>
-                                                        <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
-                                                            {clientNeedImages.map((img, idx) => (
-                                                                <div key={`${img}-${idx}`} className="relative w-24 h-24 rounded-[14px] overflow-hidden border border-neutral-100 flex-shrink-0">
-                                                                    <img src={img} alt={`Need ${idx + 1}`} className="w-full h-full object-cover" />
-                                                                    <button
-                                                                        type="button"
-                                                                        onClick={() => removeTaskImage(idx)}
-                                                                        className="absolute top-1 right-1 w-5 h-5 rounded-full bg-black/70 text-white flex items-center justify-center"
-                                                                    >
-                                                                        <X size={12} />
-                                                                    </button>
-                                                                </div>
-                                                            ))}
-                                                            {clientNeedImages.length < 6 && (
-                                                                <label className="w-24 h-24 rounded-[14px] border-2 border-dashed border-neutral-200 bg-neutral-50 hover:border-[#00A082]/50 transition-colors flex flex-col items-center justify-center gap-1.5 text-neutral-500 cursor-pointer flex-shrink-0">
-                                                                    {isUploadingTaskImages ? (
-                                                                        <div className="w-4 h-4 border-2 border-neutral-300 border-t-[#00A082] rounded-full animate-spin" />
-                                                                    ) : (
-                                                                        <Upload size={16} />
-                                                                    )}
-                                                                    <span className="text-[10px] font-black">{t({ en: 'Add', fr: 'Ajouter', ar: 'إضافة' })}</span>
-                                                                    <input
-                                                                        type="file"
-                                                                        accept="image/*"
-                                                                        multiple
-                                                                        className="hidden"
-                                                                        onChange={(e) => handleTaskImageSelection(e.target.files)}
-                                                                    />
-                                                                </label>
-                                                            )}
-                                                        </div>
-                                                    </motion.div>
+
                                                 </motion.div>
 
                                             </motion.div>
@@ -2161,7 +2055,7 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                                                         <p className={cn("text-[15px] font-black leading-tight", paymentMethod === 'bank' ? "text-[#00A082]" : "text-neutral-600")}>
                                                             {t({ en: 'Bank Transfer', fr: 'Virement', ar: 'تحويل بنكي' })}
                                                         </p>
-                                                        <p className="text-[12px] font-medium text-neutral-400">{t({ en: 'Upload receipt', fr: 'Joindre reçu', ar: 'رفع الإيصال' })}</p>
+                                                        <p className="text-[12px] font-medium text-neutral-400">{t({ en: 'WhatsApp verify', fr: 'Vérif. WhatsApp', ar: 'تأكيد واتساب' })}</p>
                                                     </div>
                                                     {paymentMethod === 'bank' && (
                                                         <div className="ml-auto w-5 h-5 rounded-full bg-[#00A082] flex items-center justify-center">
@@ -2214,7 +2108,7 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                                                 </motion.div>
                                             )}
 
-                                            {/* Bank receipt upload — only shows when bank is selected */}
+                                            {/* Bank receipt instructions — only shows when bank is selected */}
                                             {paymentMethod === 'bank' && (
                                                 <motion.div
                                                     initial={{ opacity: 0, height: 0 }}
@@ -2222,61 +2116,33 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                                                     exit={{ opacity: 0, height: 0 }}
                                                     className="overflow-hidden"
                                                 >
-                                                    <label className={cn(
-                                                        "flex items-center gap-4 w-full p-5 rounded-[16px] border-2 border-dashed cursor-pointer transition-all",
-                                                        bankReceipt ? "border-[#00A082] bg-[#E6F6F2]/30" : "border-neutral-200 hover:border-[#00A082] hover:bg-[#E6F6F2]/20"
-                                                    )}>
-                                                        {bankReceipt ? (
-                                                            <>
-                                                                <img src={bankReceipt} className="w-14 h-14 rounded-[10px] object-cover" />
-                                                                <div className="flex-1">
-                                                                    <p className="text-[14px] font-black text-[#00A082]">{t({ en: 'Receipt attached', fr: 'Reçu joint', ar: 'تم إرفاق الإيصال' })}</p>
-                                                                    <p className="text-[12px] text-neutral-400 font-medium">{t({ en: 'Tap to change', fr: 'Appuyer pour changer', ar: 'اضغط للتغيير' })}</p>
-                                                                </div>
-                                                                <button onClick={(e) => { e.preventDefault(); setBankReceipt(null); }} className="w-7 h-7 rounded-full bg-neutral-100 flex items-center justify-center">
-                                                                    <X size={14} className="text-neutral-500" />
-                                                                </button>
-                                                            </>
-                                                        ) : (
-                                                            <>
-                                                                <div className="w-12 h-12 rounded-[12px] bg-neutral-100 flex items-center justify-center">
-                                                                    <Upload size={20} className="text-neutral-400" />
-                                                                </div>
-                                                                <div>
-                                                                    <p className="text-[14px] font-black text-neutral-700">{t({ en: 'Upload bank receipt', fr: 'Téléverser le reçu bancaire', ar: 'رفع إيصال التحويل' })}</p>
-                                                                    <p className="text-[12px] text-neutral-400 font-medium">{t({ en: 'JPG or PNG', fr: 'JPG ou PNG', ar: 'JPG أو PNG' })}</p>
-                                                                </div>
-                                                            </>
-                                                        )}
-                                                        <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
-                                                            const f = e.target.files?.[0];
-                                                            if (!f) return;
-
-                                                            try {
-                                                                setIsUploadingReceipt(true);
-                                                                // Generate high quality data URL for preview and pending upload
-                                                                const compressedDataUrl = await compressImageFileToDataUrl(f, {
-                                                                    maxWidth: 1600,
-                                                                    maxHeight: 1600,
-                                                                    quality: 0.72,
-                                                                    mimeType: 'image/jpeg'
-                                                                });
-                                                                setBankReceipt(compressedDataUrl);
-
-                                                                const user = auth.currentUser;
-                                                                if (user) {
-                                                                    const compressedBlob = await dataUrlToBlob(compressedDataUrl);
-                                                                    const path = `receipts/${user.uid}/${Date.now()}_receipt.jpg`;
-                                                                    const url = await uploadImageToStorage(compressedBlob, path);
-                                                                    setBankReceipt(url);
-                                                                }
-                                                            } catch (err) {
-                                                                console.warn('Receipt capture/upload failed:', err);
-                                                            } finally {
-                                                                setIsUploadingReceipt(false);
-                                                            }
-                                                        }} />
-                                                    </label>
+                                                    <div className="flex items-center gap-4 w-full p-5 rounded-[16px] border-2 border-[#00A082] bg-[#E6F6F2]/30 border-dashed">
+                                                        <div className="w-12 h-12 rounded-[12px] bg-white flex items-center justify-center shadow-sm">
+                                                            <MessageCircle size={24} className="text-[#00A082]" />
+                                                        </div>
+                                                        <div className="flex-1">
+                                                            <p className="text-[14px] font-black text-[#00A082]">
+                                                                {t({
+                                                                    en: 'Send receipt via WhatsApp',
+                                                                    fr: 'Envoyer le reçu via WhatsApp',
+                                                                    ar: 'أرسل الإيصال عبر واتساب'
+                                                                })}
+                                                            </p>
+                                                            <p className="text-[12px] text-[#00A082]/70 font-bold">
+                                                                {t({
+                                                                    en: 'Uploads are disabled. Chat with us to verify.',
+                                                                    fr: 'Envois désactivés. Discutez avec nous.',
+                                                                    ar: 'الرفع معطل. تواصل معنا للتحقق.'
+                                                                })}
+                                                            </p>
+                                                        </div>
+                                                        <button
+                                                            onClick={() => window.open('https://wa.me/212702814355', '_blank')}
+                                                            className="bg-[#00A082] text-white px-3 py-1.5 rounded-lg text-[11px] font-black uppercase"
+                                                        >
+                                                            {t({ en: 'Chat', fr: 'Discuter', ar: 'محادثة' })}
+                                                        </button>
+                                                    </div>
                                                 </motion.div>
                                             )}
                                         </div>

@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Star, Clock, Calendar, ChevronLeft, X, CheckCircle2 } from 'lucide-react';
+import { Star, Clock, Calendar, ChevronLeft, X, CheckCircle2, MessageCircle } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
 import {
     collection,
@@ -211,10 +211,11 @@ export default function HeroesView({ orders }: HeroesViewProps) {
     const handleConfirmBooking = async () => {
         if (!selectedHero || !selectedService || !taskSize || isSubmitting) return;
 
-        if (paymentMethod === 'bank' && !bankReceipt) {
-            alert(t({ en: 'Please upload your transfer receipt before programming the mission.', fr: 'Veuillez télécharger votre reçu de virement avant de programmer la mission.', ar: 'يرجى تحميل إيصال التحويل قبل برمجة المهمة.' }));
-            return;
-        }
+        // Note: Removed bankReceipt requirement because uploads are disabled.
+        // if (paymentMethod === 'bank' && !bankReceipt) {
+        //     alert(t({ en: 'Please upload your transfer receipt before programming the mission.', fr: 'Veuillez télécharger votre reçu de virement avant de programmer la mission.', ar: 'يرجى تحميل إيصال التحويل قبل برمجة المهمة.' }));
+        //     return;
+        // }
 
         if (isUploadingReceipt) {
             alert(t({ en: 'Please wait for your receipt to finish uploading...', fr: 'Veuillez patienter pendant le téléchargement de votre reçu...', ar: 'يرجى الانتظار حتى يتم تحميل الإيصال...' }));
@@ -264,7 +265,7 @@ export default function HeroesView({ orders }: HeroesViewProps) {
                 serviceFee,
                 totalPrice,
                 paymentMethod,
-                bankReceipt: (paymentMethod === 'bank' && bankReceipt && !isImageDataUrl(bankReceipt)) ? bankReceipt : null,
+                bankReceipt: null,
                 createdAt: serverTimestamp()
             };
 
@@ -782,38 +783,33 @@ export default function HeroesView({ orders }: HeroesViewProps) {
                                                                 </div>
                                                             </div>
 
-                                                            <label className={cn(
-                                                                "flex items-center gap-4 w-full p-5 rounded-[22px] border-2 border-dashed cursor-pointer transition-all",
-                                                                bankReceipt ? "bg-[#D9F2EC] border-[#00A082]" : "border-[#F0F0F0] hover:border-[#00A082]"
-                                                            )}>
+                                                            <div className="flex items-center gap-4 w-full p-5 rounded-[22px] border-2 border-[#00A082] bg-[#D9F2EC] border-dashed">
                                                                 <div className="w-12 h-12 rounded-2xl bg-white flex items-center justify-center shadow-sm">
-                                                                    <Upload size={20} className="text-[#00A082]" />
+                                                                    <MessageCircle size={24} className="text-[#00A082]" />
                                                                 </div>
                                                                 <div className="flex-1">
-                                                                    <p className="text-[14px] font-black text-[#1D1D1D]">{bankReceipt ? t({ en: 'Receipt Attached!', fr: 'Reçu joint !', ar: 'تم إرفاق الإيصال' }) : t({ en: 'Upload Bank Receipt', fr: 'Envoyer le reçu', ar: 'رفع إيصال البنك' })}</p>
-                                                                    <p className="text-[12px] font-medium text-neutral-400">{t({ en: 'JPG or PNG format', fr: 'Format JPG ou PNG', ar: 'JPG أو PNG' })}</p>
+                                                                    <p className="text-[14px] font-black text-[#1D1D1D]">
+                                                                        {t({
+                                                                            en: 'Send receipt via WhatsApp',
+                                                                            fr: 'Envoyer le reçu via WhatsApp',
+                                                                            ar: 'أرسل الإيصال عبر واتساب'
+                                                                        })}
+                                                                    </p>
+                                                                    <p className="text-[12px] font-medium text-neutral-400">
+                                                                        {t({
+                                                                            en: 'Uploads are disabled. Chat with us.',
+                                                                            fr: 'Envois désactivés. Discutez avec nous.',
+                                                                            ar: 'الرفع معطل. تواصل معنا للحصول على المساعدة.'
+                                                                        })}
+                                                                    </p>
                                                                 </div>
-                                                                <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
-                                                                    const f = e.target.files?.[0];
-                                                                    if (!f) return;
-                                                                    const reader = new FileReader();
-                                                                    reader.onload = (ev) => setBankReceipt(ev.target?.result as string);
-                                                                    reader.readAsDataURL(f);
-                                                                    const user = auth.currentUser;
-                                                                    if (user) {
-                                                                        try {
-                                                                            setIsUploadingReceipt(true);
-                                                                            const path = `receipts/${user.uid}/${Date.now()}_receipt.jpg`;
-                                                                            const url = await uploadImageToStorage(f, path);
-                                                                            setBankReceipt(url);
-                                                                        } catch (err) {
-                                                                            console.warn('Receipt upload failed, keeping preview:', err);
-                                                                        } finally {
-                                                                            setIsUploadingReceipt(false);
-                                                                        }
-                                                                    }
-                                                                }} />
-                                                            </label>
+                                                                <button
+                                                                    onClick={() => window.open('https://wa.me/212702814355', '_blank')}
+                                                                    className="bg-[#00A082] text-white px-3 py-1.5 rounded-lg text-[11px] font-black uppercase"
+                                                                >
+                                                                    {t({ en: 'Chat', fr: 'Discuter', ar: 'محادثة' })}
+                                                                </button>
+                                                            </div>
                                                         </motion.div>
                                                     )}
                                                 </div>

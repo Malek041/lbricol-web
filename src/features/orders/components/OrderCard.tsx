@@ -66,6 +66,8 @@ export interface OrderDetails {
     clientAvatar?: string;
     confirmedAt?: any;
     responseTimeMinutes?: number;
+    clientWhatsApp?: string;
+    bricolerWhatsApp?: string;
 }
 
 interface OrderCardProps {

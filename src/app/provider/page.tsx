@@ -160,6 +160,7 @@ export interface Job {
     status: string;
     basePrice?: number | string;
     area?: string;
+    clientWhatsApp?: string;
 }
 
 interface ServiceCategory {
@@ -191,6 +192,7 @@ interface MobileJobsViewItem {
     rawJob?: Job;
     rawAccepted?: OrderDetails;
     isUrgent?: boolean;
+    clientWhatsApp?: string;
 }
 
 // --- Constants & Mock Data ---
@@ -476,7 +478,8 @@ export default function ProviderPage() {
             image: raw.image || '',
             images: raw.images || [],
             rawJob: isMarket ? raw : undefined,
-            rawAccepted: !isMarket ? raw : undefined
+            rawAccepted: !isMarket ? raw : undefined,
+            clientWhatsApp: raw.clientWhatsApp
         };
     }, [user, formatJobPrice, t]);
 
@@ -1363,15 +1366,15 @@ export default function ProviderPage() {
         if (clientRating === 0 || isSubmittingRating || !job.id || !job.clientId) return;
         setIsSubmittingRating(true);
         try {
-                const reviewData = {
-                    id: job.id,
-                    rating: clientRating,
-                    comment: clientRatingComment || clientReview,
-                    serviceName: job.title || job.craft || 'Service',
-                    date: new Date().toISOString(),
-                    bricolerName: user?.displayName || 'Bricoler',
-                    bricolerAvatar: userData?.profilePhotoURL || userData?.avatar || userData?.photoURL || user?.photoURL || null,
-                };
+            const reviewData = {
+                id: job.id,
+                rating: clientRating,
+                comment: clientRatingComment || clientReview,
+                serviceName: job.title || job.craft || 'Service',
+                date: new Date().toISOString(),
+                bricolerName: user?.displayName || 'Bricoler',
+                bricolerAvatar: userData?.profilePhotoURL || userData?.avatar || userData?.photoURL || user?.photoURL || null,
+            };
 
             const clientRef = doc(db, 'clients', job.clientId);
             await updateDoc(clientRef, {
@@ -1937,6 +1940,13 @@ export default function ProviderPage() {
     }, [jobsBySection, mobileJobsStatus]);
     const stackedMobileJobs = visibleMobileJobs.slice(0, 3);
 
+    const openWhatsApp = (number?: string) => {
+        if (!number) return;
+        const cleanNumber = number.replace(/\D/g, '');
+        const finalNumber = cleanNumber.startsWith('212') ? cleanNumber : `212${cleanNumber.startsWith('0') ? cleanNumber.slice(1) : cleanNumber}`;
+        window.open(`https://wa.me/${finalNumber}`, '_blank');
+    };
+
     const renderJobDetailsModal = () => {
         if (!viewingJobDetails) return null;
         const job = viewingJobDetails;
@@ -1968,6 +1978,14 @@ export default function ProviderPage() {
                             <h1 className="text-[20px] font-black text-black">{t({ en: 'Job details', fr: 'Détails de la mission' })}</h1>
                         </div>
                         <div className="flex items-center gap-4">
+                            {(job.rawAccepted?.status === 'confirmed' || job.rawAccepted?.status === 'programmed' || job.rawAccepted?.status === 'accepted') && (
+                                <button
+                                    onClick={() => openWhatsApp(job.clientWhatsApp)}
+                                    className="w-10 h-10 rounded-full flex items-center justify-center text-[#25D366] hover:bg-neutral-50 active:scale-90 transition-all"
+                                >
+                                    <MessageCircle size={24} strokeWidth={2.5} fill="currentColor" />
+                                </button>
+                            )}
                             <button
                                 onClick={() => {
                                     setSelectedChat((job.rawAccepted || job.rawJob) as any);
@@ -2086,28 +2104,16 @@ export default function ProviderPage() {
                                             </p>
                                         </div>
                                     </div>
-                                    {/* Images Gallery */}
-                                    {job.images && job.images.length > 0 && (
-                                        <div className="bg-neutral-50 rounded-2xl p-4 col-span-1 sm:col-span-2 border border-neutral-100/50">
-                                            <div className="flex items-center gap-4 mb-3">
-                                                <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-sm">
-                                                    <Image size={20} className="text-[#00A082]" />
-                                                </div>
-                                                <span className="text-[12px] font-bold text-neutral-400 uppercase tracking-wider">
-                                                    {t({ en: 'Photos Attachments', fr: 'Photos Jointes' })}
-                                                </span>
-                                            </div>
-                                            <div className="flex gap-3 overflow-x-auto no-scrollbar py-1">
-                                                {job.images.map((img, idx) => (
-                                                    <div
-                                                        key={`job-img-${idx}`}
-                                                        className="w-24 h-24 sm:w-32 sm:h-32 rounded-xl overflow-hidden flex-shrink-0 border border-neutral-200 cursor-pointer hover:opacity-90 active:scale-95 transition-all shadow-sm"
-                                                        onClick={() => window.open(img, '_blank')}
-                                                    >
-                                                        <img src={img} className="w-full h-full object-cover" />
-                                                    </div>
-                                                ))}
-                                            </div>
+                                    {/* Action Buttons */}
+                                    {(job.rawAccepted?.status === 'confirmed' || job.rawAccepted?.status === 'programmed' || job.rawAccepted?.status === 'accepted') && (
+                                        <div className="bg-neutral-50 rounded-2xl p-4 col-span-1 sm:col-span-2 flex flex-col items-center gap-4 border border-neutral-100/50">
+                                            <button
+                                                onClick={() => openWhatsApp(job.clientWhatsApp)}
+                                                className="w-full bg-[#25D366] text-white py-4 rounded-xl font-black text-[18px] flex items-center justify-center gap-3 hover:bg-[#128C7E] transition-all shadow-sm"
+                                            >
+                                                <MessageCircle size={24} fill="currentColor" />
+                                                {t({ en: 'Contact via WhatsApp', fr: 'Contacter via WhatsApp' })}
+                                            </button>
                                         </div>
                                     )}
                                 </div>

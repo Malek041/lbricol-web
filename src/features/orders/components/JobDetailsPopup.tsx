@@ -29,13 +29,15 @@ export interface JobDetails {
     time: string;
     duration: string;
     price: number;
-    status: 'new' | 'accepted' | 'declined' | 'completed';
+    status: 'new' | 'accepted' | 'declined' | 'completed' | 'programmed';
     description?: string;
     photos?: string[];
     images?: string[];
     bricolerId?: string;
     bricolerName?: string;
     clientAvatar?: string;
+    bricolerWhatsApp?: string;
+    clientWhatsApp?: string;
 }
 
 interface JobDetailsPopupProps {
@@ -62,6 +64,13 @@ const JobDetailsPopup: React.FC<JobDetailsPopupProps> = ({ job, onClose, onAccep
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, [job, onClose]);
 
+    const openWhatsApp = (number: string) => {
+        if (!number) return;
+        const cleanNumber = number.replace(/\D/g, '');
+        const finalNumber = cleanNumber.startsWith('212') ? cleanNumber : `212${cleanNumber.startsWith('0') ? cleanNumber.slice(1) : cleanNumber}`;
+        window.open(`https://wa.me/${finalNumber}`, '_blank');
+    };
+
     if (!job) return null;
 
     const getStatusConfig = (status: JobDetails['status']) => {
@@ -70,6 +79,8 @@ const JobDetailsPopup: React.FC<JobDetailsPopupProps> = ({ job, onClose, onAccep
                 return { color: '#007AFF', bg: '#E5F1FF', icon: Info, label: t({ en: 'NEW', fr: 'NOUVEAU', ar: 'جديد' }) };
             case 'accepted':
                 return { color: '#34C759', bg: '#EBF9EE', icon: CheckCircle2, label: t({ en: 'ACCEPTED', fr: 'ACCEPTÉE', ar: 'مقبول' }) };
+            case 'programmed':
+                return { color: '#34C759', bg: '#EBF9EE', icon: CheckCircle2, label: t({ en: 'PROGRAMMED', fr: 'PROGRAMMÉE', ar: 'مبرمج' }) };
             case 'declined':
                 return { color: '#FF3B30', bg: '#FFEBEA', icon: XCircle, label: t({ en: 'DECLINED', fr: 'REFUSÉE', ar: 'مرفوض' }) };
             case 'completed':
@@ -210,19 +221,16 @@ const JobDetailsPopup: React.FC<JobDetailsPopupProps> = ({ job, onClose, onAccep
                             </div>
                         )}
 
-                        {/* Photos */}
-                        {((job.photos && job.photos.length > 0) || (job.images && job.images.length > 0)) && (
+                        {/* WhatsApp Button for Accepted/Programmed Jobs */}
+                        {(job.status === 'accepted' || job.status === 'programmed') && (
                             <div className="mb-6">
-                                <div className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-3">
-                                    {t({ en: `Photos (${(job.photos?.length || 0) + (job.images?.length || 0)})`, fr: `Photos (${(job.photos?.length || 0) + (job.images?.length || 0)})`, ar: `صور (${(job.photos?.length || 0) + (job.images?.length || 0)})` })}
-                                </div>
-                                <div className="grid grid-cols-3 gap-2">
-                                    {[...(job.photos || []), ...(job.images || [])].map((photo, idx) => (
-                                        <div key={idx} className="aspect-square rounded-lg overflow-hidden bg-neutral-100">
-                                            <img src={photo} alt={t({ en: `Photo ${idx + 1}`, fr: `Photo ${idx + 1}`, ar: `صورة ${idx + 1}` })} className="w-full h-full object-cover" />
-                                        </div>
-                                    ))}
-                                </div>
+                                <button
+                                    onClick={() => openWhatsApp(job.bricolerWhatsApp || job.clientWhatsApp || '')}
+                                    className="w-full py-4 bg-[#25D366] text-white rounded-xl font-bold text-base hover:bg-[#128C7E] transition-all active:scale-[0.98] flex items-center justify-center gap-2 shadow-sm"
+                                >
+                                    <MessageCircle size={20} fill="currentColor" />
+                                    {t({ en: 'Contact via WhatsApp', fr: 'Contacter via WhatsApp', ar: 'اتصل عبر الواتساب' })}
+                                </button>
                             </div>
                         )}
 
@@ -244,11 +252,8 @@ const JobDetailsPopup: React.FC<JobDetailsPopupProps> = ({ job, onClose, onAccep
                             </div>
                         )}
 
-                        {job.status === 'accepted' && (
+                        {(job.status === 'accepted' || job.status === 'programmed') && (
                             <div className="space-y-3">
-                                <button className="w-full py-4 bg-neutral-900 text-white rounded-xl font-bold text-base hover:bg-neutral-800 transition-all active:scale-[0.98]">
-                                    {t({ en: 'Message Client', fr: 'Écrire au client', ar: 'مراسلة العميل' })}
-                                </button>
                                 <button className="w-full py-4 bg-neutral-100 text-neutral-900 rounded-xl font-bold text-base hover:bg-neutral-200 transition-all active:scale-[0.98]">
                                     {t({ en: 'View on Calendar', fr: 'Voir dans le calendrier', ar: 'عرض في التقويم' })}
                                 </button>

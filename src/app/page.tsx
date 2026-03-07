@@ -2148,6 +2148,7 @@ const Home = () => {
         bricolerRating: bricolerRating || null,
         bricolerRank: bricolerRank || null,
         bricolerJobsCount: bricolerJobsCount || null,
+        bricolerWhatsApp: data.bricolerWhatsApp || null,
         offeredTo: bricolerId && bricolerId !== 'open' ? [bricolerId] : [],
         city: city || "",
         area: area || "",
