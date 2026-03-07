@@ -398,9 +398,6 @@ const BricolerProfileModal = ({ bricoler, isOpen, onClose, onSelect, isSelected,
                                     <MessageCircle size={20} fill="white" />
                                 </button>
                             )}
-                            <button onClick={onClose} className="flex h-10 w-10 items-center justify-center rounded-full bg-neutral-50">
-                                <X size={20} className="text-neutral-400" />
-                            </button>
                         </div>
                     </div>
 
@@ -1362,7 +1359,7 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                     {/* Content Section */}
                     <div className={cn(
                         "relative flex-1 min-h-0 overflow-y-auto px-4 pb-4 overscroll-contain touch-pan-y sm:px-8",
-                        !isSelectingLocation ? "pt-20 pr-16 sm:pt-16 sm:pr-8" : "pt-4"
+                        !isSelectingLocation ? "pt-20 sm:pt-16" : "pt-4"
                     )}>
                         <AnimatePresence mode="wait">
                             {isSelectingLocation ? (
