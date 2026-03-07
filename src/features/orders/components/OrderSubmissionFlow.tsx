@@ -282,9 +282,17 @@ const BricolerCard = ({ bricoler, onSelect, onOpenProfile, isSelected, serviceNa
                                 MAD {bricoler.hourlyRate?.toFixed(2) || '105.93'}
                             </span>
                             <span className="text-[12px] text-neutral-400 font-medium whitespace-nowrap">/hr</span>
-                            <div className="w-4 h-4 rounded-full bg-[#00A082]/10 flex-shrink-0 flex items-center justify-center ml-0.5">
-                                <Check size={10} className="text-[#00A082]" strokeWidth={4} />
-                            </div>
+                            {bricoler.whatsappNumber && (
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        window.open(`https://wa.me/212${bricoler.whatsappNumber?.replace(/^0/, '')}`, '_blank');
+                                    }}
+                                    className="ml-2 w-8 h-8 rounded-full bg-[#25D366] flex items-center justify-center text-white active:scale-95 transition-all"
+                                >
+                                    <MessageCircle size={16} fill="white" />
+                                </button>
+                            )}
                         </div>
                     </div>
 
@@ -374,35 +382,47 @@ const BricolerProfileModal = ({ bricoler, isOpen, onClose, onSelect, isSelected,
                     className="fixed inset-0 z-[3000] bg-white flex flex-col"
                 >
                     {/* Header */}
-                    <div className="p-6 flex items-center justify-between border-b border-neutral-100">
-                        <button onClick={onClose} className="w-10 h-10 rounded-full bg-neutral-50 flex items-center justify-center">
+                    <div className="grid grid-cols-[auto,1fr,auto] items-center gap-3 border-b border-neutral-100 p-4 sm:p-6">
+                        <button onClick={onClose} className="flex h-10 w-10 items-center justify-center rounded-full bg-neutral-50">
                             <ChevronLeft size={24} className="text-neutral-900" />
                         </button>
-                        <h3 className="text-[19px] font-bold text-neutral-900">{t({ en: `${bricoler.displayName}'s Profile`, fr: `Profil de ${bricoler.displayName}`, ar: `ملف ${bricoler.displayName}` })}</h3>
-                        <button onClick={onClose} className="w-10 h-10 rounded-full bg-neutral-50 flex items-center justify-center">
-                            <X size={20} className="text-neutral-400" />
-                        </button>
+                        <h3 className="min-w-0 px-1 text-center text-[16px] font-bold leading-tight text-neutral-900 sm:text-[19px]">
+                            {t({ en: `${bricoler.displayName}'s Profile`, fr: `Profil de ${bricoler.displayName}`, ar: `ملف ${bricoler.displayName}` })}
+                        </h3>
+                        <div className="flex items-center gap-2">
+                            {bricoler.whatsappNumber && (
+                                <button
+                                    onClick={() => window.open(`https://wa.me/212${bricoler.whatsappNumber?.replace(/^0/, '')}`, '_blank')}
+                                    className="flex h-10 w-10 items-center justify-center rounded-full bg-[#25D366] text-white"
+                                >
+                                    <MessageCircle size={20} fill="white" />
+                                </button>
+                            )}
+                            <button onClick={onClose} className="flex h-10 w-10 items-center justify-center rounded-full bg-neutral-50">
+                                <X size={20} className="text-neutral-400" />
+                            </button>
+                        </div>
                     </div>
 
                     {/* Scrollable Content */}
                     <div className="flex-1 overflow-y-auto no-scrollbar pb-32">
-                        <div className="p-6">
+                        <div className="p-4 sm:p-6">
                             {/* Profile Hero */}
-                            <div className="flex gap-6 mb-8">
-                                <img src={bricoler.photoURL || "/Images/Logo/Black Lbricol Avatar Face.webp"} className="w-24 h-24 rounded-[28px] object-cover border-4 border-neutral-50" />
-                                <div className="flex-1">
-                                    <h2 className="text-[26px] font-bold text-neutral-900 leading-tight mb-1">{bricoler.displayName}</h2>
-                                    <div className="flex items-center gap-2 mb-3">
+                            <div className="mb-8 flex flex-col gap-4 min-[420px]:flex-row min-[420px]:items-start sm:gap-6">
+                                <img src={bricoler.photoURL || "/Images/Logo/Black Lbricol Avatar Face.webp"} className="h-24 w-24 rounded-[28px] object-cover border-4 border-neutral-50" />
+                                <div className="min-w-0 flex-1">
+                                    <h2 className="mb-2 text-[24px] font-bold leading-tight text-neutral-900 sm:text-[26px]">{bricoler.displayName}</h2>
+                                    <div className="mb-3 flex flex-wrap items-start gap-2">
                                         <div className={cn(
-                                            "flex items-center gap-1 px-2 py-0.5 rounded-lg",
+                                            "flex flex-shrink-0 items-center gap-1 rounded-lg px-2 py-0.5",
                                             isNew ? "bg-neutral-100 text-neutral-400" : "bg-[#FFC244]/10 text-[#FFC244]"
                                         )}>
                                             <Star size={14} fill="currentColor" />
-                                            <span className="text-[16px] font-semibold">{isNew ? t({ en: 'NEW', fr: 'NOUVEAU' }) : effectiveRating.toFixed(1)}</span>
+                                            <span className="whitespace-nowrap text-[16px] font-semibold">{isNew ? t({ en: 'NEW', fr: 'NOUVEAU' }) : effectiveRating.toFixed(1)}</span>
                                         </div>
                                         <span className="text-[15px] font-medium text-neutral-400">{effectiveJobs} {t({ en: 'Missions', fr: 'Missions', ar: 'مهمة' })}</span>
                                         {isFiltered && (
-                                            <span className="text-[11px] font-bold text-[#00A082] bg-[#00A082]/10 px-2 py-0.5 rounded-full">
+                                            <span className="rounded-full bg-[#00A082]/10 px-2 py-0.5 text-[11px] font-bold text-[#00A082]">
                                                 {t({ en: `for ${serviceName}`, fr: `en ${serviceName}`, ar: `في ${serviceName}` })}
                                             </span>
                                         )}
@@ -419,7 +439,7 @@ const BricolerProfileModal = ({ bricoler, isOpen, onClose, onSelect, isSelected,
                                                         : t({ en: 'NEW', fr: 'NOUVEAU', ar: 'جديد' });
                                             return (
                                                 <span className={cn(
-                                                    "px-2 py-0.5 text-[11px] font-semibold uppercase rounded-md ml-1 flex items-center gap-1",
+                                                    "flex items-center gap-1 rounded-md px-2 py-0.5 text-[11px] font-semibold uppercase",
                                                     rank.bg,
                                                     rank.color
                                                 )}>
@@ -428,8 +448,9 @@ const BricolerProfileModal = ({ bricoler, isOpen, onClose, onSelect, isSelected,
                                             );
                                         })()}
                                     </div>
-                                    <div className="text-[20px] font-bold text-[#00A082]">
-                                        MAD {bricoler.hourlyRate || 75}<span className="text-[15px] font-medium text-neutral-400"> /hr</span>
+                                    <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1 text-[20px] font-bold text-[#00A082]">
+                                        <span className="whitespace-nowrap">MAD {bricoler.hourlyRate || 75}</span>
+                                        <span className="text-[15px] font-medium text-neutral-400">/hr</span>
                                     </div>
                                 </div>
                             </div>
@@ -685,9 +706,9 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                 return {
                     title: t({ en: "What's the scope of the errands?", fr: "Quelle est l'ampleur des courses ?", ar: "ما هو حجم المشاوير؟" }),
                     options: [
-                        { id: 'small', duration: 0.5, label: { en: '20-30min', fr: '20-30min', ar: '20-30 دقيقة' }, estTime: { en: '20-30 min', fr: '20-30 min', ar: '20-30 دقيقة' }, desc: { en: 'Pickup or very short task nearby.', fr: 'Retrait ou tâche très courte à proximité.', ar: 'استلام أو مهمة قصيرة جداً في الجوار.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/SmallTask.webp' },
-                        { id: 'medium', duration: 1, label: { en: '45-55min', fr: '45-55min', ar: '45-55 دقيقة' }, estTime: { en: '45-55 min', fr: '45-55 min', ar: '45-55 دقيقة' }, desc: { en: 'Typical errand or simple shopping.', fr: 'Course typique ou achat simple.', ar: 'مشوار عادي أو تسوق بسيط.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/MediumSize.webp' },
-                        { id: 'large', duration: 1.5, label: { en: '1h10min-1h30min', fr: '1h10min-1h30min', ar: '1 ساعة 10 دقائق - 1 ساعة 30 دقيقة' }, estTime: { en: '1h 10min-30min', fr: '1h 10-30 min', ar: '1 ساعة 10-30 دقيقة' }, desc: { en: 'Multiple tasks or waiting time.', fr: 'Plusieurs tâches ou temps d\'attente.', ar: 'مهام متعددة أو وقت انتظار.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/BigTask.webp' },
+                        { id: 'small', duration: 0.416, label: { en: '20-30min', fr: '20-30min', ar: '20-30 دقيقة' }, estTime: { en: '≈ 25 min', fr: '≈ 25 min', ar: 'حوالي 25 دقيقة' }, desc: { en: 'Pickup or very short task nearby.', fr: 'Retrait ou tâche très courte à proximité.', ar: 'استلام أو مهمة قصيرة جداً في الجوار.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/SmallTask.webp' },
+                        { id: 'medium', duration: 0.833, label: { en: '45-55min', fr: '45-55min', ar: '45-55 دقيقة' }, estTime: { en: '≈ 50 min', fr: '≈ 50 min', ar: 'حوالي 50 دقيقة' }, desc: { en: 'Typical errand or simple shopping.', fr: 'Course typique ou achat simple.', ar: 'مشوار عادي أو تسوق بسيط.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/MediumSize.webp' },
+                        { id: 'large', duration: 1.333, label: { en: '1h10min-1h30min', fr: '1h10min-1h30min', ar: '1 ساعة 10 دقائق - 1 ساعة 30 دقيقة' }, estTime: { en: '≈ 1h 20 min', fr: '≈ 1h 20 min', ar: 'حوالي ساعة و 20 دقيقة' }, desc: { en: 'Multiple tasks or waiting time.', fr: 'Plusieurs tâches ou temps d\'attente.', ar: 'مهام متعددة أو وقت انتظار.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/BigTask.webp' },
                     ]
                 };
             case 'plumbing':
@@ -1129,6 +1150,7 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                         portfolio: data.portfolio || [],
                         errandsTransport: data.errandsTransport,
                         movingTransport: data.movingTransport,
+                        whatsappNumber: data.whatsappNumber,
                     });
                 }
             });
@@ -1196,15 +1218,24 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
             const duration = activeTaskSize?.duration || 1;
             const basePrice = hourlyRate * duration;
 
-            // Calculate option-based discount
+            // Calculate option-based discount (default for most services)
             let multiplier = 1;
             const sizeIndex = serviceConfig.options.findIndex(s => s.id === taskSize);
             if (sizeIndex === 1) multiplier = 0.95; // 5% discount
             else if (sizeIndex === 2) multiplier = 0.9; // 10% discount
 
-            const discountedBasePrice = basePrice * multiplier;
-            const serviceFee = discountedBasePrice * 0.15;
-            const totalPrice = discountedBasePrice + serviceFee;
+            let discountedBasePrice = basePrice * multiplier;
+            let serviceFee = discountedBasePrice * 0.15;
+            let totalPrice = discountedBasePrice + serviceFee;
+
+            // Special case: Errands (minute-based formula)
+            // ((Rate/60)*mins) * (1-15%)
+            if (service === 'errands') {
+                const errandBase = basePrice; // already (rate * duration) where duration is mins/60
+                totalPrice = errandBase * 0.85;
+                serviceFee = totalPrice * 0.15;
+                discountedBasePrice = totalPrice * 0.85; // Task portion
+            }
 
             const getBricolerRankLabel = (pro: any): 'New' | 'Pro' | 'Elite' => {
                 const jobs = Math.max(pro.completedJobs || 0, (pro.reviews || []).length);
@@ -1322,7 +1353,7 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                     {!isSelectingLocation && (
                         <button
                             onClick={onClose}
-                            className="absolute top-6 right-6 p-2 bg-[#F7F7F7] rounded-full transition-transform active:scale-90 z-[3010]"
+                            className="absolute right-4 top-4 z-[3010] flex h-11 w-11 items-center justify-center rounded-full bg-[#F7F7F7] transition-transform active:scale-90 sm:right-6 sm:top-6"
                         >
                             <X size={20} strokeWidth={3} className="text-black" />
                         </button>
@@ -1330,8 +1361,8 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
 
                     {/* Content Section */}
                     <div className={cn(
-                        "flex-1 min-h-0 overflow-y-auto px-8 pb-4 overscroll-contain touch-pan-y relative",
-                        !isSelectingLocation ? "pt-16" : "pt-4"
+                        "relative flex-1 min-h-0 overflow-y-auto px-4 pb-4 overscroll-contain touch-pan-y sm:px-8",
+                        !isSelectingLocation ? "pt-20 pr-16 sm:pt-16 sm:pr-8" : "pt-4"
                     )}>
                         <AnimatePresence mode="wait">
                             {isSelectingLocation ? (
@@ -1398,7 +1429,7 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                                                                     <Plus size={16} className="text-[#00A082]" />
                                                                 </div>
                                                                 <div>
-                                                                    <p className="text-[17px] font-black text-[#00A082]">{t({ en: 'Add', fr: 'Ajouter', ar: 'إضافة' })} "{areaSearch.trim()}"</p>
+                                                                    <p className="text-[17px] font-black text-[#00A082]">{t({ en: 'Add', fr: 'Ajouter', ar: 'إضافة' })} &quot;{areaSearch.trim()}&quot;</p>
                                                                     <p className="text-[13px] font-semibold text-neutral-400">{tempCity}</p>
                                                                 </div>
                                                             </div>
@@ -1489,20 +1520,20 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                                                     initial={{ opacity: 0, y: 15 }}
                                                     animate={{ opacity: 1, y: 0 }}
                                                     transition={{ delay: 0.2, type: "spring", damping: 20 }}
-                                                    className="flex items-center justify-between bg-[#FFFFFF] px-4 py-4 rounded-[12px] border border-[#00A082]/10"
+                                                    className="flex flex-col gap-4 rounded-[12px] border border-[#00A082]/10 bg-[#FFFFFF] px-4 py-4 min-[420px]:flex-row min-[420px]:items-center min-[420px]:justify-between"
                                                 >
-                                                    <div className="flex items-center gap-3">
+                                                    <div className="flex min-w-0 items-center gap-3">
                                                         <img src="/Images/LocationFlag_VI.webp" className="w-[52px] h-auto object-contain" />
-                                                        <div className="flex flex-col">
+                                                        <div className="flex min-w-0 flex-col">
                                                             <p className="text-[12px] font-medium text-neutral-500 leading-none mb-1">{t({ en: 'Location', fr: 'Lieu d\'intervention', ar: 'الموقع' })}</p>
-                                                            <p className="text-[16px] font-semibold text-[#2D2D2D] leading-tight">
+                                                            <p className="text-[16px] font-semibold leading-tight text-[#2D2D2D]">
                                                                 {currentCity}{currentArea ? `, ${currentArea}` : ''}
                                                             </p>
                                                         </div>
                                                     </div>
                                                     <button
                                                         onClick={() => { setTempCity(currentCity); setTempArea(currentArea); setIsSelectingLocation(true); setLocStep('city'); setAreaSearch(''); }}
-                                                        className="text-[20px] font-semibold text-[#00A082] px-1 hover:opacity-70 transition-opacity"
+                                                        className="self-start whitespace-nowrap px-1 text-[18px] font-semibold text-[#00A082] transition-opacity hover:opacity-70 min-[420px]:self-auto sm:text-[20px]"
                                                     >
                                                         {t({ en: 'Edit', fr: 'Modifier', ar: 'تعديل' })}
                                                     </button>
@@ -1752,21 +1783,21 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                                     className="pb-24 pt-4"
                                 >
                                     {/* Header Section with Pro Avatar */}
-                                    <div className="flex items-center justify-between mb-8 px-1">
-                                        <div className="flex items-center gap-3">
+                                    <div className="mb-8 flex items-start justify-between gap-3 px-1">
+                                        <div className="flex min-w-0 items-center gap-3">
                                             <div className="relative">
                                                 <img
                                                     src={selectedPro?.photoURL || "/Images/Logo/Black Lbricol Avatar Face.webp"}
                                                     className="w-12 h-12 rounded-full object-cover bg-neutral-100"
                                                 />
                                             </div>
-                                            <h3 className="text-[18px] font-black text-neutral-900 tracking-tight">
+                                            <h3 className="min-w-0 text-[16px] font-black leading-tight tracking-tight text-neutral-900 sm:text-[18px]">
                                                 {selectedPro?.displayName || t({ en: 'Tasker', fr: 'Pro', ar: 'محترف' })} — {t({ en: 'Availability', fr: 'Disponibilités', ar: 'التوفر' })}
                                             </h3>
                                         </div>
                                         <button
                                             onClick={() => setStep(2)}
-                                            className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-neutral-100 transition-all text-neutral-900"
+                                            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-neutral-900 transition-all hover:bg-neutral-100"
                                         >
                                             <X size={24} strokeWidth={2.5} />
                                         </button>
@@ -2028,26 +2059,26 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                                                 </div>
                                             </div>
                                             <p className="text-[15px] font-medium text-neutral-400 -mt-2">{t({ en: 'Choose your payment method', fr: 'Choisissez votre moyen de paiement', ar: 'اختر طريقة الدفع' })}</p>
-                                            <div className="flex gap-3">
+                                            <div className="grid grid-cols-1 gap-3 min-[460px]:grid-cols-2">
                                                 {/* Cash */}
                                                 <button
                                                     onClick={() => setPaymentMethod('cash')}
                                                     className={cn(
-                                                        "flex-1 flex items-center gap-3 px-5 py-4 rounded-[16px] border-2 transition-all",
+                                                        "flex min-w-0 items-start gap-3 rounded-[16px] border-2 px-4 py-4 text-left transition-all min-[520px]:items-center min-[520px]:px-5",
                                                         paymentMethod === 'cash'
                                                             ? "bg-[#FFF8E7] border-[#FFC244]"
                                                             : "bg-neutral-50 border-neutral-100"
                                                     )}
                                                 >
                                                     <span className="text-2xl">💵</span>
-                                                    <div className="text-left">
+                                                    <div className="min-w-0 flex-1 text-left">
                                                         <p className={cn("text-[15px] font-black leading-tight", paymentMethod === 'cash' ? "text-black" : "text-neutral-600")}>
                                                             {t({ en: 'Cash', fr: 'Espèces', ar: 'نقداً' })}
                                                         </p>
                                                         <p className="text-[12px] font-medium text-neutral-400">{t({ en: 'On delivery', fr: 'À la livraison', ar: 'عند التسليم' })}</p>
                                                     </div>
                                                     {paymentMethod === 'cash' && (
-                                                        <div className="ml-auto w-5 h-5 rounded-full bg-[#FFC244] flex items-center justify-center">
+                                                        <div className="ml-auto mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#FFC244] min-[520px]:mt-0">
                                                             <Check size={11} strokeWidth={4} className="text-white" />
                                                         </div>
                                                     )}
@@ -2056,21 +2087,21 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                                                 <button
                                                     onClick={() => setPaymentMethod('bank')}
                                                     className={cn(
-                                                        "flex-1 flex items-center gap-3 px-5 py-4 rounded-[16px] border-2 transition-all",
+                                                        "flex min-w-0 items-start gap-3 rounded-[16px] border-2 px-4 py-4 text-left transition-all min-[520px]:items-center min-[520px]:px-5",
                                                         paymentMethod === 'bank'
                                                             ? "bg-[#E6F6F2] border-[#00A082]"
                                                             : "bg-neutral-50 border-neutral-100"
                                                     )}
                                                 >
                                                     <span className="text-2xl">🏦</span>
-                                                    <div className="text-left">
+                                                    <div className="min-w-0 flex-1 text-left">
                                                         <p className={cn("text-[15px] font-black leading-tight", paymentMethod === 'bank' ? "text-[#00A082]" : "text-neutral-600")}>
                                                             {t({ en: 'Bank Transfer', fr: 'Virement', ar: 'تحويل بنكي' })}
                                                         </p>
                                                         <p className="text-[12px] font-medium text-neutral-400">{t({ en: 'WhatsApp verify', fr: 'Vérif. WhatsApp', ar: 'تأكيد واتساب' })}</p>
                                                     </div>
                                                     {paymentMethod === 'bank' && (
-                                                        <div className="ml-auto w-5 h-5 rounded-full bg-[#00A082] flex items-center justify-center">
+                                                        <div className="ml-auto mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#00A082] min-[520px]:mt-0">
                                                             <Check size={11} strokeWidth={4} className="text-white" />
                                                         </div>
                                                     )}
@@ -2093,23 +2124,23 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                                                             <p className="text-[15px] font-black text-[#00A082]">{t({ en: 'Account Details', fr: 'Coordonnées Bancaires', ar: 'تفاصيل الحساب' })}</p>
                                                         </div>
                                                         <div className="space-y-3">
-                                                            <div className="flex justify-between items-center text-[13px]">
+                                                            <div className="flex flex-col gap-1 text-[13px] min-[420px]:flex-row min-[420px]:items-center min-[420px]:justify-between">
                                                                 <span className="text-neutral-500 font-medium">{t({ en: 'Bank:', fr: 'Banque :', ar: 'البنك:' })}</span>
                                                                 <span className="font-bold text-black">Barid Bank</span>
                                                             </div>
-                                                            <div className="flex justify-between items-center text-[13px]">
+                                                            <div className="flex flex-col gap-1 text-[13px] min-[420px]:flex-row min-[420px]:items-center min-[420px]:justify-between">
                                                                 <span className="text-neutral-500 font-medium">{t({ en: 'Name:', fr: 'Nom :', ar: 'الاسم:' })}</span>
                                                                 <span className="font-bold text-black">Abdelmalek Tahri</span>
                                                             </div>
                                                             <div className="flex flex-col gap-1.5 pt-1">
                                                                 <span className="text-neutral-500 text-[13px] font-medium">{t({ en: 'RIB:', fr: 'RIB :', ar: 'رقم الحساب (RIB):' })}</span>
-                                                                <div className="p-3 bg-white border border-[#00A082]/10 rounded-xl flex justify-between items-center">
-                                                                    <span className="font-mono text-[14px] font-bold text-black tracking-tight">350810000000000880844466</span>
+                                                                <div className="flex flex-col gap-3 rounded-xl border border-[#00A082]/10 bg-white p-3 min-[420px]:flex-row min-[420px]:items-center min-[420px]:justify-between">
+                                                                    <span className="font-mono text-[14px] font-bold tracking-tight text-black">350810000000000880844466</span>
                                                                     <button
                                                                         onClick={() => {
                                                                             navigator.clipboard.writeText('350810000000000880844466');
                                                                         }}
-                                                                        className="px-2.5 py-1 bg-[#00A082] hover:bg-[#00896F] rounded-lg transition-colors active:scale-95"
+                                                                        className="rounded-lg bg-[#00A082] px-2.5 py-1 transition-colors active:scale-95 hover:bg-[#00896F] min-[420px]:self-auto self-start"
                                                                     >
                                                                         <span className="text-[11px] font-black text-white uppercase">{t({ en: 'Copy', fr: 'Copier', ar: 'نسخ' })}</span>
                                                                     </button>
@@ -2128,8 +2159,8 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                                                     exit={{ opacity: 0, height: 0 }}
                                                     className="overflow-hidden"
                                                 >
-                                                    <div className="flex items-center gap-4 w-full p-5 rounded-[16px] border-2 border-[#00A082] bg-[#E6F6F2]/30 border-dashed">
-                                                        <div className="w-12 h-12 rounded-[12px] bg-white flex items-center justify-center shadow-sm">
+                                                    <div className="flex w-full flex-col gap-4 rounded-[16px] border-2 border-dashed border-[#00A082] bg-[#E6F6F2]/30 p-5 min-[480px]:flex-row min-[480px]:items-center">
+                                                        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[12px] bg-white shadow-sm">
                                                             <MessageCircle size={24} className="text-[#00A082]" />
                                                         </div>
                                                         <div className="flex-1">
@@ -2150,7 +2181,7 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                                                         </div>
                                                         <button
                                                             onClick={() => window.open('https://wa.me/212702814355', '_blank')}
-                                                            className="bg-[#00A082] text-white px-3 py-1.5 rounded-lg text-[11px] font-black uppercase"
+                                                            className="w-full rounded-lg bg-[#00A082] px-3 py-2 text-[11px] font-black uppercase text-white min-[480px]:w-auto"
                                                         >
                                                             {t({ en: 'Chat', fr: 'Discuter', ar: 'محادثة' })}
                                                         </button>
@@ -2172,7 +2203,7 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                                                     </div>
                                                     <div className="flex flex-col min-w-0">
                                                         <span className="text-[11px] font-bold text-neutral-400 uppercase tracking-wider">{t({ en: 'Location', fr: 'Lieu', ar: 'الموقع' })}</span>
-                                                        <span className="text-[15px] font-black text-black truncate">{t({ en: currentCity, fr: currentCity })}{currentArea ? `, ${t({ en: currentArea, fr: currentArea })}` : ''}</span>
+                                                        <span className="text-[15px] font-black leading-tight text-black">{t({ en: currentCity, fr: currentCity })}{currentArea ? `, ${t({ en: currentArea, fr: currentArea })}` : ''}</span>
                                                     </div>
                                                 </div>
                                                 {/* Task Size/Duration */}
@@ -2182,7 +2213,7 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                                                     </div>
                                                     <div className="flex flex-col">
                                                         <span className="text-[11px] font-bold text-neutral-400 uppercase tracking-wider">{t({ en: 'Duration', fr: 'Durée', ar: 'المدة' })}</span>
-                                                        <span className="text-[15px] font-black text-black">≈ {t(activeTaskSize?.estTime as any)}</span>
+                                                        <span className="text-[15px] font-black text-black">≈ {activeTaskSize ? t(activeTaskSize.estTime as any) : '—'}</span>
                                                     </div>
                                                 </div>
                                                 {/* Service */}
@@ -2192,7 +2223,7 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                                                     </div>
                                                     <div className="flex flex-col min-w-0">
                                                         <span className="text-[11px] font-bold text-neutral-400 uppercase tracking-wider">{t({ en: 'Service', fr: 'Service', ar: 'الخدمة' })}</span>
-                                                        <span className="text-[15px] font-black text-black truncate">{t({ en: getServiceById(service)?.name || '', fr: getServiceById(service)?.name || '' })}</span>
+                                                        <span className="text-[15px] font-black leading-tight text-black">{t({ en: getServiceById(service)?.name || '', fr: getServiceById(service)?.name || '' })}</span>
                                                     </div>
                                                 </div>
                                                 {/* Price */}
@@ -2204,11 +2235,15 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                                                         <span className="text-[11px] font-bold text-neutral-400 uppercase tracking-wider">{t({ en: 'Total (Est.)', fr: 'Total (Est.)', ar: 'الإجمالي (تقريبي)' })}</span>
                                                         <span className="text-[15px] font-black text-black">
                                                             {(() => {
+                                                                const baseCalc = (selectedPro?.hourlyRate || 75) * (activeTaskSize?.duration || 1);
+                                                                if (service === 'errands') {
+                                                                    return Math.round(baseCalc * 0.85);
+                                                                }
                                                                 const sizeIndex = serviceConfig.options.findIndex(s => s.id === taskSize);
                                                                 let multiplier = 1;
                                                                 if (sizeIndex === 1) multiplier = 0.95;
                                                                 else if (sizeIndex === 2) multiplier = 0.9;
-                                                                return Math.round((selectedPro?.hourlyRate || 75) * (activeTaskSize?.duration || 1) * multiplier);
+                                                                return Math.round(baseCalc * multiplier * 1.15);
                                                             })()} MAD
                                                         </span>
                                                     </div>
@@ -2234,19 +2269,21 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                                     {selectedBricolerId !== 'open' && selectedPro && (
                                         <div className="px-6 pb-6 space-y-4">
                                             <h3 className="text-[24px] font-black text-black">{t({ en: 'Your Tasker', fr: 'Votre Pro', ar: 'المحترف الخاص بك' })}</h3>
-                                            <div className="bg-white rounded-2xl p-4 flex items-center gap-4 border border-neutral-100 shadow-sm relative overflow-hidden">
-                                                <div className="relative">
-                                                    <img src={selectedPro.photoURL || "/Images/Logo/Black Lbricol Avatar Face.webp"} className="w-16 h-16 rounded-full object-cover bg-neutral-100" />
-                                                </div>
-                                                <div className="flex-1 min-w-0">
-                                                    <h4 className="text-[17px] font-black text-black">{selectedPro.displayName}</h4>
-                                                    <div className="flex items-center gap-2 mt-1">
-                                                        <div className="flex items-center gap-1">
-                                                            <Star size={12} fill="#FFC244" className="text-[#FFC244]" />
-                                                            <span className="text-[13px] font-bold text-neutral-600">{(selectedPro.rating || 4.5).toFixed(1)}</span>
+                                            <div className="relative overflow-hidden rounded-2xl border border-neutral-100 bg-white p-4 shadow-sm">
+                                                <div className="flex items-start gap-4 sm:items-center">
+                                                    <div className="relative">
+                                                        <img src={selectedPro.photoURL || "/Images/Logo/Black Lbricol Avatar Face.webp"} className="w-16 h-16 rounded-full object-cover bg-neutral-100" />
+                                                    </div>
+                                                    <div className="flex-1 min-w-0">
+                                                        <h4 className="text-[17px] font-black text-black">{selectedPro.displayName}</h4>
+                                                        <div className="mt-1 flex flex-wrap items-center gap-2">
+                                                            <div className="flex items-center gap-1">
+                                                                <Star size={12} fill="#FFC244" className="text-[#FFC244]" />
+                                                                <span className="text-[13px] font-bold text-neutral-600">{(selectedPro.rating || 4.5).toFixed(1)}</span>
+                                                            </div>
+                                                            <span className="text-neutral-300">•</span>
+                                                            <span className="text-[13px] font-medium text-neutral-500">{t({ en: 'Trusted Pro', fr: 'Pro de confiance', ar: 'محترف موثوق' })}</span>
                                                         </div>
-                                                        <span className="text-neutral-300">•</span>
-                                                        <span className="text-[13px] font-medium text-neutral-500 truncate">{t({ en: 'Trusted Pro', fr: 'Pro de confiance', ar: 'محترف موثوق' })}</span>
                                                     </div>
                                                 </div>
                                             </div>
@@ -2262,27 +2299,51 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                                                 backgroundRepeat: 'repeat-x'
                                             }} />
                                         </div>
-                                        <div className="px-12 py-12 space-y-10">
-                                            <h3 className="text-[34px] font-black text-black">{t({ en: 'Summary', fr: 'Résumé', ar: 'الملخص' })}</h3>
+                                        <div className="space-y-8 px-4 py-8 sm:px-12 sm:py-12 sm:space-y-10">
+                                            <h3 className="text-[28px] font-black text-black sm:text-[34px]">{t({ en: 'Summary', fr: 'Résumé', ar: 'الملخص' })}</h3>
                                             <div className="space-y-8">
-                                                <div className="flex justify-between items-center px-2">
-                                                    <div className="flex items-center gap-6">
+                                                <div className="flex flex-col gap-2 px-2 min-[420px]:flex-row min-[420px]:items-center min-[420px]:justify-between">
+                                                    <div className="flex min-w-0 flex-col gap-1 min-[420px]:flex-row min-[420px]:items-center min-[420px]:gap-4">
                                                         <span className="text-[18px] font-semibold text-black">{t({ en: 'Task Fee', fr: 'Frais de tâche', ar: 'رسوم المهمة' })}</span>
-                                                        <span className="text-[15px] font-light text-black">≈ {activeTaskSize?.estTime[t({ en: 'en', fr: 'fr' }) as 'en' | 'fr']}</span>
+                                                        <span className="text-[15px] font-light text-black">≈ {activeTaskSize ? t(activeTaskSize.estTime as any) : '—'}</span>
                                                     </div>
-                                                    <span className="text-[18px] font-bold text-black tracking-tight">{Math.round((selectedPro?.hourlyRate || 75) * (activeTaskSize?.duration || 1) * 0.85)} MAD</span>
+                                                    <span className="self-end text-[18px] font-bold tracking-tight text-black min-[420px]:self-auto">
+                                                        {(() => {
+                                                            const baseCalc = (selectedPro?.hourlyRate || 75) * (activeTaskSize?.duration || 1);
+                                                            if (service === 'errands') {
+                                                                return Math.round(baseCalc * 0.85 * 0.85);
+                                                            }
+                                                            const sizeIndex = serviceConfig.options.findIndex(s => s.id === taskSize);
+                                                            let multiplier = 1;
+                                                            if (sizeIndex === 1) multiplier = 0.95;
+                                                            else if (sizeIndex === 2) multiplier = 0.9;
+                                                            return Math.round(baseCalc * multiplier * 0.85);
+                                                        })()} MAD
+                                                    </span>
                                                 </div>
-                                                <div className="flex justify-between items-center px-2">
-                                                    <div className="flex items-center gap-6">
+                                                <div className="flex flex-col gap-2 px-2 min-[420px]:flex-row min-[420px]:items-center min-[420px]:justify-between">
+                                                    <div className="flex min-w-0 flex-col gap-1 min-[420px]:flex-row min-[420px]:items-center min-[420px]:gap-4">
                                                         <span className="text-[18px] font-semibold text-black">{t({ en: 'Lbricol Fee', fr: 'Frais Lbricol', ar: 'رسوم Lbricol' })}</span>
                                                         <span className="text-[15px] font-light text-black">15%</span>
                                                     </div>
-                                                    <span className="text-[18px] font-bold text-black tracking-tight">{Math.round((selectedPro?.hourlyRate || 75) * (activeTaskSize?.duration || 1) * 0.15)} MAD</span>
+                                                    <span className="self-end text-[18px] font-bold tracking-tight text-black min-[420px]:self-auto">
+                                                        {(() => {
+                                                            const baseCalc = (selectedPro?.hourlyRate || 75) * (activeTaskSize?.duration || 1);
+                                                            if (service === 'errands') {
+                                                                return Math.round(baseCalc * 0.85 * 0.15);
+                                                            }
+                                                            const sizeIndex = serviceConfig.options.findIndex(s => s.id === taskSize);
+                                                            let multiplier = 1;
+                                                            if (sizeIndex === 1) multiplier = 0.95;
+                                                            else if (sizeIndex === 2) multiplier = 0.9;
+                                                            return Math.round(baseCalc * multiplier * 0.15);
+                                                        })()} MAD
+                                                    </span>
                                                 </div>
                                                 {referralDiscountAvailable > 0 && (
-                                                    <div className="flex justify-between items-center mt-6 p-4 bg-[#E6F6F2] rounded-[16px] border border-[#00A082]/20">
-                                                        <div className="flex items-center gap-3">
-                                                            <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-sm">
+                                                    <div className="mt-6 flex flex-col gap-4 rounded-[16px] border border-[#00A082]/20 bg-[#E6F6F2] p-4 min-[520px]:flex-row min-[520px]:items-center min-[520px]:justify-between">
+                                                        <div className="flex items-start gap-3">
+                                                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white shadow-sm">
                                                                 <span className="text-[18px]">🎁</span>
                                                             </div>
                                                             <div className="flex flex-col">
@@ -2293,7 +2354,7 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                                                         <button
                                                             onClick={(e) => { e.preventDefault(); setApplyReferralDiscount(!applyReferralDiscount); }}
                                                             className={cn(
-                                                                "px-6 py-3 rounded-xl text-[15px] font-black transition-all active:scale-95 shadow-md",
+                                                                "w-full rounded-xl px-6 py-3 text-[15px] font-black shadow-md transition-all active:scale-95 min-[520px]:w-auto",
                                                                 applyReferralDiscount
                                                                     ? "bg-[#00A082] text-white"
                                                                     : "bg-[#FFC244] text-black hover:bg-[#FDBE33]"
@@ -2445,22 +2506,33 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                                             <span className="text-[28px] font-black text-black">{t({ en: 'Total', fr: 'Total', ar: 'الإجمالي' })}</span>
                                             <div className="flex flex-col items-end">
                                                 {(() => {
-                                                    const baseCalc = Math.round((selectedPro?.hourlyRate || 75) * (activeTaskSize?.duration || 1));
-                                                    const sizeIndex = serviceConfig.options.findIndex(s => s.id === taskSize);
-                                                    let multiplier = 1;
-                                                    if (sizeIndex === 1) multiplier = 0.95;
-                                                    else if (sizeIndex === 2) multiplier = 0.9;
+                                                    const baseCalc = (selectedPro?.hourlyRate || 75) * (activeTaskSize?.duration || 1);
+                                                    let finalCalc = 0;
+                                                    let strikeCalc = 0;
 
-                                                    const optionDiscountedCalc = Math.round(baseCalc * multiplier);
-                                                    const finalCalc = Math.max(0, optionDiscountedCalc - (applyReferralDiscount ? referralDiscountAvailable : 0));
+                                                    if (service === 'errands') {
+                                                        finalCalc = Math.round(baseCalc * 0.85);
+                                                        strikeCalc = Math.round(baseCalc);
+                                                    } else {
+                                                        const sizeIndex = serviceConfig.options.findIndex(s => s.id === taskSize);
+                                                        let multiplier = 1;
+                                                        if (sizeIndex === 1) multiplier = 0.95;
+                                                        else if (sizeIndex === 2) multiplier = 0.9;
+                                                        finalCalc = Math.round(baseCalc * multiplier * 1.15);
+                                                        strikeCalc = Math.round(baseCalc * 1.15);
+                                                    }
+
+                                                    finalCalc = Math.max(0, finalCalc - (applyReferralDiscount ? referralDiscountAvailable : 0));
+                                                    const hasDiscount = (service === 'errands') || (strikeCalc > finalCalc) || (applyReferralDiscount && referralDiscountAvailable > 0);
+
                                                     return (
                                                         <>
-                                                            {(multiplier < 1 || (applyReferralDiscount && referralDiscountAvailable > 0)) && (
+                                                            {hasDiscount && (
                                                                 <span className="text-[14px] font-bold text-neutral-400 line-through">
-                                                                    {baseCalc} MAD
+                                                                    {strikeCalc} MAD
                                                                 </span>
                                                             )}
-                                                            <span className="text-[28px] font-black text-black tracking-tighter" style={{ color: (multiplier < 1 || (applyReferralDiscount && referralDiscountAvailable > 0)) ? '#00A082' : 'black' }}>
+                                                            <span className="text-[28px] font-black text-black tracking-tighter" style={{ color: hasDiscount ? '#00A082' : 'black' }}>
                                                                 {finalCalc} MAD
                                                             </span>
                                                         </>

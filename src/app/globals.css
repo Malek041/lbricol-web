@@ -43,10 +43,11 @@ html[lang="ar"] h6 {
   letter-spacing: 0;
 }
 
-/* Prevent text clipping/overflow on small screens with longer localized strings. */
+/* Allow normal wrapping first so narrow screens reflow layout instead of splitting words. */
 :where(h1, h2, h3, h4, h5, h6, p, span, a, button, label, li) {
-  overflow-wrap: anywhere;
-  word-break: break-word;
+  overflow-wrap: break-word;
+  word-break: normal;
+  hyphens: auto;
 }
 
 :where(button, input, textarea, select) {

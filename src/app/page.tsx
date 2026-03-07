@@ -521,6 +521,16 @@ const Home = () => {
       setShowCityPopup(false);
     }
 
+    // RESTORE PENDING ORDER after auth redirect (mobile hack)
+    const savedPending = localStorage.getItem('lbricol_pending_quick_order');
+    if (savedPending) {
+      try {
+        setPendingQuickOrder(JSON.parse(savedPending));
+      } catch (e) {
+        console.error("Error parsing saved pending order:", e);
+      }
+    }
+
     setMounted(true);
   }, []);
 
@@ -2076,13 +2086,15 @@ const Home = () => {
     const effectiveUser = userOverride || currentUser;
     if (!effectiveUser) {
       setPendingQuickOrder(data);
+      localStorage.setItem('lbricol_pending_quick_order', JSON.stringify(data));
       setShowAuthPopup(true);
       return;
     }
 
-    const effectiveWhatsApp = whatsappOverride || (userOverride ? null : userData?.whatsappNumber) || "";
+    const effectiveWhatsApp = whatsappOverride || userData?.whatsappNumber || "";
     if (!effectiveWhatsApp) {
       setPendingQuickOrder(data);
+      localStorage.setItem('lbricol_pending_quick_order', JSON.stringify(data));
       setShowClientWhatsAppPopup(true);
       return;
     }
@@ -3213,24 +3225,23 @@ const Home = () => {
         <AuthPopup
           isOpen={showAuthPopup}
           onClose={() => setShowAuthPopup(false)}
-          onSuccess={() => {
-            handleGoogleLogin().then((result) => {
-              if (result && result.user) {
-                setShowAuthPopup(false);
-                // Auto-trigger completion after success with the new user object
-                // We use a small timeout just to let the close animation start smoothly
-                setTimeout(() => {
-                  if (pendingQuickOrder) {
-                    const data = { ...pendingQuickOrder };
-                    setPendingQuickOrder(null);
-                    handleQuickOrderSubmit(data, result.userData?.whatsappNumber, result.user);
-                  } else {
-                    // Pass the whatsapp number from the fresh fetch to avoid stale closure state
-                    handleProgramOrder(result.user, result.userData?.whatsappNumber);
-                  }
-                }, 300);
-              }
-            });
+          onSuccess={async () => {
+            const result = await handleGoogleLogin();
+            if (result && result.user) {
+              setShowAuthPopup(false);
+              // Small timeout to allow popups to close
+              setTimeout(() => {
+                const pendingData = pendingQuickOrder || (localStorage.getItem('lbricol_pending_quick_order') ? JSON.parse(localStorage.getItem('lbricol_pending_quick_order')!) : null);
+
+                if (pendingData) {
+                  setPendingQuickOrder(null);
+                  localStorage.removeItem('lbricol_pending_quick_order');
+                  handleQuickOrderSubmit(pendingData, result.userData?.whatsappNumber, result.user);
+                } else {
+                  handleProgramOrder(result.user, result.userData?.whatsappNumber);
+                }
+              }, 400);
+            }
           }}
         />
 
