@@ -23,7 +23,7 @@ import {
     serverTimestamp,
     Timestamp,
 } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL, uploadString } from 'firebase/storage';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { FcGoogle } from 'react-icons/fc';
 import { getAllServices, getServiceVector, type ServiceConfig } from '@/config/services_config';
 import { MOROCCAN_CITIES, MOROCCAN_CITIES_AREAS, SERVICE_TIER_RATES } from '@/config/moroccan_areas';

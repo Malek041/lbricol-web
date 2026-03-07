@@ -2,48 +2,50 @@ rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
 
-    // ── Avatar Uploads ─────────────────────────────────────────────────────
-    // Authenticated users can upload their own avatar
-    match /avatars/{userId}/{fileName} {
+    // ── Avatar / Profile Photos ─────────────────────────────────────────────
+    // Any authenticated user can upload their own avatar.
+    // No content-type restriction — type is validated client-side before upload.
+    match /avatars/{userId}/{allPaths=**} {
       allow read: if true;
       allow write: if request.auth != null
-                   && request.resource.size < 5 * 1024 * 1024  // max 5MB
-                   && request.resource.contentType.matches('image/.*');
+                   && request.resource.size < 8 * 1024 * 1024;
     }
 
-    // ── Portfolio Uploads ──────────────────────────────────────────────────
-    // Bricolers can upload their own portfolio images
-    match /portfolio/{userId}/{categoryId}/{fileName} {
+    // ── Portfolio Images ───────────────────────────────────────────────────
+    // Bricolers upload portfolio images nested under their UID.
+    match /portfolio/{userId}/{allPaths=**} {
       allow read: if true;
       allow write: if request.auth != null
-                   && request.resource.size < 10 * 1024 * 1024  // max 10MB
-                   && request.resource.contentType.matches('image/.*');
+                   && request.resource.size < 12 * 1024 * 1024;
     }
 
     // ── Verification Documents ─────────────────────────────────────────────
-    // Bricolers can upload their ID cards, licenses, or tour guide auths
-    match /verifications/{userId}/{fileName} {
+    // ID cards, licences, tour-guide authorisations (images or PDF).
+    match /verifications/{userId}/{allPaths=**} {
       allow read: if true;
       allow write: if request.auth != null
-                   && request.resource.size < 10 * 1024 * 1024
-                   && (request.resource.contentType.matches('image/.*') || request.resource.contentType == 'application/pdf');
+                   && request.resource.size < 15 * 1024 * 1024;
     }
 
     // ── Order Attachments ──────────────────────────────────────────────────
-    // Authenticated users can upload images attached to their orders
-    match /orders/{orderId}/{fileName} {
-      allow read: if request.auth != null;
+    // Clients upload photos of what they need done.
+    // Public read so images display in order-detail cards for both parties.
+    match /orders/{orderId}/{allPaths=**} {
+      allow read: if true;
       allow write: if request.auth != null
-                   && request.resource.size < 10 * 1024 * 1024  // max 10MB
-                   && request.resource.contentType.matches('image/.*');
+                   && request.resource.size < 12 * 1024 * 1024;
     }
 
-    // ── Bank Receipts ──────────────────────────────────────────────────────
-    match /receipts/{userId}/{fileName} {
+    // ── Bank Transfer Receipts ─────────────────────────────────────────────
+    match /receipts/{userId}/{allPaths=**} {
       allow read: if request.auth != null;
       allow write: if request.auth != null
-                   && request.resource.size < 10 * 1024 * 1024
-                   && request.resource.contentType.matches('image/.*');
+                   && request.resource.size < 12 * 1024 * 1024;
+    }
+
+    // ── Catch-all: deny everything else ────────────────────────────────────
+    match /{allPaths=**} {
+      allow read, write: if false;
     }
   }
 }
