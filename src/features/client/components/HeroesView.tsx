@@ -121,8 +121,8 @@ export default function HeroesView({ orders }: HeroesViewProps) {
                     id: hid,
                     name: o.bricolerName!,
                     avatar: o.bricolerAvatar,
-                    rating: o.bricolerRating || 5.0,
-                    jobsCount: o.bricolerJobsCount || 1,
+                    rating: o.bricolerRating || 0, // No longer defaulting to 5.0 if not rated
+                    jobsCount: o.bricolerJobsCount || 0, // Ensuring honest jobs count too
                     services: [o.service]
                 });
             } else {
@@ -150,7 +150,7 @@ export default function HeroesView({ orders }: HeroesViewProps) {
                     if (docSnap.exists()) {
                         const data = docSnap.data();
                         newData[id] = {
-                            rating: typeof data.rating === 'number' ? data.rating : 5.0,
+                            rating: typeof data.rating === 'number' ? data.rating : 0,
                             jobsCount: data.completedJobs || data.numReviews || 0
                         };
                     }
@@ -358,7 +358,7 @@ export default function HeroesView({ orders }: HeroesViewProps) {
                                                 <>
                                                     <div className="flex items-center gap-1 text-[13px] font-bold px-2 py-0.5 rounded-md bg-[#FFC244]/10 text-[#D89B1A]">
                                                         <Star size={12} className="fill-current" />
-                                                        {(stats.rating || 5.0).toFixed(1)}
+                                                        {(stats.rating || 0).toFixed(1)}
                                                     </div>
                                                     <span className="text-[#6B6B6B] text-[13px] font-medium">• {stats.jobsCount || 0} {t({ en: 'jobs', fr: 'missions', ar: 'مهام' })}</span>
                                                 </>

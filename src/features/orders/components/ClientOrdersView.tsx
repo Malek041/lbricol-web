@@ -240,7 +240,7 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
                         if (!rating && d.totalRating && reviews.length > 0) {
                             rating = d.totalRating / reviews.length;
                         } else if (!rating) {
-                            rating = 5.0;
+                            rating = 0;
                         }
 
                         setLiveBricolerInfo({
@@ -701,14 +701,14 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
                                                     <div className="flex items-center gap-2 mt-1.5">
                                                         <div className="flex items-center gap-0.5">
                                                             {[1, 2, 3, 4, 5].map((s) => {
-                                                                const r = liveBricolerInfo?.rating || Number(selectedOrder.bricolerRating) || 5;
+                                                                const r = liveBricolerInfo?.rating ?? Number(selectedOrder.bricolerRating) ?? 0;
                                                                 return (
                                                                     <Star
                                                                         key={s}
                                                                         size={14}
                                                                         className={cn(
                                                                             "transition-all",
-                                                                            s <= Math.round(r)
+                                                                            s <= Math.floor(r)
                                                                                 ? "fill-[#FFC244] text-[#FFC244]"
                                                                                 : "fill-neutral-100 text-neutral-200"
                                                                         )}
@@ -716,7 +716,7 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
                                                                 );
                                                             })}
                                                         </div>
-                                                        <span className="text-[15px] font-black text-[#D89B1A] ml-1">{liveBricolerInfo?.rating?.toFixed(1) || Number(selectedOrder.bricolerRating).toFixed(1) || '5.0'}</span>
+                                                        <span className="text-[15px] font-black text-[#D89B1A] ml-1">{(liveBricolerInfo?.rating ?? Number(selectedOrder.bricolerRating) ?? 0).toFixed(1)}</span>
                                                         <span className="text-[13px] text-neutral-400 font-bold ml-1">({liveBricolerInfo?.jobsCount ?? selectedOrder.bricolerJobsCount ?? 0} {t({ en: 'reviews', fr: 'avis', ar: 'تقييم' })})</span>
                                                     </div>
                                                 </div>

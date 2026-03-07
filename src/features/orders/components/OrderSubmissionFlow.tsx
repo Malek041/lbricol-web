@@ -241,7 +241,7 @@ const BricolerCard = ({ bricoler, onSelect, onOpenProfile, isSelected, serviceNa
         ? bricoler.rating
         : (bricoler.reviews && bricoler.reviews.length > 0
             ? (bricoler.reviews.reduce((acc, r: any) => acc + (r.rating || 0), 0) / bricoler.reviews.length)
-            : 5.0);
+            : 0);
 
     const rank = getBricolerRank(bricoler);
     const translatedRankLabel = rank.label === 'ELITE'
@@ -1116,7 +1116,7 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                         id: docSnap.id,
                         displayName: data.displayName || 'Bricoler',
                         photoURL: data.profilePhotoURL || data.avatar || data.photoURL,
-                        rating: data.rating || 5,
+                        rating: data.rating || 0,
                         completedJobs: data.completedJobs || 0,
                         hourlyRate: (typeof matchingService === 'object' ? matchingService.hourlyRate : null) || data.hourlyRate || 75,
                         quickPitch: (typeof matchingService === 'object' ? matchingService.pitch : null) || data.quickPitch,
