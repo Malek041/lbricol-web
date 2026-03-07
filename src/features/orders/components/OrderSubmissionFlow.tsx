@@ -1795,12 +1795,22 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                                                 {selectedPro?.displayName || t({ en: 'Tasker', fr: 'Pro', ar: 'محترف' })} — {t({ en: 'Availability', fr: 'Disponibilités', ar: 'التوفر' })}
                                             </h3>
                                         </div>
-                                        <button
-                                            onClick={() => setStep(2)}
-                                            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-neutral-900 transition-all hover:bg-neutral-100"
-                                        >
-                                            <X size={24} strokeWidth={2.5} />
-                                        </button>
+                                        <div className="flex items-center gap-2">
+                                            {selectedPro?.whatsappNumber && (
+                                                <button
+                                                    onClick={() => window.open(`https://wa.me/212${selectedPro.whatsappNumber?.replace(/^0/, '')}`, '_blank')}
+                                                    className="flex h-10 w-10 items-center justify-center rounded-full bg-[#25D366] text-white active:scale-95 transition-all"
+                                                >
+                                                    <MessageCircle size={20} fill="white" />
+                                                </button>
+                                            )}
+                                            <button
+                                                onClick={() => setStep(2)}
+                                                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-neutral-900 transition-all hover:bg-neutral-100"
+                                            >
+                                                <X size={24} strokeWidth={2.5} />
+                                            </button>
+                                        </div>
                                     </div>
 
                                     {/* Month Selection / Display */}
@@ -2007,9 +2017,20 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                                                 <span className="text-neutral-200">|</span>
                                                 <span>{selectedTime}</span>
                                             </div>
-                                            <p className="text-[12px] font-light text-black uppercase tracking-[0.2em] mt-2">
-                                                {t({ en: 'ORDER ID', fr: 'ID DE COMMANDE', ar: 'رقم الطلب' })}: #TEMP
-                                            </p>
+                                            <div className="flex items-center justify-center md:justify-start gap-4 mt-3">
+                                                <p className="text-[12px] font-light text-black uppercase tracking-[0.2em]">
+                                                    {t({ en: 'ORDER ID', fr: 'ID DE COMMANDE', ar: 'رقم الطلب' })}: #TEMP
+                                                </p>
+                                                {selectedPro?.whatsappNumber && (
+                                                    <button
+                                                        onClick={() => window.open(`https://wa.me/212${selectedPro.whatsappNumber?.replace(/^0/, '')}`, '_blank')}
+                                                        className="flex items-center gap-2 bg-[#25D366] text-white px-3 py-1.5 rounded-full text-[12px] font-bold active:scale-95 transition-all shadow-sm"
+                                                    >
+                                                        <MessageCircle size={14} fill="white" />
+                                                        {t({ en: 'Chat with Tasker', fr: 'Discuter avec le Pro', ar: 'محادثة مع المحترف' })}
+                                                    </button>
+                                                )}
+                                            </div>
                                         </div>
                                     </div>
 
