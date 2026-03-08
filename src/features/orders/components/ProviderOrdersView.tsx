@@ -26,6 +26,7 @@ import { doc, updateDoc, getDoc } from 'firebase/firestore';
 import { cn } from '@/lib/utils';
 import { getServiceById, getSubServiceName, getServiceVector } from '@/config/services_config';
 import { format, isToday, isThisWeek, parseISO, startOfDay, addDays } from 'date-fns';
+import ProviderRoutineModal from './ProviderRoutineModal';
 
 interface ProviderOrdersViewProps {
     orders: OrderDetails[];
@@ -163,6 +164,8 @@ export default function ProviderOrdersView({
                         orders={orders}
                         onSelectOrder={onSelectOrder}
                         userData={userData}
+                        setUserData={setUserData}
+                        TIME_SLOTS={TIME_SLOTS}
                         horizontalSelectedDate={horizontalSelectedDate}
                         setHorizontalSelectedDate={setHorizontalSelectedDate}
                         onConfirmJob={onConfirmJob}
@@ -245,7 +248,7 @@ function ActivityTab({
     onRedistributeJob?: (order: OrderDetails) => void,
     setActiveTab?: (tab: 'activity' | 'calendar' | 'availability') => void
 }) {
-    const { t } = useLanguage();
+    const { t, language } = useLanguage();
 
     const [currentTime, setCurrentTime] = React.useState(new Date());
     const [showGetJobsBanner, setShowGetJobsBanner] = React.useState(() => {
@@ -496,8 +499,8 @@ function ActivityTab({
                                 <img src="/Images/Vectors Illu/LbricolFaceOY.webp" className="w-full h-full object-contain rounded-1xl" />
                             </div>
                             <div className="flex-1">
-                                <h3 className="text-[20px] font-[1000] text-black leading-tight mb-1">{t({ en: 'Get Jobs Today!', fr: 'Trouvez une mission !' })}</h3>
-                                <p className="text-[13px] font-bold text-black/70 leading-snug">{t({ en: 'Set your availability now to appear in client searches for today.', fr: 'Réglez vos dispo pour apparaître dans les recherches aujourd’hui.' })}</p>
+                                <h3 className="text-[20px] font-[1000] text-black leading-tight mb-1">{t({ en: 'Get Jobs Today!', fr: 'Trouvez une mission !', ar: 'احصل على مهام اليوم!' })}</h3>
+                                <p className="text-[13px] font-bold text-black/70 leading-snug">{t({ en: 'Set your availability now to appear in client searches for today.', fr: 'Réglez vos dispo pour apparaître dans les recherches d\'aujourd\'hui.', ar: 'اضبط تواجدك الآن للظهور في بحث العملاء لهذا اليوم.' })}</p>
                             </div>
                         </div>
                         <div className="flex gap-3 mt-4 relative z-10">
@@ -505,13 +508,13 @@ function ActivityTab({
                                 onClick={() => setActiveTab?.('availability')}
                                 className="px-6 py-2.5 bg-[#F55802] text-white text-[14px] font-black rounded-full active:scale-95 transition-all"
                             >
-                                {t({ en: 'Go to Calendar', fr: 'Aller au calendrier' })}
+                                {t({ en: 'Go to Calendar', fr: 'Aller au calendrier', ar: 'الذهاب للتقويم' })}
                             </button>
                             <button
                                 onClick={handleHideBanner}
                                 className="px-6 py-2.5 bg-white/20 hover:bg-white/30 text-black text-[14px] font-black rounded-full transition-all"
                             >
-                                {t({ en: 'Hide', fr: 'Masquer' })}
+                                {t({ en: 'Hide', fr: 'Masquer', ar: 'إخفاء' })}
                             </button>
                         </div>
                         {/* Decorative circle */}
@@ -590,6 +593,8 @@ function CalendarTab({
     orders,
     onSelectOrder,
     userData,
+    setUserData,
+    TIME_SLOTS,
     horizontalSelectedDate,
     setHorizontalSelectedDate,
     onConfirmJob,
@@ -599,14 +604,17 @@ function CalendarTab({
     orders: OrderDetails[],
     onSelectOrder: (o: OrderDetails) => void,
     userData: any,
+    setUserData: React.Dispatch<React.SetStateAction<any>>,
+    TIME_SLOTS: string[],
     horizontalSelectedDate: Date,
     setHorizontalSelectedDate: (d: Date) => void,
     onConfirmJob?: (jobId: string) => void,
     onRedistributeJob?: (order: OrderDetails) => void,
     setActiveTab?: (tab: 'activity' | 'calendar' | 'availability') => void
 }) {
-    const { t } = useLanguage();
+    const { t, language } = useLanguage();
     const todayStr = format(new Date(), 'yyyy-MM-dd');
+    const [showRoutineModal, setShowRoutineModal] = useState(false);
 
     const getMonday = (date: Date) => {
         const d = new Date(date);
@@ -618,10 +626,33 @@ function CalendarTab({
 
     const [weekStart, setWeekStart] = useState<Date>(() => getMonday(horizontalSelectedDate));
     const selectedDateStr = format(horizontalSelectedDate, 'yyyy-MM-dd');
+    const formatDayLabel = (date: Date, lang: string) => {
+        const enLabel = format(date, 'EEE');
+        if (lang === 'fr') {
+            const frMap: Record<string, string> = { Mon: 'Lun', Tue: 'Mar', Wed: 'Mer', Thu: 'Jeu', Fri: 'Ven', Sat: 'Sam', Sun: 'Dim' };
+            return frMap[enLabel] || enLabel;
+        } else if (lang === 'ar') {
+            const arMap: Record<string, string> = { Mon: 'الاثنين', Tue: 'الثلاثاء', Wed: 'الأربعاء', Thu: 'الخميس', Fri: 'الجمعة', Sat: 'السبت', Sun: 'الأحد' };
+            return arMap[enLabel] || enLabel;
+        }
+        return enLabel;
+    };
+
+    const formatMonthName = (date: Date, lang: string) => {
+        const enMonth = format(date, 'MMM');
+        if (lang === 'fr') {
+            const frMap: Record<string, string> = { Jan: 'Jan', Feb: 'Fév', Mar: 'Mar', Apr: 'Avr', May: 'Mai', Jun: 'Juin', Jul: 'Juil', Aug: 'Août', Sep: 'Sep', Oct: 'Oct', Nov: 'Nov', Dec: 'Déc' };
+            return frMap[enMonth] || enMonth;
+        } else if (lang === 'ar') {
+            const arMap: Record<string, string> = { Jan: 'يناير', Feb: 'فبراير', Mar: 'مارس', Apr: 'أبريل', May: 'مايو', Jun: 'يونيو', Jul: 'يوليو', Aug: 'أغسطس', Sep: 'سبتمبر', Oct: 'أكتوبر', Nov: 'نوفمبر', Dec: 'ديسمبر' };
+            return arMap[enMonth] || enMonth;
+        }
+        return enMonth;
+    };
 
     const weekDays = Array.from({ length: 7 }, (_, i) => {
         const d = addDays(weekStart, i);
-        return { date: d, dateStr: format(d, 'yyyy-MM-dd'), dayNum: format(d, 'd'), dayLabel: format(d, 'EEE') };
+        return { date: d, dateStr: format(d, 'yyyy-MM-dd'), dayNum: format(d, 'd'), dayLabel: formatDayLabel(d, language) };
     });
 
     const validOrders = orders.filter(o => !(o.status as string)?.match(/cancelled|rejected/));
@@ -631,7 +662,7 @@ function CalendarTab({
         return set;
     }, [validOrders]);
 
-    const weekLabel = `${format(weekStart, 'MMM d')} – ${format(addDays(weekStart, 6), 'MMM d, yyyy')}`;
+    const weekLabel = `${formatMonthName(weekStart, language)} ${format(weekStart, 'd')} – ${formatMonthName(addDays(weekStart, 6), language)} ${format(addDays(weekStart, 6), 'd, yyyy')}`;
 
     const hours = Array.from({ length: 15 }, (_, i) => 7 + i); // 7 AM to 9 PM
 
@@ -659,23 +690,46 @@ function CalendarTab({
 
     return (
         <div className="flex flex-col bg-white h-full relative">
+            {/* Define Routine Card */}
+            <div className="px-4 pt-4 shrink-0 bg-white">
+                <button
+                    onClick={() => setShowRoutineModal(true)}
+                    className="w-full bg-[#E6F7F4] border-2 border-[#00A082] rounded-[16px] p-4 flex items-center justify-between active:scale-[0.98] transition-transform"
+                >
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-[#00A082]/10 flex items-center justify-center">
+                            <Clock size={20} className="text-[#00A082]" />
+                        </div>
+                        <div className="text-left">
+                            <h3 className="text-[16px] font-black text-[#00A082] leading-tight">
+                                {t({ en: 'Define your Routine', fr: 'Définissez votre routine', ar: 'تحديد روتينك الأسبوعي' })}
+                            </h3>
+                            <p className="text-[12px] font-bold text-[#00A082]/70 leading-tight">
+                                {t({ en: 'Set your regular weekly working hours', fr: 'Définissez vos heures de travail hebdomadaires régulières', ar: 'حدد ساعات عملك الأسبوعية المعتادة' })}
+                            </p>
+                        </div>
+                    </div>
+                    <ChevronLeft size={20} className={cn("text-[#00A082]", language === 'ar' ? "" : "rotate-180")} />
+                </button>
+            </div>
+
             {/* Horizontal Calendar */}
             <div className="bg-white border-b border-[#F5F5F5] px-4 pt-4 pb-4 flex-shrink-0 sticky top-0 z-30">
                 <div className="flex items-center justify-between mb-4">
                     <button
-                        onClick={() => setWeekStart(prev => addDays(prev, -7))}
+                        onClick={() => setWeekStart(prev => addDays(prev, language === 'ar' ? 7 : -7))}
                         className="w-10 h-10 rounded-xl bg-neutral-50 flex items-center justify-center active:bg-neutral-100 transition-colors"
                     >
-                        <ChevronLeft size={20} className="text-black" />
+                        <ChevronLeft size={20} className={cn("text-black", language === 'ar' ? "rotate-180" : "")} />
                     </button>
                     <div className="flex flex-col items-center">
                         <span className="text-[15px] font-black text-black tracking-tight">{weekLabel}</span>
                     </div>
                     <button
-                        onClick={() => setWeekStart(prev => addDays(prev, 7))}
+                        onClick={() => setWeekStart(prev => addDays(prev, language === 'ar' ? -7 : 7))}
                         className="w-10 h-10 rounded-xl bg-neutral-50 flex items-center justify-center active:bg-neutral-100 transition-colors"
                     >
-                        <ChevronLeft size={20} className="text-black rotate-180" />
+                        <ChevronLeft size={20} className={cn("text-black", language === 'ar' ? "" : "rotate-180")} />
                     </button>
                 </div>
 
@@ -811,6 +865,14 @@ function CalendarTab({
                     </div>
                 </div>
             </div>
+
+            <ProviderRoutineModal
+                isOpen={showRoutineModal}
+                onClose={() => setShowRoutineModal(false)}
+                userData={userData}
+                setUserData={setUserData}
+                TIME_SLOTS={TIME_SLOTS}
+            />
         </div>
     );
 }
@@ -1045,7 +1107,7 @@ function AvailabilityTab({
                                 >
                                     <div className="flex flex-col h-full relative">
                                         <div className="flex items-center justify-between">
-                                            <span className="text-[14px] font-black text-[#00A082]">{t({ en: 'Available', fr: 'Disponible' })}</span>
+                                            <span className="text-[14px] font-black text-[#00A082]">{t({ en: 'Available', fr: 'Disponible', ar: 'متاح' })}</span>
                                             <button
                                                 onClick={(e) => {
                                                     e.stopPropagation();
@@ -1100,19 +1162,25 @@ function AvailabilityTab({
                             <div className="w-12 h-1.5 bg-neutral-200 rounded-full mx-auto mb-6" />
 
                             <div className="flex items-center justify-between mb-8">
-                                <h3 className="text-[22px] font-black text-black">{t({ en: 'New Availability', fr: 'Nouvelle disponibilité' })}</h3>
+                                <h3 className="text-[22px] font-black text-black">{t({ en: 'New Availability', fr: 'Nouvelle disponibilité', ar: 'جاهزية جديدة' })}</h3>
                                 <button
                                     onClick={handleAllDay}
                                     className="px-4 py-2 bg-[#E6F7F4] text-[#00A082] text-[14px] font-black rounded-xl"
                                 >
-                                    {t({ en: 'All day', fr: 'Toute la journée' })}
+                                    {t({ en: 'All day', fr: 'Toute la journée', ar: 'طوال اليوم' })}
                                 </button>
                             </div>
 
                             <div className="space-y-6">
                                 {(Object.entries(AVAILABILITY_SLOTS) as [string, string[]][]).map(([category, slots]) => (
                                     <div key={category} className="space-y-4">
-                                        <h4 className="text-[12px] font-black text-neutral-400 uppercase tracking-widest">{category}</h4>
+                                        <h4 className="text-[12px] font-black text-neutral-400 uppercase tracking-widest text-left rtl:text-right">
+                                            {t({
+                                                en: category,
+                                                fr: category === 'MORNING' ? 'MATIN' : category === 'AFTERNOON' ? 'APRÈS-MIDI' : 'SOIR',
+                                                ar: category === 'MORNING' ? 'الصباح' : category === 'AFTERNOON' ? 'الزوال' : 'المساء'
+                                            })}
+                                        </h4>
                                         <div className="grid grid-cols-3 gap-2">
                                             {slots.map((time) => {
                                                 const isSelected = localSlots.some((s: any) => s.from === time);
@@ -1152,7 +1220,7 @@ function AvailabilityTab({
                                     onClick={handleProgram}
                                     className="w-full py-4 bg-[#00A082] text-white rounded-2xl text-[18px] font-black shadow-lg shadow-[#00A082]/20 active:scale-95 transition-transform"
                                 >
-                                    {t({ en: 'Save Availability', fr: 'Enregistrer la disponibilité' })}
+                                    {t({ en: 'Save Availability', fr: 'Enregistrer la disponibilité', ar: 'حفظ الجاهزية' })}
                                 </button>
                             </div>
                         </motion.div>

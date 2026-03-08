@@ -176,7 +176,7 @@ const SERVICE_EQUIPMENT_SUGGESTIONS: Record<string, string[]> = {
 };
 
 // Services where equipment is not typically applicable
-const NO_EQUIPMENT_SERVICES = ['errands', 'driver', 'car_rental', 'courier', 'airport', 'transport_intercity', 'private_driver', 'learn_arabic'];
+const NO_EQUIPMENT_SERVICES = ['errands', 'driver', 'car_rental', 'courier', 'airport', 'transport_intercity', 'private_driver', 'learn_arabic', 'tour_guide'];
 
 const safeUploadBlob = async (storageRef: any, fileOrBlob: Blob | File, metadata?: any) => {
     const arrayBuffer = await fileOrBlob.arrayBuffer();
@@ -1563,17 +1563,42 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                                                     const s = categoryEntries[id];
                                                     const done = currentEntryValid(categoryEntries[id]);
                                                     return (
-                                                        <button
+                                                        <div
                                                             key={id}
                                                             onClick={() => { setDirection(idx > currentCatIdx ? 1 : -1); setCurrentCatIdx(idx); setEquipmentSearch(''); }}
                                                             className={cn(
-                                                                'flex items-center gap-2 px-6 py-3 rounded-[12px] text-[13px] font-bold whitespace-nowrap border-2 transition-all',
+                                                                'flex items-center gap-2 px-6 py-3 rounded-[12px] text-[13px] font-bold whitespace-nowrap border-2 transition-all cursor-pointer relative group',
                                                                 idx === currentCatIdx ? 'bg-[#E6F6F2] text-[#00A082] border-[#00A082]' : done ? 'bg-[#00A082]/5 text-[#00A082]/60 border-neutral-100' : 'bg-white text-neutral-400 border-neutral-100'
                                                             )}
                                                         >
                                                             {done && <Check size={12} strokeWidth={4} />}
                                                             {t({ en: s?.categoryName || id, fr: s?.categoryName || id })}
-                                                        </button>
+
+                                                            <button
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    // Filter out all subservices belonging to this category
+                                                                    const svc = ALL_SERVICES.find(cat => cat.id === id);
+                                                                    if (svc) {
+                                                                        const subIds = svc.subServices.map(ss => ss.id);
+                                                                        setSelectedSubServices(prev => prev.filter(x => !subIds.includes(x)));
+                                                                    }
+                                                                    // Remove from entries
+                                                                    setCategoryEntries(prev => {
+                                                                        const next = { ...prev };
+                                                                        delete next[id];
+                                                                        return next;
+                                                                    });
+                                                                    // Adjust currentCatIdx if needed
+                                                                    if (idx <= currentCatIdx && currentCatIdx > 0) {
+                                                                        setCurrentCatIdx(prev => prev - 1);
+                                                                    }
+                                                                }}
+                                                                className="ml-1 w-4 h-4 rounded-full bg-black/10 flex items-center justify-center hover:bg-red-500 hover:text-white transition-all opacity-0 group-hover:opacity-100"
+                                                            >
+                                                                <X size={10} strokeWidth={4} />
+                                                            </button>
+                                                        </div>
                                                     );
                                                 })}
                                             </div>
@@ -1599,8 +1624,8 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                                         <motion.div variants={itemVariants} initial="hidden" animate="show" className="space-y-4">
                                             <label className="text-[20px] font-bold text-neutral-900 flex items-center gap-2">
                                                 {t({
-                                                    en: `How many years of experience do you have in ${currentCatEntry.categoryName}?`,
-                                                    fr: `Combien d'années d'expérience avez-vous en ${t({ en: currentCatEntry.categoryName, fr: currentCatEntry.categoryName })} ?`,
+                                                    en: `How much experience do you have in ${currentCatEntry.categoryName}?`,
+                                                    fr: `Combien d'expérience avez-vous en ${t({ en: currentCatEntry.categoryName, fr: currentCatEntry.categoryName })} ?`,
                                                     ar: `كم عدد سنوات خبرتك في ${t({ en: currentCatEntry.categoryName, fr: currentCatEntry.categoryName })}؟`
                                                 })}
                                             </label>
@@ -1701,94 +1726,70 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                                             {currentCatEntry.experience !== '' && !NO_EQUIPMENT_SERVICES.includes(currentCatEntry.categoryId) && (
                                                 <motion.div variants={itemVariants} initial="hidden" animate="show" className="space-y-4 pt-2">
                                                     <div className="flex items-center justify-between">
-                                                        <label className="text-[20px] font-bold text-neutral-900 flex items-center gap-2">
-                                                            {t({ en: 'Which Equipment do you have?', fr: 'Quel équipement avez-vous ?', ar: 'ما هي المعدات التي تمتلكها؟' })}
-                                                        </label>
+                                                        {currentCatEntry.categoryId !== 'tour_guide' && (
+                                                            <label className="text-[20px] font-bold text-neutral-900 flex items-center gap-2">
+                                                                {t({ en: 'Which Equipment do you have?', fr: 'Quel équipement avez-vous ?', ar: 'ما هي المعدات التي تمتلكها؟' })}
+                                                            </label>
+                                                        )}
                                                     </div>
                                                     <div className="space-y-4">
-                                                        <div className="flex flex-wrap gap-2.5">
-                                                            {/* "I don't have tools" as first option */}
-                                                            <button
-                                                                onClick={() => {
-                                                                    const newValue = !currentCatEntry.noEquipment;
-                                                                    updateCatEntry(currentCatId, 'noEquipment', newValue);
-                                                                    if (newValue) updateCatEntry(currentCatId, 'equipments', []);
-                                                                }}
-                                                                className={cn(
-                                                                    "px-5 py-4 rounded-[12px] border-2 text-[14px] font-bold transition-all flex items-center justify-center gap-2 min-w-[120px] lg:min-w-0",
-                                                                    currentCatEntry.noEquipment
-                                                                        ? "bg-[#00A082] border-[#00A082] text-white"
-                                                                        : "bg-white text-neutral-800 border-neutral-200 hover:border-[#008C74]/30"
-                                                                )}
-                                                            >
-                                                                {currentCatEntry.noEquipment && <Check size={16} strokeWidth={3} />}
-                                                                {t({ en: "I don't have tools", fr: "Je n'ai pas d'outils", ar: 'ليس لدي أدوات' })}
-                                                            </button>
-
-                                                            {(SERVICE_EQUIPMENT_SUGGESTIONS[currentCatEntry.categoryId] || []).map(eq => {
-                                                                const isAdded = currentCatEntry.equipments.includes(eq);
-                                                                return (
+                                                        {currentCatEntry.categoryId !== 'tour_guide' && (
+                                                            <>
+                                                                <div className="flex flex-wrap gap-2.5">
+                                                                    {/* "I don't have tools" as first option */}
                                                                     <button
-                                                                        key={eq}
                                                                         onClick={() => {
-                                                                            if (isAdded) {
-                                                                                removeEquipment(currentCatId, eq);
-                                                                            } else {
-                                                                                addEquipment(currentCatId, eq);
-                                                                                // If adding a tool, turn off "noEquipment"
-                                                                                updateCatEntry(currentCatId, 'noEquipment', false);
-                                                                            }
+                                                                            const newValue = !currentCatEntry.noEquipment;
+                                                                            updateCatEntry(currentCatId, 'noEquipment', newValue);
+                                                                            if (newValue) updateCatEntry(currentCatId, 'equipments', []);
                                                                         }}
                                                                         className={cn(
                                                                             "px-5 py-4 rounded-[12px] border-2 text-[14px] font-bold transition-all flex items-center justify-center gap-2 min-w-[120px] lg:min-w-0",
-                                                                            isAdded ? "bg-[#E6F6F2] border-[#00A082] text-[#00A082]" : "bg-white text-neutral-800 border-neutral-100 hover:border-neutral-200"
+                                                                            currentCatEntry.noEquipment
+                                                                                ? "bg-[#00A082] border-[#00A082] text-white"
+                                                                                : "bg-white text-neutral-800 border-neutral-200 hover:border-[#008C74]/30"
                                                                         )}
                                                                     >
-                                                                        {isAdded && <Check size={16} strokeWidth={3} />}{t({ en: eq, fr: eq })}
+                                                                        {currentCatEntry.noEquipment && <Check size={16} strokeWidth={3} />}
+                                                                        {t({ en: "I don't have tools", fr: "Je n'ai pas d'outils", ar: 'ليس لدي أدوات' })}
                                                                     </button>
-                                                                );
-                                                            })}
-                                                        </div>
-                                                        <div className="flex items-center gap-2 bg-white border-2 border-neutral-100 rounded-[22px] pl-5 pr-2 py-2 focus-within:border-[#00A082] transition-colors">
-                                                            <input type="text" placeholder={t({ en: 'Add other equipment...', fr: 'Ajouter un autre équipement...', ar: 'إضافة معدات أخرى...' })} value={equipmentSearch} onChange={e => setEquipmentSearch(e.target.value)} onKeyDown={e => { if (e.key === 'Enter' && equipmentSearch.trim()) { e.preventDefault(); addEquipment(currentCatId, equipmentSearch.trim()); setEquipmentSearch(''); } }} className="flex-1 bg-transparent outline-none text-[15px] font-medium text-neutral-900 placeholder:text-neutral-400" />
-                                                            <button onClick={() => { if (equipmentSearch.trim()) { addEquipment(currentCatId, equipmentSearch.trim()); setEquipmentSearch(''); } }} className="px-5 py-3 bg-[#00A082] text-white rounded-[18px] text-[13px] font-black hover:bg-[#008C74] active:scale-95 transition-all">{t({ en: 'Add', fr: 'Ajouter', ar: 'إضافة' })}</button>
-                                                        </div>
+
+                                                                    {(SERVICE_EQUIPMENT_SUGGESTIONS[currentCatEntry.categoryId] || []).map(eq => {
+                                                                        const isAdded = currentCatEntry.equipments.includes(eq);
+                                                                        return (
+                                                                            <button
+                                                                                key={eq}
+                                                                                onClick={() => {
+                                                                                    if (isAdded) {
+                                                                                        removeEquipment(currentCatId, eq);
+                                                                                    } else {
+                                                                                        addEquipment(currentCatId, eq);
+                                                                                        // If adding a tool, turn off "noEquipment"
+                                                                                        updateCatEntry(currentCatId, 'noEquipment', false);
+                                                                                    }
+                                                                                }}
+                                                                                className={cn(
+                                                                                    "px-5 py-4 rounded-[12px] border-2 text-[14px] font-bold transition-all flex items-center justify-center gap-2 min-w-[120px] lg:min-w-0",
+                                                                                    isAdded ? "bg-[#E6F6F2] border-[#00A082] text-[#00A082]" : "bg-white text-neutral-800 border-neutral-100 hover:border-neutral-200"
+                                                                                )}
+                                                                            >
+                                                                                {isAdded && <Check size={16} strokeWidth={3} />}{t({ en: eq, fr: eq })}
+                                                                            </button>
+                                                                        );
+                                                                    })}
+                                                                </div>
+                                                                <div className="flex items-center gap-2 bg-white border-2 border-neutral-100 rounded-[22px] pl-5 pr-2 py-2 focus-within:border-[#00A082] transition-colors">
+                                                                    <input type="text" placeholder={t({ en: 'Add other equipment...', fr: 'Ajouter un autre équipement...', ar: 'إضافة معدات أخرى...' })} value={equipmentSearch} onChange={e => setEquipmentSearch(e.target.value)} onKeyDown={e => { if (e.key === 'Enter' && equipmentSearch.trim()) { e.preventDefault(); addEquipment(currentCatId, equipmentSearch.trim()); setEquipmentSearch(''); } }} className="flex-1 bg-transparent outline-none text-[15px] font-medium text-neutral-900 placeholder:text-neutral-400" />
+                                                                    <button onClick={() => { if (equipmentSearch.trim()) { addEquipment(currentCatId, equipmentSearch.trim()); setEquipmentSearch(''); } }} className="px-5 py-3 bg-[#00A082] text-white rounded-[18px] text-[13px] font-black hover:bg-[#008C74] active:scale-95 transition-all">{t({ en: 'Add', fr: 'Ajouter', ar: 'إضافة' })}</button>
+                                                                </div>
+                                                            </>
+                                                        )}
                                                     </div>
                                                 </motion.div>
                                             )}
                                         </AnimatePresence>
 
-                                        {/* 2.5 — Tour Guide: Legal authorisation upload */}
-                                        {currentCatId === 'tour_guide' && currentCatEntry.experience !== '' && (
-                                            <motion.div variants={itemVariants} initial="hidden" animate="show" className="space-y-3 pt-2">
-                                                <label className="text-[20px] font-bold text-neutral-900 block">
-                                                    {t({
-                                                        en: 'Upload your official Tour Guide authorisation',
-                                                        fr: 'Téléchargez votre autorisation officielle de guide touristique',
-                                                        ar: 'حمّل الترخيص القانوني الذي يثبت أنك مرشد سياحي معتمد'
-                                                    })}
-                                                </label>
-                                                <p className="text-[13px] text-neutral-500">
-                                                    {t({
-                                                        en: 'This document is required if you offer Tour Guide services. It will be shown to clients inside your profile.',
-                                                        fr: 'Ce document est obligatoire si vous proposez le service de guide touristique. Il sera visible dans votre profil côté client.',
-                                                        ar: 'هذا المستند إجباري إذا كنت تقدم خدمة المرشد السياحي، وسيظهر للزبائن داخل ملفك الشخصي.'
-                                                    })}
-                                                </p>
-                                                <div className="p-6 rounded-[20px] bg-neutral-50 border-2 border-dashed border-neutral-100 flex flex-col items-center justify-center text-center gap-3">
-                                                    <div className="w-12 h-12 rounded-full bg-neutral-100 flex items-center justify-center text-neutral-400">
-                                                        <FileText size={24} />
-                                                    </div>
-                                                    <p className="text-[13px] font-medium text-neutral-500 max-w-[240px]">
-                                                        {t({
-                                                            en: 'Document uploads are currently disabled. You can complete your verification later.',
-                                                            fr: 'Les téléchargements de documents sont désactivés. Vous pourrez compléter votre vérification plus tard.',
-                                                            ar: 'رفع المستندات غير متاح حاليًا. يمكنك إكمال عملية التحقق لاحقًا.'
-                                                        })}
-                                                    </p>
-                                                </div>
-                                            </motion.div>
-                                        )}
+
 
                                         {/* 1.7 — Tour Guide: Spoken Languages */}
                                         {currentCatId === 'tour_guide' && currentCatEntry.experience !== '' && (
@@ -1841,11 +1842,15 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                                                             <div className="w-6 h-6 rounded-full bg-[#00A082] text-white flex items-center justify-center text-[10px] font-black">3</div>
                                                             {currentCatId === 'errands'
                                                                 ? t({
-                                                                    en: "What's the minimum fee you want to charge a client for a simple delivery task?",
-                                                                    fr: "Quel est le tarif minimum que vous souhaitez facturer à un client pour une simple mission de livraison ?",
-                                                                    ar: "ما هو أقل مبلغ تريد أن تتقاضاه من العميل مقابل مهمة توصيل بسيطة؟"
+                                                                    en: "What's the minimum price you accept for a simple delivery task?",
+                                                                    fr: "Quel est le prix minimum que vous acceptez pour une simple mission de livraison ?",
+                                                                    ar: "ما هو أقل ثمن تقبله مقابل مهمة توصيل بسيطة؟"
                                                                 })
-                                                                : t({ en: 'How much do you want to charge clients per Hour?', fr: 'Combien voulez-vous facturer les clients par heure?', ar: 'كم تريد أن تتقاضى من العملاء في الساعة؟' })}
+                                                                : t({
+                                                                    en: "What's the minimum price you accept for this service?",
+                                                                    fr: "Quel est le prix minimum que vous acceptez pour ce service ?",
+                                                                    ar: "ما هو أقل ثمن تقبله مقابل هذه الخدمة؟"
+                                                                })}
                                                         </label>
                                                     </div>
                                                     {/* Centered rate picker */}
@@ -1866,7 +1871,7 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                                                             <div className="flex flex-col items-center">
                                                                 <div className="flex items-baseline gap-1 whitespace-nowrap">
                                                                     <span className="text-5xl font-black text-neutral-900 tracking-tighter leading-none">{currentCatEntry?.hourlyRate || 75}</span>
-                                                                    <span className="text-[14px] font-bold text-neutral-400">{t({ en: 'MAD/hr', fr: 'MAD/h', ar: 'درهم/ساعة' })}</span>
+                                                                    <span className="text-[14px] font-bold text-neutral-400 uppercase tracking-widest">{t({ en: 'MIN PRICE (MAD)', fr: 'PRIX MIN (MAD)', ar: 'أقل ثمن (درهم)' })}</span>
                                                                 </div>
                                                             </div>
                                                             <button
@@ -1891,7 +1896,7 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                                                                             <TrendingUp size={16} className="text-[#FF9500]" />
                                                                         </div>
                                                                         <h4 className="text-[15px] font-[1000] text-black uppercase tracking-tight">
-                                                                            {t({ en: 'Platform Market Reference (MAD/h)', fr: 'Référence Marché Plateforme (MAD/h)', ar: 'مرجع سعر السوق (درهم/ساعة)' })}
+                                                                            {t({ en: 'Market Reference (MAD)', fr: 'Référence Marché (MAD)', ar: 'مرجع السوق (درهم)' })}
                                                                         </h4>
                                                                     </div>
                                                                 </div>
@@ -1939,7 +1944,7 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                                                                                         {/* Tiny 'Suggested' tag for the Average one */}
                                                                                         {mock.label === t({ en: 'Average', fr: 'Moyen', ar: 'متوسط' }) && (
                                                                                             <div className="mt-1 px-2 py-0.5 bg-neutral-50 rounded-md border border-neutral-100">
-                                                                                                <span className="text-[8px] font-bold text-neutral-400 uppercase tracking-tighter">{t({ en: 'Most Picked', fr: 'Le plus choisi' })}</span>
+                                                                                                <span className="text-[8px] font-bold text-neutral-400 uppercase tracking-tighter">{t({ en: 'Ideal', fr: 'Idéal' })}</span>
                                                                                             </div>
                                                                                         )}
                                                                                     </motion.div>
@@ -1960,9 +1965,9 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                                             {(currentCatEntry.noEquipment || currentCatEntry.equipments.length > 0 || NO_EQUIPMENT_SERVICES.includes(currentCatEntry.categoryId)) && (
                                                 <motion.div variants={itemVariants} initial="hidden" animate="show" className="space-y-4 pt-2">
                                                     <div className="flex items-center justify-between">
-                                                        <label className="text-[14px] font-bold text-neutral-900 flex items-center gap-2">
+                                                        <label className="text-[16px] font-black text-neutral-900 flex items-center gap-2">
                                                             <div className="w-6 h-6 rounded-full bg-[#00A082] text-white flex items-center justify-center text-[10px] font-black">4</div>
-                                                            {t({ en: 'Experience Description', fr: 'Description de l\'expérience', ar: 'وصف الخبرة' })}
+                                                            {t({ en: 'Why the client would choose you and not others?', fr: 'Pourquoi le client vous choisirait-il vous et pas les autres ?', ar: 'لماذا قد يختارك العميل دون غيرك؟' })}
                                                         </label>
                                                         <div className="relative w-12 h-12 flex items-center justify-center">
                                                             <svg className="absolute inset-0 w-full h-full -rotate-90">
@@ -1975,7 +1980,11 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                                                     <textarea
                                                         value={currentCatEntry?.pitch || ''}
                                                         onChange={e => updateCatEntry(currentCatId, 'pitch', e.target.value)}
-                                                        placeholder={t({ en: `Describe your general experience in ${currentCatEntry.categoryName}...`, fr: `Décrivez votre expérience en ${currentCatEntry.categoryName}...`, ar: `صف خبرتك العامة في ${currentCatEntry.categoryName}...` })}
+                                                        placeholder={t({
+                                                            en: `Share what makes you the best choice for this service. Your skills, reliability, and approach...`,
+                                                            fr: `Partagez ce qui fait de vous le meilleur choix pour ce service. Vos compétences, votre fiabilité...`,
+                                                            ar: `شارك ما الذي يجعلك الخيار الأفضل لهذه الخدمة. مهاراتك، مصداقيتك، وأسلوبك...`
+                                                        })}
                                                         rows={5}
                                                         className={cn(
                                                             "w-full px-7 py-6 bg-white border-2 rounded-[32px] text-[17px] font-medium text-neutral-900 outline-none transition-all",
@@ -1983,25 +1992,7 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                                                         )}
                                                     />
 
-                                                    <div className="space-y-3 pt-2">
-                                                        <div className="flex items-center justify-between">
-                                                            <h4 className="text-[15px] font-black text-neutral-900">
-                                                                {t({ en: 'Past work photos', fr: 'Photos de réalisations', ar: 'صور أعمالك السابقة' })}
-                                                            </h4>
-                                                        </div>
-                                                        <div className="p-6 rounded-[20px] bg-neutral-50 border-2 border-dashed border-neutral-100 flex flex-col items-center justify-center text-center gap-3">
-                                                            <div className="w-12 h-12 rounded-full bg-neutral-100 flex items-center justify-center text-neutral-400">
-                                                                <Image size={24} />
-                                                            </div>
-                                                            <p className="text-[13px] font-medium text-neutral-500 max-w-[240px]">
-                                                                {t({
-                                                                    en: 'Portfolio uploads are currently disabled. You can add your past work later via the dashboard.',
-                                                                    fr: 'Les téléchargements de portfolio sont actuellement désactivés. Vous pourrez ajouter vos réalisations plus tard via le tableau de bord.',
-                                                                    ar: 'رفع صور الأعمال غير متاح حاليًا. يمكنك إضافة أعمالك السابقة لاحقًا عبر لوحة التحكم.'
-                                                                })}
-                                                            </p>
-                                                        </div>
-                                                    </div>
+
                                                 </motion.div>
                                             )}
                                         </AnimatePresence>
@@ -2168,32 +2159,6 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                                                 </div>
                                                 <p className="text-[11px] text-neutral-400 font-bold ml-1">{t({ en: '9 digits starting with 6 or 7', fr: '9 chiffres commençant par 6 ou 7', ar: '9 أرقام تبدأ بـ 6 أو 7' })}</p>
                                             </div>
-
-                                            {/* Bank details — optional */}
-                                            <div className="pt-4 space-y-4">
-                                                <div className="space-y-1">
-                                                    <p className="text-[13px] font-black text-neutral-400 uppercase tracking-widest">{t({ en: 'Bank Details (optional)', fr: 'Coordonnées bancaires (optionnel)', ar: 'بيانات البنك (اختياري)' })}</p>
-                                                    <p className="text-[11px] text-neutral-400 font-medium leading-tight">
-                                                        {t({
-                                                            en: 'This info will be used to send your money directly to your account when you request a payout.',
-                                                            fr: 'Ces informations seront utilisées pour envoyer votre argent directement sur votre compte lorsque vous demanderez un retrait.',
-                                                            ar: 'ستستخدم هذه المعلومات لإرسال أموالك مباشرة إلى حسابك عند طلب السحب.'
-                                                        })}
-                                                    </p>
-                                                </div>
-                                                <div className="space-y-2">
-                                                    <label className="text-[14px] font-bold text-neutral-900 ml-1">{t({ en: 'Bank Name', fr: 'Nom de la banque', ar: 'اسم البنك' })}</label>
-                                                    <input type="text" value={bankName} onChange={e => setBankName(e.target.value)} placeholder={t({ en: 'e.g. Attijariwafa Bank', fr: 'ex. Attijariwafa Bank', ar: 'مثل: التجاري وفا بنك' })} className="w-full px-6 py-4 bg-white border-2 border-neutral-100 rounded-[12px] text-[17px] font-bold text-neutral-900 outline-none focus:border-[#00A082] transition-all placeholder:font-medium placeholder:text-neutral-400" />
-                                                </div>
-                                                <div className="space-y-2">
-                                                    <label className="text-[14px] font-bold text-neutral-900 ml-1">{t({ en: 'Name on Bank Card', fr: 'Nom sur la carte bancaire', ar: 'الاسم على بطاقة البنك' })}</label>
-                                                    <input type="text" value={bricolerBankCardName} onChange={e => setBricolerBankCardName(e.target.value)} placeholder={t({ en: 'Full name as on card', fr: 'Nom complet comme sur la carte', ar: 'الاسم الكامل كما في البطاقة' })} className="w-full px-6 py-4 bg-white border-2 border-neutral-100 rounded-[12px] text-[17px] font-bold text-neutral-900 outline-none focus:border-[#00A082] transition-all placeholder:font-medium placeholder:text-neutral-400" />
-                                                </div>
-                                                <div className="space-y-2">
-                                                    <label className="text-[14px] font-bold text-neutral-900 ml-1">{t({ en: 'RIB / IBAN', fr: 'RIB / IBAN', ar: 'رقم الحساب (RIB)' })}</label>
-                                                    <input type="text" value={ribIBAN} onChange={e => setRibIBAN(e.target.value)} placeholder={t({ en: '24-digit RIB or IBAN', fr: 'RIB 24 chiffres ou IBAN', ar: 'رقم الحساب من 24 رقماً' })} className="w-full px-6 py-4 bg-white border-2 border-neutral-100 rounded-[12px] text-[17px] font-bold text-neutral-900 outline-none focus:border-[#00A082] transition-all placeholder:font-medium placeholder:text-neutral-400" />
-                                                </div>
-                                            </div>
                                         </motion.div>
                                     </motion.div>
                                 )}
@@ -2230,13 +2195,22 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                                                             <span
                                                                 key={id}
                                                                 className={cn(
-                                                                    "px-4 py-2 rounded-[8px] text-[13px] font-bold transition-all flex items-center gap-2",
+                                                                    "px-4 py-2 rounded-[8px] text-[13px] font-bold transition-all flex items-center gap-2 relative group",
                                                                     entry?.categoryId === 'glass_cleaning'
                                                                         ? "bg-gradient-to-r from-[#BF953F] to-[#B38728] text-white"
                                                                         : "bg-[#0CB380] text-white"
                                                                 )}
                                                             >
                                                                 {t({ en: subServiceName, fr: subServiceName })} · {entry?.hourlyRate} {t({ en: 'MAD', fr: 'MAD', ar: 'درهم' })}
+                                                                <button
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        setSelectedSubServices(prev => prev.filter(x => x !== id));
+                                                                    }}
+                                                                    className="w-5 h-5 rounded-full bg-black/10 flex items-center justify-center hover:bg-black/20 transition-all"
+                                                                >
+                                                                    <X size={10} strokeWidth={4} />
+                                                                </button>
                                                             </span>
                                                         );
                                                     })}
@@ -2311,28 +2285,30 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                                     </motion.div>
                                 )}
                             </AnimatePresence>
-                        </div>
+                        </div >
 
                         {/* Footer */}
-                        {step !== 'finish' && step !== 'google_signin' && (
-                            <div className="p-4 md:p-6 pb-6 md:pb-8 bg-white border-t border-neutral-100 flex-shrink-0 shadow-[0_-8px_30px_rgba(0,0,0,0.04)]">
-                                <motion.button
-                                    whileTap={{ scale: 0.98 }}
-                                    onClick={goNext}
-                                    disabled={!canGoNext()}
-                                    className="w-full h-16 bg-[#00A082] text-white rounded-[16px] text-[18px] font-bold flex items-center justify-center gap-2 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
-                                >
-                                    {step === 'service_details' && !isLastCat
-                                        ? t({ en: 'Next Category', fr: 'Catégorie suivante', ar: 'الفئة التالية' })
-                                        : step === 'profile'
-                                            ? t({ en: 'Save & Finish', fr: 'Enregistrer et terminer', ar: 'حفظ وإنهاء' })
-                                            : t({ en: 'Continue', fr: 'Continuer', ar: 'متابعة' })}
-                                    <ChevronRight size={22} strokeWidth={2.5} />
-                                </motion.button>
-                            </div>
-                        )}
-                    </motion.div>
-                </motion.div>
+                        {
+                            step !== 'finish' && step !== 'google_signin' && (
+                                <div className="p-4 md:p-6 pb-6 md:pb-8 bg-white border-t border-neutral-100 flex-shrink-0 shadow-[0_-8px_30px_rgba(0,0,0,0.04)]">
+                                    <motion.button
+                                        whileTap={{ scale: 0.98 }}
+                                        onClick={goNext}
+                                        disabled={!canGoNext()}
+                                        className="w-full h-16 bg-[#00A082] text-white rounded-[16px] text-[18px] font-bold flex items-center justify-center gap-2 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                                    >
+                                        {step === 'service_details' && !isLastCat
+                                            ? t({ en: 'Next Category', fr: 'Catégorie suivante', ar: 'الفئة التالية' })
+                                            : step === 'profile'
+                                                ? t({ en: 'Save & Finish', fr: 'Enregistrer et terminer', ar: 'حفظ وإنهاء' })
+                                                : t({ en: 'Continue', fr: 'Continuer', ar: 'متابعة' })}
+                                        <ChevronRight size={22} strokeWidth={2.5} />
+                                    </motion.button>
+                                </div>
+                            )
+                        }
+                    </motion.div >
+                </motion.div >
             </AnimatePresence >
         </>
     );

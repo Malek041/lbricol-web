@@ -105,6 +105,18 @@ export default function HeroesView({ orders }: HeroesViewProps) {
         localStorage.setItem('removedHeroIds', JSON.stringify(updated));
     };
 
+    const getHeroFallbackSlots = (profile: any, date: Date) => {
+        if (profile?.routine) {
+            const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+            const dayRoutine = profile.routine[dayNames[date.getDay()]];
+            if (dayRoutine && dayRoutine.active) {
+                return [{ from: dayRoutine.from, to: dayRoutine.to }];
+            }
+            return [];
+        }
+        return [{ from: '10:00', to: '17:00' }]; // Default if no routine is set
+    };
+
     const isStep1Valid = !!(selectedDate && selectedTime);
     const isStep2Valid = !!selectedService;
     const isStep3Valid = taskSize && description.trim().length > 0;
@@ -194,10 +206,10 @@ export default function HeroesView({ orders }: HeroesViewProps) {
             const d = new Date(today);
             d.setDate(today.getDate() + i);
             const dateStr = d.toISOString().split('T')[0];
-            const daySlots = Array.isArray(slotsMap[dateStr]) ? slotsMap[dateStr] : [];
+            const daySlotsRaw = slotsMap[dateStr];
+            const daySlots = Array.isArray(daySlotsRaw) && daySlotsRaw.length > 0 ? daySlotsRaw : getHeroFallbackSlots(heroProfile, d);
 
-            // If they have slots OR we use the default 10-17 availability
-            if (daySlots.length > 0 || true) { // Always available by default
+            if (daySlots.length > 0) {
                 setSelectedDate(dateStr);
                 setSelectedTime('');
                 return;
@@ -467,10 +479,9 @@ export default function HeroesView({ orders }: HeroesViewProps) {
                                                             const daySlotsRaw = (heroProfile as any)?.calendarSlots?.[dateStr];
                                                             const daySlots = Array.isArray(daySlotsRaw) && daySlotsRaw.length > 0
                                                                 ? daySlotsRaw
-                                                                : [{ from: '10:00', to: '17:00' }];
-                                                            const hasAvailability = true;
+                                                                : getHeroFallbackSlots(heroProfile, d);
+                                                            const hasAvailability = daySlots.length > 0;
 
-                                                            // Only days with declared availability should be selectable (Now always true because of default 10-17)
                                                             if (!hasAvailability) {
                                                                 return (
                                                                     <button
@@ -527,7 +538,7 @@ export default function HeroesView({ orders }: HeroesViewProps) {
                                                             const daySlotsRaw = (heroProfile as any)?.calendarSlots?.[selectedDate];
                                                             const daySlots = Array.isArray(daySlotsRaw) && daySlotsRaw.length > 0
                                                                 ? daySlotsRaw
-                                                                : [{ from: '10:00', to: '17:00' }];
+                                                                : getHeroFallbackSlots(heroProfile, new Date(selectedDate));
 
                                                             const toMinutes = (hhmm: string) => {
                                                                 const [h, m] = hhmm.split(':').map(Number);

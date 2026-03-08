@@ -430,6 +430,7 @@ interface ClientHomeProps {
     showOnboarding: boolean;
     onOnboardingComplete: () => void;
     onBecomeBricoler?: () => void; // callback to launch the Bricoler onboarding
+    isBricoler?: boolean;
 }
 
 // ── Component ──────────────────────────────────────────────────────────────
@@ -447,6 +448,7 @@ const ClientHome: React.FC<ClientHomeProps> = ({
     showOnboarding,
     onOnboardingComplete,
     onBecomeBricoler,
+    isBricoler = false,
 }) => {
     const { t, language } = useLanguage();
 
@@ -482,17 +484,14 @@ const ClientHome: React.FC<ClientHomeProps> = ({
         } else {
             setShowReferralBanner(false);
         }
-    }, [recentOrders]);
 
-    // Show bricoler upsell once after client onboarding
-    useEffect(() => {
-        const alreadyShown = localStorage.getItem('bricoler_upsell_shown');
-        if (!alreadyShown) {
-            // Small delay so the onboarding modal has fully closed first
-            const timer = setTimeout(() => setShowBricolerUpsell(true), 800);
-            return () => clearTimeout(timer);
+        // Bricoler Upsell Visibility
+        if (!isBricoler) {
+            setShowBricolerUpsell(true);
+        } else {
+            setShowBricolerUpsell(false);
         }
-    }, []);
+    }, [recentOrders, isBricoler]);
 
     const handleReferralClick = () => {
         localStorage.setItem('referral_banner_dismissed_at', Date.now().toString());
@@ -680,38 +679,65 @@ const ClientHome: React.FC<ClientHomeProps> = ({
                     />
                 </motion.h1>
 
-                {/* Referral Banner */}
-                <AnimatePresence>
-                    {showReferralBanner && (
-                        <motion.div
-                            initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                            animate={{ opacity: 1, y: 0, scale: 1 }}
-                            exit={{ opacity: 0, height: 0, scale: 0.9, marginTop: 0, marginBottom: 0 }}
-                            onClick={handleReferralClick}
-                            className="mt-8 w-full max-w-[400px] rounded-[5px] p-5 flex items-center justify-between cursor-pointer relative overflow-hidden shadow-sm active:scale-95 transition-transform"
-                            style={{ backgroundColor: '#027C3E' }}
-                        >
-                            <div className="flex-1 text-left pr-2 z-10">
-                                <h3 className="text-[25px] font-black text-white leading-tight mb-1.5">
-                                    {t({ en: 'Refer friends, win 15%', fr: 'Parrainez, gagnez 15%', ar: 'أحِل أصدقائك واربح 15%' })}
-                                </h3>
-                                <p className="text-[13px] font-semibold text-white/90 leading-tight">
-                                    {t({
-                                        en: 'Invite your friends to Lbricol and win 15% discount for each successful referral!',
-                                        fr: 'Invitez vos amis sur Lbricol et gagnez 15% de réduction pour chaque parrainage réussi !',
-                                        ar: 'قم بدعوة أصدقائك إلى Lbricol واربح خصم 15% عن كل دعوة ناجحة!'
-                                    })}
-                                </p>
-                            </div>
-                            <div className="w-24 h-24 flex-shrink-0 z-10 relative -my-4 -mr-2">
-                                <img src="/Images/Vectors Illu/gifts.webp" alt="Gifts" className="w-full h-full object-contain" />
-                            </div>
+                {/* Announcements & Offers Section (Horizontal Scroll) */}
+                {(showReferralBanner || showBricolerUpsell) && (
+                    <div className="mt-8 -mx-3 px-3 overflow-x-auto no-scrollbar flex items-stretch gap-4 snap-x snap-mandatory pb-4">
+                        {/* Referral Banner Slide */}
+                        {showReferralBanner && (
+                            <motion.div
+                                initial={{ opacity: 0, x: 20 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                onClick={handleReferralClick}
+                                className="min-w-[310px] w-[310px] snap-center rounded-[24px] p-6 flex flex-col justify-between cursor-pointer relative overflow-hidden shadow-[0_8px_30px_rgb(0,0,0,0.08)] active:scale-[0.98] transition-all bg-[#027C3E]"
+                            >
+                                <div className="z-10">
+                                    <h3 className="text-[20px] font-black text-white leading-tight mb-2">
+                                        {t({ en: 'Refer friends, win 15%', fr: 'Parrainez, gagnez 15%', ar: 'أحِل أصدقائك واربح 15%' })}
+                                    </h3>
+                                    <p className="text-[12px] font-bold text-white/90 leading-tight pr-4">
+                                        {t({
+                                            en: 'Invite your friends and win 15% discount for each successful referral!',
+                                            fr: 'Invitez vos amis et gagnez 15% de réduction pour chaque parrainage réussi !',
+                                            ar: 'قم بدعوة أصدقائك واربح خصم 15% عن كل دعوة ناجحة!'
+                                        })}
+                                    </p>
+                                </div>
+                                <div className="flex justify-end -mb-4 -mr-2 z-10">
+                                    <img src="/Images/Vectors Illu/gifts.webp" alt="Gifts" className="w-20 h-20 object-contain" />
+                                </div>
+                                <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-2xl pointer-events-none" />
+                            </motion.div>
+                        )}
 
-                            {/* Decorative background shape */}
-                            <div className="absolute top-0 right-0 w-32 h-32 bg-white/20 rounded-full blur-2xl select-none pointer-events-none" />
-                        </motion.div>
-                    )}
-                </AnimatePresence>
+                        {/* Bricoler Upsell Slide */}
+                        {showBricolerUpsell && (
+                            <motion.div
+                                initial={{ opacity: 0, x: 20 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                onClick={() => onBecomeBricoler?.()}
+                                className="min-w-[340px] w-full snap-center rounded-[11.36pt] p-5 pb-6 flex items-center cursor-pointer relative overflow-hidden shadow-sm active:scale-[0.98] transition-all bg-[#00A082]"
+                            >
+                                <div className="z-10 w-[55%] pt-2">
+                                    <h3 className="text-[20px] font-black text-white leading-tight mb-2">
+                                        {t({ en: 'Earn with your skills', fr: 'Gagnez avec vos talents', ar: 'اربح بمهاراتك' })}
+                                    </h3>
+                                    <p className="text-[14px] font-medium text-white/90 leading-snug">
+                                        {t({
+                                            en: 'Become a Bricoler — set your prices and choose your hours.',
+                                            fr: 'Devenez Bricoleur — fixez vos prix et choisissez vos horaires.',
+                                            ar: 'كن بريكولرًا — حدد أسعارك واختر مواعيدك.'
+                                        })}
+                                    </p>
+                                </div>
+                                <div className="absolute right-0 bottom-0 h-full w-[45%] flex items-end justify-end">
+                                    <img src="/Images/Vectors Illu/Groceriedbag.png" alt="Grocery bag" className="absolute w-[80px] top-[10%] right-8 z-10 drop-shadow-sm" />
+                                    <img src="/Images/4c456a03818b25032d0e4e80a711d569-Photoroom.png" alt="Moving Helper" className="absolute w-[70px] -bottom-2 right-16 z-20 drop-shadow-md" />
+                                    <img src="/Images/Vectors Illu/Dogwalker.png" alt="Dogwalker" className="absolute w-[60px] bottom-0 right-1 z-20 drop-shadow-md" />
+                                </div>
+                            </motion.div>
+                        )}
+                    </div>
+                )}
             </div>
 
             {/* ── Category tabs ───────────────────────────────────────── */}
@@ -944,58 +970,7 @@ const ClientHome: React.FC<ClientHomeProps> = ({
                 )}
             </AnimatePresence>
 
-            {/* ── Bricoler Upsell Card (shown once after first visit/onboarding) ── */}
-            <AnimatePresence>
-                {showBricolerUpsell && (
-                    <motion.div
-                        initial={{ y: 120, opacity: 0 }}
-                        animate={{ y: 0, opacity: 1 }}
-                        exit={{ y: 120, opacity: 0 }}
-                        transition={{ type: 'spring', damping: 22, stiffness: 220 }}
-                        className="fixed bottom-24 left-4 right-4 z-[200]"
-                    >
-                        <div
-                            className="rounded-[24px] p-5 flex items-center gap-4 shadow-2xl relative overflow-hidden cursor-pointer active:scale-[0.98] transition-transform"
-                            style={{ backgroundColor: '#027C3E' }}
-                            onClick={() => {
-                                localStorage.setItem('bricoler_upsell_shown', 'true');
-                                setShowBricolerUpsell(false);
-                                onBecomeBricoler?.();
-                            }}
-                        >
-                            {/* Icon */}
-                            <div className="w-24 h-24 rounded-2xl flex items-center justify-center flex-shrink-0">
-                                <img src="/Images/4c456a03818b25032d0e4e80a711d569-Photoroom.png" alt="Bricoler" className="w-50 h-50 object-contain" />
-                            </div>
 
-                            {/* Text */}
-                            <div className="flex-1">
-                                <p className="text-white font-black text-[17px] leading-tight mb-0.5">
-                                    {t({ en: 'Earn money with your skills', fr: 'Gagnez de l\'argent avec vos compétences', ar: 'اربح المال بمهاراتك' })}
-                                </p>
-                                <p className="text-white/80 text-[13px] font-semibold leading-snug">
-                                    {t({ en: 'Become a Bricoler — set your own hours', fr: 'Devenez Bricoleur — choisissez vos horaires', ar: 'كن بريكولرًا — اختر ساعاتك' })}
-                                </p>
-                            </div>
-
-                            {/* Remove button at top right */}
-                            <button
-                                className="absolute top-3 right-4 w-8 h-8 rounded-full bg-white/20 text-white flex items-center justify-center active:scale-95 transition-transform z-10"
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    localStorage.setItem('bricoler_upsell_shown', 'true');
-                                    setShowBricolerUpsell(false);
-                                }}
-                            >
-                                <X size={18} strokeWidth={3} />
-                            </button>
-
-                            {/* Decorative glow */}
-                            <div className="absolute -top-6 -right-6 w-24 h-24 bg-white/10 rounded-full blur-2xl pointer-events-none" />
-                        </div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
         </div>
     );
 };

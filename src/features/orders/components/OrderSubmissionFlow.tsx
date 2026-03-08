@@ -998,7 +998,17 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
     };
 
 
-
+    const getHeroFallbackSlots = (profile: any, date: Date) => {
+        if (profile?.routine) {
+            const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+            const dayRoutine = profile.routine[dayNames[date.getDay()]];
+            if (dayRoutine && dayRoutine.active) {
+                return [{ from: dayRoutine.from, to: dayRoutine.to }];
+            }
+            return [];
+        }
+        return [{ from: '10:00', to: '17:00' }];
+    };
 
     const timeToMinutes = (t: string) => {
         const [h, m] = t.split(':').map(Number);
@@ -1014,10 +1024,10 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
     const generateAvailableSlots = () => {
         if (!selectedDate || !selectedPro || !activeTaskSize) return [];
 
-        const blocksRaw = (selectedPro as any).availability?.[selectedDate];
+        const blocksRaw = (selectedPro as any).availability?.[selectedDate] || (selectedPro as any).calendarSlots?.[selectedDate];
         const blocks = Array.isArray(blocksRaw) && blocksRaw.length > 0
             ? blocksRaw
-            : [{ from: '10:00', to: '17:00' }];
+            : getHeroFallbackSlots(selectedPro, new Date(selectedDate));
 
         const duration = activeTaskSize.duration || 1;
         const durationMin = duration * 60;
