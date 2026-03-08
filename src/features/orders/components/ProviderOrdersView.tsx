@@ -135,10 +135,19 @@ export default function ProviderOrdersView({
             </div>
             <div className="flex-1 min-w-0">
                 <h3 className="text-[17px] font-black text-black leading-tight truncate">
-                    {order.subServiceDisplayName || order.service}
+                    {(() => {
+                        const config = getServiceById(order.serviceId || order.service);
+                        const stableBase = (config ? config.name : formatServiceName(order.service));
+                        const translatedBase = t({ en: stableBase, fr: stableBase });
+
+                        const subDisplay = getSubServiceName(order.serviceId || order.service, order.subService || '') || order.subServiceDisplayName;
+                        const translatedSub = subDisplay ? t({ en: subDisplay, fr: subDisplay }) : '';
+
+                        return translatedSub ? `${translatedBase} › ${translatedSub}` : translatedBase;
+                    })()}
                 </h3>
                 <p className="text-[14px] font-medium text-neutral-400 mt-0.5 truncate">
-                    {order.clientName || t({ en: 'Client', fr: 'Client' })} • {order.city || order.location}
+                    {order.clientName || t({ en: 'Client', fr: 'Client' })} • {order.city ? t({ en: order.city, fr: order.city }) : (order.location ? t({ en: order.location, fr: order.location }) : '')}
                 </p>
                 <p className="text-[14px] font-bold text-neutral-400 mt-1 capitalize">
                     {order.status === 'done' ? t({ en: 'Completed', fr: 'Terminée' }) : order.status}
@@ -404,16 +413,25 @@ function ActivityTab({
                             "px-2 py-0.5 text-[10px] font-black rounded-md uppercase tracking-wider",
                             isOffer ? "bg-amber-50 text-amber-600" : (isToday(parseISO(order.date)) && !isDone ? "bg-[#E6F7F4] text-[#00A082]" : (isDone ? "bg-emerald-50 text-emerald-600" : "bg-blue-50 text-blue-600"))
                         )}>
-                            {isOffer ? 'Active Offer' : (isDone ? 'Delivered' : (isToday(parseISO(order.date)) ? 'In Progress' : 'Scheduled'))}
+                            {isOffer ? t({ en: 'Active Offer', fr: 'Offre active', ar: 'عرض نشط' }) : (isDone ? t({ en: 'Delivered', fr: 'Livrée', ar: 'مكتمل' }) : (isToday(parseISO(order.date)) ? t({ en: 'In Progress', fr: 'En cours', ar: 'قيد التنفيذ' }) : t({ en: 'Scheduled', fr: 'Programmée', ar: 'مبرمج' })))}
                         </span>
                         {order.providerConfirmed && (
                             <span className="px-2 py-0.5 text-[10px] font-black rounded-md uppercase tracking-wider bg-amber-50 text-amber-600">
-                                Confirmed
+                                {t({ en: 'Confirmed', fr: 'Confirmée', ar: 'مؤكد' })}
                             </span>
                         )}
                     </div>
                     <h3 className="text-[17px] font-black text-black leading-tight">
-                        {formatServiceName(order.service)} {order.subServiceDisplayName ? `› ${order.subServiceDisplayName}` : ''}
+                        {(() => {
+                            const config = getServiceById(order.serviceId || order.service);
+                            const stableBase = config ? config.name : formatServiceName(order.service);
+                            const translatedBase = t({ en: stableBase, fr: stableBase });
+
+                            const subDisplay = getSubServiceName(order.serviceId || order.service, order.subService || '') || order.subServiceDisplayName;
+                            const translatedSub = subDisplay ? t({ en: subDisplay, fr: subDisplay }) : '';
+
+                            return translatedSub ? `${translatedBase} › ${translatedSub}` : translatedBase;
+                        })()}
                     </h3>
                     <div className="flex items-center gap-1.5 mt-1 text-neutral-500">
                         <Clock size={12} strokeWidth={2.5} />
@@ -430,7 +448,7 @@ function ActivityTab({
 
                     <div className="flex items-center gap-1.5 mt-1">
                         <p className="text-[13px] font-medium text-neutral-400 truncate">
-                            {order.clientName || t({ en: 'Client', fr: 'Client' })} • {order.city || order.location}
+                            {order.clientName || t({ en: 'Client', fr: 'Client' })} • {order.city ? t({ en: order.city, fr: order.city }) : (order.location ? t({ en: order.location, fr: order.location }) : '')}
                         </p>
                     </div>
                     {!isOffer && !isDone && (

@@ -50,6 +50,8 @@ interface Bricoler {
     portfolio?: string[];
     whatsappNumber?: string;
     servesArea?: boolean;
+    routine?: Record<string, { active: boolean; from: string; to: string }>;
+    calendarSlots?: Record<string, { from: string; to: string }[]>;
 }
 
 export interface DraftOrder {
@@ -976,34 +978,32 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
         fetchBricolers();
     }, [currentCity, currentArea]);
 
-    // Fetch existing bookings for the selected pro and date
+    // Fetch existing bookings for the selected pro to accurately show availability dots
     useEffect(() => {
         const fetchBookings = async () => {
-            if (!selectedBricolerId || !selectedDate || selectedBricolerId === 'open') return;
+            if (!selectedBricolerId || !selectedBricolerId.startsWith('pro-') || selectedBricolerId === 'open') return;
             setIsLoadingBookings(true);
             try {
+                const todayStr = new Date().toISOString().split('T')[0];
                 const q = query(
                     collection(db, 'jobs'),
-                    where('bricolerId', '==', selectedBricolerId)
+                    where('bricolerId', '==', selectedBricolerId),
+                    where('date', '>=', todayStr)
                 );
                 const snap = await getDocs(q);
                 const list = snap.docs
-                    .map(d => d.data())
-                    .filter(d => d.date === selectedDate && !['cancelled', 'rejected'].includes(d.status));
+                    .map(d => ({ id: d.id, ...d.data() }))
+                    .filter(d => !['cancelled', 'rejected'].includes(d.status));
                 setBookedOrders(list);
             } catch (err: any) {
-                if (err.code === 'permission-denied') {
-                    console.warn("Permission denied fetching bookings. Please update Firestore rules to allow read access on 'jobs'.");
-                } else {
-                    console.warn("Error fetching bookings:", err);
-                }
+                console.warn("Error fetching bookings:", err);
             } finally {
                 setIsLoadingBookings(false);
             }
         };
 
         fetchBookings();
-    }, [selectedBricolerId, selectedDate]);
+    }, [selectedBricolerId]);
 
     const handleStartMatching = () => {
         if (!taskSize || !description.trim()) return;
@@ -1032,15 +1032,28 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
     };
 
 
+    const safeParseDate = (dateStr: string | null) => {
+        if (!dateStr) return new Date();
+        const [y, m, d] = dateStr.split('-').map(Number);
+        return new Date(y, m - 1, d);
+    };
+
     const getHeroFallbackSlots = (profile: any, date: Date) => {
-        if (profile?.routine) {
+        const routine = profile?.routine;
+        // If Bricoler has ANY routine configuration, use it as the fallback
+        if (routine && typeof routine === 'object' && Object.keys(routine).length > 0) {
             const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
-            const dayRoutine = profile.routine[dayNames[date.getDay()]];
+            const dayKey = dayNames[date.getDay()];
+            const dayRoutine = routine[dayKey];
+
             if (dayRoutine && dayRoutine.active) {
                 return [{ from: dayRoutine.from, to: dayRoutine.to }];
             }
+            // If they have a routine but this specific day is inactive or not defined, they are not available
             return [];
         }
+
+        // Default fallback if neither scheduled slots nor weekly routine is used
         return [{ from: '10:00', to: '17:00' }];
     };
 
@@ -1055,13 +1068,16 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
         return `${h.toString().padStart(2, '0')}:${mm.toString().padStart(2, '0')}`;
     };
 
-    const generateAvailableSlots = () => {
-        if (!selectedDate || !selectedPro || !activeTaskSize) return [];
+    const getAvailableSlotsForDate = (dateStr: string, profile: any) => {
+        if (!profile || !activeTaskSize) return [];
 
-        const blocksRaw = (selectedPro as any).availability?.[selectedDate] || (selectedPro as any).calendarSlots?.[selectedDate];
-        const blocks = Array.isArray(blocksRaw) && blocksRaw.length > 0
+        const blocksRaw = (profile as any).calendarSlots?.[dateStr] || (profile as any).availability?.[dateStr];
+        // If blocksRaw is an array (even empty), it means the provider explicitly set availability for this day
+        const blocks = Array.isArray(blocksRaw)
             ? blocksRaw
-            : getHeroFallbackSlots(selectedPro, new Date(selectedDate));
+            : getHeroFallbackSlots(profile, safeParseDate(dateStr));
+
+        if (blocks.length === 0) return [];
 
         const duration = activeTaskSize.duration || 1;
         const durationMin = duration * 60;
@@ -1076,7 +1092,6 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
         if (sortedBlocks.length > 0) {
             let currentBlock = { ...sortedBlocks[0] };
             for (let i = 1; i < sortedBlocks.length; i++) {
-                // If it's contiguous (18:00-19:00 then 19:00-20:00) or overlapping
                 if (sortedBlocks[i].from <= currentBlock.to) {
                     if (sortedBlocks[i].to > currentBlock.to) {
                         currentBlock.to = sortedBlocks[i].to;
@@ -1100,24 +1115,35 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
             }
         });
 
-        return slots;
+        // 4. Filter out booked slots for this date
+        return slots.filter(slot => !isSlotBookedOnDate(slot, dateStr));
     };
 
-    const isSlotBooked = (startTimeStr: string) => {
+    const generateAvailableSlots = () => {
+        if (!selectedDate || !selectedPro) return [];
+        return getAvailableSlotsForDate(selectedDate, selectedPro);
+    };
+
+    const isSlotBookedOnDate = (startTimeStr: string, dateStr: string) => {
         if (!activeTaskSize) return false;
         const start = timeToMinutes(startTimeStr);
         const end = start + (activeTaskSize.duration * 60);
 
         return bookedOrders.some(order => {
+            if (order.date !== dateStr) return false;
             if (!order.time || order.time === 'Flexible') return false;
-            // Need order duration. Assume 1h if not stored, but ideally store duration in orderData
+
             const oStart = timeToMinutes(order.time);
             const oDuration = (TASK_SIZES.find(s => s.id === order.taskSize)?.duration || 1) * 60;
             const oEnd = oStart + oDuration;
 
-            // Overlap check: (start1 < end2) && (start2 < end1)
             return (start < oEnd) && (oStart < end);
         });
+    };
+
+    const isSlotBooked = (startTimeStr: string) => {
+        if (!selectedDate) return false;
+        return isSlotBookedOnDate(startTimeStr, selectedDate);
     };
 
     const fetchBricolers = async () => {
@@ -1201,7 +1227,9 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                         areas: data.workAreas || data.areas || [],
                         isVerified: data.isVerified,
                         services: data.services || [],
-                        availability: data.calendarSlots || {},
+                        routine: data.routine || {},
+                        calendarSlots: data.calendarSlots || {},
+                        availability: data.calendarSlots || {}, // Legacy fallback
                         bio: data.bio,
                         glassCleaningEquipments: data.glassCleaningEquipments || [],
                         serviceEquipments: typeof matchingService === 'object' ? matchingService.equipments : [],
@@ -1997,46 +2025,45 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                                         </div>
 
                                         <div className="grid grid-cols-7 gap-y-3">
-                                            {(() => {
-                                                const days = [];
-                                                const today = new Date();
-                                                today.setHours(0, 0, 0, 0);
+                                            {useMemo(() => {
+                                                const daysArr = [];
+                                                const todayCal = new Date();
+                                                todayCal.setHours(0, 0, 0, 0);
 
-                                                // Start from current day or start of current week?
-                                                // Screenshot shows 22 (Sun) as first day. Let's find the start of current week.
-                                                const startOfWeek = new Date(today);
-                                                startOfWeek.setDate(today.getDate() - today.getDay());
+                                                const startOfWeekCal = new Date(todayCal);
+                                                startOfWeekCal.setDate(todayCal.getDate() - todayCal.getDay());
 
                                                 for (let i = 0; i < 21; i++) {
-                                                    const d = new Date(startOfWeek);
-                                                    d.setDate(startOfWeek.getDate() + i);
-                                                    const dateStr = d.toISOString().split('T')[0];
-                                                    const isSelected = selectedDate === dateStr;
-                                                    const isPast = d < today;
+                                                    const dCal = new Date(startOfWeekCal);
+                                                    dCal.setDate(startOfWeekCal.getDate() + i);
+                                                    const dateStrCal = dCal.toISOString().split('T')[0];
+                                                    const isSelectedCal = selectedDate === dateStrCal;
+                                                    const isPastCal = dCal < todayCal;
 
-                                                    // Availability check
-                                                    const isSelectable = !isPast;
+                                                    const slotsOnDay = getAvailableSlotsForDate(dateStrCal, selectedPro);
+                                                    const hasSlotsOnDay = slotsOnDay.length > 0;
+                                                    const isSelectableCal = !isPastCal && hasSlotsOnDay;
 
-                                                    days.push(
+                                                    daysArr.push(
                                                         <button
                                                             key={i}
-                                                            disabled={!isSelectable}
-                                                            onClick={() => setSelectedDate(dateStr)}
+                                                            disabled={!isSelectableCal && !isPastCal}
+                                                            onClick={() => setSelectedDate(dateStrCal)}
                                                             className={cn(
                                                                 "h-12 w-full flex items-center justify-center text-[16px] font-bold transition-all relative",
-                                                                isSelected ? "bg-[#00A082] text-white rounded-md z-10" :
-                                                                    isSelectable ? "text-neutral-900 hover:bg-neutral-50" : "text-neutral-300"
+                                                                isSelectedCal ? "bg-[#00A082] text-white rounded-md z-10" :
+                                                                    isSelectableCal ? "text-neutral-900 hover:bg-neutral-50" : "text-neutral-300 pointer-events-none opacity-40"
                                                             )}
                                                         >
-                                                            {d.getDate()}
-                                                            {isSelectable && !isSelected && (
+                                                            {dCal.getDate()}
+                                                            {hasSlotsOnDay && !isPastCal && !isSelectedCal && (
                                                                 <div className="absolute bottom-1 w-1 h-1 bg-[#00A082] rounded-full opacity-40" />
                                                             )}
                                                         </button>
                                                     );
                                                 }
-                                                return days;
-                                            })()}
+                                                return daysArr;
+                                            }, [selectedPro, selectedDate, activeTaskSize, bookedOrders, language])}
                                         </div>
                                     </div>
 
@@ -2120,7 +2147,7 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                                                 <span className="text-[17px] font-bold text-neutral-900">{t({ en: 'Request for:', fr: 'Demande pour :', ar: 'طلب لـ:' })}</span>
                                                 <span className="text-[17px] font-bold text-neutral-600">
                                                     {selectedDate && selectedTime ? (() => {
-                                                        const d = new Date(selectedDate);
+                                                        const d = safeParseDate(selectedDate);
                                                         const datePart = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
                                                         const [h, m] = selectedTime.split(':');
                                                         const hh = parseInt(h);
@@ -2175,7 +2202,7 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                                                 {t({ en: 'Your Bricol.ma Order', fr: 'Votre commande Bricol.ma', ar: 'طلبك من Bricol.ma' })}
                                             </h2>
                                             <div className="flex items-center justify-center md:justify-start gap-2 text-[18px] font-semibold text-black mt-1">
-                                                <span>{selectedDate ? new Date(selectedDate).toLocaleDateString(t({ en: 'en-US', fr: 'fr-FR', ar: 'ar-MA' }), { day: 'numeric', month: 'short' }) : t({ en: 'Flexible', fr: 'Flexible', ar: 'مرن' })}</span>
+                                                <span>{selectedDate ? safeParseDate(selectedDate).toLocaleDateString(t({ en: 'en-US', fr: 'fr-FR', ar: 'ar-MA' }), { day: 'numeric', month: 'short' }) : t({ en: 'Flexible', fr: 'Flexible', ar: 'مرن' })}</span>
                                                 <span className="text-neutral-200">|</span>
                                                 <span>{selectedTime}</span>
                                             </div>

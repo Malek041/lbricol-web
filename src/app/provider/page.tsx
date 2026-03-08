@@ -2398,7 +2398,6 @@ export default function ProviderPage() {
                             <div className="flex items-center gap-6 overflow-x-auto no-scrollbar">
                                 {[
                                     { id: 'activity', label: t({ en: 'Activity', fr: 'Activité' }) },
-                                    { id: 'calendar', label: t({ en: 'Calendar', fr: 'Calendrier' }) },
                                     { id: 'availability', label: t({ en: 'Availability', fr: 'Disponibilité' }) }
                                 ].map((tab) => (
                                     <button
@@ -3290,8 +3289,42 @@ export default function ProviderPage() {
 
                     {
                         activeNav === 'performance' && (
-                            <div className="h-full overflow-y-auto pb-10">
-                                <div className="space-y-6 max-w-4xl mx-auto">
+                            <div className="h-full overflow-y-auto pb-10 no-scrollbar">
+                                <div className="space-y-6 max-w-4xl mx-auto px-6 pt-10">
+                                    {/* Month Selection Header */}
+                                    <div className="flex items-center justify-between mb-8">
+                                        <div
+                                            className="relative inline-flex items-center gap-3 cursor-pointer group"
+                                            onClick={() => setShowMonthPicker(!showMonthPicker)}
+                                        >
+                                            <div className="w-12 h-12 bg-neutral-50 rounded-2xl flex items-center justify-center border border-neutral-100 group-hover:bg-neutral-100 transition-colors">
+                                                <Calendar size={20} className="text-black" />
+                                            </div>
+                                            <div>
+                                                <p className="text-[11px] font-black text-neutral-400 uppercase tracking-widest leading-none mb-1">{t({ en: 'Selected Period', fr: 'Période sélectionnée' })}</p>
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-[20px] font-black text-black leading-none tracking-tight" style={{ fontFamily: 'Uber Move, var(--font-sans)' }}>
+                                                        {monthLabel}
+                                                    </span>
+                                                    <motion.div animate={{ rotate: showMonthPicker ? 180 : 0 }} transition={{ duration: 0.2 }}>
+                                                        <ChevronDown size={18} className="text-black stroke-[2.5px]" />
+                                                    </motion.div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <button
+                                            onClick={() => setShowNotificationsPage(true)}
+                                            className="w-12 h-12 flex items-center justify-center text-black relative active:scale-90 transition-transform bg-neutral-50 rounded-2xl border border-neutral-100"
+                                        >
+                                            <Bell size={22} strokeWidth={2.5} />
+                                            {mobileNotificationsCount > 0 && (
+                                                <span className="absolute top-[10px] right-[10px] h-2.5 w-2.5 rounded-full bg-[#E51B24] border-2 border-white" />
+                                            )}
+                                        </button>
+                                    </div>
+
+                                    {/* Monthly Performance Summary */}
                                     {(() => {
                                         const COMMISSION_RATE = 0.15;
 
@@ -3339,7 +3372,63 @@ export default function ProviderPage() {
                                                         : t({ en: 'Starter', fr: 'Débutant' });
 
                                         return (
-                                            <div className="space-y-6 max-w-lg mx-auto pb-20">
+                                            <div className="space-y-6 max-w-lg mx-auto pb-20 relative">
+                                                {/* ── Month Picker Dropdown Overlay ── */}
+                                                <AnimatePresence key="performance-month-picker-presence">
+                                                    {showMonthPicker && (
+                                                        <motion.div
+                                                            key="performance-month-picker"
+                                                            initial={{ opacity: 0, y: -8, scale: 0.97 }}
+                                                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                                                            exit={{ opacity: 0, y: -8, scale: 0.97 }}
+                                                            transition={{ duration: 0.18 }}
+                                                            className="absolute inset-x-6 top-0 z-[100] bg-white rounded-2xl border border-neutral-200 overflow-hidden shadow-2xl"
+                                                        >
+                                                            {/* Year row */}
+                                                            <div className="flex items-center justify-between px-5 py-4 border-b border-neutral-100">
+                                                                <button
+                                                                    onClick={() => setSelectedMonthDt(new Date(selectedMonthDt.getFullYear() - 1, selectedMonthDt.getMonth(), 1))}
+                                                                    className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-neutral-100 transition-colors"
+                                                                >
+                                                                    <ChevronDown style={{ transform: 'rotate(90deg)' }} size={16} />
+                                                                </button>
+                                                                <span className="text-[16px] font-black text-neutral-900">{selectedMonthDt.getFullYear()}</span>
+                                                                <button
+                                                                    onClick={() => setSelectedMonthDt(new Date(selectedMonthDt.getFullYear() + 1, selectedMonthDt.getMonth(), 1))}
+                                                                    className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-neutral-100 transition-colors"
+                                                                >
+                                                                    <ChevronDown style={{ transform: 'rotate(-90deg)' }} size={16} />
+                                                                </button>
+                                                            </div>
+                                                            {/* Month grid */}
+                                                            <div className="grid grid-cols-4 gap-1 p-3">
+                                                                {['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'].map((m, idx) => {
+                                                                    const isSelectedMonth = idx === selectedMonthDt.getMonth();
+                                                                    const isNowMonth = idx === new Date().getMonth() && selectedMonthDt.getFullYear() === new Date().getFullYear();
+                                                                    return (
+                                                                        <button
+                                                                            key={m}
+                                                                            onClick={() => {
+                                                                                setSelectedMonthDt(new Date(selectedMonthDt.getFullYear(), idx, 1));
+                                                                                setShowMonthPicker(false);
+                                                                            }}
+                                                                            className={cn(
+                                                                                'h-10 rounded-xl text-[13px] font-bold transition-all',
+                                                                                isSelectedMonth
+                                                                                    ? 'bg-black text-white'
+                                                                                    : isNowMonth
+                                                                                        ? 'bg-neutral-100 text-black ring-1 ring-neutral-300'
+                                                                                        : 'text-neutral-700 hover:bg-neutral-100 transition-colors'
+                                                                            )}
+                                                                        >
+                                                                            {m}
+                                                                        </button>
+                                                                    );
+                                                                })}
+                                                            </div>
+                                                        </motion.div>
+                                                    )}
+                                                </AnimatePresence>
                                                 <AnimatePresence mode="wait">
                                                     {performanceDetail === 'none' ? (
                                                         <motion.div
@@ -3414,7 +3503,7 @@ export default function ProviderPage() {
                                                                             <Wallet size={24} />
                                                                         </div>
                                                                         <div>
-                                                                            <p className="text-[11px] font-black text-neutral-400 uppercase tracking-widest leading-none mb-1">{t({ en: 'Net Earnings', fr: 'Gains Nets' })}</p>
+                                                                            <p className="text-[11px] font-black text-neutral-400 uppercase tracking-widest leading-none mb-1">{t({ en: 'Your earnings', fr: 'Vos gains' })}</p>
                                                                             <div className="flex items-baseline gap-1">
                                                                                 <span className="text-[20px] font-black text-black">{netEarnings.toFixed(0)}</span>
                                                                                 <span className="text-[12px] font-black text-neutral-300 uppercase">{t({ en: 'MAD', fr: 'MAD' })}</span>
@@ -3519,37 +3608,39 @@ export default function ProviderPage() {
                                                                 {/* FINANCIAL DETAIL */}
                                                                 {performanceDetail === 'financial' && (
                                                                     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                                                                        <div className="grid grid-cols-2 gap-4">
-                                                                            <div className="p-6 rounded-[10px] border border-black flex flex-col justify-between h-[120px]">
-                                                                                <p className="text-[11px] font-black text-black uppercase tracking-widest">{t({ en: 'Total Gross', fr: 'Brut Total' })}</p>
-                                                                                <p className="text-[24px] font-black text-black leading-none">{(totalEarnings - ((userData as any)?.bricolerReferralBalance || 0)).toFixed(0)} <span className="text-[14px] text-neutral-300 uppercase">{t({ en: 'MAD', fr: 'MAD' })}</span></p>
+                                                                        {/* TOP CARD: YOUR EARNINGS */}
+                                                                        <div className="p-8 bg-neutral-900 rounded-[28px] relative overflow-hidden group shadow-xl">
+                                                                            <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -mr-16 -mt-16 blur-2xl" />
+                                                                            <div className="relative z-10">
+                                                                                <p className="text-white/60 text-[11px] font-black uppercase tracking-widest mb-2">{t({ en: 'Your earnings', fr: 'Vos gains' })}</p>
+                                                                                <div className="flex items-center gap-3">
+                                                                                    <p className="text-white text-[38px] font-[1000] tracking-tighter">{netEarnings.toFixed(0)} <span className="text-[18px] text-white/40 uppercase">{t({ en: 'MAD', fr: 'MAD' })}</span></p>
+                                                                                    <div className="px-2 py-1 bg-emerald-500/20 backdrop-blur-md rounded-lg text-[10px] font-black text-emerald-400 uppercase tracking-tighter">{t({ en: 'Net', fr: 'Net' })}</div>
+                                                                                </div>
+                                                                                <p className="text-white/70 text-[13px] font-bold mt-4 leading-relaxed">
+                                                                                    {t({
+                                                                                        en: 'This is the net amount after platform fees based on your completed missions for this period.',
+                                                                                        fr: 'C\'est le montant net après frais de plateforme basé sur vos missions terminées pour cette période.'
+                                                                                    })}
+                                                                                </p>
                                                                             </div>
-                                                                            <div className="p-6 rounded-[10px] border border-black flex flex-col justify-between h-[120px]">
-                                                                                <p className="text-[11px] font-black text-black uppercase tracking-widest">{t({ en: 'Referral Bonus', fr: 'Bonus Parrainage' })}</p>
-                                                                                <p className="text-[24px] font-black text-[#00A082] leading-none">+{(userData as any)?.bricolerReferralBalance || 0}% </p>
+                                                                        </div>
+
+                                                                        <div className="grid grid-cols-2 gap-4">
+                                                                            <div className="p-6 rounded-[24px] border border-neutral-100 bg-neutral-50/50 flex flex-col justify-between h-[120px]">
+                                                                                <p className="text-[11px] font-black text-neutral-400 uppercase tracking-widest">{t({ en: 'Total Gross', fr: 'Brut Total' })}</p>
+                                                                                <p className="text-[24px] font-black text-black leading-none">{(totalEarnings).toFixed(0)} <span className="text-[14px] text-neutral-300 uppercase">{t({ en: 'MAD', fr: 'MAD' })}</span></p>
+                                                                            </div>
+                                                                            <div className="p-6 rounded-[24px] border border-neutral-100 bg-neutral-50/50 flex flex-col justify-between h-[120px]">
+                                                                                <p className="text-[11px] font-black text-neutral-400 uppercase tracking-widest">{t({ en: 'Referral Bonus', fr: 'Bonus Parrainage' })}</p>
+                                                                                <p className="text-[24px] font-black text-[#00A082] leading-none">+{referralBonus} <span className="text-[14px] text-[#00A082]/30 uppercase">{t({ en: 'MAD', fr: 'MAD' })}</span></p>
                                                                             </div>
                                                                         </div>
 
                                                                         <div className="grid grid-cols-1 gap-4">
-                                                                            <div className="p-6 rounded-[10px] border border-black flex flex-col justify-between h-[100px]">
-                                                                                <p className="text-[11px] font-black text-black uppercase tracking-widest">{t({ en: 'Platform Fee', fr: 'Frais Plateforme' })}</p>
+                                                                            <div className="p-6 rounded-[24px] border border-neutral-100 bg-neutral-50/50 flex flex-col justify-between h-[100px]">
+                                                                                <p className="text-[11px] font-black text-neutral-400 uppercase tracking-widest">{t({ en: 'Platform Fee', fr: 'Frais Plateforme' })}</p>
                                                                                 <p className="text-[24px] font-black text-red-500 leading-none">-{lbricolCommission} <span className="text-[14px] text-red-200 uppercase">{t({ en: 'MAD', fr: 'MAD' })}</span></p>
-                                                                            </div>
-                                                                        </div>
-
-                                                                        <div className="p-8 bg-white rounded-[10px] border border-black relative overflow-hidden group ">
-                                                                            <div className="relative z-10">
-                                                                                <p className="text-black text-[11px] font-black uppercase tracking-widest mb-2">{t({ en: 'Personal Profits', fr: 'Bénéfices Personnels' })}</p>
-                                                                                <div className="flex items-center gap-3">
-                                                                                    <p className="text-black text-[32px] font-[900] tracking-tighter">{netEarnings.toFixed(0)} {t({ en: 'MAD', fr: 'MAD' })}</p>
-                                                                                    <div className="px-2 py-1 bg-white/20 backdrop-blur-md rounded-lg text-[10px] font-black text-white uppercase tracking-tighter">{t({ en: 'Live', fr: 'En direct' })}</div>
-                                                                                </div>
-                                                                                <p className="text-black text-[13px] font-medium mt-4 leading-relaxed">
-                                                                                    {t({
-                                                                                        en: 'This is the net amount after platform fees based on your completed missions.',
-                                                                                        fr: 'C\'est le montant net après frais de plateforme basé sur vos missions terminées.'
-                                                                                    })}
-                                                                                </p>
                                                                             </div>
                                                                         </div>
 

@@ -6,6 +6,7 @@ import { Package, X, Star } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
 import { useTheme } from '@/context/ThemeContext';
 import { fluidMobilePx, useIsMobileViewport, useMobileTier, useViewportWidth } from '@/lib/mobileOnly';
+import { getServiceById, getSubServiceName } from '@/config/services_config';
 
 export interface OrderDetails {
     id?: string;
@@ -76,7 +77,7 @@ interface OrderCardProps {
 }
 
 const OrderCard = ({ order, onCancel }: OrderCardProps) => {
-    const { t } = useLanguage();
+    const { t, language } = useLanguage();
     const { theme } = useTheme();
     const isMobile = useIsMobileViewport(968);
     const mobileTier = useMobileTier();
@@ -94,6 +95,15 @@ const OrderCard = ({ order, onCancel }: OrderCardProps) => {
         textMuted: theme === 'light' ? '#545454' : '#A0A0A0',
         border: theme === 'light' ? '#E2E2E2' : '#2D2D2D',
         card: theme === 'light' ? '#FFFFFF' : '#111111'
+    };
+
+    const formatServiceName = (name: string) => {
+        if (!name) return '';
+        return name
+            .replace(/[_-]/g, ' ')
+            .split(' ')
+            .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+            .join(' ');
     };
 
     return (
@@ -130,8 +140,22 @@ const OrderCard = ({ order, onCancel }: OrderCardProps) => {
 
             {/* Left Content Area */}
             <div style={{ flex: 1, position: 'relative', zIndex: 10 }}>
-                <h3 style={{ fontSize: isMobile ? titleSize : '1.5rem', fontWeight: 900, color: c.text, marginBottom: '0.4rem', letterSpacing: '-0.03em', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', fontFamily: 'Uber Move, var(--font-sans)' }}>
-                    {order.service}{order.subServiceDisplayName && <span style={{ opacity: 0.6, fontWeight: 600, fontSize: '0.9em', marginLeft: '2px' }}> › {order.subServiceDisplayName}</span>}
+                <h3 style={{ fontSize: isMobile ? titleSize : '1.5rem', fontWeight: 900, color: c.text, marginBottom: '0.4rem', letterSpacing: '-0.03em', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', fontFamily: 'Uber Move, var(--font-sans)', direction: language === 'ar' ? 'rtl' : 'ltr' }}>
+                    {(() => {
+                        const config = getServiceById(order.serviceId || order.service);
+                        const stableBase = config ? config.name : formatServiceName(order.service);
+                        const translatedBase = t({ en: stableBase, fr: stableBase });
+
+                        const subDisplay = getSubServiceName(order.serviceId || order.service, order.subService || '') || order.subServiceDisplayName;
+                        const translatedSub = subDisplay ? t({ en: subDisplay, fr: subDisplay }) : '';
+
+                        return (
+                            <>
+                                {translatedBase}
+                                {translatedSub && <span style={{ opacity: 0.6, fontWeight: 600, fontSize: '0.9em', marginLeft: '2px' }}> › {translatedSub}</span>}
+                            </>
+                        );
+                    })()}
                     {order.rating && (
                         <div style={{ display: 'flex', alignItems: 'center', gap: '4px', backgroundColor: '#FFC24422', padding: '4px 10px', borderRadius: '100px', fontSize: badgeSize, color: '#FFC244' }}>
                             <Star size={14} fill="#FFC244" />
@@ -139,20 +163,23 @@ const OrderCard = ({ order, onCancel }: OrderCardProps) => {
                         </div>
                     )}
                 </h3>
-                <p style={{ fontSize: isMobile ? bodySize : '15px', color: c.textMuted, fontWeight: 500, lineHeight: 1.6, maxWidth: '440px' }}>
-                    {order.bricolerName ? (
-                        t({
-                            en: `${order.bricolerName} is scheduled for your task at ${order.location} on ${order.date} ${order.time ? 'at ' + order.time : ''}.`,
-                            fr: `${order.bricolerName} est prévu pour votre tâche à ${order.location} le ${order.date} ${order.time ? 'à ' + order.time : ''}.`,
-                            ar: `${order.bricolerName} مبرمج لمهمتك في ${order.location} يوم ${order.date} ${order.time ? 'على الساعة ' + order.time : ''}.`
-                        })
-                    ) : (
-                        t({
-                            en: `Your request at ${order.location} for ${order.date} ${order.time ? 'at ' + order.time : ''} is being processed.`,
-                            fr: `Votre demande à ${order.location} pour ${order.date} ${order.time ? 'à ' + order.time : ''} est en cours de traitement.`,
-                            ar: `طلبك في ${order.location} ليوم ${order.date} ${order.time ? 'على الساعة ' + order.time : ''} قيد المعالجة.`
-                        })
-                    )}
+                <p style={{ fontSize: isMobile ? bodySize : '15px', color: c.textMuted, fontWeight: 500, lineHeight: 1.6, maxWidth: '440px', direction: language === 'ar' ? 'rtl' : 'ltr' }}>
+                    {(() => {
+                        const loc = order.city ? t({ en: order.city, fr: order.city }) : (order.location ? t({ en: order.location, fr: order.location }) : '');
+                        return order.bricolerName ? (
+                            t({
+                                en: `${order.bricolerName} is scheduled for your task at ${loc} on ${order.date} ${order.time ? 'at ' + order.time : ''}.`,
+                                fr: `${order.bricolerName} est prévu pour votre tâche à ${loc} le ${order.date} ${order.time ? 'à ' + order.time : ''}.`,
+                                ar: `${order.bricolerName} مبرمج لمهمتك في ${loc} يوم ${order.date} ${order.time ? 'على الساعة ' + order.time : ''}.`
+                            })
+                        ) : (
+                            t({
+                                en: `Your request at ${loc} for ${order.date} ${order.time ? 'at ' + order.time : ''} is being processed.`,
+                                fr: `Votre demande à ${loc} pour ${order.date} ${order.time ? 'à ' + order.time : ''} est en cours de traitement.`,
+                                ar: `طلبك في ${loc} ليوم ${order.date} ${order.time ? 'على الساعة ' + order.time : ''} قيد المعالجة.`
+                            })
+                        );
+                    })()}
                     <br />
                     <span style={{ fontWeight: 800, color: c.text }}>
                         {t({ en: 'Offer', fr: 'Offre', ar: 'عرض' })}: {order.price} MAD

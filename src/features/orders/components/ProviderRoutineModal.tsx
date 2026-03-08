@@ -59,12 +59,36 @@ export default function ProviderRoutineModal({
         }));
     };
 
-    const handleSave = () => {
-        setUserData((prev: any) => ({
-            ...prev,
-            routine
-        }));
-        onClose();
+    const [isSaving, setIsSaving] = useState(false);
+
+    const handleSave = async () => {
+        setIsSaving(true);
+        try {
+            const providerId = userData?.uid || userData?.id;
+            if (!providerId) {
+                console.error("No provider ID found to save routine.");
+                onClose();
+                return;
+            }
+
+            // Update local state for immediate feedback
+            setUserData((prev: any) => ({
+                ...prev,
+                routine
+            }));
+
+            // Persist to Firestore
+            const { doc, updateDoc } = await import('firebase/firestore');
+            const { db } = await import('@/lib/firebase');
+            const providerRef = doc(db, 'bricolers', providerId);
+            await updateDoc(providerRef, { routine });
+
+            onClose();
+        } catch (error) {
+            console.error("Error saving weekly routine:", error);
+        } finally {
+            setIsSaving(false);
+        }
     };
 
     const getDayTranslation = (day: string) => {
@@ -180,9 +204,13 @@ export default function ProviderRoutineModal({
                     <div className="bg-white p-6 border-t border-[#F0F0F0] absolute bottom-0 left-0 right-0">
                         <button
                             onClick={handleSave}
-                            className="w-full py-4 bg-[#00A082] text-white rounded-2xl text-[18px] font-black shadow-lg shadow-[#00A082]/20 active:scale-95 transition-transform"
+                            disabled={isSaving}
+                            className={cn(
+                                "w-full py-4 bg-[#00A082] text-white rounded-2xl text-[18px] font-black shadow-lg shadow-[#00A082]/20 active:scale-95 transition-transform",
+                                isSaving && "opacity-70 cursor-not-allowed"
+                            )}
                         >
-                            {t({ en: 'Save Routine', fr: 'Enregistrer la routine', ar: 'حفظ الروتين' })}
+                            {isSaving ? t({ en: 'Saving...', fr: 'Enregistrement...', ar: 'جاري الحفظ...' }) : t({ en: 'Save Routine', fr: 'Enregistrer la routine', ar: 'حفظ الروتين' })}
                         </button>
                     </div>
                 </motion.div>
