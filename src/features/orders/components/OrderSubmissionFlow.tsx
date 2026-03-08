@@ -607,7 +607,7 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
     continueDraft,
     mode
 }) => {
-    const { t } = useLanguage();
+    const { t, language } = useLanguage();
     const { showToast } = useToast();
     const [step, setStep] = useState(mode === 'edit' ? 3 : (continueDraft?.step || 1));
     const [subStep1, setSubStep1] = useState<'location' | 'size' | 'description' | 'languages'>('location');
@@ -1314,6 +1314,46 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
         if (!areaSearch.trim()) return all;
         return all.filter(a => a.toLowerCase().includes(areaSearch.toLowerCase()));
     }, [tempCity, areaSearch]);
+
+    const renderedCalendarDays = useMemo(() => {
+        const daysArr = [];
+        const todayCal = new Date();
+        todayCal.setHours(0, 0, 0, 0);
+
+        const startOfWeekCal = new Date(todayCal);
+        startOfWeekCal.setDate(todayCal.getDate() - todayCal.getDay());
+
+        for (let i = 0; i < 21; i++) {
+            const dCal = new Date(startOfWeekCal);
+            dCal.setDate(startOfWeekCal.getDate() + i);
+            const dateStrCal = dCal.toISOString().split('T')[0];
+            const isSelectedCal = selectedDate === dateStrCal;
+            const isPastCal = dCal < todayCal;
+
+            const slotsOnDay = getAvailableSlotsForDate(dateStrCal, selectedPro);
+            const hasSlotsOnDay = slotsOnDay.length > 0;
+            const isSelectableCal = !isPastCal && hasSlotsOnDay;
+
+            daysArr.push(
+                <button
+                    key={i}
+                    disabled={!isSelectableCal && !isPastCal}
+                    onClick={() => setSelectedDate(dateStrCal)}
+                    className={cn(
+                        "h-12 w-full flex items-center justify-center text-[16px] font-bold transition-all relative",
+                        isSelectedCal ? "bg-[#00A082] text-white rounded-md z-10" :
+                            isSelectableCal ? "text-neutral-900 hover:bg-neutral-50" : "text-neutral-300 pointer-events-none opacity-40"
+                    )}
+                >
+                    {dCal.getDate()}
+                    {hasSlotsOnDay && !isPastCal && !isSelectedCal && (
+                        <div className="absolute bottom-1 w-1 h-1 bg-[#00A082] rounded-full opacity-40" />
+                    )}
+                </button>
+            );
+        }
+        return daysArr;
+    }, [selectedPro, selectedDate, activeTaskSize, bookedOrders, language]);
 
     const handleLocationSave = (city?: string, area?: string) => {
         const finalCity = city !== undefined ? city : tempCity;
@@ -2025,45 +2065,7 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                                         </div>
 
                                         <div className="grid grid-cols-7 gap-y-3">
-                                            {useMemo(() => {
-                                                const daysArr = [];
-                                                const todayCal = new Date();
-                                                todayCal.setHours(0, 0, 0, 0);
-
-                                                const startOfWeekCal = new Date(todayCal);
-                                                startOfWeekCal.setDate(todayCal.getDate() - todayCal.getDay());
-
-                                                for (let i = 0; i < 21; i++) {
-                                                    const dCal = new Date(startOfWeekCal);
-                                                    dCal.setDate(startOfWeekCal.getDate() + i);
-                                                    const dateStrCal = dCal.toISOString().split('T')[0];
-                                                    const isSelectedCal = selectedDate === dateStrCal;
-                                                    const isPastCal = dCal < todayCal;
-
-                                                    const slotsOnDay = getAvailableSlotsForDate(dateStrCal, selectedPro);
-                                                    const hasSlotsOnDay = slotsOnDay.length > 0;
-                                                    const isSelectableCal = !isPastCal && hasSlotsOnDay;
-
-                                                    daysArr.push(
-                                                        <button
-                                                            key={i}
-                                                            disabled={!isSelectableCal && !isPastCal}
-                                                            onClick={() => setSelectedDate(dateStrCal)}
-                                                            className={cn(
-                                                                "h-12 w-full flex items-center justify-center text-[16px] font-bold transition-all relative",
-                                                                isSelectedCal ? "bg-[#00A082] text-white rounded-md z-10" :
-                                                                    isSelectableCal ? "text-neutral-900 hover:bg-neutral-50" : "text-neutral-300 pointer-events-none opacity-40"
-                                                            )}
-                                                        >
-                                                            {dCal.getDate()}
-                                                            {hasSlotsOnDay && !isPastCal && !isSelectedCal && (
-                                                                <div className="absolute bottom-1 w-1 h-1 bg-[#00A082] rounded-full opacity-40" />
-                                                            )}
-                                                        </button>
-                                                    );
-                                                }
-                                                return daysArr;
-                                            }, [selectedPro, selectedDate, activeTaskSize, bookedOrders, language])}
+                                            {renderedCalendarDays}
                                         </div>
                                     </div>
 
