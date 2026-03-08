@@ -652,6 +652,8 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                         email: bricolerData.email,
                         photoURL: bricolerData.profilePhotoURL || bricolerData.avatar || bricolerData.photoURL || "",
                         whatsappNumber: bricolerData.whatsappNumber,
+                        isBricoler: true,
+                        userType: 'bricoler',
                         createdAt: cSnap.exists() ? cSnap.data().createdAt : serverTimestamp(),
                     }, { merge: true })
                 ]),
@@ -929,6 +931,7 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
             await setDoc(bricolerRef, updateData, { merge: true });
             await setDoc(doc(db, 'clients', user.uid), {
                 isBricoler: true,
+                userType: 'bricoler',
                 photoURL: finalProfilePhotoUrl || updateData.photoURL || ""
             }, { merge: true });
 

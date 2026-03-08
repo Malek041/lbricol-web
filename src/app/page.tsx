@@ -1749,6 +1749,7 @@ const Home = () => {
           name: effectiveUser.displayName,
           email: effectiveUser.email,
           whatsappNumber: effectiveWhatsApp,
+          userType: 'client',
           createdAt: serverTimestamp()
         }, { merge: true });
 
@@ -2271,6 +2272,7 @@ const Home = () => {
         name: effectiveUser.displayName,
         email: effectiveUser.email,
         whatsappNumber: effectiveWhatsApp,
+        userType: 'client',
         createdAt: serverTimestamp()
       }, { merge: true });
 

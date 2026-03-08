@@ -56,7 +56,12 @@ export const useAdminKpiOverview = (): UseAdminKpiOverviewResult => {
     });
 
     const unsubClients = onSnapshot(collection(db, 'clients'), (snapshot) => {
-      setClientsCount(snapshot.size);
+      // Only count real clients, not bricolers who also have a client doc
+      const realClients = snapshot.docs.filter(d => {
+        const data = d.data();
+        return !data.isBricoler && data.role !== 'bricoler';
+      });
+      setClientsCount(realClients.length);
     });
 
     return () => {
