@@ -51,6 +51,7 @@ interface CategoryDetail {
     equipments: string[];
     noEquipment: boolean;
     portfolioImages: string[];
+    spokenLanguages?: string[];
 }
 
 const ALL_SERVICES = getAllServices().filter(s => !['driver', 'car_rental', 'courier', 'airport', 'transport_intercity'].includes(s.id));
@@ -216,6 +217,7 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                 portfolioImages: normalizeImageList(
                     initialCategory.portfolioImages || initialCategory.portfolio || initialCategory.images || initialCategory.portfolio_images
                 ),
+                spokenLanguages: initialCategory.spokenLanguages || [],
             }
         } : {}
     );
@@ -350,6 +352,7 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                                 equipments: typeof s === 'object' ? (s.equipments || []) : [],
                                 noEquipment: typeof s === 'object' ? (s.noEquipment || false) : false,
                                 portfolioImages: serviceImages,
+                                spokenLanguages: typeof s === 'object' ? (s.spokenLanguages || []) : [],
                             };
                         } else if (serviceImages.length > 0) {
                             entries[catId].portfolioImages = Array.from(new Set([...entries[catId].portfolioImages, ...serviceImages]));
@@ -390,12 +393,16 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
     // ── Validation ───────────────────────────────────────────────────────────
     const currentEntryValid = (entry: CategoryDetail | undefined): boolean => {
         if (!entry) return false;
-        return (
+        const baseValid = (
             entry.experience !== '' &&
             (entry.noEquipment || entry.equipments.length > 0) &&
             entry.hourlyRate > 0 &&
             entry.pitch.trim().length >= MIN_PITCH_CHARS
         );
+        if (entry.categoryId === 'tour_guide') {
+            return baseValid && (entry.spokenLanguages?.length || 0) > 0;
+        }
+        return baseValid;
     };
 
     const migrateShadowJobs = async (targetUid: string, metaId: string) => {
@@ -543,6 +550,7 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                     equipments: e?.noEquipment ? [] : (e?.equipments || []),
                     noEquipment: e?.noEquipment || false,
                     portfolioImages: normalizeImageList(e?.portfolioImages || []),
+                    spokenLanguages: e?.spokenLanguages || [],
                 };
             });
             const hasPendingTourGuideUpload = !!(tourGuideAuthorizationFile && selectedSubServices.some(id => id.includes('tour_guide')));
@@ -656,12 +664,26 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                         const cityRef = doc(db, 'city_services', selectedCity);
                         const citySnap = await getDoc(cityRef);
                         const svcIds = [...new Set(finalCategoryEntries.map(e => e.categoryId))];
+                        const subSvcIds = selectedSubServices || [];
+
                         if (!citySnap.exists()) {
-                            await setDoc(cityRef, { active_services: svcIds, work_areas: selectedAreas, total_pros: 1, lastUpdated: serverTimestamp() });
+                            await setDoc(cityRef, {
+                                active_services: svcIds,
+                                active_sub_services: subSvcIds,
+                                work_areas: selectedAreas,
+                                total_pros: 1,
+                                lastUpdated: serverTimestamp()
+                            });
                         } else {
                             const data = citySnap.data();
                             const updated = [...new Set([...(data.active_services || []), ...svcIds])];
-                            await updateDoc(cityRef, { active_services: updated, total_pros: (data.total_pros || 0) + 1, lastUpdated: serverTimestamp() });
+                            const updatedSubs = [...new Set([...(data.active_sub_services || []), ...subSvcIds])];
+                            await updateDoc(cityRef, {
+                                active_services: updated,
+                                active_sub_services: updatedSubs,
+                                total_pros: (data.total_pros || 0) + 1,
+                                lastUpdated: serverTimestamp()
+                            });
                         }
                     })(),
                     new Promise((_, reject) => setTimeout(() => reject(new Error("CITY_UPDATE_TIMEOUT")), 12000))
@@ -749,6 +771,7 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                     equipments: e?.noEquipment ? [] : (e?.equipments || []),
                     noEquipment: e?.noEquipment || false,
                     portfolioImages: normalizeImageList(e?.portfolioImages || []),
+                    spokenLanguages: e?.spokenLanguages || [],
                 };
             });
 
@@ -862,6 +885,7 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                     equipments: e?.noEquipment ? [] : (e?.equipments || []),
                     noEquipment: e?.noEquipment || false,
                     portfolioImages: normalizeImageList(e?.portfolioImages || []),
+                    spokenLanguages: e?.spokenLanguages || [],
                 };
             });
 
@@ -975,6 +999,7 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                         equipments: [],
                         noEquipment: NO_EQUIPMENT_SERVICES.includes(catId),
                         portfolioImages: [],
+                        spokenLanguages: [],
                     }
                 }));
             }
@@ -1761,6 +1786,48 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                                                             ar: 'رفع المستندات غير متاح حاليًا. يمكنك إكمال عملية التحقق لاحقًا.'
                                                         })}
                                                     </p>
+                                                </div>
+                                            </motion.div>
+                                        )}
+
+                                        {/* 1.7 — Tour Guide: Spoken Languages */}
+                                        {currentCatId === 'tour_guide' && currentCatEntry.experience !== '' && (
+                                            <motion.div variants={itemVariants} initial="hidden" animate="show" className="space-y-4">
+                                                <label className="text-[20px] font-bold text-neutral-900 block">
+                                                    {t({
+                                                        en: 'Which languages do you speak?',
+                                                        fr: 'Quelles langues parlez-vous ?',
+                                                        ar: 'ما هي اللغات التي تتحدثها؟'
+                                                    })}
+                                                </label>
+                                                <div className="grid grid-cols-2 gap-3">
+                                                    {[
+                                                        { id: 'arabic', label: { en: 'Arabic', fr: 'Arabe', ar: 'العربية' } },
+                                                        { id: 'english', label: { en: 'English', fr: 'Anglais', ar: 'الإنجليزية' } },
+                                                        { id: 'french', label: { en: 'French', fr: 'Français', ar: 'الفرنسية' } },
+                                                        { id: 'spanish', label: { en: 'Spanish', fr: 'Espagnol', ar: 'الإسبانية' } },
+                                                    ].map(lang => {
+                                                        const isSelected = currentCatEntry.spokenLanguages?.includes(lang.id);
+                                                        return (
+                                                            <button
+                                                                key={lang.id}
+                                                                onClick={() => {
+                                                                    const prev = currentCatEntry.spokenLanguages || [];
+                                                                    const next = isSelected ? prev.filter(l => l !== lang.id) : [...prev, lang.id];
+                                                                    updateCatEntry(currentCatId, 'spokenLanguages', next);
+                                                                }}
+                                                                className={cn(
+                                                                    'px-3 py-4 rounded-[12px] border-2 text-[14px] font-bold transition-all text-left flex items-center justify-between',
+                                                                    isSelected
+                                                                        ? 'bg-[#E6F6F2] text-[#00A082] border-[#00A082]'
+                                                                        : 'bg-white text-neutral-800 border-neutral-100 hover:border-neutral-200'
+                                                                )}
+                                                            >
+                                                                {t(lang.label)}
+                                                                {isSelected && <Check size={16} strokeWidth={3} />}
+                                                            </button>
+                                                        );
+                                                    })}
                                                 </div>
                                             </motion.div>
                                         )}

@@ -354,13 +354,17 @@ export default function HeroesView({ orders }: HeroesViewProps) {
                                     <div className="flex items-center gap-1.5 mt-1">
                                         {(() => {
                                             const stats = liveHeroStats[hero.id] || { rating: hero.rating, jobsCount: hero.jobsCount };
+                                            const hasStats = (stats.rating && stats.rating > 0) || (stats.jobsCount && stats.jobsCount > 0);
                                             return (
                                                 <>
-                                                    <div className="flex items-center gap-1 text-[13px] font-bold px-2 py-0.5 rounded-md bg-[#FFC244]/10 text-[#D89B1A]">
-                                                        <Star size={12} className="fill-current" />
-                                                        {(stats.rating || 0).toFixed(1)}
+                                                    <div className={cn(
+                                                        "flex items-center gap-1 text-[13px] font-bold px-2 py-0.5 rounded-md",
+                                                        hasStats ? "bg-[#FFC244]/10 text-[#D89B1A]" : "bg-[#7C73E8]/10 text-[#7C73E8]"
+                                                    )}>
+                                                        {hasStats && <Star size={12} className="fill-current" />}
+                                                        {hasStats ? (stats.rating || 0).toFixed(1) : t({ en: 'NEW', fr: 'NOUVEAU', ar: 'جديد' })}
                                                     </div>
-                                                    <span className="text-[#6B6B6B] text-[13px] font-medium">• {stats.jobsCount || 0} {t({ en: 'jobs', fr: 'missions', ar: 'مهام' })}</span>
+                                                    {hasStats && <span className="text-[#6B6B6B] text-[13px] font-medium">• {stats.jobsCount || 0} {t({ en: 'jobs', fr: 'missions', ar: 'مهام' })}</span>}
                                                 </>
                                             );
                                         })()}

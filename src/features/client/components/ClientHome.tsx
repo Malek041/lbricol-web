@@ -854,13 +854,30 @@ const ClientHome: React.FC<ClientHomeProps> = ({
                     <div className="px-4 pb-6 flex flex-wrap gap-2.5">
                         {active.subServices
                             .filter(subObj => {
-                                const subName = subObj.en;
                                 if (!availableSubServiceIds || availableSubServiceIds.length === 0) return true;
                                 const config = getServiceById(active.id);
                                 if (!config) return true;
-                                const subConfig = config.subServices.find(ss => ss.name === subName);
-                                if (!subConfig) return true; // Keep it if we can't find a mapping (fallback)
-                                return availableSubServiceIds.includes(subConfig.id);
+
+                                // Try to find the sub-service config by matching the English name from the local catalogue
+                                const subConfig = config.subServices.find(ss =>
+                                    ss.name === subObj.en ||
+                                    ss.id === subObj.en
+                                );
+
+                                if (!subConfig) return true; // Fallback: if we can't find a config mapping, show it anyway
+
+                                // Check if the ID, English name, French name, or Arabic name exists in the available list
+                                // This makes the filter robust against data registered in different languages or formats.
+                                return (
+                                    availableSubServiceIds.includes(subConfig.id) ||
+                                    availableSubServiceIds.includes(subConfig.name) ||
+                                    availableSubServiceIds.includes(subObj.en) ||
+                                    availableSubServiceIds.includes(subObj.fr) ||
+                                    (subObj.ar && availableSubServiceIds.includes(subObj.ar)) ||
+                                    // Also check for common variants (slugified, lowercase etc)
+                                    availableSubServiceIds.includes(subConfig.id.replace(/_/g, ' ')) ||
+                                    availableSubServiceIds.includes(subConfig.id.toLowerCase())
+                                );
                             })
                             .map((sub, idx) => (
                                 <motion.button

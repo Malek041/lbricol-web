@@ -49,6 +49,7 @@ interface Bricoler {
     reviews?: any[];
     portfolio?: string[];
     whatsappNumber?: string;
+    servesArea?: boolean;
 }
 
 export interface DraftOrder {
@@ -67,7 +68,8 @@ export interface DraftOrder {
     clientNeedImages?: string[];
     frequency?: 'once' | 'daily' | 'weekly' | 'biweekly' | 'monthly';
     step: number;
-    subStep1: 'location' | 'size' | 'description';
+    subStep1: 'location' | 'size' | 'description' | 'languages';
+    selectedLanguages?: string[];
     updatedAt: number;
 }
 
@@ -80,6 +82,7 @@ interface OrderSubmissionFlowProps {
     initialArea?: string | null;
     onSubmit: (data: any) => void;
     continueDraft?: DraftOrder | null;
+    mode?: 'create' | 'edit';
 }
 
 // ── Constants ──────────────────────────────────────────────────────────────
@@ -280,7 +283,7 @@ const BricolerCard = ({ bricoler, onSelect, onOpenProfile, isSelected, serviceNa
                         <h4 className="text-[17px] font-bold text-neutral-900 truncate tracking-tight">{bricoler.displayName}</h4>
                         <div className="flex items-center gap-1 flex-shrink-0 ml-auto pl-2">
                             <span className="text-[16px] font-semibold text-neutral-900 leading-none whitespace-nowrap">
-                                MAD {bricoler.hourlyRate?.toFixed(2) || '105.93'}
+                                MAD {bricoler.hourlyRate?.toFixed(2) || '0.00'}
                             </span>
                             <span className="text-[12px] text-neutral-400 font-medium whitespace-nowrap">/hr</span>
                             <div className="w-4 h-4 rounded-full bg-[#00A082]/10 flex-shrink-0 flex items-center justify-center ml-0.5">
@@ -300,11 +303,11 @@ const BricolerCard = ({ bricoler, onSelect, onOpenProfile, isSelected, serviceNa
                     </div>
 
                     <div className="flex items-center gap-1 mt-2">
-                        <Star size={12} className="text-neutral-900" fill="currentColor" />
+                        {effectiveJobs > 0 && <Star size={12} className="text-neutral-900" fill="currentColor" />}
                         <span className="text-[14px] font-bold text-neutral-900">
-                            {effectiveJobs > 0 ? effectiveRating.toFixed(1) : t({ en: 'NEW', fr: 'NOUVEAU' })}
+                            {effectiveJobs > 0 ? effectiveRating.toFixed(1) : t({ en: 'NEW', fr: 'NOUVEAU', ar: 'جديد' })}
                         </span>
-                        <span className="text-[12px] font-medium text-neutral-400">({effectiveJobs} {t({ en: 'reviews', fr: 'avis', ar: 'تقييمات' })})</span>
+                        {effectiveJobs > 0 && <span className="text-[12px] font-medium text-neutral-400">({effectiveJobs} {t({ en: 'reviews', fr: 'avis', ar: 'تقييمات' })})</span>}
                     </div>
 
                     <div className="flex flex-col gap-0.5 mt-2">
@@ -380,7 +383,7 @@ const BricolerProfileModal = ({ bricoler, isOpen, onClose, onSelect, isSelected,
                             <ChevronLeft size={24} className="text-neutral-900" />
                         </button>
                         <h3 className="min-w-0 px-1 text-center text-[16px] font-bold leading-tight text-neutral-900 sm:text-[19px]">
-                            {t({ en: `${bricoler.displayName}'s Profile`, fr: `Profil de ${bricoler.displayName}`, ar: `ملف ${bricoler.displayName}` })}
+                            {t({ en: bricoler.displayName + "'s Profile", fr: "Profil de " + bricoler.displayName, ar: "ملف " + bricoler.displayName })}
                         </h3>
                         <div className="flex items-center gap-2">
                         </div>
@@ -405,7 +408,7 @@ const BricolerProfileModal = ({ bricoler, isOpen, onClose, onSelect, isSelected,
                                         <span className="text-[15px] font-medium text-neutral-400">{effectiveJobs} {t({ en: 'Missions', fr: 'Missions', ar: 'مهمة' })}</span>
                                         {isFiltered && (
                                             <span className="rounded-full bg-[#00A082]/10 px-2 py-0.5 text-[11px] font-bold text-[#00A082]">
-                                                {t({ en: `for ${serviceName}`, fr: `en ${serviceName}`, ar: `في ${serviceName}` })}
+                                                {t({ en: "for " + serviceName, fr: "en " + serviceName, ar: "في " + serviceName })}
                                             </span>
                                         )}
 
@@ -523,7 +526,7 @@ const BricolerProfileModal = ({ bricoler, isOpen, onClose, onSelect, isSelected,
                                     <h4 className="text-[18px] font-bold text-neutral-900">{t({ en: 'Reviews', fr: 'Avis', ar: 'التقييمات' })}</h4>
                                     {isFiltered && (
                                         <span className="text-[12px] font-black text-[#00A082] bg-[#00A082]/8 px-3 py-1 rounded-full border border-[#00A082]/20">
-                                            {t({ en: serviceName, fr: serviceName, ar: serviceName })} · {reviewsToShow.length}
+                                            {t({ en: serviceName, fr: serviceName, ar: serviceName }) + " · " + reviewsToShow.length}
                                         </span>
                                     )}
                                 </div>
@@ -599,12 +602,14 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
     initialCity,
     initialArea,
     onSubmit,
-    continueDraft
+    continueDraft,
+    mode
 }) => {
     const { t } = useLanguage();
     const { showToast } = useToast();
-    const [step, setStep] = useState(1);
-    const [subStep1, setSubStep1] = useState<'location' | 'size' | 'description'>('location');
+    const [step, setStep] = useState(mode === 'edit' ? 3 : (continueDraft?.step || 1));
+    const [subStep1, setSubStep1] = useState<'location' | 'size' | 'description' | 'languages'>('location');
+    const [selectedLanguages, setSelectedLanguages] = useState<string[]>(continueDraft?.selectedLanguages || []);
     const [descriptionDrafts, setDescriptionDrafts] = useState<string[]>([]);
     const [taskSize, setTaskSize] = useState<string | null>(null);
     const [description, setDescription] = useState('');
@@ -747,7 +752,16 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                     options: [
                         { id: 'small', duration: 1, label: { en: '1-2 Items / Picture Frames', fr: '1-2 Articles / Cadres', ar: '1-2 قطع / إطارات صور' }, estTime: { en: 'Est: 1 hr', fr: 'Est: 1h', ar: 'حوالي ساعة' }, desc: { en: 'Hanging pictures, mirrors, or small shelves.', fr: 'Accrocher des tableaux, miroirs ou petites étagères.', ar: 'تعليق صور، مرايا أو رفوف صغيرة.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/SmallTask.webp' },
                         { id: 'medium', duration: 2, label: { en: 'TV / Multiple Shelves', fr: 'TV / Plusieurs Étagères', ar: 'تلفاز / عدة رفوف' }, estTime: { en: 'Est: 2 hrs', fr: 'Est: 2h', ar: 'حوالي ساعتين' }, desc: { en: 'Mounting a TV or several shelving units.', fr: 'Fixation d\'une télévision ou de plusieurs meubles.', ar: 'تركيب تلفاز أو عدة رفوف.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/MediumSize.webp' },
-                        { id: 'large', duration: 4, label: { en: 'Complex / Heavy / Multiple Rooms', fr: 'Complexe / Lourd / Plusieurs Pièces', ar: 'معقد / ثقيل / عدة غرف' }, estTime: { en: 'Est: 4+ hrs', fr: 'Est: 4h+', ar: 'أكثر من 4 ساعات' }, desc: { en: 'Heavy mounting or covering multiple rooms.', fr: 'Fixation lourde ou couvrant plusieurs pièces.', ar: 'تركيب ثقيل أو يغطي عدة غرف.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/BigTask.webp' },
+                        { id: 'large', duration: 4, label: { en: 'Heavy Items / Custom Mount', fr: 'Articles lourds / Fixation sur mesure', ar: 'قطع ثقيلة / تركيب مخصص' }, estTime: { en: 'Est: 4+ hrs', fr: 'Est: 4h+', ar: 'أكثر من 4 ساعات' }, desc: { en: 'Oversized art, wall cabinets, or specialized mounting.', fr: 'Art surdimensionné, armoires murales ou fixations spécialisées.', ar: 'لوحات كبيرة، خزائن جدارية، أو تركيبات خاصة.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/BigTask.webp' },
+                    ]
+                };
+            case 'tour_guide':
+                return {
+                    title: t({ en: "How many people are in the group?", fr: "Combien de personnes dans le groupe ?", ar: "كم عدد الأشخاص في المجموعة؟" }),
+                    options: [
+                        { id: 'small', duration: 3, label: { en: 'Solo / Couple (1-2 persons)', fr: 'Solo / Couple (1-2 personnes)', ar: 'فرد / زوجين (1-2 أشخاص)' }, estTime: { en: 'Est: 3 hrs', fr: 'Est: 3h', ar: 'حوالي 3 ساعات' }, desc: { en: 'Personal tour for individual or couple.', fr: 'Visite personnalisée pour une personne ou un couple.', ar: 'جولة شخصية لفرد أو زوجين.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/SmallTask.webp' },
+                        { id: 'medium', duration: 4, label: { en: 'Small Group (3-5 persons)', fr: 'Petit groupe (3-5 personnes)', ar: 'مجموعة صغيرة (3-5 أشخاص)' }, estTime: { en: 'Est: 4 hrs', fr: 'Est: 4h', ar: 'حوالي 4 ساعات' }, desc: { en: 'Standard group tour for family or friends.', fr: 'Visite de groupe standard pour famille ou amis.', ar: 'جولة عادية للعائلة أو الأصدقاء.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/MediumSize.webp' },
+                        { id: 'large', duration: 6, label: { en: 'Large Group (6+ persons)', fr: 'Grand groupe (6+ personnes)', ar: 'مجموعة كبيرة (+6 أشخاص)' }, estTime: { en: 'Est: 6+ hrs', fr: 'Est: 6h+', ar: 'أكثر من 6 ساعات' }, desc: { en: 'Guided tour for larger groups or organizations.', fr: 'Visite guidée pour groupes plus larges.', ar: 'جولة إرشادية للمجموعات الكبيرة.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/BigTask.webp' },
                     ]
                 };
             case 'painting':
@@ -816,7 +830,7 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
         if (isOpen) {
             // Initialize stable draft ID once per open session
             if (!draftIdRef.current) {
-                draftIdRef.current = continueDraft?.id || `draft_${Date.now()}_${service}`;
+                draftIdRef.current = continueDraft?.id || "draft_" + Date.now() + "_" + service;
             }
 
             if (continueDraft) {
@@ -870,7 +884,7 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
         if (step === 1 && subStep1 === 'location' && !taskSize && !description) return;
 
         const draftData: DraftOrder = {
-            id: draftIdRef.current || continueDraft?.id || `draft_${Date.now()}_${service}`,
+            id: draftIdRef.current || continueDraft?.id || "draft_" + Date.now() + "_" + service,
             service,
             subService: subService || undefined,
             city: currentCity,
@@ -1086,15 +1100,20 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                 // 0. Only active bricolers
                 if (data.isActive !== true) return;
 
-                // 1. Lenient Area Matching
+                // 1. Area Matching
+                let servesArea = true;
                 if (currentArea) {
                     const normalize = (s: string) => s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, "");
                     const targetAreaNorm = normalize(currentArea);
                     const proAreas = [...(data.workAreas || []), ...(data.areas || [])].map(a => normalize(String(a)));
 
                     // Check if any pro area contains the target area or vice versa
-                    const servesArea = proAreas.some(pa => pa.includes(targetAreaNorm) || targetAreaNorm.includes(pa));
-                    if (!servesArea) return;
+                    servesArea = proAreas.some(pa => pa.includes(targetAreaNorm) || targetAreaNorm.includes(pa)) || proAreas.includes('all') || proAreas.includes('toute_la_ville');
+
+                    // Small cities like Essaouira show all pros in city. 
+                    // Large cities remain strict to ensure proximity for the pro.
+                    const isStrictCity = ['Casablanca', 'Marrakech'].includes(baseCity);
+                    if (!servesArea && isStrictCity) return;
                 }
 
                 // 2. Direct Service Category Matching
@@ -1114,13 +1133,17 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                         if (!ssId) return false;
                         return ssId.toLowerCase() === subService.toLowerCase() || (Array.isArray(s.subServices) && s.subServices.includes(subService));
                     }
+                    // 2.1 Language Matching for Tour Guide
+                    if (service === 'tour_guide' && selectedLanguages.length > 0) {
+                        const bricolerLangs = s.spokenLanguages || (typeof s === 'object' ? s.languages : []) || [];
+                        const hasLangMatch = selectedLanguages.some(l => bricolerLangs.includes(l));
+                        if (!hasLangMatch) return false;
+                    }
+
                     return true;
                 });
 
                 if (matchingService) {
-                    // 3. Availability Check - Optional for display (could show 'Check Availability' later)
-                    // We remove the strict return here to show experts even if they haven't set their schedule yet
-
                     listMap.set(docSnap.id, {
                         id: docSnap.id,
                         displayName: data.displayName || 'Bricoler',
@@ -1144,12 +1167,31 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                         errandsTransport: data.errandsTransport,
                         movingTransport: data.movingTransport,
                         whatsappNumber: data.whatsappNumber,
+                        servesArea: servesArea,
                     });
                 }
             });
-            const fetched = Array.from(listMap.values());
-            setBricolers(fetched);
-            if (fetched.length > 0) {
+
+            // 4. Sorting & Prioritization
+            const sorted = Array.from(listMap.values()).sort((a, b) => {
+                // Priority 1: Area Coverage
+                if (a.servesArea && !b.servesArea) return -1;
+                if (!a.servesArea && b.servesArea) return 1;
+
+                // Priority 2: Rating & Expertise (Score)
+                const aRating = a.rating || 0;
+                const bRating = b.rating || 0;
+                const aJobs = a.completedJobs || 0;
+                const bJobs = b.completedJobs || 0;
+
+                const aScore = aRating * Math.log10(aJobs + 2);
+                const bScore = bRating * Math.log10(bJobs + 2);
+
+                return bScore - aScore;
+            });
+
+            setBricolers(sorted);
+            if (sorted.length > 0) {
                 playMatchSound();
             }
         } catch (err) {
@@ -1160,10 +1202,39 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
         }
     };
 
-    const sortedBricolers = [...bricolers].sort((a, b) => {
-        if (sortBy === 'rating') return (b.rating || 0) - (a.rating || 0);
-        return 0; // 'all' is default unsorted or naturally sorted
-    });
+    const sortedBricolers = useMemo(() => {
+        return [...bricolers].sort((a, b) => {
+            const calculateScore = (p: Bricoler) => {
+                let score = 0;
+
+                // 1. Area Match Priority (Big boost: +60 pts)
+                // This makes them appear higher but can be overcome by someone much better rated
+                if (p.servesArea) score += 60;
+
+                // 2. Rating Score (Rating * 20 = up to 100 pts)
+                // We use a baseline of 4.0 if no rating yet to give new pros a chance
+                const effectiveRating = (p.rating && p.rating > 0) ? p.rating : 4.0;
+                score += effectiveRating * 20;
+
+                // 3. Experience/Volume (up to 30 pts)
+                score += Math.min(p.completedJobs || 0, 30);
+
+                // 4. Trust/Verification (+15 pts)
+                if (p.isVerified) score += 15;
+
+                return score;
+            };
+
+            const scoreA = calculateScore(a);
+            const scoreB = calculateScore(b);
+
+            // Primary sort by weighted score
+            if (scoreA !== scoreB) return scoreB - scoreA;
+
+            // Fallback to pure rating if scores tie
+            return (b.rating || 0) - (a.rating || 0);
+        });
+    }, [bricolers]);
 
     const filteredAreas = useMemo(() => {
         const all = tempCity ? MOROCCAN_CITIES_AREAS[tempCity] || [] : [];
@@ -1484,10 +1555,10 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                                                     errands: 'homerepairVector.png',
                                                 };
                                                 const iconName = activeService ? serviceIconMap[activeService.id] || 'homerepairVector.png' : 'homerepairVector.png';
-                                                return <img src={`/Images/Service Category vectors/${iconName}`} className="w-4 h-4 object-contain" />;
+                                                return <img src={"/Images/Service Category vectors/" + iconName} className="w-4 h-4 object-contain" />;
                                             })()}
                                             <span className="text-[13px] font-semibold text-neutral-900 whitespace-nowrap opacity-90">
-                                                {t({ en: getServiceById(service)?.name || '', fr: getServiceById(service)?.name || '' })} {subService ? `› ${t({ en: getSubServiceName(service, subService) || '', fr: getSubServiceName(service, subService) || '' })}` : ''}
+                                                {t({ en: getServiceById(service)?.name || '', fr: getServiceById(service)?.name || '' })} {subService ? "› " + t({ en: getSubServiceName(service, subService) || '', fr: getSubServiceName(service, subService) || '' }) : ''}
                                             </span>
                                         </div>
                                     </motion.div>
@@ -1524,7 +1595,7 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                                                         <div className="flex min-w-0 flex-col">
                                                             <p className="text-[12px] font-medium text-neutral-500 leading-none mb-1">{t({ en: 'Location', fr: 'Lieu d\'intervention', ar: 'الموقع' })}</p>
                                                             <p className="text-[16px] font-semibold leading-tight text-[#2D2D2D]">
-                                                                {currentCity}{currentArea ? `, ${currentArea}` : ''}
+                                                                {currentCity}{currentArea ? ", " + currentArea : ""}
                                                             </p>
                                                         </div>
                                                     </div>
@@ -1535,6 +1606,64 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                                                         {t({ en: 'Edit', fr: 'Modifier', ar: 'تعديل' })}
                                                     </button>
                                                 </motion.div>
+                                            </motion.div>
+                                        )}
+
+                                        {subStep1 === 'languages' && (
+                                            <motion.div
+                                                key="sub-lang"
+                                                initial={{ opacity: 0, x: 20 }}
+                                                animate={{ opacity: 1, x: 0 }}
+                                                exit={{ opacity: 0, x: -20 }}
+                                                transition={{ duration: 0.25, ease: "easeOut" }}
+                                                className="space-y-4 pt-20"
+                                            >
+                                                <motion.h4
+                                                    initial={{ opacity: 0, y: 10 }}
+                                                    animate={{ opacity: 1, y: 0 }}
+                                                    transition={{ delay: 0.05 }}
+                                                    className="text-[25px] font-bold text-black ml-1"
+                                                >
+                                                    {t({ en: "Preferred Language", fr: "Langue préférée", ar: "اللغة المفضلـة" })}
+                                                </motion.h4>
+                                                <p className="text-neutral-500 text-[15px] font-medium ml-1">
+                                                    {t({
+                                                        en: "Select the language you want your tour guide to speak.",
+                                                        fr: "Sélectionnez la langue que vous souhaitez que votre guide parle.",
+                                                        ar: "اختر اللغة التي تريد أن يتحدث بها مرشدك السياحي."
+                                                    })}
+                                                </p>
+                                                <div className="flex flex-col gap-3">
+                                                    {[
+                                                        { id: 'arabic', label: { en: 'Arabic', fr: 'Arabe', ar: 'العربية' } },
+                                                        { id: 'english', label: { en: 'English', fr: 'Anglais', ar: 'الإنجليزية' } },
+                                                        { id: 'french', label: { en: 'French', fr: 'Français', ar: 'الفرنسية' } },
+                                                        { id: 'spanish', label: { en: 'Spanish', fr: 'Espagnol', ar: 'الإسبانية' } },
+                                                    ].map((lang, idx) => {
+                                                        const isSelected = selectedLanguages.includes(lang.id);
+                                                        return (
+                                                            <motion.button
+                                                                key={lang.id}
+                                                                initial={{ opacity: 0, y: 10 }}
+                                                                animate={{ opacity: 1, y: 0 }}
+                                                                transition={{ delay: 0.1 + idx * 0.05 }}
+                                                                onClick={() => {
+                                                                    const next = isSelected
+                                                                        ? selectedLanguages.filter(l => l !== lang.id)
+                                                                        : [...selectedLanguages, lang.id];
+                                                                    setSelectedLanguages(next);
+                                                                }}
+                                                                className={cn(
+                                                                    "flex items-center justify-between p-6 rounded-[20px] transition-all",
+                                                                    isSelected ? "bg-[#E6F6F2] border-2 border-[#00A082]" : "bg-neutral-50/40 border border-neutral-100 hover:border-neutral-200"
+                                                                )}
+                                                            >
+                                                                <span className="text-[18px] font-bold text-neutral-900">{t(lang.label)}</span>
+                                                                {isSelected && <div className="w-6 h-6 rounded-full bg-[#00A082] flex items-center justify-center"><Check size={14} className="text-white" strokeWidth={4} /></div>}
+                                                            </motion.button>
+                                                        );
+                                                    })}
+                                                </div>
                                             </motion.div>
                                         )}
 
@@ -1712,10 +1841,10 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                                                     errands: 'homerepairVector.png',
                                                 };
                                                 const iconName = activeService ? serviceIconMap[activeService.id] || 'homerepairVector.png' : 'homerepairVector.png';
-                                                return <img src={`/Images/Service Category vectors/${iconName}`} className="w-5 h-5 object-contain" />;
+                                                return <img src={"/Images/Service Category vectors/" + iconName} className="w-5 h-5 object-contain" />;
                                             })()}
                                             <span className="text-[13px] font-black text-neutral-900 whitespace-nowrap opacity-80">
-                                                {getServiceById(service)?.name} {subService ? `> ${getSubServiceName(service, subService)}` : ''}
+                                                {getServiceById(service)?.name} {subService ? "> " + getSubServiceName(service, subService) : ''}
                                             </span>
                                         </div>
 
@@ -1809,7 +1938,7 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                                                 const d = new Date();
                                                 const currentMonth = d.toLocaleDateString('en-US', { month: 'long' });
                                                 const nextMonth = new Date(d.getFullYear(), d.getMonth() + 1).toLocaleDateString('en-US', { month: 'long' });
-                                                return `${currentMonth} — ${nextMonth} ${d.getFullYear()}`;
+                                                return `${currentMonth} — ${nextMonth} ${d.getFullYear()} `;
                                             })()}
                                         </h4>
                                     </div>
@@ -1882,7 +2011,7 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                                                 // Filter out past times if selected day is today (with 15 minute buffer)
                                                 if (selectedDate) {
                                                     const now = new Date();
-                                                    const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+                                                    const todayStr = now.getFullYear() + "-" + String(now.getMonth() + 1).padStart(2, '0') + "-" + String(now.getDate()).padStart(2, '0');
                                                     const isSelectionToday = selectedDate === todayStr;
 
                                                     if (isSelectionToday) {
@@ -1952,13 +2081,13 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                                                         const hh = parseInt(h);
                                                         const period = hh >= 12 ? 'pm' : 'am';
                                                         const displayH = hh > 12 ? hh - 12 : (hh === 0 ? 12 : hh);
-                                                        return `${datePart}, ${displayH}:${m}${period}`;
+                                                        return `${datePart}, ${displayH}:${m}${period} `;
                                                     })() : '—'}
                                                 </span>
                                             </div>
                                             {activeTaskSize && activeTaskSize.duration >= 2 && (
                                                 <p className="text-[15px] font-black text-[#00A082]">
-                                                    {t({ en: `This Tasker requires ${activeTaskSize.duration} hour min`, fr: `Ce pro requiert un minimum de ${activeTaskSize.duration} heures`, ar: `هذا المحترف يتطلب ${activeTaskSize.duration} ساعات كحد أدنى` })}
+                                                    {t({ en: "This Tasker requires " + activeTaskSize.duration + " hour min", fr: "Ce pro requiert un minimum de " + activeTaskSize.duration + " heures", ar: "هذا المحترف يتطلب " + activeTaskSize.duration + " ساعات كحد أدنى" })}
                                                 </p>
                                             )}
                                         </div>
@@ -2201,7 +2330,7 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                                                     </div>
                                                     <div className="flex flex-col min-w-0">
                                                         <span className="text-[11px] font-bold text-neutral-400 uppercase tracking-wider">{t({ en: 'Location', fr: 'Lieu', ar: 'الموقع' })}</span>
-                                                        <span className="text-[15px] font-black leading-tight text-black">{t({ en: currentCity, fr: currentCity })}{currentArea ? `, ${t({ en: currentArea, fr: currentArea })}` : ''}</span>
+                                                        <span className="text-[15px] font-black leading-tight text-black">{t({ en: currentCity, fr: currentCity })}{currentArea ? ", " + t({ en: currentArea, fr: currentArea }) : ''}</span>
                                                     </div>
                                                 </div>
                                                 {/* Task Size/Duration */}
@@ -2279,8 +2408,14 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                                                         <h4 className="text-[17px] font-black text-black">{selectedPro.displayName}</h4>
                                                         <div className="mt-1 flex flex-wrap items-center gap-2">
                                                             <div className="flex items-center gap-1">
-                                                                <Star size={12} fill="#FFC244" className="text-[#FFC244]" />
-                                                                <span className="text-[13px] font-bold text-neutral-600">{(selectedPro.rating || 4.5).toFixed(1)}</span>
+                                                                {(selectedPro.rating || (selectedPro.reviews?.length || 0) > 0) ? (
+                                                                    <>
+                                                                        <Star size={12} fill="#FFC244" className="text-[#FFC244]" />
+                                                                        <span className="text-[13px] font-bold text-neutral-600">{(selectedPro.rating || 0).toFixed(1)}</span>
+                                                                    </>
+                                                                ) : (
+                                                                    <span className="text-[13px] font-bold text-[#7C73E8] bg-[#7C73E8]/5 px-2 py-0.5 rounded-md uppercase tracking-wide">{t({ en: 'NEW', fr: 'NOUVEAU', ar: 'جديد' })}</span>
+                                                                )}
                                                             </div>
                                                             <span className="text-neutral-300">•</span>
                                                             <span className="text-[13px] font-medium text-neutral-500">{t({ en: 'Trusted Pro', fr: 'Pro de confiance', ar: 'محترف موثوق' })}</span>
@@ -2349,7 +2484,7 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                                                             </div>
                                                             <div className="flex flex-col">
                                                                 <span className="text-[15px] font-black text-[#00A082]">{t({ en: 'Referral Credit', fr: 'Crédit Parrainage', ar: 'رصيد الإحالة' })}</span>
-                                                                <span className="text-[13px] font-medium text-[#00A082]/80">{t({ en: `You have ${referralDiscountAvailable} MAD available`, fr: `Vous avez ${referralDiscountAvailable} MAD disponibles`, ar: `لديك ${referralDiscountAvailable} درهم متوفرة` })}</span>
+                                                                <span className="text-[13px] font-medium text-[#00A082]/80">{t({ en: "You have " + referralDiscountAvailable + " MAD available", fr: "Vous avez " + referralDiscountAvailable + " MAD disponibles", ar: "لديك " + referralDiscountAvailable + " درهم متوفرة" })}</span>
                                                             </div>
                                                         </div>
                                                         <button
@@ -2380,7 +2515,7 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                     <AnimatePresence mode="wait">
                         {!isMatchingAnimation && !showSuccessAnimation && (
                             <motion.div
-                                key={`${step}-${subStep1}-${isSelectingLocation}`}
+                                key={`${step} -${subStep1} -${isSelectingLocation} `}
                                 initial={{ opacity: 0, y: 20 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 exit={{ opacity: 0, y: 10 }}
@@ -2407,7 +2542,7 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                                                     initial={{ opacity: 0, x: 20 }}
                                                     animate={{ opacity: 1, x: 0 }}
                                                     exit={{ opacity: 0, x: -20 }}
-                                                    onClick={() => setSubStep1('size')}
+                                                    onClick={() => setSubStep1(service === 'tour_guide' ? 'languages' : 'size')}
                                                     disabled={!currentCity || !currentArea}
                                                     className={cn(
                                                         "w-full h-14 rounded-full text-[19px] font-semibold active:scale-95 transition-all text-white",
@@ -2416,6 +2551,33 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                                                 >
                                                     {t({ en: 'Next', fr: 'Suivant', ar: 'التالي' })}
                                                 </motion.button>
+                                            )}
+
+                                            {subStep1 === 'languages' && (
+                                                <motion.div
+                                                    key="btn-lang"
+                                                    initial={{ opacity: 0, x: 20 }}
+                                                    animate={{ opacity: 1, x: 0 }}
+                                                    exit={{ opacity: 0, x: -20 }}
+                                                    className="flex gap-2 w-full"
+                                                >
+                                                    <button
+                                                        onClick={() => setSubStep1('location')}
+                                                        className="w-14 h-14 rounded-full bg-neutral-100 flex items-center justify-center shrink-0 text-neutral-600 active:scale-95 transition-transform"
+                                                    >
+                                                        <ChevronLeft strokeWidth={2.5} size={22} />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => setSubStep1('size')}
+                                                        disabled={selectedLanguages.length === 0}
+                                                        className={cn(
+                                                            "flex-1 h-14 rounded-full text-[19px] font-semibold active:scale-95 transition-all text-white",
+                                                            selectedLanguages.length > 0 ? "bg-[#00A082]" : "bg-neutral-100 text-neutral-400 cursor-not-allowed"
+                                                        )}
+                                                    >
+                                                        {t({ en: 'Next', fr: 'Suivant', ar: 'التالي' })}
+                                                    </button>
+                                                </motion.div>
                                             )}
 
                                             {subStep1 === 'size' && (
@@ -2427,7 +2589,7 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                                                     className="flex gap-2 w-full"
                                                 >
                                                     <button
-                                                        onClick={() => setSubStep1('location')}
+                                                        onClick={() => setSubStep1(service === 'tour_guide' ? 'languages' : 'location')}
                                                         className="w-14 h-14 rounded-full bg-neutral-100 flex items-center justify-center shrink-0 text-neutral-600 active:scale-95 transition-transform"
                                                     >
                                                         <ChevronLeft strokeWidth={2.5} size={22} />

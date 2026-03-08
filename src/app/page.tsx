@@ -559,8 +559,10 @@ const Home = () => {
         const activeSubIds = new Set<string>();
         const subFreq: Record<string, number> = {};
 
-        // Populate from pros nearby
-        localPros.forEach(p => {
+        // Populate categories and sub-services available in the city
+        // We look at ALL pros in the city (pros) regardless of the specific area selected (localPros)
+        // for the purpose of showing what's available in the catalogue.
+        pros.forEach(p => {
           if (Array.isArray(p.services)) {
             p.services.forEach((s: any) => {
               const id = typeof s === 'string' ? s : (s.categoryId || s.serviceId);
@@ -574,6 +576,9 @@ const Home = () => {
             });
           }
         });
+
+        // However, we can still use localPros for area-specific logic if needed in the future.
+        // For now, availability and trending are city-wide for better visibility.
 
         const trendingIds = Object.entries(subFreq)
           .sort((a, b) => b[1] - a[1]) // Sort by count descending
