@@ -2688,11 +2688,12 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                                                         {(() => {
                                                             const hourlyRate = selectedPro?.hourlyRate || 75;
                                                             const opt = serviceConfig.options.find(o => o.id === taskSize);
-                                                            const baseCalc = hourlyRate * (opt?.duration || 1) * ((opt as any)?.coefficient || 1);
+                                                            const duration = opt?.duration || 1;
+                                                            const baseCalc = hourlyRate * duration * ((opt as any)?.coefficient || 1);
 
                                                             let finalBase = baseCalc;
                                                             if (service === 'errands') {
-                                                                const mult = (opt?.duration || 1) >= 1.33 ? 4.5 : ((opt?.duration || 1) >= 0.8 ? 2.5 : 1.5);
+                                                                const mult = duration >= 1.33 ? 4.5 : (duration >= 0.8 ? 2.5 : 1.5);
                                                                 finalBase = hourlyRate * mult;
                                                             } else {
                                                                 const sizeIndex = serviceConfig.options.findIndex(s => s.id === taskSize);
@@ -2723,11 +2724,12 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                                                         {(() => {
                                                             const hourlyRate = selectedPro?.hourlyRate || 75;
                                                             const opt = serviceConfig.options.find(o => o.id === taskSize);
-                                                            const baseCalc = hourlyRate * (opt?.duration || 1) * ((opt as any)?.coefficient || 1);
+                                                            const duration = opt?.duration || 1;
+                                                            const baseCalc = hourlyRate * duration * ((opt as any)?.coefficient || 1);
 
                                                             let finalBase = baseCalc;
                                                             if (service === 'errands') {
-                                                                const mult = (opt?.duration || 1) >= 1.33 ? 4.5 : ((opt?.duration || 1) >= 0.8 ? 2.5 : 1.5);
+                                                                const mult = duration >= 1.33 ? 4.5 : (duration >= 0.8 ? 2.5 : 1.5);
                                                                 finalBase = hourlyRate * mult;
                                                             } else if (service !== 'private_driver') {
                                                                 const sizeIndex = serviceConfig.options.findIndex(s => s.id === taskSize);
@@ -2775,7 +2777,6 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                         </AnimatePresence>
                     </div >
 
-                    {/* Persistent Footer */}
                     {/* Persistent Footer */}
                     <AnimatePresence mode="wait">
                         {!isMatchingAnimation && !showSuccessAnimation && (
