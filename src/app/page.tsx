@@ -1629,8 +1629,10 @@ const Home = () => {
         if (userSnap.exists() && userSnap.data().referralDiscountAvailable) {
           const disc = userSnap.data().referralDiscountAvailable;
           // In handleProgramOrder, we always apply the discount if available
-          finalPrice = Math.max(0, finalPrice - disc);
-          await updateDoc(userRef, { referralDiscountAvailable: 0 });
+          finalPrice = Math.max(0, finalPrice * 0.85);
+          await updateDoc(userRef, { referralDiscountAvailable: increment(-15) });
+          // Mark as issued so delivery logic doesn't double-award
+          await updateDoc(userRef, { referralRewardIssued: true });
 
           const referrerId = userSnap.data().referredBy;
           if (referrerId) {
@@ -1639,9 +1641,9 @@ const Home = () => {
             if (referrerSnap.exists()) {
               const rData = referrerSnap.data();
               if (rData.isProvider) {
-                await updateDoc(referrerRef, { bricolerReferralBalance: increment(20) });
+                await updateDoc(referrerRef, { bricolerReferralBalance: increment(15) });
               } else {
-                await updateDoc(referrerRef, { referralBalance: increment(20) });
+                await updateDoc(referrerRef, { referralBalance: increment(15) });
               }
             }
           }
@@ -1651,7 +1653,7 @@ const Home = () => {
           showToast({
             variant: 'success',
             title: t({ en: "Referral applied!", fr: "Parrainage appliqué !" }),
-            description: t({ en: "20 MAD discount applied to your order.", fr: "Réduction de 20 MAD appliquée à votre commande." })
+            description: t({ en: "15% discount applied to your order.", fr: "Réduction de 15% appliquée à votre commande." })
           });
         }
       } catch (e) {
@@ -2123,9 +2125,9 @@ const Home = () => {
         if (userSnap.exists() && userSnap.data().referralDiscountAvailable) {
           usedDiscount = userSnap.data().referralDiscountAvailable;
           if (!data.referralApplied) {
-            finalTotalPrice = Math.max(0, finalTotalPrice - usedDiscount);
+            finalTotalPrice = Math.max(0, finalTotalPrice * 0.85);
           }
-          await updateDoc(userRef, { referralDiscountAvailable: 0 });
+          await updateDoc(userRef, { referralDiscountAvailable: increment(-15) });
 
           const referrerId = userSnap.data().referredBy;
           if (referrerId) {
@@ -2134,9 +2136,9 @@ const Home = () => {
             if (referrerSnap.exists()) {
               const rData = referrerSnap.data();
               if (rData.isProvider) {
-                await updateDoc(referrerRef, { bricolerReferralBalance: increment(20) });
+                await updateDoc(referrerRef, { bricolerReferralBalance: increment(15) });
               } else {
-                await updateDoc(referrerRef, { referralBalance: increment(20) });
+                await updateDoc(referrerRef, { referralBalance: increment(15) });
               }
             }
           }

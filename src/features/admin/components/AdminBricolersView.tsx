@@ -454,7 +454,7 @@ const BricolerProfileBottomSheet = ({ bricoler, isOpen, onClose, t }: any) => {
             </div>
 
             {/* Content */}
-            <div className="flex-1 overflow-y-auto px-6 py-6 pb-12 no-scrollbar">
+            <div className="flex-1 min-h-0 overflow-y-auto px-6 py-6 pb-12">
               {activeTab === 'profile' ? (
                 <div className="space-y-6">
                   {/* Basic Info */}

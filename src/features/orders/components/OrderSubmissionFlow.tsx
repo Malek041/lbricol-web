@@ -679,7 +679,8 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
     const [isLoadingBookings, setIsLoadingBookings] = useState(false);
 
     const serviceConfig = useMemo(() => {
-        switch (service) {
+        const sKey = service?.toLowerCase().replace(/ /g, '_');
+        switch (sKey) {
             case 'cleaning':
                 return {
                     title: t({ en: "How large is the space?", fr: "Quelle est la taille de l'espace ?", ar: "ما هي مساحة المكان؟" }),
@@ -1343,8 +1344,8 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                 duration,
                 basePrice,
                 serviceFee,
-                totalPrice: applyReferralDiscount && referralDiscountAvailable > 0 ? Math.max(0, totalPrice - referralDiscountAvailable) : totalPrice,
-                price: applyReferralDiscount && referralDiscountAvailable > 0 ? Math.max(0, totalPrice - referralDiscountAvailable) : totalPrice,
+                totalPrice: applyReferralDiscount && referralDiscountAvailable > 0 ? Math.max(0, totalPrice * 0.85) : totalPrice,
+                price: applyReferralDiscount && referralDiscountAvailable > 0 ? Math.max(0, totalPrice * 0.85) : totalPrice,
                 referralApplied: applyReferralDiscount && referralDiscountAvailable > 0,
                 images: [],
                 clientNeedImages: [],
@@ -2483,8 +2484,8 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                                                                 <span className="text-[18px]">🎁</span>
                                                             </div>
                                                             <div className="flex flex-col">
-                                                                <span className="text-[15px] font-black text-[#00A082]">{t({ en: 'Referral Credit', fr: 'Crédit Parrainage', ar: 'رصيد الإحالة' })}</span>
-                                                                <span className="text-[13px] font-medium text-[#00A082]/80">{t({ en: "You have " + referralDiscountAvailable + " MAD available", fr: "Vous avez " + referralDiscountAvailable + " MAD disponibles", ar: "لديك " + referralDiscountAvailable + " درهم متوفرة" })}</span>
+                                                                <span className="text-[15px] font-black text-[#00A082]">{t({ en: 'Referral Discount', fr: 'Remise Parrainage', ar: 'خصم الإحالة' })}</span>
+                                                                <span className="text-[13px] font-medium text-[#00A082]/80">{t({ en: "15% discount will be applied", fr: "Une remise de 15% sera appliquée", ar: "سيتم تطبيق خصم 15%" })}</span>
                                                             </div>
                                                         </div>
                                                         <button
@@ -2690,7 +2691,7 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                                                         strikeCalc = Math.round(baseCalc * 1.15);
                                                     }
 
-                                                    finalCalc = Math.max(0, finalCalc - (applyReferralDiscount ? referralDiscountAvailable : 0));
+                                                    finalCalc = Math.max(0, applyReferralDiscount && referralDiscountAvailable > 0 ? finalCalc * 0.85 : finalCalc);
                                                     const hasDiscount = (service === 'errands') || (strikeCalc > finalCalc) || (applyReferralDiscount && referralDiscountAvailable > 0);
 
                                                     return (

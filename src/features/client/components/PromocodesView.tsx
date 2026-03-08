@@ -103,10 +103,10 @@ const PromocodesView: React.FC<PromocodesViewProps> = ({
             // 3. Mark current user as referred
             await setDoc(currentUserRef, {
                 referredBy: referrerId,
-                referralDiscountAvailable: 20 // Grant 20 MAD discount
+                referralDiscountAvailable: 15 // Grant 15% discount (stored as the number 15 for consistency)
             }, { merge: true });
 
-            setMessage({ text: t({ en: 'Promo code applied! You get 20 MAD off your first order.', fr: 'Code promo appliqué ! Vous obtenez 20 MAD de réduction sur votre première commande.', ar: 'تم تطبيق الرمز الترويجي! ستحصل على خصم بقيمة 20 درهم على طلبك الأول.' }), type: 'success' });
+            setMessage({ text: t({ en: 'Promo code applied! You get 15% off your first order.', fr: 'Code promo appliqué ! Vous obtenez 15% de réduction sur votre première commande.', ar: 'تم تطبيق الرمز الترويجي! ستحصل على خصم بقيمة 15% على طلبك الأول.' }), type: 'success' });
             setCode('');
 
         } catch (error) {
@@ -147,7 +147,7 @@ const PromocodesView: React.FC<PromocodesViewProps> = ({
                             {t({ en: 'Client Credit', fr: 'Crédit Client', ar: 'رصيد العميل' })}
                         </p>
                         <h2 className="text-[36px] font-black leading-tight">
-                            {balance.toFixed(2)} MAD
+                            {balance > 0 ? '15%' : '0%'}
                         </h2>
                         <p className="text-white/90 text-[13px] mt-4 max-w-[85%]">
                             {balance > 0

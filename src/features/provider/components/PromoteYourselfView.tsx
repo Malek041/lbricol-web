@@ -76,10 +76,10 @@ const PromoteYourselfView: React.FC<PromoteYourselfViewProps> = ({
         if (!currentUser) { onLogin(); return; }
         if (!clientCode) return;
         const message = language === 'ar'
-            ? `مرحباً! استخدم كودي ${clientCode} في تطبيق Lbricol للحصول على خصم 20 درهم على أول خدمة منزلية لك. حمل التطبيق: https://lbricol.com`
+            ? `مرحباً! استخدم كودي ${clientCode} في تطبيق Lbricol للحصول على خصم 15% على أول خدمة منزلية لك. حمل التطبيق: https://lbricol.com`
             : t({
-                en: `Hey! Use my code ${clientCode} on Lbricol to get 20 MAD off your first home service. Download the app: https://lbricol.com`,
-                fr: `Hey ! Utilise mon code ${clientCode} sur Lbricol pour avoir 20 MAD de réduction sur ton premier service à domicile. Télécharge l'appli : https://lbricol.com`
+                en: `Hey! Use my code ${clientCode} on Lbricol to get 15% off your first home service. Download the app: https://lbricol.com`,
+                fr: `Hey ! Utilise mon code ${clientCode} sur Lbricol pour avoir 15% de réduction sur ton premier service à domicile. Télécharge l'appli : https://lbricol.com`
             });
         navigator.clipboard.writeText(message).then(() => {
             setCopiedClient(true);
@@ -135,9 +135,9 @@ const PromoteYourselfView: React.FC<PromoteYourselfViewProps> = ({
                     </h2>
                     <p className="text-[14px] text-neutral-500 font-medium leading-relaxed mb-6">
                         {t({
-                            en: 'Share your code with new clients. They get 20 MAD off their first order, and you get 20 MAD credit!',
-                            fr: 'Partagez votre code. Ils obtiennent 20 MAD de réduction, et vous recevez 20 MAD de crédit !',
-                            ar: 'شارك كودك مع عملاء جدد. يحصلون على خصم 20 درهم على أول طلب لهم، وتحصل أنت على رصيد 20 درهم!'
+                            en: 'Share your code with new clients. They get 15% off their first order, and you earn a 15% discount too!',
+                            fr: 'Partagez votre code. Ils obtiennent 15% de réduction, et vous recevez aussi une remise de 15% !',
+                            ar: 'شارك كودك مع عملاء جدد. يحصلون على خصم 15% على أول طلب لهم، وتحصل أنت أيضاً على خصم 15%!'
                         })}
                     </p>
 

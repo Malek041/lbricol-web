@@ -693,13 +693,13 @@ const ClientHome: React.FC<ClientHomeProps> = ({
                         >
                             <div className="flex-1 text-left pr-2 z-10">
                                 <h3 className="text-[25px] font-black text-white leading-tight mb-1.5">
-                                    {t({ en: 'Refer friends, win 20 DH', fr: 'Parrainez, gagnez 20 DH', ar: 'أحِل أصدقائك واربح 20 درهم' })}
+                                    {t({ en: 'Refer friends, win 15%', fr: 'Parrainez, gagnez 15%', ar: 'أحِل أصدقائك واربح 15%' })}
                                 </h3>
                                 <p className="text-[13px] font-semibold text-white/90 leading-tight">
                                     {t({
-                                        en: 'Invite your friends to Lbricol and win 20dh for each successful referral!',
-                                        fr: 'Invitez vos amis sur Lbricol et gagnez 20dh pour chaque parrainage réussi !',
-                                        ar: 'قم بدعوة أصدقائك إلى Lbricol واربح 20 درهم عن كل دعوة ناجحة!'
+                                        en: 'Invite your friends to Lbricol and win 15% discount for each successful referral!',
+                                        fr: 'Invitez vos amis sur Lbricol et gagnez 15% de réduction pour chaque parrainage réussi !',
+                                        ar: 'قم بدعوة أصدقائك إلى Lbricol واربح خصم 15% عن كل دعوة ناجحة!'
                                     })}
                                 </p>
                             </div>

@@ -1180,7 +1180,7 @@ export default function ProviderPage() {
                             if (pData.referredBricolerBy && !pData.bricolerRewardIssued) {
                                 const pReferrerRef = doc(db, 'users', pData.referredBricolerBy);
                                 await updateDoc(pReferrerRef, {
-                                    bricolerReferralBalance: increment(20)
+                                    bricolerReferralBalance: increment(15)
                                 }).catch(console.error);
                                 await updateDoc(providerRef, {
                                     bricolerRewardIssued: true
@@ -1207,7 +1207,7 @@ export default function ProviderPage() {
                                 const referrerSnap = await getDoc(referrerRef);
                                 if (referrerSnap.exists()) {
                                     await updateDoc(referrerRef, {
-                                        referralBalance: increment(20)
+                                        referralBalance: increment(15)
                                     });
                                 }
                                 // Mark as issued
@@ -3526,7 +3526,7 @@ export default function ProviderPage() {
                                                                             </div>
                                                                             <div className="p-6 rounded-[10px] border border-black flex flex-col justify-between h-[120px]">
                                                                                 <p className="text-[11px] font-black text-black uppercase tracking-widest">{t({ en: 'Referral Bonus', fr: 'Bonus Parrainage' })}</p>
-                                                                                <p className="text-[24px] font-black text-[#00A082] leading-none">+{(userData as any)?.bricolerReferralBalance || 0} <span className="text-[14px] text-[#00A082]/50 uppercase">{t({ en: 'MAD', fr: 'MAD' })}</span></p>
+                                                                                <p className="text-[24px] font-black text-[#00A082] leading-none">+{(userData as any)?.bricolerReferralBalance || 0}% </p>
                                                                             </div>
                                                                         </div>
 

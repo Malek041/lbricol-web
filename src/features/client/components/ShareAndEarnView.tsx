@@ -24,8 +24,8 @@ const ShareAndEarnView: React.FC<ShareAndEarnViewProps> = ({
     const [isLoading, setIsLoading] = useState(true);
     const [copied, setCopied] = useState(false);
 
-    const REFERRER_REWARD = "20 MAD";
-    const NEW_USER_DISCOUNT = "50 MAD";
+    const REFERRER_REWARD = "15% DISCOUNT";
+    const NEW_USER_DISCOUNT = "15%";
 
     useEffect(() => {
         const fetchOrGenerateCode = async () => {
@@ -137,11 +137,11 @@ const ShareAndEarnView: React.FC<ShareAndEarnViewProps> = ({
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.1, duration: 0.3 }}
                     >
-                        {t({ en: 'Get ', fr: 'Obtenez ', ar: 'احصل على ' })}
+                        {t({ en: 'Get a ', fr: 'Obtenez une ', ar: 'احصل على ' })}
                         <strong className="font-black">{REFERRER_REWARD}</strong>
                         {t({ en: ' for each friend you refer', fr: ' pour chaque ami parrainé', ar: ' مقابل كل صديق تدعوه' })}
                         <br />
-                        <span className="text-[22px] font-light text-neutral-400">{t({ en: 'Your friend gets ', fr: 'Votre ami obtient ', ar: 'صديقك يحصل على ' })}<strong className="font-black text-[#00A082]">{NEW_USER_DISCOUNT}</strong>{t({ en: ' off their first order', fr: ' sur leur première commande', ar: ' خصماً على أول طلب' })}</span>
+                        <span className="text-[22px] font-light text-neutral-400">{t({ en: 'Your friend gets ', fr: 'Votre ami obtient ', ar: 'صديقك يحصل على ' })}<strong className="font-black text-[#00A082]">{NEW_USER_DISCOUNT} OFF</strong>{t({ en: ' their first order', fr: ' leur première commande', ar: ' خصماً على أول طلب' })}</span>
                     </motion.h1>
 
                     <motion.p
