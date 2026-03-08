@@ -284,7 +284,7 @@ export default function ProviderPage() {
     const [isLoading, setIsLoading] = useState(true);
 
     const [activeNav, setActiveNav] = useState<'jobs' | 'calendar' | 'performance' | 'profile' | 'messages' | 'services'>('calendar');
-    const [ordersActiveTab, setOrdersActiveTab] = useState<'activity' | 'calendar' | 'availability'>('activity');
+    const [ordersActiveTab, setOrdersActiveTab] = useState<'activity' | 'availability'>('activity');
     const [messageFilter, setMessageFilter] = useState<'all' | 'unread'>('all');
     const [providerCity, setProviderCity] = useState<string>('');
     const [selectedServices, setSelectedServices] = useState<string[]>([]);
@@ -2382,8 +2382,8 @@ export default function ProviderPage() {
                         {activeNav === 'calendar' && (
                             <div className="flex items-center gap-6 overflow-x-auto no-scrollbar">
                                 {[
-                                    { id: 'activity', label: t({ en: 'Activity', fr: 'Activité' }) },
-                                    { id: 'availability', label: t({ en: 'Availability', fr: 'Disponibilité' }) }
+                                    { id: 'activity' as const, label: t({ en: 'Activity', fr: 'Activité' }) },
+                                    { id: 'availability' as const, label: t({ en: 'Availability', fr: 'Disponibilité' }) }
                                 ].map((tab) => (
                                     <button
                                         key={tab.id}
