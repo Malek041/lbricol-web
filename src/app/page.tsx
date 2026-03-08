@@ -375,6 +375,7 @@ const Home = () => {
   const [currentUser, setCurrentUser] = useState<FirebaseUser | null>(null);
   const [userData, setUserData] = useState<any>(null);
   const [showAuthPopup, setShowAuthPopup] = useState(false);
+  const [authIntent, setAuthIntent] = useState<'bricoler' | null>(null);
   const [showClientWhatsAppPopup, setShowClientWhatsAppPopup] = useState(false);
   const [pendingQuickOrder, setPendingQuickOrder] = useState<any>(null);
   const [cityServices, setCityServices] = useState<string[]>([]);
@@ -2693,6 +2694,7 @@ const Home = () => {
                   if (currentUser) {
                     setShowMobileOnboarding(true);
                   } else {
+                    setAuthIntent('bricoler');
                     setShowAuthPopup(true);
                   }
                 }}
@@ -2715,6 +2717,7 @@ const Home = () => {
                     } else if (currentUser) {
                       setShowMobileOnboarding(true);
                     } else {
+                      setAuthIntent('bricoler');
                       setShowAuthPopup(true);
                     }
                   }}
@@ -3174,13 +3177,21 @@ const Home = () => {
 
         <AuthPopup
           isOpen={showAuthPopup}
-          onClose={() => setShowAuthPopup(false)}
+          onClose={() => {
+            setShowAuthPopup(false);
+            setAuthIntent(null);
+          }}
           onSuccess={async () => {
             const result = await handleGoogleLogin();
             if (result && result.user) {
               setShowAuthPopup(false);
               // Small timeout to allow popups to close
               setTimeout(() => {
+                if (authIntent === 'bricoler') {
+                  setAuthIntent(null);
+                  setShowMobileOnboarding(true);
+                  return;
+                }
                 const pendingData = pendingQuickOrder || (localStorage.getItem('lbricol_pending_quick_order') ? JSON.parse(localStorage.getItem('lbricol_pending_quick_order')!) : null);
 
                 if (pendingData) {
@@ -3452,7 +3463,7 @@ const Home = () => {
             setShowMobileOnboarding(false);
             setShadowProfileData(null);
             setIsBricoler(true);
-            router.push('/provider');
+            window.location.href = '/provider';
           }}
         />
 
