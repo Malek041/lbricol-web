@@ -2510,7 +2510,7 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                                                                         if (!file) return;
                                                                         setIsUploadingReceipt(true);
                                                                         try {
-                                                                            const compressedBase64 = await compressImageFileToDataUrl(file);
+                                                                            const compressedBase64 = await compressImageFileToDataUrl(file, { maxWidth: 800, maxHeight: 800, quality: 0.5 });
                                                                             setBankReceipt(compressedBase64);
                                                                         } catch (err) {
                                                                             console.error("Failed to compress receipt image", err);
