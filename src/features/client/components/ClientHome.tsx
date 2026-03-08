@@ -681,20 +681,20 @@ const ClientHome: React.FC<ClientHomeProps> = ({
 
                 {/* Announcements & Offers Section (Horizontal Scroll) */}
                 {(showReferralBanner || showBricolerUpsell) && (
-                    <div className="mt-8 -mx-3 px-3 overflow-x-auto no-scrollbar flex items-stretch gap-4 snap-x snap-mandatory pb-4">
+                    <div className="mt-8 overflow-x-auto no-scrollbar flex items-stretch gap-3 snap-x snap-mandatory pb-4 px-1">
                         {/* Referral Banner Slide */}
                         {showReferralBanner && (
                             <motion.div
                                 initial={{ opacity: 0, x: 20 }}
                                 animate={{ opacity: 1, x: 0 }}
                                 onClick={handleReferralClick}
-                                className="min-w-[310px] w-[310px] snap-center rounded-[24px] p-6 flex flex-col justify-between cursor-pointer relative overflow-hidden shadow-[0_8px_30px_rgb(0,0,0,0.08)] active:scale-[0.98] transition-all bg-[#027C3E]"
+                                className="min-w-[280px] sx:min-w-[300px] snap-start rounded-[20px] p-5 flex flex-col justify-between cursor-pointer relative overflow-hidden shadow-sm active:scale-[0.98] transition-all bg-[#027C3E]"
                             >
                                 <div className="z-10">
-                                    <h3 className="text-[20px] font-black text-white leading-tight mb-2">
+                                    <h3 className="text-[18px] font-black text-white leading-tight mb-2">
                                         {t({ en: 'Refer friends, win 15%', fr: 'Parrainez, gagnez 15%', ar: 'أحِل أصدقائك واربح 15%' })}
                                     </h3>
-                                    <p className="text-[12px] font-bold text-white/90 leading-tight pr-4">
+                                    <p className="text-[11px] font-bold text-white/90 leading-tight pr-4">
                                         {t({
                                             en: 'Invite your friends and win 15% discount for each successful referral!',
                                             fr: 'Invitez vos amis et gagnez 15% de réduction pour chaque parrainage réussi !',
@@ -702,10 +702,10 @@ const ClientHome: React.FC<ClientHomeProps> = ({
                                         })}
                                     </p>
                                 </div>
-                                <div className="flex justify-end -mb-4 -mr-2 z-10">
-                                    <img src="/Images/Vectors Illu/gifts.webp" alt="Gifts" className="w-20 h-20 object-contain" />
+                                <div className="flex justify-end -mb-3 -mr-1 z-10">
+                                    <img src="/Images/Vectors Illu/gifts.webp" alt="Gifts" className="w-16 h-16 object-contain" />
                                 </div>
-                                <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-2xl pointer-events-none" />
+                                <div className="absolute top-0 right-0 w-24 h-24 bg-white/10 rounded-full blur-2xl pointer-events-none" />
                             </motion.div>
                         )}
 
@@ -716,14 +716,14 @@ const ClientHome: React.FC<ClientHomeProps> = ({
                                     initial={{ opacity: 0, x: 20 }}
                                     animate={{ opacity: 1, x: 0 }}
                                     onClick={() => onBecomeBricoler?.()}
-                                    className="min-w-[340px] w-full snap-center rounded-[11.36pt] p-5 pb-6 flex items-center cursor-pointer relative overflow-hidden shadow-sm active:scale-[0.98] transition-all bg-[#00A082]"
+                                    className="min-w-[300px] sx:min-w-[320px] snap-start rounded-[20px] p-5 pb-6 flex items-center cursor-pointer relative overflow-hidden shadow-sm active:scale-[0.98] transition-all bg-[#00A082]"
                                 >
                                     {/* Text block — right side in LTR, left side in RTL */}
-                                    <div className={`z-10 w-[55%] pt-2 ${isRTL ? 'mr-auto text-right' : 'ml-0 text-left'}`}>
-                                        <h3 className="text-[20px] font-black text-white leading-tight mb-2">
+                                    <div className={`z-10 w-[55%] pt-1 ${isRTL ? 'mr-auto text-right' : 'ml-0 text-left'}`}>
+                                        <h3 className="text-[18px] font-black text-white leading-tight mb-2">
                                             {t({ en: 'Earn with your skills', fr: 'Gagnez avec vos talents', ar: 'اربح بمهاراتك' })}
                                         </h3>
-                                        <p className="text-[14px] font-medium text-white/90 leading-snug">
+                                        <p className="text-[12px] font-medium text-white/90 leading-snug">
                                             {t({
                                                 en: 'Become a Bricoler — set your prices and choose your hours.',
                                                 fr: 'Devenez Bricoleur — fixez vos prix et choisissez vos horaires.',
@@ -733,14 +733,13 @@ const ClientHome: React.FC<ClientHomeProps> = ({
                                     </div>
                                     {/* Images — right side in LTR, left side in RTL */}
                                     <div className={`absolute ${isRTL ? 'left-0' : 'right-0'} bottom-0 h-full w-[45%] flex items-end justify-end`}>
-                                        <img src="/Images/Vectors Illu/Groceriedbag.png" alt="Grocery bag" className={`absolute w-[80px] top-[10%] ${isRTL ? 'left-8' : 'right-8'} z-10 drop-shadow-sm`} />
-                                        <img src="/Images/4c456a03818b25032d0e4e80a711d569-Photoroom.png" alt="Moving Helper" className={`absolute w-[70px] -bottom-2 ${isRTL ? 'left-16' : 'right-16'} z-20 drop-shadow-md`} />
-                                        <img src="/Images/Vectors Illu/Dogwalker.png" alt="Dogwalker" className={`absolute w-[60px] bottom-0 ${isRTL ? 'left-1' : 'right-1'} z-20 drop-shadow-md`} />
+                                        <img src="/Images/Vectors Illu/Groceriedbag.png" alt="Grocery bag" className={`absolute w-[60px] top-[15%] ${isRTL ? 'left-6' : 'right-6'} z-10 drop-shadow-sm`} />
+                                        <img src="/Images/4c456a03818b25032d0e4e80a711d569-Photoroom.png" alt="Moving Helper" className={`absolute w-[60px] -bottom-1 ${isRTL ? 'left-12' : 'right-12'} z-20 drop-shadow-md`} />
+                                        <img src="/Images/Vectors Illu/Dogwalker.png" alt="Dogwalker" className={`absolute w-[50px] bottom-0 ${isRTL ? 'left-0' : 'right-0'} z-20 drop-shadow-md`} />
                                     </div>
                                 </motion.div>
                             );
                         })()}
-
                     </div>
                 )}
             </div>

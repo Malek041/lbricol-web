@@ -189,9 +189,23 @@ const AvailabilityCalendarView: React.FC<AvailabilityCalendarViewProps> = ({
                     {/* Right Side: Slots */}
                     <div className="space-y-6">
                         <div className="flex items-center justify-between">
-                            <h3 className="text-lg font-black">
-                                {format(selectedDate, 'EEEE, MMM d', { locale: dateLocale })}
-                            </h3>
+                            <div className="flex flex-col">
+                                <h3 className="text-lg font-black">
+                                    {format(selectedDate, 'EEEE, MMM d', { locale: dateLocale })}
+                                </h3>
+                                <button
+                                    onClick={() => {
+                                        const dateKey = format(selectedDate, 'yyyy-MM-dd');
+                                        setAvailability(prev => ({
+                                            ...prev,
+                                            [dateKey]: []
+                                        }));
+                                    }}
+                                    className="text-[10px] font-black text-red-500 hover:text-red-700 uppercase tracking-widest mt-1 text-left active:scale-95 transition-all"
+                                >
+                                    {t({ en: 'Clear Day', fr: 'Vider le jour', ar: 'مسح اليوم' })}
+                                </button>
+                            </div>
                             <span className="text-xs font-black text-[#00A082] uppercase tracking-widest bg-[#E6F6F2] px-3 py-1 rounded-full">
                                 {daySlots.length} {t({ en: 'Slots Active', fr: 'Créneaux actifs' })}
                             </span>

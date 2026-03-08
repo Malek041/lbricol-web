@@ -74,14 +74,18 @@ export default function ProviderRoutineModal({
             // Update local state for immediate feedback
             setUserData((prev: any) => ({
                 ...prev,
-                routine
+                routine,
+                routineSet: true
             }));
 
             // Persist to Firestore
             const { doc, updateDoc } = await import('firebase/firestore');
             const { db } = await import('@/lib/firebase');
             const providerRef = doc(db, 'bricolers', providerId);
-            await updateDoc(providerRef, { routine });
+            await updateDoc(providerRef, {
+                routine,
+                routineSet: true
+            });
 
             onClose();
         } catch (error) {

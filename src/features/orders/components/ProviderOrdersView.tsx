@@ -80,8 +80,9 @@ export default function ProviderOrdersView({
     onConfirmJob,
     onRedistributeJob
 }: ProviderOrdersViewProps) {
-    const { t } = useLanguage();
+    const { t, language } = useLanguage();
     const [showHistory, setShowHistory] = useState(false);
+    const [showRoutineModal, setShowRoutineModal] = useState(false);
 
     // Filter orders for history (done and cancelled)
     const historyOrders = useMemo(() => {
@@ -98,6 +99,7 @@ export default function ProviderOrdersView({
             'handyman': '/Images/Job Cards Images/Handyman_job_card.webp',
             'furniture_assembly': '/Images/Job Cards Images/Furniture_Assembly_job_card.webp',
             'moving': '/Images/Job Cards Images/Moving Help_job_card.webp',
+            'private_driver': '/Images/Vectors Illu/BWCardirever.webp',
             'gardening': '/Images/Job Cards Images/Gardening_job_card.webp',
             'babysitting': '/Images/Job Cards Images/Babysetting_job_card.webp',
             'pool_cleaning': '/Images/Vectors Illu/Poolcleaning_VI.webp',
@@ -167,6 +169,8 @@ export default function ProviderOrdersView({
                         onConfirmJob={onConfirmJob}
                         onRedistributeJob={onRedistributeJob}
                         setActiveTab={setActiveTab}
+                        userData={userData}
+                        setShowRoutineModal={setShowRoutineModal}
                     />
                 ) : activeTab === 'calendar' ? (
                     <CalendarTab
@@ -191,6 +195,8 @@ export default function ProviderOrdersView({
                         AVAILABILITY_SLOTS={AVAILABILITY_SLOTS}
                         TIME_SLOTS={TIME_SLOTS}
                         orders={orders}
+                        showRoutineModal={showRoutineModal}
+                        setShowRoutineModal={setShowRoutineModal}
                     />
                 )}
             </div>
@@ -248,14 +254,18 @@ function ActivityTab({
     onShowHistory,
     onConfirmJob,
     onRedistributeJob,
-    setActiveTab
+    setActiveTab,
+    userData,
+    setShowRoutineModal
 }: {
     orders: OrderDetails[],
     onSelect: (o: OrderDetails) => void,
     onShowHistory: () => void,
     onConfirmJob?: (jobId: string) => void,
     onRedistributeJob?: (order: OrderDetails) => void,
-    setActiveTab?: (tab: 'activity' | 'calendar' | 'availability') => void
+    setActiveTab?: (tab: 'activity' | 'calendar' | 'availability') => void,
+    userData: any,
+    setShowRoutineModal: (v: boolean) => void
 }) {
     const { t, language } = useLanguage();
 
@@ -506,39 +516,47 @@ function ActivityTab({
     return (
         <div className="flex flex-col gap-10 p-6 pb-32 bg-[#FFFFFF]">
             <div className="space-y-4">
-                {showGetJobsBanner && (
-                    <motion.div
-                        initial={{ opacity: 0, y: -20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="bg-[#FFC244] rounded-[5px] p-6 relative overflow-hidden group shadow-lg shadow-amber-100/50"
-                    >
-                        <div className="flex items-center gap-5 relative z-10">
-                            <div className="w-16 h-16 bg-transparent rounded-1xl flex items-center justify-center  shadow-md">
-                                <img src="/Images/Vectors Illu/LbricolFaceOY.webp" className="w-full h-full object-contain rounded-1xl" />
+                {/* New Green Availability Requirement Card */}
+                {(() => {
+                    const hasAvailability = userData?.routineSet ||
+                        (userData?.routine && Object.values(userData.routine).some((r: any) => r.active)) ||
+                        (userData?.calendarSlots && Object.keys(userData.calendarSlots).length > 0);
+                    if (hasAvailability) return null;
+
+                    return (
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.95 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            onClick={() => setShowRoutineModal(true)}
+                            className="bg-[#00A082] rounded-[24px] p-6 relative overflow-hidden group shadow-xl shadow-[#00A082]/20 cursor-pointer mb-8"
+                        >
+                            <div className="flex items-center gap-6 relative z-10">
+                                <div className="w-20 h-20 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-md">
+                                    <img src="/Images/Vectors Illu/OrdersHistory.png" className="w-14 h-14 object-contain" />
+                                </div>
+                                <div className="flex-1">
+                                    <h3 className="text-[22px] font-[1000] text-white leading-tight mb-1">
+                                        {t({ en: 'Set Your Availability', fr: 'Définissez vos dispos', ar: 'حدد توفرك' })}
+                                    </h3>
+                                    <p className="text-[14px] font-bold text-white/80 leading-snug">
+                                        {t({
+                                            en: 'Set your regular routine to appear in client searches and start receiving jobs.',
+                                            fr: 'Réglez votre routine pour apparaître dans les recherches et recevoir des missions.',
+                                            ar: 'اضبط روتينك المعتاد للظهور في نتائج بحث العملاء والبدء في تلقي المهام.'
+                                        })}
+                                    </p>
+                                </div>
                             </div>
-                            <div className="flex-1">
-                                <h3 className="text-[20px] font-[1000] text-black leading-tight mb-1">{t({ en: 'Get Jobs Today!', fr: 'Trouvez une mission !', ar: 'احصل على مهام اليوم!' })}</h3>
-                                <p className="text-[13px] font-bold text-black/70 leading-snug">{t({ en: 'Set your availability now to appear in client searches for today.', fr: 'Réglez vos dispo pour apparaître dans les recherches d\'aujourd\'hui.', ar: 'اضبط تواجدك الآن للظهور في بحث العملاء لهذا اليوم.' })}</p>
+                            <div className="flex items-center gap-2 mt-4 text-white font-black text-[14px] bg-white/10 w-fit px-4 py-2 rounded-full backdrop-blur-sm group-hover:bg-white/20 transition-all">
+                                <span>{t({ en: 'Configure Now', fr: 'Configurer maintenant', ar: 'تكوين الآن' })}</span>
+                                <ChevronLeft size={16} className={cn("rotate-180", language === 'ar' && "rotate-0")} strokeWidth={4} />
                             </div>
-                        </div>
-                        <div className="flex gap-3 mt-4 relative z-10">
-                            <button
-                                onClick={() => setActiveTab?.('availability')}
-                                className="px-6 py-2.5 bg-[#F55802] text-white text-[14px] font-black rounded-full active:scale-95 transition-all"
-                            >
-                                {t({ en: 'Go to Calendar', fr: 'Aller au calendrier', ar: 'الذهاب للتقويم' })}
-                            </button>
-                            <button
-                                onClick={handleHideBanner}
-                                className="px-6 py-2.5 bg-white/20 hover:bg-white/30 text-black text-[14px] font-black rounded-full transition-all"
-                            >
-                                {t({ en: 'Hide', fr: 'Masquer', ar: 'إخفاء' })}
-                            </button>
-                        </div>
-                        {/* Decorative circle */}
-                        <div className="absolute -right-8 -bottom-8 w-32 h-32 bg-white/10 rounded-full blur-2xl group-hover:scale-125 transition-transform duration-700" />
-                    </motion.div>
-                )}
+
+                            {/* Decorative elements */}
+                            <div className="absolute -right-12 -top-12 w-48 h-48 bg-white/5 rounded-full blur-3xl group-hover:scale-150 transition-transform duration-1000" />
+                        </motion.div>
+                    );
+                })()}
 
                 <h2 className="text-[26px] font-black text-black">
                     {t({ en: 'New Jobs', fr: 'Nouvelles missions' })}
@@ -872,7 +890,9 @@ function AvailabilityTab({
     handleSaveSlotsManual,
     AVAILABILITY_SLOTS,
     TIME_SLOTS,
-    orders
+    orders,
+    showRoutineModal,
+    setShowRoutineModal
 }: {
     userData: any,
     setUserData: React.Dispatch<React.SetStateAction<any>>,
@@ -881,12 +901,13 @@ function AvailabilityTab({
     handleSaveSlotsManual: (dateKey: string, slots: any[]) => void,
     AVAILABILITY_SLOTS: any,
     TIME_SLOTS: string[],
-    orders: OrderDetails[]
+    orders: OrderDetails[],
+    showRoutineModal: boolean,
+    setShowRoutineModal: (v: boolean) => void
 }) {
     const { t, language } = useLanguage();
     const todayStr = format(new Date(), 'yyyy-MM-dd');
     const selectedDateStr = format(horizontalSelectedDate, 'yyyy-MM-dd');
-    const [showRoutineModal, setShowRoutineModal] = useState(false);
     const [isAdding, setIsAdding] = useState(false);
     const [currentTime, setCurrentTime] = useState(new Date());
 
@@ -1173,12 +1194,36 @@ function AvailabilityTab({
 
                             <div className="flex items-center justify-between mb-8">
                                 <h3 className="text-[22px] font-black text-black">{t({ en: 'New Availability', fr: 'Nouvelle disponibilité', ar: 'جاهزية جديدة' })}</h3>
-                                <button
-                                    onClick={handleAllDay}
-                                    className="px-4 py-2 bg-[#E6F7F4] text-[#00A082] text-[14px] font-black rounded-xl"
-                                >
-                                    {t({ en: 'All day', fr: 'Toute la journée', ar: 'طوال اليوم' })}
-                                </button>
+                                <div className="flex items-center gap-2">
+                                    <button
+                                        onClick={async () => {
+                                            const updatedCalendarSlots = {
+                                                ...(userData?.calendarSlots || {}),
+                                                [selectedDateStr]: []
+                                            };
+                                            setUserData((p: any) => p ? { ...p, calendarSlots: updatedCalendarSlots } : null);
+                                            try {
+                                                const providerId = userData?.id || auth.currentUser?.uid;
+                                                if (providerId) {
+                                                    const providerRef = doc(db, 'bricolers', providerId);
+                                                    await updateDoc(providerRef, { calendarSlots: updatedCalendarSlots });
+                                                }
+                                            } catch (e) {
+                                                console.error("Error clearing slots:", e);
+                                            }
+                                            setLocalSlots([]);
+                                        }}
+                                        className="px-4 py-2 bg-red-50 text-red-500 text-[14px] font-black rounded-xl border border-red-100"
+                                    >
+                                        {t({ en: 'Clear Day', fr: 'Vider le jour', ar: 'مسح اليوم' })}
+                                    </button>
+                                    <button
+                                        onClick={handleAllDay}
+                                        className="px-4 py-2 bg-[#E6F7F4] text-[#00A082] text-[14px] font-black rounded-xl"
+                                    >
+                                        {t({ en: 'All day', fr: 'Toute la journée', ar: 'طوال اليوم' })}
+                                    </button>
+                                </div>
                             </div>
 
                             <div className="space-y-6">

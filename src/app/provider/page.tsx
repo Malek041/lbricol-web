@@ -1987,22 +1987,7 @@ export default function ProviderPage() {
                                     <WhatsAppBrandIcon className="w-6 h-6" />
                                 </button>
                             )}
-                            <button
-                                onClick={() => {
-                                    setSelectedChat((job.rawAccepted || job.rawJob) as any);
-                                    setActiveNav('messages');
-                                    setViewingJobDetails(null);
-                                }}
-                                className="w-10 h-10 rounded-full flex items-center justify-center text-[#00A082] hover:bg-neutral-50 active:scale-90 transition-all"
-                            >
-                                <MessageSquare size={24} strokeWidth={2.5} />
-                            </button>
-                            <button
-                                onClick={() => window.open('https://wa.me/212702814355', '_blank')}
-                                className="text-[17px] font-black text-[#00A082] hover:opacity-80 transition-opacity"
-                            >
-                                {t({ en: 'Help', fr: 'Aide' })}
-                            </button>
+                            {/* Help and Chat hidden as per user request */}
                         </div>
                     </div>
 
@@ -2045,6 +2030,18 @@ export default function ProviderPage() {
                             {/* Key Details Grid */}
                             <div className="px-6 md:px-12 mb-8">
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    {/* Contact the Client (Moved to top of grid) */}
+                                    {(job.rawAccepted?.status === 'confirmed' || job.rawAccepted?.status === 'programmed' || job.rawAccepted?.status === 'accepted') && (
+                                        <div className="col-span-1 sm:col-span-2 mb-2">
+                                            <button
+                                                onClick={() => openWhatsApp(job.clientWhatsApp)}
+                                                className="w-full bg-[#25D366] text-white py-4 rounded-xl font-black text-[18px] flex items-center justify-center gap-3 hover:bg-[#128C7E] transition-all shadow-sm"
+                                            >
+                                                <WhatsAppBrandIcon className="w-6 h-6" />
+                                                {t({ en: 'Contact Client', fr: 'Contacter le Client' })}
+                                            </button>
+                                        </div>
+                                    )}
                                     <div className="bg-neutral-50 rounded-2xl p-4 flex items-center gap-4 border border-neutral-100/50">
                                         <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-sm">
                                             <Clock size={20} className="text-[#00A082]" />
@@ -2105,18 +2102,6 @@ export default function ProviderPage() {
                                             </p>
                                         </div>
                                     </div>
-                                    {/* Action Buttons */}
-                                    {(job.rawAccepted?.status === 'confirmed' || job.rawAccepted?.status === 'programmed' || job.rawAccepted?.status === 'accepted') && (
-                                        <div className="bg-neutral-50 rounded-2xl p-4 col-span-1 sm:col-span-2 flex flex-col items-center gap-4 border border-neutral-100/50">
-                                            <button
-                                                onClick={() => openWhatsApp(job.clientWhatsApp)}
-                                                className="w-full bg-[#25D366] text-white py-4 rounded-xl font-black text-[18px] flex items-center justify-center gap-3 hover:bg-[#128C7E] transition-all shadow-sm"
-                                            >
-                                                <WhatsAppBrandIcon className="w-6 h-6" />
-                                                {t({ en: 'Contact Bricoler', fr: 'Contacter le Bricoler' })}
-                                            </button>
-                                        </div>
-                                    )}
                                 </div>
                             </div>
 
