@@ -953,7 +953,7 @@ const Home = () => {
           // 2. Real-time Bricoler Status
           const bricolerRef = doc(db, 'bricolers', user.uid);
           unsubscribeBricolerStatus = onSnapshot(bricolerRef, (snap) => {
-            setIsBricoler(snap.exists());
+            setIsBricoler(snap.exists() && snap.data()?.isBricoler === true);
           });
 
           // 3. Real-time Jobs
