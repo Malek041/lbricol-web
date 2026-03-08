@@ -434,6 +434,136 @@ interface ClientHomeProps {
 }
 
 // ── Component ──────────────────────────────────────────────────────────────
+
+const PromoBannersWidget: React.FC<{
+    showReferral: boolean;
+    showUpsell: boolean;
+    onReferralClick: () => void;
+    onUpsellClick: () => void;
+    language: string;
+    t: any;
+}> = ({ showReferral, showUpsell, onReferralClick, onUpsellClick, language, t }) => {
+    const [expanded, setExpanded] = useState(false);
+
+    if (!showReferral && !showUpsell) return null;
+
+    const banners: any[] = [];
+    if (showReferral) banners.push({
+        id: 'referral',
+        title: t({ en: 'Refer friends, win 15%', fr: 'Parrainez, gagnez 15%', ar: 'أحِل أصدقائك واربح 15%' }),
+        onClick: onReferralClick,
+        type: 'referral'
+    });
+    if (showUpsell) banners.push({
+        id: 'upsell',
+        title: t({ en: 'Earn with your skills', fr: 'Gagnez avec vos talents', ar: 'اربح بمهاراتك' }),
+        onClick: onUpsellClick,
+        type: 'upsell'
+    });
+
+    const RepeatedText = () => (
+        <div className="flex items-center gap-10 px-4">
+            {banners.map((b, i) => <span key={`rep-${i}`} className="text-[14px] font-bold text-neutral-500 whitespace-nowrap">{b.title}</span>)}
+            {banners.map((b, i) => <span key={`rep2-${i}`} className="text-[14px] font-bold text-neutral-500 whitespace-nowrap">{b.title}</span>)}
+            {banners.map((b, i) => <span key={`rep3-${i}`} className="text-[14px] font-bold text-neutral-500 whitespace-nowrap">{b.title}</span>)}
+            {banners.map((b, i) => <span key={`rep4-${i}`} className="text-[14px] font-bold text-neutral-500 whitespace-nowrap">{b.title}</span>)}
+        </div>
+    );
+
+    const isRTL = language === 'ar';
+
+    const renderCard = (b: any, index: number) => {
+        if (b.type === 'referral') {
+            return (
+                <div
+                    key={`ref-${index}`}
+                    onClick={(e) => { e.stopPropagation(); b.onClick(); }}
+                    className="w-[280px] h-[120px] shrink-0 rounded-[12px] p-4 flex flex-col justify-between cursor-pointer relative overflow-hidden shadow-sm active:scale-[0.98] transition-all bg-[#027C3E] mx-1.5"
+                >
+                    <div className="z-10">
+                        <h3 className="text-[16px] font-black text-white leading-tight mb-1">
+                            {t({ en: 'Refer friends, win 15%', fr: 'Parrainez, gagnez 15%', ar: 'أحِل أصدقائك واربح 15%' })}
+                        </h3>
+                        <p className="text-[10px] font-bold text-white/90 leading-tight pr-4">
+                            {t({
+                                en: 'Invite your friends and win 15% discount for each successful referral!',
+                                fr: 'Invitez vos amis et gagnez 15% de réduction pour chaque parrainage réussi !',
+                                ar: 'قم بدعوة أصدقائك واربح خصم 15% عن كل دعوة ناجحة!'
+                            })}
+                        </p>
+                    </div>
+                    <div className="absolute -bottom-2 -right-1 z-10">
+                        <img src="/Images/Vectors Illu/gifts.webp" alt="Gifts" className="w-[60px] h-[60px] object-contain" />
+                    </div>
+                    <div className="absolute top-0 right-0 w-20 h-20 bg-white/10 rounded-full blur-2xl pointer-events-none" />
+                </div>
+            )
+        }
+        if (b.type === 'upsell') {
+            return (
+                <div
+                    key={`up-${index}`}
+                    onClick={(e) => { e.stopPropagation(); b.onClick(); }}
+                    className="w-[280px] h-[120px] shrink-0 rounded-[12px] p-4 flex items-center cursor-pointer relative overflow-hidden shadow-sm active:scale-[0.98] transition-all bg-[#00A082] mx-1.5"
+                >
+                    <div className={`z-10 w-[55%] ${isRTL ? 'mr-auto text-right' : 'ml-0 text-left'}`}>
+                        <h3 className="text-[16px] font-black text-white leading-tight mb-1.5">
+                            {t({ en: 'Earn with your skills', fr: 'Gagnez avec vos talents', ar: 'اربح بمهاراتك' })}
+                        </h3>
+                        <p className="text-[10px] font-medium text-white/90 leading-snug">
+                            {t({
+                                en: 'Become a Bricoler — set your prices and choose your hours.',
+                                fr: 'Devenez Bricoleur — fixez vos prix et choisissez vos horaires.',
+                                ar: 'كن بريكولرًا — حدد أسعارك واختر مواعيدك.'
+                            })}
+                        </p>
+                    </div>
+                    <div className={`absolute ${isRTL ? 'left-0' : 'right-0'} bottom-0 h-full w-[45%] flex items-end justify-end`}>
+                        <img src="/Images/Vectors Illu/Groceriedbag.png" alt="Grocery bag" className={`absolute w-[50px] top-[15%] ${isRTL ? 'left-4' : 'right-4'} z-10 drop-shadow-sm`} />
+                        <img src="/Images/4c456a03818b25032d0e4e80a711d569-Photoroom.png" alt="Moving Helper" className={`absolute w-[45px] -bottom-1 ${isRTL ? 'left-12' : 'right-12'} z-20 drop-shadow-md`} />
+                        <img src="/Images/Vectors Illu/Dogwalker.png" alt="Dogwalker" className={`absolute w-[40px] bottom-0 ${isRTL ? 'left-0' : 'right-0'} z-20 drop-shadow-md`} />
+                    </div>
+                </div>
+            )
+        }
+        return null;
+    };
+
+    const RepeatedCards = () => (
+        <div className="flex px-1 items-center">
+            {banners.map((b, i) => renderCard(b, i))}
+            {banners.map((b, i) => renderCard(b, i + 10))}
+            {banners.map((b, i) => renderCard(b, i + 20))}
+            {banners.map((b, i) => renderCard(b, i + 30))}
+        </div>
+    );
+
+    return (
+        <div className="fixed left-0 right-0 z-40 bg-white/95 backdrop-blur-md border border-neutral-100 transition-all duration-300 shadow-[0_-8px_30px_rgba(0,0,0,0.06)] overflow-hidden" style={{ bottom: '70px', borderRadius: '24px 24px 0 0' }}>
+            <div className="w-full" onClick={() => !expanded && setExpanded(true)}>
+                {expanded ? (
+                    <div className="flex flex-col relative w-full pt-2 pb-5">
+                        <div className="w-full flex justify-center py-2 mb-1 cursor-pointer" onClick={(e) => { e.stopPropagation(); setExpanded(false); }}>
+                            <div className="w-10 h-1.5 rounded-full bg-neutral-200" />
+                        </div>
+                        <div className="animate-marquee items-center" style={{ animationDuration: '40s' }}>
+                            <RepeatedCards />
+                            <RepeatedCards />
+                        </div>
+                    </div>
+                ) : (
+                    <div className="py-3.5 cursor-pointer w-full flex items-center">
+                        <div className="animate-marquee items-center" style={{ animationDuration: '20s' }}>
+                            <RepeatedText />
+                            <RepeatedText />
+                        </div>
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+};
+
 const ClientHome: React.FC<ClientHomeProps> = ({
     onSelectService,
     availableServiceIds,
@@ -678,70 +808,6 @@ const ClientHome: React.FC<ClientHomeProps> = ({
                         }}
                     />
                 </motion.h1>
-
-                {/* Announcements & Offers Section (Horizontal Scroll) */}
-                {(showReferralBanner || showBricolerUpsell) && (
-                    <div className="mt-8 overflow-x-auto no-scrollbar flex items-stretch gap-3 snap-x snap-mandatory pb-4 px-6 w-full max-w-fullbox-border">
-                        {/* Referral Banner Slide */}
-                        {showReferralBanner && (
-                            <motion.div
-                                initial={{ opacity: 0, x: 20 }}
-                                animate={{ opacity: 1, x: 0 }}
-                                onClick={handleReferralClick}
-                                className="min-w-[280px] sx:min-w-[300px] snap-start rounded-[20px] p-5 flex flex-col justify-between cursor-pointer relative overflow-hidden shadow-sm active:scale-[0.98] transition-all bg-[#027C3E]"
-                            >
-                                <div className="z-10">
-                                    <h3 className="text-[18px] font-black text-white leading-tight mb-2">
-                                        {t({ en: 'Refer friends, win 15%', fr: 'Parrainez, gagnez 15%', ar: 'أحِل أصدقائك واربح 15%' })}
-                                    </h3>
-                                    <p className="text-[11px] font-bold text-white/90 leading-tight pr-4">
-                                        {t({
-                                            en: 'Invite your friends and win 15% discount for each successful referral!',
-                                            fr: 'Invitez vos amis et gagnez 15% de réduction pour chaque parrainage réussi !',
-                                            ar: 'قم بدعوة أصدقائك واربح خصم 15% عن كل دعوة ناجحة!'
-                                        })}
-                                    </p>
-                                </div>
-                                <div className="flex justify-end -mb-3 -mr-1 z-10">
-                                    <img src="/Images/Vectors Illu/gifts.webp" alt="Gifts" className="w-16 h-16 object-contain" />
-                                </div>
-                                <div className="absolute top-0 right-0 w-24 h-24 bg-white/10 rounded-full blur-2xl pointer-events-none" />
-                            </motion.div>
-                        )}
-
-                        {showBricolerUpsell && (() => {
-                            const isRTL = language === 'ar';
-                            return (
-                                <motion.div
-                                    initial={{ opacity: 0, x: 20 }}
-                                    animate={{ opacity: 1, x: 0 }}
-                                    onClick={() => onBecomeBricoler?.()}
-                                    className="min-w-[300px] sx:min-w-[320px] snap-start rounded-[20px] p-5 pb-6 flex items-center cursor-pointer relative overflow-hidden shadow-sm active:scale-[0.98] transition-all bg-[#00A082]"
-                                >
-                                    {/* Text block — right side in LTR, left side in RTL */}
-                                    <div className={`z-10 w-[55%] pt-1 ${isRTL ? 'mr-auto text-right' : 'ml-0 text-left'}`}>
-                                        <h3 className="text-[18px] font-black text-white leading-tight mb-2">
-                                            {t({ en: 'Earn with your skills', fr: 'Gagnez avec vos talents', ar: 'اربح بمهاراتك' })}
-                                        </h3>
-                                        <p className="text-[12px] font-medium text-white/90 leading-snug">
-                                            {t({
-                                                en: 'Become a Bricoler — set your prices and choose your hours.',
-                                                fr: 'Devenez Bricoleur — fixez vos prix et choisissez vos horaires.',
-                                                ar: 'كن بريكولرًا — حدد أسعارك واختر مواعيدك.'
-                                            })}
-                                        </p>
-                                    </div>
-                                    {/* Images — right side in LTR, left side in RTL */}
-                                    <div className={`absolute ${isRTL ? 'left-0' : 'right-0'} bottom-0 h-full w-[45%] flex items-end justify-end`}>
-                                        <img src="/Images/Vectors Illu/Groceriedbag.png" alt="Grocery bag" className={`absolute w-[60px] top-[15%] ${isRTL ? 'left-6' : 'right-6'} z-10 drop-shadow-sm`} />
-                                        <img src="/Images/4c456a03818b25032d0e4e80a711d569-Photoroom.png" alt="Moving Helper" className={`absolute w-[60px] -bottom-1 ${isRTL ? 'left-12' : 'right-12'} z-20 drop-shadow-md`} />
-                                        <img src="/Images/Vectors Illu/Dogwalker.png" alt="Dogwalker" className={`absolute w-[50px] bottom-0 ${isRTL ? 'left-0' : 'right-0'} z-20 drop-shadow-md`} />
-                                    </div>
-                                </motion.div>
-                            );
-                        })()}
-                    </div>
-                )}
             </div>
 
             {/* ── Category tabs ───────────────────────────────────────── */}
@@ -974,6 +1040,14 @@ const ClientHome: React.FC<ClientHomeProps> = ({
                 )}
             </AnimatePresence>
 
+            <PromoBannersWidget
+                showReferral={showReferralBanner}
+                showUpsell={showBricolerUpsell}
+                onReferralClick={handleReferralClick}
+                onUpsellClick={() => onBecomeBricoler?.()}
+                language={language}
+                t={t}
+            />
 
         </div>
     );
