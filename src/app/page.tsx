@@ -2229,8 +2229,9 @@ const Home = () => {
           const blob = await dataUrlToBlob(jobData.bankReceipt);
           const path = `receipts/${effectiveUser.uid}/${Date.now()}_receipt.jpg`;
           const storageRef = ref(storage, path);
-          await uploadBytes(storageRef, blob, { contentType: 'image/jpeg' });
-          jobData.bankReceipt = await getDownloadURL(storageRef);
+          const uploadPromise = uploadBytes(storageRef, blob, { contentType: 'image/jpeg' }).then(() => getDownloadURL(storageRef));
+          const timeoutPromise = new Promise<string>((_, reject) => setTimeout(() => reject(new Error('IMAGE_UPLOAD_TIMEOUT')), 30000));
+          jobData.bankReceipt = await Promise.race([uploadPromise, timeoutPromise]);
         } catch (err) {
           console.error("Failed to upload pending data URL receipt", err);
           jobData.bankReceipt = null;

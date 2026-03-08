@@ -1069,8 +1069,16 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
     // ── Image helpers ─────────────────────────────────────────────────────────
     const uploadImageToStorage = async (file: Blob | File, path: string) => {
         const storageRef = ref(storage, path);
-        await uploadBytes(storageRef, file, { contentType: 'image/jpeg' });
-        return await getDownloadURL(storageRef);
+        try {
+            const result = await Promise.race([
+                uploadBytes(storageRef, file, { contentType: 'image/jpeg' }).then(() => getDownloadURL(storageRef)),
+                new Promise<string>((_, reject) => setTimeout(() => reject(new Error('IMAGE_UPLOAD_TIMEOUT')), 30000))
+            ]);
+            return result;
+        } catch (err) {
+            console.error("Firebase upload error:", err);
+            throw err;
+        }
     };
 
 
@@ -1496,13 +1504,17 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
 
             // Receipt Upload Logic
             let finalBankReceiptUrl = null;
-            if (paymentMethod === 'bank' && bankReceipt && bankReceipt.startsWith('data:')) {
+            if (paymentMethod === 'bank' && bankReceipt && isImageDataUrl(bankReceipt)) {
                 try {
-                    const blob = await fetch(bankReceipt).then(r => r.blob());
-                    const path = `receipts/${Date.now()}_receipt.jpg`;
+                    const blob = await dataUrlToBlob(bankReceipt);
+                    const uid = user?.uid || 'anonymous';
+                    const path = `receipts/${uid}/${Date.now()}_receipt.jpg`;
                     finalBankReceiptUrl = await uploadImageToStorage(blob, path);
                 } catch (err) {
                     console.error("Error uploading receipt:", err);
+                    alert(t({ en: 'Failed to upload receipt. It might be too large or your connection is slow.', fr: 'Échec du téléchargement du reçu. Il est peut-être trop volumineux ou votre connexion est lente.', ar: 'فشل تحميل الإيصال. قد يكون حجمه كبيرًا جدًا أو أن اتصالك بطيء.' }));
+                    setIsSubmitting(false);
+                    return;
                 }
             } else if (paymentMethod === 'bank') {
                 finalBankReceiptUrl = bankReceipt;
@@ -2498,13 +2510,11 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                                                                         if (!file) return;
                                                                         setIsUploadingReceipt(true);
                                                                         try {
-                                                                            const reader = new FileReader();
-                                                                            reader.onloadend = () => {
-                                                                                setBankReceipt(reader.result as string);
-                                                                                setIsUploadingReceipt(false);
-                                                                            };
-                                                                            reader.readAsDataURL(file);
+                                                                            const compressedBase64 = await compressImageFileToDataUrl(file);
+                                                                            setBankReceipt(compressedBase64);
                                                                         } catch (err) {
+                                                                            console.error("Failed to compress receipt image", err);
+                                                                        } finally {
                                                                             setIsUploadingReceipt(false);
                                                                         }
                                                                     }}
