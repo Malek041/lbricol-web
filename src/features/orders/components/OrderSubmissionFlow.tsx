@@ -700,6 +700,7 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                     ]
                 };
             case 'errands':
+            case 'courier':
                 return {
                     title: t({ en: "What's the scope of the errands?", fr: "Quelle est l'ampleur des courses ?", ar: "ما هو حجم الغرض؟" }),
                     options: [
@@ -808,6 +809,39 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                         { id: 'small', duration: 1, label: { en: 'Walk / Quick Visit', fr: 'Promenade / Visite rapide', ar: 'نزهة / زيارة سريعة' }, estTime: { en: 'Est: 1 hr', fr: 'Est: 1h', ar: 'حوالي ساعة' }, desc: { en: '30-60 min walk or feeding check-in.', fr: 'Promenade de 30-60 min ou passage pour nourrir.', ar: 'نزهة 30-60 دقيقة أو فحص إطعام.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/SmallTask.webp' },
                         { id: 'medium', duration: 4, label: { en: 'Half Day Sitting', fr: 'Garde demi-journée', ar: 'رعاية نصف يوم' }, estTime: { en: 'Est: 4 hrs', fr: 'Est: 4h', ar: '4 ساعات' }, desc: { en: 'Pet sitting and companionship for a few hours.', fr: 'Garde d\'animaux et compagnie pendant quelques heures.', ar: 'رعاية ومرافقة للحيوان لعدة ساعات.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/MediumSize.webp' },
                         { id: 'large', duration: 8, label: { en: 'Full Day / Overnight', fr: 'Journée / Nuit', ar: 'يوم كامل / مبيت' }, estTime: { en: 'Est: 8+ hrs', fr: 'Est: 8h+', ar: 'أكثر من 8 ساعات' }, desc: { en: 'Comprehensive care for the entire day or night.', fr: 'Soins complets pour toute la journée ou la nuit.', ar: 'رعاية شاملة لليوم أو الليلة بالكامل.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/BigTask.webp' },
+                    ]
+                };
+            case 'driver':
+            case 'private_driver':
+            case 'car_rental':
+            case 'airport':
+            case 'transport_city':
+            case 'transport_intercity':
+                return {
+                    title: t({ en: "How long do you need the service?", fr: "Combien de temps avez-vous besoin du service ?", ar: "كم من الوقت تحتاج الخدمة؟" }),
+                    options: [
+                        { id: 'small', duration: 2, label: { en: 'Short Trip (1-2 hrs)', fr: 'Trajet Court (1-2h)', ar: 'رحلة قصيرة (1-2 ساعات)' }, estTime: { en: 'Est: 1-2 hrs', fr: 'Est: 1-2h', ar: 'حوالي 1-2 ساعة' }, desc: { en: 'Quick ride or airport transfer.', fr: 'Course rapide ou transfert aéroport.', ar: 'توصيلة سريعة أو نقل للمطار.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/SmallTask.webp' },
+                        { id: 'medium', duration: 5, label: { en: 'Half Day (3-5 hrs)', fr: 'Demi-journée (3-5h)', ar: 'نصف يوم (3-5 ساعات)' }, estTime: { en: 'Est: 3-5 hrs', fr: 'Est: 3-5h', ar: 'حوالي 3-5 ساعات' }, desc: { en: 'Multiple stops or city tour.', fr: 'Plusieurs arrêts ou visite de la ville.', ar: 'توقفات متعددة أو جولة في المدينة.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/MediumSize.webp' },
+                        { id: 'large', duration: 8, label: { en: 'Full Day (8+ hrs)', fr: 'Journée Complète (8h+)', ar: 'يوم كامل (8+ ساعات)' }, estTime: { en: 'Est: 8+ hrs', fr: 'Est: 8h+', ar: 'أكثر من 8 ساعات' }, desc: { en: 'Driver available for the entire day.', fr: 'Chauffeur disponible pour toute la journée.', ar: 'سائق متاح طوال اليوم.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/BigTask.webp' },
+                    ]
+                };
+            case 'cooking':
+            case 'meal_prep':
+                return {
+                    title: t({ en: "What is the cooking scope?", fr: "Quelle est l'ampleur de la cuisine ?", ar: "ما هو حجم الطبخ؟" }),
+                    options: [
+                        { id: 'small', duration: 2, label: { en: 'Simple Meal', fr: 'Repas Simple', ar: 'وجبة بسيطة' }, estTime: { en: 'Est: 2 hrs', fr: 'Est: 2h', ar: 'حوالي ساعتين' }, desc: { en: 'Cooking a simple meal or doing prep.', fr: 'Préparation d\'un petit repas simple.', ar: 'طبخ وجبة بسيطة أو تحضيرات.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/SmallTask.webp' },
+                        { id: 'medium', duration: 4, label: { en: 'Daily Cooking / Family', fr: 'Cuisine Quotidienne', ar: 'طبخ يومي / عائلي' }, estTime: { en: 'Est: 4 hrs', fr: 'Est: 4h', ar: 'حوالي 4 ساعات' }, desc: { en: 'Cooking complete meals for a family.', fr: 'Cuisine de repas complets pour la famille.', ar: 'طبخ وجبات كاملة للعائلة.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/MediumSize.webp' },
+                        { id: 'large', duration: 8, label: { en: 'Batch Cooking / Event', fr: 'Événement / Grande Quant', ar: 'حدث / طبخ كميات كبيرة' }, estTime: { en: 'Est: 8+ hrs', fr: 'Est: 8h+', ar: 'أكثر من 8 ساعات' }, desc: { en: 'Cooking for an event or multiple days.', fr: 'Cuisine pour événement ou plusieurs jours.', ar: 'الطبخ لحدث أو لعدة أيام.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/BigTask.webp' },
+                    ]
+                };
+            case 'learn_arabic':
+                return {
+                    title: t({ en: "How long applies to your session?", fr: "Quelle est la durée de la session ?", ar: "ما هي مدة الحصة؟" }),
+                    options: [
+                        { id: 'small', duration: 1, label: { en: '1 Hour Session', fr: 'Session d\'1 Heure', ar: 'حصة لساعة واحدة' }, estTime: { en: 'Est: 1 hr', fr: 'Est: 1h', ar: 'حوالي ساعة' }, desc: { en: 'Quick conversation practice or review.', fr: 'Pratique ou révision rapide.', ar: 'مراجعة أو محادثة سريعة.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/SmallTask.webp' },
+                        { id: 'medium', duration: 2, label: { en: '2 Hours Class', fr: 'Classe de 2 Heures', ar: 'حصة لساعتين' }, estTime: { en: 'Est: 2 hrs', fr: 'Est: 2h', ar: 'حوالي ساعتين' }, desc: { en: 'Standard class covering new material.', fr: 'Classe standard couvrant de nouvelles leçons.', ar: 'حصة عادية تشمل دروس جديدة.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/MediumSize.webp' },
+                        { id: 'large', duration: 4, label: { en: 'Intensive (3+ Hours)', fr: 'Intensif (3+ Heures)', ar: 'مكثف (3+ ساعات)' }, estTime: { en: 'Est: 3+ hrs', fr: 'Est: 3h+', ar: 'أكثر من 3 ساعات' }, desc: { en: 'Intensive learning or immersion session.', fr: 'Apprentissage intensif ou immersion.', ar: 'تعلم مكثف.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/BigTask.webp' },
                     ]
                 };
             default:

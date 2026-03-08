@@ -614,7 +614,6 @@ function CalendarTab({
 }) {
     const { t, language } = useLanguage();
     const todayStr = format(new Date(), 'yyyy-MM-dd');
-    const [showRoutineModal, setShowRoutineModal] = useState(false);
 
     const getMonday = (date: Date) => {
         const d = new Date(date);
@@ -690,29 +689,6 @@ function CalendarTab({
 
     return (
         <div className="flex flex-col bg-white h-full relative">
-            {/* Define Routine Card */}
-            <div className="px-4 pt-4 shrink-0 bg-white">
-                <button
-                    onClick={() => setShowRoutineModal(true)}
-                    className="w-full bg-[#E6F7F4] border-2 border-[#00A082] rounded-[16px] p-4 flex items-center justify-between active:scale-[0.98] transition-transform"
-                >
-                    <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-[#00A082]/10 flex items-center justify-center">
-                            <Clock size={20} className="text-[#00A082]" />
-                        </div>
-                        <div className="text-left">
-                            <h3 className="text-[16px] font-black text-[#00A082] leading-tight">
-                                {t({ en: 'Define your Routine', fr: 'Définissez votre routine', ar: 'تحديد روتينك الأسبوعي' })}
-                            </h3>
-                            <p className="text-[12px] font-bold text-[#00A082]/70 leading-tight">
-                                {t({ en: 'Set your regular weekly working hours', fr: 'Définissez vos heures de travail hebdomadaires régulières', ar: 'حدد ساعات عملك الأسبوعية المعتادة' })}
-                            </p>
-                        </div>
-                    </div>
-                    <ChevronLeft size={20} className={cn("text-[#00A082]", language === 'ar' ? "" : "rotate-180")} />
-                </button>
-            </div>
-
             {/* Horizontal Calendar */}
             <div className="bg-white border-b border-[#F5F5F5] px-4 pt-4 pb-4 flex-shrink-0 sticky top-0 z-30">
                 <div className="flex items-center justify-between mb-4">
@@ -865,14 +841,6 @@ function CalendarTab({
                     </div>
                 </div>
             </div>
-
-            <ProviderRoutineModal
-                isOpen={showRoutineModal}
-                onClose={() => setShowRoutineModal(false)}
-                userData={userData}
-                setUserData={setUserData}
-                TIME_SLOTS={TIME_SLOTS}
-            />
         </div>
     );
 }
@@ -897,9 +865,10 @@ function AvailabilityTab({
     TIME_SLOTS: string[],
     orders: OrderDetails[]
 }) {
-    const { t } = useLanguage();
+    const { t, language } = useLanguage();
     const todayStr = format(new Date(), 'yyyy-MM-dd');
     const selectedDateStr = format(horizontalSelectedDate, 'yyyy-MM-dd');
+    const [showRoutineModal, setShowRoutineModal] = useState(false);
     const [isAdding, setIsAdding] = useState(false);
     const [currentTime, setCurrentTime] = useState(new Date());
 
@@ -1013,6 +982,29 @@ function AvailabilityTab({
 
     return (
         <div className="flex flex-col bg-white h-full relative">
+            {/* Define Routine Card */}
+            <div className="px-4 pt-4 shrink-0 bg-white">
+                <button
+                    onClick={() => setShowRoutineModal(true)}
+                    className="w-full bg-[#E6F7F4] border-2 border-[#00A082] rounded-[16px] p-4 flex items-center justify-between active:scale-[0.98] transition-transform"
+                >
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-[#00A082]/10 flex items-center justify-center">
+                            <Clock size={20} className="text-[#00A082]" />
+                        </div>
+                        <div className="text-left">
+                            <h3 className="text-[16px] font-black text-[#00A082] leading-tight">
+                                {t({ en: 'Define your Routine', fr: 'Définissez votre routine', ar: 'تحديد روتينك الأسبوعي' })}
+                            </h3>
+                            <p className="text-[12px] font-bold text-[#00A082]/70 leading-tight">
+                                {t({ en: 'Set your regular weekly working hours', fr: 'Définissez vos heures de travail hebdomadaires régulières', ar: 'حدد ساعات عملك الأسبوعية المعتادة' })}
+                            </p>
+                        </div>
+                    </div>
+                    <ChevronLeft size={20} className={cn("text-[#00A082]", language === 'ar' ? "" : "rotate-180")} />
+                </button>
+            </div>
+
             {/* Horizontal Calendar */}
             <div className="bg-white border-b border-[#F5F5F5] px-4 pt-4 pb-4 flex-shrink-0 sticky top-0 z-30">
                 <div className="flex items-center justify-between mb-4">
@@ -1227,6 +1219,14 @@ function AvailabilityTab({
                     </>
                 )}
             </AnimatePresence>
+
+            <ProviderRoutineModal
+                isOpen={showRoutineModal}
+                onClose={() => setShowRoutineModal(false)}
+                userData={userData}
+                setUserData={setUserData}
+                TIME_SLOTS={TIME_SLOTS}
+            />
         </div>
     );
 }

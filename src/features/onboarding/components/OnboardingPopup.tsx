@@ -1969,30 +1969,34 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                                                             <div className="w-6 h-6 rounded-full bg-[#00A082] text-white flex items-center justify-center text-[10px] font-black">4</div>
                                                             {t({ en: 'Why the client would choose you and not others?', fr: 'Pourquoi le client vous choisirait-il vous et pas les autres ?', ar: 'لماذا قد يختارك العميل دون غيرك؟' })}
                                                         </label>
-                                                        <div className="relative w-12 h-12 flex items-center justify-center">
-                                                            <svg className="absolute inset-0 w-full h-full -rotate-90">
-                                                                <circle cx="24" cy="24" r="20" className="fill-none stroke-neutral-100" strokeWidth="3" />
-                                                                <circle cx="24" cy="24" r="20" className="fill-none stroke-[#00A082] transition-all duration-500" strokeWidth="3" strokeDasharray={126} strokeDashoffset={126 - (Math.min(currentCatEntry?.pitch?.length || 0, MIN_PITCH_CHARS) / MIN_PITCH_CHARS) * 126} strokeLinecap="round" />
-                                                            </svg>
-                                                            <span className={cn("text-[11px] font-black z-10", (currentCatEntry?.pitch?.length || 0) >= MIN_PITCH_CHARS ? "text-[#00A082]" : "text-neutral-400")}>{currentCatEntry?.pitch?.length || 0}</span>
+                                                    </div>
+                                                    <div className="flex flex-col gap-3">
+                                                        <textarea
+                                                            value={currentCatEntry?.pitch || ''}
+                                                            onChange={e => updateCatEntry(currentCatId, 'pitch', e.target.value)}
+                                                            placeholder={t({
+                                                                en: `Share what makes you the best choice for this service. Your skills, reliability, and approach...`,
+                                                                fr: `Partagez ce qui fait de vous le meilleur choix pour ce service. Vos compétences, votre fiabilité...`,
+                                                                ar: `شارك ما الذي يجعلك الخيار الأفضل لهذه الخدمة. مهاراتك، مصداقيتك، وأسلوبك...`
+                                                            })}
+                                                            rows={5}
+                                                            className={cn(
+                                                                "w-full px-7 py-6 bg-white border-2 rounded-[32px] text-[17px] font-medium text-neutral-900 outline-none transition-all",
+                                                                (currentCatEntry?.pitch?.length || 0) >= MIN_PITCH_CHARS ? "border-[#008C74] bg-[#E6F6F2]/30" : "border-neutral-100 focus:border-[#00A082]"
+                                                            )}
+                                                        />
+                                                        <div className="flex items-center gap-4 px-2">
+                                                            <div className="flex-1 h-2.5 bg-neutral-100 rounded-full overflow-hidden">
+                                                                <div
+                                                                    className={cn("h-full transition-all duration-300 rounded-full", (currentCatEntry?.pitch?.length || 0) >= MIN_PITCH_CHARS ? "bg-[#00A082]" : "bg-[#00A082]/50")}
+                                                                    style={{ width: `${Math.min(100, ((currentCatEntry?.pitch?.length || 0) / MIN_PITCH_CHARS) * 100)}%` }}
+                                                                />
+                                                            </div>
+                                                            <span className={cn("text-[13px] font-black whitespace-nowrap", (currentCatEntry?.pitch?.length || 0) >= MIN_PITCH_CHARS ? "text-[#00A082]" : "text-neutral-400")}>
+                                                                {currentCatEntry?.pitch?.length || 0} / {MIN_PITCH_CHARS}
+                                                            </span>
                                                         </div>
                                                     </div>
-                                                    <textarea
-                                                        value={currentCatEntry?.pitch || ''}
-                                                        onChange={e => updateCatEntry(currentCatId, 'pitch', e.target.value)}
-                                                        placeholder={t({
-                                                            en: `Share what makes you the best choice for this service. Your skills, reliability, and approach...`,
-                                                            fr: `Partagez ce qui fait de vous le meilleur choix pour ce service. Vos compétences, votre fiabilité...`,
-                                                            ar: `شارك ما الذي يجعلك الخيار الأفضل لهذه الخدمة. مهاراتك، مصداقيتك، وأسلوبك...`
-                                                        })}
-                                                        rows={5}
-                                                        className={cn(
-                                                            "w-full px-7 py-6 bg-white border-2 rounded-[32px] text-[17px] font-medium text-neutral-900 outline-none transition-all",
-                                                            (currentCatEntry?.pitch?.length || 0) >= MIN_PITCH_CHARS ? "border-[#008C74] bg-[#E6F6F2]/30" : "border-neutral-100 focus:border-[#00A082]"
-                                                        )}
-                                                    />
-
-
                                                 </motion.div>
                                             )}
                                         </AnimatePresence>
