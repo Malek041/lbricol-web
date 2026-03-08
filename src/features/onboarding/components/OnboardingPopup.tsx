@@ -227,9 +227,9 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
     const [currentCatIdx, setCurrentCatIdx] = useState(0);
     const [equipmentSearch, setEquipmentSearch] = useState('');
 
-    const [selectedCity, setSelectedCity] = useState(userData?.city || '');
+    const [selectedCity, setSelectedCity] = useState(String(userData?.city || ''));
     const [areaSearch, setAreaSearch] = useState('');
-    const [selectedAreas, setSelectedAreas] = useState<string[]>(userData?.areas || []);
+    const [selectedAreas, setSelectedAreas] = useState<string[]>(Array.isArray(userData?.areas) ? userData.areas : (Array.isArray(userData?.selectedAreas) ? userData.selectedAreas : []));
 
     // Availability state
     const [availability, setAvailability] = useState<Record<string, { from: string; to: string }[]>>({
@@ -324,8 +324,8 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
             setBankName(userData.bankName || '');
             setBricolerBankCardName(userData.bricolerBankCardName || '');
             setRibIBAN(userData.ribIBAN || '');
-            setSelectedCity(userData.city || '');
-            setSelectedAreas(userData.areas || userData.selectedAreas || []);
+            setSelectedCity(String(userData.city || ''));
+            setSelectedAreas(Array.isArray(userData.areas) ? userData.areas : (Array.isArray(userData.selectedAreas) ? userData.selectedAreas : []));
             setProfilePhotoUrl(userData.profilePhotoURL || userData.avatar || userData.photoURL || '');
 
             if (userData.services && Array.isArray(userData.services)) {
@@ -443,8 +443,8 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                 const metaId = s.docs[0].id;
                 setLocalUserData({ ...data, id: metaId, metaId: metaId });
 
-                if (data.city) setSelectedCity(data.city);
-                if (data.workAreas) setSelectedAreas(data.workAreas);
+                if (data.city) setSelectedCity(String(data.city));
+                if (Array.isArray(data.workAreas)) setSelectedAreas(data.workAreas);
                 if (data.profilePhotoURL || data.avatar || data.photoURL) {
                     setProfilePhotoUrl(data.profilePhotoURL || data.avatar || data.photoURL);
                 }
@@ -2050,19 +2050,20 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                                             {/* All the city button */}
                                             <button
                                                 onClick={() => {
-                                                    const allAreas = MOROCCAN_CITIES_AREAS[selectedCity] || [];
-                                                    setSelectedAreas(prev =>
-                                                        prev.length === allAreas.length ? [] : allAreas
-                                                    );
+                                                    const allAreas = (selectedCity && MOROCCAN_CITIES_AREAS[selectedCity]) || [];
+                                                    setSelectedAreas(prev => {
+                                                        const current = Array.isArray(prev) ? prev : [];
+                                                        return current.length === allAreas.length ? [] : [...allAreas];
+                                                    });
                                                 }}
                                                 className={cn(
                                                     'col-span-2 flex items-center justify-center gap-2 px-5 py-5 rounded-[12px] border-2 text-[14px] font-bold transition-all mb-2',
-                                                    selectedAreas.length === (MOROCCAN_CITIES_AREAS[selectedCity] || []).length && (MOROCCAN_CITIES_AREAS[selectedCity] || []).length > 0
+                                                    Array.isArray(selectedAreas) && selectedAreas.length === ((selectedCity && MOROCCAN_CITIES_AREAS[selectedCity]) || []).length && ((selectedCity && MOROCCAN_CITIES_AREAS[selectedCity]) || []).length > 0
                                                         ? 'bg-[#E6F6F2] text-[#00A082] border-[#00A082]'
                                                         : 'bg-white text-neutral-800 border-neutral-100 hover:border-neutral-200'
                                                 )}
                                             >
-                                                {selectedAreas.length === (MOROCCAN_CITIES_AREAS[selectedCity] || []).length && (MOROCCAN_CITIES_AREAS[selectedCity] || []).length > 0 && <Check size={16} strokeWidth={4} />}
+                                                {Array.isArray(selectedAreas) && selectedAreas.length === ((selectedCity && MOROCCAN_CITIES_AREAS[selectedCity]) || []).length && ((selectedCity && MOROCCAN_CITIES_AREAS[selectedCity]) || []).length > 0 && <Check size={16} strokeWidth={4} />}
                                                 {t({ en: 'All the city', fr: 'Toute la ville', ar: 'كل المدينة' })}
                                             </button>
                                             {/* Option to add custom area if search doesn't match exactly */}
@@ -2083,11 +2084,15 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                                             )}
 
                                             {filteredAreas.map(area => {
-                                                const sel = selectedAreas.includes(area);
+                                                const currentAreas = Array.isArray(selectedAreas) ? selectedAreas : [];
+                                                const sel = currentAreas.includes(area);
                                                 return (
                                                     <button
                                                         key={area}
-                                                        onClick={() => setSelectedAreas(prev => sel ? prev.filter(x => x !== area) : [...prev, area])}
+                                                        onClick={() => setSelectedAreas(prev => {
+                                                            const current = Array.isArray(prev) ? prev : [];
+                                                            return sel ? current.filter(x => x !== area) : [...current, area];
+                                                        })}
                                                         className={cn(
                                                             'flex items-center justify-center gap-2 px-5 py-5 rounded-[12px] border-2 text-[14px] font-bold transition-all',
                                                             sel ? 'bg-[#E6F6F2] text-[#00A082] border-[#00A082]' : 'bg-white text-neutral-800 border-neutral-100 hover:border-neutral-200'

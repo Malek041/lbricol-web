@@ -709,33 +709,38 @@ const ClientHome: React.FC<ClientHomeProps> = ({
                             </motion.div>
                         )}
 
-                        {/* Bricoler Upsell Slide */}
-                        {showBricolerUpsell && (
-                            <motion.div
-                                initial={{ opacity: 0, x: 20 }}
-                                animate={{ opacity: 1, x: 0 }}
-                                onClick={() => onBecomeBricoler?.()}
-                                className="min-w-[340px] w-full snap-center rounded-[11.36pt] p-5 pb-6 flex items-center cursor-pointer relative overflow-hidden shadow-sm active:scale-[0.98] transition-all bg-[#00A082]"
-                            >
-                                <div className="z-10 w-[55%] pt-2">
-                                    <h3 className="text-[20px] font-black text-white leading-tight mb-2">
-                                        {t({ en: 'Earn with your skills', fr: 'Gagnez avec vos talents', ar: 'اربح بمهاراتك' })}
-                                    </h3>
-                                    <p className="text-[14px] font-medium text-white/90 leading-snug">
-                                        {t({
-                                            en: 'Become a Bricoler — set your prices and choose your hours.',
-                                            fr: 'Devenez Bricoleur — fixez vos prix et choisissez vos horaires.',
-                                            ar: 'كن بريكولرًا — حدد أسعارك واختر مواعيدك.'
-                                        })}
-                                    </p>
-                                </div>
-                                <div className="absolute right-0 bottom-0 h-full w-[45%] flex items-end justify-end">
-                                    <img src="/Images/Vectors Illu/Groceriedbag.png" alt="Grocery bag" className="absolute w-[80px] top-[10%] right-8 z-10 drop-shadow-sm" />
-                                    <img src="/Images/4c456a03818b25032d0e4e80a711d569-Photoroom.png" alt="Moving Helper" className="absolute w-[70px] -bottom-2 right-16 z-20 drop-shadow-md" />
-                                    <img src="/Images/Vectors Illu/Dogwalker.png" alt="Dogwalker" className="absolute w-[60px] bottom-0 right-1 z-20 drop-shadow-md" />
-                                </div>
-                            </motion.div>
-                        )}
+                        {showBricolerUpsell && (() => {
+                            const isRTL = language === 'ar';
+                            return (
+                                <motion.div
+                                    initial={{ opacity: 0, x: 20 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    onClick={() => onBecomeBricoler?.()}
+                                    className="min-w-[340px] w-full snap-center rounded-[11.36pt] p-5 pb-6 flex items-center cursor-pointer relative overflow-hidden shadow-sm active:scale-[0.98] transition-all bg-[#00A082]"
+                                >
+                                    {/* Text block — right side in LTR, left side in RTL */}
+                                    <div className={`z-10 w-[55%] pt-2 ${isRTL ? 'mr-auto text-right' : 'ml-0 text-left'}`}>
+                                        <h3 className="text-[20px] font-black text-white leading-tight mb-2">
+                                            {t({ en: 'Earn with your skills', fr: 'Gagnez avec vos talents', ar: 'اربح بمهاراتك' })}
+                                        </h3>
+                                        <p className="text-[14px] font-medium text-white/90 leading-snug">
+                                            {t({
+                                                en: 'Become a Bricoler — set your prices and choose your hours.',
+                                                fr: 'Devenez Bricoleur — fixez vos prix et choisissez vos horaires.',
+                                                ar: 'كن بريكولرًا — حدد أسعارك واختر مواعيدك.'
+                                            })}
+                                        </p>
+                                    </div>
+                                    {/* Images — right side in LTR, left side in RTL */}
+                                    <div className={`absolute ${isRTL ? 'left-0' : 'right-0'} bottom-0 h-full w-[45%] flex items-end justify-end`}>
+                                        <img src="/Images/Vectors Illu/Groceriedbag.png" alt="Grocery bag" className={`absolute w-[80px] top-[10%] ${isRTL ? 'left-8' : 'right-8'} z-10 drop-shadow-sm`} />
+                                        <img src="/Images/4c456a03818b25032d0e4e80a711d569-Photoroom.png" alt="Moving Helper" className={`absolute w-[70px] -bottom-2 ${isRTL ? 'left-16' : 'right-16'} z-20 drop-shadow-md`} />
+                                        <img src="/Images/Vectors Illu/Dogwalker.png" alt="Dogwalker" className={`absolute w-[60px] bottom-0 ${isRTL ? 'left-1' : 'right-1'} z-20 drop-shadow-md`} />
+                                    </div>
+                                </motion.div>
+                            );
+                        })()}
+
                     </div>
                 )}
             </div>
