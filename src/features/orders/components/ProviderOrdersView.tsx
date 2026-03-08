@@ -229,6 +229,14 @@ export default function ProviderOrdersView({
                     </motion.div>
                 )}
             </AnimatePresence>
+
+            <ProviderRoutineModal
+                isOpen={showRoutineModal}
+                onClose={() => setShowRoutineModal(false)}
+                userData={userData}
+                setUserData={setUserData}
+                TIME_SLOTS={TIME_SLOTS}
+            />
         </div>
     );
 }
@@ -491,7 +499,10 @@ function ActivityTab({
                     <motion.div
                         initial={{ opacity: 0, scale: 0.95 }}
                         animate={{ opacity: 1, scale: 1 }}
-                        onClick={() => setShowRoutineModal(true)}
+                        onClick={() => {
+                            setActiveTab?.('availability');
+                            setShowRoutineModal(true);
+                        }}
                         className="bg-[#00A082] rounded-[24px] p-6 relative overflow-hidden group shadow-xl shadow-[#00A082]/20 cursor-pointer mb-8"
                     >
                         <div className="flex items-center gap-6 relative z-10">
@@ -980,14 +991,6 @@ function AvailabilityTab({
                     </>
                 )}
             </AnimatePresence>
-
-            <ProviderRoutineModal
-                isOpen={showRoutineModal}
-                onClose={() => setShowRoutineModal(false)}
-                userData={userData}
-                setUserData={setUserData}
-                TIME_SLOTS={TIME_SLOTS}
-            />
         </div>
     );
 }
