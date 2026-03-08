@@ -96,9 +96,7 @@ const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
                 justifyContent: 'space-around',
                 alignItems: 'center',
                 padding: `${navPadTop} 0 max(${navPadBottom}, env(safe-area-inset-bottom))`,
-                zIndex: 9999,
-                transform: 'translateZ(0)',
-                WebkitTransform: 'translateZ(0)',
+                zIndex: 1000,
             }}
         >
             {tabs.map((tab) => {
