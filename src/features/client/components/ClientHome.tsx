@@ -628,7 +628,7 @@ const ClientHome: React.FC<ClientHomeProps> = ({
     const active = filteredServices.find(s => s.id === activeId) || filteredServices[0] || visibleServices[0] || SERVICES[0];
 
     return (
-        <div className="min-h-screen bg-white flex flex-col pb-28">
+        <div className="min-h-[100dvh] bg-white flex flex-col pb-28">
 
             {/* ── Location selector ───────────────────────────────────── */}
             <div className="flex items-center justify-center pt-10 px-10">
@@ -645,7 +645,7 @@ const ClientHome: React.FC<ClientHomeProps> = ({
             </div>
 
             {/* ── Hero Heading ─────────────────────────────────────────── */}
-            <div className="px-6 pt-10 pb-12 flex flex-col items-center text-center">
+            <div className="pt-10 pb-12 flex flex-col text-center w-full overflow-hidden">
                 <motion.h1
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -681,7 +681,7 @@ const ClientHome: React.FC<ClientHomeProps> = ({
 
                 {/* Announcements & Offers Section (Horizontal Scroll) */}
                 {(showReferralBanner || showBricolerUpsell) && (
-                    <div className="mt-8 overflow-x-auto no-scrollbar flex items-stretch gap-3 snap-x snap-mandatory pb-4 px-1">
+                    <div className="mt-8 overflow-x-auto no-scrollbar flex items-stretch gap-3 snap-x snap-mandatory pb-4 px-6 w-full max-w-fullbox-border">
                         {/* Referral Banner Slide */}
                         {showReferralBanner && (
                             <motion.div
