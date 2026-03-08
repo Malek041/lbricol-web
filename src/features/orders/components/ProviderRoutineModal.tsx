@@ -42,20 +42,32 @@ export default function ProviderRoutineModal({
     const { t, language } = useLanguage();
 
     const [routine, setRoutine] = useState<RoutineSettings>(() => {
-        return userData?.routine || DEFAULT_ROUTINE;
+        const userRoutine = userData?.routine;
+        // Check if userRoutine is a valid object
+        if (userRoutine && typeof userRoutine === 'object' && !Array.isArray(userRoutine)) {
+            // Merge valid days
+            const merged: any = { ...DEFAULT_ROUTINE };
+            DAYS.forEach(day => {
+                if (userRoutine[day]) {
+                    merged[day] = { ...DEFAULT_ROUTINE[day], ...userRoutine[day] };
+                }
+            });
+            return merged;
+        }
+        return DEFAULT_ROUTINE;
     });
 
     const handleToggleDay = (day: string) => {
         setRoutine(prev => ({
             ...prev,
-            [day]: { ...prev[day], active: !prev[day].active }
+            [day]: { ...(prev?.[day] || DEFAULT_ROUTINE[day]), active: !(prev?.[day]?.active) }
         }));
     };
 
     const handleTimeChange = (day: string, field: 'from' | 'to', value: string) => {
         setRoutine(prev => ({
             ...prev,
-            [day]: { ...prev[day], [field]: value }
+            [day]: { ...(prev?.[day] || DEFAULT_ROUTINE[day]), [field]: value }
         }));
     };
 
@@ -139,7 +151,8 @@ export default function ProviderRoutineModal({
                     {/* Content */}
                     <div className="flex-1 overflow-y-auto px-4 py-6 space-y-4 no-scrollbar pb-32">
                         {DAYS.map((day) => {
-                            const active = routine[day].active;
+                            const dayData = routine?.[day] || DEFAULT_ROUTINE[day];
+                            const active = dayData.active;
                             return (
                                 <div key={day} className={cn(
                                     "bg-white rounded-[20px] p-5 border-2 transition-all",
@@ -174,7 +187,7 @@ export default function ProviderRoutineModal({
                                                 <div className="flex-1 flex flex-col bg-neutral-50 rounded-xl px-4 py-2 border border-neutral-100">
                                                     <span className="text-[10px] font-black text-neutral-400 uppercase">{t({ en: 'From', fr: 'De', ar: 'من' })}</span>
                                                     <select
-                                                        value={routine[day].from}
+                                                        value={dayData.from}
                                                         onChange={(e) => handleTimeChange(day, 'from', e.target.value)}
                                                         className="bg-transparent text-[15px] font-bold text-black outline-none w-full appearance-none pb-1"
                                                     >
@@ -187,7 +200,7 @@ export default function ProviderRoutineModal({
                                                 <div className="flex-1 flex flex-col bg-neutral-50 rounded-xl px-4 py-2 border border-neutral-100">
                                                     <span className="text-[10px] font-black text-neutral-400 uppercase">{t({ en: 'To', fr: 'À', ar: 'إلى' })}</span>
                                                     <select
-                                                        value={routine[day].to}
+                                                        value={dayData.to}
                                                         onChange={(e) => handleTimeChange(day, 'to', e.target.value)}
                                                         className="bg-transparent text-[15px] font-bold text-black outline-none w-full appearance-none pb-1"
                                                     >
