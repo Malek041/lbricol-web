@@ -57,6 +57,22 @@ export default function ProviderRoutineModal({
         return DEFAULT_ROUTINE;
     });
 
+    // Keep routine in sync if userData changes (especially after initial fetch or a save)
+    React.useEffect(() => {
+        if (isOpen && userData?.routine) {
+            const userRoutine = userData.routine;
+            if (typeof userRoutine === 'object' && !Array.isArray(userRoutine)) {
+                const merged: any = { ...DEFAULT_ROUTINE };
+                DAYS.forEach(day => {
+                    if (userRoutine[day]) {
+                        merged[day] = { ...DEFAULT_ROUTINE[day], ...userRoutine[day] };
+                    }
+                });
+                setRoutine(merged);
+            }
+        }
+    }, [isOpen, userData?.routine]);
+
     const handleToggleDay = (day: string) => {
         setRoutine(prev => ({
             ...prev,

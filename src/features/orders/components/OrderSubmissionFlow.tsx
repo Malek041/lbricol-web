@@ -677,6 +677,7 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
     const [bookedOrders, setBookedOrders] = useState<any[]>([]);
     // Refs for smooth scroll
     const descriptionSectionRef = useRef<HTMLDivElement>(null);
+    const dayCounterRef = useRef<HTMLDivElement>(null);
     // Stable draft ID for the current open session — generated once and reused on every save
     const draftIdRef = useRef<string | null>(null);
 
@@ -952,7 +953,26 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
     const activeTaskSize = serviceConfig.options.find(s => s.id === taskSize);
     const selectedPro = bricolers.find(b => b.id === selectedBricolerId);
 
-    // Reset or Load Draft when opened
+    // Auto-scroll the day counter to the selected taskSize
+    useEffect(() => {
+        if (subStep1 === 'size' && (serviceConfig as any)?.isDayCounter && dayCounterRef.current) {
+            const container = dayCounterRef.current;
+            const targetDay = taskSize || String((serviceConfig as any).defaultDays);
+
+            // Wait for children to be rendered then scroll
+            setTimeout(() => {
+                const targetElement = Array.from(container.children).find(
+                    child => child.getAttribute('data-day') === targetDay
+                ) as HTMLElement;
+
+                if (targetElement) {
+                    targetElement.scrollIntoView({ behavior: 'auto', block: 'nearest', inline: 'center' });
+                }
+            }, 50);
+        }
+    }, [subStep1, taskSize, service]);
+
+    // Track state visibility for analytics or UI adjustment
     useEffect(() => {
         if (isOpen) {
             // Initialize stable draft ID once per open session
@@ -1183,7 +1203,8 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
 
         const isDaily = service === 'private_driver';
         const baseDuration = (activeTaskSize as any)?.duration || (isDaily ? 1 : 2);
-        const durationHours = isDaily ? (baseDuration < 1 ? baseDuration * 8 : 8) : baseDuration;
+        // Requirement for a 'day' mission is 7 hours instead of 8 to be more inclusive of standard 10-17 routines
+        const durationHours = isDaily ? (baseDuration < 1 ? baseDuration * 7 : 7) : baseDuration;
         const daysNeeded = isDaily ? baseDuration : 1;
 
         const blocksRaw = (profile as any).calendarSlots?.[dateStr] || (profile as any).availability?.[dateStr];
@@ -1976,6 +1997,7 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                                                                 <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[160px] h-[225px] border-[5px] border-[#008C74] rounded-[100px] z-20 pointer-events-none shadow-[0_0_40px_rgba(0,140,116,0.1)]" />
 
                                                                 <div
+                                                                    ref={dayCounterRef}
                                                                     className="flex items-center gap-20 overflow-x-auto no-scrollbar w-full px-[40%] h-full scroll-smooth"
                                                                     style={{ scrollSnapType: 'x mandatory', WebkitOverflowScrolling: 'touch' }}
                                                                     onScroll={(e) => {
