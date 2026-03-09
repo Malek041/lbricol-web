@@ -306,6 +306,7 @@ export default function ProviderPage() {
     const nameInputRef = useRef<HTMLInputElement>(null);
     const cityInputRef = useRef<HTMLSelectElement>(null);
     const whatsappInputRef = useRef<HTMLInputElement>(null);
+    const performanceScrollRef = useRef<HTMLDivElement>(null);
 
     // 3. UI Logic State
     const [showNewJobPopup, setShowNewJobPopup] = useState(false);
@@ -830,6 +831,13 @@ export default function ProviderPage() {
         });
         return () => unsub();
     }, [providerCity, selectedMonthDt]);
+
+    // Scroll to top when performance detail view changes
+    useEffect(() => {
+        if (performanceScrollRef.current) {
+            performanceScrollRef.current.scrollTo(0, 0);
+        }
+    }, [performanceDetail]);
 
     // 2. Main Logic Effect
     useEffect(() => {
@@ -3323,7 +3331,7 @@ export default function ProviderPage() {
 
                     {
                         activeNav === 'performance' && (
-                            <div className="h-full overflow-y-auto pb-10 no-scrollbar">
+                            <div ref={performanceScrollRef} className="h-full overflow-y-auto pb-10 no-scrollbar">
                                 <div className="space-y-6 max-w-4xl mx-auto px-6 pt-10">
                                     {/* Month Selection Header */}
                                     <div className="flex items-center justify-between mb-8">
