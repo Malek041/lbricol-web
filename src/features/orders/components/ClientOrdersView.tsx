@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { OrderDetails } from '@/features/orders/components/OrderCard';
 import { ChevronLeft, Info, MessageCircle, MessageSquare, Image, HelpCircle, X, MapPin, Clock, Calendar as CalendarIcon, Phone, User, Ban, Check, AlertTriangle, RefreshCw, CreditCard, Wrench, Banknote, Star } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
+import { useToast } from '@/context/ToastContext';
 import { WhatsAppBrandIcon } from '@/components/shared/WhatsAppIcon';
 import { db, auth } from '@/lib/firebase';
 import { doc, updateDoc, arrayUnion, increment, serverTimestamp, getDoc, addDoc, collection } from 'firebase/firestore';
@@ -215,13 +216,35 @@ function CalendarTab({
 
 export default function ClientOrdersView({ orders, onViewMessages, initialShowHistory = false, onResumeDraft }: ClientOrdersViewProps) {
     const { t } = useLanguage();
+    const { showToast } = useToast();
     const [activeTab, setActiveTab] = useState<'activity' | 'calendar'>('activity');
     const [selectedOrder, setSelectedOrder] = useState<OrderDetails | null>(null);
     const [liveBricolerInfo, setLiveBricolerInfo] = useState<{ rating: number, jobsCount: number } | null>(null);
 
-    const openWhatsApp = (number?: string) => {
-        if (!number) return;
-        const cleanNumber = number.replace(/\D/g, '');
+    const openWhatsApp = async (number?: string, bricolerId?: string) => {
+        let targetNumber = number;
+
+        if (!targetNumber && bricolerId) {
+            try {
+                const bricolerSnap = await getDoc(doc(db, 'bricolers', bricolerId));
+                if (bricolerSnap.exists()) {
+                    targetNumber = bricolerSnap.data().whatsappNumber || bricolerSnap.data().phone;
+                }
+            } catch (err) {
+                console.error("Error fetching bricoler contact for WhatsApp:", err);
+            }
+        }
+
+        if (!targetNumber) {
+            showToast({
+                variant: 'error',
+                title: t({ en: 'Error', fr: 'Erreur', ar: 'خطأ' }),
+                description: t({ en: 'Bricoler WhatsApp number not found.', fr: 'Numéro WhatsApp du bricoleur introuvable.', ar: 'رقم واتساب البريكولر غير موجود.' })
+            });
+            return;
+        }
+
+        const cleanNumber = targetNumber.replace(/\D/g, '');
         const finalNumber = cleanNumber.startsWith('212') ? cleanNumber : `212${cleanNumber.startsWith('0') ? cleanNumber.slice(1) : cleanNumber}`;
         window.open(`https://wa.me/${finalNumber}`, '_blank');
     };
@@ -235,7 +258,7 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
                     if (snap.exists()) {
                         const d = snap.data();
                         const reviews = d.reviews || [];
-                        const jobsCount = d.jobsCompleted || d.completedJobs || reviews.length || 0;
+                        const jobsCount = d.jobsCompleted || d.completedJobs || d.numReviews || reviews.length || 0;
                         let rating = d.rating;
                         if (!rating && d.totalRating && reviews.length > 0) {
                             rating = d.totalRating / reviews.length;
@@ -362,7 +385,7 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
                 const newTotal = (data.totalRating || 0) + rating;
                 const newCount = (data.numReviews || 0) + 1;
                 const avgRating = newTotal / newCount;
-                const jobsCount = (data.completedJobs || data.jobsCompleted || 0) + 1;
+                const jobsCount = (data.completedJobs || data.jobsCompleted || data.numReviews || data.jobsDone || 0);
                 // Score formula: (avg_rating × 10) + (completed_jobs × 5)
                 const newScore = Math.round((avgRating * 10) + (jobsCount * 5));
 
@@ -371,8 +394,6 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
                     totalRating: newTotal,
                     numReviews: newCount,
                     rating: avgRating,
-                    jobsCompleted: jobsCount,
-                    completedJobs: jobsCount,
                     score: newScore,
                 });
             } else {
@@ -381,9 +402,6 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
                     totalRating: increment(rating),
                     numReviews: increment(1),
                     rating: rating,
-                    jobsCompleted: increment(1),
-                    completedJobs: increment(1),
-                    score: increment(5),
                 });
             }
 

@@ -498,30 +498,6 @@ const Home = () => {
       setShowClientOnboarding(true);
     }
 
-    if (!savedLang) {
-      setShowLanguagePopup(true);
-    } else if (!savedCity) {
-      setShowCityPopup(true);
-    } else {
-      // Migrate old city names (e.g. Marrakech vs Marrakesh)
-      let migratedCity = savedCity;
-      if (migratedCity === 'Marrakesh') migratedCity = 'Marrakech';
-
-      // Remove the artificial '(Inside)' suffix if present from old sessions
-      if (migratedCity && migratedCity.includes(' (')) {
-        migratedCity = migratedCity.split(' (')[0];
-        localStorage.setItem('lbricol_preferred_city', migratedCity);
-      }
-
-      setSelectedCity(migratedCity);
-      setLocation(migratedCity);
-
-      const savedArea = localStorage.getItem('lbricol_preferred_area');
-      if (savedArea) setSelectedArea(savedArea);
-
-      setShowCityPopup(false);
-    }
-
     // RESTORE PENDING ORDER after auth redirect (mobile hack)
     const savedPending = localStorage.getItem('lbricol_pending_quick_order');
     if (savedPending) {
@@ -534,6 +510,33 @@ const Home = () => {
 
     setMounted(true);
   }, []);
+
+  // Sequential popups after splash finishes (for first-timers)
+  useEffect(() => {
+    if (!showSplash && mounted) {
+      const savedLang = localStorage.getItem('lbricol_language');
+      const savedCity = localStorage.getItem('lbricol_preferred_city');
+
+      if (!savedLang) {
+        setShowLanguagePopup(true);
+      } else if (!savedCity) {
+        setShowCityPopup(true);
+      } else {
+        // Migration and Sync
+        let migratedCity = savedCity;
+        if (migratedCity === 'Marrakesh') migratedCity = 'Marrakech';
+        if (migratedCity && migratedCity.includes(' (')) {
+          migratedCity = migratedCity.split(' (')[0];
+          localStorage.setItem('lbricol_preferred_city', migratedCity);
+        }
+        setSelectedCity(migratedCity);
+        setLocation(migratedCity);
+        const savedArea = localStorage.getItem('lbricol_preferred_area');
+        if (savedArea) setSelectedArea(savedArea);
+        setShowCityPopup(false);
+      }
+    }
+  }, [showSplash, mounted]);
 
   // Supply-side Service Filtering
   useEffect(() => {
@@ -1500,7 +1503,7 @@ const Home = () => {
         canvas.height = height;
         const ctx = canvas.getContext('2d');
         ctx?.drawImage(img, 0, 0, width, height);
-        resolve(canvas.toDataURL('image/jpeg', 0.7)); // 0.7 quality for good balance
+        resolve(canvas.toDataURL('image/jpeg', 0.4)); // Lower quality for faster uploads
       };
     });
   };
@@ -1618,6 +1621,12 @@ const Home = () => {
         setShowClientWhatsAppPopup(true);
         setIsProgramming(false);
         return;
+      }
+
+      // Ensure it is associated to the profile if we have it now
+      if (effectiveWhatsApp && effectiveUser) {
+        await setDoc(doc(db, 'users', effectiveUser.uid), { whatsappNumber: effectiveWhatsApp }, { merge: true });
+        await setDoc(doc(db, 'clients', effectiveUser.uid), { whatsappNumber: effectiveWhatsApp }, { merge: true });
       }
 
       // Step 4: Build orders
@@ -1882,8 +1891,9 @@ const Home = () => {
     }
 
     try {
-      // 1. Save WhatsApp to clients
+      // 1. Save WhatsApp to both users and clients for universal availability
       await setDoc(doc(db, 'clients', currentUser.uid), { whatsappNumber }, { merge: true });
+      await setDoc(doc(db, 'users', currentUser.uid), { whatsappNumber }, { merge: true });
       setUserData((prev: any) => ({ ...prev, whatsappNumber }));
 
       let referralDiscountApplied = 0;
@@ -2100,12 +2110,18 @@ const Home = () => {
       return;
     }
 
-    const effectiveWhatsApp = whatsappOverride || userData?.whatsappNumber || "";
+    const effectiveWhatsApp = whatsappOverride || userData?.whatsappNumber || data.clientWhatsApp || "";
     if (!effectiveWhatsApp) {
       setPendingQuickOrder(data);
       localStorage.setItem('lbricol_pending_quick_order', JSON.stringify(data));
       setShowClientWhatsAppPopup(true);
       return;
+    }
+
+    // Association Check: if we found a WA but it's not in userData yet, associate it
+    if (effectiveWhatsApp && effectiveUser && !userData?.whatsappNumber) {
+      setDoc(doc(db, 'users', effectiveUser.uid), { whatsappNumber: effectiveWhatsApp }, { merge: true }).catch(console.error);
+      setDoc(doc(db, 'clients', effectiveUser.uid), { whatsappNumber: effectiveWhatsApp }, { merge: true }).catch(console.error);
     }
 
     setIsProgramming(true);

@@ -476,13 +476,13 @@ export default function ProviderPage() {
             timeLabel: dateInfo.timeLabel,
             description: isMarket ? raw.description : (raw.description || raw.comment || ''),
             clientRating: isMarket ? (raw.clientRating || raw.rating || 5.0) : (raw.clientRating || raw.rating || 5.0),
-            clientReviewCount: isMarket ? (raw.clientReviewCount || 12) : (raw.clientReviewCount || 12),
+            clientReviewCount: isMarket ? (raw.clientReviewCount || 0) : (raw.clientReviewCount || 0),
             priceLabel: isMarket ? formatJobPrice(raw.basePrice || raw.price) : String(raw.basePrice || raw.price),
             image: raw.image || '',
             images: raw.images || [],
             rawJob: isMarket ? raw : undefined,
             rawAccepted: !isMarket ? raw : undefined,
-            clientWhatsApp: raw.clientWhatsApp
+            clientWhatsApp: raw.clientWhatsApp || raw.clientPhone || ""
         };
     }, [user, formatJobPrice, t]);
 
@@ -1179,12 +1179,23 @@ export default function ProviderPage() {
                     // Auto mark as done
                     try {
                         const jobRef = doc(db, 'jobs', job.id!);
-                        await updateDoc(jobRef, {
-                            status: 'done',
-                            autoCompleted: true,
-                            completedAt: serverTimestamp()
-                        });
-                        console.log(`Auto-completed job ${job.id}`);
+                        const jobSnap = await getDoc(jobRef);
+                        if (jobSnap.exists() && jobSnap.data().status !== 'done') {
+                            await updateDoc(jobRef, {
+                                status: 'done',
+                                autoCompleted: true,
+                                completedAt: serverTimestamp()
+                            });
+
+                            // Increment Bricoler jobs
+                            if (job.bricolerId) {
+                                const bricolerRef = doc(db, 'bricolers', job.bricolerId);
+                                await updateDoc(bricolerRef, {
+                                    completedJobs: increment(1)
+                                }).catch(console.error);
+                            }
+                            console.log(`Auto-completed job ${job.id}`);
+                        }
                     } catch (err) {
                         console.error(`Error auto-completing job ${job.id}:`, err);
                     }
@@ -1260,6 +1271,18 @@ export default function ProviderPage() {
                 const jobSnap = await getDoc(jobRef);
                 if (jobSnap.exists()) {
                     const jobData = jobSnap.data();
+
+                    // Increment Bricoler jobs on status change to 'done' or 'delivered'
+                    if ((updates.status === 'done' || updates.status === 'delivered') &&
+                        jobData.status !== 'done' && jobData.status !== 'delivered' && jobData.status !== updates.status) {
+                        if (jobData.bricolerId) {
+                            const bricolerRef = doc(db, 'bricolers', jobData.bricolerId);
+                            await updateDoc(bricolerRef, {
+                                completedJobs: increment(1)
+                            }).catch(console.error);
+                        }
+                    }
+
                     if (jobData.clientId) {
                         await addDoc(collection(db, 'client_notifications'), {
                             clientId: jobData.clientId,
@@ -1851,7 +1874,7 @@ export default function ProviderPage() {
         const d = new Date(ts);
         return d.getMonth() === selectedMonthDt.getMonth() && d.getFullYear() === selectedMonthDt.getFullYear();
     });
-    const monthDoneJobs = monthJobs.filter((job) => job.status === 'done');
+    const monthDoneJobs = monthJobs.filter((job) => job.status === 'done' || job.status === 'delivered');
 
     // ── Calculate month-scoped worked hours ──
     const monthWorkedHours = monthDoneJobs.reduce((sum, job) => sum + (Number((job as any).duration) || 0), 0);
@@ -1998,9 +2021,39 @@ export default function ProviderPage() {
     }, [jobsBySection, mobileJobsStatus]);
     const stackedMobileJobs = visibleMobileJobs.slice(0, 3);
 
-    const openWhatsApp = (number?: string) => {
-        if (!number) return;
-        const cleanNumber = number.replace(/\D/g, '');
+    const openWhatsApp = async (number?: string, clientId?: string) => {
+        let targetNumber = number;
+
+        if (!targetNumber && clientId) {
+            try {
+                // Try from clients collection
+                const clientSnap = await getDoc(doc(db, 'clients', clientId));
+                if (clientSnap.exists()) {
+                    targetNumber = clientSnap.data().whatsappNumber || clientSnap.data().phone;
+                }
+
+                // Fallback to users collection
+                if (!targetNumber) {
+                    const userSnap = await getDoc(doc(db, 'users', clientId));
+                    if (userSnap.exists()) {
+                        targetNumber = userSnap.data().whatsappNumber || userSnap.data().phone;
+                    }
+                }
+            } catch (err) {
+                console.error("Error fetching client contact for WhatsApp:", err);
+            }
+        }
+
+        if (!targetNumber) {
+            showToast({
+                variant: 'error',
+                title: t({ en: 'Error', fr: 'Erreur', ar: 'خطأ' }),
+                description: t({ en: 'Client WhatsApp number not found.', fr: 'Numéro WhatsApp du client introuvable.', ar: 'رقم واتساب العميل غير موجود.' })
+            });
+            return;
+        }
+
+        const cleanNumber = targetNumber.replace(/\D/g, '');
         const finalNumber = cleanNumber.startsWith('212') ? cleanNumber : `212${cleanNumber.startsWith('0') ? cleanNumber.slice(1) : cleanNumber}`;
         window.open(`https://wa.me/${finalNumber}`, '_blank');
     };
@@ -2038,7 +2091,7 @@ export default function ProviderPage() {
                         <div className="flex items-center gap-4">
                             {(job.rawAccepted?.status === 'confirmed' || job.rawAccepted?.status === 'programmed' || job.rawAccepted?.status === 'accepted') && (
                                 <button
-                                    onClick={() => openWhatsApp(job.clientWhatsApp)}
+                                    onClick={() => openWhatsApp(job.clientWhatsApp, job.rawAccepted?.clientId || job.rawJob?.clientId)}
                                     className="w-10 h-10 rounded-full flex items-center justify-center hover:bg-neutral-50 active:scale-90 transition-all"
                                 >
                                     <WhatsAppBrandIcon className="w-6 h-6" />
@@ -2091,7 +2144,7 @@ export default function ProviderPage() {
                                     {(job.rawAccepted?.status === 'confirmed' || job.rawAccepted?.status === 'programmed' || job.rawAccepted?.status === 'accepted') && (
                                         <div className="col-span-1 sm:col-span-2 mb-2">
                                             <button
-                                                onClick={() => openWhatsApp(job.clientWhatsApp)}
+                                                onClick={() => openWhatsApp(job.clientWhatsApp, job.rawAccepted?.clientId || job.rawJob?.clientId)}
                                                 className="w-full bg-[#25D366] text-white py-4 rounded-xl font-black text-[18px] flex items-center justify-center gap-3 hover:bg-[#128C7E] transition-all shadow-sm"
                                             >
                                                 <WhatsAppBrandIcon className="w-6 h-6" />
@@ -2203,7 +2256,7 @@ export default function ProviderPage() {
                                                 <div className="flex items-center gap-1.5 mt-0.5">
                                                     <div className="flex items-center gap-0.5 mr-1">
                                                         {[1, 2, 3, 4, 5].map((s) => (
-                                                            <Star key={s} size={14} className={cn("fill-neutral-200 text-neutral-200", s <= Math.floor(job.clientRating || 5) ? "fill-[#FFC244] text-[#FFC244]" : "")} />
+                                                            <Star key={s} size={14} className={cn("fill-neutral-200 text-neutral-200", (job.clientRating && s <= Math.floor(job.clientRating)) ? "fill-[#FFC244] text-[#FFC244]" : "")} />
                                                         ))}
                                                     </div>
                                                     <span className="text-[13px] font-bold text-[#FFC244]">{job.clientRating || '5.0'}</span>
@@ -4560,7 +4613,7 @@ export default function ProviderPage() {
 
 
                 {/* Chat and Other Overlays */}
-                < AnimatePresence key="other-overlays-presence" >
+                <AnimatePresence key="other-overlays-presence">
                     {
                         selectedChat && (
                             <motion.div
@@ -5073,10 +5126,10 @@ export default function ProviderPage() {
                             </div>
                         )}
                     </AnimatePresence>
-                </AnimatePresence >
+                </AnimatePresence>
 
                 {/* New Job Floating Notification */}
-                < AnimatePresence key="new-job-presence" >
+                <AnimatePresence key="new-job-presence">
                     {
                         showNewJobPopup && latestJob && (
                             <motion.div
@@ -5332,7 +5385,7 @@ export default function ProviderPage() {
                         </motion.div>
                     )}
                 </AnimatePresence>
-            </AnimatePresence >
-        </div >
+            </AnimatePresence>
+        </div>
     );
 }

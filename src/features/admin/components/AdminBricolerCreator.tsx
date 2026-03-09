@@ -66,6 +66,7 @@ const AdminBricolerCreator: React.FC<AdminBricolerCreatorProps> = ({ t, onBack }
                 bio: formData.bio,
                 rating: Number(formData.rating),
                 numReviews: Number(formData.jobsDone),
+                completedJobs: Number(formData.jobsDone),
                 totalEarnings: Number(formData.totalEarned),
                 services: formData.services,
                 isActive: true,
@@ -195,8 +196,8 @@ const AdminBricolerCreator: React.FC<AdminBricolerCreatorProps> = ({ t, onBack }
                                 type="button"
                                 onClick={() => toggleService(cat)}
                                 className={`px-4 py-2 rounded-full text-xs font-bold transition-all ${formData.services.includes(cat)
-                                        ? 'bg-[#FFC244] text-black ring-2 ring-[#FFC244] ring-offset-2'
-                                        : 'bg-neutral-100 text-neutral-500 hover:bg-neutral-200'
+                                    ? 'bg-[#FFC244] text-black ring-2 ring-[#FFC244] ring-offset-2'
+                                    : 'bg-neutral-100 text-neutral-500 hover:bg-neutral-200'
                                     }`}
                             >
                                 {cat}

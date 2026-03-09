@@ -10,7 +10,7 @@ import {
     Camera, RefreshCw
 } from 'lucide-react';
 import { auth, db, storage } from '@/lib/firebase';
-import { collection, query, where, getDocs, Timestamp, serverTimestamp, doc, getDoc } from 'firebase/firestore';
+import { collection, query, where, getDocs, Timestamp, serverTimestamp, doc, getDoc, setDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { getServiceById, getSubServiceName, getServiceVector } from '@/config/services_config';
 import { MOROCCAN_CITIES, MOROCCAN_CITIES_AREAS } from '@/config/moroccan_areas';
@@ -51,6 +51,8 @@ interface Bricoler {
     reviews?: any[];
     portfolio?: string[];
     whatsappNumber?: string;
+    numReviews?: number;
+    jobsDone?: number;
     servesArea?: boolean;
     routine?: Record<string, { active: boolean; from: string; to: string }>;
     calendarSlots?: Record<string, { from: string; to: string }[]>;
@@ -304,7 +306,13 @@ const playMatchSound = () => {
 
 const BricolerCard = ({ bricoler, onSelect, onOpenProfile, isSelected, serviceName, index = 0 }: { bricoler: Bricoler, onSelect: () => void, onOpenProfile: () => void, isSelected: boolean, serviceName: string, index?: number }) => {
     const { t } = useLanguage();
-    const effectiveJobs = Math.max(bricoler.completedJobs || 0, (bricoler.reviews || []).length);
+    // effectiveJobs takes the max of different count fields for robustness (shadow vs real profiles)
+    const effectiveJobs = Math.max(
+        bricoler.completedJobs || 0,
+        bricoler.numReviews || 0,
+        bricoler.jobsDone || 0,
+        (bricoler.reviews || []).length
+    );
     const effectiveRating = (bricoler.rating && bricoler.rating > 0)
         ? bricoler.rating
         : (bricoler.reviews && bricoler.reviews.length > 0
@@ -1930,6 +1938,16 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
             let clientWhatsApp = user.phoneNumber || '';
 
             try {
+                // Primary check: global users collection
+                const userRef = doc(db, 'users', user.uid);
+                const userSnap = await getDoc(userRef);
+                if (userSnap.exists()) {
+                    const uData = userSnap.data();
+                    clientWhatsApp = uData.whatsappNumber || clientWhatsApp;
+                    clientName = uData.name || clientName;
+                }
+
+                // Secondary check/fallback: clients collection
                 const clientDoc = await getDoc(doc(db, 'clients', user.uid));
                 if (clientDoc.exists()) {
                     const cData = clientDoc.data();
@@ -2037,6 +2055,13 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
             };
 
             await onSubmit(orderData);
+
+            // Association maintenance: ensure the WA used is synced to the profile for next time
+            if (clientWhatsApp && user.uid) {
+                setDoc(doc(db, 'users', user.uid), { whatsappNumber: clientWhatsApp }, { merge: true }).catch(console.error);
+                setDoc(doc(db, 'clients', user.uid), { whatsappNumber: clientWhatsApp }, { merge: true }).catch(console.error);
+            }
+
             setShowSuccessAnimation(true);
 
             // Clear draft on success
@@ -3063,7 +3088,7 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                                                                         if (!file) return;
                                                                         setIsUploadingReceipt(true);
                                                                         try {
-                                                                            const compressedBase64 = await compressImageFileToDataUrl(file, { maxWidth: 800, maxHeight: 800, quality: 0.5 });
+                                                                            const compressedBase64 = await compressImageFileToDataUrl(file, { maxWidth: 800, maxHeight: 800, quality: 0.35 });
                                                                             setBankReceipt(compressedBase64);
                                                                         } catch (err) {
                                                                             console.error("Failed to compress receipt image", err);

@@ -38,11 +38,18 @@ const RatingPopup: React.FC<RatingPopupProps> = ({
     orderTime,
 }) => {
     const { t } = useLanguage();
+    const [step, setStep] = useState(1);
+    const [direction, setDirection] = useState(1);
     const [rating, setRating] = useState(0);
     const [hover, setHover] = useState(0);
     const [review, setReview] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [alreadySeen, setAlreadySeen] = useState(false);
+
+    const setStepWithDirection = (s: number) => {
+        setDirection(s > step ? 1 : -1);
+        setStep(s);
+    };
 
     // Guard: only show once per job using localStorage
     useEffect(() => {
@@ -68,7 +75,13 @@ const RatingPopup: React.FC<RatingPopupProps> = ({
         onClose();
     };
 
-    const handleSubmit = async () => {
+    const handleRatingSelect = (val: number) => {
+        setRating(val);
+        // Small delay for visual feedback before sliding
+        setTimeout(() => setStepWithDirection(2), 300);
+    };
+
+    const handleSubmit = async (isSkip = false) => {
         if (rating === 0 || isSubmitting) return;
         setIsSubmitting(true);
         try {
@@ -76,7 +89,7 @@ const RatingPopup: React.FC<RatingPopupProps> = ({
             const reviewData = {
                 id: jobId,
                 rating,
-                comment: review,
+                comment: isSkip ? "" : review,
                 serviceId: serviceId || serviceName,
                 serviceName,
                 date: new Date().toISOString(),
@@ -93,7 +106,7 @@ const RatingPopup: React.FC<RatingPopupProps> = ({
                 const totalRating = (data.totalRating || 0) + rating;
                 const numReviews = (data.numReviews || 0) + 1;
                 const averageRating = totalRating / numReviews;
-                const jobsCount = (data.completedJobs || data.jobsCompleted || 0) + 1;
+                const jobsCount = (data.completedJobs || data.jobsCompleted || data.numReviews || data.jobsDone || 0);
 
                 // Compute the bricoler's score in sync with the distribution algorithm:
                 // score = (avg_rating × 10) + (completed_jobs × 5)
@@ -104,30 +117,20 @@ const RatingPopup: React.FC<RatingPopupProps> = ({
                     totalRating: totalRating,
                     numReviews: numReviews,
                     rating: averageRating,
-                    jobsCompleted: jobsCount,
-                    completedJobs: jobsCount,
                     score: newScore,
                 });
             } else {
-                // Fallback for missing profile (should not happen for active bricolers)
                 await updateDoc(bricolerRef, {
                     reviews: arrayUnion(reviewData),
                     totalRating: increment(rating),
                     numReviews: increment(1),
                     rating: rating,
-                    jobsCompleted: increment(1),
-                    completedJobs: increment(1),
-                    score: increment(5), // minimal bump for fallback path
                 });
             }
 
-            // Mark job as rated — prevents future pop-ups from Firestore side
             const jobRef = doc(db, 'jobs', jobId);
             await updateDoc(jobRef, { rated: true });
-
-            // Also guard locally so it never re-appears in this session
             localStorage.setItem(`lbricol_rated_${jobId}`, '1');
-
             onClose();
         } catch (err) {
             console.error('Error submitting review:', err);
@@ -138,16 +141,13 @@ const RatingPopup: React.FC<RatingPopupProps> = ({
 
     const serviceVector = getServiceVector(serviceId || serviceName);
 
-    // Format the order date/time for display
     const displayDate = (() => {
         if (!orderDate) return null;
         try {
             const d = new Date(orderDate);
             if (isNaN(d.getTime())) return orderDate;
             return d.toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' });
-        } catch {
-            return orderDate;
-        }
+        } catch { return orderDate; }
     })();
 
     const displayTime = (() => {
@@ -158,176 +158,198 @@ const RatingPopup: React.FC<RatingPopupProps> = ({
             const period = h >= 12 ? 'pm' : 'am';
             const displayH = h > 12 ? h - 12 : (h === 0 ? 12 : h);
             return `${displayH}:${String(m || 0).padStart(2, '0')}${period}`;
-        } catch {
-            return orderTime;
-        }
+        } catch { return orderTime; }
     })();
+
+    const variants = {
+        enter: (direction: number) => ({
+            x: direction > 0 ? 300 : -300,
+            opacity: 0
+        }),
+        center: {
+            x: 0,
+            opacity: 1
+        },
+        exit: (direction: number) => ({
+            x: direction < 0 ? 300 : -300,
+            opacity: 0
+        })
+    };
 
     return (
         <AnimatePresence>
             {isOpen && !alreadySeen && (
-                <div className="fixed inset-0 z-[5000] flex items-center justify-center p-4">
+                <div className="fixed inset-0 z-[5000] flex items-end md:items-center justify-center">
                     {/* Backdrop */}
                     <motion.div
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+                        className="absolute inset-0 bg-black/40 backdrop-blur-sm"
                         onClick={handleClose}
                     />
 
-                    {/* Card */}
+                    {/* Bottom Sheet Container */}
                     <motion.div
-                        initial={{ scale: 0.85, y: 60, opacity: 0 }}
-                        animate={{ scale: 1, y: 0, opacity: 1 }}
-                        exit={{ scale: 0.85, y: 60, opacity: 0 }}
-                        transition={{ type: 'spring', damping: 22, stiffness: 280 }}
-                        className="relative bg-white w-full max-w-[400px] rounded-[32px] shadow-2xl overflow-hidden"
+                        initial={{ y: '100%' }}
+                        animate={{ y: 0 }}
+                        exit={{ y: '100%' }}
+                        transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+                        className="relative bg-white w-full max-w-[450px] rounded-t-[40px] md:rounded-[40px] shadow-2xl overflow-hidden pb-10 md:pb-6"
                     >
-                        {/* Decorative top accent */}
-                        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#FFC244] via-[#00A082] to-[#FFC244]" />
+                        {/* Drag indicator (mobile feel) */}
+                        <div className="w-12 h-1.5 bg-neutral-200 rounded-full mx-auto mt-4 mb-2 md:hidden" />
 
                         {/* Close button */}
                         <button
                             onClick={handleClose}
-                            className="absolute top-5 right-5 z-10 w-9 h-9 bg-neutral-100 rounded-full flex items-center justify-center text-neutral-400 hover:text-black transition-colors"
+                            className="absolute top-6 right-6 z-10 w-10 h-10 bg-neutral-100 rounded-full flex items-center justify-center text-neutral-400 hover:text-black transition-colors"
                         >
-                            <X size={18} />
+                            <X size={20} />
                         </button>
 
-                        {/* ── Order Context Banner ── */}
-                        <div className="px-6 pt-7 pb-5 border-b border-neutral-100 bg-neutral-50/60">
-                            <div className="flex items-center gap-4">
-                                {/* Service image */}
-                                <div className="w-16 h-16 rounded-[18px] bg-white border border-neutral-100 shadow-sm flex items-center justify-center flex-shrink-0 p-2">
-                                    <img
-                                        src={serviceVector}
-                                        alt={serviceName}
-                                        className="w-full h-full object-contain"
-                                    />
-                                </div>
-                                {/* Service info */}
-                                <div className="flex-1 min-w-0">
-                                    <p className="text-[11px] font-black uppercase tracking-widest text-[#00A082] mb-0.5">
-                                        {t({ en: 'Completed Mission', fr: 'Mission terminée', ar: 'مهمة منجزة' })}
-                                    </p>
-                                    <h3 className="text-[17px] font-black text-black leading-tight truncate capitalize">
-                                        {subServiceName ? `${serviceName} › ${subServiceName}` : serviceName}
-                                    </h3>
-                                    {(displayDate || displayTime) && (
-                                        <p className="text-[13px] font-semibold text-neutral-400 mt-0.5">
-                                            {[displayDate, displayTime].filter(Boolean).join(' · ')}
-                                        </p>
-                                    )}
-                                </div>
-                            </div>
-
-                            {/* Bricoler strip */}
-                            <div className="mt-4 flex items-center gap-3 bg-white rounded-[16px] px-4 py-3 border border-neutral-100">
-                                {bricolerAvatar ? (
-                                    <img
-                                        src={bricolerAvatar}
-                                        className="w-9 h-9 rounded-full object-cover"
-                                        alt={bricolerName}
-                                    />
-                                ) : (
-                                    <div className="w-9 h-9 rounded-full bg-[#00A082]/10 flex items-center justify-center text-[#00A082] font-black text-[16px]">
-                                        {bricolerName[0]?.toUpperCase()}
-                                    </div>
-                                )}
-                                <div>
-                                    <p className="text-[11px] font-bold text-neutral-400 uppercase tracking-wide">
-                                        {t({ en: 'Your Bricoler', fr: 'Votre Bricoler', ar: 'مقدم الخدمة' })}
-                                    </p>
-                                    <p className="text-[15px] font-black text-black leading-tight">{bricolerName}</p>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* ── Rating Body ── */}
-                        <div className="px-6 pt-6 pb-7 flex flex-col items-center gap-5">
-                            <div className="text-center">
-                                <h2 className="text-[22px] font-black text-black">
-                                    {t({ en: 'Rate your experience', fr: 'Notez votre expérience', ar: 'قيّم تجربتك' })}
-                                </h2>
-                                <p className="text-[14px] font-medium text-neutral-500 mt-1">
-                                    {t({
-                                        en: 'Tap a star to rate this mission',
-                                        fr: 'Appuyez sur une étoile pour évaluer',
-                                        ar: 'اضغط على نجمة لتقييم المهمة',
-                                    })}
-                                </p>
-                            </div>
-
-                            {/* Stars */}
-                            <div className="flex gap-1.5">
-                                {[1, 2, 3, 4, 5].map((star) => (
-                                    <motion.button
-                                        key={star}
-                                        whileHover={{ scale: 1.25 }}
-                                        whileTap={{ scale: 0.9 }}
-                                        onClick={() => setRating(star)}
-                                        onMouseEnter={() => setHover(star)}
-                                        onMouseLeave={() => setHover(0)}
-                                        className="p-1"
+                        <div className="relative overflow-hidden">
+                            <AnimatePresence initial={false} mode="wait" custom={direction}>
+                                {step === 1 ? (
+                                    <motion.div
+                                        key="step1"
+                                        custom={direction}
+                                        variants={variants}
+                                        initial="enter"
+                                        animate="center"
+                                        exit="exit"
+                                        transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+                                        className="px-6 md:px-8 py-4"
                                     >
-                                        <Star
-                                            size={38}
-                                            className={cn(
-                                                'transition-colors drop-shadow-sm',
-                                                (hover || rating) >= star
-                                                    ? 'text-[#FFC244] fill-[#FFC244]'
-                                                    : 'text-neutral-200 fill-neutral-100'
-                                            )}
-                                        />
-                                    </motion.button>
-                                ))}
-                            </div>
+                                        <div className="mb-6">
+                                            <div className="flex items-center gap-4 mb-4">
+                                                <div className="w-16 h-16 rounded-2xl bg-neutral-50 border border-neutral-100 p-2 flex items-center justify-center">
+                                                    <img src={serviceVector} alt={serviceName} className="w-full h-full object-contain" />
+                                                </div>
+                                                <div className="min-w-0">
+                                                    <p className="text-[11px] font-black text-[#00A082] uppercase tracking-[0.15em] mb-1">
+                                                        {t({ en: 'Mission Completed', fr: 'Mission terminée' })}
+                                                    </p>
+                                                    <h3 className="text-[18px] font-black text-black leading-tight truncate capitalize">
+                                                        {subServiceName || serviceName}
+                                                    </h3>
+                                                    <p className="text-[13px] font-bold text-neutral-400">
+                                                        {[displayDate, displayTime].filter(Boolean).join(' · ')}
+                                                    </p>
+                                                </div>
+                                            </div>
 
-                            {/* Optional review textarea */}
-                            <div className="w-full relative">
-                                <textarea
-                                    value={review}
-                                    onChange={(e) => setReview(e.target.value)}
-                                    placeholder={t({
-                                        en: 'Write a quick review (optional)...',
-                                        fr: 'Écrivez un court avis (optionnel)...',
-                                        ar: 'اكتب تقييماً سريعاً (اختياري)...',
-                                    })}
-                                    rows={3}
-                                    className="w-full px-4 py-3.5 rounded-[18px] bg-neutral-50 border border-neutral-100 focus:ring-2 focus:ring-[#FFC244] focus:border-transparent text-[14px] font-medium resize-none outline-none transition-all"
-                                />
-                                <MessageSquare size={15} className="absolute top-4 right-4 text-neutral-300 pointer-events-none" />
-                            </div>
+                                            <div className="bg-neutral-50 rounded-[28px] p-5 flex items-center gap-4 border border-neutral-100">
+                                                <div className="w-12 h-12 rounded-full overflow-hidden flex-shrink-0 bg-neutral-200">
+                                                    {bricolerAvatar ? (
+                                                        <img src={bricolerAvatar} className="w-full h-full object-cover" alt={bricolerName} />
+                                                    ) : (
+                                                        <div className="w-full h-full flex items-center justify-center text-[#00A082] font-black text-xl">
+                                                            {bricolerName[0]?.toUpperCase()}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                                <div className="flex-1">
+                                                    <p className="text-[10px] font-black text-neutral-400 uppercase tracking-widest mb-0.5">{t({ en: 'Your Pro', fr: 'Votre Pro' })}</p>
+                                                    <p className="text-[17px] font-black text-black">{bricolerName}</p>
+                                                </div>
+                                            </div>
+                                        </div>
 
-                            {/* Submit button */}
-                            <button
-                                onClick={handleSubmit}
-                                disabled={rating === 0 || isSubmitting}
-                                className={cn(
-                                    'w-full py-4 rounded-[20px] font-black text-[16px] flex items-center justify-center gap-2 transition-all active:scale-95',
-                                    rating > 0 && !isSubmitting
-                                        ? 'bg-[#00A082] text-white shadow-lg shadow-[#00A082]/20'
-                                        : 'bg-neutral-100 text-neutral-400 cursor-not-allowed'
-                                )}
-                            >
-                                {isSubmitting ? (
-                                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                        <div className="text-center space-y-4 mb-8">
+                                            <h2 className="text-[24px] font-black text-black leading-tight">
+                                                {t({ en: 'Rate your experience', fr: 'Notez votre expérience' })}
+                                            </h2>
+                                            <div className="flex justify-center gap-2">
+                                                {[1, 2, 3, 4, 5].map((star) => (
+                                                    <motion.button
+                                                        key={star}
+                                                        whileHover={{ scale: 1.2 }}
+                                                        whileTap={{ scale: 0.9 }}
+                                                        onClick={() => handleRatingSelect(star)}
+                                                        onMouseEnter={() => setHover(star)}
+                                                        onMouseLeave={() => setHover(0)}
+                                                        className="p-1"
+                                                    >
+                                                        <Star
+                                                            size={44}
+                                                            className={cn(
+                                                                'transition-all duration-200',
+                                                                (hover || rating) >= star
+                                                                    ? 'text-[#FFC244] fill-[#FFC244] drop-shadow-[0_0_8px_rgba(255,194,68,0.3)]'
+                                                                    : 'text-neutral-200 fill-neutral-100'
+                                                            )}
+                                                        />
+                                                    </motion.button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </motion.div>
                                 ) : (
-                                    <>
-                                        <Send size={17} />
-                                        {t({ en: 'Submit Review', fr: "Envoyer l'avis", ar: 'إرسال التقييم' })}
-                                    </>
-                                )}
-                            </button>
+                                    <motion.div
+                                        key="step2"
+                                        custom={direction}
+                                        variants={variants}
+                                        initial="enter"
+                                        animate="center"
+                                        exit="exit"
+                                        transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+                                        className="px-6 md:px-8 py-4"
+                                    >
+                                        <div className="flex items-center gap-4 mb-8">
+                                            <button
+                                                onClick={() => setStepWithDirection(1)}
+                                                className="w-10 h-10 rounded-full flex items-center justify-center bg-neutral-100 text-black hover:bg-neutral-200 transition-colors"
+                                            >
+                                                <motion.div animate={{ rotate: 0 }} whileHover={{ x: -2 }}>
+                                                    <Send className="rotate-180" size={18} />
+                                                </motion.div>
+                                            </button>
+                                            <div className="flex-1">
+                                                <p className="text-[13px] font-black text-[#00A082] uppercase tracking-widest">{t({ en: 'Write a review', fr: 'Écrire un avis' })}</p>
+                                                <h2 className="text-[20px] font-black text-black leading-tight">
+                                                    {t({ en: `How was your experience with ${bricolerName}?`, fr: `Comment était votre expérience avec ${bricolerName} ?` })}
+                                                </h2>
+                                            </div>
+                                        </div>
 
-                            {/* Hide button */}
-                            <button
-                                onClick={handleClose}
-                                className="text-[12px] font-bold text-neutral-400 hover:text-neutral-600 transition-colors uppercase tracking-wider"
-                            >
-                                {t({ en: 'Skip & Hide', fr: 'Ignorer et masquer', ar: 'تجاهل وإخفاء' })}
-                            </button>
+                                        <div className="relative mb-6">
+                                            <textarea
+                                                autoFocus
+                                                value={review}
+                                                onChange={(e) => setReview(e.target.value)}
+                                                placeholder={t({ en: 'Clean work? Great communication?', fr: 'Travail soigné ? Bonne communication ?' })}
+                                                className="w-full bg-neutral-50 rounded-[32px] p-6 text-[16px] font-semibold border-2 border-transparent focus:border-[#FFC244] focus:bg-white transition-all outline-none resize-none min-h-[160px]"
+                                            />
+                                            <div className="absolute top-6 right-6 text-neutral-300">
+                                                <MessageSquare size={20} />
+                                            </div>
+                                        </div>
+
+                                        <div className="flex flex-col gap-3">
+                                            <button
+                                                onClick={() => handleSubmit(false)}
+                                                disabled={isSubmitting}
+                                                className="w-full h-16 bg-black text-white rounded-[24px] font-black text-[18px] flex items-center justify-center gap-3 shadow-xl active:scale-[0.98] transition-all disabled:opacity-50"
+                                            >
+                                                {isSubmitting ? <div className="w-6 h-6 border-3 border-white/30 border-t-white rounded-full animate-spin" /> : (
+                                                    <>
+                                                        <Send size={20} />
+                                                        {t({ en: 'Send Review', fr: 'Envoyer l\'avis' })}
+                                                    </>
+                                                )}
+                                            </button>
+                                            <button
+                                                onClick={() => handleSubmit(true)}
+                                                disabled={isSubmitting}
+                                                className="w-full h-14 bg-neutral-100 text-neutral-500 rounded-[20px] font-black text-[15px] uppercase tracking-widest active:scale-[0.98] transition-all"
+                                            >
+                                                {t({ en: 'Skip & Submit Stars', fr: 'Passer et envoyer les étoiles' })}
+                                            </button>
+                                        </div>
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
                         </div>
                     </motion.div>
                 </div>

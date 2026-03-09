@@ -106,13 +106,17 @@ export const useAdminKpiOverview = (): UseAdminKpiOverviewResult => {
     let globalTotalOrders = 0;
     let globalGmv = 0;
     let globalRevenue = 0;
-
+    // Process Jobs
     jobs.forEach((job) => {
-      const cityStats = ensureCity(job.city);
+      // 1. Basic counts (SKIP DRAFTS - they aren't real orders yet)
+      if (job.status === 'draft') return;
+
       globalTotalOrders += 1;
+      const cityStats = ensureCity(job.city);
       cityStats.totalOrders += 1;
 
-      const isCompleted = job.status === 'done' || job.status === 'completed';
+      // 2. Financials (Include 'delivered', 'done', 'completed')
+      const isCompleted = job.status === 'done' || job.status === 'completed' || job.status === 'delivered';
       if (isCompleted) {
         const gmvVal =
           job.totalPrice !== undefined ? Number(job.totalPrice) : Number(job.price);

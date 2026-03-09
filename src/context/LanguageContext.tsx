@@ -1131,9 +1131,9 @@ export const LanguageProvider = ({ children }: { children: ReactNode }) => {
         if (savedLang === 'en' || savedLang === 'fr' || savedLang === 'ar') {
             setLanguage(savedLang as Language);
         } else {
-            // Force French if no preference is saved
+            // Use French as default session language if no preference is saved, 
+            // but do NOT save it to localStorage yet so we can detect first-timers.
             setLanguage('fr');
-            localStorage.setItem('lbricol_language', 'fr');
         }
     }, []);
 

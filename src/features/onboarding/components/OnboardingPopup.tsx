@@ -1201,9 +1201,9 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
             const selected = Array.from(files).slice(0, remainingSlots);
             const compressedImages = await Promise.all(
                 selected.map((file) => compressImageFileToDataUrl(file, {
-                    maxWidth: 1600,
-                    maxHeight: 1600,
-                    quality: 0.72,
+                    maxWidth: 1000,
+                    maxHeight: 1000,
+                    quality: 0.45,
                     mimeType: 'image/jpeg',
                 }))
             );
@@ -1233,9 +1233,9 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
         try {
             setIsProcessingProfilePhoto(true);
             const compressed = await compressImageFileToDataUrl(file, {
-                maxWidth: 1000,
-                maxHeight: 1000,
-                quality: 0.78,
+                maxWidth: 600,
+                maxHeight: 600,
+                quality: 0.6,
                 mimeType: 'image/jpeg',
             });
             setProfilePhotoUrl(compressed);
