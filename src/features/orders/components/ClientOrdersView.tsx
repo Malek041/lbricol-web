@@ -642,7 +642,7 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
                                             </div>
                                             <div className="flex flex-col overflow-hidden">
                                                 <span className="text-[12px] font-bold text-neutral-400 uppercase tracking-wider">{t({ en: 'Service', fr: 'Service', ar: 'الخدمة' })}</span>
-                                                <span className="text-[16px] font-black text-black truncate">{selectedOrder.service}</span>
+                                                <span className="text-[16px] font-black text-black truncate">{selectedOrder.subServiceName || selectedOrder.serviceName || selectedOrder.service}</span>
                                             </div>
                                         </div>
                                         <div className="bg-neutral-50 rounded-2xl p-4 flex items-center gap-4 border border-neutral-100/50">
@@ -758,7 +758,7 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
                                         </div>
                                         <div className="space-y-2">
                                             <p className="text-[20px] font-semibold text-black">
-                                                {selectedOrder.service} {selectedOrder.subServiceDisplayName ? `› ${selectedOrder.subServiceDisplayName}` : ''}
+                                                {selectedOrder.subServiceName || selectedOrder.serviceName || selectedOrder.service}
                                             </p>
                                             <p className="text-[14px] font-light text-black leading-relaxed">
                                                 {t({ en: 'Our Bricoler, ', fr: 'Notre Bricoler, ', ar: 'مقدم الخدمة لدينا، ' })}<span className="text-black font-semibold">{selectedOrder.bricolerName || (selectedOrder.status === 'confirmed' || selectedOrder.status === 'programmed' ? 'Bricoler' : t({ en: 'Professional', fr: 'Professionnel', ar: 'محترف' }))}</span>{t({ en: ', will do the task for you. Feel free to chat for more details.', fr: ', fera la tâche pour vous. N\'hésitez pas à discuter pour plus de détails.', ar: '، سيقوم بالمهمة لك. يمكنك الدردشة لمزيد من التفاصيل.' })}

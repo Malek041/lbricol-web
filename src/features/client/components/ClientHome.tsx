@@ -352,7 +352,6 @@ const SERVICES: ServiceEntry[] = [
             { en: 'Dinner', fr: 'Dîner', ar: 'عشاء' },
             { en: 'Moroccan Cooking Class', fr: 'Cours de Cuisine Marocaine', ar: 'درس طبخ مغربي' },
             { en: 'Private Chef at Home', fr: 'Chef Privé à Domicile', ar: 'شيف خاص في المنزل' },
-            { en: 'Moroccan Pastry Workshop', fr: 'Atelier Pâtisserie Marocaine', ar: 'ورشة حلويات مغربية' },
             { en: 'Market Tour & Cooking', fr: 'Circuit Marché & Cuisine', ar: 'جولة السوق وطبخ' }
         ],
         bullets: [

@@ -60,7 +60,10 @@ export interface DraftOrder {
     id: string;
     service: string;
     subService?: string;
-    city: string;
+    subServiceDisplayName?: string;
+    serviceName?: string;
+    subServiceName?: string;
+    city?: string;
     area: string;
     taskSize: string | null;
     description: string;
@@ -93,21 +96,27 @@ export const calculateTaskPrice = (
     hourlyRate: number,
     taskSize: string | null,
     serviceId: string,
+    subService: string | null | undefined,
     options: any[],
     applyReferralDiscount: boolean = false,
     referralDiscountAvailable: number = 0
 ) => {
     const activeOption = options.find((o: any) => o.id === taskSize);
-    const duration = activeOption?.duration || (serviceId === 'private_driver' ? 1 : 1);
+    const duration = activeOption?.duration || 1;
     const coefficient = (activeOption as any)?.coefficient || (serviceId === 'errands' ? 1.5 : 1);
+
+    // Check if it's a daily rate service (horizontal unit counter)
+    const isDailyCounter = serviceId === 'private_driver' ||
+        (serviceId === 'cooking' && activeOption?.id && !['small', 'medium', 'large', 'dishes', 'pastries', 'combo', 'shopping', 'educational', 'full', 'other'].includes(activeOption.id)) ||
+        (serviceId === 'cleaning' && subService?.toLowerCase().includes('airbnb'));
 
     let basePrice = hourlyRate * duration * coefficient;
 
     if (serviceId === 'errands') {
         const mult = duration >= 1.33 ? 4.5 : (duration >= 0.8 ? 2.5 : 1.5);
         basePrice = hourlyRate * mult;
-    } else if (serviceId === 'private_driver' || (serviceId === 'cooking' && duration % 0.5 === 0 && duration <= 30 && taskSize && !isNaN(Number(taskSize)))) {
-        // For private driver and private chef (daily counter), hourlyRate acts as a daily rate.
+    } else if (isDailyCounter && serviceId !== 'cleaning') {
+        // Airbnb cleaning and electricity use unit counters but are typically hourly-based 
         const units = duration < 1 ? 0.5 : duration;
         basePrice = hourlyRate * units;
 
@@ -125,8 +134,6 @@ export const calculateTaskPrice = (
         else if (duration >= 4) multiplier = 0.95;
         basePrice = basePrice * multiplier;
     } else if (serviceId === 'electricity' || (serviceId === 'cooking' && ['dishes', 'pastries', 'combo', 'shopping', 'educational', 'full', 'other'].includes(taskSize || ''))) {
-        const subKey = taskSize || '';
-        // If taskSize is numeric or uses custom keys, don't apply the generic sizeIndex discount
         basePrice = hourlyRate * duration * coefficient;
     } else {
         const sizeIndex = options.findIndex((s: any) => s.id === taskSize);
@@ -742,57 +749,25 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
         const subKey = subService?.toLowerCase().replace(/ /g, '_');
 
         // Handle specific subservices first
-        if (subKey === 'ev_charger' || subKey === 'ev_charger_installation') {
-            return {
-                title: t({ en: "How many Ecars charger to install?", fr: "Combien de chargeurs Ecars à installer ?", ar: "كم عدد شواحن السيارات الكهربائية المراد تركيبها؟" }),
-                options: [
-                    { id: '1', duration: 2, coefficient: 1.8, label: { en: '1 Charger', fr: '1 Chargeur', ar: 'شاحن واحد' }, estTime: { en: 'Est: 2 hrs', fr: 'Est: 2h', ar: 'حوالي ساعتين' }, desc: { en: 'Installation of a single EV charger.', fr: 'Installation d\'un seul chargeur EV.', ar: 'تركيب شاحن واحد.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/SmallTask.webp' },
-                    { id: '2', duration: 4, coefficient: 1.8, label: { en: '2 Chargers', fr: '2 Chargeurs', ar: 'شاحنين' }, estTime: { en: 'Est: 4 hrs', fr: 'Est: 4h', ar: 'حوالي 4 ساعات' }, desc: { en: 'Installation of two EV chargers.', fr: 'Installation de deux chargeurs EV.', ar: 'تركيب شاحنين.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/MediumSize.webp' },
-                    { id: '3', duration: 6, coefficient: 1.8, label: { en: '3 Chargers', fr: '3 Chargeurs', ar: '3 شواحن' }, estTime: { en: 'Est: 6 hrs', fr: 'Est: 6h', ar: 'حوالي 6 ساعات' }, desc: { en: 'Installation of three EV chargers.', fr: 'Installation de trois chargeurs EV.', ar: 'تركيب 3 شواحن.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/BigTask.webp' },
-                ]
-            };
-        }
-
-        if (subKey === 'cooling_heating') {
-            return {
-                title: t({ en: "Complexity of cooling/heating task?", fr: "Complexité de la tâche de refroidissement/chauffage ?", ar: "صعوبة مهمة التبريد/التدفئة؟" }),
-                options: [
-                    { id: 'small', duration: 2, coefficient: 1.6, label: { en: 'Simple Fix', fr: 'Réparation Simple', ar: 'إصلاح بسيط' }, estTime: { en: 'Est: 2 hrs', fr: 'Est: 2h', ar: 'حوالي ساعتين' }, desc: { en: 'Minor issue or maintenance.', fr: 'Problème mineur ou entretien.', ar: 'مشكلة بسيطة أو صيانة.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/SmallTask.webp' },
-                    { id: 'medium', duration: 4, coefficient: 1.6, label: { en: 'Standard Install', fr: 'Installation Standard', ar: 'تركيب عادي' }, estTime: { en: 'Est: 4 hrs', fr: 'Est: 4h', ar: 'حوالي 4 ساعات' }, desc: { en: 'Standard unit installation or repair.', fr: 'Installation ou réparation d\'unité standard.', ar: 'تركيب أو إصلاح وحدة عادية.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/MediumSize.webp' },
-                    { id: 'large', duration: 8, coefficient: 1.6, label: { en: 'Complex System', fr: 'Système Complexe', ar: 'نظام معقد' }, estTime: { en: 'Est: 8 hrs', fr: 'Est: 8h', ar: 'حوالي 8 ساعات' }, desc: { en: 'Multi-unit system or complex repair.', fr: 'Système multi-unités ou réparation complexe.', ar: 'نظام متعدد الوحدات أو إصلاح معقد.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/BigTask.webp' },
-                ]
-            };
-        }
-
-        if (subKey === 'surveillance_cameras' || subKey === 'security_cameras') {
-            return {
-                title: t({ en: "How many cameras to install?", fr: "Combien de caméras à installer ?", ar: "كم عدد الكاميرات المراد تركيبها؟" }),
-                options: [
-                    { id: 'small', duration: 2, coefficient: 1.4, label: { en: '1-2 Cameras', fr: '1-2 Caméras', ar: '1-2 كاميرات' }, estTime: { en: 'Est: 2 hrs', fr: 'Est: 2h', ar: 'حوالي ساعتين' }, desc: { en: 'Basic setup for entrance.', fr: 'Installation de base pour l\'entrée.', ar: 'تركيب أساسي للمدخل.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/SmallTask.webp' },
-                    { id: 'medium', duration: 4, coefficient: 1.4, label: { en: '3-4 Cameras', fr: '3-4 Caméras', ar: '3-4 كاميرات' }, estTime: { en: 'Est: 4 hrs', fr: 'Est: 4h', ar: 'حوالي 4 ساعات' }, desc: { en: 'Standard home surveillance setup.', fr: 'Installation de surveillance standard.', ar: 'تركيب مراقبة منزلية عادي.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/MediumSize.webp' },
-                    { id: 'large', duration: 8, coefficient: 1.4, label: { en: 'Full System (6+)', fr: 'Système complet (6+)', ar: 'نظام كامل (+6)' }, estTime: { en: 'Est: 8 hrs', fr: 'Est: 8h', ar: 'حوالي 8 ساعات' }, desc: { en: 'Complete security system for large property.', fr: 'Système de sécurité complet.', ar: 'نظام أمني كامل.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/BigTask.webp' },
-                ]
-            };
-        }
 
         switch (sKey) {
             case 'cleaning': {
                 const isAirbnb = subService?.toLowerCase().includes('airbnb') || subService?.toLowerCase().includes('hospitality');
                 if (isAirbnb) {
                     return {
-                        title: t({ en: "How many rooms to clean?", fr: "Combien de pièces à nettoyer ?", ar: "كم عدد الغرف للتنظيف؟" }),
+                        title: t({ en: "How many rooms to clean?", fr: "Combien de chambres incluses ?", ar: "كم عدد الغرف للتنظيف؟" }),
                         isDayCounter: true,
                         defaultDays: 1,
                         options: Array.from({ length: 12 }, (_, i) => ({
                             id: String(i + 1),
-                            duration: (i + 1) * 2, // 2h per room
+                            duration: i + 2, // 2h base + 1h per additional room
                             label: { en: String(i + 1), fr: String(i + 1), ar: String(i + 1) },
                             subLabel: {
                                 en: i === 0 ? 'ROOM' : 'ROOMS',
-                                fr: i === 0 ? 'PIÈCE' : 'PIÈCES',
+                                fr: i === 0 ? 'CHAMBRE' : 'CHAMBRES',
                                 ar: i === 0 ? 'غرفة' : 'غرف'
                             },
-                            estTime: { en: `Est: ${(i + 1) * 2}h`, fr: `Est: ${(i + 1) * 2}h`, ar: `حوالي ${(i + 1) * 2} ساعات` },
+                            estTime: { en: `Est: ${i + 2}h`, fr: `Est: ${i + 2}h`, ar: `حوالي ${i + 2} ساعات` },
                             desc: { en: '', fr: '', ar: '' },
                             icon: ''
                         }))
@@ -865,14 +840,14 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                         isDayCounter: true,
                         options: Array.from({ length: 10 }, (_, i) => ({
                             id: String(i + 1),
-                            duration: (i + 1) * 4,
+                            duration: (i + 1) * 2,
                             label: { en: String(i + 1), fr: String(i + 1), ar: String(i + 1) },
                             subLabel: {
                                 en: i === 0 ? 'UNIT' : 'UNITS',
                                 fr: i === 0 ? 'UNITÉ' : 'UNITÉS',
                                 ar: i === 0 ? 'وحدة' : 'وحدات'
                             },
-                            estTime: { en: `Est: ${(i + 1) * 4}h`, fr: `Est: ${(i + 1) * 4}h`, ar: `حوالي ${(i + 1) * 4} ساعات` },
+                            estTime: { en: `Est: ${(i + 1) * 2}h`, fr: `Est: ${(i + 1) * 2}h`, ar: `حوالي ${(i + 1) * 2} ساعات` },
                             desc: { en: '', fr: '', ar: '' },
                             icon: ''
                         }))
@@ -1060,7 +1035,7 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                 }
 
                 // 2. Moroccan Cooking Class (Offers Dishes/Pastries choice)
-                if (cleanSubKey.includes('cookingclass') || cleanSubKey.includes('coursdecuisine')) {
+                if (cleanSubKey.includes('cookingclass') || cleanSubKey.includes('coursdecuisine') || cleanSubKey.includes('moroccancooking')) {
                     return {
                         title: t({ en: "What would you like to learn?", fr: "Que souhaitez-vous apprendre ?", ar: "ماذا تود أن تتعلم؟" }),
                         options: [
@@ -1182,10 +1157,10 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                 setPaymentMethod(continueDraft.paymentMethod);
                 setBankReceipt(continueDraft.bankReceipt);
                 setFrequency(continueDraft.frequency || 'once');
-                setCurrentCity(continueDraft.city);
-                setCurrentArea(continueDraft.area);
-                setTempCity(continueDraft.city);
-                setTempArea(continueDraft.area);
+                setCurrentCity(continueDraft.city || '');
+                setCurrentArea(continueDraft.area || '');
+                setTempCity(continueDraft.city || '');
+                setTempArea(continueDraft.area || '');
             } else {
                 setStep(1);
                 setSubStep1('location');
@@ -1784,6 +1759,7 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                 hourlyRate,
                 taskSize,
                 service,
+                subService,
                 serviceConfig.options,
                 applyReferralDiscount,
                 referralDiscountAvailable
@@ -1854,13 +1830,13 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                 status: 'pending',
                 date: selectedDate || 'Flexible',
                 time: selectedTime || 'Flexible',
-                duration,
+                duration: activeOption?.estTime ? t(activeOption.estTime as any) : (duration + 'h'),
                 basePrice,
                 taskFee,
                 totalPrice: basePrice, // basePrice already includes referral discount if applied
                 price: basePrice, // price is the final price after all discounts
                 referralApplied: applyReferralDiscount && referralDiscountAvailable > 0,
-                durationDays: (service === 'private_driver' ? Math.ceil(duration) : 1),
+                durationDays: (service === 'private_driver' || (service === 'cooking' && activeOption?.id && !isNaN(Number(activeOption.id)))) ? Math.ceil(duration) : 1,
                 images: [],
                 clientNeedImages: [],
                 paymentMethod,
@@ -2227,22 +2203,25 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                                                                             return Math.abs(currCenter - scrollPosition) < Math.abs(prevCenter - scrollPosition) ? curr : prev;
                                                                         });
 
-                                                                        const dayValue = closest.getAttribute('data-day');
-                                                                        if (dayValue && taskSize !== dayValue) {
-                                                                            setTaskSize(dayValue);
+                                                                        const dayId = closest.getAttribute('data-id');
+                                                                        if (dayId && taskSize !== dayId) {
+                                                                            setTaskSize(dayId);
                                                                         }
                                                                     }}
                                                                 >
                                                                     {serviceConfig.options.map((option: any) => {
-                                                                        const day = option.duration;
-                                                                        const isSelected = parseFloat(taskSize || String((serviceConfig as any).defaultDays)) === day;
+                                                                        const dayId = option.id;
+                                                                        const isSelected = taskSize === dayId;
                                                                         const label = t(option.subLabel);
 
                                                                         return (
                                                                             <button
-                                                                                key={day}
-                                                                                data-day={day}
-                                                                                onClick={(e) => e.currentTarget.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' })}
+                                                                                key={option.id}
+                                                                                data-id={option.id}
+                                                                                onClick={(e) => {
+                                                                                    setTaskSize(option.id);
+                                                                                    e.currentTarget.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+                                                                                }}
                                                                                 className={cn(
                                                                                     "flex-shrink-0 flex flex-col items-center justify-center transition-all duration-500",
                                                                                     isSelected ? "w-[160px] h-[225px] scale-100 opacity-100" : "w-[130px] h-full opacity-40 grayscale scale-75"
@@ -2981,7 +2960,7 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                                                     <div className="flex flex-col">
                                                         <span className="text-[11px] font-bold text-neutral-400 uppercase tracking-wider">{t({ en: 'Total (Est.)', fr: 'Total (Est.)', ar: 'الإجمالي (تقريبي)' })}</span>
                                                         <span className="text-[15px] font-black text-black">
-                                                            {calculateTaskPrice(selectedPro?.hourlyRate || 75, taskSize, service, serviceConfig.options, applyReferralDiscount, referralDiscountAvailable)} MAD
+                                                            {calculateTaskPrice(selectedPro?.hourlyRate || 75, taskSize, service, subService, serviceConfig.options, applyReferralDiscount, referralDiscountAvailable)} MAD
                                                         </span>
                                                     </div>
                                                 </div>
@@ -3048,7 +3027,7 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                                                             <span className="text-[15px] font-light text-black">≈ {activeTaskSize ? t(activeTaskSize.estTime as any) : '—'}</span>
                                                         </div>
                                                         <span className="self-end text-[18px] font-bold tracking-tight text-black min-[420px]:self-auto">
-                                                            {Math.round(calculateTaskPrice(selectedPro?.hourlyRate || 75, taskSize, service, serviceConfig.options, applyReferralDiscount, referralDiscountAvailable) * 0.85)} MAD
+                                                            {Math.round(calculateTaskPrice(selectedPro?.hourlyRate || 75, taskSize, service, subService, serviceConfig.options, applyReferralDiscount, referralDiscountAvailable) * 0.85)} MAD
                                                         </span>
                                                     </div>
                                                     <div className="flex flex-col gap-2 px-2 min-[420px]:flex-row min-[420px]:items-center min-[420px]:justify-between">
@@ -3057,7 +3036,7 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                                                             <span className="text-[15px] font-light text-black">15%</span>
                                                         </div>
                                                         <span className="self-end text-[18px] font-bold tracking-tight text-black min-[420px]:self-auto">
-                                                            {Math.round(calculateTaskPrice(selectedPro?.hourlyRate || 75, taskSize, service, serviceConfig.options, applyReferralDiscount, referralDiscountAvailable) * 0.15)} MAD
+                                                            {Math.round(calculateTaskPrice(selectedPro?.hourlyRate || 75, taskSize, service, subService, serviceConfig.options, applyReferralDiscount, referralDiscountAvailable) * 0.15)} MAD
                                                         </span>
                                                     </div>
                                                     {referralDiscountAvailable > 0 && (
@@ -3082,7 +3061,7 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                                                             >
                                                                 {applyReferralDiscount
                                                                     ? t({ en: 'Implemented', fr: 'Implémenté', ar: 'تم التطبيق' })
-                                                                    : t({ en: 'Apply 20DH credit', fr: 'Appliquer le crédit 20DH', ar: 'تطبيق رصيد 20 درهم' })}
+                                                                    : t({ en: 'Apply Credit', fr: 'Appliquer le crédit', ar: 'تطبيق رصيد' })}
                                                             </button>
                                                         </div>
                                                     )}
@@ -3262,6 +3241,7 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                                                         hourlyRate,
                                                         taskSize,
                                                         service,
+                                                        subService,
                                                         serviceConfig.options,
                                                         applyReferralDiscount,
                                                         referralDiscountAvailable
@@ -3271,6 +3251,7 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                                                         hourlyRate,
                                                         taskSize,
                                                         service,
+                                                        subService,
                                                         serviceConfig.options,
                                                         false, // No referral discount for strike
                                                         0

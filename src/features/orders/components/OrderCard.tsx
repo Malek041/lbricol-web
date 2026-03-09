@@ -12,7 +12,9 @@ export interface OrderDetails {
     id?: string;
     service: string;
     serviceId?: string;
+    serviceName?: string;
     subService?: string;
+    subServiceName?: string;
     subServiceDisplayName?: string;
     city?: string;
     area?: string;
