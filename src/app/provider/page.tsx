@@ -1876,7 +1876,7 @@ export default function ProviderPage() {
 
     // ── Per-service breakdown (for Service Breakdown strip) ──
     const serviceBreakdown = useMemo(() => {
-        return selectedServices.map(serviceId => {
+        return [...new Set(selectedServices)].map(serviceId => {
             const myJobs = monthDoneJobs.filter(j => normalizeServiceId((j as any).craft || j.service || '') === serviceId);
             const allTimeJobsForService = doneAcceptedJobs.filter(j => normalizeServiceId((j as any).craft || j.service || '') === serviceId);
             const earnings = myJobs.reduce((acc, j) => {
