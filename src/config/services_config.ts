@@ -165,9 +165,9 @@ export const SERVICES_HIERARCHY: Record<string, ServiceConfig> = {
             { id: 'outlet_install', name: 'Outlet Installation' },
             { id: 'light_install', name: 'Light Fixture Installation' },
             { id: 'circuit_repair', name: 'Circuit Breaker Repair' },
-            { id: 'cooling_heating', name: 'Cooling & heating systems' },
-            { id: 'ev_charger', name: 'EV charger installation' },
-            { id: 'surveillance_cameras', name: 'Surveillance cameras' }
+            { id: 'cooling_heating', name: 'Heating/cooling systems' },
+            { id: 'ev_charger', name: 'EVs charger' },
+            { id: 'surveillance_cameras', name: 'Camera installation' }
         ]
     },
     painting: {

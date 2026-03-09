@@ -191,9 +191,9 @@ const SERVICES: ServiceEntry[] = [
             { en: 'Light Fixture Installation', fr: 'Installation de Luminaires', ar: 'تركيب الثريات والمصابيح' },
             { en: 'Circuit Breaker Repair', fr: 'Réparation de Disjoncteurs', ar: 'إصلاح قواطع التيار' },
             { en: 'Smart Switch Setup', fr: 'Installation d\'Interrupteurs Intelligents', ar: 'تركيب مفاتيح ذكية' },
-            { en: 'Electricity (HVAC)', fr: 'Systèmes de chauffage et de climatisation', ar: 'أنظمة التبريد والتدفئة' },
-            { en: 'Electricity (EV)', fr: 'Installation de bornes de recharge pour véhicules électriques', ar: 'تركيب شواحن السيارات الكهربائية' },
-            { en: 'Electricity (Cams)', fr: 'Caméras de surveillance', ar: 'كاميرات المراقبة' }
+            { en: 'Heating/cooling systems', fr: 'Chauffage/Climatisation', ar: 'تبريد وتدفئة' },
+            { en: 'EVs charger', fr: 'Borne de recharge', ar: 'شاحن سيارات كهربائية' },
+            { en: 'Camera installation', fr: 'Installation caméras', ar: 'تركيب كاميرات مراقبة' }
         ],
         bullets: [
             { en: 'Safe, certified electrical work by verified professionals.', fr: 'Travaux électriques sûrs et certifiés par des professionnels vérifiés.', ar: 'أعمال كهربائية آمنة ومعتمدة من قبل محترفين موثوقين.' },

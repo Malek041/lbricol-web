@@ -106,12 +106,12 @@ export const calculateTaskPrice = (
     if (serviceId === 'errands') {
         const mult = duration >= 1.33 ? 4.5 : (duration >= 0.8 ? 2.5 : 1.5);
         basePrice = hourlyRate * mult;
-    } else if (serviceId === 'private_driver') {
-        // For private driver, hourlyRate acts as a daily rate.
+    } else if (serviceId === 'private_driver' || (serviceId === 'cooking' && duration % 0.5 === 0 && duration <= 30 && taskSize && !isNaN(Number(taskSize)))) {
+        // For private driver and private chef (daily counter), hourlyRate acts as a daily rate.
         const units = duration < 1 ? 0.5 : duration;
         basePrice = hourlyRate * units;
 
-        // Apply tiered discount for private driver days
+        // Apply tiered discount for daily services
         if (units >= 7) basePrice *= 0.85; // 15% off for a week or more
         else if (units >= 2) basePrice *= 0.9; // 10% off for 2 to 6 days
     } else if (serviceId === 'babysitting' || serviceId === 'elderly_care') {
@@ -124,6 +124,10 @@ export const calculateTaskPrice = (
         if (duration >= 6) multiplier = 0.9;
         else if (duration >= 4) multiplier = 0.95;
         basePrice = basePrice * multiplier;
+    } else if (serviceId === 'electricity' || (serviceId === 'cooking' && ['dishes', 'pastries', 'combo', 'shopping', 'educational', 'full', 'other'].includes(taskSize || ''))) {
+        const subKey = taskSize || '';
+        // If taskSize is numeric or uses custom keys, don't apply the generic sizeIndex discount
+        basePrice = hourlyRate * duration * coefficient;
     } else {
         const sizeIndex = options.findIndex((s: any) => s.id === taskSize);
         let multiplier = 1;
@@ -339,7 +343,7 @@ const BricolerCard = ({ bricoler, onSelect, onOpenProfile, isSelected, serviceNa
                             <span className="text-[16px] font-semibold text-neutral-900 leading-none whitespace-nowrap">
                                 MAD {bricoler.hourlyRate?.toFixed(2) || '0.00'}
                             </span>
-                            <span className="text-[12px] text-neutral-400 font-medium whitespace-nowrap">/hr</span>
+                            <span className="text-[12px] text-neutral-400 font-medium whitespace-nowrap">(min)</span>
                             <div className="w-4 h-4 rounded-full bg-[#00A082]/10 flex-shrink-0 flex items-center justify-center ml-0.5">
                                 <Check size={10} className="text-[#00A082]" strokeWidth={4} />
                             </div>
@@ -489,7 +493,7 @@ const BricolerProfileModal = ({ bricoler, isOpen, onClose, onSelect, isSelected,
                                     </div>
                                     <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1 text-[20px] font-bold text-[#00A082]">
                                         <span className="whitespace-nowrap">MAD {bricoler.hourlyRate || 75}</span>
-                                        <span className="text-[15px] font-medium text-neutral-400">/hr</span>
+                                        <span className="text-[15px] font-medium text-neutral-400">(min)</span>
                                     </div>
                                 </div>
                             </div>
@@ -772,7 +776,28 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
         }
 
         switch (sKey) {
-            case 'cleaning':
+            case 'cleaning': {
+                const isAirbnb = subService?.toLowerCase().includes('airbnb') || subService?.toLowerCase().includes('hospitality');
+                if (isAirbnb) {
+                    return {
+                        title: t({ en: "How many rooms to clean?", fr: "Combien de pièces à nettoyer ?", ar: "كم عدد الغرف للتنظيف؟" }),
+                        isDayCounter: true,
+                        defaultDays: 1,
+                        options: Array.from({ length: 12 }, (_, i) => ({
+                            id: String(i + 1),
+                            duration: (i + 1) * 2, // 2h per room
+                            label: { en: String(i + 1), fr: String(i + 1), ar: String(i + 1) },
+                            subLabel: {
+                                en: i === 0 ? 'ROOM' : 'ROOMS',
+                                fr: i === 0 ? 'PIÈCE' : 'PIÈCES',
+                                ar: i === 0 ? 'غرفة' : 'غرف'
+                            },
+                            estTime: { en: `Est: ${(i + 1) * 2}h`, fr: `Est: ${(i + 1) * 2}h`, ar: `حوالي ${(i + 1) * 2} ساعات` },
+                            desc: { en: '', fr: '', ar: '' },
+                            icon: ''
+                        }))
+                    };
+                }
                 return {
                     title: t({ en: "How large is the space?", fr: "Quelle est la taille de l'espace ?", ar: "ما هي مساحة المكان؟" }),
                     options: [
@@ -781,6 +806,7 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                         { id: 'large', duration: 6, label: { en: '4+ Bedrooms / Deep Clean', fr: '4+ Chambres / Nettoyage profond', ar: '+4 غرف / تنظيف عميق' }, estTime: { en: 'Est: 6+ hrs', fr: 'Est: 6h+', ar: 'أكثر من 6 ساعات' }, desc: { en: 'Extensive cleaning for large homes.', fr: 'Nettoyage complet pour grandes maisons.', ar: 'تنظيف شامل للمنازل الكبيرة.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/BigTask.webp' },
                     ]
                 };
+            }
             case 'moving':
                 return {
                     title: t({ en: "What's the scope of the task?", fr: "Quelle est l'ampleur de la tâche ?", ar: "ما هو حجم المهمة؟" }),
@@ -812,34 +838,70 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                 };
             case 'electricity': {
                 const subKey = subService?.toLowerCase() || '';
+                const cleanSubKey = subKey.replace(/[_\s]/g, '');
                 let title = t({ en: "What's the size of your Task?", fr: "Quelle est la taille de votre tâche ?", ar: "ما هو حجم المهمة؟" });
+
+                if (cleanSubKey.includes('ev') || cleanSubKey.includes('charger')) {
+                    return {
+                        title: t({ en: "How many EV chargers to install?", fr: "Combien de bornes de recharge EV à installer ?", ar: "كم عدد شواحن السيارات الكهربائية المطلوب تركيبها؟" }),
+                        isDayCounter: true,
+                        options: Array.from({ length: 10 }, (_, i) => ({
+                            id: String(i + 1),
+                            duration: (i + 1) * 4,
+                            label: { en: String(i + 1), fr: String(i + 1), ar: String(i + 1) },
+                            subLabel: {
+                                en: i === 0 ? 'CHARGER' : 'CHARGERS',
+                                fr: i === 0 ? 'BORNE' : 'BORNES',
+                                ar: i === 0 ? 'شاحن' : 'شواحن'
+                            },
+                            estTime: { en: `Est: ${(i + 1) * 4}h`, fr: `Est: ${(i + 1) * 4}h`, ar: `حوالي ${(i + 1) * 4} ساعات` },
+                            desc: { en: '', fr: '', ar: '' },
+                            icon: ''
+                        }))
+                    };
+                } else if (cleanSubKey.includes('cooling') || cleanSubKey.includes('heating') || cleanSubKey.includes('hvac')) {
+                    return {
+                        title: t({ en: "How many units involved?", fr: "Combien d'unités sont concernées ?", ar: "كم عدد الوحدات المعنية؟" }),
+                        isDayCounter: true,
+                        options: Array.from({ length: 10 }, (_, i) => ({
+                            id: String(i + 1),
+                            duration: (i + 1) * 4,
+                            label: { en: String(i + 1), fr: String(i + 1), ar: String(i + 1) },
+                            subLabel: {
+                                en: i === 0 ? 'UNIT' : 'UNITS',
+                                fr: i === 0 ? 'UNITÉ' : 'UNITÉS',
+                                ar: i === 0 ? 'وحدة' : 'وحدات'
+                            },
+                            estTime: { en: `Est: ${(i + 1) * 4}h`, fr: `Est: ${(i + 1) * 4}h`, ar: `حوالي ${(i + 1) * 4} ساعات` },
+                            desc: { en: '', fr: '', ar: '' },
+                            icon: ''
+                        }))
+                    };
+                } else if (cleanSubKey.includes('surveillance') || cleanSubKey.includes('camera') || cleanSubKey.includes('cams')) {
+                    return {
+                        title: t({ en: "How many cameras to install?", fr: "Combien de caméras à installer ?", ar: "كم عدد الكاميرات المطلوب تركيبها؟" }),
+                        isDayCounter: true,
+                        options: Array.from({ length: 15 }, (_, i) => ({
+                            id: String(i + 1),
+                            duration: (i + 1) * 3,
+                            label: { en: String(i + 1), fr: String(i + 1), ar: String(i + 1) },
+                            subLabel: {
+                                en: i === 0 ? 'CAMERA' : 'CAMERAS',
+                                fr: i === 0 ? 'CAMÉRA' : 'CAMÉRAS',
+                                ar: i === 0 ? 'كاميرا' : 'كاميرات'
+                            },
+                            estTime: { en: `Est: ${(i + 1) * 3}h`, fr: `Est: ${(i + 1) * 3}h`, ar: `حوالي ${(i + 1) * 3} ساعات` },
+                            desc: { en: '', fr: '', ar: '' },
+                            icon: ''
+                        }))
+                    };
+                }
+
                 let options = [
                     { id: 'small', duration: 1, label: { en: 'Small Task', fr: 'Petite tâche', ar: 'مهمة صغيرة' }, estTime: { en: 'Est: 1 hr', fr: 'Est: 1h', ar: 'حوالي ساعة' }, desc: { en: 'Simple fixes like fixing a switch.', fr: 'Tâches simples comme réparer un interrupteur.', ar: 'مهام بسيطة مثل إصلاح مفتاح كهربائي.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/SmallTask.webp' },
                     { id: 'medium', duration: 2.5, label: { en: 'Medium Task', fr: 'Tâche moyenne', ar: 'مهمة متوسطة' }, estTime: { en: 'Est: 2-3 hrs', fr: 'Est: 2-3h', ar: '2-3 ساعات' }, desc: { en: 'Standard tasks like installing a light fixture.', fr: 'Tâches moyennes comme installer un luminaire.', ar: 'مهام متوسطة مثل تركيب مصباح.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/MediumSize.webp' },
                     { id: 'large', duration: 5, label: { en: 'Large Task', fr: 'Grosse tâche', ar: 'مهمة كبيرة' }, estTime: { en: 'Est: 4+ hrs', fr: 'Est: 4h+', ar: 'أكثر من 4 ساعات' }, desc: { en: 'Complex rewiring or panel projects.', fr: 'Projets de câblage complexes ou panneaux.', ar: 'مشاريع توصيل أسلاك معقدة.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/BigTask.webp' },
                 ];
-
-                if (subKey.includes('ev_charger') || subKey.includes('(ev)')) {
-                    title = t({ en: "How many EV chargers to install?", fr: "Combien de bornes de recharge EV à installer ?", ar: "كم عدد شواحن السيارات الكهربائية المطلوب تركيبها؟" });
-                    options = [
-                        { id: '1', duration: 3, label: { en: '1 Charger', fr: '1 Borne', ar: 'شاحن واحد' }, estTime: { en: 'Est: 3 hrs', fr: 'Est: 3h', ar: 'حوالي 3 ساعات' }, desc: { en: 'Standard installation of one wallbox.', fr: 'Installation standard d\'une borne murale.', ar: 'تركيب عادي لشاحن جداري واحد.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/SmallTask.webp' },
-                        { id: '2', duration: 5, label: { en: '2 Chargers', fr: '2 Bornes', ar: 'شاحنان' }, estTime: { en: 'Est: 5 hrs', fr: 'Est: 5h', ar: 'حوالي 5 ساعات' }, desc: { en: 'Installation of two chargers.', fr: 'Installation de deux bornes.', ar: 'تركيب شاحنين.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/MediumSize.webp' },
-                    ];
-                } else if (subKey.includes('cooling') || subKey.includes('heating') || subKey.includes('(hvac)')) {
-                    title = t({ en: "How many units involved?", fr: "Combien d'unités sont concernées ?", ar: "كم عدد الوحدات المعنية؟" });
-                    options = [
-                        { id: 'small', duration: 2, label: { en: '1 Unit', fr: '1 Unité', ar: 'وحدة واحدة' }, estTime: { en: 'Est: 2 hrs', fr: 'Est: 2h', ar: 'حوالي ساعتين' }, desc: { en: 'Maintenance or single unit install.', fr: 'Entretien ou installation d\'une seule unité.', ar: 'صيانة أو تركيب وحدة واحدة.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/SmallTask.webp' },
-                        { id: 'medium', duration: 4, label: { en: '2 Units', fr: '2 Unités', ar: 'وحدتان' }, estTime: { en: 'Est: 4 hrs', fr: 'Est: 4h', ar: 'حوالي 4 ساعات' }, desc: { en: 'Servicing two AC units or heaters.', fr: 'Entretien de deux climatiseurs ou chauffages.', ar: 'صيانة وحدتي تكييف أو تدفئة.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/MediumSize.webp' },
-                        { id: 'large', duration: 8, label: { en: 'Central / Multi', fr: 'Central / Multi-split', ar: 'مركزي / متعدد' }, estTime: { en: 'Est: 8h', fr: 'Est: 8h', ar: 'حوالي 8 ساعات' }, desc: { en: 'Complex central system or multi-split.', fr: 'Système central complexe ou multi-split.', ar: 'نظام مركزي معقد.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/BigTask.webp' }
-                    ];
-                } else if (subKey.includes('surveillance') || subKey.includes('camera') || subKey.includes('(cams)')) {
-                    title = t({ en: "How many cameras to install?", fr: "Combien de caméras à installer ?", ar: "كم عدد الكاميرات المطلوب تركيبها؟" });
-                    options = [
-                        { id: '1-2', duration: 2, label: { en: '1-2 Cameras', fr: '1-2 Caméras', ar: '1-2 كاميرات' }, estTime: { en: 'Est: 2 hrs', fr: 'Est: 2h', ar: 'حوالي ساعتين' }, desc: { en: 'Simple setup of 1 or 2 wireless/wired cameras.', fr: 'Installation simple de 1 ou 2 caméras.', ar: 'تركيب بسيط لكاميرا أو اثنتين.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/SmallTask.webp' },
-                        { id: '3-4', duration: 4, label: { en: '3-4 Cameras', fr: '3-4 Caméras', ar: '3-4 كاميرات' }, estTime: { en: 'Est: 4 hrs', fr: 'Est: 4h', ar: 'حوالي 4 ساعات' }, desc: { en: 'Full house coverage with recorder setup.', fr: 'Couverture complète avec enregistreur.', ar: 'تغطية كاملة للمنزل مع جهاز تسجيل.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/MediumSize.webp' },
-                        { id: '5+', duration: 8, label: { en: '5+ Cameras / Complex', fr: '5+ Caméras / Complexe', ar: '+5 كاميرات / معقد' }, estTime: { en: 'Est: 8h', fr: 'Est: 8h', ar: 'حوالي 8 ساعات' }, desc: { en: 'Comprehensive professional surveillance system.', fr: 'Système de surveillance professionnel complet.', ar: 'نظام مراقبة احترافي شامل.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/BigTask.webp' }
-                    ];
-                }
 
                 return { title, options };
             }
@@ -970,7 +1032,58 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                     ]
                 };
             case 'cooking':
-            case 'meal_prep':
+            case 'meal_prep': {
+                const subKey = subService?.toLowerCase() || '';
+                // Standardize subKey for matching
+                const cleanSubKey = subKey.replace(/[_\s]/g, '');
+
+                // 1. Private Chef at Home
+                if (cleanSubKey.includes('chef') || cleanSubKey.includes('prive')) {
+                    return {
+                        title: t({ en: "How many days do you need a Private Chef?", fr: "De combien de jours avez-vous besoin d'un Chef Privé ?", ar: "كم يوماً تحتاج فيه لشيف خاص؟" }),
+                        isDaily: true,
+                        isDayCounter: true,
+                        defaultDays: 0.5,
+                        options: [
+                            { id: '0.5', duration: 0.5, label: { en: '0.5', fr: '0.5', ar: '0.5' }, subLabel: { en: 'HALF-DAY', fr: 'DEMI-JOURNÉE', ar: 'نصف يوم' }, estTime: { en: '4h', fr: '4h', ar: '4س' }, desc: { en: '', fr: '', ar: '' }, icon: '' },
+                            ...Array.from({ length: 30 }, (_, i) => ({
+                                id: String(i + 1),
+                                duration: i + 1,
+                                label: { en: String(i + 1), fr: String(i + 1), ar: String(i + 1) },
+                                subLabel: { en: i === 0 ? 'DAY' : 'DAYS', fr: i === 0 ? 'JOUR' : 'JOURS', ar: i === 0 ? 'يوم' : 'أيام' },
+                                estTime: { en: `${(i + 1) * 8}h`, fr: `${(i + 1) * 8}h`, ar: `${(i + 1) * 8}س` },
+                                desc: { en: '', fr: '', ar: '' },
+                                icon: ''
+                            }))
+                        ]
+                    };
+                }
+
+                // 2. Moroccan Cooking Class (Offers Dishes/Pastries choice)
+                if (cleanSubKey.includes('cookingclass') || cleanSubKey.includes('coursdecuisine')) {
+                    return {
+                        title: t({ en: "What would you like to learn?", fr: "Que souhaitez-vous apprendre ?", ar: "ماذا تود أن تتعلم؟" }),
+                        options: [
+                            { id: 'dishes', duration: 3, label: { en: 'Moroccan Dishes', fr: 'Plats Marocains', ar: 'أطباق مغربية' }, estTime: { en: '≈ 3 hrs', fr: '≈ 3h', ar: '3 ساعات' }, desc: { en: 'Learn Tajines, Couscous, and main staples.', fr: 'Apprenez les tajines, couscous et plats principaux.', ar: 'تعلم الطواجن والكسكس والأطباق الرئيسية.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/MediumSize.webp' },
+                            { id: 'pastries', duration: 3, label: { en: 'Moroccan Pastries', fr: 'Pâtisseries Marocaines', ar: 'حلويات مغربية' }, estTime: { en: '≈ 3 hrs', fr: '≈ 3h', ar: '3 ساعات' }, desc: { en: 'Learn traditional cookies and sweets.', fr: 'Apprenez les gâteaux et douceurs traditionnelles.', ar: 'تعلم الحلويات والحلويات التقليدية.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/MediumSize.webp' },
+                            { id: 'combo', duration: 5, label: { en: 'The Full Experience', fr: 'L\'Expérience Complète', ar: 'تجربة كاملة' }, estTime: { en: '≈ 5 hrs', fr: '≈ 5h', ar: '5 ساعات' }, desc: { en: 'Both dishes and pastries mastery.', fr: 'Maîtrise des plats et des pâtisseries.', ar: 'إتقان الأطباق والحلويات.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/BigTask.webp' },
+                        ]
+                    };
+                }
+
+                // 3. Market Tour & Cooking
+                if (cleanSubKey.includes('marche') || cleanSubKey.includes('market')) {
+                    return {
+                        title: t({ en: "What's the focus of your tour?", fr: "Quel est l'objectif de votre circuit ?", ar: "ما هو محور جولتك؟" }),
+                        options: [
+                            { id: 'shopping', duration: 2, coefficient: 1.0, label: { en: 'Dish-Specific Shopping', fr: 'Shopping pour un Plat', ar: 'تسوق لطبق معين' }, estTime: { en: '≈ 2 hrs', fr: '≈ 2h', ar: 'ساعتين' }, desc: { en: 'Help shopping for ingredients for a specific dish.', fr: 'Aide au shopping d\'ingrédients pour un plat.', ar: 'المساعدة في تسوق المكونات لطبق معين.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/SmallTask.webp' },
+                            { id: 'educational', duration: 3, coefficient: 1.2, label: { en: 'Ingredient Knowledge', fr: 'Connaissance des Produits', ar: 'معرفة المكونات' }, estTime: { en: '≈ 3 hrs', fr: '≈ 3h', ar: '3 ساعات' }, desc: { en: 'Leaning about local spices and ingredients.', fr: 'Apprendre sur les épices et ingrédients locaux.', ar: 'التعرف على التوابل والمكونات المحلية.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/MediumSize.webp' },
+                            { id: 'full', duration: 6, coefficient: 1.5, label: { en: 'Tour & Hands-on Cooking', fr: 'Circuit & Cours de Cuisine', ar: 'جولة وتعلم طبخ' }, estTime: { en: '≈ 6 hrs', fr: '≈ 6h', ar: '6 ساعات' }, desc: { en: 'A complete market trip followed by cooking.', fr: 'Un tour complet du marché suivi du repas.', ar: 'رحلة كاملة في السوق متبوعة بالطبخ.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/BigTask.webp' },
+                            { id: 'other', duration: 4, coefficient: 1.3, label: { en: 'Custom Suggestion', fr: 'Suggestion sur mesure', ar: 'مقترح مخصص' }, estTime: { en: '≈ 4 hrs', fr: '≈ 4h', ar: '4 ساعات' }, desc: { en: 'Tell us exactly what you want to explore.', fr: 'Dites-nous ce que vous voulez explorer.', ar: 'أخبرنا بالضبط بما تريد استكشافه.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/MediumSize.webp' },
+                        ]
+                    };
+                }
+
                 return {
                     title: t({ en: "What is the cooking scope?", fr: "Quelle est l'ampleur de la cuisine ?", ar: "ما هو حجم الطبخ؟" }),
                     options: [
@@ -979,6 +1092,7 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                         { id: 'large', duration: 8, label: { en: 'Batch Cooking / Event', fr: 'Événement / Grande Quant', ar: 'حدث / طبخ كميات كبيرة' }, estTime: { en: 'Est: 8+ hrs', fr: 'Est: 8h+', ar: 'أكثر من 8 ساعات' }, desc: { en: 'Cooking for an event or multiple days.', fr: 'Cuisine pour événement ou plusieurs jours.', ar: 'الطبخ لحدث أو لعدة أيام.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/BigTask.webp' },
                     ]
                 };
+            }
             case 'learn_arabic':
                 return {
                     title: t({ en: "How long applies to your session?", fr: "Quelle est la durée de la session ?", ar: "ما هي مدة الحصة؟" }),
@@ -998,7 +1112,14 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                     ]
                 };
         }
-    }, [service, t]);
+    }, [service, subService, t]);
+
+    // Auto-select default task size for counters if currently null
+    useEffect(() => {
+        if (subStep1 === 'size' && (serviceConfig as any)?.isDayCounter && !taskSize) {
+            setTaskSize(String((serviceConfig as any).defaultDays || 1));
+        }
+    }, [subStep1, serviceConfig, taskSize]);
 
     const activeTaskSize = serviceConfig.options.find(s => s.id === taskSize);
     const selectedPro = bricolers.find(b => b.id === selectedBricolerId);
@@ -2154,7 +2275,12 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                                                             <div className="flex flex-col items-center gap-2 text-center -mt-6">
                                                                 <div className="px-4 py-2 rounded-full bg-[#008C74]/10 border border-[#008C74]/20">
                                                                     <span className="text-[15px] font-black text-[#008C74]">
-                                                                        {parseFloat(taskSize || '1') === 0.5 ? '4h' : `${parseFloat(taskSize || '1') * 8}h`} {t({ en: 'of total service', fr: 'de service total', ar: 'إجمالي مدة الخدمة' })}
+                                                                        {(() => {
+                                                                            const opt = serviceConfig.options.find(o => o.id === taskSize);
+                                                                            const rawDuration = opt?.duration ?? parseFloat(taskSize || '1');
+                                                                            const hours = (serviceConfig as any).isDaily ? rawDuration * 8 : rawDuration;
+                                                                            return `${hours}h`;
+                                                                        })()} {t({ en: 'of total service', fr: 'de service total', ar: 'إجمالي مدة الخدمة' })}
                                                                     </span>
                                                                 </div>
                                                                 <p className="text-[14px] text-neutral-400 font-bold max-w-[300px] mt-2">
