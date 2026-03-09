@@ -2467,8 +2467,8 @@ const Home = () => {
                   onResumeDraft={(draft: DraftOrder) => {
                     setService(draft.service);
                     setSubService(draft.subService || '');
-                    setSelectedCity(draft.city);
-                    setSelectedArea(draft.area);
+                    setSelectedCity(draft.city || null);
+                    setSelectedArea(draft.area || null);
                     setSelectedDraft(draft);
                     setShowOrderFlow(true);
                   }}
