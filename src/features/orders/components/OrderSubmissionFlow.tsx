@@ -1263,6 +1263,191 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
         }
     }, [step, subStep1, taskSize, serviceConfig]);
 
+    const placeholderText = useMemo(() => {
+        if (subService) {
+            const sub = subService.toLowerCase();
+            // Furniture Assembly
+            if (sub.includes('ikea')) return t({
+                en: 'Example: Need to assemble a PAX wardrobe with sliding doors.',
+                fr: 'Exemple : J\'ai besoin de monter une armoire PAX avec portes coulissantes.',
+                ar: 'مثال: بحاجة لتجميع خزانة ملابس PAX بأبواب منزلقة.'
+            });
+            if (sub.includes('crib')) return t({
+                en: 'Example: Need to assemble a baby crib (instructions included).',
+                fr: 'Exemple : Besoin d\'assembler un lit de bébé (instructions incluses).',
+                ar: 'مثال: أحتاج إلى تجميع سرير طفل (التعليمات متوفرة).'
+            });
+            // Assembly / Handyman
+            if (sub.includes('door')) return t({
+                en: 'Example: Need to fix a squeaky door and change the lock.',
+                fr: 'Exemple : Besoin de réparer une porte qui grince et changer la serrure.',
+                ar: 'مثال: بحاجة لإصلاح باب يصدر صريراً وتغيير القفل.'
+            });
+            // Mounting
+            if (sub.includes('tv_mount')) return t({
+                en: 'Example: Need to mount a 65" TV on drywall. I have the bracket.',
+                fr: 'Exemple : Dois fixer une TV 65" sur du placo. J\'ai le support.',
+                ar: 'مثال: أحتاج تثبيت تلفزيون 65 بوصة على جدار جاف. لدي الحامل.'
+            });
+            if (sub.includes('curtain')) return t({
+                en: 'Example: Need to drill in 4 curtain rods above the windows.',
+                fr: 'Exemple : Faudra percer 4 tringles à rideaux au-dessus des fenêtres.',
+                ar: 'مثال: يجب ثقب 4 أعمدة ستائر فوق النوافذ.'
+            });
+            if (sub.includes('mirror') || sub.includes('picture')) return t({
+                en: 'Example: Need to hang a heavy mirror and 3 large paintings.',
+                fr: 'Exemple : Besoin d\'accrocher un miroir lourd et 3 grands tableaux.',
+                ar: 'مثال: أريد تعليق مرآة ثقيلة و 3 لوحات كبيرة.'
+            });
+            // Cleaning
+            if (sub.includes('airbnb') || sub.includes('hospitality')) return t({
+                en: 'Example: Checkout at 11 AM. Need fresh linens and a deep clean.',
+                fr: 'Exemple : Check-out à 11h. Besoin de draps propres et grand ménage.',
+                ar: 'مثال: المغادرة 11 صباحاً. أحتاج أغطية نظيفة وتنظيف عميق.'
+            });
+            if (sub.includes('deep_clean')) return t({
+                en: 'Example: Need inside of fridge/oven cleaned, and baseboards dusted.',
+                fr: 'Exemple : Besoin de nettoyer frigo/four et épousseter les plinthes.',
+                ar: 'مثال: يجب تنظيف الثلاجة/الفرن من الداخل، ومسح الألواح السفلية.'
+            });
+            if (sub.includes('car_wash') || sub.includes('detail')) return t({
+                en: 'Example: Full interior and exterior wash for an SUV.',
+                fr: 'Exemple : Lavage complet intérieur et extérieur pour un SUV.',
+                ar: 'مثال: غسيل كامل داخلي وخارجي لسيارة دفع رباعي.'
+            });
+            // Cooking
+            if (sub.includes('moroccan_cooking') || sub.includes('class')) return t({
+                en: 'Example: Want to learn to make traditional Chicken Tagine & Harira.',
+                fr: 'Exemple : Je veux apprendre à préparer un tajine au poulet et Harira.',
+                ar: 'مثال: أريد أن أتعلم تحضير طاجين الدجاج التقليدي والحريرة.'
+            });
+            if (sub.includes('private_chef')) return t({
+                en: 'Example: Need a chef for a dinner party of 8. We prefer seafood.',
+                fr: 'Exemple : Chef pour un dîner de 8 personnes. Préférence fruits de mer.',
+                ar: 'مثال: نحتاج طاهٍ لحفل عشاء من 8 أشخاص. نفضل المأكولات البحرية.'
+            });
+            if (sub.includes('pastry')) return t({
+                en: 'Example: I would like to learn to make Gazelle Horns and Chebakia.',
+                fr: 'Exemple : Je voudrais apprendre à faire Cornes de Gazelle et Chebakia.',
+                ar: 'مثال: أود أن أتعلم صنع كعب الغزال والشباكية.'
+            });
+            if (sub.includes('market_tour')) return t({
+                en: 'Example: We want a market tour to buy spices & cook lamb tagine.',
+                fr: 'Exemple : Visite du marché aux épices & cuisiner un tajine d\'agneau.',
+                ar: 'مثال: نريد جولة في السوق لشراء التوابل وطبخ طاجين لحم.'
+            });
+            // Driver
+            if (sub.includes('city_half') || sub.includes('city_full')) return t({
+                en: 'Example: Need a driver to visit Majorelle Garden and the Medina.',
+                fr: 'Exemple : Besoin d\'un chauffeur pour visiter le jardin Majorelle et la Médina.',
+                ar: 'مثال: أحتاج سائقاً لزيارة حديقة ماجوريل والمدينة القديمة.'
+            });
+            if (sub.includes('airport')) return t({
+                en: 'Example: Pickup from Menara Airport at 2 PM, flight AB123.',
+                fr: 'Exemple : Prise en charge à l\'aéroport Menara à 14h, vol AB123.',
+                ar: 'مثال: الاستقبال من مطار المنارة الساعة 2 ظهراً، الرحلة AB123.'
+            });
+            if (sub.includes('intercity')) return t({
+                en: 'Example: Need a driver to go from Marrakech to Essaouira and back.',
+                fr: 'Exemple : Besoin d\'un chauffeur pour aller de Marrakech à Essaouira (aller-retour).',
+                ar: 'مثال: أحتاج سائقاً للذهاب من مراكش إلى الصويرة والعودة.'
+            });
+            // Electricity
+            if (sub.includes('ev_charger')) return t({
+                en: 'Example: Need a Tesla Wall Connector installed. Panel is 5m away.',
+                fr: 'Exemple : Installation d\'une borne Tesla. Le panneau est à 5m.',
+                ar: 'مثال: تركيب شاحن تسلا. اللوحة تبعد 5 أمتار.'
+            });
+            if (sub.includes('camera') || sub.includes('surveillance')) return t({
+                en: 'Example: Need to install 4 wireless cameras outside the house.',
+                fr: 'Exemple : Besoin d\'installer 4 caméras sans fil à l\'extérieur.',
+                ar: 'مثال: يجب تركيب 4 كاميرات لاسلكية خارج المنزل.'
+            });
+            if (sub.includes('cooling') || sub.includes('heating')) return t({
+                en: 'Example: My AC is blowing warm air, needs freon recharge.',
+                fr: 'Exemple : Ma clim souffle de l\'air chaud, besoin de recharge de gaz.',
+                ar: 'مثال: مكيف الهواء ينفث هواء دافئ، يحتاج إلى تعبئة غاز الفريون.'
+            });
+            // Plumbing
+            if (sub.includes('leak')) return t({
+                en: 'Example: The pipe under the kitchen sink is dripping constantly.',
+                fr: 'Exemple : Le tuyau sous l\'évier de la cuisine fuit constamment.',
+                ar: 'مثال: أنبوب تحت حوض المطبخ يسرب الماء باستمرار.'
+            });
+            if (sub.includes('drain')) return t({
+                en: 'Example: The shower drain is completely clogged.',
+                fr: 'Exemple : L\'évacuation de la douche est complètement bouchée.',
+                ar: 'مثال: البالوعة في الحمام مسدودة بالكامل.'
+            });
+            if (sub.includes('faucet') || sub.includes('toilet')) return t({
+                en: 'Example: The bathroom sink faucet is leaking from the handle.',
+                fr: 'Exemple : Le robinet du lavabo fuit au niveau de la poignée.',
+                ar: 'مثال: حنفية حوض الحمام تسرب من المقبض.'
+            });
+            // Tour Guide
+            if (sub.includes('tour') || sub.includes('guide')) return t({
+                en: 'Example: We are a family of 4 looking to explore hidden Medina gems.',
+                fr: 'Exemple : Nous sommes une famille de 4 cherchant à explorer la Médina.',
+                ar: 'مثال: نحن عائلة من 4 أفراد نتطلع لاستكشاف أسرار المدينة القديمة.'
+            });
+            // Language
+            if (sub.includes('arabic') || sub.includes('darija')) return t({
+                en: 'Example: I want to focus on conversational Darija for bargaining.',
+                fr: 'Exemple : Je veux me concentrer sur la Darija conversationnelle pour négocier.',
+                ar: 'مثال: أود التركيز على الدارجة للمحادثات والمساومة.'
+            });
+        }
+
+        // Fallback to service level
+        if (service === 'mounting') return t({
+            en: 'Example: I need to install a TV on a wall. I already have the bracket.',
+            fr: 'Exemple : Je dois installer une TV au mur. J\'ai déjà le support.',
+            ar: 'مثال: أحتاج إلى تثبيت تلفزيون على الحائط. لدي الحامل بالفعل.'
+        });
+        if (service === 'cleaning') return t({
+            en: 'Example: Standard cleaning for a 2-bedroom apartment. I have supplies.',
+            fr: 'Exemple : Ménage standard pour un appartement T3. J\'ai les produits.',
+            ar: 'مثال: تنظيف عادي لشقة بغرفتين. لدي مواد التنظيف.'
+        });
+        if (service === 'moving') return t({
+            en: 'Example: Moving a sofa and 5 boxes to the 3rd floor (no elevator).',
+            fr: 'Exemple : Déménagement d\'un canapé et 5 cartons au 3ème étage (sans ascenseur).',
+            ar: 'مثال: نقل أريكة و 5 صناديق إلى الطابق الثالث (بدون مصعد).'
+        });
+        if (service === 'errands') return t({
+            en: 'Example: Pick up groceries from Marjane and deliver them to my house.',
+            fr: 'Exemple : Récupérer des courses à Marjane et les livrer chez moi.',
+            ar: 'مثال: استلام بقالة من مرجان وتوصيلها إلى منزلي.'
+        });
+        if (service === 'plumbing') return t({
+            en: 'Example: The sink is leaking from the bottom pipe.',
+            fr: 'Exemple : L\'évier fuit au niveau du tuyau inférieur.',
+            ar: 'مثال: الحوض يسرب من الأنبوب السفلي.'
+        });
+        if (service === 'electricity' || service === 'electrical') return t({
+            en: 'Example: Need to install a new ceiling light fixture.',
+            fr: 'Exemple : Besoin d\'installer un nouveau plafonnier.',
+            ar: 'مثال: أحتاج إلى تركيب إضاءة سقف جديدة.'
+        });
+        if (service === 'private_driver') return t({
+            en: 'Example: Need a driver for airport pickup at Menara and trip to Palmeraie.',
+            fr: 'Exemple : Besoin d\'un chauffeur pour transfert aéroport Menara vers la Palmeraie.',
+            ar: 'مثال: أحتاج سائق للاستقبال من مطار المنارة والتوصيل إلى النخيل.'
+        });
+        if (service === 'cooking') return t({
+            en: 'Example: Looking to learn how to make Chicken Tagine.',
+            fr: 'Exemple : Je souhaite apprendre à préparer un Tajine au poulet.',
+            ar: 'مثال: أريد أن أتعلم كيفية تحضير طاجين الدجاج.'
+        });
+
+        // Default
+        return t({
+            en: 'Describe tasks, details, tools needed, or any special instructions...',
+            fr: 'Décrivez les tâches, détails, outils nécessaires ou instructions spéciales...',
+            ar: 'صف المهام، التفاصيل، الأدوات المطلوبة، أو أي تعليمات خاصة...'
+        });
+    }, [service, subService, t]);
+
     const handleStartMatching = () => {
         if (!taskSize || !description.trim()) return;
 
@@ -2361,45 +2546,7 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                                                         <textarea
                                                             value={description}
                                                             onChange={(e) => setDescription(e.target.value)}
-                                                            placeholder={
-                                                                service === 'mounting' ? t({
-                                                                    en: 'Example: I need to install a TV on a wall. I already have the bracket.',
-                                                                    fr: 'Exemple : Je dois installer une TV au mur. J\'ai déjà le support.',
-                                                                    ar: 'مثال: أحتاج إلى تثبيت تلفزيون على الحائط. لدي الحامل بالفعل.'
-                                                                }) : service === 'cleaning' ? t({
-                                                                    en: 'Example: Standard cleaning for a 2-bedroom apartment. I have all the supplies.',
-                                                                    fr: 'Exemple : Ménage standard pour un appartement T3. J\'ai tous les produits.',
-                                                                    ar: 'مثال: تنظيف عادي لشقة بغرفتي نوم. لدي جميع مواد التنظيف.'
-                                                                }) : service === 'moving' ? t({
-                                                                    en: 'Example: Moving a sofa and 5 boxes to the 3rd floor (no elevator).',
-                                                                    fr: 'Exemple : Déménagement d\'un canapé et 5 cartons au 3ème étage (sans ascenseur).',
-                                                                    ar: 'مثال: نقل أريكة و 5 صناديق إلى الطابق الثالث (بدون مصعد).'
-                                                                }) : service === 'errands' ? t({
-                                                                    en: 'Example: Pick up groceries from Marjane and deliver them to my house.',
-                                                                    fr: 'Exemple : Récupérer des courses à Marjane et les livrer chez moi.',
-                                                                    ar: 'مثال: استلام بقالة من مرجان وتوصيلها إلى منزلي.'
-                                                                }) : service === 'plumbing' ? t({
-                                                                    en: 'Example: The sink is leaking from the bottom pipe.',
-                                                                    fr: 'Exemple : L\'évier fuit au niveau du tuyau inférieur.',
-                                                                    ar: 'مثال: الحوض يسرب من الأنبوب السفلي.'
-                                                                }) : service === 'electrical' ? t({
-                                                                    en: 'Example: Need to install a new ceiling light fixture.',
-                                                                    fr: 'Exemple : Besoin d\'installer un nouveau plafonnier.',
-                                                                    ar: 'مثال: أحتاج إلى تركيب إضاءة سقف جديدة.'
-                                                                }) : service === 'private_driver' ? t({
-                                                                    en: 'Example: Need a driver for airport pickup at Menara and trip to Palmeraie.',
-                                                                    fr: 'Exemple : Besoin d\'un chauffeur pour transfert aéroport Menara vers la Palmeraie.',
-                                                                    ar: 'مثال: أحتاج سائق للاستقبال من مطار المنارة والتوصيل إلى النخيل.'
-                                                                }) : service === 'cooking' ? t({
-                                                                    en: 'Example: Looking to learn how to make Chicken Tagine and Harira soup.',
-                                                                    fr: 'Exemple : Je souhaite apprendre à préparer un Tajine au poulet et une soupe Harira.',
-                                                                    ar: 'مثال: أريد أن أتعلم كيفية تحضير طاجين الدجاج وحساء الحريرة.'
-                                                                }) : t({
-                                                                    en: 'Describe tasks, details, tools needed, or any special instructions...',
-                                                                    fr: 'Décrivez les tâches, détails, outils nécessaires ou instructions spéciales...',
-                                                                    ar: 'صف المهام، التفاصيل، الأدوات المطلوبة، أو أي تعليمات خاصة...'
-                                                                })
-                                                            }
+                                                            placeholder={placeholderText}
                                                             className="w-full h-24 bg-transparent outline-none text-[15px] font-medium text-neutral-800 placeholder:text-neutral-400 resize-none leading-relaxed"
                                                         />
                                                     </div>
