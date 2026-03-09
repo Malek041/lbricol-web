@@ -661,7 +661,7 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
     useEffect(() => {
         if (step === 3 && !selectedDate) {
             const today = new Date();
-            const todayStr = today.toISOString().split('T')[0];
+            const todayStr = format(today, 'yyyy-MM-dd');
             setSelectedDate(todayStr);
         }
     }, [step, selectedDate]);
@@ -750,22 +750,70 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                     ]
                 };
             case 'plumbing':
-            case 'electricity':
             case 'appliance_installation':
-            case 'private_driver':
+                return {
+                    title: t({ en: "What's the size of your Task?", fr: "Quelle est la taille de votre tâche ?", ar: "ما هو حجم المهمة؟" }),
+                    options: [
+                        { id: 'small', duration: 1, label: { en: 'Small Task', fr: 'Petite tâche', ar: 'مهمة صغيرة' }, estTime: { en: 'Est: 1 hr', fr: 'Est: 1h', ar: 'حوالي ساعة' }, desc: { en: 'Simple fixes like fixing a leak.', fr: 'Tâches simples comme réparer une fuite.', ar: 'مهام بسيطة مثل إصلاح تسرب.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/SmallTask.webp' },
+                        { id: 'medium', duration: 2.5, label: { en: 'Medium Task', fr: 'Tâche moyenne', ar: 'مهمة متوسطة' }, estTime: { en: 'Est: 2-3 hrs', fr: 'Est: 2-3h', ar: '2-3 ساعات' }, desc: { en: 'Standard tasks like installing a faucet.', fr: 'Tâches moyennes comme installer un robinet.', ar: 'مهام متوسطة مثل تركيب صنبور.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/MediumSize.webp' },
+                        { id: 'large', duration: 5, label: { en: 'Large Task', fr: 'Grosse tâche', ar: 'مهمة كبيرة' }, estTime: { en: 'Est: 4+ hrs', fr: 'Est: 4h+', ar: 'أكثر من 4 ساعات' }, desc: { en: 'Complex projects or multiple issues.', fr: 'Projets complexes ou problèmes multiples.', ar: 'مشاريع معقدة أو مشاكل متعددة.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/BigTask.webp' },
+                    ]
+                };
+            case 'electricity': {
+                const subKey = subService?.toLowerCase() || '';
+                let title = t({ en: "What's the size of your Task?", fr: "Quelle est la taille de votre tâche ?", ar: "ما هو حجم المهمة؟" });
+                let options = [
+                    { id: 'small', duration: 1, label: { en: 'Small Task', fr: 'Petite tâche', ar: 'مهمة صغيرة' }, estTime: { en: 'Est: 1 hr', fr: 'Est: 1h', ar: 'حوالي ساعة' }, desc: { en: 'Simple fixes like fixing a switch.', fr: 'Tâches simples comme réparer un interrupteur.', ar: 'مهام بسيطة مثل إصلاح مفتاح كهربائي.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/SmallTask.webp' },
+                    { id: 'medium', duration: 2.5, label: { en: 'Medium Task', fr: 'Tâche moyenne', ar: 'مهمة متوسطة' }, estTime: { en: 'Est: 2-3 hrs', fr: 'Est: 2-3h', ar: '2-3 ساعات' }, desc: { en: 'Standard tasks like installing a light fixture.', fr: 'Tâches moyennes comme installer un luminaire.', ar: 'مهام متوسطة مثل تركيب مصباح.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/MediumSize.webp' },
+                    { id: 'large', duration: 5, label: { en: 'Large Task', fr: 'Grosse tâche', ar: 'مهمة كبيرة' }, estTime: { en: 'Est: 4+ hrs', fr: 'Est: 4h+', ar: 'أكثر من 4 ساعات' }, desc: { en: 'Complex rewiring or panel projects.', fr: 'Projets de câblage complexes ou panneaux.', ar: 'مشاريع توصيل أسلاك معقدة.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/BigTask.webp' },
+                ];
+
+                if (subKey.includes('ev_charger')) {
+                    title = t({ en: "How many EV chargers to install?", fr: "Combien de bornes de recharge EV à installer ?", ar: "كم عدد شواحن السيارات الكهربائية المطلوب تركيبها؟" });
+                    options = [
+                        { id: '1', duration: 3, label: { en: '1 Charger', fr: '1 Borne', ar: 'شاحن واحد' }, estTime: { en: 'Est: 3 hrs', fr: 'Est: 3h', ar: 'حوالي 3 ساعات' }, desc: { en: 'Standard installation of one wallbox.', fr: 'Installation standard d\'une borne murale.', ar: 'تركيب عادي لشاحن جداري واحد.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/SmallTask.webp' },
+                        { id: '2', duration: 5, label: { en: '2 Chargers', fr: '2 Bornes', ar: 'شاحنان' }, estTime: { en: 'Est: 5 hrs', fr: 'Est: 5h', ar: 'حوالي 5 ساعات' }, desc: { en: 'Installation of two chargers.', fr: 'Installation de deux bornes.', ar: 'تركيب شاحنين.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/MediumSize.webp' },
+                    ];
+                } else if (subKey.includes('cooling') || subKey.includes('heating')) {
+                    title = t({ en: "How many units involved?", fr: "Combien d'unités sont concernées ?", ar: "كم عدد الوحدات المعنية؟" });
+                    options = [
+                        { id: 'small', duration: 2, label: { en: '1 Unit', fr: '1 Unité', ar: 'وحدة واحدة' }, estTime: { en: 'Est: 2 hrs', fr: 'Est: 2h', ar: 'حوالي ساعتين' }, desc: { en: 'Maintenance or single unit install.', fr: 'Entretien ou installation d\'une seule unité.', ar: 'صيانة أو تركيب وحدة واحدة.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/SmallTask.webp' },
+                        { id: 'medium', duration: 4, label: { en: '2 Units', fr: '2 Unités', ar: 'وحدتان' }, estTime: { en: 'Est: 4 hrs', fr: 'Est: 4h', ar: 'حوالي 4 ساعات' }, desc: { en: 'Servicing two AC units or heaters.', fr: 'Entretien de deux climatiseurs ou chauffages.', ar: 'صيانة وحدتي تكييف أو تدفئة.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/MediumSize.webp' },
+                        { id: 'large', duration: 8, label: { en: 'Central / Multi', fr: 'Central / Multi-split', ar: 'مركزي / متعدد' }, estTime: { en: 'Est: 8h', fr: 'Est: 8h', ar: 'حوالي 8 ساعات' }, desc: { en: 'Complex central system or multi-split.', fr: 'Système central complexe ou multi-split.', ar: 'نظام مركزي معقد.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/BigTask.webp' }
+                    ];
+                } else if (subKey.includes('surveillance') || subKey.includes('camera')) {
+                    title = t({ en: "How many cameras to install?", fr: "Combien de caméras à installer ?", ar: "كم عدد الكاميرات المطلوب تركيبها؟" });
+                    options = [
+                        { id: '1-2', duration: 2, label: { en: '1-2 Cameras', fr: '1-2 Caméras', ar: '1-2 كاميرات' }, estTime: { en: 'Est: 2 hrs', fr: 'Est: 2h', ar: 'حوالي ساعتين' }, desc: { en: 'Simple setup of 1 or 2 wireless/wired cameras.', fr: 'Installation simple de 1 ou 2 caméras.', ar: 'تركيب بسيط لكاميرا أو اثنتين.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/SmallTask.webp' },
+                        { id: '3-4', duration: 4, label: { en: '3-4 Cameras', fr: '3-4 Caméras', ar: '3-4 كاميرات' }, estTime: { en: 'Est: 4 hrs', fr: 'Est: 4h', ar: 'حوالي 4 ساعات' }, desc: { en: 'Full house coverage with recorder setup.', fr: 'Couverture complète avec enregistreur.', ar: 'تغطية كاملة للمنزل مع جهاز تسجيل.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/MediumSize.webp' },
+                        { id: '5+', duration: 8, label: { en: '5+ Cameras / Complex', fr: '5+ Caméras / Complexe', ar: '+5 كاميرات / معقد' }, estTime: { en: 'Est: 8h', fr: 'Est: 8h', ar: 'حوالي 8 ساعات' }, desc: { en: 'Comprehensive professional surveillance system.', fr: 'Système de surveillance professionnel complet.', ar: 'نظام مراقبة احترافي شامل.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/BigTask.webp' }
+                    ];
+                }
+
+                return { title, options };
+            }
+            case 'private_driver': {
+                const subKey = subService?.toLowerCase().replace(/ /g, '_').replace(/-/g, '_') || '';
+                const defaultDays = (subKey.includes('half') || subKey.includes('demi')) ? 0.5 : 1;
                 return {
                     title: t({ en: "How many days do you need the driver?", fr: "De combien de jours avez-vous besoin du chauffeur ?", ar: "كم يوماً تحتاج فيه للسائق؟" }),
                     isDaily: true,
+                    isDayCounter: true,
+                    defaultDays,
                     options: [
-                        { id: '0.5', duration: 0.5, coefficient: 1.2, label: { en: 'Half a Day', fr: 'Demi-journée', ar: 'نصف يوم' }, estTime: { en: '4 hrs', fr: '4h', ar: '4 ساعات' }, desc: { en: 'Personal driver for 4 hours.', fr: 'Chauffeur privé pour 4 heures.', ar: 'سائق خاص لمدة 4 ساعات.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/SmallTask.webp' },
-                        { id: '1', duration: 1, coefficient: 1.2, label: { en: '1 Day', fr: '1 Jour', ar: 'يوم واحد' }, estTime: { en: '8 hrs', fr: '8h', ar: '8 ساعات' }, desc: { en: 'Full day personal driver service.', fr: 'Service de chauffeur privé pour toute la journée.', ar: 'خدمة سائق خاص ليوم كامل.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/MediumSize.webp' },
-                        { id: '2', duration: 2, coefficient: 1.2, label: { en: '2 Days', fr: '2 Jours', ar: 'يومان' }, estTime: { en: '16 hrs', fr: '16h', ar: '16 ساعة' }, desc: { en: 'Personal driver for 2 consecutive days.', fr: 'Chauffeur privé pour 2 jours consécutifs.', ar: 'سائق خاص ليومين متتاليين.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/BigTask.webp' },
-                        { id: '3', duration: 3, coefficient: 1.2, label: { en: '3 Days', fr: '3 Jours', ar: '3 أيام' }, estTime: { en: '24 hrs', fr: '24h', ar: '24 ساعة' }, desc: { en: 'Personal driver for 3 days.', fr: 'Chauffeur privé pour 3 jours.', ar: 'سائق خاص لثلاثة أيام.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/BigTask.webp' },
-                        { id: '4', duration: 4, coefficient: 1.2, label: { en: '4 Days', fr: '4 Jours', ar: '4 أيام' }, estTime: { en: '32 hrs', fr: '4 jours', ar: '4 أيام' }, desc: { en: 'Extended personal driver service.', fr: 'Service de chauffeur privé prolongé.', ar: 'خدمة سائق خاص ممتدة.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/BigTask.webp' },
-                        { id: '5', duration: 5, coefficient: 1.2, label: { en: '5 Days', fr: '5 Jours', ar: '5 أيام' }, estTime: { en: '40 hrs', fr: '5 jours', ar: '5 أيام' }, desc: { en: 'Personal driver for a full week part.', fr: 'Chauffeur privé pour une partie de la semaine.', ar: 'سائق خاص لجزء كامل من الأسبوع.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/BigTask.webp' },
-                        { id: '7', duration: 7, coefficient: 1.2, label: { en: '7 Days', fr: '7 Jours', ar: '7 أيام' }, estTime: { en: '56 hrs', fr: '7 jours', ar: '7 أيام' }, desc: { en: 'Full week personal driver (7 days).', fr: 'Chauffeur privé pour toute la semaine (7j).', ar: 'سائق خاص طوال الأسبوع (7 أيام).' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/BigTask.webp' },
+                        { id: '0.5', duration: 0.5, label: { en: '0.5', fr: '0.5', ar: '0.5' }, subLabel: { en: 'HALF-DAY', fr: 'DEMI-JOURNÉE', ar: 'نصف يوم' }, estTime: { en: '4h', fr: '4h', ar: '4س' }, desc: { en: '', fr: '', ar: '' }, icon: '' },
+                        ...Array.from({ length: 30 }, (_, i) => ({
+                            id: String(i + 1),
+                            duration: i + 1,
+                            label: { en: String(i + 1), fr: String(i + 1), ar: String(i + 1) },
+                            subLabel: { en: i === 0 ? 'DAY' : 'DAYS', fr: i === 0 ? 'JOUR' : 'JOURS', ar: i === 0 ? 'يوم' : 'أيام' },
+                            estTime: { en: `${(i + 1) * 8}h`, fr: `${(i + 1) * 8}h`, ar: `${(i + 1) * 8}س` },
+                            desc: { en: '', fr: '', ar: '' },
+                            icon: ''
+                        }))
                     ]
                 };
+            }
             case 'babysitting':
             case 'elderly_care':
                 return {
@@ -930,7 +978,9 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
             } else {
                 setStep(1);
                 setSubStep1('location');
-                setTaskSize(null);
+                // Auto-select default task size if available
+                const initialTaskSize = serviceConfig?.defaultDays ? String(serviceConfig.defaultDays) : null;
+                setTaskSize(initialTaskSize);
                 setDescription('');
                 setSelectedBricolerId(null);
                 setViewedBricoler(null);
@@ -1020,13 +1070,20 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
         fetchBricolers();
     }, [currentCity, currentArea]);
 
+    // Initialize taskSize if a default is provided (e.g. for private_driver)
+    useEffect(() => {
+        if (step === 1 && subStep1 === 'size' && !taskSize && (serviceConfig as any).defaultDays) {
+            setTaskSize(String((serviceConfig as any).defaultDays));
+        }
+    }, [step, subStep1, taskSize, serviceConfig]);
+
     // Fetch existing bookings for the selected pro to accurately show availability dots
     useEffect(() => {
         const fetchBookings = async () => {
             if (!selectedBricolerId || !selectedBricolerId.startsWith('pro-') || selectedBricolerId === 'open') return;
             setIsLoadingBookings(true);
             try {
-                const todayStr = new Date().toISOString().split('T')[0];
+                const todayStr = format(new Date(), 'yyyy-MM-dd');
                 const q = query(
                     collection(db, 'jobs'),
                     where('bricolerId', '==', selectedBricolerId),
@@ -1104,6 +1161,9 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
         }
 
         // Default fallback if neither scheduled slots nor weekly routine is used
+        if (service === 'private_driver') {
+            return [{ from: '08:00', to: '18:00' }]; // More flexible for drivers
+        }
         return [{ from: '10:00', to: '17:00' }];
     };
 
@@ -1118,23 +1178,13 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
         return `${h.toString().padStart(2, '0')}:${mm.toString().padStart(2, '0')}`;
     };
 
-    const getAvailableSlotsForDate = (dateStr: string, profile: any) => {
-        if (!profile || !activeTaskSize) return [];
+    const getAvailableSlotsForDate = (dateStr: string, profile: any, skipMultiDayCheck = false) => {
+        if (!profile) return [];
 
         const isDaily = service === 'private_driver';
-        const daysNeeded = isDaily ? activeTaskSize.duration : 1;
-
-        // If multi-day, we must check if THE PROVIDER IS ACTIVE on all those days
-        if (isDaily && daysNeeded > 1) {
-            const startDate = parseISO(dateStr);
-            for (let i = 0; i < Math.ceil(daysNeeded); i++) {
-                const checkDate = addDays(startDate, i);
-                const checkDateStr = format(checkDate, 'yyyy-MM-dd');
-                const dayBlocks = (profile as any).calendarSlots?.[checkDateStr] || (profile as any).availability?.[checkDateStr];
-                const fallback = getHeroFallbackSlots(profile, checkDate);
-                if ((!dayBlocks || dayBlocks.length === 0) && fallback.length === 0) return [];
-            }
-        }
+        const baseDuration = (activeTaskSize as any)?.duration || (isDaily ? 1 : 2);
+        const durationHours = isDaily ? (baseDuration < 1 ? baseDuration * 8 : 8) : baseDuration;
+        const daysNeeded = isDaily ? baseDuration : 1;
 
         const blocksRaw = (profile as any).calendarSlots?.[dateStr] || (profile as any).availability?.[dateStr];
         const blocks = Array.isArray(blocksRaw)
@@ -1144,7 +1194,6 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
         if (blocks.length === 0) return [];
 
         // For daily services, duration in hours is effectively a full work day (8h)
-        const durationHours = isDaily ? 8 : activeTaskSize.duration;
         const durationMin = durationHours * 60;
 
         const slots: string[] = [];
@@ -1182,11 +1231,9 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
     };
 
     const isSlotBookedOnDate = (startTimeStr: string, dateStr: string) => {
-        if (!activeTaskSize) return false;
-
         const isDaily = service === 'private_driver';
-        const daysCount = isDaily ? Math.ceil(activeTaskSize.duration) : 1;
-        const durationHours = isDaily ? 8 : activeTaskSize.duration;
+        const daysCount = isDaily ? Math.ceil(activeTaskSize?.duration || 1) : 1;
+        const durationHours = isDaily ? 8 : (activeTaskSize?.duration || 2);
         const durationMin = durationHours * 60;
         const start = timeToMinutes(startTimeStr);
         const end = start + durationMin;
@@ -1396,10 +1443,10 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
         const startOfWeekCal = new Date(todayCal);
         startOfWeekCal.setDate(todayCal.getDate() - todayCal.getDay());
 
-        for (let i = 0; i < 21; i++) {
+        for (let i = 0; i < 31; i++) { // Render 31 days for more choice
             const dCal = new Date(startOfWeekCal);
             dCal.setDate(startOfWeekCal.getDate() + i);
-            const dateStrCal = dCal.toISOString().split('T')[0];
+            const dateStrCal = format(dCal, 'yyyy-MM-dd');
             const isSelectedCal = selectedDate === dateStrCal;
             const isPastCal = dCal < todayCal;
 
@@ -1481,9 +1528,14 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
 
             let basePrice = hourlyRate * duration * coefficient;
 
-            if (service === 'errands') {
+            if (service === 'errands' || service === 'courier') {
                 const multiplier = duration >= 1.33 ? 4.5 : duration >= 0.8 ? 2.5 : 1.5;
                 basePrice = hourlyRate * multiplier;
+            } else if (service === 'private_driver') {
+                // Finalize days logic: the hours are fixed per selected taskSize.
+                // 0.5 = 4h, 1 = 8h, etc.
+                const hours = duration < 1 ? 4 : duration * 8;
+                basePrice = hourlyRate * hours;
             } else if (service === 'babysitting' || service === 'elderly_care') {
                 let multiplier = 1;
                 if (duration >= 10) multiplier = 0.8;
@@ -1780,9 +1832,14 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                                                     mounting: 'MountingVector.png',
                                                     babysitting: 'babysettingnVector.png',
                                                     errands: 'homerepairVector.png',
+                                                    private_driver: '/Images/Vectors Illu/BWCardirever.png',
+                                                    cooking: '/Images/Vectors Illu/cooking.png',
+                                                    pool_cleaning: '/Images/Vectors Illu/Poolcleaning_VI.png',
+                                                    pets_care: '/Images/Vectors Illu/petscare.png',
                                                 };
                                                 const iconName = activeService ? serviceIconMap[activeService.id] || 'homerepairVector.png' : 'homerepairVector.png';
-                                                return <img src={"/Images/Service Category vectors/" + iconName} className="w-4 h-4 object-contain" />;
+                                                const iconPath = iconName.startsWith('/') ? iconName : "/Images/Service Category vectors/" + iconName;
+                                                return <img src={iconPath} className="w-4 h-4 object-contain" />;
                                             })()}
                                             <span className="text-[13px] font-semibold text-neutral-900 whitespace-nowrap opacity-90">
                                                 {t({ en: getServiceById(service)?.name || '', fr: getServiceById(service)?.name || '' })} {subService ? "› " + t({ en: getSubServiceName(service, subService) || '', fr: getSubServiceName(service, subService) || '' }) : ''}
@@ -1912,52 +1969,134 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                                                     {serviceConfig.title}
                                                 </motion.h4>
                                                 <div className="flex flex-col gap-4">
-                                                    {serviceConfig.options.map((size, idx) => (
-                                                        <motion.button
-                                                            key={size.id}
-                                                            initial={{ opacity: 0, y: 20, scale: 0.95 }}
-                                                            animate={{ opacity: 1, y: 0, scale: 1 }}
-                                                            transition={{
-                                                                type: "spring",
-                                                                damping: 20,
-                                                                stiffness: 250,
-                                                                delay: 0.1 + idx * 0.08
-                                                            }}
-                                                            onClick={() => {
-                                                                setTaskSize(size.id);
-                                                                setTimeout(() => setSubStep1('description'), 250);
-                                                            }}
-                                                            className={cn(
-                                                                "flex flex-col gap-3 p-8 rounded-[20px] text-left transition-all",
-                                                                taskSize === size.id ? "bg-[#F7F6F6] border-2 border-[#00A082] shadow-sm" : "bg-neutral-50/40 border border-neutral-100 hover:border-[#008C74]/30"
-                                                            )}
-                                                        >
+                                                    {((serviceConfig as any).isDayCounter) ? (
+                                                        <div className="flex flex-col items-center justify-center p-0 bg-transparent gap-8">
+                                                            <div className="relative w-full h-[320px] flex items-center justify-center overflow-hidden">
+                                                                {/* Fixed Middle Oval Lens */}
+                                                                <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[160px] h-[225px] border-[5px] border-[#008C74] rounded-[100px] z-20 pointer-events-none shadow-[0_0_40px_rgba(0,140,116,0.1)]" />
 
-                                                            <div className="flex-1 relative">
-                                                                <div className="flex items-center justify-between mb-2">
-                                                                    <div className="flex items-center gap-2">
-                                                                        <span className="text-[20px] font-bold text-neutral-900 leading-none">{t(size.label as any)}</span>
-                                                                    </div>
-                                                                    <span className="text-[16px] font-black text-[#00A082] bg-[#00A082]/10 px-4 py-2 rounded-xl whitespace-nowrap">
-                                                                        ≈ {t(size.estTime as any)}
+                                                                <div
+                                                                    className="flex items-center gap-20 overflow-x-auto no-scrollbar w-full px-[40%] h-full scroll-smooth"
+                                                                    style={{ scrollSnapType: 'x mandatory', WebkitOverflowScrolling: 'touch' }}
+                                                                    onScroll={(e) => {
+                                                                        const container = e.currentTarget;
+                                                                        const scrollPosition = container.scrollLeft + container.offsetWidth / 2;
+                                                                        const children = Array.from(container.children) as HTMLElement[];
+
+                                                                        const closest = children.reduce((prev, curr) => {
+                                                                            const currCenter = curr.offsetLeft + curr.offsetWidth / 2;
+                                                                            const prevCenter = prev.offsetLeft + prev.offsetWidth / 2;
+                                                                            return Math.abs(currCenter - scrollPosition) < Math.abs(prevCenter - scrollPosition) ? curr : prev;
+                                                                        });
+
+                                                                        const dayValue = closest.getAttribute('data-day');
+                                                                        if (dayValue && taskSize !== dayValue) {
+                                                                            setTaskSize(dayValue);
+                                                                        }
+                                                                    }}
+                                                                >
+                                                                    {serviceConfig.options.map((option: any) => {
+                                                                        const day = option.duration;
+                                                                        const isSelected = parseFloat(taskSize || String((serviceConfig as any).defaultDays)) === day;
+                                                                        const label = t(option.subLabel);
+
+                                                                        return (
+                                                                            <button
+                                                                                key={day}
+                                                                                data-day={day}
+                                                                                onClick={(e) => e.currentTarget.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' })}
+                                                                                className={cn(
+                                                                                    "flex-shrink-0 flex flex-col items-center justify-center transition-all duration-500",
+                                                                                    isSelected ? "w-[160px] h-[225px] scale-100 opacity-100" : "w-[130px] h-full opacity-40 grayscale scale-75"
+                                                                                )}
+                                                                                style={{ scrollSnapAlign: 'center', scrollSnapStop: 'always' }}
+                                                                            >
+                                                                                <div className={cn(
+                                                                                    "w-44 h-44 rounded-full flex flex-col items-center justify-center border-2 transition-all duration-700",
+                                                                                    isSelected ? "border-transparent bg-transparent" : "border-neutral-200 bg-transparent"
+                                                                                )}>
+                                                                                    <span className={cn(
+                                                                                        "font-black tracking-tighter leading-none transition-all duration-700",
+                                                                                        isSelected ? "text-[64px] text-black" : "text-[40px] text-neutral-400"
+                                                                                    )}>
+                                                                                        {option.label.en}
+                                                                                    </span>
+                                                                                    <span className={cn(
+                                                                                        "font-black uppercase tracking-widest text-center px-4 transition-all duration-700 leading-tight",
+                                                                                        isSelected ? "text-[14px] text-[#008C74] mt-2" : "text-[11px] text-neutral-300 mt-1"
+                                                                                    )}>
+                                                                                        {label}
+                                                                                    </span>
+                                                                                </div>
+                                                                            </button>
+                                                                        );
+                                                                    })}
+                                                                </div>
+                                                            </div>
+
+                                                            <div className="flex flex-col items-center gap-2 text-center -mt-6">
+                                                                <div className="px-4 py-2 rounded-full bg-[#008C74]/10 border border-[#008C74]/20">
+                                                                    <span className="text-[15px] font-black text-[#008C74]">
+                                                                        {parseFloat(taskSize || '1') === 0.5 ? '4h' : `${parseFloat(taskSize || '1') * 8}h`} {t({ en: 'of total service', fr: 'de service total', ar: 'إجمالي مدة الخدمة' })}
                                                                     </span>
                                                                 </div>
-                                                                <p className="text-[17px] text-black font-medium leading-normal opacity-70 max-w-[90%]">{t(size.desc as any)}</p>
-
-                                                                {/* Discount Badge at Top Right */}
-                                                                {idx === 1 && (
-                                                                    <div className="absolute -top-10 -right-4 rotate-3 px-3 py-1.5 rounded-[12px] bg-[#FFC244] text-black text-[13px] font-black shadow-lg shadow-[#FFC244]/20 border border-white/20">
-                                                                        -5%
-                                                                    </div>
-                                                                )}
-                                                                {idx === 2 && (
-                                                                    <div className="absolute -top-10 -right-4 -rotate-3 px-3 py-1.5 rounded-[12px] bg-[#9F7AEA] text-white text-[13px] font-black shadow-lg shadow-[#9F7AEA]/20 border border-white/20">
-                                                                        -10%
-                                                                    </div>
-                                                                )}
+                                                                <p className="text-[14px] text-neutral-400 font-bold max-w-[300px] mt-2">
+                                                                    {t({
+                                                                        en: "Swipe to define exactly how many days you need.",
+                                                                        fr: "Faites défiler pour définir le nombre de jours exact.",
+                                                                        ar: "قم بالتمرير لتحديد عدد الأيام بالضبط."
+                                                                    })}
+                                                                </p>
                                                             </div>
-                                                        </motion.button>
-                                                    ))}
+                                                        </div>
+                                                    ) : (
+                                                        serviceConfig.options.map((size, idx) => (
+                                                            <motion.button
+                                                                key={size.id}
+                                                                initial={{ opacity: 0, y: 20, scale: 0.95 }}
+                                                                animate={{ opacity: 1, y: 0, scale: 1 }}
+                                                                transition={{
+                                                                    type: "spring",
+                                                                    damping: 20,
+                                                                    stiffness: 250,
+                                                                    delay: 0.1 + idx * 0.08
+                                                                }}
+                                                                onClick={() => {
+                                                                    setTaskSize(size.id);
+                                                                    setTimeout(() => setSubStep1('description'), 250);
+                                                                }}
+                                                                className={cn(
+                                                                    "flex flex-col gap-3 p-8 rounded-[20px] text-left transition-all",
+                                                                    taskSize === size.id ? "bg-[#F7F6F6] border-2 border-[#00A082] shadow-sm" : "bg-neutral-50/40 border border-neutral-100 hover:border-[#008C74]/30"
+                                                                )}
+                                                            >
+
+                                                                <div className="flex-1 relative">
+                                                                    <div className="flex items-center justify-between mb-2">
+                                                                        <div className="flex items-center gap-2">
+                                                                            <span className="text-[20px] font-bold text-neutral-900 leading-none">{t(size.label as any)}</span>
+                                                                        </div>
+                                                                        <span className="text-[16px] font-black text-[#00A082] bg-[#00A082]/10 px-4 py-2 rounded-xl whitespace-nowrap">
+                                                                            ≈ {t(size.estTime as any)}
+                                                                        </span>
+                                                                    </div>
+                                                                    <p className="text-[17px] text-black font-medium leading-normal opacity-70 max-w-[90%]">{t(size.desc as any)}</p>
+
+                                                                    {/* Discount Badge at Top Right */}
+                                                                    {idx === 1 && (
+                                                                        <div className="absolute -top-10 -right-4 rotate-3 px-3 py-1.5 rounded-[12px] bg-[#FFC244] text-black text-[13px] font-black shadow-lg shadow-[#FFC244]/20 border border-white/20">
+                                                                            -5%
+                                                                        </div>
+                                                                    )}
+                                                                    {idx === 2 && (
+                                                                        <div className="absolute -top-10 -right-4 -rotate-3 px-3 py-1.5 rounded-[12px] bg-[#9F7AEA] text-white text-[13px] font-black shadow-lg shadow-[#9F7AEA]/20 border border-white/20">
+                                                                            -10%
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            </motion.button>
+                                                        ))
+                                                    )}
                                                 </div>
                                             </motion.div>
                                         )}
@@ -2066,9 +2205,14 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                                                     mounting: 'MountingVector.png',
                                                     babysitting: 'babysettingnVector.png',
                                                     errands: 'homerepairVector.png',
+                                                    private_driver: '/Images/Vectors Illu/BWCardirever.png',
+                                                    cooking: '/Images/Vectors Illu/cooking.png',
+                                                    pool_cleaning: '/Images/Vectors Illu/Poolcleaning_VI.png',
+                                                    pets_care: '/Images/Vectors Illu/petscare.png',
                                                 };
                                                 const iconName = activeService ? serviceIconMap[activeService.id] || 'homerepairVector.png' : 'homerepairVector.png';
-                                                return <img src={"/Images/Service Category vectors/" + iconName} className="w-5 h-5 object-contain" />;
+                                                const iconPath = iconName.startsWith('/') ? iconName : "/Images/Service Category vectors/" + iconName;
+                                                return <img src={iconPath} className="w-5 h-5 object-contain" />;
                                             })()}
                                             <span className="text-[13px] font-black text-neutral-900 whitespace-nowrap opacity-80">
                                                 {getServiceById(service)?.name} {subService ? "> " + getSubServiceName(service, subService) : ''}
@@ -2785,7 +2929,7 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                                 </motion.div>
                             )}
                         </AnimatePresence>
-                    </div >
+                    </div>
 
                     {/* Persistent Footer */}
                     <AnimatePresence mode="wait">
@@ -3056,9 +3200,9 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                             onClose();
                         }}
                     />
-                </motion.div >
-            </motion.div >
-        </AnimatePresence >
+                </motion.div>
+            </motion.div>
+        </AnimatePresence>
     );
 };
 
