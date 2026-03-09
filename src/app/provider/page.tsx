@@ -3625,7 +3625,96 @@ export default function ProviderPage() {
                                                                 </div>
                                                             </div>
 
+                                                            {/* SERVICE BREAKDOWN STRIP */}
+                                                            {serviceBreakdown.length > 0 && (
+                                                                <div className="space-y-4 pt-6 pb-2">
+                                                                    <div className="px-6 flex items-center justify-between">
+                                                                        <div>
+                                                                            <h3 className="text-[18px] font-[900] text-black tracking-tight">{t({ en: 'My Services', fr: 'Mes Services', ar: 'خدماتي' })}</h3>
+                                                                            <p className="text-[11px] font-black text-neutral-400 uppercase tracking-widest mt-0.5">{t({ en: 'This month breakdown', fr: 'Récap du mois', ar: 'ملخص الشهر' })}</p>
+                                                                        </div>
+                                                                        <div className="flex gap-1">
+                                                                            <div className="w-1.5 h-1.5 rounded-full bg-[#00A082]" />
+                                                                            <div className="w-1.5 h-1.5 rounded-full bg-neutral-100" />
+                                                                        </div>
+                                                                    </div>
 
+                                                                    <div className="px-4 overflow-x-auto no-scrollbar flex gap-3 pb-6">
+                                                                        {serviceBreakdown.map(({ serviceId, earnings, avgRating, demandScore, jobCount }) => {
+                                                                            const cat = SERVICE_CATEGORIES.find(c => c.id === serviceId);
+                                                                            const catName = cat ? t(cat.name) : serviceId;
+                                                                            const CatIcon = (cat as any)?.icon as React.ElementType | undefined;
+                                                                            return (
+                                                                                <motion.div
+                                                                                    key={serviceId}
+                                                                                    initial={{ opacity: 0, y: 16 }}
+                                                                                    animate={{ opacity: 1, y: 0 }}
+                                                                                    className="w-[190px] flex-none bg-white rounded-[20px] border border-neutral-100 p-5 flex flex-col gap-4 shadow-sm"
+                                                                                >
+                                                                                    {/* Service header */}
+                                                                                    <div className="flex items-center gap-2.5">
+                                                                                        <div className="w-10 h-10 rounded-xl bg-neutral-50 border border-neutral-100 flex items-center justify-center">
+                                                                                            {CatIcon ? <CatIcon size={20} className="text-black/70" /> : <span className="text-[18px]">🔧</span>}
+                                                                                        </div>
+                                                                                        <div className="min-w-0">
+                                                                                            <p className="text-[13px] font-black text-black leading-none truncate">{catName}</p>
+                                                                                            <p className="text-[10px] font-bold text-neutral-400 mt-0.5">{jobCount} {t({ en: jobCount === 1 ? 'mission' : 'missions', fr: jobCount === 1 ? 'mission' : 'missions', ar: jobCount === 1 ? 'مهمة' : 'مهام' })}</p>
+                                                                                        </div>
+                                                                                    </div>
+
+                                                                                    {/* KPIs */}
+                                                                                    <div className="space-y-3">
+                                                                                        {/* Earnings */}
+                                                                                        <div className="flex items-center justify-between">
+                                                                                            <span className="text-[10px] font-black text-neutral-400 uppercase tracking-widest">{t({ en: 'Earned', fr: 'Gains', ar: 'الأرباح' })}</span>
+                                                                                            <span className="text-[15px] font-black text-black">
+                                                                                                {earnings > 0 ? `${earnings.toFixed(0)} MAD` : '--'}
+                                                                                            </span>
+                                                                                        </div>
+
+                                                                                        {/* Avg Rating */}
+                                                                                        <div className="flex items-center justify-between">
+                                                                                            <span className="text-[10px] font-black text-neutral-400 uppercase tracking-widest">{t({ en: 'Rating', fr: 'Note', ar: 'التقييم' })}</span>
+                                                                                            <div className="flex items-center gap-1">
+                                                                                                {avgRating > 0 ? (
+                                                                                                    <>
+                                                                                                        <Star size={12} fill="#FFC244" className="text-[#FFC244]" />
+                                                                                                        <span className="text-[15px] font-black text-black">{avgRating.toFixed(1)}</span>
+                                                                                                    </>
+                                                                                                ) : (
+                                                                                                    <span className="text-[15px] font-black text-neutral-300">--</span>
+                                                                                                )}
+                                                                                            </div>
+                                                                                        </div>
+
+                                                                                        {/* Demand score */}
+                                                                                        <div>
+                                                                                            <div className="flex items-center justify-between mb-1.5">
+                                                                                                <span className="text-[10px] font-black text-neutral-400 uppercase tracking-widest">{t({ en: 'City Demand', fr: 'Demande Ville', ar: 'طلب المدينة' })}</span>
+                                                                                                {demandScore === null ? (
+                                                                                                    <span className="px-2 py-0.5 bg-[#00A082]/10 text-[#00A082] text-[10px] font-black rounded-full">{t({ en: 'New', fr: 'Nouveau', ar: 'جديد' })}</span>
+                                                                                                ) : (
+                                                                                                    <span className="text-[15px] font-black text-black">{demandScore}%</span>
+                                                                                                )}
+                                                                                            </div>
+                                                                                            {/* Progress bar */}
+                                                                                            <div className="w-full h-1.5 bg-neutral-100 rounded-full overflow-hidden">
+                                                                                                <motion.div
+                                                                                                    initial={{ width: 0 }}
+                                                                                                    animate={{ width: `${demandScore ?? 0}%` }}
+                                                                                                    transition={{ duration: 0.8, ease: 'easeOut' }}
+                                                                                                    className="h-full rounded-full"
+                                                                                                    style={{ background: demandScore !== null && demandScore >= 50 ? '#00A082' : demandScore !== null && demandScore > 0 ? '#FFC244' : '#E5E5E5' }}
+                                                                                                />
+                                                                                            </div>
+                                                                                        </div>
+                                                                                    </div>
+                                                                                </motion.div>
+                                                                            );
+                                                                        })}
+                                                                    </div>
+                                                                </div>
+                                                            )}
                                                         </motion.div>
                                                     ) : (
                                                         <motion.div
@@ -3973,7 +4062,7 @@ export default function ProviderPage() {
                                                                                     {t({ en: 'Adding just 3 high-quality photos of your work increases your trust score by 50%.', fr: 'Ajouter seulement 3 photos de qualité de votre travail augmente votre score de confiance de 50 %.' })}
                                                                                 </p>
                                                                             </div>
-                                                                            <button onClick={() => { setShowProfileModal(true); setPerformanceDetail('none'); }} className="w-full py-5 bg-[#FFC244] text-black font-[900] rounded-[24px] active:scale-[0.98] transition-all">{t({ en: 'Update My Profile Now', fr: 'Mettre à jour mon profil maintenant' })}</button>
+
                                                                         </div>
                                                                     </div>
                                                                 )}
@@ -4073,96 +4162,7 @@ export default function ProviderPage() {
                                                                 )}
                                                             </div>
 
-                                                            {/* SERVICE BREAKDOWN STRIP */}
-                                                            {serviceBreakdown.length > 0 && (
-                                                                <div className="space-y-4 pt-6 pb-2">
-                                                                    <div className="px-6 flex items-center justify-between">
-                                                                        <div>
-                                                                            <h3 className="text-[18px] font-[900] text-black tracking-tight">{t({ en: 'My Services', fr: 'Mes Services', ar: 'خدماتي' })}</h3>
-                                                                            <p className="text-[11px] font-black text-neutral-400 uppercase tracking-widest mt-0.5">{t({ en: 'This month breakdown', fr: 'Récap du mois', ar: 'ملخص الشهر' })}</p>
-                                                                        </div>
-                                                                        <div className="flex gap-1">
-                                                                            <div className="w-1.5 h-1.5 rounded-full bg-[#00A082]" />
-                                                                            <div className="w-1.5 h-1.5 rounded-full bg-neutral-100" />
-                                                                        </div>
-                                                                    </div>
 
-                                                                    <div className="px-4 overflow-x-auto no-scrollbar flex gap-3 pb-6">
-                                                                        {serviceBreakdown.map(({ serviceId, earnings, avgRating, demandScore, jobCount }) => {
-                                                                            const cat = SERVICE_CATEGORIES.find(c => c.id === serviceId);
-                                                                            const catName = cat ? t(cat.name) : serviceId;
-                                                                            const CatIcon = (cat as any)?.icon as React.ElementType | undefined;
-                                                                            return (
-                                                                                <motion.div
-                                                                                    key={serviceId}
-                                                                                    initial={{ opacity: 0, y: 16 }}
-                                                                                    animate={{ opacity: 1, y: 0 }}
-                                                                                    className="w-[190px] flex-none bg-white rounded-[20px] border border-neutral-100 p-5 flex flex-col gap-4 shadow-sm"
-                                                                                >
-                                                                                    {/* Service header */}
-                                                                                    <div className="flex items-center gap-2.5">
-                                                                                        <div className="w-10 h-10 rounded-xl bg-neutral-50 border border-neutral-100 flex items-center justify-center">
-                                                                                            {CatIcon ? <CatIcon size={20} className="text-black/70" /> : <span className="text-[18px]">🔧</span>}
-                                                                                        </div>
-                                                                                        <div className="min-w-0">
-                                                                                            <p className="text-[13px] font-black text-black leading-none truncate">{catName}</p>
-                                                                                            <p className="text-[10px] font-bold text-neutral-400 mt-0.5">{jobCount} {t({ en: jobCount === 1 ? 'mission' : 'missions', fr: jobCount === 1 ? 'mission' : 'missions', ar: jobCount === 1 ? 'مهمة' : 'مهام' })}</p>
-                                                                                        </div>
-                                                                                    </div>
-
-                                                                                    {/* KPIs */}
-                                                                                    <div className="space-y-3">
-                                                                                        {/* Earnings */}
-                                                                                        <div className="flex items-center justify-between">
-                                                                                            <span className="text-[10px] font-black text-neutral-400 uppercase tracking-widest">{t({ en: 'Earned', fr: 'Gains', ar: 'الأرباح' })}</span>
-                                                                                            <span className="text-[15px] font-black text-black">
-                                                                                                {earnings > 0 ? `${earnings.toFixed(0)} MAD` : '--'}
-                                                                                            </span>
-                                                                                        </div>
-
-                                                                                        {/* Avg Rating */}
-                                                                                        <div className="flex items-center justify-between">
-                                                                                            <span className="text-[10px] font-black text-neutral-400 uppercase tracking-widest">{t({ en: 'Rating', fr: 'Note', ar: 'التقييم' })}</span>
-                                                                                            <div className="flex items-center gap-1">
-                                                                                                {avgRating > 0 ? (
-                                                                                                    <>
-                                                                                                        <Star size={12} fill="#FFC244" className="text-[#FFC244]" />
-                                                                                                        <span className="text-[15px] font-black text-black">{avgRating.toFixed(1)}</span>
-                                                                                                    </>
-                                                                                                ) : (
-                                                                                                    <span className="text-[15px] font-black text-neutral-300">--</span>
-                                                                                                )}
-                                                                                            </div>
-                                                                                        </div>
-
-                                                                                        {/* Demand score */}
-                                                                                        <div>
-                                                                                            <div className="flex items-center justify-between mb-1.5">
-                                                                                                <span className="text-[10px] font-black text-neutral-400 uppercase tracking-widest">{t({ en: 'City Demand', fr: 'Demande Ville', ar: 'طلب المدينة' })}</span>
-                                                                                                {demandScore === null ? (
-                                                                                                    <span className="px-2 py-0.5 bg-[#00A082]/10 text-[#00A082] text-[10px] font-black rounded-full">{t({ en: 'New', fr: 'Nouveau', ar: 'جديد' })}</span>
-                                                                                                ) : (
-                                                                                                    <span className="text-[15px] font-black text-black">{demandScore}%</span>
-                                                                                                )}
-                                                                                            </div>
-                                                                                            {/* Progress bar */}
-                                                                                            <div className="w-full h-1.5 bg-neutral-100 rounded-full overflow-hidden">
-                                                                                                <motion.div
-                                                                                                    initial={{ width: 0 }}
-                                                                                                    animate={{ width: `${demandScore ?? 0}%` }}
-                                                                                                    transition={{ duration: 0.8, ease: 'easeOut' }}
-                                                                                                    className="h-full rounded-full"
-                                                                                                    style={{ background: demandScore !== null && demandScore >= 50 ? '#00A082' : demandScore !== null && demandScore > 0 ? '#FFC244' : '#E5E5E5' }}
-                                                                                                />
-                                                                                            </div>
-                                                                                        </div>
-                                                                                    </div>
-                                                                                </motion.div>
-                                                                            );
-                                                                        })}
-                                                                    </div>
-                                                                </div>
-                                                            )}
 
                                                         </motion.div>
                                                     )}
