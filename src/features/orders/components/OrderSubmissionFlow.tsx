@@ -757,6 +757,7 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                     return {
                         title: t({ en: "How many rooms to clean?", fr: "Combien de chambres incluses ?", ar: "كم عدد الغرف للتنظيف؟" }),
                         isDayCounter: true,
+                        swipeText: t({ en: "Swipe to define exactly how many rooms you need.", fr: "Faites défiler pour définir le nombre exact de chambres.", ar: "قم بالتمرير لتحديد عدد الغرف بالضبط." }),
                         defaultDays: 1,
                         options: Array.from({ length: 12 }, (_, i) => ({
                             id: String(i + 1),
@@ -820,6 +821,7 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                     return {
                         title: t({ en: "How many EV chargers to install?", fr: "Combien de bornes de recharge EV à installer ?", ar: "كم عدد شواحن السيارات الكهربائية المطلوب تركيبها؟" }),
                         isDayCounter: true,
+                        swipeText: t({ en: "Swipe to define exactly how many chargers you need.", fr: "Faites défiler pour définir le nombre exact de bornes.", ar: "قم بالتمرير لتحديد العدد الدقيق للشواحن." }),
                         options: Array.from({ length: 10 }, (_, i) => ({
                             id: String(i + 1),
                             duration: (i + 1) * 4,
@@ -836,8 +838,9 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                     };
                 } else if (cleanSubKey.includes('cooling') || cleanSubKey.includes('heating') || cleanSubKey.includes('hvac')) {
                     return {
-                        title: t({ en: "How many units involved?", fr: "Combien d'unités sont concernées ?", ar: "كم عدد الوحدات المعنية؟" }),
+                        title: t({ en: "How many units to service?", fr: "Combien d'unités à entretenir ?", ar: "كم عدد الوحدات المطلوب صيانتها؟" }),
                         isDayCounter: true,
+                        swipeText: t({ en: "Swipe to define exactly how many units you need.", fr: "Faites défiler pour définir le nombre exact d'unités.", ar: "قم بالتمرير لتحديد العدد الدقيق للوحدات." }),
                         options: Array.from({ length: 10 }, (_, i) => ({
                             id: String(i + 1),
                             duration: (i + 1) * 2,
@@ -856,6 +859,7 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                     return {
                         title: t({ en: "How many cameras to install?", fr: "Combien de caméras à installer ?", ar: "كم عدد الكاميرات المطلوب تركيبها؟" }),
                         isDayCounter: true,
+                        swipeText: t({ en: "Swipe to define exactly how many cameras you need.", fr: "Faites défiler pour définir le nombre exact de caméras.", ar: "قم بالتمرير لتحديد العدد الدقيق للكاميرات." }),
                         options: Array.from({ length: 15 }, (_, i) => ({
                             id: String(i + 1),
                             duration: (i + 1) * 3,
@@ -887,6 +891,7 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                     title: t({ en: "How many days do you need the driver?", fr: "De combien de jours avez-vous besoin du chauffeur ?", ar: "كم يوماً تحتاج فيه للسائق؟" }),
                     isDaily: true,
                     isDayCounter: true,
+                    swipeText: t({ en: "Swipe to define exactly how many days you need.", fr: "Faites défiler pour définir le nombre de jours exact.", ar: "قم بالتمرير لتحديد عدد الأيام بالضبط." }),
                     defaultDays,
                     options: [
                         { id: '0.5', duration: 0.5, label: { en: '0.5', fr: '0.5', ar: '0.5' }, subLabel: { en: 'HALF-DAY', fr: 'DEMI-JOURNÉE', ar: 'نصف يوم' }, estTime: { en: '4h', fr: '4h', ar: '4س' }, desc: { en: '', fr: '', ar: '' }, icon: '' },
@@ -1018,6 +1023,7 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                         title: t({ en: "How many days do you need a Private Chef?", fr: "De combien de jours avez-vous besoin d'un Chef Privé ?", ar: "كم يوماً تحتاج فيه لشيف خاص؟" }),
                         isDaily: true,
                         isDayCounter: true,
+                        swipeText: t({ en: "Swipe to define exactly how many days you need.", fr: "Faites défiler pour définir le nombre de jours exact.", ar: "قم بالتمرير لتحديد عدد الأيام بالضبط." }),
                         defaultDays: 0.5,
                         options: [
                             { id: '0.5', duration: 0.5, label: { en: '0.5', fr: '0.5', ar: '0.5' }, subLabel: { en: 'HALF-DAY', fr: 'DEMI-JOURNÉE', ar: 'نصف يوم' }, estTime: { en: '4h', fr: '4h', ar: '4س' }, desc: { en: '', fr: '', ar: '' }, icon: '' },
@@ -2448,7 +2454,7 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                                                                     </span>
                                                                 </div>
                                                                 <p className="text-[14px] text-neutral-400 font-bold max-w-[300px] mt-2">
-                                                                    {t({
+                                                                    {(serviceConfig as any).swipeText || t({
                                                                         en: "Swipe to define exactly how many days you need.",
                                                                         fr: "Faites défiler pour définir le nombre de jours exact.",
                                                                         ar: "قم بالتمرير لتحديد عدد الأيام بالضبط."
