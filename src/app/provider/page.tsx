@@ -367,6 +367,7 @@ export default function ProviderPage() {
     const [settlementReceipt, setSettlementReceipt] = useState<string | null>(null);
     const [isSubmittingSettlement, setIsSubmittingSettlement] = useState(false);
     const [settlementAmount, setSettlementAmount] = useState<number>(0);
+    const [cityDoneJobs, setCityDoneJobs] = useState<{ craft: string }[]>([]);
 
     // --- Helpers ---
     const getJobDateTime = useCallback((rawDate: string) => {
@@ -803,6 +804,32 @@ export default function ProviderPage() {
 
         return () => clearInterval(interval);
     }, [user, acceptedJobs, parseDateTime]);
+
+    // City-wide done jobs for Demand Score calculation
+    useEffect(() => {
+        if (!providerCity) return;
+        const q = query(
+            collection(db, 'jobs'),
+            where('city', '==', providerCity),
+            where('status', '==', 'done')
+        );
+        const unsub = onSnapshot(q, (snap) => {
+            const selYear = selectedMonthDt.getFullYear();
+            const selMonth = selectedMonthDt.getMonth();
+            const jobs = snap.docs.flatMap(d => {
+                const data = d.data();
+                const ts = data.confirmedAt?.seconds || data.createdAt?.seconds;
+                if (!ts) return [];
+                const dt = new Date(ts * 1000);
+                if (dt.getFullYear() !== selYear || dt.getMonth() !== selMonth) return [];
+                return [{ craft: normalizeServiceId(data.craft || data.service || '') }];
+            });
+            setCityDoneJobs(jobs);
+        }, (err) => {
+            if (err.code !== 'permission-denied') console.error('City demand listener error:', err);
+        });
+        return () => unsub();
+    }, [providerCity, selectedMonthDt]);
 
     // 2. Main Logic Effect
     useEffect(() => {
@@ -1846,6 +1873,28 @@ export default function ProviderPage() {
         return Math.round(totalMinutes / 60);
     })();
     const monthProgrammedJobs = monthJobs.filter((job) => programmedStatuses.has(job.status || ''));
+
+    // ── Per-service breakdown (for Service Breakdown strip) ──
+    const serviceBreakdown = useMemo(() => {
+        return selectedServices.map(serviceId => {
+            const myJobs = monthDoneJobs.filter(j => normalizeServiceId((j as any).craft || j.service || '') === serviceId);
+            const allTimeJobsForService = doneAcceptedJobs.filter(j => normalizeServiceId((j as any).craft || j.service || '') === serviceId);
+            const earnings = myJobs.reduce((acc, j) => {
+                const p = String(j.price || '0').replace(/[^\d.]/g, '');
+                return acc + (parseFloat(p) || 0);
+            }, 0);
+            const ratings = myJobs.map(j => Number(j.rating)).filter(r => r > 0);
+            const allTimeRatingsForService = allTimeJobsForService.map(j => Number(j.rating)).filter(r => r > 0);
+            const avgRating = ratings.length > 0
+                ? (ratings.reduce((s, r) => s + r, 0) / ratings.length)
+                : allTimeRatingsForService.length > 0
+                    ? (allTimeRatingsForService.reduce((s, r) => s + r, 0) / allTimeRatingsForService.length)
+                    : 0;
+            const cityTotal = cityDoneJobs.filter(j => j.craft === serviceId).length;
+            const demandScore = cityTotal > 0 ? Math.round((myJobs.length / cityTotal) * 100) : null;
+            return { serviceId, earnings, avgRating, demandScore, jobCount: myJobs.length };
+        });
+    }, [selectedServices, monthDoneJobs, doneAcceptedJobs, cityDoneJobs]);
     const monthRevenue = monthDoneJobs.reduce((acc, job) => acc + (parseInt(String(job.price || '').replace(/[^\d]/g, ''), 10) || 0), 0);
     // Month-scoped rating: AVG of client ratings on DONE jobs in the selected month
     const monthRatings = monthDoneJobs
@@ -4016,6 +4065,96 @@ export default function ProviderPage() {
                                                                 )}
                                                             </div>
 
+                                                            {/* SERVICE BREAKDOWN STRIP */}
+                                                            {serviceBreakdown.length > 0 && (
+                                                                <div className="space-y-4 pt-6 pb-2">
+                                                                    <div className="px-6 flex items-center justify-between">
+                                                                        <div>
+                                                                            <h3 className="text-[18px] font-[900] text-black tracking-tight">{t({ en: 'My Services', fr: 'Mes Services', ar: 'خدماتي' })}</h3>
+                                                                            <p className="text-[11px] font-black text-neutral-400 uppercase tracking-widest mt-0.5">{t({ en: 'This month breakdown', fr: 'Récap du mois', ar: 'ملخص الشهر' })}</p>
+                                                                        </div>
+                                                                        <div className="flex gap-1">
+                                                                            <div className="w-1.5 h-1.5 rounded-full bg-[#00A082]" />
+                                                                            <div className="w-1.5 h-1.5 rounded-full bg-neutral-100" />
+                                                                        </div>
+                                                                    </div>
+
+                                                                    <div className="px-4 overflow-x-auto no-scrollbar flex gap-3 pb-6">
+                                                                        {serviceBreakdown.map(({ serviceId, earnings, avgRating, demandScore, jobCount }) => {
+                                                                            const cat = SERVICE_CATEGORIES.find(c => c.id === serviceId);
+                                                                            const catName = cat ? t(cat.name) : serviceId;
+                                                                            const catEmoji = (cat as any)?.icon ?? '🔧';
+                                                                            return (
+                                                                                <motion.div
+                                                                                    key={serviceId}
+                                                                                    initial={{ opacity: 0, y: 16 }}
+                                                                                    animate={{ opacity: 1, y: 0 }}
+                                                                                    className="w-[190px] flex-none bg-white rounded-[20px] border border-neutral-100 p-5 flex flex-col gap-4 shadow-sm"
+                                                                                >
+                                                                                    {/* Service header */}
+                                                                                    <div className="flex items-center gap-2.5">
+                                                                                        <div className="w-10 h-10 rounded-xl bg-neutral-50 border border-neutral-100 flex items-center justify-center text-[20px]">
+                                                                                            {catEmoji}
+                                                                                        </div>
+                                                                                        <div className="min-w-0">
+                                                                                            <p className="text-[13px] font-black text-black leading-none truncate">{catName}</p>
+                                                                                            <p className="text-[10px] font-bold text-neutral-400 mt-0.5">{jobCount} {t({ en: jobCount === 1 ? 'mission' : 'missions', fr: jobCount === 1 ? 'mission' : 'missions', ar: jobCount === 1 ? 'مهمة' : 'مهام' })}</p>
+                                                                                        </div>
+                                                                                    </div>
+
+                                                                                    {/* KPIs */}
+                                                                                    <div className="space-y-3">
+                                                                                        {/* Earnings */}
+                                                                                        <div className="flex items-center justify-between">
+                                                                                            <span className="text-[10px] font-black text-neutral-400 uppercase tracking-widest">{t({ en: 'Earned', fr: 'Gains', ar: 'الأرباح' })}</span>
+                                                                                            <span className="text-[15px] font-black text-black">
+                                                                                                {earnings > 0 ? `${earnings.toFixed(0)} MAD` : '--'}
+                                                                                            </span>
+                                                                                        </div>
+
+                                                                                        {/* Avg Rating */}
+                                                                                        <div className="flex items-center justify-between">
+                                                                                            <span className="text-[10px] font-black text-neutral-400 uppercase tracking-widest">{t({ en: 'Rating', fr: 'Note', ar: 'التقييم' })}</span>
+                                                                                            <div className="flex items-center gap-1">
+                                                                                                {avgRating > 0 ? (
+                                                                                                    <>
+                                                                                                        <Star size={12} fill="#FFC244" className="text-[#FFC244]" />
+                                                                                                        <span className="text-[15px] font-black text-black">{avgRating.toFixed(1)}</span>
+                                                                                                    </>
+                                                                                                ) : (
+                                                                                                    <span className="text-[15px] font-black text-neutral-300">--</span>
+                                                                                                )}
+                                                                                            </div>
+                                                                                        </div>
+
+                                                                                        {/* Demand score */}
+                                                                                        <div>
+                                                                                            <div className="flex items-center justify-between mb-1.5">
+                                                                                                <span className="text-[10px] font-black text-neutral-400 uppercase tracking-widest">{t({ en: 'City Demand', fr: 'Demande Ville', ar: 'طلب المدينة' })}</span>
+                                                                                                {demandScore === null ? (
+                                                                                                    <span className="px-2 py-0.5 bg-[#00A082]/10 text-[#00A082] text-[10px] font-black rounded-full">{t({ en: 'New', fr: 'Nouveau', ar: 'جديد' })}</span>
+                                                                                                ) : (
+                                                                                                    <span className="text-[15px] font-black text-black">{demandScore}%</span>
+                                                                                                )}
+                                                                                            </div>
+                                                                                            {/* Progress bar */}
+                                                                                            <div className="w-full h-1.5 bg-neutral-100 rounded-full overflow-hidden">
+                                                                                                <motion.div
+                                                                                                    initial={{ width: 0 }}
+                                                                                                    animate={{ width: `${demandScore ?? 0}%` }}
+                                                                                                    transition={{ duration: 0.8, ease: 'easeOut' }}
+                                                                                                    className="h-full rounded-full"
+                                                                                                    style={{ background: demandScore !== null && demandScore >= 50 ? '#00A082' : demandScore !== null && demandScore > 0 ? '#FFC244' : '#E5E5E5' }}
+                                                                                                />
+                                                                                            </div>
+                                                                                        </div>
+                                                                                    </div>
+                                                                                </motion.div>
+                                                                            );
+                                                                        })}
+                                                                    </div>
+                                                                </div>
+                                                            )}
 
                                                         </motion.div>
                                                     )}
