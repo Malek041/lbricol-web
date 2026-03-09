@@ -186,11 +186,14 @@ const SERVICES: ServiceEntry[] = [
         labelAr: 'كهربائي (تريسيان)',
         iconPath: '/Images/Service Category vectors/ElectricityVector.webp',
         subServices: [
-            { en: 'Wiring & Rewiring', fr: 'Câبلage et Recâبلage', ar: 'توصيل وتجديد الأسلاك' },
+            { en: 'Wiring & Rewiring', fr: 'Câblage et Recâblage', ar: 'توصيل وتجديد الأسلاك' },
             { en: 'Outlet Installation', fr: 'Installation de Prises', ar: 'تركيب المقابس' },
             { en: 'Light Fixture Installation', fr: 'Installation de Luminaires', ar: 'تركيب الثريات والمصابيح' },
             { en: 'Circuit Breaker Repair', fr: 'Réparation de Disjoncteurs', ar: 'إصلاح قواطع التيار' },
-            { en: 'Smart Switch Setup', fr: 'Installation d\'Interrupteurs Intelligents', ar: 'تركيب مفاتيح ذكية' }
+            { en: 'Smart Switch Setup', fr: 'Installation d\'Interrupteurs Intelligents', ar: 'تركيب مفاتيح ذكية' },
+            { en: 'Electricity (HVAC)', fr: 'Systèmes de chauffage et de climatisation', ar: 'أنظمة التبريد والتدفئة' },
+            { en: 'Electricity (EV)', fr: 'Installation de bornes de recharge pour véhicules électriques', ar: 'تركيب شواحن السيارات الكهربائية' },
+            { en: 'Electricity (Cams)', fr: 'Caméras de surveillance', ar: 'كاميرات المراقبة' }
         ],
         bullets: [
             { en: 'Safe, certified electrical work by verified professionals.', fr: 'Travaux électriques sûrs et certifiés par des professionnels vérifiés.', ar: 'أعمال كهربائية آمنة ومعتمدة من قبل محترفين موثوقين.' },
@@ -950,6 +953,17 @@ const ClientHome: React.FC<ClientHomeProps> = ({
                     <div className="px-4 pb-6 flex flex-wrap gap-2.5">
                         {active.subServices
                             .filter(subObj => {
+                                // Always show these even if no pro is available yet (forced for growth)
+                                const forceShow = [
+                                    'Electricity (HVAC)',
+                                    'Electricity (EV)',
+                                    'Electricity (Cams)',
+                                    'Cooling & heating systems',
+                                    'EV charger installation',
+                                    'Surveillance cameras'
+                                ];
+                                if (forceShow.includes(subObj.en)) return true;
+
                                 if (!availableSubServiceIds || availableSubServiceIds.length === 0) return true;
                                 const config = getServiceById(active.id);
                                 if (!config) return true;

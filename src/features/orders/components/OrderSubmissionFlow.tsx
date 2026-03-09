@@ -89,6 +89,56 @@ interface OrderSubmissionFlowProps {
     mode?: 'create' | 'edit';
 }
 
+export const calculateTaskPrice = (
+    hourlyRate: number,
+    taskSize: string | null,
+    serviceId: string,
+    options: any[],
+    applyReferralDiscount: boolean = false,
+    referralDiscountAvailable: number = 0
+) => {
+    const activeOption = options.find((o: any) => o.id === taskSize);
+    const duration = activeOption?.duration || (serviceId === 'private_driver' ? 1 : 1);
+    const coefficient = (activeOption as any)?.coefficient || (serviceId === 'errands' ? 1.5 : 1);
+
+    let basePrice = hourlyRate * duration * coefficient;
+
+    if (serviceId === 'errands') {
+        const mult = duration >= 1.33 ? 4.5 : (duration >= 0.8 ? 2.5 : 1.5);
+        basePrice = hourlyRate * mult;
+    } else if (serviceId === 'private_driver') {
+        // For private driver, hourlyRate acts as a daily rate.
+        const units = duration < 1 ? 0.5 : duration;
+        basePrice = hourlyRate * units;
+
+        // Apply tiered discount for private driver days
+        if (units >= 7) basePrice *= 0.85; // 15% off for a week or more
+        else if (units >= 2) basePrice *= 0.9; // 10% off for 2 to 6 days
+    } else if (serviceId === 'babysitting' || serviceId === 'elderly_care') {
+        let multiplier = 1;
+        if (duration >= 10) multiplier = 0.8;
+        else if (duration >= 6) multiplier = 0.9;
+        basePrice = basePrice * multiplier;
+    } else if (serviceId === 'cleaning') {
+        let multiplier = 1;
+        if (duration >= 6) multiplier = 0.9;
+        else if (duration >= 4) multiplier = 0.95;
+        basePrice = basePrice * multiplier;
+    } else {
+        const sizeIndex = options.findIndex((s: any) => s.id === taskSize);
+        let multiplier = 1;
+        if (sizeIndex === 1) multiplier = 0.95;
+        else if (sizeIndex === 2) multiplier = 0.9;
+        basePrice = basePrice * multiplier;
+    }
+
+    let finalPrice = Math.round(basePrice);
+    if (applyReferralDiscount && referralDiscountAvailable > 0) {
+        finalPrice = Math.round(finalPrice * 0.85);
+    }
+    return finalPrice;
+};
+
 // ── Constants ──────────────────────────────────────────────────────────────
 
 const TASK_SIZES = [
@@ -366,13 +416,13 @@ const BricolerProfileModal = ({ bricoler, isOpen, onClose, onSelect, isSelected,
     const reviewsToShow = serviceReviews.length > 0 ? serviceReviews : allReviews;
     const isFiltered = serviceReviews.length > 0 && serviceReviews.length < allReviews.length;
 
-    // Compute stats from filtered reviews
+    // Compute stats
     const effectiveJobs = reviewsToShow.length > 0 ? reviewsToShow.length : Math.max(bricoler.completedJobs || 0, allReviews.length);
     const effectiveRating = reviewsToShow.length > 0
-        ? reviewsToShow.reduce((acc: number, r: any) => acc + (r.rating || 0), 0) / reviewsToShow.length
-        : ((bricoler.rating && bricoler.rating > 0) ? bricoler.rating : 5.0);
+        ? (reviewsToShow.reduce((acc: number, r: any) => acc + (r.rating || 0), 0) / reviewsToShow.length)
+        : ((bricoler.rating && bricoler.rating > 0) ? bricoler.rating : null);
 
-    const isNew = reviewsToShow.length === 0;
+    const isNew = reviewsToShow.length === 0 || effectiveRating === null;
 
     return (
         <AnimatePresence>
@@ -479,7 +529,7 @@ const BricolerProfileModal = ({ bricoler, isOpen, onClose, onSelect, isSelected,
                                                     bricoler.errandsTransport === 'walking' ? t({ en: 'Travels on foot', fr: 'Se déplace à pied', ar: 'يتنقل مشيًا' }) :
                                                         bricoler.errandsTransport === 'airbike' ? t({ en: 'Travels by bicycle', fr: 'Se déplace à vélo', ar: 'يتنقل بالدراجة الهوائية' }) :
                                                             bricoler.errandsTransport === 'motorbike' ? t({ en: 'Travels by motorbike', fr: 'Se déplace à moto', ar: 'يتنقل بدراجة نارية' }) :
-                                                                bricoler.errandsTransport === 'escooter' ? t({ en: 'Travels by e‑scooter', fr: 'Se déplace en trottinette électrique', ar: 'يتنقل بسكوتر كهربائي' }) :
+                                                                bricoler.errandsTransport === 'escooter' ? t({ en: 'Travels by e‑scooter', fr: 'Se déplace par trottinette électrique', ar: 'يتنقل بسكوتر كهربائي' }) :
                                                                     t({ en: 'Custom way of travelling in the city', fr: 'Mode de déplacement personnalisé en ville', ar: 'طريقة خاصة للتنقل داخل المدينة' })
                                             )
                                             : (
@@ -769,20 +819,20 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                     { id: 'large', duration: 5, label: { en: 'Large Task', fr: 'Grosse tâche', ar: 'مهمة كبيرة' }, estTime: { en: 'Est: 4+ hrs', fr: 'Est: 4h+', ar: 'أكثر من 4 ساعات' }, desc: { en: 'Complex rewiring or panel projects.', fr: 'Projets de câblage complexes ou panneaux.', ar: 'مشاريع توصيل أسلاك معقدة.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/BigTask.webp' },
                 ];
 
-                if (subKey.includes('ev_charger')) {
+                if (subKey.includes('ev_charger') || subKey.includes('(ev)')) {
                     title = t({ en: "How many EV chargers to install?", fr: "Combien de bornes de recharge EV à installer ?", ar: "كم عدد شواحن السيارات الكهربائية المطلوب تركيبها؟" });
                     options = [
                         { id: '1', duration: 3, label: { en: '1 Charger', fr: '1 Borne', ar: 'شاحن واحد' }, estTime: { en: 'Est: 3 hrs', fr: 'Est: 3h', ar: 'حوالي 3 ساعات' }, desc: { en: 'Standard installation of one wallbox.', fr: 'Installation standard d\'une borne murale.', ar: 'تركيب عادي لشاحن جداري واحد.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/SmallTask.webp' },
                         { id: '2', duration: 5, label: { en: '2 Chargers', fr: '2 Bornes', ar: 'شاحنان' }, estTime: { en: 'Est: 5 hrs', fr: 'Est: 5h', ar: 'حوالي 5 ساعات' }, desc: { en: 'Installation of two chargers.', fr: 'Installation de deux bornes.', ar: 'تركيب شاحنين.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/MediumSize.webp' },
                     ];
-                } else if (subKey.includes('cooling') || subKey.includes('heating')) {
+                } else if (subKey.includes('cooling') || subKey.includes('heating') || subKey.includes('(hvac)')) {
                     title = t({ en: "How many units involved?", fr: "Combien d'unités sont concernées ?", ar: "كم عدد الوحدات المعنية؟" });
                     options = [
                         { id: 'small', duration: 2, label: { en: '1 Unit', fr: '1 Unité', ar: 'وحدة واحدة' }, estTime: { en: 'Est: 2 hrs', fr: 'Est: 2h', ar: 'حوالي ساعتين' }, desc: { en: 'Maintenance or single unit install.', fr: 'Entretien ou installation d\'une seule unité.', ar: 'صيانة أو تركيب وحدة واحدة.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/SmallTask.webp' },
                         { id: 'medium', duration: 4, label: { en: '2 Units', fr: '2 Unités', ar: 'وحدتان' }, estTime: { en: 'Est: 4 hrs', fr: 'Est: 4h', ar: 'حوالي 4 ساعات' }, desc: { en: 'Servicing two AC units or heaters.', fr: 'Entretien de deux climatiseurs ou chauffages.', ar: 'صيانة وحدتي تكييف أو تدفئة.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/MediumSize.webp' },
                         { id: 'large', duration: 8, label: { en: 'Central / Multi', fr: 'Central / Multi-split', ar: 'مركزي / متعدد' }, estTime: { en: 'Est: 8h', fr: 'Est: 8h', ar: 'حوالي 8 ساعات' }, desc: { en: 'Complex central system or multi-split.', fr: 'Système central complexe ou multi-split.', ar: 'نظام مركزي معقد.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/BigTask.webp' }
                     ];
-                } else if (subKey.includes('surveillance') || subKey.includes('camera')) {
+                } else if (subKey.includes('surveillance') || subKey.includes('camera') || subKey.includes('(cams)')) {
                     title = t({ en: "How many cameras to install?", fr: "Combien de caméras à installer ?", ar: "كم عدد الكاميرات المطلوب تركيبها؟" });
                     options = [
                         { id: '1-2', duration: 2, label: { en: '1-2 Cameras', fr: '1-2 Caméras', ar: '1-2 كاميرات' }, estTime: { en: 'Est: 2 hrs', fr: 'Est: 2h', ar: 'حوالي ساعتين' }, desc: { en: 'Simple setup of 1 or 2 wireless/wired cameras.', fr: 'Installation simple de 1 ou 2 caméras.', ar: 'تركيب بسيط لكاميرا أو اثنتين.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/SmallTask.webp' },
@@ -972,6 +1022,26 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
         }
     }, [subStep1, taskSize, service]);
 
+    // Fetch existing bookings for the selected pro to accurately show availability dots
+    useEffect(() => {
+        if (selectedBricolerId) {
+            const fetchBookings = async () => {
+                try {
+                    const q = query(
+                        collection(db, 'jobs'),
+                        where('bricolerId', '==', selectedBricolerId)
+                    );
+                    const snap = await getDocs(q);
+                    const jobs = snap.docs.map(d => ({ id: d.id, ...d.data() })) as any[];
+                    setBookedOrders(jobs);
+                } catch (e) {
+                    console.error("Error fetching bricoler bookings:", e);
+                }
+            };
+            fetchBookings();
+        }
+    }, [selectedBricolerId]);
+
     // Track state visibility for analytics or UI adjustment
     useEffect(() => {
         if (isOpen) {
@@ -1097,33 +1167,6 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
         }
     }, [step, subStep1, taskSize, serviceConfig]);
 
-    // Fetch existing bookings for the selected pro to accurately show availability dots
-    useEffect(() => {
-        const fetchBookings = async () => {
-            if (!selectedBricolerId || !selectedBricolerId.startsWith('pro-') || selectedBricolerId === 'open') return;
-            setIsLoadingBookings(true);
-            try {
-                const todayStr = format(new Date(), 'yyyy-MM-dd');
-                const q = query(
-                    collection(db, 'jobs'),
-                    where('bricolerId', '==', selectedBricolerId),
-                    where('date', '>=', todayStr)
-                );
-                const snap = await getDocs(q);
-                const list = snap.docs
-                    .map(d => ({ id: d.id, ...d.data() } as any))
-                    .filter(d => !['cancelled', 'rejected'].includes(d.status));
-                setBookedOrders(list);
-            } catch (err: any) {
-                console.warn("Error fetching bookings:", err);
-            } finally {
-                setIsLoadingBookings(false);
-            }
-        };
-
-        fetchBookings();
-    }, [selectedBricolerId]);
-
     const handleStartMatching = () => {
         if (!taskSize || !description.trim()) return;
 
@@ -1198,28 +1241,89 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
         return `${h.toString().padStart(2, '0')}:${mm.toString().padStart(2, '0')}`;
     };
 
-    const getAvailableSlotsForDate = (dateStr: string, profile: any, skipMultiDayCheck = false) => {
+    const isSlotBookedOnDate = (dateStr: string, startTimeStr: string, endTimeStr: string, allBookedOrders: any[]) => {
+        const start = timeToMinutes(startTimeStr);
+        const end = timeToMinutes(endTimeStr);
+
+        return allBookedOrders.some(order => {
+            const orderDate = parseISO(order.date);
+            const isDailyOrder = order.serviceId === 'private_driver' || order.service === 'private_driver';
+            const oDurationDays = order.durationDays || (isDailyOrder ? Math.ceil(order.duration || 1) : 1);
+
+            const orderDays: string[] = [];
+            for (let k = 0; k < oDurationDays; k++) {
+                orderDays.push(format(addDays(orderDate, k), 'yyyy-MM-dd'));
+            }
+
+            if (!orderDays.includes(dateStr)) return false;
+            if (!order.time || order.time === 'Flexible') return false;
+
+            const oStart = timeToMinutes(order.time);
+            let oDurationHours = 1;
+            if (isDailyOrder) {
+                oDurationHours = 8; // Assume a full day for private driver bookings
+            } else if (order.taskSize) {
+                oDurationHours = TASK_SIZES.find(s => s.id === order.taskSize)?.duration || 1;
+            } else {
+                oDurationHours = order.duration || 1;
+            }
+            const oEnd = oStart + (oDurationHours * 60);
+
+            return (start < oEnd) && (oStart < end);
+        });
+    };
+
+    const getAvailableSlotsForDate = (dateStr: string, profile: any) => {
         if (!profile) return [];
 
-        const isDaily = service === 'private_driver';
-        const baseDuration = (activeTaskSize as any)?.duration || (isDaily ? 1 : 2);
-        // Requirement for a 'day' mission is 7 hours instead of 8 to be more inclusive of standard 10-17 routines
-        const durationHours = isDaily ? (baseDuration < 1 ? baseDuration * 7 : 7) : baseDuration;
-        const daysNeeded = isDaily ? baseDuration : 1;
+        const isDailyService = service === 'private_driver';
+        const baseDuration = (activeTaskSize as any)?.duration || (isDailyService ? 1 : 2);
+        const durationHours = isDailyService ? (baseDuration < 1 ? baseDuration * 8 : 8) : Math.min(baseDuration, 7); // Max 7 hours for non-daily to avoid full-day conflicts
+        const daysNeeded = isDailyService ? Math.ceil(baseDuration) : 1;
 
-        const blocksRaw = (profile as any).calendarSlots?.[dateStr] || (profile as any).availability?.[dateStr];
-        const blocks = Array.isArray(blocksRaw)
-            ? blocksRaw
-            : getHeroFallbackSlots(profile, safeParseDate(dateStr));
+        // Handle multi-day bookings (e.g. Private Driver 2+ days)
+        // For multi-day tasks, a slot is available on 'date' if the provider is free 
+        // for the FULL daily block (e.g. 8h) on every day of the sequence.
+        if (isDailyService && daysNeeded > 1) {
+            const startDate = parseISO(dateStr);
+            const dailyStartTime = "09:00"; // Standard full-day start
+            const dailyEndTime = "17:00"; // Standard full-day end (8 hours)
 
-        if (blocks.length === 0) return [];
+            // Check each day in the sequence
+            for (let i = 0; i < daysNeeded; i++) {
+                const currentDate = addDays(startDate, i);
+                const currentDateStr = format(currentDate, 'yyyy-MM-dd');
+                const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+                const dayKey = dayNames[currentDate.getDay()];
 
-        // For daily services, duration in hours is effectively a full work day (8h)
+                const dayRoutine = profile.routine?.[dayKey];
+                if (!dayRoutine || !dayRoutine.active) return []; // If any day in sequence is inactive, no slots
+
+                // Check if they are already booked for ANYTHING on this specific day
+                if (isSlotBookedOnDate(currentDateStr, dailyStartTime, dailyEndTime, bookedOrders)) {
+                    return [];
+                }
+            }
+
+            // If we reach here, the full 8h block is available for all days
+            return [dailyStartTime];
+        }
+
+        const checkAvailabilityOnDay = (dStr: string) => {
+            const blocksRaw = (profile as any).calendarSlots?.[dStr] || (profile as any).availability?.[dStr];
+            const blocks = Array.isArray(blocksRaw)
+                ? blocksRaw
+                : getHeroFallbackSlots(profile, safeParseDate(dStr));
+            return blocks;
+        };
+
+        const firstDayBlocks = checkAvailabilityOnDay(dateStr);
+        if (firstDayBlocks.length === 0) return [];
+
         const durationMin = durationHours * 60;
-
         const slots: string[] = [];
-        const sortedBlocks = [...blocks].sort((a, b) => a.from.localeCompare(b.from));
 
+        const sortedBlocks = [...firstDayBlocks].sort((a, b) => a.from.localeCompare(b.from));
         const mergedBlocks: { from: string; to: string }[] = [];
         if (sortedBlocks.length > 0) {
             let currentBlock = { ...sortedBlocks[0] };
@@ -1238,12 +1342,39 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
             let current = timeToMinutes(block.from);
             const endLimit = timeToMinutes(block.to);
             while (current + durationMin <= endLimit) {
-                slots.push(minutesToTime(current));
+                const startTime = minutesToTime(current);
+                const endTime = minutesToTime(current + durationMin);
+
+                // Verification: Are subsequent days also free in this timeframe?
+                let allDaysFree = true;
+                for (let i = 0; i < daysNeeded; i++) {
+                    const checkDateStr = format(addDays(parseISO(dateStr), i), 'yyyy-MM-dd');
+
+                    // 1. Check if slot overlaps with booked orders
+                    if (isSlotBookedOnDate(checkDateStr, startTime, endTime, bookedOrders)) {
+                        allDaysFree = false;
+                        break;
+                    }
+
+                    // 2. Check if the pro is actually working that day in that timeslot
+                    if (i > 0) {
+                        const dayBlocks = checkAvailabilityOnDay(checkDateStr);
+                        const isWorking = dayBlocks.some(b => b.from <= startTime && b.to >= endTime);
+                        if (!isWorking) {
+                            allDaysFree = false;
+                            break;
+                        }
+                    }
+                }
+
+                if (allDaysFree) {
+                    slots.push(startTime);
+                }
                 current += 60;
             }
         });
 
-        return slots.filter(slot => !isSlotBookedOnDate(slot, dateStr));
+        return slots;
     };
 
     const generateAvailableSlots = () => {
@@ -1251,40 +1382,21 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
         return getAvailableSlotsForDate(selectedDate, selectedPro);
     };
 
-    const isSlotBookedOnDate = (startTimeStr: string, dateStr: string) => {
-        const isDaily = service === 'private_driver';
-        const daysCount = isDaily ? Math.ceil(activeTaskSize?.duration || 1) : 1;
-        const durationHours = isDaily ? 8 : (activeTaskSize?.duration || 2);
-        const durationMin = durationHours * 60;
-        const start = timeToMinutes(startTimeStr);
-        const end = start + durationMin;
-
-        // Check each day of the multi-day mission
-        for (let i = 0; i < daysCount; i++) {
-            const checkDate = format(addDays(parseISO(dateStr), i), 'yyyy-MM-dd');
-
-            const isBooked = bookedOrders.some(order => {
-                if (order.date !== checkDate) return false;
-                if (!order.time || order.time === 'Flexible') return false;
-
-                const oStart = timeToMinutes(order.time);
-                // Handle current task in loop
-                const isDailyOrder = order.serviceId === 'private_driver' || order.service === 'private_driver';
-                const oDurationHours = isDailyOrder ? 8 : (TASK_SIZES.find(s => s.id === order.taskSize)?.duration || 1);
-                const oEnd = oStart + (oDurationHours * 60);
-
-                return (start < oEnd) && (oStart < end);
-            });
-
-            if (isBooked) return true;
-        }
-
-        return false;
-    };
-
     const isSlotBooked = (startTimeStr: string) => {
-        if (!selectedDate) return false;
-        return isSlotBookedOnDate(startTimeStr, selectedDate);
+        if (!selectedDate || !selectedPro) return false;
+        const isDailyService = service === 'private_driver';
+        const baseDuration = (activeTaskSize as any)?.duration || (isDailyService ? 1 : 2);
+        const durationHours = isDailyService ? (baseDuration < 1 ? baseDuration * 8 : 8) : Math.min(baseDuration, 7);
+        const daysNeeded = isDailyService ? Math.ceil(baseDuration) : 1;
+
+        const startTime = timeToMinutes(startTimeStr);
+        const endTime = minutesToTime(startTime + (durationHours * 60));
+
+        for (let i = 0; i < daysNeeded; i++) {
+            const checkDate = format(addDays(parseISO(selectedDate), i), 'yyyy-MM-dd');
+            if (isSlotBookedOnDate(checkDate, startTimeStr, endTime, bookedOrders)) return true;
+        }
+        return false;
     };
 
     const fetchBricolers = async () => {
@@ -1547,33 +1659,14 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
             const duration = activeOption?.duration || 1;
             const coefficient = (activeOption as any)?.coefficient || (service === 'errands' ? 1.5 : 1);
 
-            let basePrice = hourlyRate * duration * coefficient;
-
-            if (service === 'errands' || service === 'courier') {
-                const multiplier = duration >= 1.33 ? 4.5 : duration >= 0.8 ? 2.5 : 1.5;
-                basePrice = hourlyRate * multiplier;
-            } else if (service === 'private_driver') {
-                // Finalize days logic: the hours are fixed per selected taskSize.
-                // 0.5 = 4h, 1 = 8h, etc.
-                const hours = duration < 1 ? 4 : duration * 8;
-                basePrice = hourlyRate * hours;
-            } else if (service === 'babysitting' || service === 'elderly_care') {
-                let multiplier = 1;
-                if (duration >= 10) multiplier = 0.8;
-                else if (duration >= 6) multiplier = 0.9;
-                basePrice = (hourlyRate * duration * coefficient) * multiplier;
-            } else if (service === 'cleaning') {
-                let multiplier = 1;
-                if (duration >= 6) multiplier = 0.9;
-                else if (duration >= 4) multiplier = 0.95;
-                basePrice = (hourlyRate * duration * coefficient) * multiplier;
-            } else if (service !== 'private_driver') {
-                const sizeIndex = serviceConfig.options.findIndex(s => s.id === taskSize);
-                let multiplier = 1;
-                if (sizeIndex === 1) multiplier = 0.95;
-                else if (sizeIndex === 2) multiplier = 0.9;
-                basePrice = basePrice * multiplier;
-            }
+            const basePrice = calculateTaskPrice(
+                hourlyRate,
+                taskSize,
+                service,
+                serviceConfig.options,
+                applyReferralDiscount,
+                referralDiscountAvailable
+            );
 
             // Receipt Upload Logic
             let finalBankReceiptUrl = null;
@@ -1643,9 +1736,10 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                 duration,
                 basePrice,
                 taskFee,
-                totalPrice: applyReferralDiscount && referralDiscountAvailable > 0 ? Math.max(0, totalPrice * 0.85) : totalPrice,
-                price: applyReferralDiscount && referralDiscountAvailable > 0 ? Math.max(0, totalPrice * 0.85) : totalPrice,
+                totalPrice: basePrice, // basePrice already includes referral discount if applied
+                price: basePrice, // price is the final price after all discounts
                 referralApplied: applyReferralDiscount && referralDiscountAvailable > 0,
+                durationDays: (service === 'private_driver' ? Math.ceil(duration) : 1),
                 images: [],
                 clientNeedImages: [],
                 paymentMethod,
@@ -1739,6 +1833,7 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                                     initial={{ opacity: 0, x: 20 }}
                                     animate={{ opacity: 1, x: 0 }}
                                     exit={{ opacity: 0, x: -20 }}
+                                    transition={{ duration: 0.25, ease: "easeOut" }}
                                     className="flex flex-col h-full bg-white -mx-6 -my-4 px-6 py-6"
                                 >
                                     <div className="flex items-center gap-3 px-1 pt-4 pb-6 bg-white flex-shrink-0 safe-top">
@@ -2726,7 +2821,6 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                                         {/* Key Details Grid */}
                                         <div className="mb-4">
                                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                                {/* City & Area */}
                                                 <div className="bg-neutral-50 rounded-2xl p-4 flex items-center gap-3 border border-neutral-100/50">
                                                     <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-sm">
                                                         <MapPin size={20} className="text-[#00A082]" />
@@ -2736,7 +2830,6 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                                                         <span className="text-[15px] font-black leading-tight text-black">{t({ en: currentCity, fr: currentCity })}{currentArea ? ", " + t({ en: currentArea, fr: currentArea }) : ''}</span>
                                                     </div>
                                                 </div>
-                                                {/* Task Size/Duration */}
                                                 <div className="bg-neutral-50 rounded-2xl p-4 flex items-center gap-3 border border-neutral-100/50">
                                                     <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-sm">
                                                         <Clock size={20} className="text-[#00A082]" />
@@ -2746,7 +2839,6 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                                                         <span className="text-[15px] font-black text-black">≈ {activeTaskSize ? t(activeTaskSize.estTime as any) : '—'}</span>
                                                     </div>
                                                 </div>
-                                                {/* Service */}
                                                 <div className="bg-neutral-50 rounded-2xl p-4 flex items-center gap-3 border border-neutral-100/50">
                                                     <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-sm">
                                                         <Wrench size={20} className="text-[#00A082]" />
@@ -2756,7 +2848,6 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                                                         <span className="text-[15px] font-black leading-tight text-black">{t({ en: getServiceById(service)?.name || '', fr: getServiceById(service)?.name || '' })}</span>
                                                     </div>
                                                 </div>
-                                                {/* Price */}
                                                 <div className="bg-neutral-50 rounded-2xl p-4 flex items-center gap-3 border border-neutral-100/50">
                                                     <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-sm">
                                                         <Banknote size={20} className="text-[#00A082]" />
@@ -2764,187 +2855,112 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                                                     <div className="flex flex-col">
                                                         <span className="text-[11px] font-bold text-neutral-400 uppercase tracking-wider">{t({ en: 'Total (Est.)', fr: 'Total (Est.)', ar: 'الإجمالي (تقريبي)' })}</span>
                                                         <span className="text-[15px] font-black text-black">
-                                                            {(() => {
-                                                                const hourlyRate = selectedPro?.hourlyRate || 75;
-                                                                const opt = serviceConfig.options.find(o => o.id === taskSize);
-                                                                const duration = opt?.duration || 1;
-                                                                const coefficient = (opt as any)?.coefficient || 1;
-                                                                let basePrice = hourlyRate * duration * coefficient;
-
-                                                                if (service === 'errands') {
-                                                                    const mult = duration >= 1.33 ? 4.5 : (duration >= 0.8 ? 2.5 : 1.5);
-                                                                    basePrice = hourlyRate * mult;
-                                                                } else {
-                                                                    const sizeIndex = serviceConfig.options.findIndex(s => s.id === taskSize);
-                                                                    let multiplier = 1;
-                                                                    if (service === 'babysitting' || service === 'elderly_care') {
-                                                                        if (duration >= 10) multiplier = 0.8;
-                                                                        else if (duration >= 6) multiplier = 0.9;
-                                                                    } else if (service === 'cleaning') {
-                                                                        if (duration >= 6) multiplier = 0.9;
-                                                                        else if (duration >= 4) multiplier = 0.95;
-                                                                    } else if (service !== 'private_driver') {
-                                                                        if (sizeIndex === 1) multiplier = 0.95;
-                                                                        else if (sizeIndex === 2) multiplier = 0.9;
-                                                                    }
-                                                                    basePrice = basePrice * multiplier;
-                                                                }
-
-                                                                return Math.round(basePrice);
-                                                            })()} MAD
+                                                            {calculateTaskPrice(selectedPro?.hourlyRate || 75, taskSize, service, serviceConfig.options, applyReferralDiscount, referralDiscountAvailable)} MAD
                                                         </span>
                                                     </div>
                                                 </div>
-                                                {/* Instructions (Full width) */}
-                                                <div className="bg-neutral-50 rounded-2xl p-4 col-span-1 sm:col-span-2 flex items-start gap-3 border border-neutral-100/50">
-                                                    <div className="w-10 h-10 rounded-full bg-white flex-shrink-0 flex items-center justify-center shadow-sm">
-                                                        <Info size={20} className="text-[#00A082]" />
-                                                    </div>
-                                                    <div className="flex flex-col">
-                                                        <span className="text-[11px] font-bold text-neutral-400 uppercase tracking-wider">{t({ en: 'Instructions', fr: 'Instructions', ar: 'التعليمات' })}</span>
-                                                        <p className="text-[14px] font-semibold text-black line-clamp-3 leading-tight">
-                                                            {description || t({ en: 'No specific instructions.', fr: 'Pas d\'instructions.', ar: 'لا توجد تعليمات محددة.' })}
-                                                        </p>
-                                                    </div>
+                                            </div>
+                                            <div className="mt-4 bg-neutral-50 rounded-2xl p-4 flex items-start gap-3 border border-neutral-100/50">
+                                                <div className="w-10 h-10 rounded-full bg-white flex-shrink-0 flex items-center justify-center shadow-sm">
+                                                    <Info size={20} className="text-[#00A082]" />
+                                                </div>
+                                                <div className="flex flex-col">
+                                                    <span className="text-[11px] font-bold text-neutral-400 uppercase tracking-wider">{t({ en: 'Instructions', fr: 'Instructions', ar: 'التعليمات' })}</span>
+                                                    <p className="text-[14px] font-semibold text-black line-clamp-3 leading-tight">
+                                                        {description || t({ en: 'No specific instructions.', fr: 'Pas d\'instructions.', ar: 'لا تووجد تعليمات محددة.' })}
+                                                    </p>
                                                 </div>
                                             </div>
                                         </div>
 
-                                    </div>
-
-                                    {/* Your Selected Bricoler */}
-                                    {selectedBricolerId !== 'open' && selectedPro && (
-                                        <div className="px-6 pb-6 space-y-4">
-                                            <h3 className="text-[24px] font-black text-black">{t({ en: 'Your Tasker', fr: 'Votre Pro', ar: 'المحترف الخاص بك' })}</h3>
-                                            <div className="relative overflow-hidden rounded-2xl border border-neutral-100 bg-white p-4 shadow-sm">
-                                                <div className="flex items-start gap-4 sm:items-center">
-                                                    <div className="relative">
-                                                        <img src={selectedPro.photoURL || "/Images/Logo/Black Lbricol Avatar Face.webp"} className="w-16 h-16 rounded-full object-cover bg-neutral-100" />
+                                        {/* Your Selected Bricoler */}
+                                        {selectedBricolerId !== 'open' && selectedPro && (
+                                            <div className="px-0 pb-6 space-y-4">
+                                                <h3 className="text-[24px] font-black text-black">{t({ en: 'Your Tasker', fr: 'Votre Pro', ar: 'المحترف الخاص بك' })}</h3>
+                                                <div className="relative overflow-hidden rounded-2xl border border-neutral-100 bg-white p-4 shadow-sm">
+                                                    <div className="flex items-start gap-4 sm:items-center">
+                                                        <div className="relative">
+                                                            <img src={selectedPro.photoURL || "/Images/Logo/Black Lbricol Avatar Face.webp"} className="w-16 h-16 rounded-full object-cover bg-neutral-100" />
+                                                        </div>
+                                                        <div className="flex-1 min-w-0">
+                                                            <h4 className="text-[17px] font-black text-black">{selectedPro.displayName}</h4>
+                                                            <div className="mt-1 flex flex-wrap items-center gap-2">
+                                                                <div className="flex items-center gap-1">
+                                                                    {(selectedPro.rating || (selectedPro.reviews?.length || 0) > 0) ? (
+                                                                        <>
+                                                                            <Star size={12} fill="#FFC244" className="text-[#FFC244]" />
+                                                                            <span className="text-[13px] font-bold text-neutral-600">{(selectedPro.rating || 0).toFixed(1)}</span>
+                                                                        </>
+                                                                    ) : (
+                                                                        <span className="text-[13px] font-bold text-[#7C73E8] bg-[#7C73E8]/5 px-2 py-0.5 rounded-md uppercase tracking-wide">{t({ en: 'NEW', fr: 'NOUVEAU', ar: 'جديد' })}</span>
+                                                                    )}
+                                                                </div>
+                                                                <span className="text-neutral-300">•</span>
+                                                                <span className="text-[13px] font-medium text-neutral-500">{t({ en: 'Trusted Pro', fr: 'Pro de confiance', ar: 'محترف موثوق' })}</span>
+                                                            </div>
+                                                        </div>
                                                     </div>
-                                                    <div className="flex-1 min-w-0">
-                                                        <h4 className="text-[17px] font-black text-black">{selectedPro.displayName}</h4>
-                                                        <div className="mt-1 flex flex-wrap items-center gap-2">
-                                                            <div className="flex items-center gap-1">
-                                                                {(selectedPro.rating || (selectedPro.reviews?.length || 0) > 0) ? (
-                                                                    <>
-                                                                        <Star size={12} fill="#FFC244" className="text-[#FFC244]" />
-                                                                        <span className="text-[13px] font-bold text-neutral-600">{(selectedPro.rating || 0).toFixed(1)}</span>
-                                                                    </>
-                                                                ) : (
-                                                                    <span className="text-[13px] font-bold text-[#7C73E8] bg-[#7C73E8]/5 px-2 py-0.5 rounded-md uppercase tracking-wide">{t({ en: 'NEW', fr: 'NOUVEAU', ar: 'جديد' })}</span>
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* Summary Section */}
+                                        <div className="mt-4 bg-[#FFFFFF] relative">
+                                            <div className="absolute top-0 left-0 right-0 h-[10px] -translate-y-[10px]">
+                                                <div className="w-full h-full" style={{
+                                                    backgroundImage: 'linear-gradient(135deg, transparent 45%, #F5F5F5 45%, #F5F5F5 55%, transparent 55%), linear-gradient(-135deg, transparent 45%, #F5F5F5 45%, #F5F5F5 55%, transparent 55%)',
+                                                    backgroundSize: '20px 20px',
+                                                    backgroundRepeat: 'repeat-x'
+                                                }} />
+                                            </div>
+                                            <div className="space-y-8 px-4 py-8 sm:px-12 sm:py-12 sm:space-y-10">
+                                                <h3 className="text-[28px] font-black text-black sm:text-[34px]">{t({ en: 'Summary', fr: 'Résumé', ar: 'الملخص' })}</h3>
+                                                <div className="space-y-8">
+                                                    <div className="flex flex-col gap-2 px-2 min-[420px]:flex-row min-[420px]:items-center min-[420px]:justify-between">
+                                                        <div className="flex min-w-0 flex-col gap-1 min-[420px]:flex-row min-[420px]:items-center min-[420px]:gap-4">
+                                                            <span className="text-[18px] font-semibold text-black">{t({ en: 'Task Fee', fr: 'Frais de tâche', ar: 'رسوم المهمة' })}</span>
+                                                            <span className="text-[15px] font-light text-black">≈ {activeTaskSize ? t(activeTaskSize.estTime as any) : '—'}</span>
+                                                        </div>
+                                                        <span className="self-end text-[18px] font-bold tracking-tight text-black min-[420px]:self-auto">
+                                                            {Math.round(calculateTaskPrice(selectedPro?.hourlyRate || 75, taskSize, service, serviceConfig.options, applyReferralDiscount, referralDiscountAvailable) * 0.85)} MAD
+                                                        </span>
+                                                    </div>
+                                                    <div className="flex flex-col gap-2 px-2 min-[420px]:flex-row min-[420px]:items-center min-[420px]:justify-between">
+                                                        <div className="flex min-w-0 flex-col gap-1 min-[420px]:flex-row min-[420px]:items-center min-[420px]:gap-4">
+                                                            <span className="text-[18px] font-semibold text-black">{t({ en: 'Lbricol Fee', fr: 'Frais Lbricol', ar: 'رسوم Lbricol' })}</span>
+                                                            <span className="text-[15px] font-light text-black">15%</span>
+                                                        </div>
+                                                        <span className="self-end text-[18px] font-bold tracking-tight text-black min-[420px]:self-auto">
+                                                            {Math.round(calculateTaskPrice(selectedPro?.hourlyRate || 75, taskSize, service, serviceConfig.options, applyReferralDiscount, referralDiscountAvailable) * 0.15)} MAD
+                                                        </span>
+                                                    </div>
+                                                    {referralDiscountAvailable > 0 && (
+                                                        <div className="mt-6 flex flex-col gap-4 rounded-[16px] border border-[#00A082]/20 bg-[#E6F6F2] p-4 min-[520px]:flex-row min-[520px]:items-center min-[520px]:justify-between">
+                                                            <div className="flex items-start gap-3">
+                                                                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white shadow-sm">
+                                                                    <span className="text-[18px]">🎁</span>
+                                                                </div>
+                                                                <div className="flex flex-col">
+                                                                    <span className="text-[15px] font-black text-[#00A082]">{t({ en: 'Referral Discount', fr: 'Remise Parrainage', ar: 'خصم الإحالة' })}</span>
+                                                                    <span className="text-[13px] font-medium text-[#00A082]/80">{t({ en: "15% discount will be applied", fr: "Une remise de 15% sera appliquée", ar: "سيتم تطبيق خصم 15%" })}</span>
+                                                                </div>
+                                                            </div>
+                                                            <button
+                                                                onClick={(e) => { e.preventDefault(); setApplyReferralDiscount(!applyReferralDiscount); }}
+                                                                className={cn(
+                                                                    "w-full rounded-xl px-6 py-3 text-[15px] font-black shadow-md transition-all active:scale-95 min-[520px]:w-auto",
+                                                                    applyReferralDiscount
+                                                                        ? "bg-[#00A082] text-white"
+                                                                        : "bg-[#FFC244] text-black hover:bg-[#FDBE33]"
                                                                 )}
-                                                            </div>
-                                                            <span className="text-neutral-300">•</span>
-                                                            <span className="text-[13px] font-medium text-neutral-500">{t({ en: 'Trusted Pro', fr: 'Pro de confiance', ar: 'محترف موثوق' })}</span>
+                                                            >
+                                                                {applyReferralDiscount
+                                                                    ? t({ en: 'Implemented', fr: 'Implémenté', ar: 'تم التطبيق' })
+                                                                    : t({ en: 'Apply 20DH credit', fr: 'Appliquer le crédit 20DH', ar: 'تطبيق رصيد 20 درهم' })}
+                                                            </button>
                                                         </div>
-                                                    </div>
+                                                    )}
                                                 </div>
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    {/* Summary Section — same bg/zigzag as ClientOrdersView */}
-                                    <div className="mt-4 bg-[#FFFFFF] relative">
-                                        <div className="absolute top-0 left-0 right-0 h-[10px] -translate-y-[10px]">
-                                            <div className="w-full h-full" style={{
-                                                backgroundImage: 'linear-gradient(135deg, transparent 45%, #F5F5F5 45%, #F5F5F5 55%, transparent 55%), linear-gradient(-135deg, transparent 45%, #F5F5F5 45%, #F5F5F5 55%, transparent 55%)',
-                                                backgroundSize: '20px 20px',
-                                                backgroundRepeat: 'repeat-x'
-                                            }} />
-                                        </div>
-                                        <div className="space-y-8 px-4 py-8 sm:px-12 sm:py-12 sm:space-y-10">
-                                            <h3 className="text-[28px] font-black text-black sm:text-[34px]">{t({ en: 'Summary', fr: 'Résumé', ar: 'الملخص' })}</h3>
-                                            <div className="space-y-8">
-                                                <div className="flex flex-col gap-2 px-2 min-[420px]:flex-row min-[420px]:items-center min-[420px]:justify-between">
-                                                    <div className="flex min-w-0 flex-col gap-1 min-[420px]:flex-row min-[420px]:items-center min-[420px]:gap-4">
-                                                        <span className="text-[18px] font-semibold text-black">{t({ en: 'Task Fee', fr: 'Frais de tâche', ar: 'رسوم المهمة' })}</span>
-                                                        <span className="text-[15px] font-light text-black">≈ {activeTaskSize ? t(activeTaskSize.estTime as any) : '—'}</span>
-                                                    </div>
-                                                    <span className="self-end text-[18px] font-bold tracking-tight text-black min-[420px]:self-auto">
-                                                        {(() => {
-                                                            const hourlyRate = selectedPro?.hourlyRate || 75;
-                                                            const opt = serviceConfig.options.find(o => o.id === taskSize);
-                                                            const duration = opt?.duration || 1;
-                                                            const baseCalc = hourlyRate * duration * ((opt as any)?.coefficient || 1);
-
-                                                            let finalBase = baseCalc;
-                                                            if (service === 'errands') {
-                                                                const mult = duration >= 1.33 ? 4.5 : (duration >= 0.8 ? 2.5 : 1.5);
-                                                                finalBase = hourlyRate * mult;
-                                                            } else {
-                                                                const sizeIndex = serviceConfig.options.findIndex(s => s.id === taskSize);
-                                                                let multiplier = 1;
-                                                                if (service === 'babysitting' || service === 'elderly_care') {
-                                                                    if (duration >= 10) multiplier = 0.8;
-                                                                    else if (duration >= 6) multiplier = 0.9;
-                                                                } else if (service === 'cleaning') {
-                                                                    if (duration >= 6) multiplier = 0.9;
-                                                                    else if (duration >= 4) multiplier = 0.95;
-                                                                } else if (service !== 'private_driver') {
-                                                                    if (sizeIndex === 1) multiplier = 0.95;
-                                                                    else if (sizeIndex === 2) multiplier = 0.9;
-                                                                }
-                                                                finalBase = finalBase * multiplier;
-                                                            }
-
-                                                            return Math.round(finalBase * 0.85); // 85% goes to tasker
-                                                        })()} MAD
-                                                    </span>
-                                                </div>
-                                                <div className="flex flex-col gap-2 px-2 min-[420px]:flex-row min-[420px]:items-center min-[420px]:justify-between">
-                                                    <div className="flex min-w-0 flex-col gap-1 min-[420px]:flex-row min-[420px]:items-center min-[420px]:gap-4">
-                                                        <span className="text-[18px] font-semibold text-black">{t({ en: 'Lbricol Fee', fr: 'Frais Lbricol', ar: 'رسوم Lbricol' })}</span>
-                                                        <span className="text-[15px] font-light text-black">15%</span>
-                                                    </div>
-                                                    <span className="self-end text-[18px] font-bold tracking-tight text-black min-[420px]:self-auto">
-                                                        {(() => {
-                                                            const hourlyRate = selectedPro?.hourlyRate || 75;
-                                                            const opt = serviceConfig.options.find(o => o.id === taskSize);
-                                                            const duration = opt?.duration || 1;
-                                                            const baseCalc = hourlyRate * duration * ((opt as any)?.coefficient || 1);
-
-                                                            let finalBase = baseCalc;
-                                                            if (service === 'errands') {
-                                                                const mult = duration >= 1.33 ? 4.5 : (duration >= 0.8 ? 2.5 : 1.5);
-                                                                finalBase = hourlyRate * mult;
-                                                            } else if (service !== 'private_driver') {
-                                                                const sizeIndex = serviceConfig.options.findIndex(s => s.id === taskSize);
-                                                                let multiplier = 1;
-                                                                if (sizeIndex === 1) multiplier = 0.95;
-                                                                else if (sizeIndex === 2) multiplier = 0.9;
-                                                                finalBase = finalBase * multiplier;
-                                                            }
-
-                                                            return Math.round(finalBase * 0.15); // 15% platform fee
-                                                        })()} MAD
-                                                    </span>
-                                                </div>
-                                                {referralDiscountAvailable > 0 && (
-                                                    <div className="mt-6 flex flex-col gap-4 rounded-[16px] border border-[#00A082]/20 bg-[#E6F6F2] p-4 min-[520px]:flex-row min-[520px]:items-center min-[520px]:justify-between">
-                                                        <div className="flex items-start gap-3">
-                                                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white shadow-sm">
-                                                                <span className="text-[18px]">🎁</span>
-                                                            </div>
-                                                            <div className="flex flex-col">
-                                                                <span className="text-[15px] font-black text-[#00A082]">{t({ en: 'Referral Discount', fr: 'Remise Parrainage', ar: 'خصم الإحالة' })}</span>
-                                                                <span className="text-[13px] font-medium text-[#00A082]/80">{t({ en: "15% discount will be applied", fr: "Une remise de 15% sera appliquée", ar: "سيتم تطبيق خصم 15%" })}</span>
-                                                            </div>
-                                                        </div>
-                                                        <button
-                                                            onClick={(e) => { e.preventDefault(); setApplyReferralDiscount(!applyReferralDiscount); }}
-                                                            className={cn(
-                                                                "w-full rounded-xl px-6 py-3 text-[15px] font-black shadow-md transition-all active:scale-95 min-[520px]:w-auto",
-                                                                applyReferralDiscount
-                                                                    ? "bg-[#00A082] text-white"
-                                                                    : "bg-[#FFC244] text-black hover:bg-[#FDBE33]"
-                                                            )}
-                                                        >
-                                                            {applyReferralDiscount
-                                                                ? t({ en: 'Implemented', fr: 'Implémenté', ar: 'تم التطبيق' })
-                                                                : t({ en: 'Implement 20DH credit', fr: 'Appliquer le crédit 20DH', ar: 'تطبيق رصيد 20 درهم' })}
-                                                        </button>
-                                                    </div>
-                                                )}
                                             </div>
                                         </div>
                                     </div>
@@ -3115,36 +3131,25 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                                                     const opt = serviceConfig.options.find(o => o.id === taskSize);
                                                     const duration = opt?.duration || 1;
                                                     const coefficient = (opt as any)?.coefficient || 1;
-                                                    let basePrice = hourlyRate * duration * coefficient;
-                                                    let strikePrice = basePrice;
 
-                                                    if (service === 'errands') {
-                                                        const mult = duration >= 1.33 ? 4.5 : (duration >= 0.8 ? 2.5 : 1.5);
-                                                        basePrice = hourlyRate * mult;
-                                                        strikePrice = basePrice;
-                                                    } else {
-                                                        const sizeIndex = serviceConfig.options.findIndex(s => s.id === taskSize);
-                                                        let multiplier = 1;
-                                                        if (service === 'babysitting' || service === 'elderly_care') {
-                                                            if (duration >= 10) multiplier = 0.8;
-                                                            else if (duration >= 6) multiplier = 0.9;
-                                                        } else if (service === 'cleaning') {
-                                                            if (duration >= 6) multiplier = 0.9;
-                                                            else if (duration >= 4) multiplier = 0.95;
-                                                        } else {
-                                                            if (sizeIndex === 1) multiplier = 0.95;
-                                                            else if (sizeIndex === 2) multiplier = 0.9;
-                                                        }
-                                                        basePrice = basePrice * multiplier;
-                                                        strikePrice = hourlyRate * duration * coefficient;
-                                                    }
+                                                    const finalCalc = calculateTaskPrice(
+                                                        hourlyRate,
+                                                        taskSize,
+                                                        service,
+                                                        serviceConfig.options,
+                                                        applyReferralDiscount,
+                                                        referralDiscountAvailable
+                                                    );
 
-                                                    let finalCalc = Math.round(basePrice);
-                                                    let strikeCalc = Math.round(strikePrice);
+                                                    const strikeCalc = calculateTaskPrice(
+                                                        hourlyRate,
+                                                        taskSize,
+                                                        service,
+                                                        serviceConfig.options,
+                                                        false, // No referral discount for strike
+                                                        0
+                                                    );
 
-                                                    if (applyReferralDiscount && referralDiscountAvailable > 0) {
-                                                        finalCalc = Math.round(finalCalc * 0.85);
-                                                    }
 
                                                     const hasDiscount = (strikeCalc > finalCalc);
 
@@ -3224,7 +3229,7 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                     />
                 </motion.div>
             </motion.div>
-        </AnimatePresence>
+        </AnimatePresence >
     );
 };
 
