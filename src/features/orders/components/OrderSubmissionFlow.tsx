@@ -2361,11 +2361,45 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                                                         <textarea
                                                             value={description}
                                                             onChange={(e) => setDescription(e.target.value)}
-                                                            placeholder={t({
-                                                                en: 'Example: I need to install a TV on a wall. I already have the bracket.',
-                                                                fr: 'Exemple : Je dois installer une TV au mur. J\'ai déjà le support.',
-                                                                ar: 'مثال: أحتاج إلى تثبيت تلفزيون على الحائط. لدي الحامل بالفعل.'
-                                                            })}
+                                                            placeholder={
+                                                                service === 'mounting' ? t({
+                                                                    en: 'Example: I need to install a TV on a wall. I already have the bracket.',
+                                                                    fr: 'Exemple : Je dois installer une TV au mur. J\'ai déjà le support.',
+                                                                    ar: 'مثال: أحتاج إلى تثبيت تلفزيون على الحائط. لدي الحامل بالفعل.'
+                                                                }) : service === 'cleaning' ? t({
+                                                                    en: 'Example: Standard cleaning for a 2-bedroom apartment. I have all the supplies.',
+                                                                    fr: 'Exemple : Ménage standard pour un appartement T3. J\'ai tous les produits.',
+                                                                    ar: 'مثال: تنظيف عادي لشقة بغرفتي نوم. لدي جميع مواد التنظيف.'
+                                                                }) : service === 'moving' ? t({
+                                                                    en: 'Example: Moving a sofa and 5 boxes to the 3rd floor (no elevator).',
+                                                                    fr: 'Exemple : Déménagement d\'un canapé et 5 cartons au 3ème étage (sans ascenseur).',
+                                                                    ar: 'مثال: نقل أريكة و 5 صناديق إلى الطابق الثالث (بدون مصعد).'
+                                                                }) : service === 'errands' ? t({
+                                                                    en: 'Example: Pick up groceries from Marjane and deliver them to my house.',
+                                                                    fr: 'Exemple : Récupérer des courses à Marjane et les livrer chez moi.',
+                                                                    ar: 'مثال: استلام بقالة من مرجان وتوصيلها إلى منزلي.'
+                                                                }) : service === 'plumbing' ? t({
+                                                                    en: 'Example: The sink is leaking from the bottom pipe.',
+                                                                    fr: 'Exemple : L\'évier fuit au niveau du tuyau inférieur.',
+                                                                    ar: 'مثال: الحوض يسرب من الأنبوب السفلي.'
+                                                                }) : service === 'electrical' ? t({
+                                                                    en: 'Example: Need to install a new ceiling light fixture.',
+                                                                    fr: 'Exemple : Besoin d\'installer un nouveau plafonnier.',
+                                                                    ar: 'مثال: أحتاج إلى تركيب إضاءة سقف جديدة.'
+                                                                }) : service === 'private_driver' ? t({
+                                                                    en: 'Example: Need a driver for airport pickup at Menara and trip to Palmeraie.',
+                                                                    fr: 'Exemple : Besoin d\'un chauffeur pour transfert aéroport Menara vers la Palmeraie.',
+                                                                    ar: 'مثال: أحتاج سائق للاستقبال من مطار المنارة والتوصيل إلى النخيل.'
+                                                                }) : service === 'cooking' ? t({
+                                                                    en: 'Example: Looking to learn how to make Chicken Tagine and Harira soup.',
+                                                                    fr: 'Exemple : Je souhaite apprendre à préparer un Tajine au poulet et une soupe Harira.',
+                                                                    ar: 'مثال: أريد أن أتعلم كيفية تحضير طاجين الدجاج وحساء الحريرة.'
+                                                                }) : t({
+                                                                    en: 'Describe tasks, details, tools needed, or any special instructions...',
+                                                                    fr: 'Décrivez les tâches, détails, outils nécessaires ou instructions spéciales...',
+                                                                    ar: 'صف المهام، التفاصيل، الأدوات المطلوبة، أو أي تعليمات خاصة...'
+                                                                })
+                                                            }
                                                             className="w-full h-24 bg-transparent outline-none text-[15px] font-medium text-neutral-800 placeholder:text-neutral-400 resize-none leading-relaxed"
                                                         />
                                                     </div>
