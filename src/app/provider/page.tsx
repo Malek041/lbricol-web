@@ -4083,7 +4083,7 @@ export default function ProviderPage() {
                                                                         {serviceBreakdown.map(({ serviceId, earnings, avgRating, demandScore, jobCount }) => {
                                                                             const cat = SERVICE_CATEGORIES.find(c => c.id === serviceId);
                                                                             const catName = cat ? t(cat.name) : serviceId;
-                                                                            const catEmoji = (cat as any)?.icon ?? '🔧';
+                                                                            const CatIcon = (cat as any)?.icon as React.ElementType | undefined;
                                                                             return (
                                                                                 <motion.div
                                                                                     key={serviceId}
@@ -4093,8 +4093,8 @@ export default function ProviderPage() {
                                                                                 >
                                                                                     {/* Service header */}
                                                                                     <div className="flex items-center gap-2.5">
-                                                                                        <div className="w-10 h-10 rounded-xl bg-neutral-50 border border-neutral-100 flex items-center justify-center text-[20px]">
-                                                                                            {catEmoji}
+                                                                                        <div className="w-10 h-10 rounded-xl bg-neutral-50 border border-neutral-100 flex items-center justify-center">
+                                                                                            {CatIcon ? <CatIcon size={20} className="text-black/70" /> : <span className="text-[18px]">🔧</span>}
                                                                                         </div>
                                                                                         <div className="min-w-0">
                                                                                             <p className="text-[13px] font-black text-black leading-none truncate">{catName}</p>
