@@ -936,11 +936,18 @@ const Home = () => {
         if (user) {
           // 1. Real-time User Data (Global profile)
           const userRef = doc(db, 'users', user.uid);
+          let hasAdminRedirected = false;
           unsubscribeUserData = onSnapshot(userRef, (snap) => {
             if (snap.exists()) {
               const data = snap.data();
               setUserData(data);
-              setIsAdmin(data.role === 'admin');
+              const isAdminUser = data.role === 'admin';
+              setIsAdmin(isAdminUser);
+              // Redirect admins to their dedicated /admin URL
+              if (!hasAdminRedirected && isAdminUser && typeof window !== 'undefined' && window.location.pathname === '/') {
+                hasAdminRedirected = true;
+                router.push('/admin');
+              }
             } else {
               // Initialize global user profile if new
               const newUser = {
@@ -954,10 +961,20 @@ const Home = () => {
             }
           });
 
-          // 2. Real-time Bricoler Status
+          // 2. Real-time Bricoler Status + Role-based URL redirect
           const bricolerRef = doc(db, 'bricolers', user.uid);
+          let hasRedirected = false;
           unsubscribeBricolerStatus = onSnapshot(bricolerRef, (snap) => {
-            setIsBricoler(snap.exists() && snap.data()?.isBricoler === true);
+            const isBricolerUser = snap.exists() && snap.data()?.isBricoler === true;
+            setIsBricoler(isBricolerUser);
+            // Smart redirect: send users to their dedicated URL on first load
+            if (!hasRedirected && typeof window !== 'undefined' && window.location.pathname === '/') {
+              hasRedirected = true;
+              if (isBricolerUser) {
+                router.push('/provider');
+                return;
+              }
+            }
           });
 
           // 3. Real-time Jobs
