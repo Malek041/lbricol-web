@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Lbricol — Investor Pitch</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&display=swap');
+
+        :root {
+            --primary: #008855;
+            /* Vibrant Green */
+            --primary-dark: #004433;
+            --accent: #FF9911;
+            /* Energetic Orange */
+            --accent-dark: #DD7700;
+            --dark: #003322;
+            /* Very Dark Green (instead of black) */
+            --white: #FFFFFF;
+            --bg: #F8FBF9;
+            --text: #003322;
+            --text-muted: #557766;
+            --border: #E0F0E8;
+            --radius-lg: 32px;
+            --radius-md: 20px;
+            --radius-sm: 12px;
+            --shadow: 0 20px 50px rgba(0, 68, 34, 0.08);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+            color: var(--text);
+            line-height: 1.5;
+            padding: 60px 40px;
+            background: #fbfbfb;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            padding: 60px;
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow);
+        }
+
+        .cover {
+            background: linear-gradient(135deg, var(--dark) 0%, #004433 100%);
+            color: var(--white);
+            padding: 80px 60px;
+            border-radius: var(--radius-lg);
+            margin-bottom: 60px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 30px 60px rgba(0, 51, 34, 0.2);
+        }
+
+        .cover::after {
+            content: '';
+            position: absolute;
+            bottom: -60px;
+            right: -60px;
+            width: 250px;
+            height: 250px;
+            background: var(--accent);
+            border-radius: 50%;
+            opacity: 0.15;
+        }
+
+        .cover-logo {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 32px;
+        }
+
+        .logo-icon {
+            width: 60px;
+            height: 60px;
+            background: var(--primary);
+            border-radius: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            color: var(--white);
+        }
+
+        .logo-text {
+            font-size: 36px;
+            font-weight: 900;
+            letter-spacing: -1.5px;
+        }
+
+        .logo-text span {
+            color: var(--accent);
+        }
+
+        .cover-headline {
+            font-size: 56px;
+            font-weight: 900;
+            line-height: 1.05;
+            letter-spacing: -3px;
+            margin-bottom: 24px;
+            max-width: 700px;
+        }
+
+        .cover-subheadline {
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--accent);
+            font-style: italic;
+            opacity: 0.95;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .cover-subheadline::before {
+            content: '';
+            width: 32px;
+            height: 2px;
+            background: var(--accent);
+        }
+
+        .oneliner {
+            background: #F0FAF5;
+            border-left: 6px solid var(--primary);
+            padding: 32px 40px;
+            border-radius: 0 24px 24px 0;
+            margin-bottom: 60px;
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--primary-dark);
+            line-height: 1.5;
+            box-shadow: 0 10px 30px rgba(0, 136, 85, 0.05);
+        }
+
+        .section-title {
+            font-size: 13px;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 2.5px;
+            color: var(--primary);
+            margin-bottom: 40px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .section-title::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--border);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 24px;
+            margin-bottom: 80px;
+        }
+
+        .stat-card {
+            background: var(--white);
+            border: 1.5px solid var(--border);
+            padding: 40px 32px;
+            border-radius: var(--radius-md);
+            text-align: center;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.02);
+        }
+
+        .stat-card:hover {
+            transform: translateY(-8px);
+            border-color: var(--primary);
+            box-shadow: var(--shadow);
+        }
+
+        .stat-value {
+            font-size: 48px;
+            font-weight: 900;
+            color: var(--dark);
+            letter-spacing: -2px;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+        }
+
+        .stat-value span {
+            color: var(--accent);
+        }
+
+        .stat-label {
+            font-size: 13px;
+            font-weight: 800;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+        }
+
+        .traction-section {
+            background: linear-gradient(135deg, var(--dark) 0%, #004433 100%);
+            color: white;
+            padding: 60px;
+            border-radius: var(--radius-lg);
+            margin-bottom: 80px;
+            box-shadow: 0 30px 60px rgba(0, 51, 34, 0.15);
+        }
+
+        .traction-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 40px;
+        }
+
+        .traction-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 20px;
+        }
+
+        .traction-check {
+            width: 36px;
+            height: 36px;
+            background: var(--accent);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            font-size: 20px;
+            color: var(--white);
+            font-weight: 900;
+            box-shadow: 0 8px 20px rgba(255, 153, 17, 0.3);
+        }
+
+        .traction-content h4 {
+            font-size: 20px;
+            font-weight: 800;
+            margin-bottom: 8px;
+            color: var(--white);
+        }
+
+        .traction-content p {
+            font-size: 15px;
+            color: #A0C0B0;
+            line-height: 1.6;
+        }
+
+        .roadmap {
+            display: flex;
+            gap: 24px;
+            margin-bottom: 80px;
+        }
+
+        .phase-card {
+            flex: 1;
+            padding: 40px 32px;
+            background: #F8FBF9;
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border);
+            transition: all 0.3s ease;
+        }
+
+        .phase-card:hover {
+            border-color: var(--primary);
+            background: white;
+        }
+
+        .phase-badge {
+            display: inline-block;
+            background: var(--primary);
+            color: var(--white);
+            padding: 6px 16px;
+            border-radius: 100px;
+            font-size: 12px;
+            font-weight: 900;
+            margin-bottom: 24px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .phase-title {
+            font-size: 22px;
+            font-weight: 900;
+            margin-bottom: 20px;
+            color: var(--dark);
+        }
+
+        .phase-list {
+            list-style: none;
+        }
+
+        .phase-list li {
+            font-size: 15px;
+            color: var(--text-muted);
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-weight: 600;
+        }
+
+        .phase-list li::before {
+            content: '';
+            width: 8px;
+            height: 8px;
+            background: var(--accent);
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .ask-section {
+            background: #F0FAF5;
+            padding: 60px;
+            border-radius: var(--radius-lg);
+            text-align: center;
+            border: 1px solid var(--border);
+        }
+
+        .ask-desc {
+            font-size: 24px;
+            font-weight: 900;
+            color: var(--primary-dark);
+            margin-bottom: 40px;
+            line-height: 1.4;
+        }
+
+        .ask-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 24px;
+        }
+
+        .ask-item {
+            background: white;
+            padding: 32px;
+            border-radius: var(--radius-md);
+            text-align: left;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.03);
+            border: 1px solid var(--border);
+        }
+
+        .ask-type {
+            font-size: 14px;
+            font-weight: 900;
+            text-transform: uppercase;
+            color: var(--accent-dark);
+            margin-bottom: 10px;
+            letter-spacing: 1px;
+        }
+
+        .ask-val {
+            font-size: 16px;
+            color: var(--text);
+            font-weight: 700;
+            line-height: 1.5;
+        }
+
+        footer {
+            border-top: 2px solid var(--border);
+            padding-top: 60px;
+            margin-top: 80px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 14px;
+            color: var(--text-muted);
+        }
+
+        .footer-links {
+            display: flex;
+            gap: 32px;
+            font-weight: 900;
+            color: var(--dark);
+            text-decoration: none;
+        }
+
+        .footer-links span {
+            border-bottom: 2px solid var(--accent);
+        }
+
+        @media print {
+            body {
+                padding: 40px;
+                background: white;
+            }
+
+            .container {
+                box-shadow: none;
+                border: none;
+                padding: 0;
+            }
+
+            .cover {
+                background: #004433;
+            }
+
+            .traction-section {
+                background: #004433;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <!-- Cover Section -->
+        <div class="cover">
+            <div class="cover-logo">
+                <div class="logo-icon">🏠</div>
+                <div class="logo-text">Lbricol<span>.com</span></div>
+            </div>
+            <div class="cover-headline">Morocco's Home Services Infrastructure Play.</div>
+            <div class="cover-subheadline">Standardizing trust in a $3B+ untapped market.</div>
+        </div>
+
+        <!-- One-Liner -->
+        <div class="oneliner">
+            Lbricol is Morocco's on-demand home services platform — connecting households with trusted, vetted local
+            professionals in minutes.
+        </div>
+
+        <!-- Opportunity Section -->
+        <div class="section-title">The Opportunity</div>
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-value">37M<span>+</span></div>
+                <div class="stat-label">National Population</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value"><span>$</span>3B</div>
+                <div class="stat-label">TAM (Total Market)</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">90<span>%</span></div>
+                <div class="stat-label">Mobile Connectivity</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">15<span>%</span></div>
+                <div class="stat-label">Gig Economy CAGR</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">65<span>%</span></div>
+                <div class="stat-label">Urban Pop Density</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value"><span>0</span></div>
+                <div class="stat-label">Digital Competitors</div>
+            </div>
+        </div>
+
+        <!-- Traction Section -->
+        <div class="section-title">Execution & Traction</div>
+        <div class="traction-section">
+            <div class="traction-grid">
+                <div class="traction-item">
+                    <div class="traction-check">✓</div>
+                    <div class="traction-content">
+                        <h4>Mature Product</h4>
+                        <p>Full-stack Next.js/Firebase platform live and deployed at lbricol.com.</p>
+                    </div>
+                </div>
+                <div class="traction-item">
+                    <div class="traction-check">✓</div>
+                    <div class="traction-content">
+                        <h4>7-City Presence</h4>
+                        <p>Neighborhood-level mapping across Casablanca, Marrakech, Rabat & more.</p>
+                    </div>
+                </div>
+                <div class="traction-item">
+                    <div class="traction-check">✓</div>
+                    <div class="traction-content">
+                        <h4>Extensive Catalog</h4>
+                        <p>80+ specialized sub-services spanning repairs, care, and lifestyle.</p>
+                    </div>
+                </div>
+                <div class="traction-item">
+                    <div class="traction-check">✓</div>
+                    <div class="traction-content">
+                        <h4>Inclusive Access</h4>
+                        <p>Multilingual support with full native Arabic (RTL) experience.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Roadmap Section -->
+        <div class="section-title">Expansion Roadmap</div>
+        <div class="roadmap">
+            <div class="phase-card">
+                <span class="phase-badge">Phase 1</span>
+                <div class="phase-title">City Density</div>
+                <ul class="phase-list">
+                    <li>Market dominance in Casablanca</li>
+                    <li>HNV growth in Marrakech</li>
+                    <li>B2B Riad & Agency partnerships</li>
+                </ul>
+            </div>
+            <div class="phase-card">
+                <span class="phase-badge">Phase 2</span>
+                <div class="phase-title">Lifestyle Verticals</div>
+                <ul class="phase-list">
+                    <li>Private Chef experiences</li>
+                    <li>Licensed Regional Guides</li>
+                    <li>Premium Inter-city transport</li>
+                </ul>
+            </div>
+            <div class="phase-card">
+                <span class="phase-badge">Phase 3</span>
+                <div class="phase-title">Regional Growth</div>
+                <ul class="phase-list">
+                    <li>North Africa (Tunis/Algiers)</li>
+                    <li>Enterprise Facility Mgmt</li>
+                    <li>Fintech Payment Layer</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Partnership Section -->
+        <div class="section-title">The Partnership</div>
+        <div class="ask-section">
+            <div class="ask-desc">We are looking for strategic partners to scale Morocco's first standardized home
+                services brand.</div>
+            <div class="ask-grid">
+                <div class="ask-item">
+                    <div class="ask-type">🟢 Early Angels</div>
+                    <div class="ask-val">Seed funding to accelerate city growth and team scaling.</div>
+                </div>
+                <div class="ask-item">
+                    <div class="ask-type">🟠 Media Partners</div>
+                    <div class="ask-val">Publicity, PR support, and ecosystem awareness across MENA.</div>
+                </div>
+                <div class="ask-item">
+                    <div class="ask-type">🤝 Strategic allies</div>
+                    <div class="ask-val">Access to real estate portfolios and expat community networks.</div>
+                </div>
+                <div class="ask-item">
+                    <div class="ask-type">⚙️ Infrastructure</div>
+                    <div class="ask-val">Co-marketing and technical integrations for payment/logistics.</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer>
+            <p>&copy; 2026 Lbricol.com — Building Tomorrow's Local Marketplace.</p>
+            <div class="footer-links">
+                <span>lbricol.com</span>
+                <span>press@lbricol.com</span>
+            </div>
+        </footer>
+    </div>
+
+</body>
+
+</html>

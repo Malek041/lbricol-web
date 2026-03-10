@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Lbricol — Press Release</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&display=swap');
+
+        :root {
+            --primary: #008855;
+            /* Vibrant Green */
+            --primary-dark: #006644;
+            --accent: #FF9911;
+            /* Energetic Orange */
+            --accent-dark: #DD7700;
+            --dark: #003322;
+            /* Very Dark Green (instead of black) */
+            --white: #FFFFFF;
+            --bg: #FFFFFF;
+            --text: #003322;
+            --text-muted: #557766;
+            --border: #E0F0E8;
+            --radius-lg: 32px;
+            --radius-md: 20px;
+            --radius-sm: 12px;
+            --shadow: 0 10px 40px rgba(0, 68, 34, 0.06);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+            padding: 60px 40px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 60px;
+            border-bottom: 3px solid var(--primary);
+            padding-bottom: 32px;
+        }
+
+        .logo-side {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .logo-icon {
+            width: 64px;
+            height: 64px;
+            background: var(--primary);
+            border-radius: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 30px;
+            box-shadow: 0 8px 24px rgba(0, 136, 85, 0.2);
+        }
+
+        .logo-text {
+            font-size: 38px;
+            font-weight: 900;
+            letter-spacing: -1.5px;
+            color: var(--dark);
+        }
+
+        .logo-text span {
+            color: var(--accent);
+        }
+
+        .release-meta {
+            text-align: right;
+        }
+
+        .release-meta .tag {
+            display: inline-block;
+            background: var(--accent);
+            color: var(--white);
+            padding: 8px 16px;
+            border-radius: 100px;
+            font-size: 12px;
+            font-weight: 900;
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            box-shadow: 0 4px 12px rgba(255, 153, 17, 0.2);
+        }
+
+        .release-meta p {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--text-muted);
+        }
+
+        .for-release {
+            padding: 20px 24px;
+            background: #F0FAF5;
+            border-left: 5px solid var(--primary);
+            border-radius: 0 16px 16px 0;
+            margin-bottom: 48px;
+        }
+
+        .for-release p {
+            font-size: 14px;
+            font-weight: 900;
+            color: var(--primary-dark);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        h1 {
+            font-size: 48px;
+            font-weight: 900;
+            letter-spacing: -2.5px;
+            line-height: 1.1;
+            margin-bottom: 24px;
+            color: var(--dark);
+        }
+
+        .subheadline {
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--text-muted);
+            margin-bottom: 48px;
+            font-style: italic;
+            border-left: 2px solid var(--accent);
+            padding-left: 20px;
+        }
+
+        .intro-text {
+            font-size: 18px;
+            margin-bottom: 60px;
+            color: var(--text);
+        }
+
+        .section {
+            margin-bottom: 60px;
+        }
+
+        .section-title {
+            font-size: 14px;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: var(--primary);
+            margin-bottom: 32px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .section-title::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--border);
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 32px;
+            margin-bottom: 40px;
+        }
+
+        .feature-card {
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            padding: 32px;
+            box-shadow: 0 4px 20px rgba(0, 68, 34, 0.03);
+            transition: all 0.3s ease;
+        }
+
+        .feature-card h3 {
+            font-size: 13px;
+            font-weight: 900;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: var(--primary);
+        }
+
+        .feature-card h3 span {
+            width: 36px;
+            height: 36px;
+            background: var(--bg);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            color: var(--primary);
+            border: 1px solid var(--border);
+        }
+
+        .feature-card p {
+            font-size: 15px;
+            color: var(--text-muted);
+            line-height: 1.6;
+        }
+
+        .quote-box {
+            background: linear-gradient(135deg, var(--dark) 0%, #004433 100%);
+            color: var(--white);
+            padding: 60px;
+            border-radius: var(--radius-lg);
+            margin: 60px 0;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 20px 50px rgba(0, 51, 34, 0.15);
+        }
+
+        .quote-box::after {
+            content: '"';
+            position: absolute;
+            top: -20px;
+            left: 20px;
+            font-size: 180px;
+            color: var(--primary);
+            opacity: 0.1;
+            font-family: serif;
+        }
+
+        .quote-text {
+            font-size: 26px;
+            font-weight: 700;
+            line-height: 1.5;
+            margin-bottom: 32px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .quote-attr {
+            font-size: 13px;
+            font-weight: 900;
+            color: var(--accent);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .cities-section {
+            background: #F8FBF9;
+            padding: 48px;
+            border-radius: var(--radius-lg);
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+
+        .city-badge {
+            background: white;
+            border: 1px solid var(--border);
+            padding: 10px 24px;
+            border-radius: 100px;
+            font-size: 14px;
+            font-weight: 800;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.02);
+        }
+
+        .city-dot {
+            width: 10px;
+            height: 10px;
+            background: var(--accent);
+            border-radius: 50%;
+        }
+
+        .contact-footer {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 60px;
+            margin-top: 100px;
+            padding-top: 80px;
+            border-top: 2px solid var(--border);
+        }
+
+        .contact-block h4 {
+            font-size: 13px;
+            font-weight: 900;
+            text-transform: uppercase;
+            margin-bottom: 24px;
+            letter-spacing: 1.5px;
+            color: var(--primary);
+        }
+
+        .link-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 16px 0;
+            border-bottom: 1px solid var(--border);
+            font-size: 15px;
+        }
+
+        .link-label {
+            color: var(--text-muted);
+            font-weight: 700;
+        }
+
+        .link-value {
+            font-weight: 900;
+            color: var(--dark);
+        }
+
+        footer {
+            margin-top: 80px;
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+
+        @media print {
+            body {
+                padding: 40px;
+                background: white;
+            }
+
+            .quote-box {
+                background: #004433;
+                color: white;
+                border: none;
+            }
+
+            .feature-card {
+                box-shadow: none;
+                border: 1.5px solid #E0F0E8;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <header>
+            <div class="logo-side">
+                <div class="logo-icon">🏠</div>
+                <div class="logo-text">Lbricol<span>.com</span></div>
+            </div>
+            <div class="release-meta">
+                <span class="tag">Press Release</span>
+                <p>For Immediate Release</p>
+                <p>March 2026</p>
+                <p>Casablanca, Morocco</p>
+            </div>
+        </header>
+
+        <div class="for-release">
+            <p>🌍 Morocco's First On-Demand Home Services Marketplace</p>
+        </div>
+
+        <h1>Digitizing Trust: Lbricol.com Launches Nationwide Home Services Platform</h1>
+        <p class="subheadline">Empowering local artisans and professionals while standardizing quality and safety for
+            millions of households.</p>
+
+        <div class="intro-text">
+            <p><strong>CASABLANCA, MOROCCO</strong> — Lbricol, a Moroccan-built technology startup, has launched a
+                mobile-first marketplace that connects households with trusted, local service professionals across
+                Morocco. The platform — available today at <strong>lbricol.com</strong> — covers an extensive range of
+                services including home repairs, cleaning, plumbing, electrical work, carpentry, gardening, babysitting,
+                cooking, and private drivers.</p>
+        </div>
+
+        <div class="section">
+            <div class="section-title">The Marketplace Philosophy</div>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <h3><span>🛠️</span> Professional Pride</h3>
+                    <p>Empowering local talent ("Bricolers") with a digital storefront. We provide the tools for
+                        artisans to build a reputation, manage their schedule, and scale their income.</p>
+                </div>
+                <div class="feature-card">
+                    <h3><span>🏠</span> Household Safety</h3>
+                    <p>A rigorous vetting process and a transparent community rating system. Clients can book with
+                        confidence, backed by clear pricing and historical performance data.</p>
+                </div>
+                <div class="feature-card">
+                    <h3><span>💡</span> Modern Efficiency</h3>
+                    <p>Moving beyond informal WhatsApp groups and word-of-mouth. Lbricol offers real-time matching,
+                        instant messaging, and structured job distribution.</p>
+                </div>
+                <div class="feature-card">
+                    <h3><span>🇲🇦</span> Cultural Inclusion</h3>
+                    <p>Built with deep local context. Full native Arabic (RTL) support ensures the platform is
+                        accessible to every professional and homeowner in Morocco.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="quote-box">
+            <div class="quote-text">"Morocco has incredible local talent—plumbers, electricians, cooks, nannies—but no
+                modern way to discover them. Lbricol creates that bridge: making skilled work visible, safe, and
+                accessible to everyone."</div>
+            <div class="quote-attr">— Founder, Lbricol.com</div>
+        </div>
+
+        <div class="section">
+            <div class="section-title">Active in 7 Cities</div>
+            <div class="cities-section">
+                <div class="city-badge">
+                    <div class="city-dot"></div>Casablanca
+                </div>
+                <div class="city-badge">
+                    <div class="city-dot"></div>Marrakech
+                </div>
+                <div class="city-badge">
+                    <div class="city-dot"></div>Rabat
+                </div>
+                <div class="city-badge">
+                    <div class="city-dot"></div>Agadir
+                </div>
+                <div class="city-badge">
+                    <div class="city-dot"></div>Tangier
+                </div>
+                <div class="city-badge">
+                    <div class="city-dot"></div>Fes
+                </div>
+                <div class="city-badge">
+                    <div class="city-dot"></div>Essaouira
+                </div>
+            </div>
+        </div>
+
+        <div class="contact-footer">
+            <div class="contact-block">
+                <h4>Company Info</h4>
+                <div class="link-row"><span class="link-label">Main Site</span><span
+                        class="link-value">lbricol.com</span></div>
+                <div class="link-row"><span class="link-label">Bricoler Sign-up</span><span
+                        class="link-value">lbricol.com/join</span></div>
+                <div class="link-row"><span class="link-label">Client Portal</span><span
+                        class="link-value">lbricol.com/client</span></div>
+            </div>
+            <div class="contact-block">
+                <h4>Media Relations</h4>
+                <div class="link-row"><span class="link-label">Email</span><span
+                        class="link-value">press@lbricol.com</span></div>
+                <div class="link-row"><span class="link-label">Location</span><span class="link-value">Casablanca,
+                        Morocco</span></div>
+                <div class="link-row"><span class="link-label">Platform</span><span
+                        class="link-value">Lbricol.com</span></div>
+            </div>
+        </div>
+
+        <footer>
+            &copy; 2026 Lbricol Technology. Bridging the gap in the Moroccan home services sector.
+        </footer>
+    </div>
+
+</body>
+
+</html>
