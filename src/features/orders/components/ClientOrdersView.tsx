@@ -289,6 +289,7 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
     const [showCancelModal, setShowCancelModal] = useState(false);
     const [cancelReason, setCancelReason] = useState('');
     const [isCancelling, setIsCancelling] = useState(false);
+    const [isRedistributeCancellation, setIsRedistributeCancellation] = useState(false);
 
     // Filter orders for history (done and cancelled)
     const historyOrders = useMemo(() => {
@@ -341,7 +342,8 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
         }
     };
 
-    const handleCancelOrder = (orderId: string) => {
+    const handleCancelOrder = (orderId: string, isFromRedistributed: boolean = false) => {
+        setIsRedistributeCancellation(isFromRedistributed);
         setShowCancelModal(true);
     };
 
@@ -947,59 +949,83 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
                                 <ChevronLeft size={28} className="text-white" />
                             </button>
                             <h3 className="text-[32px] font-black text-black leading-tight mb-2 tracking-tight">
-                                {t({ en: 'Wait! Why cancel?', fr: 'Attendez ! Pourquoi annuler ?', ar: 'انتظر! لماذا الإلغاء؟' })}
+                                {isRedistributeCancellation
+                                    ? t({ en: 'Are you sure?', fr: 'Êtes-vous sûr ?', ar: 'هل أنت متأكد؟' })
+                                    : t({ en: 'Wait! Why cancel?', fr: 'Attendez ! Pourquoi annuler ?', ar: 'انتظر! لماذا الإلغاء؟' })}
                             </h3>
                             <p className="text-neutral-500 font-bold text-[17px] leading-relaxed">
-                                {t({
-                                    en: 'Your feedback helps us provide a better experience for everyone.',
-                                    fr: 'Vos commentaires nous aident à offrir une meilleure expérience à tous.',
-                                    ar: 'تساعدنا ملاحظاتك في تقديم تجربة أفضل للجميع.'
-                                })}
+                                {isRedistributeCancellation
+                                    ? t({
+                                        en: 'This action will permanently remove your order.',
+                                        fr: 'Cette action supprimera définitivement votre commande.',
+                                        ar: 'سيؤدي هذا الإجراء إلى حذف طلبك بشكل دائم.'
+                                    })
+                                    : t({
+                                        en: 'Your feedback helps us provide a better experience for everyone.',
+                                        fr: 'Vos commentaires nous aident à offrir une meilleure expérience à tous.',
+                                        ar: 'تساعدنا ملاحظاتك في تقديم تجربة أفضل للجميع.'
+                                    })}
                             </p>
                         </div>
 
                         {/* Options */}
                         <div className="flex-1 overflow-y-auto px-6 py-4 space-y-3 pb-32">
-                            {[
-                                { en: 'Found another solution', fr: 'J\'ai trouvé une autre solution', ar: 'وجدت حلاً آخر' },
-                                { en: 'Personal reasons', fr: 'Raisons personnelles', ar: 'أسباب شخصية' },
-                                { en: 'Scheduled by mistake', fr: 'Planifié par erreur', ar: 'تمت الجدولة عن طريق الخطأ' },
-                                { en: 'Professional didn\'t answer', fr: 'Le professionnel ne répond pas', ar: 'المحترف لا يرد' },
-                                { en: 'Change of plans', fr: 'Changement de programme', ar: 'تغيير في الخطط' }
-                            ].map((reason, idx) => (
-                                <button
-                                    key={idx}
-                                    onClick={() => setCancelReason(t(reason))}
-                                    className={cn(
-                                        "w-full p-5 rounded-2xl border-2 text-left font-bold transition-all active:scale-[0.99] flex items-center justify-between group",
-                                        cancelReason === t(reason)
-                                            ? "border-[#007AFF] bg-[#007AFF08] text-[#007AFF]"
-                                            : "border-neutral-100 hover:border-neutral-200 text-neutral-600 bg-neutral-50/50"
-                                    )}
-                                >
-                                    <span className="text-[16px]">{t(reason)}</span>
-                                    <div className={cn(
-                                        "w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all",
-                                        cancelReason === t(reason) ? "border-[#007AFF] bg-[#007AFF]" : "border-neutral-200"
-                                    )}>
-                                        {cancelReason === t(reason) && <Check size={14} className="text-white" strokeWidth={4} />}
-                                    </div>
-                                </button>
-                            ))}
+                            {!isRedistributeCancellation && (
+                                <>
+                                    {[
+                                        { en: 'Found another solution', fr: 'J\'ai trouvé une autre solution', ar: 'وجدت حلاً آخر' },
+                                        { en: 'Personal reasons', fr: 'Raisons personnelles', ar: 'أسباب شخصية' },
+                                        { en: 'Scheduled by mistake', fr: 'Planifié par erreur', ar: 'تمت الجدولة عن طريق الخطأ' },
+                                        { en: 'Professional didn\'t answer', fr: 'Le professionnel ne répond pas', ar: 'المحترف لا يرد' },
+                                        { en: 'Change of plans', fr: 'Changement de programme', ar: 'تغيير في الخطط' }
+                                    ].map((reason, idx) => (
+                                        <button
+                                            key={idx}
+                                            onClick={() => setCancelReason(t(reason))}
+                                            className={cn(
+                                                "w-full p-5 rounded-2xl border-2 text-left font-bold transition-all active:scale-[0.99] flex items-center justify-between group",
+                                                cancelReason === t(reason)
+                                                    ? "border-[#007AFF] bg-[#007AFF08] text-[#007AFF]"
+                                                    : "border-neutral-100 hover:border-neutral-200 text-neutral-600 bg-neutral-50/50"
+                                            )}
+                                        >
+                                            <span className="text-[16px]">{t(reason)}</span>
+                                            <div className={cn(
+                                                "w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all",
+                                                cancelReason === t(reason) ? "border-[#007AFF] bg-[#007AFF]" : "border-neutral-200"
+                                            )}>
+                                                {cancelReason === t(reason) && <Check size={14} className="text-white" strokeWidth={4} />}
+                                            </div>
+                                        </button>
+                                    ))}
 
-                            <textarea
-                                value={cancelReason && ![
-                                    t({ en: 'Found another solution', fr: 'J\'ai trouvé une autre solution', ar: 'وجدت حلاً آخر' }),
-                                    t({ en: 'Personal reasons', fr: 'Raisons personnelles', ar: 'أسباب شخصية' }),
-                                    t({ en: 'Scheduled by mistake', fr: 'Planifié par erreur', ar: 'تمت الجدولة عن طريق الخطأ' }),
-                                    t({ en: 'Professional didn\'t answer', fr: 'Le professionnel ne répond pas', ar: 'المحترف لا يرد' }),
-                                    t({ en: 'Change of plans', fr: 'Changement de programme', ar: 'تغيير في الخطط' })
-                                ].includes(cancelReason) ? cancelReason : ''}
-                                onChange={(e) => setCancelReason(e.target.value)}
-                                placeholder={t({ en: 'Other reason...', fr: 'Autre raison...', ar: 'سبب آخر...' })}
-                                className="w-full p-5 rounded-2xl bg-neutral-50/50 border-2 border-dashed border-neutral-200 focus:border-[#007AFF] focus:bg-white outline-none transition-all font-bold text-black"
-                                rows={3}
-                            />
+                                    <textarea
+                                        value={cancelReason && ![
+                                            t({ en: 'Found another solution', fr: 'J\'ai trouvé une autre solution', ar: 'وجدت حلاً آخر' }),
+                                            t({ en: 'Personal reasons', fr: 'Raisons personnelles', ar: 'أسباب شخصية' }),
+                                            t({ en: 'Scheduled by mistake', fr: 'Planifié par erreur', ar: 'تمت الجدولة عن طريق الخطأ' }),
+                                            t({ en: 'Professional didn\'t answer', fr: 'Le professionnel ne répond pas', ar: 'المحترف لا يرد' }),
+                                            t({ en: 'Change of plans', fr: 'Changement de programme', ar: 'تغيير في الخطط' })
+                                        ].includes(cancelReason) ? cancelReason : ''}
+                                        onChange={(e) => setCancelReason(e.target.value)}
+                                        placeholder={t({ en: 'Other reason...', fr: 'Autre raison...', ar: 'سبب آخر...' })}
+                                        className="w-full p-5 rounded-2xl bg-neutral-50/50 border-2 border-dashed border-neutral-200 focus:border-[#007AFF] focus:bg-white outline-none transition-all font-bold text-black"
+                                        rows={3}
+                                    />
+                                </>
+                            )}
+                            {isRedistributeCancellation && (
+                                <div className="py-10 text-center">
+                                    <Ban size={64} className="mx-auto text-red-100 mb-4" />
+                                    <p className="text-neutral-400 font-medium">
+                                        {t({
+                                            en: 'Cancelling this order will inform the system and clear it from your activity.',
+                                            fr: 'L\'annulation de cette commande informera le système et l\'effacera de votre activité.',
+                                            ar: 'سيؤدي إلغاء هذا الطلب إلى إبلاغ النظام ومسحه من نشاطك.'
+                                        })}
+                                    </p>
+                                </div>
+                            )}
                         </div>
 
                         {/* Footer */}
@@ -1015,7 +1041,9 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
                                 {isCancelling ? (
                                     <RefreshCw className="animate-spin" size={24} />
                                 ) : (
-                                    t({ en: 'Confirm Cancellation', fr: 'Confirmer l\'annulation', ar: 'تأكيد الإلغاء' })
+                                    isRedistributeCancellation
+                                        ? t({ en: 'Cancel Order', fr: 'Annuler la commande', ar: 'إلغاء الطلب' })
+                                        : t({ en: 'Confirm Cancellation', fr: 'Confirmer l\'annulation', ar: 'تأكيد الإلغاء' })
                                 )}
                             </button>
                         </div>
@@ -1038,7 +1066,7 @@ function ActivityTab({
     onSelect: (o: OrderDetails) => void,
     onShowHistory: () => void,
     onResumeDraft?: (draft: any) => void,
-    onCancelOrder: (id: string) => void
+    onCancelOrder: (id: string, isFromRedistributed?: boolean) => void
 }) {
     const { t } = useLanguage();
 
@@ -1346,7 +1374,7 @@ function ActivityTab({
                                     {t({ en: 'Select New Bricoler', fr: 'Choisir un nouveau Bricoleur', ar: 'اختر بريكولر جديد' })}
                                 </button>
                                 <button
-                                    onClick={() => onCancelOrder(order.id!)}
+                                    onClick={() => onCancelOrder(order.id!, true)}
                                     className="w-full py-3 bg-white border border-red-200 text-red-500 hover:bg-red-50 rounded-xl text-[14px] font-bold transition-all active:scale-95"
                                 >
                                     {t({ en: 'Cancel Order', fr: 'Annuler la commande', ar: 'إلغاء الطلب' })}
@@ -1445,7 +1473,7 @@ function ActivityTab({
                                             {t({ en: 'Extend wait time', fr: 'Prolonger l\'attente', ar: 'تمديد وقت الانتظار' })}
                                         </button>
                                         <button
-                                            onClick={() => onCancelOrder(order.id!)}
+                                            onClick={() => onCancelOrder(order.id!, true)}
                                             className="flex-1 py-3 bg-white border border-red-200 text-red-500 hover:bg-red-50 rounded-xl text-[14px] font-bold transition-all active:scale-95"
                                         >
                                             {t({ en: 'Cancel', fr: 'Annuler', ar: 'إلغاء' })}

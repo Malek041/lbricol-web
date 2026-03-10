@@ -2158,7 +2158,7 @@ export default function ProviderPage() {
                                         </div>
                                         <div className="flex flex-col">
                                             <span className="text-[12px] font-bold text-neutral-400 uppercase tracking-wider">{t({ en: 'Duration', fr: 'Durée' })}</span>
-                                            <span className="text-[16px] font-black text-black">≈ {job.rawAccepted?.duration || '2h-3h'}</span>
+                                            <span className="text-[16px] font-black text-black">≈ {job.rawAccepted?.duration || job.rawJob?.duration || '2h-3h'}</span>
                                         </div>
                                     </div>
                                     <div className="bg-neutral-50 rounded-2xl p-4 flex items-center gap-4 border border-neutral-100/50">
@@ -2230,7 +2230,7 @@ export default function ProviderPage() {
                                 <div className="space-y-4">
                                     <div className="flex items-center gap-2">
                                         <div className="flex-shrink-0 px-3 py-1 bg-[#FFC244]/20 text-black text-[13px] font-black rounded-md whitespace-nowrap">
-                                            ≈ {job.rawAccepted?.duration || '2h-3h'}
+                                            ≈ {job.rawAccepted?.duration || job.rawJob?.duration || '2h-3h'}
                                         </div>
                                     </div>
                                     <div className="space-y-2">
@@ -2256,23 +2256,23 @@ export default function ProviderPage() {
                                                 <div className="flex items-center gap-1.5 mt-0.5">
                                                     <div className="flex items-center gap-0.5 mr-1">
                                                         {[1, 2, 3, 4, 5].map((s) => (
-                                                            <Star key={s} size={14} className={cn("fill-neutral-200 text-neutral-200", (job.clientRating && s <= Math.floor(job.clientRating)) ? "fill-[#FFC244] text-[#FFC244]" : "")} />
+                                                            <Star key={s} size={14} className={cn("fill-neutral-200 text-neutral-200", (job.clientRating && s <= Math.floor(job.clientRating)) ? "fill-[#FFC244] text-[#FFC244]" : (s <= 5 && !job.clientRating ? "fill-[#FFC244] text-[#FFC244]" : ""))} />
                                                         ))}
                                                     </div>
-                                                    <span className="text-[13px] font-bold text-[#FFC244]">{job.clientRating || '5.0'}</span>
-                                                    <span className="text-[13px] text-neutral-400 font-medium">({job.clientReviewCount || 0} reviews)</span>
+                                                    <span className="text-[13px] font-bold text-[#FFC244]">{job.clientRating ? job.clientRating.toFixed(1) : '5.0'}</span>
+                                                    <span className="text-[13px] text-neutral-400 font-medium">({job.clientReviewCount || 0} {t({ en: 'reviews', fr: 'avis' })})</span>
                                                 </div>
                                             </div>
                                         </div>
                                         <button
                                             onClick={() => {
-                                                setSelectedChat((job.rawAccepted || job.rawJob) as any);
-                                                setActiveNav('messages');
-                                                setViewingJobDetails(null);
+                                                const clientId = job.rawAccepted?.clientId || job.rawJob?.clientId;
+                                                const whatsappNumber = job.rawAccepted?.clientWhatsApp || job.rawJob?.clientWhatsApp;
+                                                openWhatsApp(whatsappNumber, clientId);
                                             }}
-                                            className="h-12 w-12 flex items-center justify-center bg-black text-white rounded-full transition-transform active:scale-90"
+                                            className="h-12 w-12 flex items-center justify-center bg-[#25D366] text-white rounded-full transition-transform active:scale-90 shadow-lg shadow-[#25D366]/20"
                                         >
-                                            <MessageSquare size={20} />
+                                            <WhatsAppBrandIcon size={24} />
                                         </button>
                                     </div>
 
@@ -2427,7 +2427,7 @@ export default function ProviderPage() {
                                             <div className="flex justify-between items-center">
                                                 <div className="flex items-center gap-4">
                                                     <span className="text-[16px] font-semibold text-black">{t({ en: 'Mission Fee', fr: 'Frais de mission' })}</span>
-                                                    <span className="text-[14px] font-light text-black">≈ {job.rawAccepted?.duration || '2h-3h'}</span>
+                                                    <span className="text-[14px] font-light text-black">≈ {job.rawAccepted?.duration || job.rawJob?.duration || '2h-3h'}</span>
                                                 </div>
                                                 <span className="text-[16px] font-bold text-black tracking-tight">{job.priceLabel} {t({ en: 'MAD', fr: 'MAD' })}</span>
                                             </div>
