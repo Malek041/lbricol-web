@@ -534,9 +534,22 @@ const Home = () => {
         const savedArea = localStorage.getItem('lbricol_preferred_area');
         if (savedArea) setSelectedArea(savedArea);
         setShowCityPopup(false);
+
+        // Auto-start Bricoler onboarding if user came from /join as first-timer
+        if (typeof window !== 'undefined') {
+          const params = new URLSearchParams(window.location.search);
+          const startBricolerIntent = params.get('start_bricoler');
+          if (startBricolerIntent === 'true' && !showMobileOnboarding && !showClientOnboarding) {
+            setShowMobileOnboarding(true);
+            // Clean up URL
+            const url = new URL(window.location.href);
+            url.searchParams.delete('start_bricoler');
+            window.history.replaceState({}, '', url.toString());
+          }
+        }
       }
     }
-  }, [showSplash, mounted, showClientOnboarding]);
+  }, [showSplash, mounted, showClientOnboarding, showMobileOnboarding]);
 
   // Supply-side Service Filtering
   useEffect(() => {

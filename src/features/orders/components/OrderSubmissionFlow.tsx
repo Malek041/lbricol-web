@@ -76,6 +76,7 @@ export interface DraftOrder {
     paymentMethod: 'cash' | 'bank';
     bankReceipt: string | null;
     clientNeedImages?: string[];
+    images?: string[];
     frequency?: 'once' | 'daily' | 'weekly' | 'biweekly' | 'monthly';
     step: number;
     subStep1: 'location' | 'size' | 'description' | 'languages';
@@ -699,8 +700,10 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isMatchingAnimation, setIsMatchingAnimation] = useState(false);
     const [paymentMethod, setPaymentMethod] = useState<'cash' | 'bank'>('cash');
-    const [bankReceipt, setBankReceipt] = useState<string | null>(null);
+    const [bankReceipt, setBankReceipt] = useState<string | null>(continueDraft?.bankReceipt || null);
     const [isUploadingReceipt, setIsUploadingReceipt] = useState(false);
+    const [images, setImages] = useState<string[]>(continueDraft?.images || []);
+    const [isUploadingImages, setIsUploadingImages] = useState(false);
     const [frequency, setFrequency] = useState<'once' | 'daily' | 'weekly' | 'biweekly' | 'monthly'>('once');
     const [showSuccessAnimation, setShowSuccessAnimation] = useState(false);
 
@@ -1228,6 +1231,8 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
             selectedTime,
             paymentMethod,
             bankReceipt,
+            images,
+            clientNeedImages: images,
             frequency,
             step,
             subStep1,
@@ -1257,7 +1262,7 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
     }, [
         isOpen, service, subService, currentCity, currentArea,
         taskSize, description, selectedBricolerId, selectedDate,
-        step, subStep1, paymentMethod, bankReceipt, frequency, selectedTime
+        step, subStep1, paymentMethod, bankReceipt, images, frequency, selectedTime
     ]);
 
     useEffect(() => {
@@ -2061,8 +2066,8 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                 price: basePrice, // price is the final price after all discounts
                 referralApplied: applyReferralDiscount && referralDiscountAvailable > 0,
                 durationDays: (service === 'private_driver' || (service === 'cooking' && activeOption?.id && !isNaN(Number(activeOption.id)))) ? Math.ceil(duration) : 1,
-                images: [],
-                clientNeedImages: [],
+                images: images,
+                clientNeedImages: images, // for redundancy
                 paymentMethod,
                 bankReceipt: finalBankReceiptUrl,
                 frequency,
@@ -2618,6 +2623,83 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                                                         </motion.div>
                                                     )}
 
+                                                    {/* Mission Photos Section */}
+                                                    <div className="space-y-3 mt-4">
+                                                        <div className="flex items-center justify-between px-1">
+                                                            <span className="text-[13px] font-bold text-neutral-500 uppercase tracking-wider">
+                                                                {t({ en: 'Photos (Optional)', fr: 'Photos (Optionnel)', ar: 'صور (اختياري)' })}
+                                                            </span>
+                                                            <span className="text-[11px] font-medium text-neutral-400">
+                                                                {images.length}/5
+                                                            </span>
+                                                        </div>
+
+                                                        <div className="grid grid-cols-4 gap-2">
+                                                            {images.map((url, idx) => (
+                                                                <motion.div
+                                                                    key={url}
+                                                                    initial={{ opacity: 0, scale: 0.9 }}
+                                                                    animate={{ opacity: 1, scale: 1 }}
+                                                                    className="relative aspect-square rounded-xl overflow-hidden border border-neutral-100 group shadow-sm bg-neutral-50"
+                                                                >
+                                                                    <img src={url} className="w-full h-full object-cover transition-transform group-hover:scale-105" alt={`Task ${idx + 1}`} />
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => setImages(prev => prev.filter((_, i) => i !== idx))}
+                                                                        className="absolute top-1 right-1 w-6 h-6 rounded-full bg-red-500 text-white flex items-center justify-center shadow-lg active:scale-90 transition-transform"
+                                                                    >
+                                                                        <X size={14} strokeWidth={3} />
+                                                                    </button>
+                                                                </motion.div>
+                                                            ))}
+
+                                                            {images.length < 5 && (
+                                                                <label className="relative aspect-square rounded-xl border-2 border-dashed border-neutral-200 hover:border-[#007AFF]/40 hover:bg-[#007AFF]/5 transition-all cursor-pointer flex flex-col items-center justify-center gap-1.5 active:scale-95">
+                                                                    <input
+                                                                        type="file"
+                                                                        accept="image/*"
+                                                                        multiple
+                                                                        className="hidden"
+                                                                        disabled={isUploadingImages}
+                                                                        onChange={async (e) => {
+                                                                            const files = Array.from(e.target.files || []);
+                                                                            if (files.length === 0) return;
+
+                                                                            const limit = 5 - images.length;
+                                                                            const filesToUpload = files.slice(0, limit);
+
+                                                                            setIsUploadingImages(true);
+                                                                            try {
+                                                                                for (const file of filesToUpload) {
+                                                                                    // 1. Compress
+                                                                                    const blob = await compressImageFileToDataUrl(file, { maxWidth: 1000, maxHeight: 1000, quality: 0.5 }).then(dataUrlToBlob);
+                                                                                    // 2. Upload
+                                                                                    const uid = auth.currentUser?.uid || 'anonymous';
+                                                                                    const path = `orders/${uid}/${Date.now()}_${Math.random().toString(36).substr(2, 5)}.jpg`;
+                                                                                    const url = await uploadImageToStorage(blob, path);
+                                                                                    setImages(prev => [...prev, url]);
+                                                                                }
+                                                                            } catch (err) {
+                                                                                console.error("Failed to upload mission images:", err);
+                                                                                showToast({ variant: 'error', title: t({ en: 'Upload failed', fr: 'Échec du téléversement' }) });
+                                                                            } finally {
+                                                                                setIsUploadingImages(false);
+                                                                            }
+                                                                        }}
+                                                                    />
+                                                                    {isUploadingImages ? (
+                                                                        <RefreshCw size={20} className="text-[#007AFF] animate-spin" />
+                                                                    ) : (
+                                                                        <>
+                                                                            <Camera size={20} className="text-[#007AFF]" />
+                                                                            <span className="text-[10px] font-black text-[#007AFF] uppercase">{t({ en: 'Add', fr: 'Ajouter', ar: 'إضافة' })}</span>
+                                                                        </>
+                                                                    )}
+                                                                </label>
+                                                            )}
+                                                        </div>
+                                                    </div>
+
 
                                                 </motion.div>
 
@@ -3103,10 +3185,23 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                                                                         if (!file) return;
                                                                         setIsUploadingReceipt(true);
                                                                         try {
-                                                                            const compressedBase64 = await compressImageFileToDataUrl(file, { maxWidth: 800, maxHeight: 800, quality: 0.35 });
-                                                                            setBankReceipt(compressedBase64);
+                                                                            // 1. Compress
+                                                                            const blob = await compressImageFileToDataUrl(file, { maxWidth: 1000, maxHeight: 1000, quality: 0.5 }).then(dataUrlToBlob);
+
+                                                                            // 2. Upload immediately
+                                                                            const uid = auth.currentUser?.uid || 'anonymous';
+                                                                            const path = `receipts/${uid}/${Date.now()}_receipt.jpg`;
+                                                                            const url = await uploadImageToStorage(blob, path);
+
+                                                                            // 3. Store URL in state
+                                                                            setBankReceipt(url);
                                                                         } catch (err) {
-                                                                            console.error("Failed to compress receipt image", err);
+                                                                            console.error("Failed to upload receipt image:", err);
+                                                                            showToast({
+                                                                                variant: 'error',
+                                                                                title: t({ en: 'Upload failed', fr: 'Échec du téléversement', ar: 'فشل الرفع' }),
+                                                                                description: t({ en: 'Could not upload receipt.', fr: 'Impossible de téléverser le reçu.', ar: 'تعذر رفع الإيصال.' })
+                                                                            });
                                                                         } finally {
                                                                             setIsUploadingReceipt(false);
                                                                         }

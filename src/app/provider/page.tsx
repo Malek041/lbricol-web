@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import Lottie from 'lottie-react';
 import radarAnimation from '../../../public/Lottifiles Animation/Radar.json';
@@ -278,10 +279,19 @@ export default function ProviderPage() {
     const { t, setLanguage } = useLanguage();
     const [showLanguagePopup, setShowLanguagePopup] = useState(false);
     const { showToast } = useToast();
+    const router = useRouter();
     const [user, setUser] = useState<FirebaseUser | null>(null);
     const [userData, setUserData] = useState<UserData | null>(null);
     const [mounted, setMounted] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
+
+    // Redirection check for first-timers
+    useEffect(() => {
+        const onboardingShown = localStorage.getItem('client_onboarding_shown');
+        if (!onboardingShown) {
+            router.push('/join');
+        }
+    }, [router]);
 
     const [activeNav, setActiveNav] = useState<'jobs' | 'calendar' | 'performance' | 'profile' | 'messages' | 'services'>('calendar');
     const [ordersActiveTab, setOrdersActiveTab] = useState<'activity' | 'availability'>('activity');

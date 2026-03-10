@@ -209,6 +209,21 @@ const JobDetailsPopup: React.FC<JobDetailsPopupProps> = ({ job, onClose, onAccep
                                 </div>
                                 <div className="p-4 bg-neutral-50 rounded-xl border border-neutral-200">
                                     <p className="text-sm text-neutral-700 italic">"{job.description}"</p>
+
+                                    {/* Task Photos */}
+                                    {(job.images && job.images.length > 0) && (
+                                        <div className="mt-4 flex gap-2 overflow-x-auto no-scrollbar pb-2">
+                                            {job.images.map((url, idx) => (
+                                                <div
+                                                    key={idx}
+                                                    className="w-32 h-32 flex-shrink-0 rounded-lg overflow-hidden border border-neutral-100 bg-white"
+                                                    onClick={() => window.open(url, '_blank')}
+                                                >
+                                                    <img src={url} className="w-full h-full object-cover cursor-pointer hover:scale-105 transition-transform" />
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         )}

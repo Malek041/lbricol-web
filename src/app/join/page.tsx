@@ -8,6 +8,13 @@ export default function JoinPage() {
     const router = useRouter();
     const [isOpen, setIsOpen] = useState(true);
 
+    React.useEffect(() => {
+        const onboardingShown = localStorage.getItem('client_onboarding_shown');
+        if (!onboardingShown) {
+            router.push('/?start_bricoler=true');
+        }
+    }, [router]);
+
     return (
         <div className="min-h-screen bg-neutral-50 flex flex-col items-center justify-center p-4">
             <div className="text-center mb-8">
