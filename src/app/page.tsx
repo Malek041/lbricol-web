@@ -513,7 +513,7 @@ const Home = () => {
 
   // Sequential popups after splash finishes (for first-timers)
   useEffect(() => {
-    if (!showSplash && mounted) {
+    if (!showSplash && mounted && !showClientOnboarding) {
       const savedLang = localStorage.getItem('lbricol_language');
       const savedCity = localStorage.getItem('lbricol_preferred_city');
 
@@ -536,7 +536,7 @@ const Home = () => {
         setShowCityPopup(false);
       }
     }
-  }, [showSplash, mounted]);
+  }, [showSplash, mounted, showClientOnboarding]);
 
   // Supply-side Service Filtering
   useEffect(() => {
