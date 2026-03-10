@@ -17,7 +17,9 @@ export const MOROCCAN_CITIES_AREAS: Record<string, string[]> = {
         "Lotissement Al Matar", "Lotissement Laftihat", "Médina",
         "Mellah (Jewish Quarter)", "Quartier As-Salam", "Quartier binlaârassi",
         "Quartier des Dunes", "Quartier Industriel", "Quartier Nouvelle Saqqalah",
-        "Rawnak", "Skala", "The Bay"
+        "Rawnak", "Skala", "The Bay",
+        "Sidi Magdoul", "Argana", "Lahrarta", "Ida Ougourd", "Road of Ounagha",
+        "Kilometre 8", "Kilometre 24", "Ounagha", "Sidi Kaouki", "Ouassane"
     ],
     Agadir: [
         "Hay Mohammadi", "Tikiouine", "Dakhla", "Ait Melloul", "Founty", "Charaf",
