@@ -345,6 +345,11 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
     const handleCancelOrder = (orderId: string, isFromRedistributed: boolean = false) => {
         setIsRedistributeCancellation(isFromRedistributed);
         setShowCancelModal(true);
+        if (isFromRedistributed) {
+            setCancelReason("Redistributed order cancelled by client");
+        } else {
+            setCancelReason('');
+        }
     };
 
     const getHeroImage = (service: string) => {
