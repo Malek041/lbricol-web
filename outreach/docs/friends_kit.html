@@ -334,18 +334,48 @@
         }
 
         @media print {
-            body {
-                padding: 40px;
-                background: white;
+            @page {
+                size: A4;
+                margin: 0;
             }
 
+            body {
+                margin: 0;
+                padding: 40px 60px !important;
+                background: white !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+
+            * {
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+
+            .container {
+                max-width: 100%;
+                width: 100%;
+            }
+
+            .oneliner-card,
+            .link-card,
             .post-card {
-                box-shadow: none;
-                border: 2px solid #E0F0E8;
+                page-break-inside: avoid;
+                break-inside: avoid;
+            }
+
+            h1,
+            h2,
+            h3 {
+                page-break-after: avoid;
             }
 
             .copy-btn {
-                display: none;
+                display: none !important;
+            }
+
+            .logo-square {
+                border: 1px solid var(--primary) !important;
             }
         }
     </style>

@@ -392,23 +392,58 @@
         }
 
         @media print {
+            @page {
+                size: A4;
+                margin: 0;
+            }
+
             body {
-                padding: 40px;
+                margin: 0;
+                padding: 0 !important;
                 background: white;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+
+            * {
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
             }
 
             .container {
+                max-width: 100%;
+                width: 100%;
                 box-shadow: none;
                 border: none;
-                padding: 0;
+                padding: 40px 60px !important;
+                border-radius: 0;
+            }
+
+            .stat-card,
+            .traction-section,
+            .phase-card,
+            .ask-item,
+            .ask-section {
+                page-break-inside: avoid;
+                break-inside: avoid;
+            }
+
+            h1,
+            h2,
+            h3,
+            .section-title {
+                page-break-after: avoid;
             }
 
             .cover {
-                background: #004433;
+                page-break-after: always;
+                border-radius: 24px;
+                /* Keep Some radius for style */
             }
 
-            .traction-section {
-                background: #004433;
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr) !important;
+                /* Better fit for A4 */
             }
         }
     </style>

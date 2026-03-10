@@ -335,20 +335,44 @@
         }
 
         @media print {
+            @page {
+                size: A4;
+                margin: 0;
+            }
+
             body {
-                padding: 40px;
+                margin: 0;
+                padding: 40px 60px !important;
                 background: white;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
             }
 
-            .quote-box {
-                background: #004433;
-                color: white;
-                border: none;
+            * {
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
             }
 
-            .feature-card {
-                box-shadow: none;
-                border: 1.5px solid #E0F0E8;
+            .container {
+                max-width: 100%;
+            }
+
+            .feature-card,
+            .quote-box,
+            .cities-section,
+            .contact-footer {
+                page-break-inside: avoid;
+                break-inside: avoid;
+            }
+
+            h1,
+            h2,
+            h3 {
+                page-break-after: avoid;
+            }
+
+            .logo-icon {
+                border: 1px solid var(--primary) !important;
             }
         }
     </style>
