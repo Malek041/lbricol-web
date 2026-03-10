@@ -665,6 +665,8 @@ const Home = () => {
 
   const handleProfileBricolerAction = () => {
     if (isBricoler) {
+      // When switching to provider mode, clear the "force client" flag
+      localStorage.removeItem('lbricol_force_client_mode');
       window.location.href = '/provider';
     } else {
       setShowMobileOnboarding(true);
@@ -945,8 +947,11 @@ const Home = () => {
               setIsAdmin(isAdminUser);
               // Redirect admins to their dedicated /admin URL
               if (!hasAdminRedirected && isAdminUser && typeof window !== 'undefined' && window.location.pathname === '/') {
+                const forceClient = localStorage.getItem('lbricol_force_client_mode') === 'true';
                 hasAdminRedirected = true;
-                router.push('/admin');
+                if (!forceClient) {
+                  router.push('/admin');
+                }
               }
             } else {
               // Initialize global user profile if new
@@ -963,14 +968,18 @@ const Home = () => {
 
           // 2. Real-time Bricoler Status + Role-based URL redirect
           const bricolerRef = doc(db, 'bricolers', user.uid);
-          let hasRedirected = false;
+          let hasRedirectedScroll = false;
           unsubscribeBricolerStatus = onSnapshot(bricolerRef, (snap) => {
             const isBricolerUser = snap.exists() && snap.data()?.isBricoler === true;
             setIsBricoler(isBricolerUser);
+
             // Smart redirect: send users to their dedicated URL on first load
-            if (!hasRedirected && typeof window !== 'undefined' && window.location.pathname === '/') {
-              hasRedirected = true;
-              if (isBricolerUser) {
+            // Only redirect if they haven't explicitly chosen to stay in client mode
+            if (!hasRedirectedScroll && typeof window !== 'undefined' && window.location.pathname === '/') {
+              const forceClient = localStorage.getItem('lbricol_force_client_mode') === 'true';
+              hasRedirectedScroll = true;
+
+              if (isBricolerUser && !forceClient) {
                 router.push('/provider');
                 return;
               }
@@ -2728,7 +2737,12 @@ const Home = () => {
                 }}
                 onBecomeBricoler={() => {
                   if (currentUser) {
-                    setShowMobileOnboarding(true);
+                    if (isBricoler) {
+                      localStorage.removeItem('lbricol_force_client_mode');
+                      window.location.href = '/provider';
+                    } else {
+                      setShowMobileOnboarding(true);
+                    }
                   } else {
                     setAuthIntent('bricoler');
                     setShowAuthPopup(true);
@@ -2749,6 +2763,7 @@ const Home = () => {
                   }}
                   onBecomeBricolerClick={() => {
                     if (currentUser && isBricoler) {
+                      localStorage.removeItem('lbricol_force_client_mode');
                       window.location.href = '/provider';
                     } else if (currentUser) {
                       setShowMobileOnboarding(true);

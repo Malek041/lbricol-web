@@ -4246,7 +4246,10 @@ export default function ProviderPage() {
                                     isAuthenticated={!!user}
                                     variant="provider"
                                     initialView="portfolio"
-                                    onBricolerAction={() => window.location.href = '/'}
+                                    onBricolerAction={() => {
+                                        localStorage.setItem('lbricol_force_client_mode', 'true');
+                                        window.location.href = '/';
+                                    }}
                                     onOpenLanguage={() => setShowLanguagePopup(true)}
                                     onLogin={() => handleGoogleLogin()}
                                     onLogout={() => auth.signOut()}
@@ -4406,7 +4409,10 @@ export default function ProviderPage() {
                                     isBricoler={true}
                                     isAuthenticated={!!user}
                                     variant="provider"
-                                    onBricolerAction={() => window.location.href = '/'}
+                                    onBricolerAction={() => {
+                                        localStorage.setItem('lbricol_force_client_mode', 'true');
+                                        window.location.href = '/';
+                                    }}
                                     onOpenLanguage={() => setShowLanguagePopup(true)}
                                     onLogin={() => handleGoogleLogin()}
                                     onLogout={() => auth.signOut()}

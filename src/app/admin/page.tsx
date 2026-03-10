@@ -98,7 +98,10 @@ export default function AdminPage() {
                             <div className="absolute top-1.5 right-1.5 w-3 h-3 bg-red-500 rounded-full border-2 border-[#FFC244]" />
                         </button>
                         <button
-                            onClick={() => router.push('/')}
+                            onClick={() => {
+                                localStorage.setItem('lbricol_force_client_mode', 'true');
+                                router.push('/');
+                            }}
                             className="w-10 h-10 bg-black/10 rounded-2xl flex items-center justify-center"
                         >
                             <Home size={20} className="text-black" />
