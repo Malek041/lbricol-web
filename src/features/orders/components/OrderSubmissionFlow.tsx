@@ -1493,13 +1493,18 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
     const uploadImageToStorage = async (file: Blob | File, path: string) => {
         const storageRef = ref(storage, path);
         try {
+            // Reduced timeout to 15s for better mobile experience. Compressed images are small.
             const result = await Promise.race([
                 uploadBytes(storageRef, file, { contentType: 'image/jpeg' }).then(() => getDownloadURL(storageRef)),
-                new Promise<string>((_, reject) => setTimeout(() => reject(new Error('IMAGE_UPLOAD_TIMEOUT')), 30000))
+                new Promise<string>((_, reject) => setTimeout(() => reject(new Error('IMAGE_UPLOAD_TIMEOUT')), 15000))
             ]);
             return result;
-        } catch (err) {
-            console.error("Firebase upload error:", err);
+        } catch (err: any) {
+            console.error("Firebase upload error at path:", path, err);
+            // If it's a permission error, it's likely the anonymous upload rule missing or auth token propagation lag.
+            if (err?.code === 'storage/unauthorized' || err?.message?.includes('unauthorized')) {
+                throw new Error('PERMISSION_DENIED');
+            }
             throw err;
         }
     };
@@ -2670,18 +2675,33 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
 
                                                                             setIsUploadingImages(true);
                                                                             try {
-                                                                                for (const file of filesToUpload) {
-                                                                                    // 1. Compress
-                                                                                    const blob = await compressImageFileToDataUrl(file, { maxWidth: 1000, maxHeight: 1000, quality: 0.5 }).then(dataUrlToBlob);
-                                                                                    // 2. Upload
-                                                                                    const uid = auth.currentUser?.uid || 'anonymous';
-                                                                                    const path = `orders/${uid}/${Date.now()}_${Math.random().toString(36).substr(2, 5)}.jpg`;
-                                                                                    const url = await uploadImageToStorage(blob, path);
-                                                                                    setImages(prev => [...prev, url]);
-                                                                                }
-                                                                            } catch (err) {
+                                                                                // Parallelize uploads for better speed
+                                                                                const uploadPromises = filesToUpload.map(async (file) => {
+                                                                                    try {
+                                                                                        const blob = await compressImageFileToDataUrl(file, { maxWidth: 1000, maxHeight: 1000, quality: 0.5 }).then(dataUrlToBlob);
+                                                                                        const uid = auth.currentUser?.uid || 'anonymous';
+                                                                                        const path = `orders/${uid}/${Date.now()}_${Math.random().toString(36).substr(2, 5)}.jpg`;
+                                                                                        const url = await uploadImageToStorage(blob, path);
+                                                                                        setImages(prev => [...prev, url]);
+                                                                                        return url;
+                                                                                    } catch (innerErr) {
+                                                                                        console.error("Single image upload failed:", innerErr);
+                                                                                        throw innerErr;
+                                                                                    }
+                                                                                });
+
+                                                                                await Promise.all(uploadPromises);
+                                                                            } catch (err: any) {
                                                                                 console.error("Failed to upload mission images:", err);
-                                                                                showToast({ variant: 'error', title: t({ en: 'Upload failed', fr: 'Échec du téléversement' }) });
+                                                                                const errorMsg = err.message === 'PERMISSION_DENIED'
+                                                                                    ? t({ en: 'Permission denied. Please try logging in.', fr: 'Accès refusé. Veuillez vous connecter.', ar: 'تم رفض الوصول. يرجى تسجيل الدخول.' })
+                                                                                    : t({ en: 'Cloud storage error. Please check your connection.', fr: 'Erreur de stockage. Vérifiez votre connexion.', ar: 'خطأ في التخزين. تحقق من الاتصال.' });
+
+                                                                                showToast({
+                                                                                    variant: 'error',
+                                                                                    title: t({ en: 'Upload failed', fr: 'Échec de l\'envoi', ar: 'فشل الرفع' }), // Matching user's "Echec d l'envoyer" (Échec de l'envoi)
+                                                                                    description: errorMsg
+                                                                                });
                                                                             } finally {
                                                                                 setIsUploadingImages(false);
                                                                             }
@@ -3195,12 +3215,16 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
 
                                                                             // 3. Store URL in state
                                                                             setBankReceipt(url);
-                                                                        } catch (err) {
+                                                                        } catch (err: any) {
                                                                             console.error("Failed to upload receipt image:", err);
+                                                                            const errorMsg = err.message === 'PERMISSION_DENIED'
+                                                                                ? t({ en: 'Permission denied. Please try logging in.', fr: 'Accès refusé. Veuillez vous connecter.', ar: 'تم رفض الوصول. يرجى تسجيل الدخول.' })
+                                                                                : t({ en: 'Could not upload receipt.', fr: 'Impossible de téléverser le reçu.', ar: 'تعذر رفع الإيصال.' });
+
                                                                             showToast({
                                                                                 variant: 'error',
-                                                                                title: t({ en: 'Upload failed', fr: 'Échec du téléversement', ar: 'فشل الرفع' }),
-                                                                                description: t({ en: 'Could not upload receipt.', fr: 'Impossible de téléverser le reçu.', ar: 'تعذر رفع الإيصال.' })
+                                                                                title: t({ en: 'Upload failed', fr: 'Échec de l\'envoi', ar: 'فشل الرفع' }),
+                                                                                description: errorMsg
                                                                             });
                                                                         } finally {
                                                                             setIsUploadingReceipt(false);
