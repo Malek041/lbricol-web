@@ -12,6 +12,7 @@ import {
 import { auth, db, storage } from '@/lib/firebase';
 import { collection, query, where, getDocs, Timestamp, serverTimestamp, doc, getDoc, setDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
 import { getServiceById, getSubServiceName, getServiceVector } from '@/config/services_config';
 import { MOROCCAN_CITIES, MOROCCAN_CITIES_AREAS } from '@/config/moroccan_areas';
 import { cn } from '@/lib/utils';
@@ -92,6 +93,7 @@ interface OrderSubmissionFlowProps {
     onSubmit: (data: any) => void;
     continueDraft?: DraftOrder | null;
     mode?: 'create' | 'edit';
+    onRequireLogin?: () => void;
 }
 
 export const calculateTaskPrice = (
@@ -676,7 +678,8 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
     initialArea,
     onSubmit,
     continueDraft,
-    mode
+    mode = 'create',
+    onRequireLogin
 }) => {
     const { t, language } = useLanguage();
     const { showToast } = useToast();
@@ -1925,10 +1928,22 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
             return;
         }
 
-        const user = auth.currentUser;
+        let user = auth.currentUser;
         if (!user) {
-            alert(t({ en: 'Please login to program your mission.', fr: 'Veuillez vous connecter pour programmer votre mission.', ar: 'يرجى تسجيل الدخول لبرمجة مهمتك.' }));
-            return;
+            try {
+                const provider = new GoogleAuthProvider();
+                const result = await signInWithPopup(auth, provider);
+                user = result.user;
+                if (!user) return; // if something went strictly wrong but no error thrown
+            } catch (err) {
+                console.error("Login failed or cancelled", err);
+                if (onRequireLogin) {
+                    onRequireLogin();
+                } else {
+                    alert(t({ en: 'Please login to program your mission.', fr: 'Veuillez vous connecter pour programmer votre mission.', ar: 'يرجى تسجيل الدخول لبرمجة مهمتك.' }));
+                }
+                return;
+            }
         }
 
         setIsSubmitting(true);

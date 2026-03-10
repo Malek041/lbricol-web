@@ -3498,6 +3498,7 @@ const Home = () => {
           initialArea={selectedArea}
           onSubmit={handleQuickOrderSubmit}
           continueDraft={selectedDraft}
+          onRequireLogin={() => setShowAuthPopup(true)}
         />
 
       </main>
