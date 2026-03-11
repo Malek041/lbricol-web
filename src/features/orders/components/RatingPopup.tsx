@@ -7,6 +7,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { db, auth } from '@/lib/firebase';
 import { doc, updateDoc, arrayUnion, increment, getDoc } from 'firebase/firestore';
 import { getServiceVector } from '@/config/services_config';
+import { writeCityIndex } from '@/lib/cityIndex';
 
 const cn = (...classes: (string | undefined | false | null)[]) => classes.filter(Boolean).join(' ');
 
@@ -119,6 +120,16 @@ const RatingPopup: React.FC<RatingPopupProps> = ({
                     rating: averageRating,
                     score: newScore,
                 });
+
+                // Update city_index (non-blocking)
+                if (data.city) {
+                    writeCityIndex(bricolerId, data.city, {
+                        ...data,
+                        rating: averageRating,
+                        numReviews: numReviews,
+                        score: newScore,
+                    } as any).catch(console.warn);
+                }
             } else {
                 await updateDoc(bricolerRef, {
                     reviews: arrayUnion(reviewData),

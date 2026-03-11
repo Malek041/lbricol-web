@@ -111,6 +111,7 @@ import {
     increment
 } from 'firebase/firestore';
 import { MOROCCAN_CITIES, MOROCCAN_CITIES_AREAS, SERVICE_TIER_RATES } from '@/config/moroccan_areas';
+import { writeCityIndex } from '@/lib/cityIndex';
 import SplashScreen from '@/components/layout/SplashScreen';
 import LanguagePreferencePopup from '@/features/onboarding/components/LanguagePreferencePopup';
 
@@ -591,6 +592,24 @@ export default function ProviderPage() {
             };
 
             await updateDoc(doc(db, 'bricolers', auth.currentUser.uid), updates);
+
+            // Keep city_index in sync (non-blocking)
+            writeCityIndex(auth.currentUser.uid, city || userData?.city || '', {
+                displayName: name,
+                whatsappNumber: whatsapp,
+                areas: selectedWorkAreas,
+                workAreas: selectedWorkAreas,
+                services: tempSelectedServices,
+                rating: (userData as any)?.rating || 0,
+                completedJobs: (userData as any)?.completedJobs || 0,
+                numReviews: (userData as any)?.numReviews || 0,
+                jobsDone: (userData as any)?.jobsDone || (userData as any)?.completedJobs || 0,
+                bio: (userData as any)?.bio || (userData as any)?.quickPitch || '',
+                isVerified: (userData as any)?.isVerified || false,
+                isActive: (userData as any)?.isActive !== false,
+                profilePhotoURL: (userData as any)?.profilePhotoURL || (userData as any)?.avatar,
+                routine: (userData as any)?.routine,
+            }).catch(console.warn);
 
             showToast({
                 variant: 'success',
@@ -1203,6 +1222,15 @@ export default function ProviderPage() {
                                 await updateDoc(bricolerRef, {
                                     completedJobs: increment(1)
                                 }).catch(console.error);
+
+                                // Update city_index (non-blocking)
+                                if (userData && job.city) {
+                                    writeCityIndex(job.bricolerId, job.city, {
+                                        ...userData,
+                                        completedJobs: (userData.completedJobs || 0) + 1,
+                                        jobsDone: (userData.jobsDone || userData.completedJobs || 0) + 1
+                                    }).catch(console.warn);
+                                }
                             }
                             console.log(`Auto-completed job ${job.id}`);
                         }
@@ -1282,7 +1310,6 @@ export default function ProviderPage() {
                 if (jobSnap.exists()) {
                     const jobData = jobSnap.data();
 
-                    // Increment Bricoler jobs on status change to 'done' or 'delivered'
                     if ((updates.status === 'done' || updates.status === 'delivered') &&
                         jobData.status !== 'done' && jobData.status !== 'delivered' && jobData.status !== updates.status) {
                         if (jobData.bricolerId) {
@@ -1290,6 +1317,15 @@ export default function ProviderPage() {
                             await updateDoc(bricolerRef, {
                                 completedJobs: increment(1)
                             }).catch(console.error);
+
+                            // Update city_index (non-blocking)
+                            if (userData && jobData.city) {
+                                writeCityIndex(jobData.bricolerId, jobData.city, {
+                                    ...userData,
+                                    completedJobs: (userData.completedJobs || 0) + 1,
+                                    jobsDone: (userData.jobsDone || userData.completedJobs || 0) + 1
+                                }).catch(console.warn);
+                            }
                         }
                     }
 

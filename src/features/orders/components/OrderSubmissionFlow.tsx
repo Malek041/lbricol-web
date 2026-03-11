@@ -10,7 +10,7 @@ import {
     Camera, RefreshCw
 } from 'lucide-react';
 import { auth, db, storage } from '@/lib/firebase';
-import { collection, query, where, getDocs, Timestamp, serverTimestamp, doc, getDoc, setDoc } from 'firebase/firestore';
+import { collection, query, where, getDocs, limit, Timestamp, serverTimestamp, doc, getDoc, setDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
 import { getServiceById, getSubServiceName, getServiceVector } from '@/config/services_config';
@@ -384,6 +384,25 @@ const BricolerCard = ({ bricoler, onSelect, onOpenProfile, isSelected, serviceNa
                             {effectiveJobs > 0 ? effectiveRating.toFixed(1) : t({ en: 'NEW', fr: 'NOUVEAU', ar: 'جديد' })}
                         </span>
                         {effectiveJobs > 0 && <span className="text-[12px] font-medium text-neutral-400">({effectiveJobs} {t({ en: 'reviews', fr: 'avis', ar: 'تقييمات' })})</span>}
+
+                        {/* Availability Badge */}
+                        {(() => {
+                            const today = new Date().toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
+                            const routine = bricoler.routine || {};
+                            const isAvailableToday = routine[today]?.active !== false; // Default to true if not set (legacy)
+
+                            if (isAvailableToday) {
+                                return (
+                                    <div className="flex items-center gap-1 ml-auto bg-[#E6F6F3] px-2 py-0.5 rounded-full border border-[#00A082]/10">
+                                        <div className="w-1.5 h-1.5 bg-[#00A082] rounded-full animate-pulse" />
+                                        <span className="text-[10px] font-black text-[#00A082] uppercase tracking-wider">
+                                            {t({ en: 'Available Today', fr: 'Dispo Aujourd\'hui', ar: 'متاح اليوم' })}
+                                        </span>
+                                    </div>
+                                );
+                            }
+                            return null;
+                        })()}
                     </div>
 
                     <div className="flex flex-col gap-0.5 mt-2">
@@ -691,6 +710,7 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
     const [taskSize, setTaskSize] = useState<string | null>(null);
     const [description, setDescription] = useState('');
     const [bricolers, setBricolers] = useState<Bricoler[]>([]);
+    const [fullSelectedProData, setFullSelectedProData] = useState<Bricoler | null>(null);
     const [isLoadingBricolers, setIsLoadingBricolers] = useState(false);
     const [selectedBricolerId, setSelectedBricolerId] = useState<string | null>(null);
     const [sortBy, setSortBy] = useState<'all' | 'rating'>('all');
@@ -1117,7 +1137,8 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
     }, [subStep1, serviceConfig, taskSize]);
 
     const activeTaskSize = serviceConfig.options.find(s => s.id === taskSize);
-    const selectedPro = bricolers.find(b => b.id === selectedBricolerId);
+    // Use full data if available, otherwise fallback to the index version
+    const selectedPro = fullSelectedProData || bricolers.find(b => b.id === selectedBricolerId);
 
     // Auto-scroll the day counter to the selected taskSize
     useEffect(() => {
@@ -1138,11 +1159,20 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
         }
     }, [subStep1, taskSize, service]);
 
-    // Fetch existing bookings for the selected pro to accurately show availability dots
+    // Fetch full profile and existing bookings for the selected pro to accurately show availability
     useEffect(() => {
-        if (selectedBricolerId) {
-            const fetchBookings = async () => {
+        if (selectedBricolerId && selectedBricolerId !== 'open') {
+            const fetchFullData = async () => {
+                setIsLoadingBookings(true);
                 try {
+                    // 1. Fetch full profile for calendarSlots
+                    const proRef = doc(db, 'bricolers', selectedBricolerId);
+                    const proSnap = await getDoc(proRef);
+                    if (proSnap.exists()) {
+                        setFullSelectedProData({ id: proSnap.id, ...proSnap.data() } as Bricoler);
+                    }
+
+                    // 2. Fetch bookings for conflicts
                     const q = query(
                         collection(db, 'jobs'),
                         where('bricolerId', '==', selectedBricolerId)
@@ -1151,10 +1181,15 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                     const jobs = snap.docs.map(d => ({ id: d.id, ...d.data() })) as any[];
                     setBookedOrders(jobs);
                 } catch (e) {
-                    console.error("Error fetching bricoler bookings:", e);
+                    console.error("Error fetching bricoler details:", e);
+                } finally {
+                    setIsLoadingBookings(false);
                 }
             };
-            fetchBookings();
+            fetchFullData();
+        } else {
+            setFullSelectedProData(null);
+            setBookedOrders([]);
         }
     }, [selectedBricolerId]);
 
@@ -1711,123 +1746,130 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
         if (!currentCity || !service) return;
         setIsLoadingBricolers(true);
 
-        try {
-            const baseCity = currentCity.trim();
+        const baseCity = currentCity.trim();
+        const targetSvc = getServiceById(service);
+        const targetServiceId = targetSvc?.id?.toLowerCase() || service?.toLowerCase() || '';
 
-            // Query active bricolers in this city
-            const q = query(
-                collection(db, 'bricolers'),
-                where('city', '==', baseCity)
+        // ── Shared: area normalization & service matching (used for both index + fallback) ──
+        const normalize = (s: string) => s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, "");
+        const isStrictCity = ['Casablanca', 'Marrakech'].includes(baseCity);
+
+        const areaMatches = (proAreas: string[]): boolean => {
+            if (!currentArea) return true;
+            const targetAreaNorm = normalize(currentArea);
+            const normalized = proAreas.map(a => normalize(String(a)));
+            return normalized.some(pa => pa.includes(targetAreaNorm) || targetAreaNorm.includes(pa))
+                || normalized.includes('all')
+                || normalized.includes('toute_la_ville');
+        };
+
+        const serviceMatches = (services: any[]): { matched: boolean; svcData: any } => {
+            const matchingService = services?.find((s: any) => {
+                const sId = typeof s === 'string' ? s : (s.categoryId || s.serviceId || '');
+                if (sId.toLowerCase() !== targetServiceId) return false;
+                if (typeof s === 'object' && s.isActive === false) return false;
+                if (subService) {
+                    if (typeof s === 'string') return true;
+                    const ssId = s.subServiceId || (s.subServices?.includes(subService) ? subService : null);
+                    if (!ssId) return false;
+                    return ssId.toLowerCase() === subService.toLowerCase() || (Array.isArray(s.subServices) && s.subServices.includes(subService));
+                }
+                if (service === 'tour_guide' && selectedLanguages.length > 0) {
+                    const bricolerLangs = s.spokenLanguages || (typeof s === 'object' ? s.languages : []) || [];
+                    if (!selectedLanguages.some(l => bricolerLangs.includes(l))) return false;
+                }
+                return true;
+            });
+            return { matched: !!matchingService, svcData: matchingService };
+        };
+
+        const buildBricoler = (docId: string, data: any, svcData: any, servesArea: boolean): Bricoler => ({
+            id: docId,
+            displayName: data.displayName || data.name || 'Bricoler',
+            photoURL: data.profilePhotoURL || data.avatar || data.photoURL,
+            rating: data.rating || 0,
+            completedJobs: data.completedJobs || 0,
+            hourlyRate: (typeof svcData === 'object' ? svcData.hourlyRate : null) || data.hourlyRate || 75,
+            quickPitch: (typeof svcData === 'object' ? svcData.pitch : null) || data.quickPitch,
+            city: data.city || baseCity,
+            areas: data.workAreas || data.areas || [],
+            isVerified: data.isVerified,
+            services: data.services || [],
+            routine: data.routine || {},
+            calendarSlots: data.calendarSlots || {},
+            availability: data.calendarSlots || {},
+            bio: data.bio,
+            glassCleaningEquipments: data.glassCleaningEquipments || [],
+            serviceEquipments: typeof svcData === 'object' ? svcData.equipments : [],
+            yearsOfExperience: (typeof svcData === 'object' ? svcData.experience : null) || data.yearsOfExperience || data.experience,
+            isActive: true,
+            reviews: data.reviews || [],
+            portfolio: data.portfolio || [],
+            errandsTransport: data.errandsTransport,
+            movingTransport: data.movingTransport,
+            whatsappNumber: data.whatsappNumber,
+            servesArea,
+        });
+
+        try {
+            // ── PRIMARY: Query the fast city_index (pre-sorted by matchScore) ──────────
+            const indexSnap = await getDocs(
+                query(
+                    collection(db, 'city_index', baseCity, 'providers'),
+                    where('isActive', '==', true),
+                    limit(50) // fetch top 50, then filter service-side for service match
+                )
             );
 
-            const snap = await getDocs(q);
-            const listMap = new Map<string, Bricoler>();
+            let results: Bricoler[] = [];
 
-            const targetSvc = getServiceById(service);
-            const targetServiceId = targetSvc?.id?.toLowerCase() || service?.toLowerCase() || '';
-
-            snap.docs.forEach(docSnap => {
-                const data = docSnap.data();
-
-                // 0. Only active bricolers
-                if (data.isActive !== true) return;
-
-                // 1. Area Matching
-                let servesArea = true;
-                if (currentArea) {
-                    const normalize = (s: string) => s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, "");
-                    const targetAreaNorm = normalize(currentArea);
-                    const proAreas = [...(data.workAreas || []), ...(data.areas || [])].map(a => normalize(String(a)));
-
-                    // Check if any pro area contains the target area or vice versa
-                    servesArea = proAreas.some(pa => pa.includes(targetAreaNorm) || targetAreaNorm.includes(pa)) || proAreas.includes('all') || proAreas.includes('toute_la_ville');
-
-                    // Small cities like Essaouira show all pros in city. 
-                    // Large cities remain strict to ensure proximity for the pro.
-                    const isStrictCity = ['Casablanca', 'Marrakech'].includes(baseCity);
+            if (indexSnap.size > 0) {
+                indexSnap.docs.forEach(docSnap => {
+                    const data = docSnap.data();
+                    const servesArea = areaMatches([...(data.workAreas || []), ...(data.areas || [])]);
                     if (!servesArea && isStrictCity) return;
-                }
-
-                // 2. Direct Service Category Matching
-                const matchingService = data.services?.find((s: any) => {
-                    // Support both categoryId (new) and serviceId (legacy)
-                    const sId = typeof s === 'string' ? s : (s.categoryId || s.serviceId || '');
-                    const catMatch = sId.toLowerCase() === targetServiceId;
-                    if (!catMatch) return false;
-
-                    // CHECK: Service must be Active (toggled on in portfolio)
-                    if (typeof s === 'object' && s.isActive === false) return false;
-
-                    // If sub-service is specified, verify it matches
-                    if (subService) {
-                        if (typeof s === 'string') return true; // Assume match for legacy string-only services
-                        const ssId = s.subServiceId || (s.subServices?.includes(subService) ? subService : null);
-                        if (!ssId) return false;
-                        return ssId.toLowerCase() === subService.toLowerCase() || (Array.isArray(s.subServices) && s.subServices.includes(subService));
+                    const { matched, svcData } = serviceMatches(data.services || []);
+                    if (matched) {
+                        results.push(buildBricoler(docSnap.id, data, svcData, servesArea));
                     }
-                    // 2.1 Language Matching for Tour Guide
-                    if (service === 'tour_guide' && selectedLanguages.length > 0) {
-                        const bricolerLangs = s.spokenLanguages || (typeof s === 'object' ? s.languages : []) || [];
-                        const hasLangMatch = selectedLanguages.some(l => bricolerLangs.includes(l));
-                        if (!hasLangMatch) return false;
-                    }
-
-                    return true;
                 });
 
-                if (matchingService) {
-                    listMap.set(docSnap.id, {
-                        id: docSnap.id,
-                        displayName: data.displayName || 'Bricoler',
-                        photoURL: data.profilePhotoURL || data.avatar || data.photoURL,
-                        rating: data.rating || 0,
-                        completedJobs: data.completedJobs || 0,
-                        hourlyRate: (typeof matchingService === 'object' ? matchingService.hourlyRate : null) || data.hourlyRate || 75,
-                        quickPitch: (typeof matchingService === 'object' ? matchingService.pitch : null) || data.quickPitch,
-                        city: data.city,
-                        areas: data.workAreas || data.areas || [],
-                        isVerified: data.isVerified,
-                        services: data.services || [],
-                        routine: data.routine || {},
-                        calendarSlots: data.calendarSlots || {},
-                        availability: data.calendarSlots || {}, // Legacy fallback
-                        bio: data.bio,
-                        glassCleaningEquipments: data.glassCleaningEquipments || [],
-                        serviceEquipments: typeof matchingService === 'object' ? matchingService.equipments : [],
-                        yearsOfExperience: (typeof matchingService === 'object' ? matchingService.experience : null) || data.yearsOfExperience || data.experience,
-                        isActive: true,
-                        reviews: data.reviews || [],
-                        portfolio: data.portfolio || [],
-                        errandsTransport: data.errandsTransport,
-                        movingTransport: data.movingTransport,
-                        whatsappNumber: data.whatsappNumber,
-                        servesArea: servesArea,
-                    });
-                }
-            });
+                // Sort: area first, then by pre-computed score fields
+                results.sort((a, b) => {
+                    if (a.servesArea && !b.servesArea) return -1;
+                    if (!a.servesArea && b.servesArea) return 1;
+                    const aScore = (a.rating || 0) * Math.log10((a.completedJobs || 0) + 2);
+                    const bScore = (b.rating || 0) * Math.log10((b.completedJobs || 0) + 2);
+                    return bScore - aScore;
+                });
 
-            // 4. Sorting & Prioritization
-            const sorted = Array.from(listMap.values()).sort((a, b) => {
-                // Priority 1: Area Coverage
-                if (a.servesArea && !b.servesArea) return -1;
-                if (!a.servesArea && b.servesArea) return 1;
-
-                // Priority 2: Rating & Expertise (Score)
-                const aRating = a.rating || 0;
-                const bRating = b.rating || 0;
-                const aJobs = a.completedJobs || 0;
-                const bJobs = b.completedJobs || 0;
-
-                const aScore = aRating * Math.log10(aJobs + 2);
-                const bScore = bRating * Math.log10(bJobs + 2);
-
-                return bScore - aScore;
-            });
-
-            setBricolers(sorted);
-            if (sorted.length > 0) {
-                playMatchSound();
+                results = results.slice(0, 20); // final hard cap
             }
+
+            // ── FALLBACK: If index is empty (cold start / not yet populated), use full scan ──
+            if (results.length === 0) {
+                console.info('[fetchBricolers] city_index empty, falling back to full scan for', baseCity);
+                const fallbackSnap = await getDocs(
+                    query(collection(db, 'bricolers'), where('city', '==', baseCity))
+                );
+                fallbackSnap.docs.forEach(docSnap => {
+                    const data = docSnap.data();
+                    if (data.isActive !== true) return;
+                    const servesArea = areaMatches([...(data.workAreas || []), ...(data.areas || [])]);
+                    if (!servesArea && isStrictCity) return;
+                    const { matched, svcData } = serviceMatches(data.services || []);
+                    if (matched) results.push(buildBricoler(docSnap.id, data, svcData, servesArea));
+                });
+                results.sort((a, b) => {
+                    if (a.servesArea && !b.servesArea) return -1;
+                    if (!a.servesArea && b.servesArea) return 1;
+                    return ((b.rating || 0) * Math.log10((b.completedJobs || 0) + 2))
+                        - ((a.rating || 0) * Math.log10((a.completedJobs || 0) + 2));
+                });
+            }
+
+            setBricolers(results);
+            if (results.length > 0) playMatchSound();
         } catch (err) {
             console.error("Error fetching bricolers:", err);
             setBricolers([]);

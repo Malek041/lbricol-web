@@ -28,6 +28,7 @@ import { FcGoogle } from 'react-icons/fc';
 import { getAllServices, getServiceVector, type ServiceConfig } from '@/config/services_config';
 import { MOROCCAN_CITIES, MOROCCAN_CITIES_AREAS, SERVICE_TIER_RATES } from '@/config/moroccan_areas';
 import { useToast } from '@/context/ToastContext';
+import { writeCityIndex } from '@/lib/cityIndex';
 import { useLanguage } from '@/context/LanguageContext';
 import SplashScreen from '@/components/layout/SplashScreen';
 import { useIsMobileViewport } from '@/lib/mobileOnly';
@@ -694,6 +695,25 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                 });
             }
 
+            // Write initial city_index entry so this Bricoler appears in search immediately (non-blocking)
+            if (selectedCity && user) {
+                writeCityIndex(user.uid, selectedCity, {
+                    displayName: bricolerData.name || bricolerData.displayName,
+                    profilePhotoURL: bricolerData.profilePhotoURL || bricolerData.avatar,
+                    rating: bricolerData.rating || 5.0,
+                    completedJobs: bricolerData.completedJobs || 0,
+                    numReviews: bricolerData.numReviews || 0,
+                    jobsDone: bricolerData.completedJobs || 0,
+                    bio: finalCategoryEntries[0]?.pitch || "",
+                    isVerified: bricolerData.isVerified || false,
+                    isActive: true,
+                    services: bricolerData.services || [],
+                    areas: selectedAreas || [],
+                    whatsappNumber: bricolerData.whatsappNumber,
+                    routine: bricolerData.routine,
+                }).catch(console.warn);
+            }
+
             // ── Upload images synchronously with clear status messages ─────────────────
             // Background uploads kept failing (IMAGE_UPLOAD_TIMEOUT) because base64 data
             // was being garbage-collected or the promise died after component unmount.
@@ -934,6 +954,25 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                 userType: 'bricoler',
                 photoURL: finalProfilePhotoUrl || updateData.photoURL || ""
             }, { merge: true });
+
+            // Keep city_index in sync (non-blocking)
+            if (selectedCity) {
+                writeCityIndex(user.uid, selectedCity, {
+                    displayName: existingData.name || existingData.displayName,
+                    profilePhotoURL: finalProfilePhotoUrl,
+                    rating: existingData.rating || 0,
+                    completedJobs: existingData.completedJobs || 0,
+                    numReviews: existingData.numReviews || 0,
+                    jobsDone: existingData.jobsDone || existingData.completedJobs || 0,
+                    bio: existingData.bio,
+                    isVerified: existingData.isVerified || false,
+                    isActive: true,
+                    services: finalCategoryEntries,
+                    areas: existingData.workAreas || existingData.areas || [],
+                    whatsappNumber: existingData.whatsappNumber,
+                    routine: existingData.routine,
+                }).catch(console.warn);
+            }
 
             // Note: Media uploads are now disabled. The initial setDoc already saved all information.
 
