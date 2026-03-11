@@ -130,8 +130,11 @@ interface UserData {
     rating?: number;
     completedJobs?: number;
     jobsDone?: number;
+    isVerified?: boolean;
     isActive?: boolean;
     workAreas?: string[];
+    quickPitch?: string;
+    bio?: string;
     calendarSlots?: Record<string, { from: string; to: string }[]>;
     photoURL?: string; // Added photoURL to UserData
     avatar?: string;

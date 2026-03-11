@@ -621,6 +621,14 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                 bricolerBankCardName: (bricolerBankCardName || '').trim(),
                 ribIBAN: (ribIBAN || '').trim(),
                 services: finalCategoryEntries,
+                serviceIds: [...new Set(finalCategoryEntries.map((s: any) =>
+                    (typeof s === 'string' ? s : (s.categoryId || s.serviceId || s.id || '')).toLowerCase()
+                ).filter(Boolean))],
+                subServiceIds: [...new Set(finalCategoryEntries.map((s: any) => {
+                    const ssId = s.subServiceId || '';
+                    const ssList = Array.isArray(s.subServices) ? s.subServices : [];
+                    return [ssId, ...ssList];
+                }).flat().map(id => String(id).toLowerCase()).filter(Boolean))],
                 portfolio: allPortfolioUrls,
                 images: allPortfolioUrls,
                 experience: finalCategoryEntries[0]?.experience || "",

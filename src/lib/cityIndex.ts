@@ -29,13 +29,15 @@ export interface CityIndexEntry {
     areas: string[];
     workAreas?: string[];
     routine?: Record<string, { active: boolean; from: string; to: string }>;
-    quickPitch?: string;
-    bio?: string;
+    quickPitch?: string | null;
+    bio?: string | null;
     numReviews?: number;
     jobsDone?: number;
-    errandsTransport?: string;
-    movingTransport?: string;
-    whatsappNumber?: string;
+    errandsTransport?: string | null;
+    movingTransport?: string | null;
+    whatsappNumber?: string | null;
+    serviceIds?: string[];      // Flat array of category IDs for future Firestore filtering
+    subServiceIds?: string[];   // Flat array of subservice IDs
     matchScore: number;    // pre-baked for Firestore orderBy
     updatedAt: number;
 }
@@ -72,7 +74,7 @@ export const writeCityIndex = async (
     bricolerId: string,
     city: string,
     data: {
-        displayName?: string;
+        displayName?: string | null;
         profilePhotoURL?: string | null;
         avatar?: string | null;
         photoURL?: string | null;
@@ -85,13 +87,15 @@ export const writeCityIndex = async (
         areas?: string[];
         workAreas?: string[];
         routine?: Record<string, { active: boolean; from: string; to: string }>;
-        quickPitch?: string;
-        bio?: string;
+        quickPitch?: string | null;
+        bio?: string | null;
         numReviews?: number;
+        name?: string | null;
         jobsDone?: number;
-        errandsTransport?: string;
-        movingTransport?: string;
-        whatsappNumber?: string;
+        errandsTransport?: string | null;
+        movingTransport?: string | null;
+        whatsappNumber?: string | null;
+        [key: string]: any;
     }
 ): Promise<void> => {
     if (!bricolerId || !city) return;
@@ -100,15 +104,29 @@ export const writeCityIndex = async (
     const completedJobs = data.completedJobs || 0;
     const isVerified = data.isVerified || false;
 
+    const services = data.services || [];
+    const serviceIds = [...new Set(services.map((s: any) =>
+        (typeof s === 'string' ? s : (s.categoryId || s.serviceId || s.id || '')).toLowerCase()
+    ).filter(Boolean))];
+
+    const subServiceIds = [...new Set(services.map((s: any) => {
+        if (typeof s === 'string') return [];
+        const ssId = s.subServiceId || '';
+        const ssList = Array.isArray(s.subServices) ? s.subServices : [];
+        return [ssId, ...ssList];
+    }).flat().map(id => String(id).toLowerCase()).filter(Boolean))];
+
     const entry: CityIndexEntry = {
-        displayName: data.displayName || 'Bricoler',
+        displayName: data.displayName || data.name || 'Bricoler',
         photoURL: data.profilePhotoURL || data.avatar || data.photoURL || null,
         rating,
         completedJobs,
         hourlyRate: data.hourlyRate || 75,
         isVerified,
         isActive: data.isActive !== false, // default true
-        services: data.services || [],
+        services,
+        serviceIds,
+        subServiceIds,
         areas: data.areas || data.workAreas || [],
         workAreas: data.workAreas || data.areas || [],
         routine: data.routine || {},

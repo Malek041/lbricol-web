@@ -1346,11 +1346,7 @@ const Home = () => {
   const handleLanguageSelect = (lang: 'en' | 'fr' | 'ar') => {
     setLanguage(lang);
     setShowLanguagePopup(false);
-    
-    const onboardingShown = localStorage.getItem('client_onboarding_shown');
-    if (!onboardingShown) {
-      setShowClientOnboarding(true);
-    } else if (!selectedCity && !localStorage.getItem('lbricol_preferred_city')) {
+    if (!selectedCity) {
       setShowCityPopup(true);
     } else {
       setActiveSearchSection('what');
@@ -2751,9 +2747,6 @@ const Home = () => {
                 onOnboardingComplete={() => {
                   localStorage.setItem('client_onboarding_shown', 'true');
                   setShowClientOnboarding(false);
-                  if (!selectedCity && !localStorage.getItem('lbricol_preferred_city')) {
-                    setShowCityPopup(true);
-                  }
                 }}
                 onBecomeBricoler={() => {
                   if (currentUser) {

@@ -1625,7 +1625,7 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
         const daysNeeded = isDailyService ? Math.ceil(baseDuration) : 1;
 
         // Handle multi-day bookings (e.g. Private Driver 2+ days)
-        // For multi-day tasks, a slot is available on 'date' if the provider is free 
+        // For multi-day tasks, a slot is available on the 'date' if the provider is free
         // for the FULL daily block (e.g. 8h) on every day of the sequence.
         if (isDailyService && daysNeeded > 1) {
             const startDate = parseISO(dateStr);
@@ -1757,10 +1757,25 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
         const areaMatches = (proAreas: string[]): boolean => {
             if (!currentArea) return true;
             const targetAreaNorm = normalize(currentArea);
+
+            // If client selected "All the city", everything matches
+            if (targetAreaNorm === 'toutelaville' || targetAreaNorm === 'all' || targetAreaNorm === 'toutemaghrib' || targetAreaNorm === 'toute_la_ville') return true;
+
             const normalized = proAreas.map(a => normalize(String(a)));
-            return normalized.some(pa => pa.includes(targetAreaNorm) || targetAreaNorm.includes(pa))
-                || normalized.includes('all')
-                || normalized.includes('toute_la_ville');
+
+            // If Bricoler serves "All the city", they match any area
+            if (normalized.some(pa =>
+                pa === 'all' ||
+                pa === 'toutelaville' ||
+                pa === 'toute_la_ville' ||
+                pa === 'tout_marrakech' ||
+                pa === 'tout_casablanca' ||
+                pa === 'toutemaroc'
+            )) {
+                return true;
+            }
+
+            return normalized.some(pa => pa.includes(targetAreaNorm) || targetAreaNorm.includes(pa));
         };
 
         const serviceMatches = (services: any[]): { matched: boolean; svcData: any } => {
@@ -1811,50 +1826,55 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
             servesArea,
         });
 
+        let results: Bricoler[] = [];
+
         try {
             // ── PRIMARY: Query the fast city_index (pre-sorted by matchScore) ──────────
-            const indexSnap = await getDocs(
-                query(
-                    collection(db, 'city_index', baseCity, 'providers'),
-                    where('isActive', '==', true),
-                    limit(50) // fetch top 50, then filter service-side for service match
-                )
-            );
+            // Wrap in its own try/catch to ensure fallback always runs if this fails
+            try {
+                const indexSnap = await getDocs(
+                    query(
+                        collection(db, 'city_index', baseCity, 'providers'),
+                        where('isActive', '==', true),
+                        limit(100) // Increased limit to find more matches during server-side filtering
+                    )
+                );
 
-            let results: Bricoler[] = [];
+                if (indexSnap.size > 0) {
+                    indexSnap.docs.forEach(docSnap => {
+                        const data = docSnap.data();
+                        const servesArea = areaMatches([...(data.workAreas || []), ...(data.areas || [])]);
+                        if (!servesArea && isStrictCity) return;
+                        const { matched, svcData } = serviceMatches(data.services || []);
+                        if (matched) {
+                            results.push(buildBricoler(docSnap.id, data, svcData, servesArea));
+                        }
+                    });
 
-            if (indexSnap.size > 0) {
-                indexSnap.docs.forEach(docSnap => {
-                    const data = docSnap.data();
-                    const servesArea = areaMatches([...(data.workAreas || []), ...(data.areas || [])]);
-                    if (!servesArea && isStrictCity) return;
-                    const { matched, svcData } = serviceMatches(data.services || []);
-                    if (matched) {
-                        results.push(buildBricoler(docSnap.id, data, svcData, servesArea));
-                    }
-                });
+                    // Sort: area first, then by pre-computed score fields
+                    results.sort((a, b) => {
+                        if (a.servesArea && !b.servesArea) return -1;
+                        if (!a.servesArea && b.servesArea) return 1;
+                        const aScore = (a.rating || 0) * Math.log10((a.completedJobs || 0) + 2);
+                        const bScore = (b.rating || 0) * Math.log10((b.completedJobs || 0) + 2);
+                        return bScore - aScore;
+                    });
 
-                // Sort: area first, then by pre-computed score fields
-                results.sort((a, b) => {
-                    if (a.servesArea && !b.servesArea) return -1;
-                    if (!a.servesArea && b.servesArea) return 1;
-                    const aScore = (a.rating || 0) * Math.log10((a.completedJobs || 0) + 2);
-                    const bScore = (b.rating || 0) * Math.log10((b.completedJobs || 0) + 2);
-                    return bScore - aScore;
-                });
-
-                results = results.slice(0, 20); // final hard cap
+                    results = results.slice(0, 30); // final cap
+                }
+            } catch (indexErr) {
+                console.warn("[fetchBricolers] city_index query failed, will use fallback:", indexErr);
             }
 
-            // ── FALLBACK: If index is empty (cold start / not yet populated), use full scan ──
+            // ── FALLBACK: If index found nothing or failed, use full scan ──
             if (results.length === 0) {
-                console.info('[fetchBricolers] city_index empty, falling back to full scan for', baseCity);
+                console.info('[fetchBricolers] Index returned 0 matches, scanning full bricolers collection for', baseCity);
                 const fallbackSnap = await getDocs(
                     query(collection(db, 'bricolers'), where('city', '==', baseCity))
                 );
                 fallbackSnap.docs.forEach(docSnap => {
                     const data = docSnap.data();
-                    if (data.isActive !== true) return;
+                    if (data.isActive === false) return; // Lenient: skip ONLY if explicitly false
                     const servesArea = areaMatches([...(data.workAreas || []), ...(data.areas || [])]);
                     if (!servesArea && isStrictCity) return;
                     const { matched, svcData } = serviceMatches(data.services || []);
@@ -1870,7 +1890,7 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
 
             setBricolers(results);
             if (results.length > 0) playMatchSound();
-        } catch (err) {
+        } catch (err: any) {
             console.error("Error fetching bricolers:", err);
             setBricolers([]);
         } finally {
@@ -2278,13 +2298,30 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                                                             </div>
                                                         </motion.button>
                                                     )}
+                                                    {/* "All the city" option for clients to see everyone in the city */}
+                                                    <motion.button
+                                                        initial={{ opacity: 0, y: 10 }}
+                                                        animate={{ opacity: 1, y: 0 }}
+                                                        transition={{ delay: 0 }}
+                                                        onClick={() => { setTempArea('Toute la ville'); handleLocationSave(tempCity, 'Toute la ville'); }}
+                                                        className="w-full text-left py-4 px-1 active:bg-neutral-50 transition-colors border-b border-neutral-100 flex items-center justify-between group"
+                                                    >
+                                                        <div>
+                                                            <p className="text-[17px] font-black text-[#00A082]">{t({ en: 'All the city', fr: 'Toute la ville', ar: 'كل المدينة' })}</p>
+                                                            <p className="text-[13px] font-semibold text-neutral-400 mt-0.5">{tempCity}, {t({ en: 'Morocco', fr: 'Maroc', ar: 'المغرب' })}</p>
+                                                        </div>
+                                                        <div className="w-8 h-8 rounded-full bg-[#00A082]/10 flex items-center justify-center opacity-0 group-active:opacity-100 transition-opacity">
+                                                            <Check size={16} className="text-[#00A082]" />
+                                                        </div>
+                                                    </motion.button>
+
                                                     {filteredAreas.map((area, idx) => (
                                                         <motion.button
                                                             key={area}
                                                             initial={{ opacity: 0, y: 10 }}
                                                             animate={{ opacity: 1, y: 0 }}
                                                             exit={{ opacity: 0, scale: 0.95 }}
-                                                            transition={{ delay: Math.min(idx * 0.03, 0.3) }}
+                                                            transition={{ delay: Math.min((idx + 1) * 0.03, 0.3) }}
                                                             onClick={() => { setTempArea(area); handleLocationSave(tempCity, area); }}
                                                             className="w-full text-left py-4 px-1 active:bg-neutral-50 transition-colors border-b border-neutral-50 last:border-0"
                                                         >
