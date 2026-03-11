@@ -494,7 +494,8 @@ const Home = () => {
 
     // NEW: Check for Client Onboarding
     const onboardingShown = localStorage.getItem('client_onboarding_shown');
-    if (!onboardingShown) {
+    const savedLang = localStorage.getItem('lbricol_language');
+    if (!onboardingShown && savedLang) {
       setShowClientOnboarding(true);
     }
 
@@ -3508,7 +3509,10 @@ const Home = () => {
           isOpen={showLanguagePopup}
           onClose={() => {
             setShowLanguagePopup(false);
-            if (!selectedCity && !localStorage.getItem('lbricol_preferred_city')) {
+            const onboardingShown = localStorage.getItem('client_onboarding_shown');
+            if (!onboardingShown) {
+              setShowClientOnboarding(true);
+            } else if (!selectedCity && !localStorage.getItem('lbricol_preferred_city')) {
               setShowCityPopup(true);
             }
           }}
