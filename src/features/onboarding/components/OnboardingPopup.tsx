@@ -3,7 +3,7 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-    X, Check, CheckCircle2, Search, ChevronLeft, ChevronRight, FileText, Info, Plus, Minus, MapPin, ArrowRight, TrendingUp, User, Wrench, Save, Star, Key, Sparkles, Image
+    X, Check, CheckCircle2, Search, ChevronLeft, ChevronRight, FileText, Info, Plus, Minus, MapPin, ArrowRight, TrendingUp, User, Wrench, Save, Star, Key, Sparkles, Image, Globe
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { auth, db, storage } from '@/lib/firebase';
@@ -198,7 +198,7 @@ const normalizeImageList = (value: any): string[] => {
 const OnboardingPopup = (props: OnboardingPopupProps) => {
     const { isOpen, onClose, onComplete, mode = 'onboarding', initialCategory, userData } = props;
     const { showToast } = useToast();
-    const { t } = useLanguage();
+    const { t, language, setLanguage } = useLanguage();
     const isMobile = useIsMobileViewport(968);
 
     // ── Data ────────────────────────────────────────────────────────────────
@@ -301,6 +301,7 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
             ];
         }
         const baseSteps = [
+            { id: 'language', label: t({ en: 'Language', fr: 'Langue', ar: 'اللغة' }) },
             { id: 'activation', label: t({ en: 'Activation', fr: 'Activation', ar: 'تفعيل' }) },
             { id: 'services', label: t({ en: 'Services', fr: 'Services', ar: 'الخدمات' }) },
             { id: 'service_details', label: t({ en: 'Details', fr: 'Détails', ar: 'التفاصيل' }) },
@@ -987,6 +988,7 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
         }
     };
     const canGoNext = () => {
+        if (step === 'language') return true;
         if (step === 'activation') return hasCode === false || (hasCode === true && localUserData !== null);
         if (step === 'services') return selectedSubServices.length > 0;
         if (step === 'service_details') return currentEntryValid(currentCatEntry);
@@ -1374,6 +1376,71 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                         {/* Content */}
                         <div ref={scrollContainerRef} className="flex-1 overflow-y-auto w-full relative z-[1]" style={{ paddingBottom: '70px', scrollbarWidth: 'none' }}>
                             <AnimatePresence mode="wait" custom={direction}>
+                                {/* ── STEP: Language Selection ── */}
+                                {step === 'language' && (
+                                    <motion.div key="language" custom={direction} variants={slideVariants} initial="enter" animate="center" exit="exit" className="p-6 md:p-10 space-y-8">
+                                        <motion.div variants={itemVariants} initial="hidden" animate="show" className="space-y-4">
+                                            <div className="w-16 h-16 bg-[#00A082]/10 rounded-3xl flex items-center justify-center text-[#00A082]">
+                                                <Globe size={32} />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <h2 className="text-2xl md:text-3xl font-bold text-neutral-900 tracking-tight">
+                                                    {t({ en: 'Choose your language', fr: 'Choisissez votre langue', ar: 'اختر لغتك' })}
+                                                </h2>
+                                                <p className="text-neutral-500 text-[15px] font-medium leading-relaxed">
+                                                    {t({ en: 'Select your preferred language to continue.', fr: 'Sélectionnez votre langue préférée pour continuer.', ar: 'اختر لغتك المفضلة للمتابعة.' })}
+                                                </p>
+                                            </div>
+                                        </motion.div>
+
+                                        <div className="grid grid-cols-1 gap-4">
+                                            {[
+                                                { id: 'fr', label: 'Français', flag: '🇫🇷', sub: 'Préféré au Maroc' },
+                                                { id: 'ar', label: 'العربية', flag: '🇲🇦', sub: 'اللغة الرسمية' },
+                                                { id: 'en', label: 'English', flag: '🇺🇸', sub: 'International' },
+                                            ].map((lang) => (
+                                                <motion.button
+                                                    key={lang.id}
+                                                    whileTap={{ scale: 0.98 }}
+                                                    onClick={() => {
+                                                        setLanguage(lang.id as any);
+                                                        // Automatically go next for high speed onboarding
+                                                        setTimeout(goNext, 300);
+                                                    }}
+                                                    className={cn(
+                                                        "group flex items-center justify-between p-6 rounded-[24px] border-2 transition-all",
+                                                        language === lang.id
+                                                            ? "border-[#008C74] bg-[#E6F6F2] shadow-sm"
+                                                            : "border-neutral-100 hover:border-neutral-200 bg-white"
+                                                    )}
+                                                >
+                                                    <div className="flex items-center gap-4">
+                                                        <div className={cn(
+                                                            "w-12 h-12 rounded-2xl flex items-center justify-center text-2xl shadow-sm transition-transform group-hover:scale-110",
+                                                            language === lang.id ? "bg-[#00A082] text-white" : "bg-neutral-50"
+                                                        )}>
+                                                            {lang.flag}
+                                                        </div>
+                                                        <div className="text-left">
+                                                            <div className={cn("text-lg font-bold", language === lang.id ? "text-[#008C74]" : "text-neutral-900")}>
+                                                                {lang.label}
+                                                            </div>
+                                                            <div className="text-sm text-neutral-400 font-medium">
+                                                                {lang.sub}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    {language === lang.id && (
+                                                        <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className="w-8 h-8 rounded-full bg-[#00A082] flex items-center justify-center text-white">
+                                                            <Check size={18} strokeWidth={3} />
+                                                        </motion.div>
+                                                    )}
+                                                </motion.button>
+                                            ))}
+                                        </div>
+                                    </motion.div>
+                                )}
+
                                 {/* ── STEP: Activation Code ── */}
                                 {step === 'activation' && (
                                     <motion.div key="activation" custom={direction} variants={slideVariants} initial="enter" animate="center" exit="exit" className="p-6 md:p-10 space-y-8">
