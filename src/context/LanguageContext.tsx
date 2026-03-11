@@ -1138,6 +1138,8 @@ export const LanguageProvider = ({ children }: { children: ReactNode }) => {
     }, []);
 
     React.useEffect(() => {
+        localStorage.setItem('lbricol_language', language);
+
         const root = document.documentElement;
         const rtl = language === 'ar';
 
@@ -1148,7 +1150,6 @@ export const LanguageProvider = ({ children }: { children: ReactNode }) => {
     }, [language]);
 
     const handleSetLanguage = (lang: Language) => {
-        localStorage.setItem('lbricol_language', lang);
         setLanguage(lang);
     };
 

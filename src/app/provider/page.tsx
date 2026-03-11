@@ -129,6 +129,7 @@ interface UserData {
 
     rating?: number;
     completedJobs?: number;
+    jobsDone?: number;
     isActive?: boolean;
     workAreas?: string[];
     calendarSlots?: Record<string, { from: string; to: string }[]>;

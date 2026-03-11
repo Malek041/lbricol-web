@@ -494,7 +494,6 @@ const Home = () => {
 
     // NEW: Check for Client Onboarding
     const onboardingShown = localStorage.getItem('client_onboarding_shown');
-    const savedLang = localStorage.getItem('lbricol_language');
     if (!onboardingShown && savedLang) {
       setShowClientOnboarding(true);
     }
@@ -1347,7 +1346,11 @@ const Home = () => {
   const handleLanguageSelect = (lang: 'en' | 'fr' | 'ar') => {
     setLanguage(lang);
     setShowLanguagePopup(false);
-    if (!selectedCity) {
+    
+    const onboardingShown = localStorage.getItem('client_onboarding_shown');
+    if (!onboardingShown) {
+      setShowClientOnboarding(true);
+    } else if (!selectedCity && !localStorage.getItem('lbricol_preferred_city')) {
       setShowCityPopup(true);
     } else {
       setActiveSearchSection('what');
@@ -2748,6 +2751,9 @@ const Home = () => {
                 onOnboardingComplete={() => {
                   localStorage.setItem('client_onboarding_shown', 'true');
                   setShowClientOnboarding(false);
+                  if (!selectedCity && !localStorage.getItem('lbricol_preferred_city')) {
+                    setShowCityPopup(true);
+                  }
                 }}
                 onBecomeBricoler={() => {
                   if (currentUser) {
