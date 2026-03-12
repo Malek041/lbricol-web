@@ -97,6 +97,20 @@ interface OrderSubmissionFlowProps {
     onRequireLogin?: () => void;
 }
 
+// ── Pricing Logic Helpers ──────────────────────────────────────────────────
+
+export const getServiceSubCoefficient = (serviceId: string, subService: string | null | undefined): number => {
+    if (serviceId === 'cleaning') {
+        const sub = (subService || '').toLowerCase();
+        if (sub.includes('airbnb') || sub.includes('hospitality')) return 1.0;
+        if (sub.includes('family')) return 1.5;
+        if (sub.includes('deep')) return 2.0;
+        if (sub.includes('car')) return 1.0;
+        if (sub.includes('end_of_tenancy') || sub.includes('empty')) return 2.5;
+    }
+    return 1.0;
+};
+
 export const calculateTaskPrice = (
     hourlyRate: number,
     taskSize: string | null,
@@ -114,7 +128,8 @@ export const calculateTaskPrice = (
         (serviceId === 'cooking' && activeOption?.id && !['small', 'medium', 'large', 'dishes', 'pastries', 'combo', 'shopping', 'educational', 'full', 'other'].includes(activeOption.id)) ||
         (serviceId === 'cleaning' && subService && !subService.toLowerCase().includes('car'));
 
-    let basePrice = hourlyRate * duration * coefficient;
+    const subCoeff = getServiceSubCoefficient(serviceId, subService);
+    let basePrice = hourlyRate * duration * coefficient * subCoeff;
 
     if (serviceId === 'errands') {
         const option = options.find((o: any) => o.id === taskSize);
@@ -146,8 +161,11 @@ export const calculateTaskPrice = (
         basePrice = basePrice * multiplier;
     } else if (serviceId === 'cleaning') {
         let multiplier = 1;
-        if (duration >= 6) multiplier = 0.9;
-        else if (duration >= 4) multiplier = 0.95;
+        // Use subCoeff * duration as the "effective time" for tier discounts
+        const effectiveTime = duration * subCoeff;
+        if (effectiveTime >= 8) multiplier = 0.85;
+        else if (effectiveTime >= 6) multiplier = 0.9;
+        else if (effectiveTime >= 4) multiplier = 0.95;
         basePrice = basePrice * multiplier;
     } else if (serviceId === 'electricity' || (serviceId === 'cooking' && ['dishes', 'pastries', 'combo', 'shopping', 'educational', 'full', 'other'].includes(taskSize || ''))) {
         basePrice = hourlyRate * duration * coefficient;
@@ -799,36 +817,78 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
             case 'cleaning': {
                 const subKey = subService?.toLowerCase() || '';
                 const isCarRelated = subKey.includes('car');
+                const isDetailing = subKey.includes('detail');
+                const subCoeff = getServiceSubCoefficient('cleaning', subService);
                 
-                if (!isCarRelated) {
+                if (isCarRelated) {
                     return {
-                        title: t({ en: "How many rooms to clean?", fr: "Combien de chambres à nettoyer ?", ar: "كم عدد الغرف للتنظيف؟" }),
+                        title: t({ en: "What is your car size?", fr: "Quelle est la taille de la voiture ?", ar: "ما هو حجم السيارة؟" }),
                         isDayCounter: true,
-                        swipeText: t({ en: "Swipe to define exactly how many rooms you need.", fr: "Faites défiler pour définir le nombre exact de chambres.", ar: "قم بالتمرير لتحديد عدد الغرف بالضبط." }),
+                        swipeText: t({ en: "Swipe to select vehicle category.", fr: "Faites défiler pour choisir le type.", ar: "مرر لاختيار نوع السيارة." }),
                         defaultDays: 1,
-                        options: Array.from({ length: 12 }, (_, i) => ({
+                        options: [
+                            { 
+                                id: 'compact', 
+                                duration: isDetailing ? 3 : 0.5, 
+                                label: { en: 'Compact', fr: 'Citadine', ar: 'صغيرة' }, 
+                                subLabel: { en: 'CAR SIZE', fr: 'TAILLE', ar: 'حجم السيارة' }, 
+                                estTime: { en: isDetailing ? '3h' : '30m', fr: isDetailing ? '3h' : '30m', ar: isDetailing ? '3 ساعات' : '30 دقيقة' },
+                                desc: { en: '', fr: '', ar: '' },
+                                icon: '' 
+                            },
+                            { 
+                                id: 'standard', 
+                                duration: isDetailing ? 4.5 : 0.75, 
+                                label: { en: 'Sedan', fr: 'Berline', ar: 'سيدان' }, 
+                                subLabel: { en: 'CAR SIZE', fr: 'TAILLE', ar: 'حجم السيارة' }, 
+                                estTime: { en: isDetailing ? '4.5h' : '45m', fr: isDetailing ? '4.5h' : '45m', ar: isDetailing ? '4.5 ساعات' : '45 دقيقة' },
+                                desc: { en: '', fr: '', ar: '' },
+                                icon: ''
+                            },
+                            { 
+                                id: 'suv', 
+                                duration: isDetailing ? 6 : 1, 
+                                label: { en: 'SUV/4x4', fr: 'SUV/4x4', ar: 'دفع رباعي' }, 
+                                subLabel: { en: 'CAR SIZE', fr: 'TAILLE', ar: 'حجم السيارة' }, 
+                                estTime: { en: isDetailing ? '6h' : '1h', fr: isDetailing ? '6h' : '1h', ar: isDetailing ? '6 ساعات' : 'ساعة واحدة' },
+                                desc: { en: '', fr: '', ar: '' },
+                                icon: ''
+                            },
+                            { 
+                                id: 'van', 
+                                duration: isDetailing ? 8 : 1.5, 
+                                label: { en: 'Large/Van', fr: 'Grand/Van', ar: 'كبيرة' }, 
+                                subLabel: { en: 'CAR SIZE', fr: 'TAILLE', ar: 'حجم السيارة' }, 
+                                estTime: { en: isDetailing ? '8h' : '1.5h', fr: isDetailing ? '8h' : '1.5h', ar: isDetailing ? '8 ساعات' : '1.5 ساعة' },
+                                desc: { en: '', fr: '', ar: '' },
+                                icon: ''
+                            },
+                        ]
+                    };
+                }
+                
+                return {
+                    title: t({ en: "How many rooms to clean?", fr: "Combien de chambres à nettoyer ?", ar: "كم عدد الغرف للتنظيف؟" }),
+                    isDayCounter: true,
+                    swipeText: t({ en: "Swipe to define exactly how many rooms you need.", fr: "Faites défiler pour définir le nombre exact de chambres.", ar: "قم بالتمرير لتحديد عدد الغرف بالضبط." }),
+                    defaultDays: 1,
+                    options: Array.from({ length: 12 }, (_, i) => {
+                        const baseRoomDuration = i + 2;
+                        const totalTime = baseRoomDuration * subCoeff;
+                        return {
                             id: String(i + 1),
-                            duration: i + 2, // 2h base + 1h per additional room
+                            duration: baseRoomDuration,
                             label: { en: String(i + 1), fr: String(i + 1), ar: String(i + 1) },
                             subLabel: {
                                 en: i === 0 ? 'ROOM' : 'ROOMS',
                                 fr: i === 0 ? 'CHAMBRE' : 'CHAMBRES',
                                 ar: i === 0 ? 'غرفة' : 'غرف'
                             },
-                            estTime: { en: `Est: ${i + 2}h`, fr: `Est: ${i + 2}h`, ar: `حوالي ${i + 2} ساعات` },
+                            estTime: { en: `Est: ${totalTime}h`, fr: `Est: ${totalTime}h`, ar: `حوالي ${totalTime} ساعات` },
                             desc: { en: '', fr: '', ar: '' },
                             icon: ''
-                        }))
-                    };
-                }
-                
-                return {
-                    title: t({ en: "Which service level do you need?", fr: "Quel niveau de service ?", ar: "ما هو مستوى الخدمة؟" }),
-                    options: [
-                        { id: 'small', duration: 1, label: { en: 'Exterior Wash', fr: 'Lavage Extérieur', ar: 'غسيل خارجي' }, estTime: { en: 'Est: 1 hr', fr: 'Est: 1h', ar: 'ساعة واحدة' }, desc: { en: 'Basic exterior cleaning.', fr: 'Nettoyage extérieur de base.', ar: 'تنظيف خارجي أساسي.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/SmallTask.webp' },
-                        { id: 'medium', duration: 2, label: { en: 'Full Wash (Int + Ext)', fr: 'Lavage Complet', ar: 'غسيل كامل' }, estTime: { en: 'Est: 2 hrs', fr: 'Est: 2h', ar: 'ساعتين' }, desc: { en: 'Thorough interior and exterior cleaning.', fr: 'Nettoyage complet intérieur et extérieur.', ar: 'تنظيف كامل داخلي وخارجي.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/MediumSize.webp' },
-                        { id: 'large', duration: 4, label: { en: 'Full Detailing', fr: 'Detailing Complet', ar: 'تنظيف دقيق' }, estTime: { en: 'Est: 4 hrs', fr: 'Est: 4h', ar: '4 ساعات' }, desc: { en: 'In-depth cleaning and restoration.', fr: 'Nettoyage approfondi et restauration.', ar: 'تنظيف عميق وتلميع.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/BigTask.webp' },
-                    ]
+                        };
+                    })
                 };
             }
             case 'moving':
@@ -2590,8 +2650,9 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                                                                                     isSelected ? "border-transparent bg-transparent" : "border-neutral-200 bg-transparent"
                                                                                 )}>
                                                                                     <span className={cn(
-                                                                                        "font-black tracking-tighter leading-none transition-all duration-700",
-                                                                                        isSelected ? "text-[64px] text-black" : "text-[40px] text-neutral-400"
+                                                                                        "font-black tracking-tighter leading-none transition-all duration-700 text-center px-2",
+                                                                                        isSelected ? (option.label.en.length > 5 ? "text-[36px]" : "text-[64px]") : (option.label.en.length > 5 ? "text-[24px]" : "text-[40px]"),
+                                                                                        isSelected ? "text-black" : "text-neutral-400"
                                                                                     )}>
                                                                                         {option.label.en}
                                                                                     </span>
@@ -2614,7 +2675,8 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                                                                         {(() => {
                                                                             const opt = serviceConfig.options.find(o => o.id === taskSize);
                                                                             const rawDuration = opt?.duration ?? parseFloat(taskSize || '1');
-                                                                            const hours = (serviceConfig as any).isDaily ? rawDuration * 8 : rawDuration;
+                                                                            const subCoeff = getServiceSubCoefficient(service, subService);
+                                                                            const hours = (serviceConfig as any).isDaily ? rawDuration * 8 : (rawDuration * subCoeff);
                                                                             return `${hours}h`;
                                                                         })()} {t({ en: 'of total service', fr: 'de service total', ar: 'إجمالي مدة الخدمة' })}
                                                                     </span>
