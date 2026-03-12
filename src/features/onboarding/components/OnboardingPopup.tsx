@@ -1957,17 +1957,23 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                                                     <div className="flex flex-col gap-1">
                                                         <label className="text-[17px] font-black text-neutral-900 flex items-center gap-2">
                                                             <div className="w-6 h-6 rounded-full bg-[#00A082] text-white flex items-center justify-center text-[10px] font-black">3</div>
-                                                            {currentCatId === 'errands'
+                                                            {currentCatId === 'private_driver'
                                                                 ? t({
-                                                                    en: "What's the minimum price you accept for a simple delivery task?",
-                                                                    fr: "Quel est le prix minimum que vous acceptez pour une simple mission de livraison ?",
-                                                                    ar: "ما هو أقل ثمن تقبله مقابل مهمة توصيل بسيطة؟"
+                                                                    en: "What's the daily rate you'd like to charge for a full day of service?",
+                                                                    fr: "Quel tarif journalier souhaitez-vous facturer pour une journée complète ?",
+                                                                    ar: "ما هو السعر اليومي الذي ترغب في تقاضيه مقابل يوم كامل من الخدمة؟"
                                                                 })
-                                                                : t({
-                                                                    en: "What's the minimum price you accept for this service?",
-                                                                    fr: "Quel est le prix minimum que vous acceptez pour ce service ?",
-                                                                    ar: "ما هو أقل ثمن تقبله مقابل هذه الخدمة؟"
-                                                                })}
+                                                                : currentCatId === 'errands'
+                                                                    ? t({
+                                                                        en: "What's the minimum price you accept for a simple delivery task?",
+                                                                        fr: "Quel est le prix minimum que vous acceptez pour une simple mission de livraison ?",
+                                                                        ar: "ما هو أقل ثمن تقبله مقابل مهمة توصيل بسيطة؟"
+                                                                    })
+                                                                    : t({
+                                                                        en: "What's the minimum price you accept for this service?",
+                                                                        fr: "Quel est le prix minimum que vous acceptez pour ce service ?",
+                                                                        ar: "ما هو أقل ثمن تقبله مقابل هذه الخدمة؟"
+                                                                    })}
                                                         </label>
                                                     </div>
                                                     {/* Centered rate picker */}
@@ -1988,7 +1994,11 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                                                             <div className="flex flex-col items-center">
                                                                 <div className="flex items-baseline gap-1 whitespace-nowrap">
                                                                     <span className="text-5xl font-black text-neutral-900 tracking-tighter leading-none">{currentCatEntry?.hourlyRate || 75}</span>
-                                                                    <span className="text-[14px] font-bold text-neutral-400 uppercase tracking-widest">{t({ en: 'MIN PRICE (MAD)', fr: 'PRIX MIN (MAD)', ar: 'أقل ثمن (درهم)' })}</span>
+                                                                    <span className="text-[14px] font-bold text-neutral-400 uppercase tracking-widest">
+                                                                        {currentCatId === 'private_driver'
+                                                                            ? t({ en: 'DAILY RATE (MAD)', fr: 'TARIF JOUR (MAD)', ar: 'السعر اليومي (درهم)' })
+                                                                            : t({ en: 'MIN PRICE (MAD)', fr: 'PRIX MIN (MAD)', ar: 'أقل ثمن (درهم)' })}
+                                                                    </span>
                                                                 </div>
                                                             </div>
                                                             <button

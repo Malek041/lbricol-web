@@ -118,16 +118,28 @@ export const calculateTaskPrice = (
     let basePrice = hourlyRate * duration * coefficient;
 
     if (serviceId === 'errands') {
-        const mult = duration >= 1.33 ? 4.5 : (duration >= 0.8 ? 2.5 : 1.5);
-        basePrice = hourlyRate * mult;
-    } else if (isDailyCounter && serviceId !== 'cleaning') {
-        // Airbnb cleaning and electricity use unit counters but are typically hourly-based 
+        const option = options.find((o: any) => o.id === taskSize);
+        let errandCoeff = 1.0;
+        if (option?.id === 'medium') errandCoeff = 1.2;
+        else if (option?.id === 'large') errandCoeff = 1.5;
+        
+        // Return (hourlyRate * errandCoeff) / 0.85 to ensure Bricoler gets (hourlyRate * errandCoeff)
+        basePrice = (hourlyRate * errandCoeff) / 0.85;
+    } else if (isDailyCounter && serviceId === 'private_driver') {
         const units = duration < 1 ? 0.5 : duration;
-        basePrice = hourlyRate * units;
+        // For half-day (0.5), it's (hourlyRate / 2) / 0.85
+        // For 1 day, it's hourlyRate / 0.85
+        basePrice = (hourlyRate * units) / 0.85;
 
         // Apply tiered discount for daily services
         if (units >= 7) basePrice *= 0.85; // 15% off for a week or more
         else if (units >= 2) basePrice *= 0.9; // 10% off for 2 to 6 days
+    } else if (isDailyCounter && serviceId !== 'cleaning') {
+        // Other daily services (like Private Chef)
+        const units = duration < 1 ? 0.5 : duration;
+        basePrice = hourlyRate * units;
+        if (units >= 7) basePrice *= 0.85;
+        else if (units >= 2) basePrice *= 0.9;
     } else if (serviceId === 'babysitting' || serviceId === 'elderly_care') {
         let multiplier = 1;
         if (duration >= 10) multiplier = 0.8;
@@ -1108,6 +1120,15 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                     ]
                 };
             }
+            case 'errands':
+                return {
+                    title: t({ en: "What is the size of your task?", fr: "Quelle est la taille de votre tâche ?", ar: "ما هو حجم المهمة؟" }),
+                    options: [
+                        { id: 'small', duration: 0.42, label: { en: 'Quick Delivery (≈25 min)', fr: 'Livraison Rapide (≈25 min)', ar: 'توصيل سريع (≈25 دقيقة)' }, estTime: { en: '≈ 25 min', fr: '≈ 25 min', ar: '≈ 25 دقيقة' }, desc: { en: 'Simple pickup and drop-off.', fr: 'Simple retrait et dépôt.', ar: 'استلام وتسليم بسيط.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/SmallTask.webp' },
+                        { id: 'medium', duration: 1, label: { en: 'Standard Errand', fr: 'Course Standard', ar: 'مهمة عادية' }, estTime: { en: 'Est: 1 hr', fr: 'Est: 1h', ar: 'حوالي ساعة' }, desc: { en: 'Grocery shopping or multiple stops.', fr: 'Courses alimentaires ou plusieurs arrêts.', ar: 'تسوق أو توقفات متعددة.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/MediumSize.webp' },
+                        { id: 'large', duration: 2.5, label: { en: 'Extensive Errands', fr: 'Courses Importantes', ar: 'مهام مكثفة' }, estTime: { en: 'Est: 2-3 hrs', fr: 'Est: 2-3h', ar: '2-3 ساعات' }, desc: { en: 'Complex errands or full city circuit.', fr: 'Courses complexes ou circuit complet en ville.', ar: 'مهام معقدة أو جولة كاملة في المدينة.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/BigTask.webp' },
+                    ]
+                };
             case 'learn_arabic':
                 return {
                     title: t({ en: "How long applies to your session?", fr: "Quelle est la durée de la session ?", ar: "ما هي مدة الحصة؟" }),
