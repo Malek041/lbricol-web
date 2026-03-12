@@ -110,10 +110,9 @@ export const calculateTaskPrice = (
     const duration = activeOption?.duration || 1;
     const coefficient = (activeOption as any)?.coefficient || (serviceId === 'errands' ? 1.5 : 1);
 
-    // Check if it's a daily rate service (horizontal unit counter)
     const isDailyCounter = serviceId === 'private_driver' ||
         (serviceId === 'cooking' && activeOption?.id && !['small', 'medium', 'large', 'dishes', 'pastries', 'combo', 'shopping', 'educational', 'full', 'other'].includes(activeOption.id)) ||
-        (serviceId === 'cleaning' && subService?.toLowerCase().includes('airbnb'));
+        (serviceId === 'cleaning' && subService && !subService.toLowerCase().includes('car'));
 
     let basePrice = hourlyRate * duration * coefficient;
 
@@ -798,10 +797,12 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
 
         switch (sKey) {
             case 'cleaning': {
-                const isAirbnb = subService?.toLowerCase().includes('airbnb') || subService?.toLowerCase().includes('hospitality');
-                if (isAirbnb) {
+                const subKey = subService?.toLowerCase() || '';
+                const isCarRelated = subKey.includes('car');
+                
+                if (!isCarRelated) {
                     return {
-                        title: t({ en: "How many rooms to clean?", fr: "Combien de chambres incluses ?", ar: "كم عدد الغرف للتنظيف؟" }),
+                        title: t({ en: "How many rooms to clean?", fr: "Combien de chambres à nettoyer ?", ar: "كم عدد الغرف للتنظيف؟" }),
                         isDayCounter: true,
                         swipeText: t({ en: "Swipe to define exactly how many rooms you need.", fr: "Faites défiler pour définir le nombre exact de chambres.", ar: "قم بالتمرير لتحديد عدد الغرف بالضبط." }),
                         defaultDays: 1,
@@ -820,12 +821,13 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                         }))
                     };
                 }
+                
                 return {
-                    title: t({ en: "How large is the space?", fr: "Quelle est la taille de l'espace ?", ar: "ما هي مساحة المكان؟" }),
+                    title: t({ en: "Which service level do you need?", fr: "Quel niveau de service ?", ar: "ما هو مستوى الخدمة؟" }),
                     options: [
-                        { id: 'small', duration: 2, label: { en: 'Studio / 1 Bedroom', fr: 'Studio / 1 Chambre', ar: 'استوديو / غرفة واحدة' }, estTime: { en: 'Est: 2 hrs', fr: 'Est: 2h', ar: 'حوالي ساعتين' }, desc: { en: 'Basic cleaning for a small space.', fr: 'Nettoyage de base pour un petit espace.', ar: 'تنظيف أساسي لمساحة صغيرة.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/SmallTask.webp' },
-                        { id: 'medium', duration: 4, label: { en: '2-3 Bedrooms', fr: '2-3 Chambres', ar: '2-3 غرف نوم' }, estTime: { en: 'Est: 4 hrs', fr: 'Est: 4h', ar: 'حوالي 4 ساعات' }, desc: { en: 'Standard cleaning for a medium home.', fr: 'Nettoyage standard pour une maison moyenne.', ar: 'تنظيف عادي لمنزل متوسط.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/MediumSize.webp' },
-                        { id: 'large', duration: 6, label: { en: '4+ Bedrooms / Deep Clean', fr: '4+ Chambres / Nettoyage profond', ar: '+4 غرف / تنظيف عميق' }, estTime: { en: 'Est: 6+ hrs', fr: 'Est: 6h+', ar: 'أكثر من 6 ساعات' }, desc: { en: 'Extensive cleaning for large homes.', fr: 'Nettoyage complet pour grandes maisons.', ar: 'تنظيف شامل للمنازل الكبيرة.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/BigTask.webp' },
+                        { id: 'small', duration: 1, label: { en: 'Exterior Wash', fr: 'Lavage Extérieur', ar: 'غسيل خارجي' }, estTime: { en: 'Est: 1 hr', fr: 'Est: 1h', ar: 'ساعة واحدة' }, desc: { en: 'Basic exterior cleaning.', fr: 'Nettoyage extérieur de base.', ar: 'تنظيف خارجي أساسي.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/SmallTask.webp' },
+                        { id: 'medium', duration: 2, label: { en: 'Full Wash (Int + Ext)', fr: 'Lavage Complet', ar: 'غسيل كامل' }, estTime: { en: 'Est: 2 hrs', fr: 'Est: 2h', ar: 'ساعتين' }, desc: { en: 'Thorough interior and exterior cleaning.', fr: 'Nettoyage complet intérieur et extérieur.', ar: 'تنظيف كامل داخلي وخارجي.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/MediumSize.webp' },
+                        { id: 'large', duration: 4, label: { en: 'Full Detailing', fr: 'Detailing Complet', ar: 'تنظيف دقيق' }, estTime: { en: 'Est: 4 hrs', fr: 'Est: 4h', ar: '4 ساعات' }, desc: { en: 'In-depth cleaning and restoration.', fr: 'Nettoyage approfondi et restauration.', ar: 'تنظيف عميق وتلميع.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/BigTask.webp' },
                     ]
                 };
             }
@@ -1158,8 +1160,22 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
     }, [subStep1, serviceConfig, taskSize]);
 
     const activeTaskSize = serviceConfig.options.find(s => s.id === taskSize);
+    
+    // Helper to get the correct rate for a specific pro and service
+    const getProRateForService = (pro: Bricoler | null | undefined, svcId: string) => {
+        if (!pro) return 75;
+        // Search in services array
+        const svc = pro.services?.find((s: any) => 
+            (s.categoryId || s.serviceId || '').toLowerCase() === svcId.toLowerCase()
+        );
+        if (svc && typeof svc === 'object' && svc.hourlyRate) return svc.hourlyRate;
+        return pro.hourlyRate || 75;
+    };
+
     // Use full data if available, otherwise fallback to the index version
-    const selectedPro = fullSelectedProData || bricolers.find(b => b.id === selectedBricolerId);
+    const basePro = fullSelectedProData || bricolers.find(b => b.id === selectedBricolerId);
+    const selectedProRate = getProRateForService(basePro as any, service);
+    const selectedPro = basePro ? { ...basePro, hourlyRate: selectedProRate } : null;
 
     // Auto-scroll the day counter to the selected taskSize
     useEffect(() => {
@@ -3473,7 +3489,7 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                                                             <span className="text-[15px] font-light text-black">≈ {activeTaskSize ? t(activeTaskSize.estTime as any) : '—'}</span>
                                                         </div>
                                                         <span className="self-end text-[18px] font-bold tracking-tight text-black min-[420px]:self-auto">
-                                                            {Math.round(calculateTaskPrice(selectedPro?.hourlyRate || 75, taskSize, service, subService, serviceConfig.options, applyReferralDiscount, referralDiscountAvailable) * 0.85)} MAD
+                                                            {Math.round(calculateTaskPrice(selectedProRate, taskSize, service, subService, serviceConfig.options, applyReferralDiscount, referralDiscountAvailable) * 0.85)} MAD
                                                         </span>
                                                     </div>
                                                     <div className="flex flex-col gap-2 px-2 min-[420px]:flex-row min-[420px]:items-center min-[420px]:justify-between">
@@ -3482,7 +3498,7 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                                                             <span className="text-[15px] font-light text-black">15%</span>
                                                         </div>
                                                         <span className="self-end text-[18px] font-bold tracking-tight text-black min-[420px]:self-auto">
-                                                            {Math.round(calculateTaskPrice(selectedPro?.hourlyRate || 75, taskSize, service, subService, serviceConfig.options, applyReferralDiscount, referralDiscountAvailable) * 0.15)} MAD
+                                                            {Math.round(calculateTaskPrice(selectedProRate, taskSize, service, subService, serviceConfig.options, applyReferralDiscount, referralDiscountAvailable) * 0.15)} MAD
                                                         </span>
                                                     </div>
                                                     {referralDiscountAvailable > 0 && (
