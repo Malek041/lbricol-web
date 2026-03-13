@@ -365,7 +365,7 @@ const SERVICES: ServiceEntry[] = [
         label: 'Tour Guide',
         labelFr: 'Guide Touristique',
         labelAr: 'مرشد سياحي',
-        iconPath: '/Images/Vectors Illu/Traveler.webp',
+        iconPath: '/Images/Vectors Illu/tourGuide.png',
         subServices: [
             { en: 'City Tour', fr: 'Tour de la Ville', ar: 'جولة في المدينة' },
             { en: 'Historical Sites Tour', fr: 'Visite des Sites Historiques', ar: 'جولة المواقع التاريخية' },
@@ -383,7 +383,7 @@ const SERVICES: ServiceEntry[] = [
         label: 'Private Driver',
         labelFr: 'Chauffeur Privé',
         labelAr: 'سائق خاص',
-        iconPath: '/Images/Vectors Illu/DriverCar.webp',
+        iconPath: '/Images/Vectors Illu/privateDriver.png',
         subServices: [
             { en: 'Half-Day City Driver', fr: 'Chauffeur Demi-journée (Ville)', ar: 'سائق نصف يوم (بالمدينة)' },
             { en: 'Full-Day City Driver', fr: 'Chauffeur Journée Complète (Ville)', ar: 'سائق يوم كامل (بالمدينة)' },
@@ -413,6 +413,21 @@ const SERVICES: ServiceEntry[] = [
             { en: 'Now Trending: Personalized Darija sessions for expats.', fr: 'Tendance actuelle : Sessions de Darija personnalisées pour les expatriés.', ar: 'رائج الآن: جلسات دارجة مخصصة للمغتربين.' },
         ],
         heroImage: '/Images/Job Cards Images/Babysetting_job_card.webp',
+    },
+    {
+        id: 'car_rental',
+        label: 'Car Rental',
+        labelFr: 'Location de Voiture',
+        labelAr: 'كراء السيارات',
+        iconPath: '/Images/Vectors Illu/carKey.png',
+        subServices: [
+            { en: 'Rent a Car', fr: 'Louer une Voiture', ar: 'كراء سيارة' }
+        ],
+        bullets: [
+            { en: 'Rent a car from verified local owners.', fr: 'Louez une voiture auprès de propriétaires locaux vérifiés.', ar: 'اكتري سيارة من ملاك محليين موثوقين.' },
+            { en: 'Now Trending: SUV and Compact cars for city trips.', fr: 'Tendance actuelle : SUV et voitures compactes pour les trajets en ville.', ar: 'رائج الآن: سيارات الدفع الرباعي والسيارات الصغيرة للرحلات الحضرية.' },
+        ],
+        heroImage: '/Images/Cars.png',
     },
 ];
 

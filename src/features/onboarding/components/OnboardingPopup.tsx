@@ -33,6 +33,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import SplashScreen from '@/components/layout/SplashScreen';
 import { useIsMobileViewport } from '@/lib/mobileOnly';
 import { isImageDataUrl, compressImageFileToDataUrl, dataUrlToBlob } from '@/lib/imageCompression';
+import { CAR_BRANDS } from '@/config/cars_config';
 
 interface OnboardingPopupProps {
     isOpen: boolean;
@@ -55,7 +56,7 @@ interface CategoryDetail {
     spokenLanguages?: string[];
 }
 
-const ALL_SERVICES = getAllServices().filter(s => !['driver', 'car_rental', 'courier', 'airport', 'transport_intercity'].includes(s.id));
+const ALL_SERVICES = getAllServices().filter(s => !['driver', 'courier', 'airport', 'transport_intercity'].includes(s.id));
 const MIN_PITCH_CHARS = 50;
 
 // ── Animation Variants ──────────────────────────────────────────────────────
@@ -270,6 +271,12 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
     const [activationCode, setActivationCode] = useState('');
     const [localUserData, setLocalUserData] = useState<any>(userData || null);
 
+    // Car rental state
+    const [selectedCars, setSelectedCars] = useState<any[]>(
+        mode === 'edit' && userData?.carRentalDetails?.cars ? userData.carRentalDetails.cars : []
+    );
+    const [activeBrandId, setActiveBrandId] = useState<string>(CAR_BRANDS[0]?.id || '');
+
     useEffect(() => {
         if (!fullName && auth.currentUser?.displayName) {
             setFullName(auth.currentUser.displayName);
@@ -283,36 +290,36 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
 
     // ── Steps (no Availability — bricoler sets it in their dashboard) ────────
     const STEPS = useMemo(() => {
-        if (mode === 'edit' || mode === 'add') {
-            return [
-                { id: 'services', label: t({ en: 'Services', fr: 'Services', ar: 'الخدمات' }) },
-                { id: 'service_details', label: t({ en: 'Details', fr: 'Détails', ar: 'التفاصيل' }) },
-                { id: 'finish', label: t({ en: 'Review', fr: 'Révision', ar: 'المراجعة' }) },
-            ];
+        const isClientEdit = mode === 'edit' || mode === 'add';
+        const isAdminEdit = mode === 'admin_add' || mode === 'admin_edit';
+        
+        const steps = [];
+        
+        if (mode === 'onboarding') {
+            steps.push({ id: 'language', label: t({ en: 'Language', fr: 'Langue', ar: 'اللغة' }) });
+            steps.push({ id: 'activation', label: t({ en: 'Activation', fr: 'Activation', ar: 'تفعيل' }) });
         }
-        if (mode === 'admin_add' || mode === 'admin_edit') {
-            return [
-                { id: 'services', label: t({ en: 'Services', fr: 'Services', ar: 'الخدمات' }) },
-                { id: 'service_details', label: t({ en: 'Details', fr: 'Détails', ar: 'التفاصيل' }) },
-                { id: 'city', label: t({ en: 'City', fr: 'Ville', ar: 'المدينة' }) },
-                { id: 'areas', label: t({ en: 'Work Areas', fr: 'Zones', ar: 'مناطق العمل' }) },
-                { id: 'profile', label: t({ en: 'Bricoler Profile', fr: 'Profil Bricoleur', ar: 'ملف الحرفي' }) },
-                { id: 'finish', label: t({ en: 'Save Bricoler', fr: 'Enregistrer', ar: 'حفظ' }) },
-            ];
-        }
-        const baseSteps = [
-            { id: 'language', label: t({ en: 'Language', fr: 'Langue', ar: 'اللغة' }) },
-            { id: 'activation', label: t({ en: 'Activation', fr: 'Activation', ar: 'تفعيل' }) },
-            { id: 'services', label: t({ en: 'Services', fr: 'Services', ar: 'الخدمات' }) },
-            { id: 'service_details', label: t({ en: 'Details', fr: 'Détails', ar: 'التفاصيل' }) },
-            { id: 'city', label: t({ en: 'City', fr: 'Ville', ar: 'المدينة' }) },
-            { id: 'areas', label: t({ en: 'Work Areas', fr: 'Zones', ar: 'مناطق العمل' }) },
-            { id: 'profile', label: t({ en: 'Your Profile', fr: 'Profil', ar: 'ملفك الشخصي' }) },
-            { id: 'finish', label: t({ en: 'Sign Up', fr: 'Inscription', ar: 'تسجيل' }) },
-        ];
 
-        return baseSteps;
-    }, [t, mode, auth.currentUser, hasGoogleSigned]);
+        steps.push({ id: 'services', label: t({ en: 'Services', fr: 'Services', ar: 'الخدمات' }) });
+
+        // Inject car steps if rent_a_car is selected
+        if (selectedSubServices.includes('rent_a_car')) {
+            steps.push({ id: 'car_selection', label: t({ en: 'Cars', fr: 'Voitures', ar: 'السيارات' }) });
+            steps.push({ id: 'car_pricing', label: t({ en: 'Pricing', fr: 'Tarifs', ar: 'الأسعار' }) });
+        }
+
+        steps.push({ id: 'service_details', label: t({ en: 'Details', fr: 'Détails', ar: 'التفاصيل' }) });
+
+        if (!isClientEdit) {
+            steps.push({ id: 'city', label: t({ en: 'City', fr: 'Ville', ar: 'المدينة' }) });
+            steps.push({ id: 'areas', label: t({ en: 'Work Areas', fr: 'Zones', ar: 'مناطق العمل' }) });
+            steps.push({ id: 'profile', label: t({ en: 'Profile', fr: 'Profil', ar: 'الملف الشخصي' }) });
+        }
+
+        steps.push({ id: 'finish', label: isClientEdit ? t({ en: 'Review', fr: 'Révision', ar: 'المراجعة' }) : t({ en: 'Sign Up', fr: 'Inscription', ar: 'تسجيل' }) });
+
+        return steps;
+    }, [t, mode, selectedSubServices]);
 
     const [stepIndex, setStepIndex] = useState(mode === 'edit' ? 1 : 0);
     const step = STEPS[stepIndex]?.id || 'services';
@@ -330,12 +337,29 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
             setSelectedAreas(Array.isArray(userData.areas) ? userData.areas : (Array.isArray(userData.selectedAreas) ? userData.selectedAreas : []));
             setProfilePhotoUrl(userData.profilePhotoURL || userData.avatar || userData.photoURL || '');
 
+            if (userData.carRentalDetails?.cars) {
+                setSelectedCars(userData.carRentalDetails.cars);
+            }
+
             if (userData.services && Array.isArray(userData.services)) {
                 const subIds: string[] = [];
                 const entries: Record<string, CategoryDetail> = {};
 
                 userData.services.forEach((s: any) => {
-                    const subId = typeof s === 'string' ? s : (s.subServiceId || s.id);
+                    const thisCatId = s.categoryId || (typeof s === 'string' ? s : null);
+                    
+                    if (mode === 'edit' && initialCategory && thisCatId && thisCatId !== initialCategory.categoryId) {
+                        return; // ONLY load the specific category we are editing
+                    }
+
+                    let subId = typeof s === 'string' ? s : (s.subServiceId || s.id);
+                    if (!subId && thisCatId === 'car_rental') subId = 'rent_a_car';
+                    else if (!subId && thisCatId) {
+                        const cat = ALL_SERVICES.find(c => c.id === thisCatId);
+                        if (cat?.subServices && cat.subServices.length > 0) subId = cat.subServices[0].id;
+                        else subId = thisCatId;
+                    }
+
                     if (subId) subIds.push(subId);
 
                     const svc = ALL_SERVICES.find(cat => cat.subServices.some(ss => ss.id === subId) || cat.id === subId);
@@ -643,6 +667,9 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                 numReviews: existingBricoler?.numReviews || (isClaimingShadow ? localUserData.numReviews : 0) || 0,
                 isBricoler: true,
                 lastLoginAt: serverTimestamp(),
+                carRentalDetails: selectedSubServices.includes('rent_a_car') ? {
+                    cars: selectedCars,
+                } : null,
                 tourGuideAuthorizationUrl: finalTourGuideUrl || null
             });
 
@@ -847,6 +874,9 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                 numReviews: userData?.numReviews || 0,
                 rating: userData?.rating || 5.0,
                 completedJobs: userData?.completedJobs || 0,
+                carRentalDetails: selectedSubServices.includes('rent_a_car') ? {
+                    cars: selectedCars,
+                } : null,
                 tourGuideAuthorizationUrl: finalTourGuideAuthUrl || null
             });
 
@@ -955,6 +985,9 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                 avatar: finalProfilePhotoUrl,
                 profilePhotoURL: finalProfilePhotoUrl,
                 googlePhotoURL,
+                carRentalDetails: selectedSubServices.includes('rent_a_car') ? {
+                    cars: selectedCars,
+                } : null,
                 tourGuideAuthorizationUrl: finalTourGuideAuthUrl || existingData.tourGuideAuthorizationUrl
             };
             await setDoc(bricolerRef, updateData, { merge: true });
@@ -999,6 +1032,8 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
         if (step === 'language') return true;
         if (step === 'activation') return hasCode === false || (hasCode === true && localUserData !== null);
         if (step === 'services') return selectedSubServices.length > 0;
+        if (step === 'car_selection') return selectedCars.length > 0;
+        if (step === 'car_pricing') return selectedCars.length > 0 && selectedCars.every(c => c.quantity > 0 && (c.pricePerDay > 0 || c.price > 0));
         if (step === 'service_details') return currentEntryValid(currentCatEntry);
         if (step === 'city') return selectedCity !== '';
         if (step === 'areas') return selectedAreas.length > 0;
@@ -1663,6 +1698,164 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                                     </motion.div>
                                 )}
 
+                                {/* ── STEP: Car Selection ── */}
+                                {step === 'car_selection' && (
+                                    <motion.div key="car_selection" custom={direction} variants={slideVariants} initial="enter" animate="center" exit="exit" className="p-6 md:p-10 space-y-8">
+                                        <motion.div variants={itemVariants} initial="hidden" animate="show" className="space-y-1">
+                                            <h2 className="text-2xl md:text-3xl font-bold text-neutral-900 tracking-tight">{t({ en: 'Select your cars', fr: 'Sélectionnez vos voitures', ar: 'اختر سياراتك' })}</h2>
+                                            <p className="text-neutral-500 text-[15px] font-medium leading-relaxed">{t({ en: 'Select the car brands and models you offer for rental.', fr: 'Sélectionnez les marques et modèles de voitures que vous proposez à la location.', ar: 'اختر ماركات وموديلات السيارات التي تقدمها للإيجار.' })}</p>
+                                        </motion.div>
+
+                                        {/* Brand Logos (Horizontal Scroll) */}
+                                        <div className="flex gap-6 overflow-x-auto no-scrollbar py-4 -mx-2 px-2" style={{ scrollbarWidth: 'none' }}>
+                                            {CAR_BRANDS.map((brand) => {
+                                                const isActive = activeBrandId === brand.id;
+                                                const hasSelected = selectedCars.some(c => c.brandId === brand.id);
+                                                return (
+                                                    <motion.button
+                                                        key={brand.id}
+                                                        onClick={() => setActiveBrandId(brand.id)}
+                                                        className="flex flex-col items-center gap-2 flex-shrink-0"
+                                                    >
+                                                        <div className={cn(
+                                                            "w-16 h-16 rounded-2xl flex items-center justify-center p-2 transition-all relative",
+                                                            isActive ? "bg-[#00A082]/10 border-2 border-[#00A082]" : "bg-white border-2 border-neutral-100"
+                                                        )}>
+                                                            <img src={brand.logo} alt={brand.name} className="w-full h-full object-contain" />
+                                                            {hasSelected && (
+                                                                <div className="absolute -top-1 -right-1 w-5 h-5 bg-[#00A082] rounded-full flex items-center justify-center border-2 border-white">
+                                                                    <Check size={10} className="text-white" strokeWidth={4} />
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                        <span className={cn("text-xs font-bold", isActive ? "text-[#00A082]" : "text-neutral-500")}>{brand.name}</span>
+                                                    </motion.button>
+                                                );
+                                            })}
+                                        </div>
+
+                                        {/* Car Models Grid */}
+                                        <div className="grid grid-cols-2 gap-4">
+                                            {CAR_BRANDS.find(b => b.id === activeBrandId)?.models.map((model) => {
+                                                const isSelected = selectedCars.some(c => c.modelId === model.id);
+                                                return (
+                                                    <motion.button
+                                                        key={model.id}
+                                                        onClick={() => {
+                                                            if (isSelected) {
+                                                                setSelectedCars(prev => prev.filter(c => c.modelId !== model.id));
+                                                            } else {
+                                                                const brand = CAR_BRANDS.find(b => b.id === activeBrandId);
+                                                                setSelectedCars(prev => [...prev, {
+                                                                    brandId: activeBrandId,
+                                                                    brandName: brand?.name,
+                                                                    modelId: model.id,
+                                                                    modelName: model.name,
+                                                                    modelImage: model.image,
+                                                                    quantity: 1,
+                                                                    pricePerDay: 300 // default price
+                                                                }]);
+                                                            }
+                                                        }}
+                                                        className={cn(
+                                                            "group p-4 rounded-3xl border-2 transition-all text-left space-y-3",
+                                                            isSelected ? "border-[#00A082] bg-[#E6F6F2]" : "border-neutral-100 bg-white"
+                                                        )}
+                                                    >
+                                                        <div className="aspect-[4/3] w-full overflow-hidden rounded-xl bg-neutral-50 p-2">
+                                                            <img src={model.image} alt={model.name} className="w-full h-full object-contain group-hover:scale-110 transition-transform duration-500" />
+                                                        </div>
+                                                        <div className="flex items-center justify-between">
+                                                            <span className="font-bold text-neutral-900">{model.name}</span>
+                                                            <div className={cn(
+                                                                "w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all",
+                                                                isSelected ? "bg-[#00A082] border-[#00A082] text-white" : "border-neutral-200"
+                                                            )}>
+                                                                {isSelected && <Check size={14} strokeWidth={4} />}
+                                                            </div>
+                                                        </div>
+                                                    </motion.button>
+                                                );
+                                            })}
+                                        </div>
+                                    </motion.div>
+                                )}
+
+                                {/* ── STEP: Car Pricing ── */}
+                                {step === 'car_pricing' && (
+                                    <motion.div key="car_pricing" custom={direction} variants={slideVariants} initial="enter" animate="center" exit="exit" className="p-6 md:p-10 space-y-8">
+                                        <motion.div variants={itemVariants} initial="hidden" animate="show" className="space-y-1">
+                                            <h2 className="text-2xl md:text-3xl font-bold text-neutral-900 tracking-tight">{t({ en: 'Set quantity and price', fr: 'Définir la quantité et le prix', ar: 'حدد الكمية والسعر' })}</h2>
+                                            <p className="text-neutral-500 text-[15px] font-medium leading-relaxed">{t({ en: 'Set the number of available cars and daily rental price for each model.', fr: 'Définissez le nombre de voitures disponibles et le prix de location journalier pour chaque modèle.', ar: 'حدد عدد السيارات المتوفرة وسعر الإيجار اليومي لكل موديل.' })}</p>
+                                        </motion.div>
+
+                                        <div className="space-y-6">
+                                            {selectedCars.map((car, idx) => (
+                                                <div key={`${car.brandId}-${car.modelId}`} className="bg-white border-2 border-neutral-100 rounded-3xl p-6 space-y-6">
+                                                    <div className="flex items-center gap-4">
+                                                        <div className="w-20 h-15 bg-neutral-50 rounded-xl overflow-hidden p-2">
+                                                            <img src={car.modelImage || car.image} alt={car.modelName} className="w-full h-full object-contain" />
+                                                        </div>
+                                                        <div>
+                                                            <div className="text-xs font-black text-[#00A082] uppercase tracking-wider">{car.brandName}</div>
+                                                            <div className="text-lg font-bold text-neutral-900">{car.modelName}</div>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="grid grid-cols-2 gap-6">
+                                                        <div className="space-y-2">
+                                                            <label className="text-xs font-black text-neutral-400 uppercase tracking-widest">{t({ en: 'Quantity', fr: 'Quantité', ar: 'الكمية' })}</label>
+                                                            <div className="flex items-center gap-4">
+                                                                <button
+                                                                    onClick={() => {
+                                                                        const next = [...selectedCars];
+                                                                        next[idx].quantity = Math.max(1, next[idx].quantity - 1);
+                                                                        setSelectedCars(next);
+                                                                    }}
+                                                                    className="w-10 h-10 rounded-xl border-2 border-neutral-100 flex items-center justify-center hover:bg-neutral-50"
+                                                                >
+                                                                    <Minus size={18} />
+                                                                </button>
+                                                                <span className="text-xl font-bold w-6 text-center">{car.quantity}</span>
+                                                                <button
+                                                                    onClick={() => {
+                                                                        const next = [...selectedCars];
+                                                                        next[idx].quantity += 1;
+                                                                        setSelectedCars(next);
+                                                                    }}
+                                                                    className="w-10 h-10 rounded-xl border-2 border-neutral-100 flex items-center justify-center hover:bg-neutral-50"
+                                                                >
+                                                                    <Plus size={18} />
+                                                                </button>
+                                                            </div>
+                                                        </div>
+
+                                                        <div className="space-y-2">
+                                                            <label className="text-xs font-black text-neutral-400 uppercase tracking-widest">{t({ en: 'Price / Day (MAD)', fr: 'Prix / Jour (DH)', ar: 'السعر / اليوم (درهم)' })}</label>
+                                                            <div className="relative">
+                                                                <input
+                                                                    type="number"
+                                                                    value={car.pricePerDay || car.price}
+                                                                    onChange={(e) => {
+                                                                        const next = [...selectedCars];
+                                                                        const val = Math.max(0, parseInt(e.target.value) || 0);
+                                                                        if (next[idx].pricePerDay !== undefined) {
+                                                                            next[idx].pricePerDay = val;
+                                                                        }
+                                                                        next[idx].price = val;
+                                                                        setSelectedCars(next);
+                                                                    }}
+                                                                    className="w-full bg-neutral-50 border-none rounded-2xl px-4 py-3 font-bold text-lg outline-none focus:ring-2 focus:ring-[#00A082]/20"
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </motion.div>
+                                )}
+
                                 {/* ── STEP: Per-Service Details ── */}
                                 {step === 'service_details' && currentCatEntry && (
                                     <motion.div
@@ -1952,7 +2145,7 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
 
                                         {/* 3. Hourly Rate — shows after equipment is set */}
                                         <AnimatePresence>
-                                            {(currentCatEntry.noEquipment || currentCatEntry.equipments.length > 0 || NO_EQUIPMENT_SERVICES.includes(currentCatEntry.categoryId)) && (
+                                            {(currentCatEntry.noEquipment || currentCatEntry.equipments.length > 0 || NO_EQUIPMENT_SERVICES.includes(currentCatEntry.categoryId)) && currentCatEntry.categoryId !== 'car_rental' && (
                                                 <motion.div variants={itemVariants} initial="hidden" animate="show" className="space-y-4 pt-2">
                                                     <div className="flex flex-col gap-1">
                                                         <label className="text-[17px] font-black text-neutral-900 flex items-center gap-2">
@@ -2093,7 +2286,7 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                                                 <motion.div variants={itemVariants} initial="hidden" animate="show" className="space-y-4 pt-2">
                                                     <div className="flex items-center justify-between">
                                                         <label className="text-[16px] font-black text-neutral-900 flex items-center gap-2">
-                                                            <div className="w-6 h-6 rounded-full bg-[#00A082] text-white flex items-center justify-center text-[10px] font-black">4</div>
+                                                            <div className="w-6 h-6 rounded-full bg-[#00A082] text-white flex items-center justify-center text-[10px] font-black">{currentCatId === 'car_rental' ? '3' : '4'}</div>
                                                             {t({ en: 'Why the client would choose you and not others?', fr: 'Pourquoi le client vous choisirait-il vous et pas les autres ?', ar: 'لماذا قد يختارك العميل دون غيرك؟' })}
                                                         </label>
                                                     </div>

@@ -71,6 +71,9 @@ export interface OrderDetails {
     responseTimeMinutes?: number;
     clientWhatsApp?: string;
     bricolerWhatsApp?: string;
+    selectedCar?: any;
+    carReturnDate?: string;
+    carReturnTime?: string;
 }
 
 interface OrderCardProps {

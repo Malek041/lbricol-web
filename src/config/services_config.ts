@@ -339,7 +339,9 @@ export const SERVICES_HIERARCHY: Record<string, ServiceConfig> = {
         id: 'car_rental',
         name: 'Car rental',
         icon: Key,
-        subServices: []
+        subServices: [
+            { id: 'rent_a_car', name: 'Rent a car' }
+        ]
     },
     courier: {
         id: 'courier',
@@ -467,9 +469,10 @@ export const getServiceVector = (serviceIdOrName: string | undefined): string =>
     if (id.includes('babysitting')) return '/Images/Vectors Illu/babysetting.webp';
     if (id.includes('appliance')) return '/Images/Service Category vectors/homerepairVector.webp';
     if (id.includes('cooking')) return '/Images/Vectors Illu/cooking.webp';
-    if (id.includes('driver')) return '/Images/Vectors Illu/BWCardirever.webp';
+    if (id.includes('driver')) return '/Images/Vectors Illu/privateDriver.png';
     if (id.includes('arabic') || id.includes('learn')) return '/Images/Vectors Illu/Arabic Letter.webp';
     if (id.includes('tour') || id.includes('guide')) return '/Images/Vectors Illu/de099bb06d30cd9d1c5744cc227c189f-Photoroom.webp';
+    if (id.includes('car_rental') || id.includes('rent')) return '/Images/Vectors Illu/carKey.png';
 
     return '/Images/Service Category vectors/HandymanVector.webp'; // Fallback
 };

@@ -17,6 +17,7 @@ import {
 import { cn } from '@/lib/utils';
 import { useIsMobileViewport } from '@/lib/mobileOnly';
 import { useLanguage } from '@/context/LanguageContext';
+import { format } from 'date-fns';
 import { WhatsAppBrandIcon } from '@/components/shared/WhatsAppIcon';
 
 export interface JobDetails {
@@ -38,6 +39,10 @@ export interface JobDetails {
     clientAvatar?: string;
     bricolerWhatsApp?: string;
     clientWhatsApp?: string;
+    selectedCar?: any;
+    carReturnDate?: string;
+    carReturnTime?: string;
+    totalPrice?: number;
 }
 
 interface JobDetailsPopupProps {
@@ -186,6 +191,45 @@ const JobDetailsPopup: React.FC<JobDetailsPopupProps> = ({ job, onClose, onAccep
                                 </div>
                             </div>
                         </div>
+                        
+                        {/* Selected Car Details section */}
+                        {job.selectedCar && (
+                            <div className="bg-[#F0FBF8] rounded-2xl p-5 border border-[#00A082]/20 flex flex-col gap-4 mb-6">
+                                <div className="flex justify-between items-start">
+                                    <div className="flex-1">
+                                        <h4 className="text-[12px] font-black text-[#00A082] uppercase tracking-wider mb-1">{t({ en: 'Rented Vehicle', fr: 'Véhicule Loué' })}</h4>
+                                        <p className="text-[20px] font-black text-black leading-tight">{job.selectedCar.brandName} {job.selectedCar.modelName}</p>
+                                    </div>
+                                    <div className="w-20 h-14 bg-white rounded-xl flex items-center justify-center p-2 border border-neutral-100 shadow-sm overflow-hidden flex-shrink-0 ml-4">
+                                        <img src={job.selectedCar.modelImage || job.selectedCar.image} alt="car" className="w-full h-full object-contain" />
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-6 pt-2 border-t border-[#00A082]/10">
+                                    <div className="flex flex-col">
+                                        <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-tighter">{t({ en: 'Daily Rate', fr: 'Prix/Jour' })}</span>
+                                        <span className="text-[16px] font-black text-black">{job.selectedCar.pricePerDay || job.selectedCar.price} MAD</span>
+                                    </div>
+                                    <div className="flex flex-col">
+                                        <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-tighter">{t({ en: 'Return Date', fr: 'Retour' })}</span>
+                                        <span className="text-[16px] font-black text-[#00A082]">
+                                            {job.carReturnDate ? format(new Date(job.carReturnDate), 'MMM d, yyyy') : '---'}
+                                        </span>
+                                    </div>
+                                    <div className="flex flex-col">
+                                        <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-tighter">{t({ en: 'Duration', fr: 'Durée' })}</span>
+                                        <span className="text-[16px] font-black text-black">
+                                            {(() => {
+                                                if (job.date && job.carReturnDate) {
+                                                    const d = Math.max(1, Math.round((new Date(job.carReturnDate).getTime() - new Date(job.date).getTime()) / 86400000));
+                                                    return `${d} ${t({ en: d > 1 ? 'days' : 'day', fr: d > 1 ? 'jours' : 'jour' })}`;
+                                                }
+                                                return job.duration || '---';
+                                            })()}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
 
                         {/* Budget Breakdown */}
                         <div className="mb-6">
@@ -193,7 +237,7 @@ const JobDetailsPopup: React.FC<JobDetailsPopupProps> = ({ job, onClose, onAccep
                                 {t({ en: 'Budget Breakdown', fr: 'Détail du budget', ar: 'تفاصيل الميزانية' })}
                             </div>
                             <div className="flex items-baseline gap-2">
-                                <span className="text-5xl font-bold text-neutral-900">{job.price}</span>
+                                <span className="text-5xl font-bold text-neutral-900">{job.totalPrice || job.price}</span>
                                 <span className="text-xl font-semibold text-neutral-500">MAD</span>
                             </div>
                             <div className="text-sm text-neutral-500 mt-1">

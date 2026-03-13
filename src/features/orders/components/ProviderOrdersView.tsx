@@ -105,6 +105,7 @@ export default function ProviderOrdersView({
             'pets_care': '/Images/Vectors Illu/PetsCare_VI.webp',
             'errands': '/Images/Vectors Illu/Errands_VI.webp',
             'elderly_care': '/Images/Vectors Illu/ElderlyCare_VI.webp',
+            'car_rental': '/Images/Cars.png',
         };
         return serviceMap[service] || '/Images/Job Cards Images/Handyman_job_card.webp';
     };

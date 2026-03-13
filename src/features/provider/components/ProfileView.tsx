@@ -626,7 +626,8 @@ const ProfileView: React.FC<ProfileViewProps> = ({
                     portfolioImages: currentPhotos,
                     subServices: current.subServiceId ? [current.subServiceId] : [],
                     subServiceNames: current.subServiceName ? [current.subServiceName] : [],
-                    isActive
+                    isActive,
+                    carRentalDetails: categoryId === 'car_rental' ? (current.carRentalDetails || userData?.carRentalDetails) : undefined
                 });
             }
             return acc;
@@ -684,9 +685,15 @@ const ProfileView: React.FC<ProfileViewProps> = ({
                                                 <h3 className={cn("text-[30px] font-black tracking-tighter leading-none mb-1.5 transition-all text-[#1D1D1D]", !group.isActive && "text-neutral-400")}>
                                                     {t({ en: group.categoryName, fr: group.categoryName })}
                                                 </h3>
-                                                <span className={cn("text-[18px] font-bold transition-all text-neutral-600", !group.isActive && "text-neutral-300")}>
-                                                    MAD {group.hourlyRate || '150'}/hr
-                                                </span>
+                                                {group.categoryId === 'car_rental' ? (
+                                                    <span className="text-[14px] font-medium text-neutral-400">
+                                                        {t({ en: 'Vehicle collection', fr: 'Flotte de véhicules', ar: 'مجموعة السيارات' })}
+                                                    </span>
+                                                ) : (
+                                                    <span className={cn("text-[18px] font-bold transition-all text-neutral-600", !group.isActive && "text-neutral-300")}>
+                                                        MAD {group.hourlyRate || '150'}/hr
+                                                    </span>
+                                                )}
                                             </div>
                                         </div>
 
@@ -728,9 +735,31 @@ const ProfileView: React.FC<ProfileViewProps> = ({
                                         )}
                                     </div>
 
-                                    {/* Image Preview - Link Real Photos */}
+                                    {/* Image Preview / Car Preview - Link Real Photos */}
                                     <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-none">
-                                        {group.portfolioImages.length > 0 ? (
+                                        {group.categoryId === 'car_rental' && group.carRentalDetails?.cars?.length > 0 ? (
+                                            group.carRentalDetails.cars.map((car: any, i: number) => (
+                                                <div
+                                                    key={i}
+                                                    className="w-[140px] flex-shrink-0 flex flex-col gap-2"
+                                                >
+                                                    <div className="w-full h-[85px] rounded-[14px] bg-neutral-50 border border-neutral-100 flex items-center justify-center p-2 relative overflow-hidden">
+                                                        <img
+                                                            src={car.modelImage || car.image}
+                                                            className="w-full h-full object-contain"
+                                                            alt={car.modelName}
+                                                        />
+                                                        <div className="absolute top-1 left-1 bg-black/80 px-1.5 py-0.5 rounded-md text-[9px] font-black text-white">
+                                                            x{car.quantity}
+                                                        </div>
+                                                    </div>
+                                                    <div className="px-1">
+                                                        <p className="text-[11px] font-black text-black truncate leading-tight uppercase tracking-tight">{car.modelName}</p>
+                                                        <p className="text-[10px] font-bold text-[#0CB380]">{car.pricePerDay || car.price} MAD/{t({ en: 'day', fr: 'jour' })}</p>
+                                                    </div>
+                                                </div>
+                                            ))
+                                        ) : group.portfolioImages.length > 0 ? (
                                             group.portfolioImages.map((img: string, i: number) => (
                                                 <div
                                                     key={i}

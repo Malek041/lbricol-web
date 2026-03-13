@@ -636,12 +636,51 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
                                         {selectedOrder.bricolerWhatsApp && (
                                             <button
                                                 onClick={() => openWhatsApp(selectedOrder.bricolerWhatsApp)}
-                                                className="w-full flex items-center justify-center gap-4 py-6 rounded-[24px] bg-[#25D366] text-white font-[1000] text-[18px] hover:bg-[#128C7E] active:scale-95 transition-all shadow-xl shadow-[#25D366]/20 group relative overflow-hidden"
+                                                className="w-full flex items-center justify-center gap-4 py-6 rounded-[24px] bg-[#25D366] text-white font-[1000] text-[18px] hover:bg-[#128C7E] active:scale-95 transition-all group relative overflow-hidden"
                                             >
                                                 <div className="absolute inset-0 bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity" />
                                                 <WhatsAppBrandIcon size={36} className="group-hover:scale-110 transition-transform drop-shadow-sm" />
                                                 <span className="tracking-tight">{t({ en: 'Contact Bricoler', fr: 'Contacter le Bricoler', ar: 'اتصل بالبريكولر' })}</span>
                                             </button>
+                                        )}
+
+                                        {/* Selected Car Details section */}
+                                        {(selectedOrder as any).selectedCar && (
+                                            <div className="bg-[#F0FBF8] rounded-2xl p-5 border border-[#00A082]/20 flex flex-col gap-4">
+                                                <div className="flex justify-between items-start">
+                                                    <div>
+                                                        <h4 className="text-[12px] font-black text-[#00A082] uppercase tracking-wider mb-1">{t({ en: 'Rented Vehicle', fr: 'Véhicule Loué' })}</h4>
+                                                        <p className="text-[20px] font-[1000] text-black leading-tight">{(selectedOrder as any).selectedCar.brandName} {(selectedOrder as any).selectedCar.modelName}</p>
+                                                    </div>
+                                                    <div className="w-20 h-14 bg-white rounded-xl flex items-center justify-center p-2 border border-neutral-100 shadow-sm overflow-hidden">
+                                                        <img src={(selectedOrder as any).selectedCar.modelImage || (selectedOrder as any).selectedCar.image} alt="car" className="w-full h-full object-contain" />
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-center gap-6 pt-2 border-t border-[#00A082]/10">
+                                                    <div className="flex flex-col">
+                                                        <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-tighter">{t({ en: 'Daily Rate', fr: 'Prix/Jour' })}</span>
+                                                        <span className="text-[16px] font-black text-black">{(selectedOrder as any).selectedCar.pricePerDay || (selectedOrder as any).selectedCar.price} MAD</span>
+                                                    </div>
+                                                    <div className="flex flex-col">
+                                                        <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-tighter">{t({ en: 'Return Date', fr: 'Retour' })}</span>
+                                                        <span className="text-[16px] font-black text-[#00A082]">
+                                                            {(selectedOrder as any).carReturnDate ? format(parseISO((selectedOrder as any).carReturnDate), 'MMM d, yyyy') : '---'}
+                                                        </span>
+                                                    </div>
+                                                    <div className="flex flex-col">
+                                                        <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-tighter">{t({ en: 'Duration', fr: 'Durée' })}</span>
+                                                        <span className="text-[16px] font-black text-black">
+                                                            {(() => {
+                                                                if (selectedOrder.date && (selectedOrder as any).carReturnDate) {
+                                                                    const d = Math.max(1, Math.round((new Date((selectedOrder as any).carReturnDate).getTime() - new Date(selectedOrder.date).getTime()) / 86400000));
+                                                                    return `${d} ${t({ en: d > 1 ? 'days' : 'day', fr: d > 1 ? 'jours' : 'jour' })}`;
+                                                                }
+                                                                return selectedOrder.duration || '1 day';
+                                                            })()}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            </div>
                                         )}
                                         <div className="bg-neutral-50 rounded-2xl p-4 flex items-center gap-4 border border-neutral-100/50">
                                             <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-sm">
@@ -841,8 +880,8 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
                                                     onClick={() => handleRateBricoler(selectedOrder)}
                                                     disabled={rating === 0 || isSubmittingRating}
                                                     className={cn(
-                                                        "w-full py-4 rounded-2xl text-white font-black text-[16px] transition-all active:scale-95 flex items-center justify-center gap-2 shadow-lg shadow-[#00A082]/20",
-                                                        rating > 0 ? "bg-[#00A082]" : "bg-neutral-300 pointer-events-none opacity-50 shadow-none"
+                                                        "w-full py-4 rounded-2xl text-white font-black text-[16px] transition-all active:scale-95 flex items-center justify-center gap-2",
+                                                        rating > 0 ? "bg-[#00A082]" : "bg-neutral-300 pointer-events-none opacity-50"
                                                     )}
                                                 >
                                                     {isSubmittingRating ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : t({ en: 'Submit Review', fr: 'Envoyer l\'avis', ar: 'إرسال التقييم' })}
@@ -892,14 +931,14 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
                                                 <span className="text-[16px] font-semibold text-black">{t({ en: 'Task Fee', fr: 'Frais de tâche', ar: 'رسوم المهمة' })}</span>
                                                 <span className="text-[14px] font-light text-black">≈ {selectedOrder.duration || '2h-3h'}</span>
                                             </div>
-                                            <span className="text-[16px] font-bold text-black tracking-tight">{((selectedOrder.totalPrice || 0) * 0.85).toFixed(0)} MAD</span>
+                                            <span className="text-[16px] font-bold text-black tracking-tight">{((selectedOrder.totalPrice || parseFloat(String(selectedOrder.price || '0'))) * 0.85).toFixed(0)} MAD</span>
                                         </div>
                                         <div className="flex justify-between items-center">
                                             <div className="flex items-center gap-4">
                                                 <span className="text-[16px] font-semibold text-black">{t({ en: 'Lbricol Fee', fr: 'Frais Lbricol', ar: 'رسوم لبريكول' })}</span>
                                                 <span className="text-[14px] font-light text-black">15%</span>
                                             </div>
-                                            <span className="text-[16px] font-bold text-black tracking-tight">{((selectedOrder.totalPrice || 0) * 0.15).toFixed(0)} MAD</span>
+                                            <span className="text-[16px] font-bold text-black tracking-tight">{((selectedOrder.totalPrice || parseFloat(String(selectedOrder.price || '0'))) * 0.15).toFixed(0)} MAD</span>
                                         </div>
                                     </div>
                                 </div>
@@ -910,7 +949,7 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
                         <div className="px-6 md:px-12 py-8 bg-white border-t border-neutral-100 shadow-[0_-10px_40px_rgba(0,0,0,0.05)] z-[4001] flex flex-col gap-4">
                             <div className="flex items-center justify-between gap-4">
                                 <span className="text-[28px] md:text-[32px] font-black text-black">{t({ en: 'Total', fr: 'Total', ar: 'الإجمالي' })}</span>
-                                <span className="text-[28px] md:text-[32px] font-black text-black tracking-tighter truncate">{((selectedOrder?.totalPrice || 0)).toFixed(0)} MAD</span>
+                                <span className="text-[28px] md:text-[32px] font-black text-black tracking-tighter truncate">{((selectedOrder?.totalPrice || parseFloat(String(selectedOrder?.price || '0')))).toFixed(0)} MAD</span>
                             </div>
 
                             {/* Cancellation Button */}
@@ -949,7 +988,7 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
                         <div className="flex-shrink-0 pt-16 px-6 pb-4 bg-[#FFFFFF]">
                             <button
                                 onClick={() => setShowCancelModal(false)}
-                                className="w-12 h-12 flex items-center justify-center rounded-2xl bg-[#000000] active:scale-95 transition-all shadow-md mb-6"
+                                className="w-12 h-12 flex items-center justify-center rounded-2xl bg-[#000000] active:scale-95 transition-all mb-6"
                             >
                                 <ChevronLeft size={28} className="text-white" />
                             </button>
@@ -1039,8 +1078,8 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
                                 onClick={handleConfirmCancel}
                                 disabled={!cancelReason || isCancelling}
                                 className={cn(
-                                    "w-full py-5 rounded-2xl font-black text-[18px] text-white shadow-xl transition-all active:scale-95 flex items-center justify-center h-16",
-                                    cancelReason && !isCancelling ? "bg-red-500 shadow-red-200" : "bg-neutral-200 shadow-none pointer-events-none"
+                                    "w-full py-5 rounded-2xl font-black text-[18px] text-white transition-all active:scale-95 flex items-center justify-center h-16",
+                                    cancelReason && !isCancelling ? "bg-red-500" : "bg-neutral-200 pointer-events-none"
                                 )}
                             >
                                 {isCancelling ? (

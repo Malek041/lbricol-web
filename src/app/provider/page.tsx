@@ -200,6 +200,9 @@ interface MobileJobsViewItem {
     rawAccepted?: OrderDetails;
     isUrgent?: boolean;
     clientWhatsApp?: string;
+    selectedCar?: any;
+    carReturnDate?: string;
+    carReturnTime?: string;
 }
 
 // --- Constants & Mock Data ---
@@ -492,12 +495,18 @@ export default function ProviderPage() {
             description: isMarket ? raw.description : (raw.description || raw.comment || ''),
             clientRating: isMarket ? (raw.clientRating || raw.rating || 5.0) : (raw.clientRating || raw.rating || 5.0),
             clientReviewCount: isMarket ? (raw.clientReviewCount || 0) : (raw.clientReviewCount || 0),
-            priceLabel: isMarket ? formatJobPrice(raw.basePrice || raw.price) : String(raw.basePrice || raw.price),
+            priceLabel: isMarket
+                ? formatJobPrice(raw.totalPrice || raw.basePrice || raw.price)
+                : String(raw.totalPrice || raw.basePrice || raw.price || '0'),
             image: raw.image || '',
             images: raw.images || [],
             rawJob: isMarket ? raw : undefined,
             rawAccepted: !isMarket ? raw : undefined,
-            clientWhatsApp: raw.clientWhatsApp || raw.clientPhone || ""
+            clientWhatsApp: raw.clientWhatsApp || raw.clientPhone || "",
+            selectedCar: raw.selectedCar,
+            carReturnDate: raw.carReturnDate,
+            carReturnTime: raw.carReturnTime,
+            totalPrice: raw.totalPrice
         };
     }, [user, formatJobPrice, t]);
 
@@ -2186,6 +2195,48 @@ export default function ProviderPage() {
                                     </p>
                                 </div>
                             </div>
+
+                            {/* Selected Car Details section */}
+                            {job.selectedCar && (
+                                <div className="px-6 md:px-12 mb-8">
+                                    <div className="bg-[#F0FBF8] rounded-2xl p-5 border border-[#00A082]/20 flex flex-col gap-4">
+                                        <div className="flex justify-between items-start">
+                                            <div className="flex-1">
+                                                <h4 className="text-[12px] font-black text-[#00A082] uppercase tracking-wider mb-1">{t({ en: 'Rented Vehicle', fr: 'Véhicule Loué' })}</h4>
+                                                <p className="text-[20px] font-black text-black leading-tight">{job.selectedCar.brandName} {job.selectedCar.modelName}</p>
+                                            </div>
+                                            <div className="w-20 h-14 bg-white rounded-xl flex items-center justify-center p-2 border border-neutral-100 shadow-sm overflow-hidden flex-shrink-0 ml-4">
+                                                <img src={job.selectedCar.modelImage || job.selectedCar.image} alt="car" className="w-full h-full object-contain" />
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center gap-6 pt-2 border-t border-[#00A082]/10">
+                                            <div className="flex flex-col">
+                                                <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-tighter">{t({ en: 'Daily Rate', fr: 'Prix/Jour' })}</span>
+                                                <span className="text-[16px] font-black text-black">{job.selectedCar.pricePerDay || job.selectedCar.price} MAD</span>
+                                            </div>
+                                            <div className="flex flex-col">
+                                                <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-tighter">{t({ en: 'Return Date', fr: 'Retour' })}</span>
+                                                <span className="text-[16px] font-black text-[#00A082]">
+                                                    {job.carReturnDate ? format(new Date(job.carReturnDate), 'MMM d, yyyy') : '---'}
+                                                </span>
+                                            </div>
+                                            <div className="flex flex-col">
+                                                <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-tighter">{t({ en: 'Duration', fr: 'Durée' })}</span>
+                                                <span className="text-[16px] font-black text-black">
+                                                    {(() => {
+                                                        const startDateStr = job.rawAccepted?.date || job.rawJob?.date;
+                                                        if (startDateStr && job.carReturnDate) {
+                                                            const d = Math.max(1, Math.round((new Date(job.carReturnDate).getTime() - new Date(startDateStr).getTime()) / 86400000));
+                                                            return `${d} ${t({ en: d > 1 ? 'days' : 'day', fr: d > 1 ? 'jours' : 'jour' })}`;
+                                                        }
+                                                        return job.rawAccepted?.duration || job.rawJob?.duration || '---';
+                                                    })()}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
 
                             {/* Key Details Grid */}
                             <div className="px-6 md:px-12 mb-8">

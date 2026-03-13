@@ -14,6 +14,7 @@ import { collection, query, where, getDocs, limit, Timestamp, serverTimestamp, d
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
 import { getServiceById, getSubServiceName, getServiceVector } from '@/config/services_config';
+import { CAR_BRANDS } from '@/config/cars_config';
 import { MOROCCAN_CITIES, MOROCCAN_CITIES_AREAS } from '@/config/moroccan_areas';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/context/LanguageContext';
@@ -57,6 +58,16 @@ interface Bricoler {
     servesArea?: boolean;
     routine?: Record<string, { active: boolean; from: string; to: string }>;
     calendarSlots?: Record<string, { from: string; to: string }[]>;
+    carRentalDetails?: {
+        cars: {
+            brandId: string;
+            modelId: string;
+            modelName: string;
+            modelImage: string;
+            quantity: number;
+            pricePerDay: number;
+        }[];
+    };
 }
 
 export interface DraftOrder {
@@ -73,6 +84,8 @@ export interface DraftOrder {
     selectedBricolerId: string | null;
     selectedDate: string | null;
     selectedTime: string | null;
+    carReturnDate?: string | null;
+    carReturnTime?: string | null;
     paymentMethod: 'cash' | 'bank';
     bankReceipt: string | null;
     clientNeedImages?: string[];
@@ -81,6 +94,7 @@ export interface DraftOrder {
     step: number;
     subStep1: 'location' | 'size' | 'description' | 'languages';
     selectedLanguages?: string[];
+    selectedCar?: any;
     updatedAt: number;
 }
 
@@ -121,10 +135,10 @@ export const calculateTaskPrice = (
     referralDiscountAvailable: number = 0
 ) => {
     const activeOption = options.find((o: any) => o.id === taskSize);
-    const duration = activeOption?.duration || 1;
+    const duration = activeOption?.duration || (taskSize && !isNaN(Number(taskSize)) ? Number(taskSize) : 1);
     const coefficient = (activeOption as any)?.coefficient || (serviceId === 'errands' ? 1.5 : 1);
 
-    const isDailyCounter = serviceId === 'private_driver' ||
+    const isDailyCounter = serviceId === 'private_driver' || serviceId === 'car_rental' ||
         (serviceId === 'cooking' && activeOption?.id && !['small', 'medium', 'large', 'dishes', 'pastries', 'combo', 'shopping', 'educational', 'full', 'other'].includes(activeOption.id)) ||
         (serviceId === 'cleaning' && subService && !subService.toLowerCase().includes('car'));
 
@@ -139,7 +153,7 @@ export const calculateTaskPrice = (
         
         // Return (hourlyRate * errandCoeff) / 0.85 to ensure Bricoler gets (hourlyRate * errandCoeff)
         basePrice = (hourlyRate * errandCoeff) / 0.85;
-    } else if (isDailyCounter && serviceId === 'private_driver') {
+    } else if (isDailyCounter && (serviceId === 'private_driver' || serviceId === 'car_rental')) {
         const units = duration < 1 ? 0.5 : duration;
         // For half-day (0.5), it's (hourlyRate / 2) / 0.85
         // For 1 day, it's hourlyRate / 0.85
@@ -336,7 +350,80 @@ const playMatchSound = () => {
     }
 };
 
-const BricolerCard = ({ bricoler, onSelect, onOpenProfile, isSelected, serviceName, index = 0 }: { bricoler: Bricoler, onSelect: () => void, onOpenProfile: () => void, isSelected: boolean, serviceName: string, index?: number }) => {
+const CarCard = ({ car, bricoler, onSelect, onOpenProfile, isSelected, index = 0 }: { car: any, bricoler: Bricoler, onSelect: () => void, onOpenProfile: () => void, isSelected: boolean, index?: number }) => {
+    const { t } = useLanguage();
+    const effectiveJobs = Math.max(bricoler.completedJobs || 0, (bricoler.reviews || []).length);
+    const effectiveRating = (bricoler.rating && bricoler.rating > 0) ? bricoler.rating : 5.0;
+
+    return (
+        <motion.div
+            initial={{ opacity: 0, y: 30, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            transition={{ type: "spring", damping: 18, stiffness: 220, delay: index * 0.12 }}
+            onClick={onSelect}
+            className={cn(
+                "flex flex-col bg-white rounded-[32px] border-2 transition-all cursor-pointer overflow-hidden",
+                isSelected ? "border-[#00A082] shadow-xl shadow-[#00A082]/10" : "border-neutral-100 hover:border-neutral-200"
+            )}
+        >
+            {/* Visual Header: Car Image */}
+            <div className="relative w-full aspect-[16/10] bg-neutral-50 p-6 flex items-center justify-center overflow-hidden">
+                <img src={car.modelImage || car.image} className="w-full h-full object-contain drop-shadow-2xl transform hover:scale-105 transition-transform duration-700" alt={car.modelName} />
+                <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-md px-3 py-1.5 rounded-2xl border border-neutral-100 flex items-center gap-1.5 shadow-sm">
+                    <Star size={12} className="text-[#FFC244]" fill="#FFC244" />
+                    <span className="text-[13px] font-black text-neutral-900">{effectiveRating.toFixed(1)}</span>
+                </div>
+            </div>
+
+            {/* Content Body */}
+            <div className="p-6">
+                <div className="flex justify-between items-start mb-4">
+                    <div className="min-w-0">
+                        <h4 className="text-[18px] font-black text-neutral-900 truncate uppercase tracking-tight">{car.modelName}</h4>
+                        <div className="flex items-center gap-1.5 mt-0.5">
+                            <ShieldCheck size={14} className="text-[#00A082]" />
+                            <span className="text-[12px] font-bold text-neutral-400">{t({ en: 'Fully Insured', fr: 'Entièrement Assurée' })}</span>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Bricoler Info Row */}
+                <div onClick={(e) => { e.stopPropagation(); onOpenProfile(); }} className="flex items-center gap-3 p-3 bg-neutral-50 rounded-2xl mb-4 hover:bg-neutral-100 transition-colors">
+                    <img src={bricoler.photoURL || "/Images/Logo/Black Lbricol Avatar Face.webp"} className="w-8 h-8 rounded-full object-cover" />
+                    <div className="flex flex-1 flex-col">
+                        <span className="text-[12px] font-black text-neutral-900 leading-tight">{bricoler.displayName}</span>
+                        <span className="text-[10px] font-bold text-neutral-400">{effectiveJobs} {t({ en: 'rentals', fr: 'locations' })}</span>
+                    </div>
+                    <ChevronRight size={14} className="text-neutral-300" />
+                </div>
+
+                {/* Price and Action */}
+                <div className="flex items-center justify-between mt-2 pt-4 border-t border-neutral-50">
+                    <div className="flex flex-col">
+                        <span className="text-[20px] font-black text-[#00A082]">MAD {car.pricePerDay || car.price}</span>
+                        <span className="text-[11px] font-bold text-neutral-400 uppercase tracking-widest leading-none">{t({ en: 'per day', fr: 'par jour' })}</span>
+                    </div>
+                    <button className={cn(
+                        "h-12 px-6 rounded-full text-[14px] font-black transition-all",
+                        isSelected ? "bg-[#00A082] text-white" : "bg-neutral-900 text-white hover:bg-neutral-800"
+                    )}>
+                        {isSelected ? t({ en: 'Selected', fr: 'Choisie' }) : t({ en: 'Rent Car', fr: 'Louer' })}
+                    </button>
+                </div>
+            </div>
+        </motion.div>
+    );
+};
+
+const BricolerCard = ({ 
+    bricoler, onSelect, onOpenProfile, isSelected, serviceName, service, index = 0,
+    carRentalBookings = [], selectedPickUpDate, selectedPickUpTime, selectedReturnDate, selectedReturnTime
+}: { 
+    bricoler: Bricoler, onSelect: () => void, onOpenProfile: () => void, isSelected: boolean, 
+    serviceName: string, service?: string, index?: number,
+    carRentalBookings?: any[], selectedPickUpDate?: string | null, selectedPickUpTime?: string | null,
+    selectedReturnDate?: string | null, selectedReturnTime?: string | null
+}) => {
     const { t } = useLanguage();
     // effectiveJobs takes the max of different count fields for robustness (shadow vs real profiles)
     const effectiveJobs = Math.max(
@@ -456,21 +543,164 @@ const BricolerCard = ({ bricoler, onSelect, onOpenProfile, isSelected, serviceNa
                 </button>
             </div>
 
+            {/* Brand Logo Strip */}
+            {service === 'car_rental' && bricoler.carRentalDetails?.cars && bricoler.carRentalDetails.cars.length > 0 && (() => {
+                const convertTimeTo24h = (timeStr: string | null) => {
+                    if (!timeStr || timeStr === '-') return "00:00:00";
+                    const parts = timeStr.split(' ');
+                    if (parts.length < 2) return timeStr.includes(':') ? timeStr + ":00" : "00:00:00";
+                    const [time, modifier] = parts;
+                    let [hours, minutes] = time.split(':').map(Number);
+                    if (modifier === 'PM' && hours < 12) hours += 12;
+                    if (modifier === 'AM' && hours === 12) hours = 0;
+                    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:00`;
+                };
+
+                const isCarAvailable = (car: any) => {
+                    if (!selectedPickUpDate || !selectedPickUpTime || !selectedReturnDate || !selectedReturnTime) return true;
+                    try {
+                        const requestStart = new Date(`${selectedPickUpDate}T${convertTimeTo24h(selectedPickUpTime)}`);
+                        const requestEnd = new Date(`${selectedReturnDate}T${convertTimeTo24h(selectedReturnTime)}`);
+                        if (isNaN(requestStart.getTime()) || isNaN(requestEnd.getTime())) return true;
+
+                        const overlaps = carRentalBookings.filter(booking => {
+                            const bModelId = booking.car?.modelId || booking.orderDetails?.car?.modelId;
+                            if (bModelId !== car.modelId) return false;
+                            
+                            // Condition: Must be for the same provider
+                            if (booking.bricolerId !== bricoler.id) return false;
+                            
+                            const bStart = new Date(`${booking.taskDate || booking.startDate}T${convertTimeTo24h(booking.taskTime || booking.startTime)}`);
+                            const bEnd = new Date(`${booking.carReturnDate || booking.taskDate}T${convertTimeTo24h(booking.carReturnTime || booking.taskTime)}`);
+                            return requestStart < bEnd && requestEnd > bStart;
+                        });
+                        return overlaps.length < (car.quantity || 1);
+                    } catch (e) { return true; }
+                };
+
+                // Deduplicate brands
+                const seenBrands = new Set<string>();
+                const brands: { id: string; name: string; logo: string; availableCount: number; totalCount: number }[] = [];
+                bricoler.carRentalDetails.cars.forEach((car: any) => {
+                    if (!car.brandId || seenBrands.has(car.brandId)) return;
+                    seenBrands.add(car.brandId);
+                    const found = CAR_BRANDS.find(b => b.id === car.brandId);
+                    const sameBrandCars = bricoler.carRentalDetails!.cars.filter((c: any) => c.brandId === car.brandId);
+                    const availableCount = sameBrandCars.filter(c => isCarAvailable(c)).length;
+
+                    brands.push({
+                        id: car.brandId,
+                        name: car.brandName || found?.name || car.brandId,
+                        logo: found?.logo || '',
+                        availableCount,
+                        totalCount: sameBrandCars.length
+                    });
+                });
+                if (brands.length === 0) return null;
+                return (
+                    <div className="mt-3 -mx-3 px-3 overflow-x-auto no-scrollbar" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex gap-2.5 pb-1">
+                            {brands.map((brand) => (
+                                <div key={brand.id} className={cn("flex-shrink-0 flex flex-col items-center gap-1.5 w-[60px]", brand.availableCount === 0 && "opacity-50 grayscale")}>
+                                    <div className="w-[52px] h-[52px] rounded-2xl bg-neutral-50 border border-neutral-100 flex items-center justify-center p-2 overflow-hidden">
+                                        {brand.logo
+                                            ? <img src={brand.logo} className="w-full h-full object-contain" alt={brand.name} />
+                                            : <span className="text-[9px] font-black text-neutral-500 text-center leading-tight">{brand.name}</span>
+                                        }
+                                    </div>
+                                    <p className="text-[10px] font-bold text-neutral-600 truncate w-full text-center leading-none">{brand.name}</p>
+                                    <p className={cn("text-[9px] font-bold leading-none", brand.availableCount > 0 ? "text-[#00A082]" : "text-red-500")}>
+                                        {brand.availableCount > 0 ? `${brand.availableCount}/${brand.totalCount} ${t({ en: 'av.', fr: 'dispo.' })}` : t({ en: 'Full', fr: 'Complet' })}
+                                    </p>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                );
+            })()}
+
             {/* Action Button */}
             <div className="px-0.5 mt-1">
                 <button
-                    onClick={(e) => { e.stopPropagation(); onSelect(); }}
+                    onClick={(e) => { e.stopPropagation(); service === 'car_rental' ? onOpenProfile() : onSelect(); }}
                     className="w-full h-[42px] bg-[#00A082] text-white rounded-full text-[16px] font-black active:scale-[0.98] transition-all"
                 >
-                    {t({ en: 'Select & Continue', fr: 'Choisir & Continuer', ar: 'اختر وتابع' })}
+                    {service === 'car_rental' ? t({ en: 'View Details', fr: 'Voir les détails', ar: 'عرض التفاصيل' }) : t({ en: 'Select & Continue', fr: 'Choisir & Continuer', ar: 'اختر وتابع' })}
                 </button>
             </div>
         </motion.div>
     );
 };
 
-const BricolerProfileModal = ({ bricoler, isOpen, onClose, onSelect, isSelected, serviceName, service }: { bricoler: Bricoler, isOpen: boolean, onClose: () => void, onSelect: () => void, isSelected: boolean, serviceName: string, service?: string }) => {
+const BricolerProfileModal = ({ 
+    bricoler, isOpen, onClose, onSelect, isSelected, serviceName, service,
+    carRentalBookings = [], selectedPickUpDate, selectedPickUpTime, selectedReturnDate, selectedReturnTime
+}: { 
+    bricoler: Bricoler, isOpen: boolean, onClose: () => void, onSelect: (car?: any, note?: string) => void, 
+    isSelected: boolean, serviceName: string, service?: string,
+    carRentalBookings?: any[], selectedPickUpDate?: string | null, selectedPickUpTime?: string | null,
+    selectedReturnDate?: string | null, selectedReturnTime?: string | null
+}) => {
     const { t } = useLanguage();
+    const [localSelectedCar, setLocalSelectedCar] = useState<any>(null);
+    const [localNote, setLocalNote] = useState('');
+
+    const convertTimeTo24h = (timeStr: string | null) => {
+        if (!timeStr || timeStr === '-') return "00:00:00";
+        const parts = timeStr.split(' ');
+        if (parts.length < 2) return timeStr.includes(':') ? timeStr + ":00" : "00:00:00";
+        const [time, modifier] = parts;
+        let [hours, minutes] = time.split(':').map(Number);
+        if (modifier === 'PM' && hours < 12) hours += 12;
+        if (modifier === 'AM' && hours === 12) hours = 0;
+        return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:00`;
+    };
+
+    const isCarModelAvailable = (car: any) => {
+        if (!selectedPickUpDate || !selectedPickUpTime || !selectedReturnDate || !selectedReturnTime) return true;
+        
+        try {
+            const requestStart = new Date(`${selectedPickUpDate}T${convertTimeTo24h(selectedPickUpTime)}`);
+            const requestEnd = new Date(`${selectedReturnDate}T${convertTimeTo24h(selectedReturnTime)}`);
+            
+            if (isNaN(requestStart.getTime()) || isNaN(requestEnd.getTime())) return true;
+
+            const overlappingBookings = carRentalBookings.filter(booking => {
+                const bookingModelId = booking.car?.modelId || booking.orderDetails?.car?.modelId;
+                if (bookingModelId !== car.modelId) return false;
+
+                // Condition: Must be for the same provider
+                if (booking.bricolerId !== bricoler.id) return false;
+
+                const bDate = booking.taskDate || booking.startDate;
+                const bTime = booking.taskTime || booking.startTime;
+                const bReturnDate = booking.carReturnDate || bDate;
+                const bReturnTime = booking.carReturnTime || bTime;
+
+                const bookingStart = new Date(`${bDate}T${convertTimeTo24h(bTime)}`);
+                const bookingEnd = new Date(`${bReturnDate}T${convertTimeTo24h(bReturnTime)}`);
+
+                if (isNaN(bookingStart.getTime()) || isNaN(bookingEnd.getTime())) return false;
+
+                // Condition 1: Time Window Overlap
+                return requestStart < bookingEnd && requestEnd > bookingStart;
+            });
+
+            // Condition 2: Stock Check
+            const stockQuantity = car.quantity || 1;
+            return overlappingBookings.length < stockQuantity;
+        } catch (e) {
+            return true;
+        }
+    };
+
+    useEffect(() => {
+        if (isOpen) {
+            setLocalSelectedCar(null);
+            setLocalNote('');
+        }
+    }, [isOpen]);
+
     if (!bricoler) return null;
 
     // Normalize a service id/name for comparison
@@ -558,7 +788,11 @@ const BricolerProfileModal = ({ bricoler, isOpen, onClose, onSelect, isSelected,
                                         })()}
                                     </div>
                                     <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1 text-[20px] font-bold text-[#00A082]">
-                                        <span className="whitespace-nowrap">MAD {bricoler.hourlyRate || 75}</span>
+                                        <span className="whitespace-nowrap">
+                                            {service === 'car_rental' && (bricoler as any).carRentalDetails?.cars?.length > 0
+                                                ? `MAD ${Math.min(...(bricoler as any).carRentalDetails.cars.map((c: any) => c.pricePerDay || c.price || 9999))}`
+                                                : `MAD ${bricoler.hourlyRate || 75}`}
+                                        </span>
                                         <span className="text-[15px] font-medium text-neutral-400">(min)</span>
                                     </div>
                                 </div>
@@ -612,6 +846,65 @@ const BricolerProfileModal = ({ bricoler, isOpen, onClose, onSelect, isSelected,
                                     </p>
                                 </div>
                             ) : null}
+
+                            {/* Car Rental Details */}
+                            {service === 'car_rental' && bricoler.carRentalDetails?.cars && bricoler.carRentalDetails.cars.length > 0 && (
+                                <div className="mb-8">
+                                    <h4 className="text-[18px] font-black text-neutral-900 mb-4">{t({ en: 'Available Vehicles', fr: 'Véhicules Disponibles', ar: 'السيارات المتاحة' })}</h4>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        {bricoler.carRentalDetails.cars.map((car: any, i: number) => {
+                                            const isSelectedCar = localSelectedCar?.modelId === car.modelId;
+                                            const available = isCarModelAvailable(car);
+                                            return (
+                                                <div 
+                                                    key={i} 
+                                                    onClick={() => available && setLocalSelectedCar(car)}
+                                                    className={cn(
+                                                        "relative rounded-2xl border p-3 cursor-pointer transition-all",
+                                                        isSelectedCar ? "bg-[#F0FBF8] border-[#00A082] shadow-sm active:scale-95" : 
+                                                        available ? "bg-neutral-50 border-neutral-100 hover:border-[#00A082]/30 active:scale-95" : 
+                                                        "bg-neutral-100 border-neutral-100 opacity-50 cursor-not-allowed grayscale-[0.5]"
+                                                    )}
+                                                >
+                                                    {/* Car Image */}
+                                                    <div className="w-full h-[80px] rounded-xl bg-white flex items-center justify-center p-2 overflow-hidden mb-2">
+                                                        <img src={car.modelImage || car.image} className="w-full h-full object-contain" alt={car.modelName} />
+                                                    </div>
+                                                    {/* Info */}
+                                                    <p className="text-[13px] font-black text-neutral-900 truncate uppercase tracking-tight leading-tight">{car.modelName}</p>
+                                                    <div className="flex items-center justify-between mt-1">
+                                                        <span className="text-[12px] font-bold text-[#00A082]">{car.pricePerDay || car.price} MAD/j</span>
+                                                        <span className="text-[10px] font-bold text-neutral-400">x{car.quantity}</span>
+                                                    </div>
+                                                    {/* Status Badge */}
+                                                    {!available && (
+                                                        <div className="absolute top-2 left-2 bg-red-500 text-white text-[8px] font-black px-1.5 py-0.5 rounded-full uppercase">
+                                                            {t({ en: 'Booked', fr: 'Réservée' })}
+                                                        </div>
+                                                    )}
+                                                    {/* Selected check */}
+                                                    {isSelectedCar && (
+                                                        <div className="absolute top-2 right-2 w-5 h-5 bg-[#00A082] rounded-full flex items-center justify-center shadow">
+                                                            <Check size={11} className="text-white" strokeWidth={4} />
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                    
+                                    {/* Optional Description inside Car Rental Modal */}
+                                    <div className="mt-4">
+                                        <h4 className="text-[15px] font-black text-neutral-900 mb-2">{t({ en: 'Additional Notes (Optional)', fr: 'Notes supplémentaires (Optionnel)', ar: 'ملاحظات إضافية (اختياري)' })}</h4>
+                                        <textarea
+                                            value={localNote}
+                                            onChange={(e) => setLocalNote(e.target.value)}
+                                            placeholder={t({ en: 'Any specific requests for the car?', fr: 'Des demandes spécifiques pour la voiture ?', ar: 'أي طلبات خاصة للسيارة؟' })}
+                                            className="w-full h-24 p-3 rounded-xl border border-neutral-200 bg-neutral-50 text-[14px] outline-none focus:border-[#00A082] resize-none"
+                                        />
+                                    </div>
+                                </div>
+                            )}
 
 
                             {/* Service Specific Equipments */}
@@ -701,10 +994,14 @@ const BricolerProfileModal = ({ bricoler, isOpen, onClose, onSelect, isSelected,
                     <div className="p-6 border-t border-neutral-100 bg-white">
                         <button
                             onClick={() => {
-                                onSelect();
+                                onSelect(localSelectedCar, localNote);
                                 onClose();
                             }}
-                            className="w-full h-16 bg-[#00A082] hover:bg-[#008C74] text-white text-[18px] font-bold rounded-full active:scale-95 transition-all flex items-center justify-center gap-3"
+                            disabled={service === 'car_rental' && !localSelectedCar}
+                            className={cn(
+                                "w-full h-16 text-[18px] font-bold rounded-full transition-all flex items-center justify-center gap-3",
+                                (service === 'car_rental' && !localSelectedCar) ? "bg-neutral-100 text-neutral-400 cursor-not-allowed" : "bg-[#00A082] hover:bg-[#008C74] text-white active:scale-95"
+                            )}
                         >
                             {isSelected ? t({ en: 'Already Selected', fr: 'Déjà sélectionné', ar: 'مختار بالفعل' }) : t({ en: 'Select & Continue', fr: 'Choisir & Continuer', ar: 'اختر وتابع' })}
                             <ChevronRight size={22} className="mt-0.5" />
@@ -746,6 +1043,8 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
     const [viewedBricoler, setViewedBricoler] = useState<Bricoler | null>(null); // To open profile modal
     const [selectedDate, setSelectedDate] = useState<string | null>(null);
     const [selectedTime, setSelectedTime] = useState<string | null>(null);
+    const [carReturnDate, setCarReturnDate] = useState<string | null>(null);
+    const [carReturnTime, setCarReturnTime] = useState<string | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isMatchingAnimation, setIsMatchingAnimation] = useState(false);
     const [paymentMethod, setPaymentMethod] = useState<'cash' | 'bank'>('cash');
@@ -754,6 +1053,7 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
     const [images, setImages] = useState<string[]>(continueDraft?.images || []);
     const [isUploadingImages, setIsUploadingImages] = useState(false);
     const [frequency, setFrequency] = useState<'once' | 'daily' | 'weekly' | 'biweekly' | 'monthly'>('once');
+    const [selectedCar, setSelectedCar] = useState<any | null>(continueDraft?.selectedCar || null);
     const [showSuccessAnimation, setShowSuccessAnimation] = useState(false);
 
     const [referralDiscountAvailable, setReferralDiscountAvailable] = useState<number>(0);
@@ -781,14 +1081,40 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
         }
     }, [isOpen]);
 
-    // Auto-select today/first available date when entering step 3
+    // Auto-select today/current time defaults when opening
     useEffect(() => {
-        if (step === 3 && !selectedDate) {
-            const today = new Date();
-            const todayStr = format(today, 'yyyy-MM-dd');
-            setSelectedDate(todayStr);
+        if (isOpen) {
+            if (!selectedDate) {
+                const today = new Date();
+                const todayStr = format(today, 'yyyy-MM-dd');
+                setSelectedDate(todayStr);
+            }
+            
+            if (!selectedTime) {
+                const now = new Date();
+                let hours = now.getHours();
+                let mins = now.getMinutes();
+                
+                // Snap to next 30-min slot
+                if (mins > 30) {
+                    hours += 1;
+                    mins = 0;
+                } else if (mins > 0) {
+                    mins = 30;
+                }
+                
+                const finalHours = hours % 24;
+                const hourStr = `${String(finalHours).padStart(2, '0')}:${String(mins).padStart(2, '0')}`;
+                setSelectedTime(hourStr);
+            }
+
+            // Ensure car rental return dates are explicitly null by default (safety)
+            if (service === 'car_rental' && !carReturnDate) {
+                setCarReturnDate(null);
+                setCarReturnTime(null);
+            }
         }
-    }, [step, selectedDate]);
+    }, [isOpen]);
 
     // Location Change State
     const [isSelectingLocation, setIsSelectingLocation] = useState(false);
@@ -806,6 +1132,8 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
     const draftIdRef = useRef<string | null>(null);
 
     const [isLoadingBookings, setIsLoadingBookings] = useState(false);
+    const [carRentalBookings, setCarRentalBookings] = useState<any[]>([]);
+    const [openCalendarMode, setOpenCalendarMode] = useState<'pickup' | 'return' | null>(null);
 
     const serviceConfig = useMemo(() => {
         const sKey = service?.toLowerCase().replace(/ /g, '_');
@@ -1084,16 +1412,49 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                     title: t({ en: "How many windows/surfaces?", fr: "Combien de fenêtres/surfaces ?", ar: "كم عدد النوافذ/الأسطح؟" }),
                     options: [
                         { id: 'small', duration: 2, label: { en: 'Few Windows / Minor', fr: 'Quelques Fenêtres / Mineur', ar: 'نوافذ قليلة / عمل بسيط' }, estTime: { en: 'Est: 1-2 hrs', fr: 'Est: 1-2h', ar: '1-2 ساعة' }, desc: { en: 'Cleaning glass in a small apartment or storefront.', fr: 'Nettoyage des vitres pour petit appartement ou vitrine.', ar: 'تنظيف الزجاج في شقة صغيرة أو محل تجاري.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/SmallTask.webp' },
-                        { id: 'medium', duration: 4, label: { en: 'Standard House', fr: 'Maison Standard', ar: 'منزل عادي' }, estTime: { en: 'Est: 3-4 hrs', fr: 'Est: 3-4h', ar: '3-4 ساعات' }, desc: { en: 'Full interior/exterior window cleaning for a typical home.', fr: 'Nettoyage complet (intérieur/extérieur) pour maison typique.', ar: 'تنظيف كامل للنوافذ (داخلي/خارجي) لمنزل عادي.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/MediumSize.webp' },
-                        { id: 'large', duration: 6, label: { en: 'Large House / High glass', fr: 'Grande Maison / Vitres Hautes', ar: 'منزل كبير / نوافذ عالية' }, estTime: { en: 'Est: 6+ hrs', fr: 'Est: 6h+', ar: 'أكثر من 6 ساعات' }, desc: { en: 'Extensive glass cleaning requiring ladders or specialized tools.', fr: 'Nettoyage intensif nécessitant échelle ou outils spéciaux.', ar: 'تنظيف زجاج شامل يتطلب سلالم أو أدوات خاصة.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/BigTask.webp' },
+                        { id: 'medium', duration: 4, label: { en: 'Standard House', fr: 'Maison Standard', ar: 'منزل عادي' }, estTime: { en: 'Est: 3-4 hrs', fr: 'Est: 3-4h', ar: '3-4 ساعات' }, desc: { en: 'Full interior/exterior window cleaning for a typical home.', fr: 'Nettoyage complet (intérieur/extérieur) pour maison typique.', ar: 'تنظيف كامل للنوافذ (داخلي/خارجي) للمنازل العادية.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/MediumSize.webp' },
+                        { id: 'large', duration: 8, label: { en: 'Large Property / Commercial', fr: 'Grande Propriété / Commercial', ar: 'منزل كبير / تجاري' }, estTime: { en: 'Est: 6-8 hrs', fr: 'Est: 6-8h', ar: '6-8 ساعات' }, desc: { en: 'Extensive window cleaning for large homes or offices.', fr: 'Nettoyage intensif des vitres pour grandes maisons ou bureaux.', ar: 'تنظيف شامل للنوافذ للمنازل الكبيرة أو المكاتب.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/BigTask.webp' },
                     ]
+                };
+            case 'driver':
+            case 'airport':
+            case 'transport_city':
+            case 'transport_intercity':
+                return {
+                    title: t({ en: "How long do you need the service?", fr: "Combien de temps avez-vous besoin du service ?", ar: "كم من الوقت تحتاج الخدمة؟" }),
+                    options: [
+                        { id: 'small', duration: 2, label: { en: 'Short Trip (1-2 hrs)', fr: 'Trajet Court (1-2h)', ar: 'رحلة قصيرة (1-2 ساعات)' }, estTime: { en: 'Est: 1-2 hrs', fr: 'Est: 1-2h', ar: 'حوالي 1-2 ساعة' }, desc: { en: 'Quick ride or airport transfer.', fr: 'Course rapide ou transfert aéroport.', ar: 'توصيلة سريعة أو نقل للمطار.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/SmallTask.webp' },
+                        { id: 'medium', duration: 5, label: { en: 'Half Day (3-5 hrs)', fr: 'Demi-journée (3-5h)', ar: 'نصف يوم (3-5 ساعات)' }, estTime: { en: 'Est: 3-5 hrs', fr: 'Est: 3-5h', ar: 'حوالي 3-5 ساعات' }, desc: { en: 'Multiple stops or city tour.', fr: 'Plusieurs arrêts ou visite de la ville.', ar: 'توقفات متعددة أو جولة في المدينة.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/MediumSize.webp' },
+                        { id: 'large', duration: 8, label: { en: 'Full Day (8+ hrs)', fr: 'Journée Complète (8h+)', ar: 'يوم كامل (8+ ساعات)' }, estTime: { en: 'Est: 8+ hrs', fr: 'Est: 8h+', ar: 'أكثر من 8 ساعات' }, desc: { en: 'Driver available for the entire day.', fr: 'Chauffeur disponible pour toute la journée.', ar: 'سائق متاح طوال اليوم.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/BigTask.webp' },
+                    ]
+                };
+            case 'car_rental':
+                return {
+                    title: t({ en: "How many days do you need the car?", fr: "Combien de jours avez-vous besoin de la voiture ?", ar: "كم يوماً تحتاج فيه للسيارة؟" }),
+                    isDaily: true,
+                    isDayCounter: true,
+                    swipeText: t({ en: "Swipe to define exactly how many days you need.", fr: "Faites défiler pour définir le nombre de jours exact.", ar: "قم بالتمرير لتحديد عدد الأيام بالضبط." }),
+                    defaultDays: 1,
+                    options: Array.from({ length: 30 }, (_, i) => ({
+                        id: String(i + 1),
+                        duration: i + 1,
+                        label: { en: String(i + 1), fr: String(i + 1), ar: String(i + 1) },
+                        subLabel: {
+                            en: i === 0 ? 'DAY' : 'DAYS',
+                            fr: i === 0 ? 'JOUR' : 'JOURS',
+                            ar: i === 0 ? 'يوم' : 'أيام'
+                        },
+                        estTime: { en: '', fr: '', ar: '' },
+                        desc: { en: '', fr: '', ar: '' },
+                        icon: ''
+                    }))
                 };
             case 'pool_cleaning':
                 return {
-                    title: t({ en: "How big is your pool?", fr: "Quelle est la taille de votre piscine ?", ar: "ما هو حجم المسبح؟" }),
+                    title: t({ en: "How big is your pool?", fr: "Quelle est la taille de la piscine ?", ar: "ما هو حجم المسبح؟" }),
                     options: [
-                        { id: 'small', duration: 1, label: { en: 'Small / Plunge Pool', fr: 'Petit / Bassin de trempage', ar: 'مسبح صغير / غطس' }, estTime: { en: 'Est: 1 hr', fr: 'Est: 1h', ar: 'حوالي ساعة' }, desc: { en: 'Chemical check and minor surface skimming.', fr: 'Contrôle chimique et léger écrémage de surface.', ar: 'فحص المواد الكيميائية وتنظيف سطحي بسيط.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/SmallTask.webp' },
-                        { id: 'medium', duration: 3, label: { en: 'Standard In-ground', fr: 'Standard enterrée', ar: 'مسبح عادي محفور' }, estTime: { en: 'Est: 2-3 hrs', fr: 'Est: 2-3h', ar: '2-3 ساعات' }, desc: { en: 'Full vacuum, filter clean, and chemical balance.', fr: 'Aspiration complète, nettoyage du filtre et équilibre chimique.', ar: 'تنظيف كامل، تنظيف الفلتر وتوازن كيميائي.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/MediumSize.webp' },
+                        { id: 'small', duration: 1.5, label: { en: 'Small / Maintenance', fr: 'Petite / Entretien', ar: 'مسبح صغير / صيانة' }, estTime: { en: 'Est: 1.5 hrs', fr: 'Est: 1.5h', ar: 'حوالي 1.5 ساعة' }, desc: { en: 'Quick skimming, chemical check, and filter rinse.', fr: 'Écrémage rapide, contrôle chimique et rinçage du filtre.', ar: 'إزالة شوائب سريعة، فحص كيميائي وشطف الفلتر.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/SmallTask.webp' },
+                        { id: 'medium', duration: 3, label: { en: 'Standard Cleaning', fr: 'Nettoyage Standard', ar: 'تنظيف عادي' }, estTime: { en: 'Est: 3 hrs', fr: 'Est: 3h', ar: 'حوالي 3 ساعات' }, desc: { en: 'Full vacuum, filter clean, and chemical balance.', fr: 'Aspiration complète, nettoyage du filtre et équilibre chimique.', ar: 'تنظيف كامل، تنظيف الفلتر وتوازن كيميائي.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/MediumSize.webp' },
                         { id: 'large', duration: 5, label: { en: 'Large / Green-to-Clean', fr: 'Grande / Remise en état', ar: 'مسبح كبير / معالجة' }, estTime: { en: 'Est: 5+ hrs', fr: 'Est: 5h+', ar: 'أكثر من 5 ساعات' }, desc: { en: 'Extensive cleaning for large pools or water restoration.', fr: 'Nettoyage intensif pour grandes piscines ou restauration de l\'eau.', ar: 'تنظيف شامل للمسابح الكبيرة أو معالجة المياه.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/BigTask.webp' },
                     ]
                 };
@@ -1104,19 +1465,6 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                         { id: 'small', duration: 1, label: { en: 'Walk / Quick Visit', fr: 'Promenade / Visite rapide', ar: 'نزهة / زيارة سريعة' }, estTime: { en: 'Est: 1 hr', fr: 'Est: 1h', ar: 'حوالي ساعة' }, desc: { en: '30-60 min walk or feeding check-in.', fr: 'Promenade de 30-60 min ou passage pour nourrir.', ar: 'نزهة 30-60 دقيقة أو فحص إطعام.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/SmallTask.webp' },
                         { id: 'medium', duration: 4, label: { en: 'Half Day Sitting', fr: 'Garde demi-journée', ar: 'رعاية نصف يوم' }, estTime: { en: 'Est: 4 hrs', fr: 'Est: 4h', ar: '4 ساعات' }, desc: { en: 'Pet sitting and companionship for a few hours.', fr: 'Garde d\'animaux et compagnie pendant quelques heures.', ar: 'رعاية ومرافقة للحيوان لعدة ساعات.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/MediumSize.webp' },
                         { id: 'large', duration: 8, label: { en: 'Full Day / Overnight', fr: 'Journée / Nuit', ar: 'يوم كامل / مبيت' }, estTime: { en: 'Est: 8+ hrs', fr: 'Est: 8h+', ar: 'أكثر من 8 ساعات' }, desc: { en: 'Comprehensive care for the entire day or night.', fr: 'Soins complets pour toute la journée ou la nuit.', ar: 'رعاية شاملة لليوم أو الليلة بالكامل.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/BigTask.webp' },
-                    ]
-                };
-            case 'driver':
-            case 'car_rental':
-            case 'airport':
-            case 'transport_city':
-            case 'transport_intercity':
-                return {
-                    title: t({ en: "How long do you need the service?", fr: "Combien de temps avez-vous besoin du service ?", ar: "كم من الوقت تحتاج الخدمة؟" }),
-                    options: [
-                        { id: 'small', duration: 2, label: { en: 'Short Trip (1-2 hrs)', fr: 'Trajet Court (1-2h)', ar: 'رحلة قصيرة (1-2 ساعات)' }, estTime: { en: 'Est: 1-2 hrs', fr: 'Est: 1-2h', ar: 'حوالي 1-2 ساعة' }, desc: { en: 'Quick ride or airport transfer.', fr: 'Course rapide ou transfert aéroport.', ar: 'توصيلة سريعة أو نقل للمطار.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/SmallTask.webp' },
-                        { id: 'medium', duration: 5, label: { en: 'Half Day (3-5 hrs)', fr: 'Demi-journée (3-5h)', ar: 'نصف يوم (3-5 ساعات)' }, estTime: { en: 'Est: 3-5 hrs', fr: 'Est: 3-5h', ar: 'حوالي 3-5 ساعات' }, desc: { en: 'Multiple stops or city tour.', fr: 'Plusieurs arrêts ou visite de la ville.', ar: 'توقفات متعددة أو جولة في المدينة.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/MediumSize.webp' },
-                        { id: 'large', duration: 8, label: { en: 'Full Day (8+ hrs)', fr: 'Journée Complète (8h+)', ar: 'يوم كامل (8+ ساعات)' }, estTime: { en: 'Est: 8+ hrs', fr: 'Est: 8h+', ar: 'أكثر من 8 ساعات' }, desc: { en: 'Driver available for the entire day.', fr: 'Chauffeur disponible pour toute la journée.', ar: 'سائق متاح طوال اليوم.' }, icon: '/Images/Location&taskSize_OrderSetup/TaskSizes/BigTask.webp' },
                     ]
                 };
             case 'cooking':
@@ -1234,7 +1582,13 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
 
     // Use full data if available, otherwise fallback to the index version
     const basePro = fullSelectedProData || bricolers.find(b => b.id === selectedBricolerId);
-    const selectedProRate = getProRateForService(basePro as any, service);
+    let selectedProRate = getProRateForService(basePro as any, service);
+    
+    // For car rental, override pro's minimum rate with the specific car's daily rate
+    if (service === 'car_rental' && selectedCar?.pricePerDay) {
+        selectedProRate = selectedCar.pricePerDay;
+    }
+    
     const selectedPro = basePro ? { ...basePro, hourlyRate: selectedProRate } : null;
 
     // Auto-scroll the day counter to the selected taskSize
@@ -1306,9 +1660,12 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                 setSelectedBricolerId(continueDraft.selectedBricolerId);
                 setSelectedDate(continueDraft.selectedDate);
                 setSelectedTime(continueDraft.selectedTime);
+                setCarReturnDate((continueDraft as any).carReturnDate || null);
+                setCarReturnTime((continueDraft as any).carReturnTime || null);
                 setPaymentMethod(continueDraft.paymentMethod);
                 setBankReceipt(continueDraft.bankReceipt);
                 setFrequency(continueDraft.frequency || 'once');
+                setSelectedCar(continueDraft.selectedCar || null);
                 setCurrentCity(continueDraft.city || '');
                 setCurrentArea(continueDraft.area || '');
                 setTempCity(continueDraft.city || '');
@@ -1361,11 +1718,14 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
             selectedBricolerId,
             selectedDate,
             selectedTime,
+            carReturnDate,
+            carReturnTime,
             paymentMethod,
             bankReceipt,
             images,
             clientNeedImages: images,
             frequency,
+            selectedCar,
             step,
             subStep1,
             updatedAt: Date.now()
@@ -1394,7 +1754,7 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
     }, [
         isOpen, service, subService, currentCity, currentArea,
         taskSize, description, selectedBricolerId, selectedDate,
-        step, subStep1, paymentMethod, bankReceipt, images, frequency, selectedTime
+        step, subStep1, paymentMethod, bankReceipt, images, frequency, selectedTime, selectedCar
     ]);
 
     useEffect(() => {
@@ -1603,13 +1963,16 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
     }, [service, subService, t]);
 
     const handleStartMatching = () => {
-        if (!taskSize || !description.trim()) return;
+        // For car_rental, skip taskSize/description validation
+        if (service !== 'car_rental' && (!taskSize || !description.trim())) return;
 
-        try {
-            const drafts = [description.trim(), ...descriptionDrafts.filter(d => d !== description.trim())].slice(0, 5);
-            setDescriptionDrafts(drafts);
-            localStorage.setItem('lbricol_description_drafts', JSON.stringify(drafts));
-        } catch (e) { }
+        if (service !== 'car_rental') {
+            try {
+                const drafts = [description.trim(), ...descriptionDrafts.filter(d => d !== description.trim())].slice(0, 5);
+                setDescriptionDrafts(drafts);
+                localStorage.setItem('lbricol_description_drafts', JSON.stringify(drafts));
+            } catch (e) { }
+        }
 
         setStep(2);
         setIsMatchingAnimation(true);
@@ -1921,6 +2284,7 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
             movingTransport: data.movingTransport,
             whatsappNumber: data.whatsappNumber,
             servesArea,
+            carRentalDetails: data.carRentalDetails,
         });
 
         let results: Bricoler[] = [];
@@ -1966,6 +2330,7 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
             // ── FALLBACK: If index found nothing or failed, use full scan ──
             if (results.length === 0) {
                 console.info('[fetchBricolers] Index returned 0 matches, scanning full bricolers collection for', baseCity);
+                // Try exact city match first
                 const fallbackSnap = await getDocs(
                     query(collection(db, 'bricolers'), where('city', '==', baseCity))
                 );
@@ -1983,6 +2348,53 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                     return ((b.rating || 0) * Math.log10((b.completedJobs || 0) + 2))
                         - ((a.rating || 0) * Math.log10((a.completedJobs || 0) + 2));
                 });
+            }
+
+            // ── car_rental SUPER-FALLBACK: if still empty, scan all docs with carRentalDetails ──
+            // This handles spelling mismatches in city or stale city_index entries
+            if (results.length === 0 && service === 'car_rental') {
+                console.info('[fetchBricolers] car_rental super-fallback: scanning all docs with carRentalDetails');
+                const carSnap = await getDocs(
+                    query(collection(db, 'bricolers'), where('isActive', '==', true))
+                );
+                const citySim = (a: string, b: string) => normalize(a).includes(normalize(b)) || normalize(b).includes(normalize(a));
+                carSnap.docs.forEach(docSnap => {
+                    const data = docSnap.data();
+                    if (!data.carRentalDetails?.cars?.length) return;
+                    // Only include if city roughly matches
+                    if (!citySim(data.city || '', baseCity)) return;
+                    const servesArea = areaMatches([...(data.workAreas || []), ...(data.areas || [])]);
+                    const { matched, svcData } = serviceMatches(data.services || []);
+                    // For car rental super-fallback, also accept if carRentalDetails has cars even without service entry
+                    if (matched || data.carRentalDetails?.cars?.length > 0) {
+                        results.push(buildBricoler(docSnap.id, data, svcData || {}, servesArea));
+                    }
+                });
+                results.sort((a, b) => {
+                    if (a.servesArea && !b.servesArea) return -1;
+                    if (!a.servesArea && b.servesArea) return 1;
+                    return ((b.rating || 0) * Math.log10((b.completedJobs || 0) + 2))
+                        - ((a.rating || 0) * Math.log10((a.completedJobs || 0) + 2));
+                });
+            }
+
+            if (results.length > 0 && service === 'car_rental') {
+                const bIds = results.map(r => r.id);
+                try {
+                    const chunks = [];
+                    for (let i = 0; i < bIds.length; i += 10) chunks.push(bIds.slice(i, i + 10));
+                    
+                    let allJobs: any[] = [];
+                    for (const chunk of chunks) {
+                        const jobsSnap = await getDocs(
+                            query(collection(db, 'jobs'), where('bricolerId', 'in', chunk), where('status', 'in', ['Programmed', 'Active']))
+                        );
+                        allJobs.push(...jobsSnap.docs.map(d => ({ id: d.id, ...d.data() })));
+                    }
+                    setCarRentalBookings(allJobs);
+                } catch (e) {
+                    console.error("Failed to fetch car rental bookings for smart availability", e);
+                }
             }
 
             setBricolers(results);
@@ -2028,6 +2440,20 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
             return (b.rating || 0) - (a.rating || 0);
         });
     }, [bricolers]);
+    
+    const allAvailableCars = useMemo(() => {
+        if (service !== 'car_rental') return [];
+        const cars: { car: any, bricoler: Bricoler }[] = [];
+        // Use sortedBricolers to maintain the same ordering logic (city, area, rating)
+        sortedBricolers.forEach(b => {
+            if (b.carRentalDetails?.cars) {
+                b.carRentalDetails.cars.forEach(c => {
+                    cars.push({ car: c, bricoler: b });
+                });
+            }
+        });
+        return cars;
+    }, [sortedBricolers, service]);
 
     const filteredAreas = useMemo(() => {
         const all = tempCity ? MOROCCAN_CITIES_AREAS[tempCity] || [] : [];
@@ -2074,6 +2500,67 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
         }
         return daysArr;
     }, [selectedPro, selectedDate, activeTaskSize, bookedOrders, language]);
+
+    const carRentalCalendarDays = useMemo(() => {
+        const daysArr = [];
+        const todayCal = new Date();
+        todayCal.setHours(0, 0, 0, 0);
+
+        const startOfWeekCal = new Date(todayCal);
+        startOfWeekCal.setDate(todayCal.getDate() - todayCal.getDay());
+
+        for (let i = 0; i < 31; i++) {
+            const dCal = new Date(startOfWeekCal);
+            dCal.setDate(startOfWeekCal.getDate() + i);
+            const dateStrCal = format(dCal, 'yyyy-MM-dd');
+            
+            const isPast = dCal < todayCal;
+            const isToday = dCal.getTime() === todayCal.getTime();
+            const isPickup = selectedDate === dateStrCal;
+            const isReturn = carReturnDate === dateStrCal;
+            
+            const pTime = selectedDate ? new Date(selectedDate).getTime() : 0;
+            const rTime = carReturnDate ? new Date(carReturnDate).getTime() : 0;
+            const cTime = dCal.getTime();
+            
+            const inRange = pTime && rTime && cTime > pTime && cTime < rTime;
+
+            daysArr.push(
+                <button
+                    key={i}
+                    disabled={isPast}
+                    onClick={() => {
+                        if (openCalendarMode === 'pickup' || !openCalendarMode) {
+                            setSelectedDate(dateStrCal);
+                            if (carReturnDate && new Date(dateStrCal) > new Date(carReturnDate)) {
+                                setCarReturnDate(null);
+                            }
+                            setOpenCalendarMode('return');
+                        } else if (openCalendarMode === 'return') {
+                            if (selectedDate && new Date(dateStrCal) < new Date(selectedDate)) {
+                                setSelectedDate(dateStrCal);
+                                setCarReturnDate(null);
+                                setOpenCalendarMode('return');
+                            } else {
+                                setCarReturnDate(dateStrCal);
+                                setOpenCalendarMode(null);
+                            }
+                        }
+                    }}
+                    className={cn(
+                        "h-12 w-[calc(100%+8px)] -ml-[4px] flex items-center justify-center text-[16px] font-bold transition-all relative",
+                        (isPickup || isReturn) ? "bg-[#00A082] text-white rounded-md z-10" :
+                        isToday ? "border-2 border-[#00A082]/30 bg-[#00A082]/5 text-[#00A082] rounded-md" :
+                        inRange ? "bg-[#00A082]/10 text-[#00A082]" :
+                        !isPast ? "text-neutral-900 hover:bg-neutral-50 rounded-md" : "text-neutral-300 pointer-events-none opacity-40"
+                    )}
+                >
+                    {dCal.getDate()}
+                </button>
+            );
+        }
+        return daysArr;
+    }, [selectedDate, carReturnDate, language, openCalendarMode]);
 
     const handleLocationSave = (city?: string, area?: string) => {
         const finalCity = city !== undefined ? city : tempCity;
@@ -2143,14 +2630,20 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
             }
 
             const selectedPro = bricolers.find(b => b.id === selectedBricolerId);
-            const hourlyRate = selectedPro?.hourlyRate || 75;
+            let hourlyRate = selectedPro?.hourlyRate || 75;
+            if (service === 'car_rental' && selectedCar?.pricePerDay) {
+                hourlyRate = selectedCar.pricePerDay;
+            }
             const activeOption = serviceConfig.options.find(o => o.id === taskSize);
-            const duration = activeOption?.duration || 1;
+            let duration = activeOption?.duration || 1;
+            if (service === 'car_rental' && selectedDate && carReturnDate) {
+                duration = Math.max(1, Math.round((new Date(carReturnDate).getTime() - new Date(selectedDate).getTime()) / 86400000));
+            }
             const coefficient = (activeOption as any)?.coefficient || (service === 'errands' ? 1.5 : 1);
 
             const basePrice = calculateTaskPrice(
                 hourlyRate,
-                taskSize,
+                service === 'car_rental' ? String(duration) : taskSize,
                 service,
                 subService,
                 serviceConfig.options,
@@ -2205,6 +2698,7 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                 clientWhatsApp,
                 service: service,
                 subService: subService || null,
+                selectedCar: selectedCar || null,
                 serviceId: service,
                 subServiceId: subService || '',
                 serviceName: getServiceById(service)?.name || 'Service',
@@ -2223,13 +2717,15 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                 status: 'pending',
                 date: selectedDate || 'Flexible',
                 time: selectedTime || 'Flexible',
-                duration: activeOption?.estTime ? t(activeOption.estTime as any) : (duration + 'h'),
+                carReturnDate: carReturnDate || null,
+                carReturnTime: carReturnTime || null,
+                duration: service === 'car_rental' ? `${duration} ${t({ en: duration > 1 ? 'days' : 'day', fr: duration > 1 ? 'jours' : 'jour' })}` : (activeOption?.estTime ? t(activeOption.estTime as any) : (duration + 'h')),
                 basePrice,
                 taskFee,
                 totalPrice: basePrice, // basePrice already includes referral discount if applied
                 price: basePrice, // price is the final price after all discounts
                 referralApplied: applyReferralDiscount && referralDiscountAvailable > 0,
-                durationDays: (service === 'private_driver' || (service === 'cooking' && activeOption?.id && !isNaN(Number(activeOption.id)))) ? Math.ceil(duration) : 1,
+                durationDays: (service === 'private_driver' || service === 'car_rental' || (service === 'cooking' && activeOption?.id && !isNaN(Number(activeOption.id)))) ? Math.ceil(duration) : 1,
                 images: images,
                 clientNeedImages: images, // for redundancy
                 paymentMethod,
@@ -2596,10 +3092,124 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                                                     transition={{ delay: 0.05 }}
                                                     className="text-[25px] font-bold text-black ml-1"
                                                 >
-                                                    {serviceConfig.title}
+                                                    {service === 'car_rental'
+                                                        ? t({ en: 'When do you want the car and when will you return it?', fr: 'Quand voulez-vous la voiture et quand allez-vous la retourner ?', ar: 'متى تريد السيارة ومتى ستعيدها؟' })
+                                                        : serviceConfig.title}
                                                 </motion.h4>
                                                 <div className="flex flex-col gap-4">
-                                                    {((serviceConfig as any).isDayCounter) ? (
+                                                    {service === 'car_rental' ? (
+                                                        <div className="flex flex-col gap-6 w-full -mx-1 px-1">
+                                                            {/* Range Pickers */}
+                                                            <div className="bg-white rounded-[24px] border border-neutral-100 p-5 shadow-[0_2px_10px_rgba(0,0,0,0.02)] space-y-5">
+                                                                {/* Pick up */}
+                                                                <div className="space-y-2.5">
+                                                                    <label className="text-[14px] font-black text-neutral-900 uppercase tracking-tight">{t({en:'Pick up', fr:'Prise en charge'})}</label>
+                                                                    <div className="flex items-center gap-3">
+                                                                        <button 
+                                                                            onClick={() => setOpenCalendarMode(openCalendarMode === 'pickup' ? null : 'pickup')}
+                                                                            className="flex-1 flex items-center justify-between px-4 h-12 bg-neutral-50 rounded-xl border border-neutral-100 transition-colors focus:border-[#00A082] focus:bg-white"
+                                                                        >
+                                                                            <div className="flex items-center gap-2">
+                                                                                <Calendar size={18} className={openCalendarMode === 'pickup' ? "text-[#00A082]" : "text-neutral-500"} />
+                                                                                <span className="font-bold text-[14px] text-neutral-900">
+                                                                                    {selectedDate ? format(new Date(selectedDate), 'E, MMM d') : t({en: 'Select Date', fr: 'Choisir la date'})}
+                                                                                </span>
+                                                                            </div>
+                                                                        </button>
+                                                                        <div className="relative w-[130px]">
+                                                                            <Clock size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 pointer-events-none z-10" />
+                                                                            <select
+                                                                                className="w-full h-12 bg-neutral-50 rounded-xl border border-neutral-100 pl-8 pr-6 font-bold text-[14px] text-neutral-900 outline-none appearance-none"
+                                                                                value={selectedTime || ''}
+                                                                                onChange={e => setSelectedTime(e.target.value)}
+                                                                            >
+                                                                                <option value="" disabled>-</option>
+                                                                                {Array.from({ length: 48 }).map((_, i) => {
+                                                                                    const totalMinutes = i * 30;
+                                                                                    const hours24 = Math.floor(totalMinutes / 60);
+                                                                                    const mins = totalMinutes % 60;
+                                                                                    const ampm = hours24 < 12 ? 'AM' : 'PM';
+                                                                                    const hours12 = hours24 % 12 || 12;
+                                                                                    const timeStr = `${hours24.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`;
+                                                                                    const displayStr = `${hours12}:${mins.toString().padStart(2, '0')} ${ampm}`;
+                                                                                    return <option key={timeStr} value={timeStr}>{displayStr}</option>;
+                                                                                })}
+                                                                            </select>
+                                                                            <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 pointer-events-none" />
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+
+                                                                <div className="w-full h-px bg-neutral-100" />
+
+                                                                {/* Return */}
+                                                                <div className="space-y-2.5">
+                                                                    <label className="text-[14px] font-black text-neutral-900 uppercase tracking-tight">{t({en:'Return', fr:'Retour'})}</label>
+                                                                    <div className="flex items-center gap-3">
+                                                                        <button
+                                                                            onClick={() => setOpenCalendarMode(openCalendarMode === 'return' ? null : 'return')}
+                                                                            className="flex-1 flex items-center justify-between px-4 h-12 bg-neutral-50 rounded-xl border border-neutral-100 transition-colors focus:border-[#00A082] focus:bg-white"
+                                                                        >
+                                                                            <div className="flex items-center gap-2">
+                                                                                <Calendar size={18} className={openCalendarMode === 'return' ? "text-[#00A082]" : "text-neutral-500"} />
+                                                                                <span className="font-bold text-[14px] text-neutral-900">
+                                                                                    {carReturnDate ? format(new Date(carReturnDate), 'E, MMM d') : t({en: 'Select Date', fr: 'Choisir la date'})}
+                                                                                </span>
+                                                                            </div>
+                                                                        </button>
+                                                                        <div className="relative w-[130px]">
+                                                                            <Clock size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 pointer-events-none z-10" />
+                                                                            <select
+                                                                                className="w-full h-12 bg-neutral-50 rounded-xl border border-neutral-100 pl-8 pr-6 font-bold text-[14px] text-neutral-900 outline-none appearance-none"
+                                                                                value={carReturnTime || ''}
+                                                                                onChange={e => setCarReturnTime(e.target.value)}
+                                                                            >
+                                                                                <option value="" disabled>-</option>
+                                                                                {Array.from({ length: 48 }).map((_, i) => {
+                                                                                    const totalMinutes = i * 30;
+                                                                                    const hours24 = Math.floor(totalMinutes / 60);
+                                                                                    const mins = totalMinutes % 60;
+                                                                                    const ampm = hours24 < 12 ? 'AM' : 'PM';
+                                                                                    const hours12 = hours24 % 12 || 12;
+                                                                                    const timeStr = `${hours24.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`;
+                                                                                    const displayStr = `${hours12}:${mins.toString().padStart(2, '0')} ${ampm}`;
+                                                                                    return <option key={timeStr} value={timeStr}>{displayStr}</option>;
+                                                                                })}
+                                                                            </select>
+                                                                            <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 pointer-events-none" />
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                                {openCalendarMode && (
+                                                                    <div className="bg-white rounded-[24px] border border-[#00A082] p-5 shadow-xl -mx-1 relative z-20">
+                                                                        <div className="text-center mb-6 flex items-center justify-between">
+                                                                            <h4 className="text-[16px] font-black text-neutral-900 tracking-tight pl-2">
+                                                                                {(() => {
+                                                                                    const d = new Date();
+                                                                                    const currentMonth = d.toLocaleDateString('en-US', { month: 'long' });
+                                                                                    const nextMonth = new Date(d.getFullYear(), d.getMonth() + 1).toLocaleDateString('en-US', { month: 'long' });
+                                                                                    return `${currentMonth} — ${nextMonth} ${d.getFullYear()} `;
+                                                                                })()}
+                                                                            </h4>
+                                                                            <button onClick={() => setOpenCalendarMode(null)} className="w-8 h-8 flex items-center justify-center rounded-full bg-neutral-100 text-neutral-600 hover:bg-neutral-200 transition-colors">
+                                                                                <X size={16} />
+                                                                            </button>
+                                                                        </div>
+                                                                        <div className="px-1">
+                                                                            <div className="grid grid-cols-7 mb-4">
+                                                                                {(t({ en: 'SUN,MON,TUE,WED,THU,FRI,SAT', fr: 'DIM,LUN,MAR,MER,JEU,VEN,SAM' })).split(',').map(d => (
+                                                                                    <div key={d} className="text-[11px] font-black text-neutral-400 text-center">{d}</div>
+                                                                                ))}
+                                                                            </div>
+                                                                            <div className="grid grid-cols-7 gap-y-2">
+                                                                                {carRentalCalendarDays}
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                    ) : ((serviceConfig as any).isDayCounter) ? (
                                                         <div className="flex flex-col items-center justify-center p-0 bg-transparent gap-8">
                                                             <div className="relative w-full h-[320px] flex items-center justify-center overflow-hidden">
                                                                 {/* Fixed Middle Oval Lens */}
@@ -2829,7 +3439,7 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                                                                     <button
                                                                         type="button"
                                                                         onClick={() => setImages(prev => prev.filter((_, i) => i !== idx))}
-                                                                        className="absolute top-1 right-1 w-6 h-6 rounded-full bg-red-500 text-white flex items-center justify-center shadow-lg active:scale-90 transition-transform"
+                                                                        className="absolute top-1 right-1 w-6 h-6 rounded-full bg-red-500 text-white flex items-center justify-center active:scale-90 transition-transform"
                                                                     >
                                                                         <X size={14} strokeWidth={3} />
                                                                     </button>
@@ -2971,20 +3581,39 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                                         <div className="space-y-6 pt-2">
 
                                             {/* Results List */}
-                                            {sortedBricolers.map((bricoler: any, idx) => (
-                                                <BricolerCard
-                                                    key={bricoler.id}
-                                                    index={idx}
-                                                    bricoler={bricoler}
-                                                    serviceName={getServiceById(service)?.name || ''}
-                                                    isSelected={selectedBricolerId === bricoler.id}
-                                                    onSelect={() => {
-                                                        setSelectedBricolerId(bricoler.id);
-                                                        setStep(3);
-                                                    }}
-                                                    onOpenProfile={() => setViewedBricoler(bricoler)}
-                                                />
-                                            ))}
+                                            {service === 'car_rental' && (
+                                                <div className="mb-2">
+                                                    <h3 className="text-[22px] font-black text-neutral-900 leading-tight">
+                                                        {t({ en: 'Available Vehicles', fr: 'Véhicules Disponibles', ar: 'السيارات المتاحة' })}
+                                                    </h3>
+                                                    <p className="text-[14px] font-bold text-neutral-400 mt-1">
+                                                        {t({ en: 'Select a car from our trusted providers.', fr: 'Choisissez une voiture de nos fournisseurs certifiés.' })}
+                                                    </p>
+                                                </div>
+                                            )}
+                                            
+                                            <div className="grid grid-cols-1 gap-6 pt-2">
+                                                {sortedBricolers.map((bricoler: any, idx) => (
+                                                    <BricolerCard
+                                                        key={bricoler.id}
+                                                        index={idx}
+                                                        service={service}
+                                                        bricoler={bricoler}
+                                                        serviceName={getServiceById(service)?.name || ''}
+                                                        isSelected={selectedBricolerId === bricoler.id}
+                                                        carRentalBookings={carRentalBookings.filter(job => job.bricolerId === bricoler.id)}
+                                                        selectedPickUpDate={selectedDate}
+                                                        selectedPickUpTime={selectedTime}
+                                                        selectedReturnDate={carReturnDate}
+                                                        selectedReturnTime={carReturnTime}
+                                                        onSelect={() => {
+                                                            setSelectedBricolerId(bricoler.id);
+                                                            setStep(3);
+                                                        }}
+                                                        onOpenProfile={() => setViewedBricoler(bricoler)}
+                                                    />
+                                                ))}
+                                            </div>
 
                                             {sortedBricolers.length === 0 && (
                                                 <div className="flex flex-col items-center justify-center pt-8 pb-12 text-center px-4 bg-neutral-50 rounded-[32px] border-2 border-dashed border-neutral-100 mt-4">
@@ -3105,7 +3734,7 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                                                                         className={cn(
                                                                             "h-[54px] rounded-[14px] border flex items-center justify-center text-[16px] font-black transition-all active:scale-95",
                                                                             isSelected
-                                                                                ? "bg-[#00A082] border-[#00A082] text-white shadow-lg shadow-[#00A082]/20"
+                                                                                ? "bg-[#00A082] border-[#00A082] text-white"
                                                                                 : "bg-[#F9F9F9]/50 border-neutral-100 text-neutral-900 hover:border-[#008C74]/30"
                                                                         )}
                                                                     >
@@ -3190,10 +3819,18 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                                             <h2 className="text-[32px] md:text-[35px] font-black text-black leading-[1.1] tracking-tighter">
                                                 {t({ en: 'Your Bricol.ma Order', fr: 'Votre commande Bricol.ma', ar: 'طلبك من Bricol.ma' })}
                                             </h2>
-                                            <div className="flex items-center justify-center md:justify-start gap-2 text-[18px] font-semibold text-black mt-1">
+                                            <div className="flex items-center justify-center md:justify-start gap-2 text-[18px] font-semibold text-black mt-1 flex-wrap">
                                                 <span>{selectedDate ? safeParseDate(selectedDate).toLocaleDateString(t({ en: 'en-US', fr: 'fr-FR', ar: 'ar-MA' }), { day: 'numeric', month: 'short' }) : t({ en: 'Flexible', fr: 'Flexible', ar: 'مرن' })}</span>
                                                 <span className="text-neutral-200">|</span>
                                                 <span>{selectedTime}</span>
+                                                {service === 'car_rental' && carReturnDate && carReturnTime && (
+                                                    <>
+                                                        <span className="text-[#00A082] px-1">→</span>
+                                                        <span>{safeParseDate(carReturnDate).toLocaleDateString(t({ en: 'en-US', fr: 'fr-FR', ar: 'ar-MA' }), { day: 'numeric', month: 'short' })}</span>
+                                                        <span className="text-neutral-200">|</span>
+                                                        <span>{carReturnTime}</span>
+                                                    </>
+                                                )}
                                             </div>
                                             <p className="text-[12px] font-light text-black uppercase tracking-[0.2em] mt-2">
                                                 {t({ en: 'ORDER ID', fr: 'ID DE COMMANDE', ar: 'رقم الطلب' })}: #TEMP
@@ -3465,7 +4102,11 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                                                     </div>
                                                     <div className="flex flex-col">
                                                         <span className="text-[11px] font-bold text-neutral-400 uppercase tracking-wider">{t({ en: 'Duration', fr: 'Durée', ar: 'المدة' })}</span>
-                                                        <span className="text-[15px] font-black text-black">≈ {activeTaskSize ? t(activeTaskSize.estTime as any) : '—'}</span>
+                                                        <span className="text-[15px] font-black text-black">
+                                                            {service === 'car_rental' && selectedDate && carReturnDate
+                                                                ? (() => { const d = Math.max(1, Math.round((new Date(carReturnDate).getTime() - new Date(selectedDate).getTime()) / 86400000)); return `${d} ${t({ en: d > 1 ? 'days' : 'day', fr: d > 1 ? 'jours' : 'jour', ar: 'يوم' })}`; })()
+                                                                : (activeTaskSize ? `≈ ${t(activeTaskSize.estTime as any)}` : '—')}
+                                                        </span>
                                                     </div>
                                                 </div>
                                                 <div className="bg-neutral-50 rounded-2xl p-4 flex items-center gap-3 border border-neutral-100/50">
@@ -3484,7 +4125,17 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                                                     <div className="flex flex-col">
                                                         <span className="text-[11px] font-bold text-neutral-400 uppercase tracking-wider">{t({ en: 'Total (Est.)', fr: 'Total (Est.)', ar: 'الإجمالي (تقريبي)' })}</span>
                                                         <span className="text-[15px] font-black text-black">
-                                                            {calculateTaskPrice(selectedPro?.hourlyRate || 75, taskSize, service, subService, serviceConfig.options, applyReferralDiscount, referralDiscountAvailable)} MAD
+                                                        {service === 'car_rental' && selectedCar && selectedDate && carReturnDate
+                                                                ? calculateTaskPrice(
+                                                                    selectedCar.pricePerDay || selectedCar.price || 0,
+                                                                    String(Math.max(1, Math.round((new Date(carReturnDate).getTime() - new Date(selectedDate).getTime()) / 86400000))),
+                                                                    service,
+                                                                    subService,
+                                                                    [],
+                                                                    applyReferralDiscount,
+                                                                    referralDiscountAvailable
+                                                                )
+                                                                : calculateTaskPrice(selectedProRate, taskSize, service, subService, serviceConfig.options, applyReferralDiscount, referralDiscountAvailable)} MAD
                                                         </span>
                                                     </div>
                                                 </div>
@@ -3502,10 +4153,26 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                                             </div>
                                         </div>
 
+                                        {/* Selected Vehicle */}
+                                        {service === 'car_rental' && selectedCar && (
+                                            <div className="px-0 space-y-4">
+                                                <h3 className="text-[24px] font-black text-black">{t({ en: 'Selected Vehicle', fr: 'Véhicule Choisie', ar: 'السيارة المختارة' })}</h3>
+                                                <div className="relative overflow-hidden rounded-2xl border border-neutral-100 bg-[#F8F9FA] p-4 flex items-center gap-4">
+                                                    <div className="w-24 h-16 rounded-xl bg-white border border-neutral-50 flex items-center justify-center p-2">
+                                                        <img src={selectedCar.modelImage || selectedCar.image} className="w-full h-full object-contain" alt={selectedCar.modelName} />
+                                                    </div>
+                                                    <div className="flex-1 min-w-0">
+                                                        <h4 className="text-[17px] font-black text-black uppercase tracking-tight">{selectedCar.modelName}</h4>
+                                                        <p className="text-[13px] font-bold text-[#00A082]">MAD {selectedCar.pricePerDay || selectedCar.price} / {t({ en: 'day', fr: 'jour' })}</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
+
                                         {/* Your Selected Bricoler */}
                                         {selectedBricolerId !== 'open' && selectedPro && (
                                             <div className="px-0 pb-6 space-y-4">
-                                                <h3 className="text-[24px] font-black text-black">{t({ en: 'Your Tasker', fr: 'Votre Pro', ar: 'المحترف الخاص بك' })}</h3>
+                                                <h3 className="text-[24px] font-black text-black">{service === 'car_rental' ? t({ en: 'Provider', fr: 'Fournisseur', ar: 'المزود' }) : t({ en: 'Your Tasker', fr: 'Votre Pro', ar: 'المحترف الخاص بك' })}</h3>
                                                 <div className="relative overflow-hidden rounded-2xl border border-neutral-100 bg-white p-4 shadow-sm">
                                                     <div className="flex items-start gap-4 sm:items-center">
                                                         <div className="relative">
@@ -3548,10 +4215,24 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                                                     <div className="flex flex-col gap-2 px-2 min-[420px]:flex-row min-[420px]:items-center min-[420px]:justify-between">
                                                         <div className="flex min-w-0 flex-col gap-1 min-[420px]:flex-row min-[420px]:items-center min-[420px]:gap-4">
                                                             <span className="text-[18px] font-semibold text-black">{t({ en: 'Task Fee', fr: 'Frais de tâche', ar: 'رسوم المهمة' })}</span>
-                                                            <span className="text-[15px] font-light text-black">≈ {activeTaskSize ? t(activeTaskSize.estTime as any) : '—'}</span>
+                                                            <span className="text-[15px] font-light text-black">
+                                                                {service === 'car_rental' && selectedDate && carReturnDate
+                                                                    ? (() => { const d = Math.max(1, Math.round((new Date(carReturnDate).getTime() - new Date(selectedDate).getTime()) / 86400000)); return `${d} ${t({ en: d > 1 ? 'days' : 'day', fr: d > 1 ? 'jours' : 'jour', ar: 'يوم' })}`; })()
+                                                                    : (activeTaskSize ? `≈ ${t(activeTaskSize.estTime as any)}` : '—')}
+                                                            </span>
                                                         </div>
                                                         <span className="self-end text-[18px] font-bold tracking-tight text-black min-[420px]:self-auto">
-                                                            {Math.round(calculateTaskPrice(selectedProRate, taskSize, service, subService, serviceConfig.options, applyReferralDiscount, referralDiscountAvailable) * 0.85)} MAD
+                                                            {service === 'car_rental' && selectedCar && selectedDate && carReturnDate
+                                                                ? Math.round(calculateTaskPrice(
+                                                                    selectedCar.pricePerDay || selectedCar.price || 0,
+                                                                    String(Math.max(1, Math.round((new Date(carReturnDate).getTime() - new Date(selectedDate).getTime()) / 86400000))),
+                                                                    service,
+                                                                    subService,
+                                                                    [],
+                                                                    applyReferralDiscount,
+                                                                    referralDiscountAvailable
+                                                                ) * 0.85)
+                                                                : Math.round(calculateTaskPrice(selectedProRate, taskSize, service, subService, serviceConfig.options, applyReferralDiscount, referralDiscountAvailable) * 0.85)} MAD
                                                         </span>
                                                     </div>
                                                     <div className="flex flex-col gap-2 px-2 min-[420px]:flex-row min-[420px]:items-center min-[420px]:justify-between">
@@ -3560,7 +4241,17 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                                                             <span className="text-[15px] font-light text-black">15%</span>
                                                         </div>
                                                         <span className="self-end text-[18px] font-bold tracking-tight text-black min-[420px]:self-auto">
-                                                            {Math.round(calculateTaskPrice(selectedProRate, taskSize, service, subService, serviceConfig.options, applyReferralDiscount, referralDiscountAvailable) * 0.15)} MAD
+                                                            {service === 'car_rental' && selectedCar && selectedDate && carReturnDate
+                                                                ? Math.round(calculateTaskPrice(
+                                                                    selectedCar.pricePerDay || selectedCar.price || 0,
+                                                                    String(Math.max(1, Math.round((new Date(carReturnDate).getTime() - new Date(selectedDate).getTime()) / 86400000))),
+                                                                    service,
+                                                                    subService,
+                                                                    [],
+                                                                    applyReferralDiscount,
+                                                                    referralDiscountAvailable
+                                                                ) * 0.15)
+                                                                : Math.round(calculateTaskPrice(selectedProRate, taskSize, service, subService, serviceConfig.options, applyReferralDiscount, referralDiscountAvailable) * 0.15)} MAD
                                                         </span>
                                                     </div>
                                                     {referralDiscountAvailable > 0 && (
@@ -3577,7 +4268,7 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                                                             <button
                                                                 onClick={(e) => { e.preventDefault(); setApplyReferralDiscount(!applyReferralDiscount); }}
                                                                 className={cn(
-                                                                    "w-full rounded-xl px-6 py-3 text-[15px] font-black shadow-md transition-all active:scale-95 min-[520px]:w-auto",
+                                                                    "w-full rounded-xl px-6 py-3 text-[15px] font-black transition-all active:scale-95 min-[520px]:w-auto",
                                                                     applyReferralDiscount
                                                                         ? "bg-[#00A082] text-white"
                                                                         : "bg-[#FFC244] text-black hover:bg-[#FDBE33]"
@@ -3682,11 +4373,17 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                                                         <ChevronLeft strokeWidth={2.5} size={22} />
                                                     </button>
                                                     <button
-                                                        onClick={() => setSubStep1('description')}
-                                                        disabled={!taskSize}
+                                                        onClick={() => {
+                                                            if (service === 'car_rental') {
+                                                                handleStartMatching(); // Skip description step for Car Rental
+                                                            } else {
+                                                                setSubStep1('description');
+                                                            }
+                                                        }}
+                                                        disabled={service === 'car_rental' ? (!selectedDate || !selectedTime || !carReturnDate || !carReturnTime) : !taskSize}
                                                         className={cn(
                                                             "flex-1 h-14 rounded-full text-[19px] font-semibold active:scale-95 transition-all text-white",
-                                                            taskSize ? "bg-[#00A082]" : "bg-neutral-100 text-neutral-400 cursor-not-allowed"
+                                                            (service === 'car_rental' ? (selectedDate && selectedTime && carReturnDate && carReturnTime) : taskSize) ? "bg-[#00A082]" : "bg-neutral-100 text-neutral-400 cursor-not-allowed"
                                                         )}
                                                     >
                                                         {t({ en: 'Next', fr: 'Suivant', ar: 'التالي' })}
@@ -3756,14 +4453,21 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                                             <span className="text-[28px] font-black text-black">{t({ en: 'Total', fr: 'Total', ar: 'الإجمالي' })}</span>
                                             <div className="flex flex-col items-end">
                                                 {(() => {
-                                                    const hourlyRate = selectedPro?.hourlyRate || 75;
+                                                    let hourlyRate = selectedPro?.hourlyRate || 75;
+                                                    if (service === 'car_rental' && selectedCar?.pricePerDay) {
+                                                        hourlyRate = selectedCar.pricePerDay;
+                                                    }
                                                     const opt = serviceConfig.options.find(o => o.id === taskSize);
-                                                    const duration = opt?.duration || 1;
-                                                    const coefficient = (opt as any)?.coefficient || 1;
+                                                    
+                                                    let effectiveTaskSize = taskSize;
+                                                    if (service === 'car_rental' && selectedDate && carReturnDate) {
+                                                        const d = Math.max(1, Math.round((new Date(carReturnDate).getTime() - new Date(selectedDate).getTime()) / 86400000));
+                                                        effectiveTaskSize = String(d);
+                                                    }
 
                                                     const finalCalc = calculateTaskPrice(
                                                         hourlyRate,
-                                                        taskSize,
+                                                        effectiveTaskSize,
                                                         service,
                                                         subService,
                                                         serviceConfig.options,
@@ -3773,7 +4477,7 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
 
                                                     const strikeCalc = calculateTaskPrice(
                                                         hourlyRate,
-                                                        taskSize,
+                                                        effectiveTaskSize,
                                                         service,
                                                         subService,
                                                         serviceConfig.options,
@@ -3846,9 +4550,20 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                         serviceName={getServiceById(service)?.name || 'Service'}
                         isSelected={selectedBricolerId === viewedBricoler?.id}
                         onClose={() => setViewedBricoler(null)}
-                        onSelect={() => {
+                        carRentalBookings={carRentalBookings.filter(job => job.bricolerId === viewedBricoler?.id)}
+                        selectedPickUpDate={selectedDate}
+                        selectedPickUpTime={selectedTime}
+                        selectedReturnDate={carReturnDate}
+                        selectedReturnTime={carReturnTime}
+                        onSelect={(car, note) => {
                             setSelectedBricolerId(viewedBricoler?.id!);
-                            setStep(3);
+                            if (service === 'car_rental') {
+                                if (car) setSelectedCar(car);
+                                if (note) setDescription(note);
+                                setStep(4);
+                            } else {
+                                setStep(3);
+                            }
                         }}
                     />
                     <SuccessAnimation
