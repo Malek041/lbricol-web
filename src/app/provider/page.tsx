@@ -203,6 +203,7 @@ interface MobileJobsViewItem {
     selectedCar?: any;
     carReturnDate?: string;
     carReturnTime?: string;
+    totalPrice?: number;
 }
 
 // --- Constants & Mock Data ---
