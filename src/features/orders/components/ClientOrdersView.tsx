@@ -746,7 +746,7 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
                                 <h1 className="text-[20px] font-black text-black">{t({ en: 'Order details', fr: 'Détails de la commande', ar: 'تفاصيل الطلب' })}</h1>
                             </div>
                             <div className="flex items-center gap-2">
-                                {selectedOrder.bricolerWhatsApp && ['programmed', 'in_progress', 'confirmed', 'accepted', 'done', 'delivered'].includes(selectedOrder.status || '') && (
+                                {selectedOrder.bricolerWhatsApp && ['programmed', 'in_progress', 'done', 'delivered'].includes(selectedOrder.status || '') && (
                                     <button
                                         onClick={() => selectedOrder.bricolerWhatsApp && openWhatsApp(selectedOrder.bricolerWhatsApp)}
                                         className="w-12 h-12 md:w-14 md:h-14 rounded-full flex items-center justify-center text-[#25D366] hover:scale-110 active:scale-95 transition-all group"
@@ -831,7 +831,7 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
                                 <div className="px-6 md:px-12 mb-8">
                                     <div className="grid grid-cols-1 gap-4">
                                         {/* Contact Bricoler CTA - shown when a bricoler is assigned */}
-                                        {selectedOrder.bricolerWhatsApp && ['programmed', 'in_progress', 'confirmed', 'accepted', 'done', 'delivered'].includes(selectedOrder.status || '') && (
+                                        {selectedOrder.bricolerWhatsApp && ['programmed', 'in_progress', 'done', 'delivered'].includes(selectedOrder.status || '') && (
                                             <button
                                                 onClick={() => selectedOrder.bricolerWhatsApp && openWhatsApp(selectedOrder.bricolerWhatsApp)}
                                                 className="w-full flex items-center justify-center gap-4 py-4 rounded-[20px] bg-[#25D366] text-white font-[1000] text-[18px] hover:bg-[#128C7E] active:scale-95 transition-all group relative overflow-hidden"
@@ -1009,7 +1009,7 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
                                                 </div>
                                             </div>
                                             <div className="flex items-center gap-3">
-                                                {selectedOrder.bricolerWhatsApp && ['programmed', 'in_progress', 'confirmed', 'accepted', 'done', 'delivered'].includes(selectedOrder.status || '') && (
+                                                {selectedOrder.bricolerWhatsApp && ['programmed', 'in_progress', 'done', 'delivered'].includes(selectedOrder.status || '') && (
                                                     <button
                                                         onClick={() => selectedOrder.bricolerWhatsApp && openWhatsApp(selectedOrder.bricolerWhatsApp)}
                                                         className="p-1 rounded-full flex items-center justify-center text-[#25D366] hover:scale-110 active:scale-90 transition-all group"
@@ -1188,17 +1188,17 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
                         </div>
 
                         {/* Fixed Total Footer */}
-                        <div className="px-6 md:px-12 py-5 bg-white border-t border-neutral-100 shadow-[0_-10px_40px_rgba(0,0,0,0.05)] z-[4001] flex flex-col gap-3">
+                        <div className="px-6 md:px-12 py-3 bg-white border-t border-neutral-100 shadow-[0_-10px_40px_rgba(0,0,0,0.05)] z-[4001] flex flex-col gap-1.5">
                             <div className="flex items-center justify-between gap-4">
-                                <span className="text-[24px] md:text-[28px] font-black text-black">{t({ en: 'Total Price', fr: 'Prix Total', ar: 'الإجمالي' })}</span>
-                                <span className="text-[24px] md:text-[28px] font-black text-black tracking-tighter truncate">{((selectedOrder?.totalPrice || parseFloat(String(selectedOrder?.price || '0')))).toFixed(0)} MAD</span>
+                                <span className="text-[20px] md:text-[24px] font-black text-black">{t({ en: 'Total Price', fr: 'Prix Total', ar: 'الإجمالي' })}</span>
+                                <span className="text-[20px] md:text-[24px] font-black text-black tracking-tighter truncate">{((selectedOrder?.totalPrice || parseFloat(String(selectedOrder?.price || '0')))).toFixed(0)} MAD</span>
                             </div>
 
                             {/* Cancellation Button */}
                             {selectedOrder && !['done', 'cancelled', 'delivered'].includes(selectedOrder.status || '') && (
                                 <button
                                     onClick={() => handleCancelOrder(selectedOrder.id!)}
-                                    className="w-full py-3 rounded-xl border-2 border-red-50 text-red-500 font-bold text-[14px] hover:bg-red-50 transition-colors uppercase tracking-widest mt-1"
+                                    className="w-full py-2.5 rounded-xl border-2 border-red-50 text-red-500 font-bold text-[13px] hover:bg-red-50 transition-colors uppercase tracking-widest"
                                 >
                                     {t({ en: 'Cancel Order', fr: 'Annuler la commande', ar: 'إلغاء الطلب' })}
                                 </button>
@@ -1207,7 +1207,7 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
                             {/* Help link at the bottom */}
                             <button
                                 onClick={() => window.open('https://wa.me/212702814355', '_blank')}
-                                className="w-full text-center text-[15px] font-bold text-neutral-400 hover:text-[#00A082] transition-colors py-1"
+                                className="w-full text-center text-[13px] font-bold text-neutral-400 hover:text-[#00A082] transition-colors"
                             >
                                 {t({ en: '💬 Need help with this order?', fr: '💬 Besoin d\'aide pour cette commande ?', ar: '💬 تحتاج مساعدة في هذا الطلب؟' })}
                             </button>

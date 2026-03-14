@@ -35,6 +35,7 @@ export interface CityIndexEntry {
     jobsDone?: number;
     errandsTransport?: string | null;
     movingTransport?: string | null;
+    movingTransports?: string[];
     whatsappNumber?: string | null;
     serviceIds?: string[];      // Flat array of category IDs for future Firestore filtering
     subServiceIds?: string[];   // Flat array of subservice IDs
@@ -94,6 +95,7 @@ export const writeCityIndex = async (
         jobsDone?: number;
         errandsTransport?: string | null;
         movingTransport?: string | null;
+        movingTransports?: string[];
         whatsappNumber?: string | null;
         [key: string]: any;
     }
@@ -136,6 +138,7 @@ export const writeCityIndex = async (
         jobsDone: data.jobsDone || data.completedJobs || 0,
         errandsTransport: data.errandsTransport,
         movingTransport: data.movingTransport,
+        movingTransports: data.movingTransports || [],
         whatsappNumber: data.whatsappNumber,
         matchScore: computeMatchScore(rating, completedJobs, isVerified),
         updatedAt: Date.now(),

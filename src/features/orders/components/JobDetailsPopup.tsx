@@ -43,6 +43,7 @@ export interface JobDetails {
     carReturnDate?: string;
     carReturnTime?: string;
     totalPrice?: number;
+    movingVehicle?: string;
 }
 
 interface JobDetailsPopupProps {
@@ -255,6 +256,30 @@ const JobDetailsPopup: React.FC<JobDetailsPopupProps> = ({ job, onClose, onAccep
                             </div>
                         )}
 
+                        {/* Moving Vehicle Details section */}
+                        {job.movingVehicle && (
+                            <div className="bg-[#F0FBF8] rounded-2xl p-5 border border-[#00A082]/20 flex flex-col gap-4 mb-6">
+                                <div className="flex justify-between items-start">
+                                    <div className="flex-1">
+                                        <h4 className="text-[12px] font-black text-[#00A082] uppercase tracking-wider mb-1">{t({ en: 'Requested Transport', fr: 'Transport Demandé' })}</h4>
+                                        <p className="text-[20px] font-black text-black leading-tight">
+                                           {(() => {
+                                               const opts = {
+                                                   triporteur: { en: '🛵 Triporteur', fr: '🛵 Triporteur', ar: '🛵 تربورتور' },
+                                                   small_van: { en: '🚐 Small Van', fr: '🚐 Petit Van', ar: '🚐 سيارة "برلانكو"' },
+                                                   large_van: { en: '🚚 Large Van', fr: '🚚 Grand Van', ar: '🚚 شاحنة فورد ترانزيت' },
+                                                   small_truck: { en: '🚛 Small Truck', fr: '🚛 Petit Camion', ar: '🚛 شاحنة صغيرة' },
+                                                   large_truck: { en: '🚚 Large Truck', fr: '🚚 Grand Camion', ar: '🚚 شاحنة كبيرة' },
+                                                   labor_only: { en: '💪 Labor only', fr: '💪 Main-d’œuvre seule', ar: '💪 يد عاملة فقط' }
+                                               };
+                                               return t((opts as any)[job.movingVehicle] || { en: job.movingVehicle });
+                                           })()}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
                         {/* Budget Breakdown */}
                         <div className="mb-6">
                             <div className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-3">
@@ -314,8 +339,8 @@ const JobDetailsPopup: React.FC<JobDetailsPopupProps> = ({ job, onClose, onAccep
                             </div>
                         )}
 
-                        {/* WhatsApp Button for Accepted/Programmed Jobs */}
-                        {(job.status === 'accepted' || job.status === 'programmed') && (
+                        {/* WhatsApp Button for Programmed/Completed Jobs */}
+                        {(job.status === 'programmed' || job.status === 'completed') && (
                             <div className="mb-6">
                                 <button
                                     onClick={() => openWhatsApp(job.bricolerWhatsApp || job.clientWhatsApp || '')}

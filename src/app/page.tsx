@@ -375,7 +375,7 @@ const Home = () => {
   const [currentUser, setCurrentUser] = useState<FirebaseUser | null>(null);
   const [userData, setUserData] = useState<any>(null);
   const [showAuthPopup, setShowAuthPopup] = useState(false);
-  const [authIntent, setAuthIntent] = useState<'bricoler' | null>(null);
+  const [authIntent, setAuthIntent] = useState<'bricoler' | 'program_order' | 'login_only' | null>(null);
   const [showClientWhatsAppPopup, setShowClientWhatsAppPopup] = useState(false);
   const [pendingQuickOrder, setPendingQuickOrder] = useState<any>(null);
   const [cityServices, setCityServices] = useState<string[]>([]);
@@ -1642,6 +1642,7 @@ const Home = () => {
       // Step 2: Check authentication
       if (!effectiveUser) {
         console.log("[handleProgramOrder] No user, showing auth");
+        setAuthIntent('program_order');
         setShowAuthPopup(true);
         setIsProgramming(false);
         return;
@@ -2585,7 +2586,7 @@ const Home = () => {
                 isAdmin={isAdmin}
                 variant={isAdminMode ? 'admin' : 'client'}
                 onOpenLanguage={() => setShowLanguagePopup(true)}
-                onLogin={() => setShowAuthPopup(true)}
+                onLogin={() => { setAuthIntent('login_only'); setShowAuthPopup(true); }}
                 onLogout={async () => {
                   try {
                     await signOut(auth);
@@ -2626,7 +2627,7 @@ const Home = () => {
               <ShareAndEarnView
                 currentUser={currentUser}
                 onBack={() => setMobileNavTab('profile')}
-                onLogin={() => setShowAuthPopup(true)}
+                onLogin={() => { setAuthIntent('login_only'); setShowAuthPopup(true); }}
               />
             )}
 
@@ -3258,19 +3259,28 @@ const Home = () => {
               setShowAuthPopup(false);
               // Small timeout to allow popups to close
               setTimeout(() => {
+                if (authIntent === 'login_only') {
+                  setAuthIntent(null);
+                  return;
+                }
+
                 if (authIntent === 'bricoler') {
                   setAuthIntent(null);
                   setShowMobileOnboarding(true);
                   return;
                 }
-                const pendingData = pendingQuickOrder || (localStorage.getItem('lbricol_pending_quick_order') ? JSON.parse(localStorage.getItem('lbricol_pending_quick_order')!) : null);
 
-                if (pendingData) {
-                  setPendingQuickOrder(null);
-                  localStorage.removeItem('lbricol_pending_quick_order');
-                  handleQuickOrderSubmit(pendingData, result.userData?.whatsappNumber, result.user);
-                } else {
-                  handleProgramOrder(result.user, result.userData?.whatsappNumber);
+                if (authIntent === 'program_order' || !authIntent) {
+                  const pendingData = pendingQuickOrder || (localStorage.getItem('lbricol_pending_quick_order') ? JSON.parse(localStorage.getItem('lbricol_pending_quick_order')!) : null);
+
+                  if (pendingData) {
+                    setPendingQuickOrder(null);
+                    localStorage.removeItem('lbricol_pending_quick_order');
+                    handleQuickOrderSubmit(pendingData, result.userData?.whatsappNumber, result.user);
+                  } else {
+                    handleProgramOrder(result.user, result.userData?.whatsappNumber);
+                  }
+                  setAuthIntent(null);
                 }
               }, 400);
             }
@@ -3553,7 +3563,10 @@ const Home = () => {
           initialArea={selectedArea}
           onSubmit={handleQuickOrderSubmit}
           continueDraft={selectedDraft}
-          onRequireLogin={() => setShowAuthPopup(true)}
+          onRequireLogin={() => {
+            setAuthIntent('program_order');
+            setShowAuthPopup(true);
+          }}
         />
 
       </main>

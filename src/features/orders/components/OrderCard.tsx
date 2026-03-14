@@ -76,6 +76,7 @@ export interface OrderDetails {
     carReturnTime?: string | null;
     durationDays?: number;
     basePrice?: number;
+    movingVehicle?: string | null;
 }
 
 interface OrderCardProps {
@@ -256,6 +257,21 @@ const OrderCard = ({ order, onCancel }: OrderCardProps) => {
                     {order.images && order.images.length > 0 && (
                         <span style={{ marginLeft: '12px', fontSize: '13px', backgroundColor: '#06C16722', padding: '2px 8px', borderRadius: '4px', color: '#06C167' }}>
                             {order.images.length} {t({ en: 'Photos', fr: 'Photos', ar: 'صور' })}
+                        </span>
+                    )}
+                    {order.movingVehicle && (
+                        <span style={{ marginLeft: '12px', fontSize: '13px', backgroundColor: '#00A08215', padding: '2px 8px', borderRadius: '4px', color: '#00A082', fontWeight: 700 }}>
+                            {(() => {
+                                const opts = {
+                                    triporteur: { en: '🛵 Triporteur', fr: '🛵 Triporteur', ar: '🛵 تربورتور' },
+                                    small_van: { en: '🚐 Small Van', fr: '🚐 Petit Van', ar: '🚐 سيارة "برلانكو"' },
+                                    large_van: { en: '🚚 Large Van', fr: '🚚 Grand Van', ar: '🚚 شاحنة فورد ترانزيت' },
+                                    small_truck: { en: '🚛 Small Truck', fr: '🚛 Petit Camion', ar: '🚛 شاحنة صغيرة' },
+                                    large_truck: { en: '🚚 Large Truck', fr: '🚚 Grand Camion', ar: '🚚 شاحنة كبيرة' },
+                                    labor_only: { en: '💪 Labor only', fr: '💪 Main-d’œuvre seule', ar: '💪 يد عاملة فقط' }
+                                };
+                                return t((opts as any)[order.movingVehicle] || { en: order.movingVehicle });
+                            })()}
                         </span>
                     )}
                     {order.comment && (

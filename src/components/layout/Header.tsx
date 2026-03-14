@@ -10,15 +10,15 @@ import { useTheme } from '@/context/ThemeContext';
 import OnboardingPopup from '@/features/onboarding/components/OnboardingPopup';
 import LanguagePreferencePopup from '@/features/onboarding/components/LanguagePreferencePopup';
 import { fluidMobilePx, useIsMobileViewport, useMobileTier, useViewportWidth } from '@/lib/mobileOnly';
-
 interface HeaderProps {
     activeTab: 'domestic' | 'go';
     onTabChange: (tab: 'domestic' | 'go') => void;
     isBricoler?: boolean;
     user?: any;
+    onLogin?: () => void;
 }
 
-const Header = ({ activeTab, onTabChange, isBricoler = false, user = null }: HeaderProps) => {
+const Header = ({ activeTab, onTabChange, isBricoler = false, user = null, onLogin }: HeaderProps) => {
     const { language, setLanguage, t } = useLanguage();
     const { theme, toggleTheme } = useTheme();
     const isMobile = useIsMobileViewport(968);
@@ -389,9 +389,8 @@ const Header = ({ activeTab, onTabChange, isBricoler = false, user = null }: Hea
                                                     icon={LogIn}
                                                     label={t({ en: 'Log in or sign up', fr: 'Se connecter ou s\'inscrire', ar: 'تسجيل الدخول أو الاشتراك' })}
                                                     onClick={() => {
-                                                        // Trigger auth popup logic from parent if needed, 
-                                                        // or just log click for now as it was
-                                                        console.log('Login clicked');
+                                                        if (onLogin) onLogin();
+                                                        setIsMenuOpen(false);
                                                     }}
                                                 />
                                             )}

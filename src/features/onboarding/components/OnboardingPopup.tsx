@@ -262,7 +262,11 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [submittingStatus, setSubmittingStatus] = useState<string | null>(null);
     const [errandsTransport, setErrandsTransport] = useState<string>(userData?.errandsTransport || '');
-    const [movingTransport, setMovingTransport] = useState<string>(userData?.movingTransport || '');
+    const [movingTransports, setMovingTransports] = useState<string[]>(
+        Array.isArray(userData?.movingTransports) 
+            ? userData.movingTransports 
+            : (userData?.movingTransport ? [userData.movingTransport] : [])
+    );
     const [tourGuideAuthorizationFile, setTourGuideAuthorizationFile] = useState<File | Blob | null>(null);
     const [tourGuideAuthorizationUrl, setTourGuideAuthorizationUrl] = useState<string>(userData?.tourGuideAuthorizationUrl || '');
 
@@ -336,6 +340,12 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
             setSelectedCity(String(userData.city || ''));
             setSelectedAreas(Array.isArray(userData.areas) ? userData.areas : (Array.isArray(userData.selectedAreas) ? userData.selectedAreas : []));
             setProfilePhotoUrl(userData.profilePhotoURL || userData.avatar || userData.photoURL || '');
+            setErrandsTransport(userData.errandsTransport || '');
+            setMovingTransports(
+                Array.isArray(userData.movingTransports) 
+                    ? userData.movingTransports 
+                    : (userData.movingTransport ? [userData.movingTransport] : [])
+            );
 
             if (userData.carRentalDetails?.cars) {
                 setSelectedCars(userData.carRentalDetails.cars);
@@ -671,6 +681,9 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                 carRentalDetails: selectedSubServices.includes('rent_a_car') ? {
                     cars: selectedCars,
                 } : null,
+                errandsTransport,
+                movingTransports,
+                movingTransport: movingTransports[0] || '', // legacy compatibility
                 tourGuideAuthorizationUrl: finalTourGuideUrl || null
             });
 
@@ -748,6 +761,9 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                     areas: selectedAreas || [],
                     whatsappNumber: bricolerData.whatsappNumber,
                     routine: bricolerData.routine,
+                    errandsTransport,
+                    movingTransports,
+                    movingTransport: movingTransports[0] || '',
                 }).catch(console.warn);
             }
 
@@ -989,6 +1005,9 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                 carRentalDetails: selectedSubServices.includes('rent_a_car') ? {
                     cars: selectedCars,
                 } : null,
+                errandsTransport,
+                movingTransports,
+                movingTransport: movingTransports[0] || '',
                 tourGuideAuthorizationUrl: finalTourGuideAuthUrl || existingData.tourGuideAuthorizationUrl
             };
             await setDoc(bricolerRef, updateData, { merge: true });
@@ -1014,6 +1033,9 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                     areas: existingData.workAreas || existingData.areas || [],
                     whatsappNumber: existingData.whatsappNumber,
                     routine: existingData.routine,
+                    errandsTransport,
+                    movingTransports,
+                    movingTransport: movingTransports[0] || '',
                 }).catch(console.warn);
             }
 
@@ -1037,6 +1059,7 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
         if (step === 'car_pricing') return selectedCars.length > 0 && selectedCars.every(c => c.quantity > 0 && (c.pricePerDay > 0 || c.price > 0));
         if (step === 'service_details') return currentEntryValid(currentCatEntry);
         if (step === 'city') return selectedCity !== '';
+        if (step === 'moving_selection') return movingTransports.length > 0;
         if (step === 'areas') return selectedAreas.length > 0;
         if (step === 'profile') return fullName.trim().length > 2 && whatsappNumber.length >= 9;
         return true;
@@ -2029,37 +2052,50 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                                             </motion.div>
                                         )}
 
-                                        {/* 1.6 — Moving help: What vehicle do you use? */}
+                                        {/* 1.6 — Moving help: What vehicle(s) do you use? */}
                                         {currentCatId === 'moving' && currentCatEntry.experience !== '' && (
                                             <motion.div variants={itemVariants} initial="hidden" animate="show" className="space-y-4">
                                                 <label className="text-[20px] font-bold text-neutral-900 block">
                                                     {t({
-                                                        en: 'What vehicle do you use for moving jobs?',
-                                                        fr: 'Quel véhicule utilisez-vous pour les missions de déménagement ?',
-                                                        ar: 'ما هي وسيلة النقل التي تستعملها في مهام النقل؟'
+                                                        en: 'What vehicle(s) do you use for moving jobs?',
+                                                        fr: 'Quel(s) véhicule(s) utilisez-vous pour les missions de déménagement ?',
+                                                        ar: 'ما هي وسيلة (أو وسائل) النقل التي تستعملها في مهام النقل؟'
                                                     })}
                                                 </label>
-                                                <div className="grid grid-cols-2 gap-3">
+                                                <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
                                                     {[
-                                                        { id: 'truck', label: { en: '🚚 Moving truck', fr: '🚚 Camion de déménagement', ar: '🚚 شاحنة للنقل' } },
-                                                        { id: 'van', label: { en: '🚐 Van', fr: '🚐 Camionnette', ar: '🚐 سيارة "فان"' } },
-                                                        { id: 'car', label: { en: '🚗 Car', fr: '🚗 Voiture', ar: '🚗 سيارة' } },
-                                                        { id: 'labor_only', label: { en: '💪 Labor only (no vehicle)', fr: '💪 Main-d’œuvre uniquement (sans véhicule)', ar: '💪 يد عاملة فقط (بدون وسيلة نقل)' } },
-                                                        { id: 'other', label: { en: 'Other setup', fr: 'Autre configuration', ar: 'ترتيب آخر' } },
-                                                    ].map(opt => (
-                                                        <button
-                                                            key={opt.id}
-                                                            onClick={() => setMovingTransport(opt.id)}
-                                                            className={cn(
-                                                                'px-3 py-4 rounded-[12px] border-2 text-[14px] font-bold transition-all text-left',
-                                                                movingTransport === opt.id
-                                                                    ? 'bg-[#E6F6F2] text-[#00A082] border-[#00A082]'
-                                                                    : 'bg-white text-neutral-800 border-neutral-100 hover:border-neutral-200'
-                                                            )}
-                                                        >
-                                                            {t(opt.label)}
-                                                        </button>
-                                                    ))}
+                                                        { id: 'triporteur', label: { en: '🛵 Triporteur', fr: '🛵 Triporteur', ar: '🛵 تربورتور' } },
+                                                        { id: 'small_van', label: { en: '🚐 Small Van', fr: '🚐 Petit Van', ar: '🚐 سيارة "برلانكو"' } },
+                                                        { id: 'large_van', label: { en: '🚚 Large Van', fr: '🚚 Grand Van', ar: '🚚 شاحنة فورد ترانزيت' } },
+                                                        { id: 'small_truck', label: { en: '🚛 Small Truck', fr: '🚛 Petit Camion', ar: '🚛 شاحنة صغيرة' } },
+                                                        { id: 'large_truck', label: { en: '🚚 Large Truck', fr: '🚚 Grand Camion', ar: '🚚 شاحنة كبيرة' } },
+                                                        { id: 'labor_only', label: { en: '💪 Labor only', fr: '💪 Main-d’œuvre seule', ar: '💪 يد عاملة فقط' } },
+                                                    ].map(opt => {
+                                                        const isSelected = movingTransports.includes(opt.id);
+                                                        return (
+                                                            <button
+                                                                key={opt.id}
+                                                                onClick={() => {
+                                                                    if (isSelected) {
+                                                                        setMovingTransports(prev => prev.filter(id => id !== opt.id));
+                                                                    } else {
+                                                                        // If labor only is selected, maybe we should clear others? 
+                                                                        // Actually let's allow combination since they might do both.
+                                                                        setMovingTransports(prev => [...prev, opt.id]);
+                                                                    }
+                                                                }}
+                                                                className={cn(
+                                                                    'px-3 py-4 rounded-[12px] border-2 text-[14px] font-bold transition-all text-left flex items-center justify-between',
+                                                                    isSelected
+                                                                        ? 'bg-[#E6F6F2] text-[#00A082] border-[#00A082]'
+                                                                        : 'bg-white text-neutral-800 border-neutral-100 hover:border-neutral-200'
+                                                                )}
+                                                            >
+                                                                {t(opt.label)}
+                                                                {isSelected && <Check size={16} strokeWidth={3} />}
+                                                            </button>
+                                                        );
+                                                    })}
                                                 </div>
                                             </motion.div>
                                         )}

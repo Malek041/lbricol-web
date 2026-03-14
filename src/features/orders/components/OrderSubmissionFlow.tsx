@@ -48,6 +48,7 @@ interface Bricoler {
     createdAt?: Timestamp | any;
     errandsTransport?: string;
     movingTransport?: string;
+    movingTransports?: string[];
     // Ranking system extensions
     servicePrideScore?: number;
     happyMakingScore?: number;
@@ -93,9 +94,10 @@ export interface DraftOrder {
     images?: string[];
     frequency?: 'once' | 'daily' | 'weekly' | 'biweekly' | 'monthly';
     step: number;
-    subStep1: 'location' | 'size' | 'description' | 'languages';
+    subStep1: 'location' | 'size' | 'description' | 'languages' | 'moving_vehicle';
     selectedLanguages?: string[];
     selectedCar?: any;
+    movingVehicle?: string | null;
     updatedAt: number;
 }
 
@@ -1099,7 +1101,7 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
     const { t, language } = useLanguage();
     const { showToast } = useToast();
     const [step, setStep] = useState(mode === 'edit' ? 3 : (continueDraft?.step || 1));
-    const [subStep1, setSubStep1] = useState<'location' | 'size' | 'description' | 'languages'>('location');
+    const [subStep1, setSubStep1] = useState<'location' | 'size' | 'description' | 'languages' | 'moving_vehicle'>(continueDraft?.subStep1 || 'location');
     const [selectedLanguages, setSelectedLanguages] = useState<string[]>(continueDraft?.selectedLanguages || []);
     const [descriptionDrafts, setDescriptionDrafts] = useState<string[]>([]);
     const [taskSize, setTaskSize] = useState<string | null>(null);
@@ -1123,6 +1125,7 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
     const [isUploadingImages, setIsUploadingImages] = useState(false);
     const [frequency, setFrequency] = useState<'once' | 'daily' | 'weekly' | 'biweekly' | 'monthly'>('once');
     const [selectedCar, setSelectedCar] = useState<any | null>(continueDraft?.selectedCar || null);
+    const [selectedMovingVehicle, setSelectedMovingVehicle] = useState<string | null>(continueDraft?.movingVehicle || null);
     const [showSuccessAnimation, setShowSuccessAnimation] = useState(false);
 
     const [referralDiscountAvailable, setReferralDiscountAvailable] = useState<number>(0);
@@ -1823,7 +1826,7 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
     }, [
         isOpen, service, subService, currentCity, currentArea,
         taskSize, description, selectedBricolerId, selectedDate,
-        step, subStep1, paymentMethod, bankReceipt, images, frequency, selectedTime, selectedCar
+        step, subStep1, paymentMethod, bankReceipt, images, frequency, selectedTime, selectedCar, selectedMovingVehicle
     ]);
 
     useEffect(() => {
@@ -1837,7 +1840,7 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
 
     useEffect(() => {
         fetchBricolers();
-    }, [currentCity, currentArea]);
+    }, [currentCity, currentArea, selectedMovingVehicle]);
 
     // Initialize taskSize if a default is provided (e.g. for private_driver)
     useEffect(() => {
@@ -2307,7 +2310,7 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
             return normalized.some(pa => pa.includes(targetAreaNorm) || targetAreaNorm.includes(pa));
         };
 
-        const serviceMatches = (services: any[]): { matched: boolean; svcData: any } => {
+        const serviceMatches = (services: any[], rawData: any): { matched: boolean; svcData: any } => {
             const matchingService = services?.find((s: any) => {
                 const sId = typeof s === 'string' ? s : (s.categoryId || s.serviceId || '');
                 if (sId.toLowerCase() !== targetServiceId) return false;
@@ -2318,11 +2321,15 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                     if (!ssId) return false;
                     const normSsId = ssId.toLowerCase().replace(/[_\s-]/g, '');
                     const normSubSvc = subService.toLowerCase().replace(/[_\s-]/g, '');
-                    return normSsId === normSubSvc || (Array.isArray(s.subServices) && s.subServices.some((sub: string) => sub.toLowerCase().replace(/[_\s-]/g, '') === normSubSvc));
+                    if (!(normSsId === normSubSvc || (Array.isArray(s.subServices) && s.subServices.some((sub: string) => sub.toLowerCase().replace(/[_\s-]/g, '') === normSubSvc)))) return false;
                 }
                 if (service === 'tour_guide' && selectedLanguages.length > 0) {
                     const bricolerLangs = s.spokenLanguages || (typeof s === 'object' ? s.languages : []) || [];
                     if (!selectedLanguages.some(l => bricolerLangs.includes(l))) return false;
+                }
+                if (service === 'moving' && selectedMovingVehicle) {
+                    const vehicles = rawData.movingTransports || (rawData.movingTransport ? [rawData.movingTransport] : []);
+                    if (!vehicles.includes(selectedMovingVehicle)) return false;
                 }
                 return true;
             });
@@ -2354,6 +2361,7 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
             portfolio: data.portfolio || [],
             errandsTransport: data.errandsTransport,
             movingTransport: data.movingTransport,
+            movingTransports: data.movingTransports || (data.movingTransport ? [data.movingTransport] : []),
             whatsappNumber: data.whatsappNumber,
             servesArea,
             carRentalDetails: data.carRentalDetails,
@@ -2378,7 +2386,7 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                         const data = docSnap.data();
                         const servesArea = areaMatches([...(data.workAreas || []), ...(data.areas || [])]);
                         if (!servesArea && isStrictCity) return;
-                        const { matched, svcData } = serviceMatches(data.services || []);
+                        const { matched, svcData } = serviceMatches(data.services || [], data);
                         if (matched) {
                             results.push(buildBricoler(docSnap.id, data, svcData, servesArea));
                         }
@@ -2411,7 +2419,7 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                     if (data.isActive === false) return; // Lenient: skip ONLY if explicitly false
                     const servesArea = areaMatches([...(data.workAreas || []), ...(data.areas || [])]);
                     if (!servesArea && isStrictCity) return;
-                    const { matched, svcData } = serviceMatches(data.services || []);
+                    const { matched, svcData } = serviceMatches(data.services || [], data);
                     if (matched) results.push(buildBricoler(docSnap.id, data, svcData, servesArea));
                 });
                 results.sort((a, b) => {
@@ -2436,7 +2444,7 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                     // Only include if city roughly matches
                     if (!citySim(data.city || '', baseCity)) return;
                     const servesArea = areaMatches([...(data.workAreas || []), ...(data.areas || [])]);
-                    const { matched, svcData } = serviceMatches(data.services || []);
+                    const { matched, svcData } = serviceMatches(data.services || [], data);
                     // For car rental super-fallback, also accept if carRentalDetails has cars even without service entry
                     if (matched || data.carRentalDetails?.cars?.length > 0) {
                         results.push(buildBricoler(docSnap.id, data, svcData || {}, servesArea));
@@ -2645,7 +2653,6 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
     const handleFinalSubmit = async () => {
         if (isSubmitting) return;
 
-        // Note: Removed the isUploadingTaskImages block because uploads are now backgrounded.
         if (isUploadingReceipt) {
             alert(t({ en: 'Please wait for the receipt photo to finish uploading...', fr: 'Veuillez patienter pendant le téléchargement de la photo du reçu...', ar: 'يرجى الانتظار حتى يتم تحميل صورة الإيصال...' }));
             return;
@@ -2656,49 +2663,32 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
             return;
         }
 
-        let user = auth.currentUser;
-        if (!user) {
-            try {
-                const provider = new GoogleAuthProvider();
-                const result = await signInWithPopup(auth, provider);
-                user = result.user;
-                if (!user) return; // if something went strictly wrong but no error thrown
-            } catch (err) {
-                console.error("Login failed or cancelled", err);
-                if (onRequireLogin) {
-                    onRequireLogin();
-                } else {
-                    alert(t({ en: 'Please login to program your mission.', fr: 'Veuillez vous connecter pour programmer votre mission.', ar: 'يرجى تسجيل الدخول لبرمجة مهمتك.' }));
-                }
-                return;
-            }
-        }
-
         setIsSubmitting(true);
         try {
-            // Fetch client data for contact info
-            let clientName = user.displayName || 'Client';
-            let clientWhatsApp = user.phoneNumber || '';
+            const user = auth.currentUser;
 
-            try {
-                // Primary check: global users collection
-                const userRef = doc(db, 'users', user.uid);
-                const userSnap = await getDoc(userRef);
-                if (userSnap.exists()) {
-                    const uData = userSnap.data();
-                    clientWhatsApp = uData.whatsappNumber || clientWhatsApp;
-                    clientName = uData.name || clientName;
-                }
+            // Gather client data if available
+            let clientName = user?.displayName || 'Client';
+            let clientWhatsApp = user?.phoneNumber || '';
 
-                // Secondary check/fallback: clients collection
-                const clientDoc = await getDoc(doc(db, 'clients', user.uid));
-                if (clientDoc.exists()) {
-                    const cData = clientDoc.data();
-                    clientName = cData.name || clientName;
-                    clientWhatsApp = cData.whatsappNumber || cData.whatsapp || clientWhatsApp;
+            if (user) {
+                try {
+                    const userRef = doc(db, 'users', user.uid);
+                    const userSnap = await getDoc(userRef);
+                    if (userSnap.exists()) {
+                        const uData = userSnap.data();
+                        clientWhatsApp = uData.whatsappNumber || clientWhatsApp;
+                        clientName = uData.name || clientName;
+                    }
+                    const clientDoc = await getDoc(doc(db, 'clients', user.uid));
+                    if (clientDoc.exists()) {
+                        const cData = clientDoc.data();
+                        clientName = cData.name || clientName;
+                        clientWhatsApp = cData.whatsappNumber || cData.whatsapp || clientWhatsApp;
+                    }
+                } catch (e) {
+                    console.log("Error fetching user info:", e);
                 }
-            } catch (e) {
-                console.error("Error fetching client contact info:", e);
             }
 
             const selectedPro = bricolers.find(b => b.id === selectedBricolerId);
@@ -2717,7 +2707,6 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
             } else if (service === 'private_driver' || (service === 'cooking' && activeOption?.id && !isNaN(Number(activeOption.id)))) {
                 durationDays = Math.ceil(duration);
             }
-            const coefficient = (activeOption as any)?.coefficient || (service === 'errands' ? 1.5 : 1);
 
             const basePrice = calculateTaskPrice(
                 hourlyRate,
@@ -2729,17 +2718,15 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                 referralDiscountAvailable
             );
 
-            // Receipt Upload Logic
             let finalBankReceiptUrl = null;
             if (paymentMethod === 'bank' && bankReceipt && isImageDataUrl(bankReceipt)) {
                 try {
                     const blob = await dataUrlToBlob(bankReceipt);
-                    const uid = user?.uid || 'anonymous';
-                    const path = `receipts/${uid}/${Date.now()}_receipt.jpg`;
-                    finalBankReceiptUrl = await uploadImageToStorage(blob, path);
+                    const storagePath = `receipts/${user?.uid || 'anonymous'}/${Date.now()}_receipt.jpg`;
+                    finalBankReceiptUrl = await uploadImageToStorage(blob, storagePath);
                 } catch (err) {
                     console.error("Error uploading receipt:", err);
-                    alert(t({ en: 'Failed to upload receipt. It might be too large or your connection is slow.', fr: 'Échec du téléchargement du reçu. Il est peut-être trop volumineux ou votre connexion est lente.', ar: 'فشل تحميل الإيصال. قد يكون حجمه كبيرًا جدًا أو أن اتصالك بطيء.' }));
+                    alert(t({ en: 'Failed to upload receipt.', fr: 'Échec du téléchargement du reçu.' }));
                     setIsSubmitting(false);
                     return;
                 }
@@ -2747,34 +2734,26 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                 finalBankReceiptUrl = bankReceipt;
             }
 
-            // Platform model: Client pays the total, we take 15%.
             const commissionRate = 0.15;
             const totalPrice = basePrice;
-            const taskFee = totalPrice * (1 - commissionRate); // Amount for the tasker
-            const platformFee = totalPrice * commissionRate; // Amount for Lbricol
+            const taskFee = totalPrice * (1 - commissionRate);
 
             const getBricolerRankLabel = (pro: any): 'New' | 'Classic' | 'Pro' | 'Elite' => {
                 const jobs = Math.max(pro.completedJobs || 0, (pro.reviews || []).length);
-                const rating = (pro.rating && pro.rating > 0)
-                    ? pro.rating
-                    : (pro.reviews && pro.reviews.length > 0
-                        ? (pro.reviews.reduce((acc: number, r: any) => acc + (r.rating || 0), 0) / pro.reviews.length)
-                        : 0);
-
-                const verified = pro.isVerified || false;
-                const personalityPassed = (pro.servicePrideScore || 0) >= 80 && (pro.happyMakingScore || 0) >= 80;
-
-                if (jobs > 40 && rating >= 4.5 && verified && personalityPassed) return 'Elite';
+                const rating = (pro.rating && pro.rating > 0) ? pro.rating : 0;
+                if (jobs > 40 && rating >= 4.5) return 'Elite';
                 if (jobs >= 20 && rating >= 4.4) return 'Pro';
                 if (jobs >= 10) return 'Classic';
                 return 'New';
             };
 
+            const coefficient = (activeOption as any)?.coefficient || (service === 'errands' ? 1.5 : 1);
+            
             const orderData = {
-                clientId: user.uid,
+                clientId: user?.uid || null,
                 clientName,
                 clientWhatsApp,
-                service: service,
+                service,
                 subService: subService || null,
                 selectedCar: selectedCar || null,
                 serviceId: service,
@@ -2800,12 +2779,13 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                 duration: service === 'car_rental' ? `${duration} ${t({ en: duration > 1 ? 'days' : 'day', fr: duration > 1 ? 'jours' : 'jour' })}` : (activeOption?.estTime ? t(activeOption.estTime as any) : (duration + 'h')),
                 basePrice,
                 taskFee,
-                totalPrice: basePrice, // basePrice already includes referral discount if applied
-                price: basePrice, // price is the final price after all discounts
+                totalPrice: basePrice,
+                price: basePrice,
                 referralApplied: applyReferralDiscount && referralDiscountAvailable > 0,
-                durationDays: durationDays,
+                durationDays,
+                movingVehicle: selectedMovingVehicle,
                 images: images,
-                clientNeedImages: images, // for redundancy
+                clientNeedImages: images,
                 paymentMethod,
                 bankReceipt: finalBankReceiptUrl,
                 frequency,
@@ -2814,35 +2794,20 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
 
             await onSubmit(orderData);
 
-            // Association maintenance: ensure the WA used is synced to the profile for next time
-            if (clientWhatsApp && user.uid) {
-                setDoc(doc(db, 'users', user.uid), { whatsappNumber: clientWhatsApp }, { merge: true }).catch(console.error);
-                setDoc(doc(db, 'clients', user.uid), { whatsappNumber: clientWhatsApp }, { merge: true }).catch(console.error);
-            }
-
-            setShowSuccessAnimation(true);
-
-            // Clear draft on success
-            const draftId = continueDraft?.id;
-            if (draftId) {
-                try {
-                    const existingDraftsJson = localStorage.getItem('lbricol_order_drafts');
-                    if (existingDraftsJson) {
-                        let drafts: DraftOrder[] = JSON.parse(existingDraftsJson);
-                        drafts = drafts.filter(d => d.id !== draftId);
+            if (user) {
+                if (clientWhatsApp) {
+                    setDoc(doc(db, 'users', user.uid), { whatsappNumber: clientWhatsApp }, { merge: true }).catch(console.error);
+                }
+                setShowSuccessAnimation(true);
+                // Clear drafts ... (already handled in page.tsx handleQuickOrderSubmit if we want, but can do here too)
+                const draftId = continueDraft?.id;
+                if (draftId) {
+                    try {
+                        let drafts = JSON.parse(localStorage.getItem('lbricol_order_drafts') || '[]');
+                        drafts = drafts.filter((d: any) => d.id !== draftId);
                         localStorage.setItem('lbricol_order_drafts', JSON.stringify(drafts));
-                    }
-                } catch (e) { }
-            } else {
-                // Also try to clear any draft matching this service/subservice if no id
-                try {
-                    const existingDraftsJson = localStorage.getItem('lbricol_order_drafts');
-                    if (existingDraftsJson) {
-                        let drafts: DraftOrder[] = JSON.parse(existingDraftsJson);
-                        drafts = drafts.filter(d => !(d.service === service && d.subService === subService));
-                        localStorage.setItem('lbricol_order_drafts', JSON.stringify(drafts));
-                    }
-                } catch (e) { }
+                    } catch (e) { }
+                }
             }
         } catch (err) {
             console.error("Submission error:", err);
@@ -3400,7 +3365,11 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                                                                 }}
                                                                 onClick={() => {
                                                                     setTaskSize(size.id);
-                                                                    setTimeout(() => setSubStep1('description'), 250);
+                                                                    if (service === 'moving') {
+                                                                        setTimeout(() => setSubStep1('moving_vehicle'), 250);
+                                                                    } else {
+                                                                        setTimeout(() => setSubStep1('description'), 250);
+                                                                    }
                                                                 }}
                                                                 className={cn(
                                                                     "flex flex-col gap-3 p-8 rounded-[20px] text-left transition-all",
@@ -3438,6 +3407,64 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                                             </motion.div>
                                         )}
 
+                                        {subStep1 === 'moving_vehicle' && (
+                                            <motion.div
+                                                key="sub-moving-vehicle"
+                                                initial={{ opacity: 0, x: 20 }}
+                                                animate={{ opacity: 1, x: 0 }}
+                                                exit={{ opacity: 0, x: -20 }}
+                                                transition={{ duration: 0.25, ease: "easeOut" }}
+                                                className="space-y-4 pt-20"
+                                            >
+                                                <motion.h4
+                                                    initial={{ opacity: 0, y: 10 }}
+                                                    animate={{ opacity: 1, y: 0 }}
+                                                    transition={{ delay: 0.05 }}
+                                                    className="text-[25px] font-bold text-black ml-1"
+                                                >
+                                                    {t({ en: "Which transport mean do you need?", fr: "De quelle moyen transport avez-vous besoin ?", ar: "ما هي وسيلة النقل التي تحتاجها؟" })}
+                                                </motion.h4>
+                                                <p className="text-neutral-500 text-[15px] font-medium ml-1">
+                                                    {t({
+                                                        en: "We'll match you with Bricolers who have this type of vehicle.",
+                                                        fr: "Nous vous mettrez en relation avec des Bricolers disposant de ce type de véhicule.",
+                                                        ar: "سنقوم بمطابقتك مع Bricolers الذين لديهم هذا النوع من الشاحنات."
+                                                    })}
+                                                </p>
+                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                                    {[
+                                                        { id: 'triporteur', label: { en: '🛵 Triporteur', fr: '🛵 Triporteur', ar: '🛵 تربورتور' } },
+                                                        { id: 'small_van', label: { en: '🚐 Small Van', fr: '🚐 Petit Van', ar: '🚐 سيارة "برلانكو"' } },
+                                                        { id: 'large_van', label: { en: '🚚 Large Van', fr: '🚚 Grand Van', ar: '🚚 شاحنة فورد ترانزيت' } },
+                                                        { id: 'small_truck', label: { en: '🚛 Small Truck', fr: '🚛 Petit Camion', ar: '🚛 شاحنة صغيرة' } },
+                                                        { id: 'large_truck', label: { en: '🚚 Large Truck', fr: '🚚 Grand Camion', ar: '🚚 شاحنة كبيرة' } },
+                                                        { id: 'labor_only', label: { en: '💪 Labor only', fr: '💪 Main-d’œuvre seule', ar: '💪 يد عاملة فقط' } },
+                                                    ].map((opt, idx) => {
+                                                        const isSelected = selectedMovingVehicle === opt.id;
+                                                        return (
+                                                            <motion.button
+                                                                key={opt.id}
+                                                                initial={{ opacity: 0, y: 10 }}
+                                                                animate={{ opacity: 1, y: 0 }}
+                                                                transition={{ delay: 0.1 + idx * 0.05 }}
+                                                                onClick={() => {
+                                                                    setSelectedMovingVehicle(opt.id);
+                                                                    setTimeout(() => setSubStep1('description'), 250);
+                                                                }}
+                                                                className={cn(
+                                                                    "flex items-center justify-between p-5 rounded-[20px] transition-all text-left",
+                                                                    isSelected ? "bg-[#E6F6F2] border-2 border-[#00A082]" : "bg-neutral-50/40 border border-neutral-100 hover:border-neutral-200"
+                                                                )}
+                                                            >
+                                                                <span className="text-[16px] font-bold text-neutral-900">{t(opt.label)}</span>
+                                                                {isSelected && <div className="w-6 h-6 rounded-full bg-[#00A082] flex items-center justify-center"><Check size={14} className="text-white" strokeWidth={4} /></div>}
+                                                            </motion.button>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </motion.div>
+                                        )}
+
                                         {subStep1 === 'description' && (
                                             <motion.div
                                                 key="sub-desc"
@@ -3455,7 +3482,7 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                                                 >
                                                     {t({ en: 'Describe What you need', fr: 'Décrivez votre besoin', ar: 'صف ما تحتاجه' })}
                                                 </motion.h4>
-                                                {(service === 'moving' || service === 'errands') && (
+                                                {(service === 'moving' || service === 'errands' || service === 'courier') && (
                                                     <motion.p
                                                         initial={{ opacity: 0 }}
                                                         animate={{ opacity: 1 }}
@@ -4268,6 +4295,30 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                                             </div>
                                         )}
 
+                                        {/* Selected Moving Vehicle summary */}
+                                        {service === 'moving' && selectedMovingVehicle && (
+                                            <div className="px-0 space-y-4">
+                                                <h3 className="text-[24px] font-black text-black">{t({ en: 'Requested Transport', fr: 'Transport Demandé', ar: 'وسيلة النقل المطلوبة' })}</h3>
+                                                <div className="relative overflow-hidden rounded-2xl border border-neutral-100 bg-[#F8F9FA] p-4 flex items-center gap-4">
+                                                    <div className="flex-1 min-w-0">
+                                                        <h4 className="text-[17px] font-black text-black leading-tight">
+                                                            {(() => {
+                                                                const opts = {
+                                                                    triporteur: { en: '🛵 Triporteur', fr: '🛵 Triporteur', ar: '🛵 تربورتور' },
+                                                                    small_van: { en: '🚐 Small Van', fr: '🚐 Petit Van', ar: '🚐 سيارة "برلانكو"' },
+                                                                    large_van: { en: '🚚 Large Van', fr: '🚚 Grand Van', ar: '🚚 شاحنة فورد ترانزيت' },
+                                                                    small_truck: { en: '🚛 Small Truck', fr: '🚛 Petit Camion', ar: '🚛 شاحنة صغيرة' },
+                                                                    large_truck: { en: '🚚 Large Truck', fr: '🚚 Grand Camion', ar: '🚚 شاحنة كبيرة' },
+                                                                    labor_only: { en: '💪 Labor only', fr: '💪 Main-d’œuvre seule', ar: '💪 يد عاملة فقط' }
+                                                                };
+                                                                return t((opts as any)[selectedMovingVehicle] || { en: selectedMovingVehicle });
+                                                            })()}
+                                                        </h4>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
+
                                         {/* Your Selected Bricoler */}
                                         {selectedBricolerId !== 'open' && selectedPro && (
                                             <div className="px-0 pb-6 space-y-4">
@@ -4488,6 +4539,8 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                                                         onClick={() => {
                                                             if (service === 'car_rental') {
                                                                 handleStartMatching(); // Skip description step for Car Rental
+                                                            } else if (service === 'moving') {
+                                                                setSubStep1('moving_vehicle');
                                                             } else {
                                                                 setSubStep1('description');
                                                             }
@@ -4496,6 +4549,33 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                                                         className={cn(
                                                             "flex-1 h-14 rounded-full text-[19px] font-semibold active:scale-95 transition-all text-white",
                                                             (service === 'car_rental' ? (selectedDate && selectedTime && carReturnDate && carReturnTime) : taskSize) ? "bg-[#00A082]" : "bg-neutral-100 text-neutral-400 cursor-not-allowed"
+                                                        )}
+                                                    >
+                                                        {t({ en: 'Next', fr: 'Suivant', ar: 'التالي' })}
+                                                    </button>
+                                                </motion.div>
+                                            )}
+
+                                            {subStep1 === 'moving_vehicle' && (
+                                                <motion.div
+                                                    key="btn-moving-vehicle"
+                                                    initial={{ opacity: 0, x: 20 }}
+                                                    animate={{ opacity: 1, x: 0 }}
+                                                    exit={{ opacity: 0, x: -20 }}
+                                                    className="flex gap-2 w-full"
+                                                >
+                                                    <button
+                                                        onClick={() => setSubStep1('size')}
+                                                        className="w-14 h-14 rounded-full bg-neutral-100 flex items-center justify-center shrink-0 text-neutral-600 active:scale-95 transition-transform"
+                                                    >
+                                                        <ChevronLeft strokeWidth={2.5} size={22} />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => setSubStep1('description')}
+                                                        disabled={!selectedMovingVehicle}
+                                                        className={cn(
+                                                            "flex-1 h-14 rounded-full text-[19px] font-semibold active:scale-95 transition-all text-white",
+                                                            selectedMovingVehicle ? "bg-[#00A082]" : "bg-neutral-100 text-neutral-400 cursor-not-allowed"
                                                         )}
                                                     >
                                                         {t({ en: 'Next', fr: 'Suivant', ar: 'التالي' })}
@@ -4512,7 +4592,10 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                                                     className="flex gap-2 w-full"
                                                 >
                                                     <button
-                                                        onClick={() => setSubStep1('size')}
+                                                        onClick={() => {
+                                                            if (service === 'moving') setSubStep1('moving_vehicle');
+                                                            else setSubStep1('size');
+                                                        }}
                                                         className="w-14 h-14 rounded-full bg-neutral-100 flex items-center justify-center shrink-0 text-neutral-600 active:scale-95 transition-transform"
                                                     >
                                                         <ChevronLeft strokeWidth={2.5} size={22} />
