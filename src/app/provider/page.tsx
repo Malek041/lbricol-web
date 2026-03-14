@@ -1276,6 +1276,37 @@ export default function ProviderPage() {
         try {
             const jobRef = doc(db, 'jobs', id);
 
+            // --- CAR RENTAL RETURN DATE GUARD ---
+            if (updates.status === 'done') {
+                const guardSnap = await getDoc(jobRef);
+                if (guardSnap.exists()) {
+                    const gData = guardSnap.data();
+                    const isCarRental = gData.service === 'car_rental' || gData.craft === 'Car rental';
+                    if (isCarRental && gData.carReturnDate) {
+                        try {
+                            const rawReturnTime = (gData.carReturnTime || '').split('-')[0].trim();
+                            const returnTimePart = rawReturnTime.includes(':')
+                                ? (rawReturnTime.split(':').length === 2 ? `${rawReturnTime}:00` : rawReturnTime)
+                                : '23:59:00';
+                            const returnDatePart = gData.carReturnDate.split('T')[0];
+                            const returnDateTime = new Date(`${returnDatePart}T${returnTimePart}`);
+                            if (!isNaN(returnDateTime.getTime()) && new Date() < returnDateTime) {
+                                showToast({
+                                    variant: 'error',
+                                    title: t({ en: 'Return date not reached', fr: 'Date de retour non atteinte' }),
+                                    description: t({
+                                        en: `This rental cannot be marked as done until the return date (${returnDatePart}) has passed.`,
+                                        fr: `Cette location ne peut pas être marquée comme terminée avant la date de retour (${returnDatePart}).`
+                                    })
+                                });
+                                return;
+                            }
+                        } catch (e) { /* ignore parse errors */ }
+                    }
+                }
+            }
+            // --- CAR RENTAL RETURN DATE GUARD END ---
+
             // --- REFERRAL LOGIC START ---
             if (updates.status === 'done') {
                 const jobSnap = await getDoc(jobRef);
@@ -2933,15 +2964,38 @@ export default function ProviderPage() {
                                                                         <MessageSquare size={20} strokeWidth={2.5} />
                                                                         {t({ en: 'Quick Chat', fr: 'Chat rapide' })}
                                                                     </button>
-                                                                    <button
-                                                                        onClick={(e) => {
-                                                                            e.stopPropagation();
-                                                                            handleUpdateJob(job.rawAccepted!.id!, { status: 'done' });
-                                                                        }}
-                                                                        className="h-14 w-14 rounded-2xl bg-black text-white flex items-center justify-center active:scale-95 transition-all shadow-lg"
-                                                                    >
-                                                                        <Check size={24} strokeWidth={3} />
-                                                                    </button>
+                                                                    {(() => {
+                                                                        const ra = job.rawAccepted as any;
+                                                                        const isCarRental = ra?.service === 'car_rental' || ra?.craft === 'Car rental';
+                                                                        let returnLocked = false;
+                                                                        let returnLabel = '';
+                                                                        if (isCarRental && ra?.carReturnDate) {
+                                                                            try {
+                                                                                const rawT = (ra.carReturnTime || '').split('-')[0].trim();
+                                                                                const tPart = rawT.includes(':') ? (rawT.split(':').length === 2 ? `${rawT}:00` : rawT) : '23:59:00';
+                                                                                const dt = new Date(`${ra.carReturnDate.split('T')[0]}T${tPart}`);
+                                                                                if (!isNaN(dt.getTime()) && new Date() < dt) {
+                                                                                    returnLocked = true;
+                                                                                    returnLabel = ra.carReturnDate.split('T')[0];
+                                                                                }
+                                                                            } catch (e) {}
+                                                                        }
+                                                                        return (
+                                                                            <button
+                                                                                onClick={(e) => {
+                                                                                    e.stopPropagation();
+                                                                                    handleUpdateJob(job.rawAccepted!.id!, { status: 'done' });
+                                                                                }}
+                                                                                title={returnLocked ? t({ en: `Locked until return: ${returnLabel}`, fr: `Bloqué jusqu'au retour: ${returnLabel}` }) : t({ en: 'Mark as done', fr: 'Marquer comme terminée' })}
+                                                                                className={cn(
+                                                                                    "h-14 w-14 rounded-2xl flex items-center justify-center active:scale-95 transition-all shadow-lg",
+                                                                                    returnLocked ? "bg-neutral-300 text-neutral-500 cursor-not-allowed" : "bg-black text-white"
+                                                                                )}
+                                                                            >
+                                                                                {returnLocked ? <Clock size={22} strokeWidth={2.5} /> : <Check size={24} strokeWidth={3} />}
+                                                                            </button>
+                                                                        );
+                                                                    })()}
                                                                 </div>
                                                             </div>
                                                         </motion.div>
@@ -3345,14 +3399,36 @@ export default function ProviderPage() {
                                                                     >
                                                                         <MessageCircle size={20} strokeWidth={1.8} />
                                                                     </button>
-                                                                    <button
-                                                                        onClick={() => handleUpdateJob(job.rawAccepted!.id!, { status: 'done' })}
-                                                                        title={t({ en: 'Mark as done', fr: 'Marquer comme terminée' })}
-                                                                        className="h-11 flex-1 rounded-full bg-black text-white flex items-center justify-center gap-2 text-[13px] font-bold hover:bg-neutral-800 transition-colors shadow-[0_4px_14px_rgba(0,0,0,0.18)]"
-                                                                    >
-                                                                        <CheckCircle2 size={16} strokeWidth={1.8} />
-                                                                        {t({ en: 'Done', fr: 'Terminée' })}
-                                                                    </button>
+                                                                    {(() => {
+                                                                        const ra = job.rawAccepted as any;
+                                                                        const isCarRental = ra?.service === 'car_rental' || ra?.craft === 'Car rental';
+                                                                        let returnLocked = false;
+                                                                        let returnLabel = '';
+                                                                        if (isCarRental && ra?.carReturnDate) {
+                                                                            try {
+                                                                                const rawT = (ra.carReturnTime || '').split('-')[0].trim();
+                                                                                const tPart = rawT.includes(':') ? (rawT.split(':').length === 2 ? `${rawT}:00` : rawT) : '23:59:00';
+                                                                                const dt = new Date(`${ra.carReturnDate.split('T')[0]}T${tPart}`);
+                                                                                if (!isNaN(dt.getTime()) && new Date() < dt) {
+                                                                                    returnLocked = true;
+                                                                                    returnLabel = ra.carReturnDate.split('T')[0];
+                                                                                }
+                                                                            } catch (e) {}
+                                                                        }
+                                                                        return (
+                                                                            <button
+                                                                                onClick={() => handleUpdateJob(job.rawAccepted!.id!, { status: 'done' })}
+                                                                                title={returnLocked ? t({ en: `Locked until return: ${returnLabel}`, fr: `Bloqué jusqu'au retour: ${returnLabel}` }) : t({ en: 'Mark as done', fr: 'Marquer comme terminée' })}
+                                                                                className={cn(
+                                                                                    "h-11 flex-1 rounded-full flex items-center justify-center gap-2 text-[13px] font-bold transition-colors shadow-[0_4px_14px_rgba(0,0,0,0.18)]",
+                                                                                    returnLocked ? "bg-neutral-200 text-neutral-500 cursor-not-allowed" : "bg-black text-white hover:bg-neutral-800"
+                                                                                )}
+                                                                            >
+                                                                                {returnLocked ? <Clock size={14} strokeWidth={2} /> : <CheckCircle2 size={16} strokeWidth={1.8} />}
+                                                                                {returnLocked ? t({ en: `Return: ${returnLabel}`, fr: `Retour: ${returnLabel}` }) : t({ en: 'Done', fr: 'Terminée' })}
+                                                                            </button>
+                                                                        );
+                                                                    })()}
                                                                 </>
                                                             )}
 

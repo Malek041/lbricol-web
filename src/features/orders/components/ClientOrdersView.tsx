@@ -80,11 +80,24 @@ export const useOrderProgress = () => {
 
     const getTimeRemaining = (order: OrderDetails) => {
         if (!order.date || !order.time) return null;
+
+        const isCarRental = order.service === 'car_rental';
+        const isRentalInProgress = isCarRental && getProgress(order) === 100 && !['done', 'delivered', 'cancelled'].includes(order.status || '');
+
+        let targetDate;
         try {
-            const rawTime = order.time.split('-')[0].trim();
-            const timePart = rawTime.includes(':') ? (rawTime.split(':').length === 2 ? `${rawTime}:00` : rawTime) : `${rawTime}:00:00`;
-            const datePart = order.date.split('T')[0];
-            const targetDate = new Date(`${datePart}T${timePart}`);
+            if (isRentalInProgress && order.carReturnDate && order.carReturnTime) {
+                const rawTime = order.carReturnTime.split('-')[0].trim();
+                const timePart = rawTime.includes(':') ? (rawTime.split(':').length === 2 ? `${rawTime}:00` : rawTime) : `${rawTime}:00:00`;
+                const datePart = order.carReturnDate.split('T')[0];
+                targetDate = new Date(`${datePart}T${timePart}`);
+            } else {
+                const rawTime = order.time.split('-')[0].trim();
+                const timePart = rawTime.includes(':') ? (rawTime.split(':').length === 2 ? `${rawTime}:00` : rawTime) : `${rawTime}:00:00`;
+                const datePart = order.date.split('T')[0];
+                targetDate = new Date(`${datePart}T${timePart}`);
+            }
+
             if (isNaN(targetDate.getTime())) return null;
             const now = currentTime.getTime();
             const diffMs = targetDate.getTime() - now;
@@ -733,7 +746,7 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
                                 <h1 className="text-[20px] font-black text-black">{t({ en: 'Order details', fr: 'Détails de la commande', ar: 'تفاصيل الطلب' })}</h1>
                             </div>
                             <div className="flex items-center gap-2">
-                                {selectedOrder.bricolerWhatsApp && (
+                                {selectedOrder.bricolerWhatsApp && ['programmed', 'in_progress', 'confirmed', 'accepted', 'done', 'delivered'].includes(selectedOrder.status || '') && (
                                     <button
                                         onClick={() => selectedOrder.bricolerWhatsApp && openWhatsApp(selectedOrder.bricolerWhatsApp)}
                                         className="w-12 h-12 md:w-14 md:h-14 rounded-full flex items-center justify-center text-[#25D366] hover:scale-110 active:scale-95 transition-all group"
@@ -788,19 +801,17 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
                                             isRentalInProgress ? "text-rose-500" : "text-black"
                                         )}>
                                             {selectedOrder.service === 'car_rental' ? (
-                                                <div className="flex items-center gap-2 flex-wrap">
-                                                    <div className="flex items-center gap-1.5 font-black">
+                                                <div className="flex flex-col gap-1 mt-2">
+                                                    <div className="flex items-center gap-2 font-black">
                                                         <span>{selectedOrder.date ? format(parseISO(selectedOrder.date), 'MMM d') : '---'}</span>
-                                                        <span className="opacity-50">|</span>
+                                                        <span className="opacity-30">|</span>
                                                         <span>{selectedOrder.time || '---'}</span>
                                                     </div>
-                                                    <span className="mx-1">→</span>
-                                                    <div className="flex items-center gap-1.5 font-black">
+                                                    <div className="flex items-center gap-2 font-bold text-neutral-400">
                                                         <span>{selectedOrder.carReturnDate ? format(parseISO(selectedOrder.carReturnDate), 'MMM d') : (selectedOrder as any).carReturnDate ? format(parseISO((selectedOrder as any).carReturnDate), 'MMM d') : '---'}</span>
                                                         <span className="opacity-30">|</span>
                                                         <span>{selectedOrder.carReturnTime || (selectedOrder as any).carReturnTime || '---'}</span>
                                                     </div>
-                                                    <span className="opacity-40 ml-1">, {selectedOrder.date ? (selectedOrder.date.includes('-') ? format(parseISO(selectedOrder.date), 'yyyy') : selectedOrder.date.split(',').pop()?.trim()) : ''}</span>
                                                 </div>
                                             ) : (
                                                 <div className="flex items-center gap-2">
@@ -820,13 +831,13 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
                                 <div className="px-6 md:px-12 mb-8">
                                     <div className="grid grid-cols-1 gap-4">
                                         {/* Contact Bricoler CTA - shown when a bricoler is assigned */}
-                                        {selectedOrder.bricolerWhatsApp && (
+                                        {selectedOrder.bricolerWhatsApp && ['programmed', 'in_progress', 'confirmed', 'accepted', 'done', 'delivered'].includes(selectedOrder.status || '') && (
                                             <button
                                                 onClick={() => selectedOrder.bricolerWhatsApp && openWhatsApp(selectedOrder.bricolerWhatsApp)}
-                                                className="w-full flex items-center justify-center gap-4 py-6 rounded-[24px] bg-[#25D366] text-white font-[1000] text-[18px] hover:bg-[#128C7E] active:scale-95 transition-all group relative overflow-hidden"
+                                                className="w-full flex items-center justify-center gap-4 py-4 rounded-[20px] bg-[#25D366] text-white font-[1000] text-[18px] hover:bg-[#128C7E] active:scale-95 transition-all group relative overflow-hidden"
                                             >
                                                 <div className="absolute inset-0 bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity" />
-                                                <WhatsAppBrandIcon size={36} className="group-hover:scale-110 transition-transform drop-shadow-sm" />
+                                                <WhatsAppBrandIcon size={28} className="group-hover:scale-110 transition-transform drop-shadow-sm" />
                                                 <span className="tracking-tight">{t({ en: 'Contact Bricoler', fr: 'Contacter le Bricoler', ar: 'اتصل بالبريكولر' })}</span>
                                             </button>
                                         )}
@@ -998,7 +1009,7 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
                                                 </div>
                                             </div>
                                             <div className="flex items-center gap-3">
-                                                {selectedOrder.bricolerWhatsApp && (
+                                                {selectedOrder.bricolerWhatsApp && ['programmed', 'in_progress', 'confirmed', 'accepted', 'done', 'delivered'].includes(selectedOrder.status || '') && (
                                                     <button
                                                         onClick={() => selectedOrder.bricolerWhatsApp && openWhatsApp(selectedOrder.bricolerWhatsApp)}
                                                         className="p-1 rounded-full flex items-center justify-center text-[#25D366] hover:scale-110 active:scale-90 transition-all group"
@@ -1177,17 +1188,17 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
                         </div>
 
                         {/* Fixed Total Footer */}
-                        <div className="px-6 md:px-12 py-8 bg-white border-t border-neutral-100 shadow-[0_-10px_40px_rgba(0,0,0,0.05)] z-[4001] flex flex-col gap-4">
+                        <div className="px-6 md:px-12 py-5 bg-white border-t border-neutral-100 shadow-[0_-10px_40px_rgba(0,0,0,0.05)] z-[4001] flex flex-col gap-3">
                             <div className="flex items-center justify-between gap-4">
-                                <span className="text-[28px] md:text-[32px] font-black text-black">{t({ en: 'Total', fr: 'Total', ar: 'الإجمالي' })}</span>
-                                <span className="text-[28px] md:text-[32px] font-black text-black tracking-tighter truncate">{((selectedOrder?.totalPrice || parseFloat(String(selectedOrder?.price || '0')))).toFixed(0)} MAD</span>
+                                <span className="text-[24px] md:text-[28px] font-black text-black">{t({ en: 'Total Price', fr: 'Prix Total', ar: 'الإجمالي' })}</span>
+                                <span className="text-[24px] md:text-[28px] font-black text-black tracking-tighter truncate">{((selectedOrder?.totalPrice || parseFloat(String(selectedOrder?.price || '0')))).toFixed(0)} MAD</span>
                             </div>
 
                             {/* Cancellation Button */}
                             {selectedOrder && !['done', 'cancelled', 'delivered'].includes(selectedOrder.status || '') && (
                                 <button
                                     onClick={() => handleCancelOrder(selectedOrder.id!)}
-                                    className="w-full py-4 rounded-xl border-2 border-red-50 text-red-500 font-bold text-[15px] hover:bg-red-50 transition-colors uppercase tracking-widest mt-2"
+                                    className="w-full py-3 rounded-xl border-2 border-red-50 text-red-500 font-bold text-[14px] hover:bg-red-50 transition-colors uppercase tracking-widest mt-1"
                                 >
                                     {t({ en: 'Cancel Order', fr: 'Annuler la commande', ar: 'إلغاء الطلب' })}
                                 </button>
@@ -1519,40 +1530,38 @@ function ActivityTab({
                     <h3 className="text-[17px] font-black text-black leading-tight">
                         {order.service} {order.subServiceDisplayName ? `› ${order.subServiceDisplayName}` : ''}
                     </h3>
-                    <div className="flex items-end gap-2 mt-1">
-                        <div className="text-[14px] font-black text-black leading-tight">
-                            {isCarRental && order.date && order.carReturnDate ? (
-                                <div className="flex flex-col gap-0.5">
-                                    <div className="flex items-center gap-1.5">
-                                        <span className="text-[16px]">{format(parseISO(order.date), 'MMM d')}</span>
-                                        <span className="opacity-30">|</span>
-                                        <span className="text-[16px]">{order.time?.split('-')[0] || '09:00'}</span>
-                                    </div>
-                                    <div className="flex items-center gap-1.5 text-neutral-400">
-                                        <span>{format(parseISO(order.carReturnDate), 'MMM d')}</span>
-                                        <span className="opacity-30">|</span>
-                                        <span>{order.carReturnTime?.split('-')[0] || '09:00'}</span>
-                                    </div>
+                    <div className="mt-2 text-[14px] font-black text-black leading-tight">
+                        {isCarRental && order.date && order.carReturnDate ? (
+                            <div className="flex flex-col gap-1">
+                                <div className="flex items-center gap-1.5">
+                                    <span className="text-[16px]">{format(parseISO(order.date), 'MMM d')}</span>
+                                    <span className="opacity-30">|</span>
+                                    <span className="text-[16px]">{order.time?.split('-')[0] || '09:00'}</span>
                                 </div>
-                            ) : (
-                                <p className="text-[20px] font-black">
-                                    {order.time || '12:00-13:00'}
-                                </p>
-                            )}
-                        </div>
+                                <div className="flex items-center gap-1.5 text-neutral-400">
+                                    <span>{format(parseISO(order.carReturnDate), 'MMM d')}</span>
+                                    <span className="opacity-30">|</span>
+                                    <span>{order.carReturnTime?.split('-')[0] || '09:00'}</span>
+                                </div>
+                            </div>
+                        ) : (
+                            <p className="text-[20px] font-black mt-1">
+                                {order.time || '12:00-13:00'}
+                            </p>
+                        )}
+                    </div>
+                    <div className="flex justify-between items-end mt-2">
+                        <p className="text-[13px] font-medium text-neutral-400 truncate pr-2">
+                            {order.bricolerName || t({ en: 'Matching...', fr: 'Recherche...', ar: 'جاري البحث...' })} • {order.city || order.location}
+                        </p>
                         {timeLeft && (
                             <span className={cn(
-                                "text-[14px] font-bold mb-[2px]",
+                                "text-[12px] font-bold whitespace-nowrap mb-0.5",
                                 isRentalInProgress ? "text-rose-500" : "text-[#00A082]"
                             )}>
                                 ({timeLeft})
                             </span>
                         )}
-                    </div>
-                    <div className="flex items-center gap-1.5 mt-0.5">
-                        <p className="text-[13px] font-medium text-neutral-400 truncate">
-                            {order.bricolerName || t({ en: 'Matching...', fr: 'Recherche...', ar: 'جاري البحث...' })} • {order.city || order.location}
-                        </p>
                     </div>
                     <div className="w-full h-1.5 bg-neutral-100 rounded-full mt-3 overflow-hidden">
                         <motion.div
