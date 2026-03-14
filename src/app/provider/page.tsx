@@ -1382,6 +1382,7 @@ export default function ProviderPage() {
                 }
 
                 await updateDoc(jobRef, {
+                    status: 'confirmed',
                     providerConfirmed: true,
                     confirmedAt: serverTimestamp(),
                     responseTimeMinutes
@@ -2186,10 +2187,20 @@ export default function ProviderPage() {
                                             (job.rawAccepted?.status === 'confirmed' || job.rawAccepted?.status === 'programmed') ? t({ en: 'Programmed', fr: 'Programmée' }) :
                                                 t({ en: 'Upcoming', fr: 'À venir' })}
                                     </h2>
-                                    <div className="flex items-center gap-2 text-[18px] font-semibold text-black mt-1">
-                                        <span>{dateStr}</span>
-                                        <span className="text-neutral-200">|</span>
-                                        <span>{timeStr}</span>
+                                    <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[18px] font-semibold text-black mt-1">
+                                        <div className="flex items-center gap-2">
+                                            <span>{dateStr}</span>
+                                            <span className="text-neutral-200">|</span>
+                                            <span>{timeStr}</span>
+                                        </div>
+                                        {job.carReturnDate && (
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-neutral-300">-</span>
+                                                <span>{formatJobDate(job.carReturnDate)}</span>
+                                                <span className="text-neutral-200">|</span>
+                                                <span>{job.carReturnTime || t({ en: 'Flexible', fr: 'Flexible', ar: 'مرن' })}</span>
+                                            </div>
+                                        )}
                                     </div>
                                     <p className="text-[12px] font-light text-black uppercase tracking-[0.2em] mt-2">
                                         {t({ en: 'ORDER ID', fr: 'ID DE COMMANDE' })}: #{job.id?.slice(-8).toUpperCase() || '---'}
@@ -2204,22 +2215,16 @@ export default function ProviderPage() {
                                         <div className="flex justify-between items-start">
                                             <div className="flex-1">
                                                 <h4 className="text-[12px] font-black text-[#00A082] uppercase tracking-wider mb-1">{t({ en: 'Rented Vehicle', fr: 'Véhicule Loué' })}</h4>
-                                                <p className="text-[20px] font-black text-black leading-tight">{job.selectedCar.brandName} {job.selectedCar.modelName}</p>
+                                                <p className="text-[20px] font-black text-black leading-tight">{(job.selectedCar.brandName || '').toUpperCase()} {(job.selectedCar.modelName || '').toUpperCase()}</p>
                                             </div>
                                             <div className="w-20 h-14 bg-white rounded-xl flex items-center justify-center p-2 border border-neutral-100 shadow-sm overflow-hidden flex-shrink-0 ml-4">
                                                 <img src={job.selectedCar.modelImage || job.selectedCar.image} alt="car" className="w-full h-full object-contain" />
                                             </div>
                                         </div>
-                                        <div className="flex items-center gap-6 pt-2 border-t border-[#00A082]/10">
+                                        <div className="flex items-center justify-between pt-2 border-t border-[#00A082]/10">
                                             <div className="flex flex-col">
-                                                <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-tighter">{t({ en: 'Daily Rate', fr: 'Prix/Jour' })}</span>
-                                                <span className="text-[16px] font-black text-black">{job.selectedCar.pricePerDay || job.selectedCar.price} MAD</span>
-                                            </div>
-                                            <div className="flex flex-col">
-                                                <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-tighter">{t({ en: 'Return Date', fr: 'Retour' })}</span>
-                                                <span className="text-[16px] font-black text-[#00A082]">
-                                                    {job.carReturnDate ? format(new Date(job.carReturnDate), 'MMM d, yyyy') : '---'}
-                                                </span>
+                                                <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-tighter">{t({ en: 'Rate', fr: 'Prix' })}</span>
+                                                <span className="text-[16px] font-black text-black">{job.selectedCar.pricePerDay || job.selectedCar.price} MAD/j</span>
                                             </div>
                                             <div className="flex flex-col">
                                                 <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-tighter">{t({ en: 'Duration', fr: 'Durée' })}</span>
@@ -2232,6 +2237,12 @@ export default function ProviderPage() {
                                                         }
                                                         return job.rawAccepted?.duration || job.rawJob?.duration || '---';
                                                     })()}
+                                                </span>
+                                            </div>
+                                            <div className="flex flex-col items-end">
+                                                <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-tighter">{t({ en: 'Total Price', fr: 'Prix Total', ar: 'السعر الإجمالي' })}</span>
+                                                <span className="text-[16px] font-black text-[#00A082] italic">
+                                                    {job.priceLabel}
                                                 </span>
                                             </div>
                                         </div>
@@ -2260,7 +2271,7 @@ export default function ProviderPage() {
                                         </div>
                                         <div className="flex flex-col">
                                             <span className="text-[12px] font-bold text-neutral-400 uppercase tracking-wider">{t({ en: 'Duration', fr: 'Durée' })}</span>
-                                            <span className="text-[16px] font-black text-black">≈ {job.rawAccepted?.duration || job.rawJob?.duration || '2h-3h'}</span>
+                                            <span className="text-[16px] font-black text-black">{job.rawAccepted?.duration || job.rawJob?.duration || t({ en: 'Flexible', fr: 'Flexible' })}</span>
                                         </div>
                                     </div>
                                     <div className="bg-neutral-50 rounded-2xl p-4 flex items-center gap-4 border border-neutral-100/50">
@@ -2309,8 +2320,8 @@ export default function ProviderPage() {
                                         </div>
                                         <div className="flex flex-col">
                                             <span className="text-[12px] font-bold text-neutral-400 uppercase tracking-wider">{t({ en: 'Description', fr: 'Description' })}</span>
-                                            <p className="text-[14px] font-semibold text-black line-clamp-2 leading-tight">
-                                                {job.rawAccepted?.description || job.rawJob?.description || t({ en: 'No specific instructions.', fr: 'Aucune instruction spécifique.' })}
+                                            <p className="text-[14px] font-semibold text-black leading-tight">
+                                                {job.description || job.rawAccepted?.description || job.rawJob?.description || t({ en: 'No specific instructions.', fr: 'Aucune instruction spécifique.' })}
                                             </p>
                                         </div>
                                     </div>
@@ -2332,7 +2343,7 @@ export default function ProviderPage() {
                                 <div className="space-y-4">
                                     <div className="flex items-center gap-2">
                                         <div className="flex-shrink-0 px-3 py-1 bg-[#FFC244]/20 text-black text-[13px] font-black rounded-md whitespace-nowrap">
-                                            ≈ {job.rawAccepted?.duration || job.rawJob?.duration || '2h-3h'}
+                                            {job.rawAccepted?.duration || job.rawJob?.duration || t({ en: 'Flexible', fr: 'Flexible' })}
                                         </div>
                                     </div>
                                     <div className="space-y-2">
@@ -2357,11 +2368,26 @@ export default function ProviderPage() {
                                                 <p className="text-[18px] font-black text-black">{job.clientName || 'Client'}</p>
                                                 <div className="flex items-center gap-1.5 mt-0.5">
                                                     <div className="flex items-center gap-0.5 mr-1">
-                                                        {[1, 2, 3, 4, 5].map((s) => (
-                                                            <Star key={s} size={14} className={cn("fill-neutral-200 text-neutral-200", (job.clientRating && s <= Math.floor(job.clientRating)) ? "fill-[#FFC244] text-[#FFC244]" : (s <= 5 && !job.clientRating ? "fill-[#FFC244] text-[#FFC244]" : ""))} />
-                                                        ))}
+                                                        {[1, 2, 3, 4, 5].map((s) => {
+                                                            const hasReviews = (job.clientReviewCount || 0) > 0;
+                                                            const rating = hasReviews ? (job.clientRating || 0) : 0;
+                                                            return (
+                                                                <Star 
+                                                                    key={s} 
+                                                                    size={14} 
+                                                                    className={cn(
+                                                                        "transition-all",
+                                                                        s <= Math.floor(rating)
+                                                                            ? "fill-[#FFC244] text-[#FFC244]"
+                                                                            : "fill-neutral-100 text-neutral-200"
+                                                                    )} 
+                                                                />
+                                                            );
+                                                        })}
                                                     </div>
-                                                    <span className="text-[13px] font-bold text-[#FFC244]">{job.clientRating ? job.clientRating.toFixed(1) : '5.0'}</span>
+                                                    <span className="text-[13px] font-bold text-[#FFC244]">
+                                                        {((job.clientReviewCount || 0) > 0) ? (job.clientRating || 0).toFixed(1) : '---'}
+                                                    </span>
                                                     <span className="text-[13px] text-neutral-400 font-medium">({job.clientReviewCount || 0} {t({ en: 'reviews', fr: 'avis' })})</span>
                                                 </div>
                                             </div>
@@ -2432,7 +2458,7 @@ export default function ProviderPage() {
                                 <div className="space-y-3">
                                     <h3 className="text-[28px] font-black text-black">{t({ en: 'Need Description', fr: 'Description du besoin' })}</h3>
                                     <div className="p-5 bg-neutral-50 rounded-[16px] text-neutral-500 text-[15px] font-light leading-relaxed">
-                                        {job.rawJob?.description || job.rawAccepted?.description || job.rawAccepted?.comment || t({ en: 'No specific instructions provided for this task.', fr: 'Aucune instruction spécifique fournie pour cette tâche.' })}
+                                        {job.description || job.rawJob?.description || job.rawAccepted?.description || job.rawAccepted?.comment || t({ en: 'No specific instructions provided for this task.', fr: 'Aucune instruction spécifique fournie pour cette tâche.' })}
                                     </div>
                                 </div>
 
@@ -2529,7 +2555,7 @@ export default function ProviderPage() {
                                             <div className="flex justify-between items-center">
                                                 <div className="flex items-center gap-4">
                                                     <span className="text-[16px] font-semibold text-black">{t({ en: 'Mission Fee', fr: 'Frais de mission' })}</span>
-                                                    <span className="text-[14px] font-light text-black">≈ {job.rawAccepted?.duration || job.rawJob?.duration || '2h-3h'}</span>
+                                                    <span className="text-[14px] font-light text-black">{job.rawAccepted?.duration || job.rawJob?.duration || t({ en: 'Flexible', fr: 'Flexible' })}</span>
                                                 </div>
                                                 <span className="text-[16px] font-bold text-black tracking-tight">{job.priceLabel} {t({ en: 'MAD', fr: 'MAD' })}</span>
                                             </div>

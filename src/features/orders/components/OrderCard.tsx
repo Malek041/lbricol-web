@@ -57,12 +57,12 @@ export interface OrderDetails {
         sender?: 'client' | 'provider';
         timestamp?: any;
     }[];
-    bricolerId?: string;
-    bricolerName?: string;
-    bricolerAvatar?: string;
-    bricolerRating?: number;
-    bricolerJobsCount?: number;
-    bricolerRank?: 'New' | 'Pro' | 'Elite';
+    bricolerId?: string | null;
+    bricolerName?: string | null;
+    bricolerAvatar?: string | null;
+    bricolerRating?: number | null;
+    bricolerJobsCount?: number | null;
+    bricolerRank?: 'New' | 'Classic' | 'Pro' | 'Elite' | null;
     acceptedOffer?: any;
     clientName?: string;
     clientId?: string;
@@ -70,10 +70,11 @@ export interface OrderDetails {
     confirmedAt?: any;
     responseTimeMinutes?: number;
     clientWhatsApp?: string;
-    bricolerWhatsApp?: string;
+    bricolerWhatsApp?: string | null;
     selectedCar?: any;
-    carReturnDate?: string;
-    carReturnTime?: string;
+    carReturnDate?: string | null;
+    carReturnTime?: string | null;
+    durationDays?: number;
 }
 
 interface OrderCardProps {
@@ -171,6 +172,48 @@ const OrderCard = ({ order, onCancel }: OrderCardProps) => {
                 <p style={{ fontSize: isMobile ? bodySize : '15px', color: c.textMuted, fontWeight: 500, lineHeight: 1.6, maxWidth: '440px', direction: language === 'ar' ? 'rtl' : 'ltr' }}>
                     {(() => {
                         const loc = order.city ? t({ en: order.city, fr: order.city }) : (order.location ? t({ en: order.location, fr: order.location }) : '');
+                        const isCarRental = order.service === 'car_rental' || order.serviceId === 'car_rental';
+                        
+                        if (isCarRental && order.date && order.carReturnDate) {
+                            return (
+                                <div className="space-y-4">
+                                    <p>{order.bricolerName ? (
+                                        t({
+                                            en: `${order.bricolerName} is scheduled for your car rental at ${loc}.`,
+                                            fr: `${order.bricolerName} est prévu pour votre location de voiture à ${loc}.`,
+                                            ar: `${order.bricolerName} مبرمج لتأجير سيارتك في ${loc}.`
+                                        })
+                                    ) : (
+                                        t({
+                                            en: `Your car rental request at ${loc} is being processed.`,
+                                            fr: `Votre demande de location de voiture à ${loc} est en cours de traitement.`,
+                                            ar: `طلب تأجير سيارتك في ${loc} قيد المعالجة.`
+                                        })
+                                    )}</p>
+                                    
+                                    <div style={{ 
+                                        display: 'flex', 
+                                        gap: '15px', 
+                                        padding: '12px 16px', 
+                                        backgroundColor: theme === 'light' ? '#00A08208' : '#00A08215', 
+                                        borderRadius: '16px', 
+                                        border: `1px dashed ${theme === 'light' ? '#00A08233' : '#00A08255'}`,
+                                        marginTop: '4px'
+                                    }}>
+                                        <div style={{ flex: 1 }}>
+                                            <span style={{ fontSize: '10px', fontWeight: 900, color: '#00A082', textTransform: 'uppercase', letterSpacing: '0.1em', display: 'block', marginBottom: '2px' }}>{t({ en: 'Pickup', fr: 'Départ', ar: 'الاستلام' })}</span>
+                                            <div style={{ fontSize: '13px', fontWeight: 800, color: c.text }}>{order.date} <span style={{ opacity: 0.6 }}>{order.time}</span></div>
+                                        </div>
+                                        <div style={{ width: '1px', backgroundColor: theme === 'light' ? '#00A08222' : '#00A08244' }} />
+                                        <div style={{ flex: 1 }}>
+                                            <span style={{ fontSize: '10px', fontWeight: 900, color: '#008C74', textTransform: 'uppercase', letterSpacing: '0.1em', display: 'block', marginBottom: '2px' }}>{t({ en: 'Return', fr: 'Retour', ar: 'الاسترجاع' })}</span>
+                                            <div style={{ fontSize: '13px', fontWeight: 800, color: c.text }}>{order.carReturnDate} <span style={{ opacity: 0.6 }}>{order.carReturnTime}</span></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            );
+                        }
+
                         return order.bricolerName ? (
                             t({
                                 en: `${order.bricolerName} is scheduled for your task at ${loc} on ${order.date} ${order.time ? 'at ' + order.time : ''}.`,
@@ -263,6 +306,12 @@ const OrderCard = ({ order, onCancel }: OrderCardProps) => {
                                 src={order.images[0]}
                                 alt="Service preview"
                                 style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                            />
+                        ) : order.selectedCar ? (
+                            <img
+                                src={order.selectedCar.modelImage || order.selectedCar.image}
+                                alt="Car preview"
+                                style={{ width: '100%', height: '100%', objectFit: 'contain', padding: '10px' }}
                             />
                         ) : (
                             <Package size={32} color={c.textMuted} />

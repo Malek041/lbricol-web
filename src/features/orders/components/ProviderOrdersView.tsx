@@ -283,7 +283,7 @@ function ActivityTab({
 
     const scheduledJobs = useMemo(() => {
         return orders.filter(order => {
-            const isAssigned = ['confirmed', 'accepted', 'programmed'].includes(order.status || '');
+            const isAssigned = ['confirmed', 'accepted', 'programmed', 'pending'].includes(order.status || '');
             if (!isAssigned || !order.date) return false;
 
             try {
@@ -302,7 +302,7 @@ function ActivityTab({
 
     const pendingJobs = useMemo(() => {
         return orders.filter(order => {
-            const isAssigned = ['confirmed', 'accepted', 'programmed'].includes(order.status || '');
+            const isAssigned = ['confirmed', 'accepted', 'programmed', 'pending'].includes(order.status || '');
             if (!isAssigned || !order.date || !order.time) return false;
             try {
                 const orderDate = parseISO(order.date);
@@ -417,17 +417,35 @@ function ActivityTab({
                             return translatedSub ? `${translatedBase} › ${translatedSub}` : translatedBase;
                         })()}
                     </h3>
-                    <div className="flex items-center gap-1.5 mt-1 text-neutral-500">
-                        <Clock size={12} strokeWidth={2.5} />
-                        <p className="text-[14px] font-bold">
-                            {order.time || '12:00-13:00'}
-                        </p>
-                        {timeLeft && !isDone && (
-                            <span className="text-[12px] font-bold text-[#00A082]">
-                                ({timeLeft})
-                            </span>
+                    <div className="flex flex-col mt-1">
+                        {order.service === 'car_rental' && order.date && order.carReturnDate ? (
+                            <div className="flex flex-col gap-0.5 font-bold">
+                                <div className="flex items-center gap-1.5 text-neutral-900">
+                                    <Clock size={12} strokeWidth={2.5} />
+                                    <span>{format(parseISO(order.date), 'MMM d')}</span>
+                                    <span className="opacity-30">|</span>
+                                    <span>{order.time?.split('-')[0] || '09:00'}</span>
+                                </div>
+                                <div className="flex items-center gap-1.5 text-neutral-400 pl-4">
+                                    <span>{format(parseISO(order.carReturnDate), 'MMM d')}</span>
+                                    <span className="opacity-30">|</span>
+                                    <span>{order.carReturnTime?.split('-')[0] || '09:00'}</span>
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="flex items-center gap-1.5 text-neutral-500">
+                                <Clock size={12} strokeWidth={2.5} />
+                                <p className="text-[14px] font-bold">
+                                    {order.time || '12:00-13:00'}
+                                </p>
+                                {timeLeft && !isDone && (
+                                    <span className="text-[12px] font-bold text-[#00A082]">
+                                        ({timeLeft})
+                                    </span>
+                                )}
+                                {isDone && <Check size={14} className="text-emerald-500 ml-1" />}
+                            </div>
                         )}
-                        {isDone && <Check size={14} className="text-emerald-500 ml-1" />}
                     </div>
 
                     <div className="flex items-center gap-1.5 mt-1">

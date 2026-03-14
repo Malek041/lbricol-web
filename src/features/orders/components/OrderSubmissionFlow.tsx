@@ -7,7 +7,7 @@ import {
     X, ChevronLeft, ChevronRight, ChevronDown, MapPin,
     Star, ShieldCheck, Briefcase,
     Info, Clock, CheckCircle2, SlidersHorizontal, ArrowUpDown, Search, Check, Calendar, Trophy, FileText, Sparkles, Zap, Plus, Wrench, Banknote, AlertCircle, MessageSquare, MessageCircle,
-    Camera, RefreshCw
+    Camera, RefreshCw, Car
 } from 'lucide-react';
 import { auth, db, storage } from '@/lib/firebase';
 import { collection, query, where, getDocs, limit, Timestamp, serverTimestamp, doc, getDoc, setDoc } from 'firebase/firestore';
@@ -33,6 +33,7 @@ interface Bricoler {
     completedJobs: number;
     hourlyRate?: number;
     quickPitch?: string;
+    pitch?: string;
     bio?: string;
     yearsOfExperience?: number;
     serviceEquipments?: string[];
@@ -150,7 +151,7 @@ export const calculateTaskPrice = (
         let errandCoeff = 1.0;
         if (option?.id === 'medium') errandCoeff = 1.2;
         else if (option?.id === 'large') errandCoeff = 1.5;
-        
+
         // Return (hourlyRate * errandCoeff) / 0.85 to ensure Bricoler gets (hourlyRate * errandCoeff)
         basePrice = (hourlyRate * errandCoeff) / 0.85;
     } else if (isDailyCounter && (serviceId === 'private_driver' || serviceId === 'car_rental')) {
@@ -353,7 +354,7 @@ const playMatchSound = () => {
 const CarCard = ({ car, bricoler, onSelect, onOpenProfile, isSelected, index = 0 }: { car: any, bricoler: Bricoler, onSelect: () => void, onOpenProfile: () => void, isSelected: boolean, index?: number }) => {
     const { t } = useLanguage();
     const effectiveJobs = Math.max(bricoler.completedJobs || 0, (bricoler.reviews || []).length);
-    const effectiveRating = (bricoler.rating && bricoler.rating > 0) ? bricoler.rating : 5.0;
+    const effectiveRating = (bricoler.rating && bricoler.rating > 0) ? bricoler.rating : 0;
 
     return (
         <motion.div
@@ -415,11 +416,11 @@ const CarCard = ({ car, bricoler, onSelect, onOpenProfile, isSelected, index = 0
     );
 };
 
-const BricolerCard = ({ 
+const BricolerCard = ({
     bricoler, onSelect, onOpenProfile, isSelected, serviceName, service, index = 0,
     carRentalBookings = [], selectedPickUpDate, selectedPickUpTime, selectedReturnDate, selectedReturnTime
-}: { 
-    bricoler: Bricoler, onSelect: () => void, onOpenProfile: () => void, isSelected: boolean, 
+}: {
+    bricoler: Bricoler, onSelect: () => void, onOpenProfile: () => void, isSelected: boolean,
     serviceName: string, service?: string, index?: number,
     carRentalBookings?: any[], selectedPickUpDate?: string | null, selectedPickUpTime?: string | null,
     selectedReturnDate?: string | null, selectedReturnTime?: string | null
@@ -432,11 +433,9 @@ const BricolerCard = ({
         bricoler.jobsDone || 0,
         (bricoler.reviews || []).length
     );
-    const effectiveRating = (bricoler.rating && bricoler.rating > 0)
-        ? bricoler.rating
-        : (bricoler.reviews && bricoler.reviews.length > 0
-            ? (bricoler.reviews.reduce((acc, r: any) => acc + (r.rating || 0), 0) / bricoler.reviews.length)
-            : 0);
+    const effectiveRating = (bricoler.reviews && bricoler.reviews.length > 0)
+        ? (bricoler.reviews.reduce((acc, r: any) => acc + (r.rating || 0), 0) / bricoler.reviews.length)
+        : 0;
 
     const rank = getBricolerRank(bricoler);
     const translatedRankLabel = rank.label === 'ELITE'
@@ -446,6 +445,11 @@ const BricolerCard = ({
             : rank.label === 'CLASSIC'
                 ? t({ en: 'CLASSIC', fr: 'CLASSIQUE' })
                 : t({ en: 'NEW', fr: 'NOUVEAU', ar: 'جديد' });
+
+    // Handle car rental price display in the card
+    const minCarPrice = service === 'car_rental' && bricoler.carRentalDetails?.cars && bricoler.carRentalDetails.cars.length > 0
+        ? Math.min(...bricoler.carRentalDetails.cars.map((c: any) => c.pricePerDay || c.price || 9999))
+        : null;
 
     return (
         <motion.div
@@ -475,7 +479,7 @@ const BricolerCard = ({
                         <h4 className="text-[17px] font-bold text-neutral-900 truncate tracking-tight">{bricoler.displayName}</h4>
                         <div className="flex items-center gap-1 flex-shrink-0 ml-auto pl-2">
                             <span className="text-[16px] font-semibold text-neutral-900 leading-none whitespace-nowrap">
-                                MAD {bricoler.hourlyRate?.toFixed(2) || '0.00'}
+                                MAD {minCarPrice !== null ? minCarPrice.toFixed(0) : (bricoler.hourlyRate?.toFixed(0) || '75')}
                             </span>
                             <span className="text-[12px] text-neutral-400 font-medium whitespace-nowrap">(min)</span>
                             <div className="w-4 h-4 rounded-full bg-[#00A082]/10 flex-shrink-0 flex items-center justify-center ml-0.5">
@@ -495,9 +499,9 @@ const BricolerCard = ({
                     </div>
 
                     <div className="flex items-center gap-1 mt-2">
-                        {effectiveJobs > 0 && <Star size={12} className="text-neutral-900" fill="currentColor" />}
+                        <Star size={12} className="text-neutral-900" fill="currentColor" />
                         <span className="text-[14px] font-bold text-neutral-900">
-                            {effectiveJobs > 0 ? effectiveRating.toFixed(1) : t({ en: 'NEW', fr: 'NOUVEAU', ar: 'جديد' })}
+                            {effectiveRating.toFixed(1)}
                         </span>
                         {effectiveJobs > 0 && <span className="text-[12px] font-medium text-neutral-400">({effectiveJobs} {t({ en: 'reviews', fr: 'avis', ar: 'تقييمات' })})</span>}
 
@@ -533,7 +537,7 @@ const BricolerCard = ({
             {/* Bio Box */}
             <div className="mt-0.5 mx-0.5 bg-[#F8F9FA] p-3 rounded-[10px] relative border border-neutral-50">
                 <p className="text-[13px] font-medium text-neutral-500 leading-relaxed line-clamp-2">
-                    {bricoler.bio || bricoler.quickPitch || t({ en: "Hello 👋 I'm proficient in a wide range of services tailored to your needs. Fast and reliable work.", fr: "Bonjour 👋 Je suis compétent dans une large gamme de services adaptés à vos besoins. Travail rapide et fiable.", ar: "مرحباً 👋 أنا متمكن من مجموعة واسعة من الخدمات لتلبية احتياجاتك. عمل سريع وموثوق." })}
+                    {bricoler.pitch || bricoler.quickPitch || bricoler.bio || t({ en: "Hello 👋 I'm proficient in a wide range of services tailored to your needs. Fast and reliable work.", fr: "Bonjour 👋 Je suis compétent dans une large gamme de services adaptés à vos besoins. Travail rapide et fiable.", ar: "مرحباً 👋 أنا متمكن من مجموعة واسعة من الخدمات لتلبية احتياجاتك. عمل سريع وموثوق." })}
                 </p>
                 <button
                     onClick={(e) => { e.stopPropagation(); onOpenProfile(); }}
@@ -564,14 +568,27 @@ const BricolerCard = ({
                         if (isNaN(requestStart.getTime()) || isNaN(requestEnd.getTime())) return true;
 
                         const overlaps = carRentalBookings.filter(booking => {
-                            const bModelId = booking.car?.modelId || booking.orderDetails?.car?.modelId;
+                            // Check for the same car model
+                            const bModelId = booking.selectedCar?.modelId || booking.car?.modelId || booking.orderDetails?.car?.modelId;
                             if (bModelId !== car.modelId) return false;
-                            
+
                             // Condition: Must be for the same provider
                             if (booking.bricolerId !== bricoler.id) return false;
-                            
-                            const bStart = new Date(`${booking.taskDate || booking.startDate}T${convertTimeTo24h(booking.taskTime || booking.startTime)}`);
-                            const bEnd = new Date(`${booking.carReturnDate || booking.taskDate}T${convertTimeTo24h(booking.carReturnTime || booking.taskTime)}`);
+
+                            // Determine booking start and end times
+                            const startDateStr = booking.date || booking.taskDate || booking.startDate;
+                            const startTimeStr = booking.time || booking.taskTime || booking.startTime;
+                            const endDateStr = booking.carReturnDate || startDateStr; // Fallback to start date if return date is missing
+                            const endTimeStr = booking.carReturnTime || startTimeStr; // Fallback to start time if return time is missing
+
+                            if (!startDateStr || !startTimeStr) return false;
+
+                            const bStart = new Date(`${startDateStr}T${convertTimeTo24h(startTimeStr)}`);
+                            const bEnd = new Date(`${endDateStr}T${convertTimeTo24h(endTimeStr)}`);
+
+                            if (isNaN(bStart.getTime()) || isNaN(bEnd.getTime())) return false;
+
+                            // Standard overlap condition: (StartA < EndB) and (EndA > StartB)
                             return requestStart < bEnd && requestEnd > bStart;
                         });
                         return overlaps.length < (car.quantity || 1);
@@ -625,18 +642,18 @@ const BricolerCard = ({
                     onClick={(e) => { e.stopPropagation(); service === 'car_rental' ? onOpenProfile() : onSelect(); }}
                     className="w-full h-[42px] bg-[#00A082] text-white rounded-full text-[16px] font-black active:scale-[0.98] transition-all"
                 >
-                    {service === 'car_rental' ? t({ en: 'View Details', fr: 'Voir les détails', ar: 'عرض التفاصيل' }) : t({ en: 'Select & Continue', fr: 'Choisir & Continuer', ar: 'اختر وتابع' })}
+                    {service === 'car_rental' ? t({ en: 'Pickup a car', fr: 'Récupérer une voiture', ar: 'استلام السيارة' }) : t({ en: 'Select & Continue', fr: 'Choisir & Continuer', ar: 'اختر وتابع' })}
                 </button>
             </div>
         </motion.div>
     );
 };
 
-const BricolerProfileModal = ({ 
+const BricolerProfileModal = ({
     bricoler, isOpen, onClose, onSelect, isSelected, serviceName, service,
     carRentalBookings = [], selectedPickUpDate, selectedPickUpTime, selectedReturnDate, selectedReturnTime
-}: { 
-    bricoler: Bricoler, isOpen: boolean, onClose: () => void, onSelect: (car?: any, note?: string) => void, 
+}: {
+    bricoler: Bricoler, isOpen: boolean, onClose: () => void, onSelect: (car?: any, note?: string) => void,
     isSelected: boolean, serviceName: string, service?: string,
     carRentalBookings?: any[], selectedPickUpDate?: string | null, selectedPickUpTime?: string | null,
     selectedReturnDate?: string | null, selectedReturnTime?: string | null
@@ -658,24 +675,28 @@ const BricolerProfileModal = ({
 
     const isCarModelAvailable = (car: any) => {
         if (!selectedPickUpDate || !selectedPickUpTime || !selectedReturnDate || !selectedReturnTime) return true;
-        
+
         try {
             const requestStart = new Date(`${selectedPickUpDate}T${convertTimeTo24h(selectedPickUpTime)}`);
             const requestEnd = new Date(`${selectedReturnDate}T${convertTimeTo24h(selectedReturnTime)}`);
-            
+
             if (isNaN(requestStart.getTime()) || isNaN(requestEnd.getTime())) return true;
 
             const overlappingBookings = carRentalBookings.filter(booking => {
-                const bookingModelId = booking.car?.modelId || booking.orderDetails?.car?.modelId;
+                // Check if it's the same car model
+                const bookingModelId = booking.selectedCar?.modelId || booking.car?.modelId || booking.orderDetails?.car?.modelId;
                 if (bookingModelId !== car.modelId) return false;
 
                 // Condition: Must be for the same provider
                 if (booking.bricolerId !== bricoler.id) return false;
 
-                const bDate = booking.taskDate || booking.startDate;
-                const bTime = booking.taskTime || booking.startTime;
+                // Use date/time and carReturnDate/Time fields which are the standard now
+                const bDate = booking.date || booking.taskDate || booking.startDate;
+                const bTime = booking.time || booking.taskTime || booking.startTime;
                 const bReturnDate = booking.carReturnDate || bDate;
                 const bReturnTime = booking.carReturnTime || bTime;
+
+                if (!bDate || !bTime) return false;
 
                 const bookingStart = new Date(`${bDate}T${convertTimeTo24h(bTime)}`);
                 const bookingEnd = new Date(`${bReturnDate}T${convertTimeTo24h(bReturnTime)}`);
@@ -683,6 +704,7 @@ const BricolerProfileModal = ({
                 if (isNaN(bookingStart.getTime()) || isNaN(bookingEnd.getTime())) return false;
 
                 // Condition 1: Time Window Overlap
+                // Two bookings overlap if (StartA < EndB) AND (EndA > StartB)
                 return requestStart < bookingEnd && requestEnd > bookingStart;
             });
 
@@ -690,6 +712,7 @@ const BricolerProfileModal = ({
             const stockQuantity = car.quantity || 1;
             return overlappingBookings.length < stockQuantity;
         } catch (e) {
+            console.error("Availability check error:", e);
             return true;
         }
     };
@@ -720,7 +743,7 @@ const BricolerProfileModal = ({
     const effectiveJobs = reviewsToShow.length > 0 ? reviewsToShow.length : Math.max(bricoler.completedJobs || 0, allReviews.length);
     const effectiveRating = reviewsToShow.length > 0
         ? (reviewsToShow.reduce((acc: number, r: any) => acc + (r.rating || 0), 0) / reviewsToShow.length)
-        : ((bricoler.rating && bricoler.rating > 0) ? bricoler.rating : null);
+        : (allReviews.length > 0 ? (bricoler.rating || 0) : 0);
 
     const isNew = reviewsToShow.length === 0 || effectiveRating === null;
 
@@ -754,10 +777,10 @@ const BricolerProfileModal = ({
                                     <div className="mb-3 flex flex-wrap items-start gap-2">
                                         <div className={cn(
                                             "flex flex-shrink-0 items-center gap-1 rounded-lg px-2 py-0.5",
-                                            isNew ? "bg-neutral-100 text-neutral-400" : "bg-[#FFC244]/10 text-[#FFC244]"
+                                            effectiveRating === 0 ? "bg-neutral-100 text-neutral-400" : "bg-[#FFC244]/10 text-[#FFC244]"
                                         )}>
                                             <Star size={14} fill="currentColor" />
-                                            <span className="whitespace-nowrap text-[16px] font-semibold">{isNew ? t({ en: 'NEW', fr: 'NOUVEAU' }) : effectiveRating.toFixed(1)}</span>
+                                            <span className="whitespace-nowrap text-[16px] font-semibold">{(effectiveRating || 0).toFixed(1)}</span>
                                         </div>
                                         <span className="text-[15px] font-medium text-neutral-400">{effectiveJobs} {t({ en: 'Missions', fr: 'Missions', ar: 'مهمة' })}</span>
                                         {isFiltered && (
@@ -814,7 +837,7 @@ const BricolerProfileModal = ({
                             <div className="mb-8">
                                 <h4 className="text-[18px] font-black text-neutral-900 mb-4">{t({ en: 'About Me', fr: 'À propos de moi', ar: 'نبذة عني' })}</h4>
                                 <p className="text-[15px] text-black leading-relaxed font-medium  p-1 rounded-[12px] border border-neutral-100">
-                                    {bricoler.bio || bricoler.quickPitch || t({ en: 'No bio provided yet.', fr: 'Aucune bio fournie pour le moment.', ar: 'لم يتم تقديم سيرة ذاتية بعد.' })}
+                                    {bricoler.pitch || bricoler.quickPitch || bricoler.bio || t({ en: 'No bio provided yet.', fr: 'Aucune bio fournie pour le moment.', ar: 'لم يتم تقديم سيرة ذاتية بعد.' })}
                                 </p>
                             </div>
 
@@ -848,63 +871,109 @@ const BricolerProfileModal = ({
                             ) : null}
 
                             {/* Car Rental Details */}
-                            {service === 'car_rental' && bricoler.carRentalDetails?.cars && bricoler.carRentalDetails.cars.length > 0 && (
-                                <div className="mb-8">
-                                    <h4 className="text-[18px] font-black text-neutral-900 mb-4">{t({ en: 'Available Vehicles', fr: 'Véhicules Disponibles', ar: 'السيارات المتاحة' })}</h4>
-                                    <div className="grid grid-cols-2 gap-3">
-                                        {bricoler.carRentalDetails.cars.map((car: any, i: number) => {
-                                            const isSelectedCar = localSelectedCar?.modelId === car.modelId;
-                                            const available = isCarModelAvailable(car);
+                            {service === 'car_rental' && bricoler.carRentalDetails?.cars && bricoler.carRentalDetails.cars.length > 0 && (() => {
+                                // Group cars by brand
+                                const groupedCars: Record<string, any[]> = {};
+                                bricoler.carRentalDetails.cars.forEach((car: any) => {
+                                    const brandId = car.brandId || 'other';
+                                    if (!groupedCars[brandId]) groupedCars[brandId] = [];
+                                    groupedCars[brandId].push(car);
+                                });
+
+                                return (
+                                    <div className="mb-8 space-y-8">
+                                        <h4 className="text-[18px] font-black text-neutral-900 mb-4">{t({ en: 'Select a car', fr: 'Choisir une voiture', ar: 'اختر سيارة' })}</h4>
+
+                                        {Object.entries(groupedCars).map(([brandId, cars]) => {
+                                            const brand = CAR_BRANDS.find(b => b.id === brandId);
+                                            const brandName = brand?.name || cars[0]?.brandName || brandId;
+                                            const brandLogo = brand?.logo;
+
                                             return (
-                                                <div 
-                                                    key={i} 
-                                                    onClick={() => available && setLocalSelectedCar(car)}
-                                                    className={cn(
-                                                        "relative rounded-2xl border p-3 cursor-pointer transition-all",
-                                                        isSelectedCar ? "bg-[#F0FBF8] border-[#00A082] shadow-sm active:scale-95" : 
-                                                        available ? "bg-neutral-50 border-neutral-100 hover:border-[#00A082]/30 active:scale-95" : 
-                                                        "bg-neutral-100 border-neutral-100 opacity-50 cursor-not-allowed grayscale-[0.5]"
-                                                    )}
-                                                >
-                                                    {/* Car Image */}
-                                                    <div className="w-full h-[80px] rounded-xl bg-white flex items-center justify-center p-2 overflow-hidden mb-2">
-                                                        <img src={car.modelImage || car.image} className="w-full h-full object-contain" alt={car.modelName} />
+                                                <div key={brandId} className="space-y-4">
+                                                    {/* Brand Logo & Name */}
+                                                    <div className="flex items-center gap-3 px-1">
+                                                        {brandLogo ? (
+                                                            <div className="w-10 h-10 rounded-xl bg-neutral-50 p-1.5 flex items-center justify-center border border-neutral-100/50">
+                                                                <img src={brandLogo} alt={brandName} className="w-full h-full object-contain" />
+                                                            </div>
+                                                        ) : (
+                                                            <div className="w-10 h-10 rounded-xl bg-[#00A082]/5 flex items-center justify-center border border-[#00A082]/10">
+                                                                <Car size={20} className="text-[#00A082]" />
+                                                            </div>
+                                                        )}
+                                                        <span className="text-[15px] font-black text-neutral-900 uppercase tracking-wider">{brandName}</span>
                                                     </div>
-                                                    {/* Info */}
-                                                    <p className="text-[13px] font-black text-neutral-900 truncate uppercase tracking-tight leading-tight">{car.modelName}</p>
-                                                    <div className="flex items-center justify-between mt-1">
-                                                        <span className="text-[12px] font-bold text-[#00A082]">{car.pricePerDay || car.price} MAD/j</span>
-                                                        <span className="text-[10px] font-bold text-neutral-400">x{car.quantity}</span>
+
+                                                    {/* Horizontal Scrollable Section */}
+                                                    <div className="relative">
+                                                        <div className="flex gap-4 overflow-x-auto no-scrollbar pb-2 px-1 -mx-1">
+                                                            {cars.map((car, i) => {
+                                                                const isSelectedCar = localSelectedCar?.modelId === car.modelId;
+                                                                const available = isCarModelAvailable(car);
+                                                                return (
+                                                                    <motion.div
+                                                                        key={car.modelId || i}
+                                                                        initial={{ opacity: 0, scale: 0.9 }}
+                                                                        animate={{ opacity: 1, scale: 1 }}
+                                                                        onClick={() => available && setLocalSelectedCar(car)}
+                                                                        className={cn(
+                                                                            "flex-shrink-0 w-[160px] relative rounded-2xl border p-3 cursor-pointer transition-all",
+                                                                            isSelectedCar ? "bg-[#F0FBF8] border-[#00A082] shadow-md active:scale-95" :
+                                                                                available ? "bg-neutral-50 border-neutral-100 hover:border-[#00A082]/30 active:scale-95" :
+                                                                                    "bg-neutral-100 border-neutral-100 opacity-50 cursor-not-allowed grayscale-[0.5]"
+                                                                        )}
+                                                                    >
+                                                                        {/* Car Image */}
+                                                                        <div className="w-full h-[90px] rounded-xl bg-white flex items-center justify-center p-2 mb-2">
+                                                                            <img src={car.modelImage || car.image} className="w-full h-full object-contain" alt={car.modelName} />
+                                                                        </div>
+                                                                        {/* Info */}
+                                                                        <div className="min-w-0">
+                                                                            <p className="text-[12px] font-black text-neutral-900 truncate uppercase tracking-tight leading-tight">{car.modelName}</p>
+                                                                            <div className="flex items-center justify-between mt-1">
+                                                                                <span className="text-[11px] font-bold text-[#00A082]">{car.pricePerDay || car.price} MAD/j</span>
+                                                                                <span className="text-[10px] font-bold text-neutral-400">x{car.quantity}</span>
+                                                                            </div>
+                                                                        </div>
+                                                                        {/* Status Badge */}
+                                                                        {!available && (
+                                                                            <div className="absolute top-2 left-2 bg-red-500 text-white text-[8px] font-black px-1.5 py-0.5 rounded-full uppercase z-10">
+                                                                                {t({ en: 'Full', fr: 'Complet' })}
+                                                                            </div>
+                                                                        )}
+                                                                        {/* Selected check */}
+                                                                        {isSelectedCar && (
+                                                                            <motion.div
+                                                                                initial={{ scale: 0 }}
+                                                                                animate={{ scale: 1 }}
+                                                                                className="absolute top-2 right-2 w-5 h-5 bg-[#00A082] rounded-full flex items-center justify-center shadow-lg z-10"
+                                                                            >
+                                                                                <Check size={11} className="text-white" strokeWidth={4} />
+                                                                            </motion.div>
+                                                                        )}
+                                                                    </motion.div>
+                                                                );
+                                                            })}
+                                                        </div>
                                                     </div>
-                                                    {/* Status Badge */}
-                                                    {!available && (
-                                                        <div className="absolute top-2 left-2 bg-red-500 text-white text-[8px] font-black px-1.5 py-0.5 rounded-full uppercase">
-                                                            {t({ en: 'Booked', fr: 'Réservée' })}
-                                                        </div>
-                                                    )}
-                                                    {/* Selected check */}
-                                                    {isSelectedCar && (
-                                                        <div className="absolute top-2 right-2 w-5 h-5 bg-[#00A082] rounded-full flex items-center justify-center shadow">
-                                                            <Check size={11} className="text-white" strokeWidth={4} />
-                                                        </div>
-                                                    )}
                                                 </div>
                                             );
                                         })}
+
+                                        {/* Optional Description inside Car Rental Modal */}
+                                        <div className="mt-8">
+                                            <h4 className="text-[15px] font-black text-neutral-900 mb-2">{t({ en: 'Additional Notes (Optional)', fr: 'Notes supplémentaires (Optionnel)', ar: 'ملاحظات إضافية (اختياري)' })}</h4>
+                                            <textarea
+                                                value={localNote}
+                                                onChange={(e) => setLocalNote(e.target.value)}
+                                                placeholder={t({ en: 'Any specific requests for the car?', fr: 'Des demandes spécifiques pour la voiture ?', ar: 'أي طلبات خاصة للسيارة؟' })}
+                                                className="w-full h-24 p-3 rounded-xl border border-neutral-200 bg-neutral-50 text-[14px] outline-none focus:border-[#00A082] resize-none"
+                                            />
+                                        </div>
                                     </div>
-                                    
-                                    {/* Optional Description inside Car Rental Modal */}
-                                    <div className="mt-4">
-                                        <h4 className="text-[15px] font-black text-neutral-900 mb-2">{t({ en: 'Additional Notes (Optional)', fr: 'Notes supplémentaires (Optionnel)', ar: 'ملاحظات إضافية (اختياري)' })}</h4>
-                                        <textarea
-                                            value={localNote}
-                                            onChange={(e) => setLocalNote(e.target.value)}
-                                            placeholder={t({ en: 'Any specific requests for the car?', fr: 'Des demandes spécifiques pour la voiture ?', ar: 'أي طلبات خاصة للسيارة؟' })}
-                                            className="w-full h-24 p-3 rounded-xl border border-neutral-200 bg-neutral-50 text-[14px] outline-none focus:border-[#00A082] resize-none"
-                                        />
-                                    </div>
-                                </div>
-                            )}
+                                );
+                            })()}
 
 
                             {/* Service Specific Equipments */}
@@ -1089,12 +1158,12 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                 const todayStr = format(today, 'yyyy-MM-dd');
                 setSelectedDate(todayStr);
             }
-            
+
             if (!selectedTime) {
                 const now = new Date();
                 let hours = now.getHours();
                 let mins = now.getMinutes();
-                
+
                 // Snap to next 30-min slot
                 if (mins > 30) {
                     hours += 1;
@@ -1102,7 +1171,7 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                 } else if (mins > 0) {
                     mins = 30;
                 }
-                
+
                 const finalHours = hours % 24;
                 const hourStr = `${String(finalHours).padStart(2, '0')}:${String(mins).padStart(2, '0')}`;
                 setSelectedTime(hourStr);
@@ -1147,7 +1216,7 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                 const isCarRelated = subKey.includes('car');
                 const isDetailing = subKey.includes('detail');
                 const subCoeff = getServiceSubCoefficient('cleaning', subService);
-                
+
                 if (isCarRelated) {
                     return {
                         title: t({ en: "What is your car size?", fr: "Quelle est la taille de la voiture ?", ar: "ما هو حجم السيارة؟" }),
@@ -1155,38 +1224,38 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                         swipeText: t({ en: "Swipe to select vehicle category.", fr: "Faites défiler pour choisir le type.", ar: "مرر لاختيار نوع السيارة." }),
                         defaultDays: 1,
                         options: [
-                            { 
-                                id: 'compact', 
-                                duration: isDetailing ? 3 : 0.5, 
-                                label: { en: 'Compact', fr: 'Citadine', ar: 'صغيرة' }, 
-                                subLabel: { en: 'CAR SIZE', fr: 'TAILLE', ar: 'حجم السيارة' }, 
+                            {
+                                id: 'compact',
+                                duration: isDetailing ? 3 : 0.5,
+                                label: { en: 'Compact', fr: 'Citadine', ar: 'صغيرة' },
+                                subLabel: { en: 'CAR SIZE', fr: 'TAILLE', ar: 'حجم السيارة' },
                                 estTime: { en: isDetailing ? '3h' : '30m', fr: isDetailing ? '3h' : '30m', ar: isDetailing ? '3 ساعات' : '30 دقيقة' },
                                 desc: { en: '', fr: '', ar: '' },
-                                icon: '' 
+                                icon: ''
                             },
-                            { 
-                                id: 'standard', 
-                                duration: isDetailing ? 4.5 : 0.75, 
-                                label: { en: 'Sedan', fr: 'Berline', ar: 'سيدان' }, 
-                                subLabel: { en: 'CAR SIZE', fr: 'TAILLE', ar: 'حجم السيارة' }, 
+                            {
+                                id: 'standard',
+                                duration: isDetailing ? 4.5 : 0.75,
+                                label: { en: 'Sedan', fr: 'Berline', ar: 'سيدان' },
+                                subLabel: { en: 'CAR SIZE', fr: 'TAILLE', ar: 'حجم السيارة' },
                                 estTime: { en: isDetailing ? '4.5h' : '45m', fr: isDetailing ? '4.5h' : '45m', ar: isDetailing ? '4.5 ساعات' : '45 دقيقة' },
                                 desc: { en: '', fr: '', ar: '' },
                                 icon: ''
                             },
-                            { 
-                                id: 'suv', 
-                                duration: isDetailing ? 6 : 1, 
-                                label: { en: 'SUV/4x4', fr: 'SUV/4x4', ar: 'دفع رباعي' }, 
-                                subLabel: { en: 'CAR SIZE', fr: 'TAILLE', ar: 'حجم السيارة' }, 
+                            {
+                                id: 'suv',
+                                duration: isDetailing ? 6 : 1,
+                                label: { en: 'SUV/4x4', fr: 'SUV/4x4', ar: 'دفع رباعي' },
+                                subLabel: { en: 'CAR SIZE', fr: 'TAILLE', ar: 'حجم السيارة' },
                                 estTime: { en: isDetailing ? '6h' : '1h', fr: isDetailing ? '6h' : '1h', ar: isDetailing ? '6 ساعات' : 'ساعة واحدة' },
                                 desc: { en: '', fr: '', ar: '' },
                                 icon: ''
                             },
-                            { 
-                                id: 'van', 
-                                duration: isDetailing ? 8 : 1.5, 
-                                label: { en: 'Large/Van', fr: 'Grand/Van', ar: 'كبيرة' }, 
-                                subLabel: { en: 'CAR SIZE', fr: 'TAILLE', ar: 'حجم السيارة' }, 
+                            {
+                                id: 'van',
+                                duration: isDetailing ? 8 : 1.5,
+                                label: { en: 'Large/Van', fr: 'Grand/Van', ar: 'كبيرة' },
+                                subLabel: { en: 'CAR SIZE', fr: 'TAILLE', ar: 'حجم السيارة' },
                                 estTime: { en: isDetailing ? '8h' : '1.5h', fr: isDetailing ? '8h' : '1.5h', ar: isDetailing ? '8 ساعات' : '1.5 ساعة' },
                                 desc: { en: '', fr: '', ar: '' },
                                 icon: ''
@@ -1194,7 +1263,7 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                         ]
                     };
                 }
-                
+
                 return {
                     title: t({ en: "How many rooms to clean?", fr: "Combien de chambres à nettoyer ?", ar: "كم عدد الغرف للتنظيف؟" }),
                     isDayCounter: true,
@@ -1568,12 +1637,12 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
     }, [subStep1, serviceConfig, taskSize]);
 
     const activeTaskSize = serviceConfig.options.find(s => s.id === taskSize);
-    
+
     // Helper to get the correct rate for a specific pro and service
     const getProRateForService = (pro: Bricoler | null | undefined, svcId: string) => {
         if (!pro) return 75;
         // Search in services array
-        const svc = pro.services?.find((s: any) => 
+        const svc = pro.services?.find((s: any) =>
             (s.categoryId || s.serviceId || '').toLowerCase() === svcId.toLowerCase()
         );
         if (svc && typeof svc === 'object' && svc.hourlyRate) return svc.hourlyRate;
@@ -1583,12 +1652,12 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
     // Use full data if available, otherwise fallback to the index version
     const basePro = fullSelectedProData || bricolers.find(b => b.id === selectedBricolerId);
     let selectedProRate = getProRateForService(basePro as any, service);
-    
+
     // For car rental, override pro's minimum rate with the specific car's daily rate
     if (service === 'car_rental' && selectedCar?.pricePerDay) {
         selectedProRate = selectedCar.pricePerDay;
     }
-    
+
     const selectedPro = basePro ? { ...basePro, hourlyRate: selectedProRate } : null;
 
     // Auto-scroll the day counter to the selected taskSize
@@ -2247,7 +2316,9 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                     if (typeof s === 'string') return true;
                     const ssId = s.subServiceId || (s.subServices?.includes(subService) ? subService : null);
                     if (!ssId) return false;
-                    return ssId.toLowerCase() === subService.toLowerCase() || (Array.isArray(s.subServices) && s.subServices.includes(subService));
+                    const normSsId = ssId.toLowerCase().replace(/[_\s-]/g, '');
+                    const normSubSvc = subService.toLowerCase().replace(/[_\s-]/g, '');
+                    return normSsId === normSubSvc || (Array.isArray(s.subServices) && s.subServices.some((sub: string) => sub.toLowerCase().replace(/[_\s-]/g, '') === normSubSvc));
                 }
                 if (service === 'tour_guide' && selectedLanguages.length > 0) {
                     const bricolerLangs = s.spokenLanguages || (typeof s === 'object' ? s.languages : []) || [];
@@ -2264,8 +2335,9 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
             photoURL: data.profilePhotoURL || data.avatar || data.photoURL,
             rating: data.rating || 0,
             completedJobs: data.completedJobs || 0,
-            hourlyRate: (typeof svcData === 'object' ? svcData.hourlyRate : null) || data.hourlyRate || 75,
-            quickPitch: (typeof svcData === 'object' ? svcData.pitch : null) || data.quickPitch,
+            hourlyRate: (typeof svcData === 'object' ? svcData.hourlyRate : null) || (data.services?.find((s: any) => (s.categoryId || s.serviceId) === targetServiceId)?.hourlyRate) || data.hourlyRate || 75,
+            pitch: (typeof svcData === 'object' ? svcData.pitch : null) || (data.services?.find((s: any) => (s.categoryId || s.serviceId) === targetServiceId)?.pitch) || data.pitch,
+            quickPitch: data.quickPitch,
             city: data.city || baseCity,
             areas: data.workAreas || data.areas || [],
             isVerified: data.isVerified,
@@ -2383,11 +2455,11 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                 try {
                     const chunks = [];
                     for (let i = 0; i < bIds.length; i += 10) chunks.push(bIds.slice(i, i + 10));
-                    
+
                     let allJobs: any[] = [];
                     for (const chunk of chunks) {
                         const jobsSnap = await getDocs(
-                            query(collection(db, 'jobs'), where('bricolerId', 'in', chunk), where('status', 'in', ['Programmed', 'Active']))
+                            query(collection(db, 'jobs'), where('bricolerId', 'in', chunk), where('status', 'in', ['pending', 'confirmed', 'programmed', 'ongoing', 'Pending', 'Programmed', 'Active']))
                         );
                         allJobs.push(...jobsSnap.docs.map(d => ({ id: d.id, ...d.data() })));
                     }
@@ -2418,7 +2490,7 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
 
                 // 2. Rating Score (Rating * 20 = up to 100 pts)
                 // We use a baseline of 4.0 if no rating yet to give new pros a chance
-                const effectiveRating = (p.rating && p.rating > 0) ? p.rating : 4.0;
+                const effectiveRating = (p.rating && p.rating > 0) ? p.rating : 0;
                 score += effectiveRating * 20;
 
                 // 3. Experience/Volume (up to 30 pts)
@@ -2440,7 +2512,7 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
             return (b.rating || 0) - (a.rating || 0);
         });
     }, [bricolers]);
-    
+
     const allAvailableCars = useMemo(() => {
         if (service !== 'car_rental') return [];
         const cars: { car: any, bricoler: Bricoler }[] = [];
@@ -2513,16 +2585,16 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
             const dCal = new Date(startOfWeekCal);
             dCal.setDate(startOfWeekCal.getDate() + i);
             const dateStrCal = format(dCal, 'yyyy-MM-dd');
-            
+
             const isPast = dCal < todayCal;
             const isToday = dCal.getTime() === todayCal.getTime();
             const isPickup = selectedDate === dateStrCal;
             const isReturn = carReturnDate === dateStrCal;
-            
+
             const pTime = selectedDate ? new Date(selectedDate).getTime() : 0;
             const rTime = carReturnDate ? new Date(carReturnDate).getTime() : 0;
             const cTime = dCal.getTime();
-            
+
             const inRange = pTime && rTime && cTime > pTime && cTime < rTime;
 
             daysArr.push(
@@ -2550,9 +2622,9 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                     className={cn(
                         "h-12 w-[calc(100%+8px)] -ml-[4px] flex items-center justify-center text-[16px] font-bold transition-all relative",
                         (isPickup || isReturn) ? "bg-[#00A082] text-white rounded-md z-10" :
-                        isToday ? "border-2 border-[#00A082]/30 bg-[#00A082]/5 text-[#00A082] rounded-md" :
-                        inRange ? "bg-[#00A082]/10 text-[#00A082]" :
-                        !isPast ? "text-neutral-900 hover:bg-neutral-50 rounded-md" : "text-neutral-300 pointer-events-none opacity-40"
+                            isToday ? "border-2 border-[#00A082]/30 bg-[#00A082]/5 text-[#00A082] rounded-md" :
+                                inRange ? "bg-[#00A082]/10 text-[#00A082]" :
+                                    !isPast ? "text-neutral-900 hover:bg-neutral-50 rounded-md" : "text-neutral-300 pointer-events-none opacity-40"
                     )}
                 >
                     {dCal.getDate()}
@@ -2636,8 +2708,14 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
             }
             const activeOption = serviceConfig.options.find(o => o.id === taskSize);
             let duration = activeOption?.duration || 1;
+            let durationDays = 1;
             if (service === 'car_rental' && selectedDate && carReturnDate) {
-                duration = Math.max(1, Math.round((new Date(carReturnDate).getTime() - new Date(selectedDate).getTime()) / 86400000));
+                const start = new Date(selectedDate).getTime();
+                const end = new Date(carReturnDate).getTime();
+                duration = Math.max(1, Math.round((end - start) / 86400000));
+                durationDays = duration;
+            } else if (service === 'private_driver' || (service === 'cooking' && activeOption?.id && !isNaN(Number(activeOption.id)))) {
+                durationDays = Math.ceil(duration);
             }
             const coefficient = (activeOption as any)?.coefficient || (service === 'errands' ? 1.5 : 1);
 
@@ -2725,7 +2803,7 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                 totalPrice: basePrice, // basePrice already includes referral discount if applied
                 price: basePrice, // price is the final price after all discounts
                 referralApplied: applyReferralDiscount && referralDiscountAvailable > 0,
-                durationDays: (service === 'private_driver' || service === 'car_rental' || (service === 'cooking' && activeOption?.id && !isNaN(Number(activeOption.id)))) ? Math.ceil(duration) : 1,
+                durationDays: durationDays,
                 images: images,
                 clientNeedImages: images, // for redundancy
                 paymentMethod,
@@ -3103,16 +3181,16 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                                                             <div className="bg-white rounded-[24px] border border-neutral-100 p-5 shadow-[0_2px_10px_rgba(0,0,0,0.02)] space-y-5">
                                                                 {/* Pick up */}
                                                                 <div className="space-y-2.5">
-                                                                    <label className="text-[14px] font-black text-neutral-900 uppercase tracking-tight">{t({en:'Pick up', fr:'Prise en charge'})}</label>
+                                                                    <label className="text-[14px] font-black text-neutral-900 uppercase tracking-tight">{t({ en: 'Pick up', fr: 'Prise en charge' })}</label>
                                                                     <div className="flex items-center gap-3">
-                                                                        <button 
+                                                                        <button
                                                                             onClick={() => setOpenCalendarMode(openCalendarMode === 'pickup' ? null : 'pickup')}
                                                                             className="flex-1 flex items-center justify-between px-4 h-12 bg-neutral-50 rounded-xl border border-neutral-100 transition-colors focus:border-[#00A082] focus:bg-white"
                                                                         >
                                                                             <div className="flex items-center gap-2">
                                                                                 <Calendar size={18} className={openCalendarMode === 'pickup' ? "text-[#00A082]" : "text-neutral-500"} />
                                                                                 <span className="font-bold text-[14px] text-neutral-900">
-                                                                                    {selectedDate ? format(new Date(selectedDate), 'E, MMM d') : t({en: 'Select Date', fr: 'Choisir la date'})}
+                                                                                    {selectedDate ? format(new Date(selectedDate), 'E, MMM d') : t({ en: 'Select Date', fr: 'Choisir la date' })}
                                                                                 </span>
                                                                             </div>
                                                                         </button>
@@ -3126,13 +3204,17 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                                                                                 <option value="" disabled>-</option>
                                                                                 {Array.from({ length: 48 }).map((_, i) => {
                                                                                     const totalMinutes = i * 30;
+                                                                                    // Filter slots if today is selected (at least 1 hour from now)
+                                                                                    if (selectedDate && isToday(parseISO(selectedDate))) {
+                                                                                        const now = new Date();
+                                                                                        const currentMinutes = now.getHours() * 60 + now.getMinutes();
+                                                                                        if (totalMinutes < currentMinutes + 60) return null;
+                                                                                    }
+
                                                                                     const hours24 = Math.floor(totalMinutes / 60);
                                                                                     const mins = totalMinutes % 60;
-                                                                                    const ampm = hours24 < 12 ? 'AM' : 'PM';
-                                                                                    const hours12 = hours24 % 12 || 12;
                                                                                     const timeStr = `${hours24.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`;
-                                                                                    const displayStr = `${hours12}:${mins.toString().padStart(2, '0')} ${ampm}`;
-                                                                                    return <option key={timeStr} value={timeStr}>{displayStr}</option>;
+                                                                                    return <option key={timeStr} value={timeStr}>{timeStr}</option>;
                                                                                 })}
                                                                             </select>
                                                                             <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 pointer-events-none" />
@@ -3144,7 +3226,7 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
 
                                                                 {/* Return */}
                                                                 <div className="space-y-2.5">
-                                                                    <label className="text-[14px] font-black text-neutral-900 uppercase tracking-tight">{t({en:'Return', fr:'Retour'})}</label>
+                                                                    <label className="text-[14px] font-black text-neutral-900 uppercase tracking-tight">{t({ en: 'Return', fr: 'Retour' })}</label>
                                                                     <div className="flex items-center gap-3">
                                                                         <button
                                                                             onClick={() => setOpenCalendarMode(openCalendarMode === 'return' ? null : 'return')}
@@ -3153,7 +3235,7 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                                                                             <div className="flex items-center gap-2">
                                                                                 <Calendar size={18} className={openCalendarMode === 'return' ? "text-[#00A082]" : "text-neutral-500"} />
                                                                                 <span className="font-bold text-[14px] text-neutral-900">
-                                                                                    {carReturnDate ? format(new Date(carReturnDate), 'E, MMM d') : t({en: 'Select Date', fr: 'Choisir la date'})}
+                                                                                    {carReturnDate ? format(new Date(carReturnDate), 'E, MMM d') : t({ en: 'Select Date', fr: 'Choisir la date' })}
                                                                                 </span>
                                                                             </div>
                                                                         </button>
@@ -3167,13 +3249,17 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                                                                                 <option value="" disabled>-</option>
                                                                                 {Array.from({ length: 48 }).map((_, i) => {
                                                                                     const totalMinutes = i * 30;
+                                                                                    // Filter slots if return date is today (at least 1 hour from now)
+                                                                                    if (carReturnDate && isToday(parseISO(carReturnDate))) {
+                                                                                        const now = new Date();
+                                                                                        const currentMinutes = now.getHours() * 60 + now.getMinutes();
+                                                                                        if (totalMinutes < currentMinutes + 60) return null;
+                                                                                    }
+
                                                                                     const hours24 = Math.floor(totalMinutes / 60);
                                                                                     const mins = totalMinutes % 60;
-                                                                                    const ampm = hours24 < 12 ? 'AM' : 'PM';
-                                                                                    const hours12 = hours24 % 12 || 12;
                                                                                     const timeStr = `${hours24.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`;
-                                                                                    const displayStr = `${hours12}:${mins.toString().padStart(2, '0')} ${ampm}`;
-                                                                                    return <option key={timeStr} value={timeStr}>{displayStr}</option>;
+                                                                                    return <option key={timeStr} value={timeStr}>{timeStr}</option>;
                                                                                 })}
                                                                             </select>
                                                                             <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 pointer-events-none" />
@@ -3181,34 +3267,34 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                                                                     </div>
                                                                 </div>
                                                             </div>
-                                                                {openCalendarMode && (
-                                                                    <div className="bg-white rounded-[24px] border border-[#00A082] p-5 shadow-xl -mx-1 relative z-20">
-                                                                        <div className="text-center mb-6 flex items-center justify-between">
-                                                                            <h4 className="text-[16px] font-black text-neutral-900 tracking-tight pl-2">
-                                                                                {(() => {
-                                                                                    const d = new Date();
-                                                                                    const currentMonth = d.toLocaleDateString('en-US', { month: 'long' });
-                                                                                    const nextMonth = new Date(d.getFullYear(), d.getMonth() + 1).toLocaleDateString('en-US', { month: 'long' });
-                                                                                    return `${currentMonth} — ${nextMonth} ${d.getFullYear()} `;
-                                                                                })()}
-                                                                            </h4>
-                                                                            <button onClick={() => setOpenCalendarMode(null)} className="w-8 h-8 flex items-center justify-center rounded-full bg-neutral-100 text-neutral-600 hover:bg-neutral-200 transition-colors">
-                                                                                <X size={16} />
-                                                                            </button>
+                                                            {openCalendarMode && (
+                                                                <div className="bg-white rounded-[24px] border border-[#00A082] p-5 shadow-xl -mx-1 relative z-20">
+                                                                    <div className="text-center mb-6 flex items-center justify-between">
+                                                                        <h4 className="text-[16px] font-black text-neutral-900 tracking-tight pl-2">
+                                                                            {(() => {
+                                                                                const d = new Date();
+                                                                                const currentMonth = d.toLocaleDateString('en-US', { month: 'long' });
+                                                                                const nextMonth = new Date(d.getFullYear(), d.getMonth() + 1).toLocaleDateString('en-US', { month: 'long' });
+                                                                                return `${currentMonth} — ${nextMonth} ${d.getFullYear()} `;
+                                                                            })()}
+                                                                        </h4>
+                                                                        <button onClick={() => setOpenCalendarMode(null)} className="w-8 h-8 flex items-center justify-center rounded-full bg-neutral-100 text-neutral-600 hover:bg-neutral-200 transition-colors">
+                                                                            <X size={16} />
+                                                                        </button>
+                                                                    </div>
+                                                                    <div className="px-1">
+                                                                        <div className="grid grid-cols-7 mb-4">
+                                                                            {(t({ en: 'SUN,MON,TUE,WED,THU,FRI,SAT', fr: 'DIM,LUN,MAR,MER,JEU,VEN,SAM' })).split(',').map(d => (
+                                                                                <div key={d} className="text-[11px] font-black text-neutral-400 text-center">{d}</div>
+                                                                            ))}
                                                                         </div>
-                                                                        <div className="px-1">
-                                                                            <div className="grid grid-cols-7 mb-4">
-                                                                                {(t({ en: 'SUN,MON,TUE,WED,THU,FRI,SAT', fr: 'DIM,LUN,MAR,MER,JEU,VEN,SAM' })).split(',').map(d => (
-                                                                                    <div key={d} className="text-[11px] font-black text-neutral-400 text-center">{d}</div>
-                                                                                ))}
-                                                                            </div>
-                                                                            <div className="grid grid-cols-7 gap-y-2">
-                                                                                {carRentalCalendarDays}
-                                                                            </div>
+                                                                        <div className="grid grid-cols-7 gap-y-2">
+                                                                            {carRentalCalendarDays}
                                                                         </div>
                                                                     </div>
-                                                                )}
-                                                            </div>
+                                                                </div>
+                                                            )}
+                                                        </div>
                                                     ) : ((serviceConfig as any).isDayCounter) ? (
                                                         <div className="flex flex-col items-center justify-center p-0 bg-transparent gap-8">
                                                             <div className="relative w-full h-[320px] flex items-center justify-center overflow-hidden">
@@ -3554,7 +3640,10 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                                                 return <img src={iconPath} className="w-5 h-5 object-contain" />;
                                             })()}
                                             <span className="text-[13px] font-black text-neutral-900 whitespace-nowrap opacity-80">
-                                                {getServiceById(service)?.name} {subService ? "> " + getSubServiceName(service, subService) : ''}
+                                                {getServiceById(service)?.name} {(() => {
+                                                    const subName = subService ? getSubServiceName(service, subService) : null;
+                                                    return subName ? "> " + subName : "";
+                                                })()}
                                             </span>
                                         </div>
 
@@ -3567,9 +3656,11 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                                         </div>
                                     </div>
 
-                                    <div className="flex flex-col gap-1 pb-2">
-                                        <h3 className="text-[22px] font-black text-neutral-900">{t({ en: 'Find your Tasker', fr: 'Trouvez votre Pro', ar: 'ابحث عن المحترف الخاص بك' })}</h3>
-                                    </div>
+                                    {service !== 'car_rental' && (
+                                        <div className="flex flex-col gap-1 pb-2">
+                                            <h3 className="text-[22px] font-black text-neutral-900">{t({ en: 'Find your Tasker', fr: 'Trouvez votre Pro', ar: 'ابحث عن المحترف الخاص بك' })}</h3>
+                                        </div>
+                                    )}
 
                                     {isLoadingBricolers ? (
                                         <div className="space-y-4">
@@ -3584,14 +3675,14 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                                             {service === 'car_rental' && (
                                                 <div className="mb-2">
                                                     <h3 className="text-[22px] font-black text-neutral-900 leading-tight">
-                                                        {t({ en: 'Available Vehicles', fr: 'Véhicules Disponibles', ar: 'السيارات المتاحة' })}
+                                                        {t({ en: 'Available Car rental providers', fr: 'Car rental providers Disponibles', ar: 'السيارات المتاحة' })}
                                                     </h3>
                                                     <p className="text-[14px] font-bold text-neutral-400 mt-1">
                                                         {t({ en: 'Select a car from our trusted providers.', fr: 'Choisissez une voiture de nos fournisseurs certifiés.' })}
                                                     </p>
                                                 </div>
                                             )}
-                                            
+
                                             <div className="grid grid-cols-1 gap-6 pt-2">
                                                 {sortedBricolers.map((bricoler: any, idx) => (
                                                     <BricolerCard
@@ -3608,7 +3699,12 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                                                         selectedReturnTime={carReturnTime}
                                                         onSelect={() => {
                                                             setSelectedBricolerId(bricoler.id);
-                                                            setStep(3);
+                                                            if (service === 'car_rental') {
+                                                                // For car rental, we MUST select a car model, so opening profile is better than go to step 3
+                                                                setViewedBricoler(bricoler);
+                                                            } else {
+                                                                setStep(3);
+                                                            }
                                                         }}
                                                         onOpenProfile={() => setViewedBricoler(bricoler)}
                                                     />
@@ -3849,6 +3945,8 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                                     </div>
                                     <div className="px-6 py-6 space-y-10">
                                         {/* Frequency Selection */}
+                                        {/* Hide Repeat Order section as per user request */}
+                                        {/* 
                                         <div className="space-y-4 mb-4">
                                             <h3 className="text-[24px] font-black text-black">{t({ en: 'Repeat this order', fr: 'Répéter cette commande', ar: 'تكرار هذا الطلب' })}</h3>
                                             <div className="flex flex-wrap gap-2">
@@ -3866,7 +3964,7 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                                                             "px-4 py-2 rounded-full text-[14px] font-bold transition-all border-2",
                                                             frequency === freq.id
                                                                 ? "bg-[#00A082] text-white border-[#00A082]"
-                                                                : "bg-white text-neutral-600 border-neutral-200 hover:border-[#00A082]"
+                                                                : "bg-white text-neutral-600 border-neutral-200 hover:border-[#008C74]!important"
                                                         )}
                                                     >
                                                         {t(freq.label as any)}
@@ -3874,6 +3972,7 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                                                 ))}
                                             </div>
                                         </div>
+                                        */}
 
                                         {/* Payment Method Selection - MOVED ABOVE GRID */}
                                         <div className="space-y-4 mb-4">
@@ -4125,7 +4224,7 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                                                     <div className="flex flex-col">
                                                         <span className="text-[11px] font-bold text-neutral-400 uppercase tracking-wider">{t({ en: 'Total (Est.)', fr: 'Total (Est.)', ar: 'الإجمالي (تقريبي)' })}</span>
                                                         <span className="text-[15px] font-black text-black">
-                                                        {service === 'car_rental' && selectedCar && selectedDate && carReturnDate
+                                                            {service === 'car_rental' && selectedCar && selectedDate && carReturnDate
                                                                 ? calculateTaskPrice(
                                                                     selectedCar.pricePerDay || selectedCar.price || 0,
                                                                     String(Math.max(1, Math.round((new Date(carReturnDate).getTime() - new Date(selectedDate).getTime()) / 86400000))),
@@ -4181,11 +4280,24 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                                                         <div className="flex-1 min-w-0">
                                                             <h4 className="text-[17px] font-black text-black">{selectedPro.displayName}</h4>
                                                             <div className="mt-1 flex flex-wrap items-center gap-2">
-                                                                <div className="flex items-center gap-1">
-                                                                    {(selectedPro.rating || (selectedPro.reviews?.length || 0) > 0) ? (
+                                                                <div className="flex items-center gap-1.5">
+                                                                    {(selectedPro.rating || (selectedPro.reviews?.length || 0) > 0 || (selectedPro as any).jobsCount > 0) ? (
                                                                         <>
-                                                                            <Star size={12} fill="#FFC244" className="text-[#FFC244]" />
-                                                                            <span className="text-[13px] font-bold text-neutral-600">{(selectedPro.rating || 0).toFixed(1)}</span>
+                                                                            <div className="flex items-center gap-0.5">
+                                                                                {[1, 2, 3, 4, 5].map((s) => (
+                                                                                    <Star
+                                                                                        key={s}
+                                                                                        size={12}
+                                                                                        className={cn(
+                                                                                            "transition-all",
+                                                                                            s <= Math.round(selectedPro.rating || 5)
+                                                                                                ? "fill-[#FFC244] text-[#FFC244]"
+                                                                                                : "fill-neutral-100 text-neutral-200"
+                                                                                        )}
+                                                                                    />
+                                                                                ))}
+                                                                            </div>
+                                                                            <span className="text-[13px] font-black text-[#D89B1A]">{(selectedPro.rating || 5.0).toFixed(1)}</span>
                                                                         </>
                                                                     ) : (
                                                                         <span className="text-[13px] font-bold text-[#7C73E8] bg-[#7C73E8]/5 px-2 py-0.5 rounded-md uppercase tracking-wide">{t({ en: 'NEW', fr: 'NOUVEAU', ar: 'جديد' })}</span>
@@ -4437,11 +4549,16 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                                             <ChevronLeft size={22} strokeWidth={3} />
                                         </button>
                                         <button
-                                            onClick={() => (selectedDate && selectedTime) ? setStep(4) : null}
-                                            disabled={!selectedDate || !selectedTime}
+                                            onClick={() => {
+                                                const hasBaseDates = selectedDate && selectedTime;
+                                                const isRental = service === 'car_rental';
+                                                const hasRentalDates = isRental ? (carReturnDate && carReturnTime) : true;
+                                                if (hasBaseDates && hasRentalDates) setStep(4);
+                                            }}
+                                            disabled={service === 'car_rental' ? (!selectedDate || !selectedTime || !carReturnDate || !carReturnTime) : (!selectedDate || !selectedTime)}
                                             className={cn(
-                                                "flex-1 h-14 rounded-[10px] text-[18px] font-semibold active:scale-95 transition-all",
-                                                (selectedDate && selectedTime) ? "bg-[#00A082] text-white" : "bg-neutral-100 text-neutral-400"
+                                                "flex-1 h-14 rounded-[10px] text-[18px] font-semibold active:scale-95 transition-all flex items-center justify-center",
+                                                (service === 'car_rental' ? (selectedDate && selectedTime && carReturnDate && carReturnTime) : (selectedDate && selectedTime)) ? "bg-[#00A082] text-white" : "bg-neutral-100 text-neutral-400"
                                             )}
                                         >
                                             {t({ en: 'Next Step', fr: 'Étape suivante', ar: 'الخطوة التالية' })}
@@ -4458,7 +4575,7 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                                                         hourlyRate = selectedCar.pricePerDay;
                                                     }
                                                     const opt = serviceConfig.options.find(o => o.id === taskSize);
-                                                    
+
                                                     let effectiveTaskSize = taskSize;
                                                     if (service === 'car_rental' && selectedDate && carReturnDate) {
                                                         const d = Math.max(1, Math.round((new Date(carReturnDate).getTime() - new Date(selectedDate).getTime()) / 86400000));
@@ -4505,7 +4622,7 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                                         </div>
                                         <div className="flex items-center gap-3">
                                             <button
-                                                onClick={() => setStep(3)}
+                                                onClick={() => setStep(service === 'car_rental' ? 2 : 3)}
                                                 className="w-14 h-14 flex items-center justify-center rounded-[20px] border-2 border-neutral-100 text-neutral-900 active:scale-95 transition-all"
                                             >
                                                 <ChevronLeft size={22} strokeWidth={3} />
@@ -4518,7 +4635,7 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
 
                                                 return (
                                                     <button
-                                                        disabled={!isSubmittable}
+                                                        disabled={!isSubmittable || (service === 'car_rental' && (!selectedDate || !carReturnDate))}
                                                         onClick={handleFinalSubmit}
                                                         className={cn(
                                                             "flex-1 h-14 rounded-[10px] text-white text-[18px] font-black transition-all active:scale-95 flex items-center justify-center gap-2",

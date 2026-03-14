@@ -22,6 +22,84 @@ interface ClientOrdersViewProps {
     onResumeDraft?: (draft: any) => void;
 }
 
+// ── Shared Hook for Progress ────────────────────────────────────────────────
+export const useOrderProgress = () => {
+    const { t } = useLanguage();
+    const [currentTime, setCurrentTime] = React.useState(new Date());
+
+    React.useEffect(() => {
+        const timer = setInterval(() => setCurrentTime(new Date()), 60000);
+        return () => clearInterval(timer);
+    }, []);
+
+    const getProgress = (order: OrderDetails) => {
+        if (!order.date || !order.time) return 10;
+        try {
+            const rawTime = order.time.split('-')[0].trim();
+            const timePart = rawTime.includes(':') ? (rawTime.split(':').length === 2 ? `${rawTime}:00` : rawTime) : `${rawTime}:00:00`;
+            const datePart = order.date.split('T')[0];
+            const targetDate = new Date(`${datePart}T${timePart}`);
+            if (isNaN(targetDate.getTime())) return 10;
+            const now = currentTime.getTime();
+            const target = targetDate.getTime();
+            const diffMs = target - now;
+            if (diffMs <= 0) return 100;
+            const windowMs = 24 * 60 * 60 * 1000;
+            if (diffMs > windowMs) return 5;
+            return Math.max(5, Math.floor(((windowMs - diffMs) / windowMs) * 100));
+        } catch (e) { return 10; }
+    };
+
+    const getReturnProgress = (order: OrderDetails) => {
+        if (!order.carReturnDate || !order.carReturnTime || !order.date || !order.time) return 0;
+        try {
+            const rawStartTime = order.time.split('-')[0].trim();
+            const startTimePart = rawStartTime.includes(':') ? (rawStartTime.split(':').length === 2 ? `${rawStartTime}:00` : rawStartTime) : `${rawStartTime}:00:00`;
+            const startDatePart = order.date.split('T')[0];
+            const startDate = new Date(`${startDatePart}T${startTimePart}`);
+
+            const rawReturnTime = order.carReturnTime.split('-')[0].trim();
+            const returnTimePart = rawReturnTime.includes(':') ? (rawReturnTime.split(':').length === 2 ? `${rawReturnTime}:00` : rawReturnTime) : `${rawReturnTime}:00:00`;
+            const returnDatePart = order.carReturnDate.split('T')[0];
+            const returnDate = new Date(`${returnDatePart}T${returnTimePart}`);
+
+            if (isNaN(startDate.getTime()) || isNaN(returnDate.getTime())) return 0;
+
+            const now = currentTime.getTime();
+            const start = startDate.getTime();
+            const end = returnDate.getTime();
+
+            if (now >= end) return 100;
+            if (now <= start) return 0;
+
+            const totalDurationMs = end - start;
+            const elapsedMs = now - start;
+            return Math.min(100, Math.max(0, Math.floor((elapsedMs / totalDurationMs) * 100)));
+        } catch (e) { return 0; }
+    };
+
+    const getTimeRemaining = (order: OrderDetails) => {
+        if (!order.date || !order.time) return null;
+        try {
+            const rawTime = order.time.split('-')[0].trim();
+            const timePart = rawTime.includes(':') ? (rawTime.split(':').length === 2 ? `${rawTime}:00` : rawTime) : `${rawTime}:00:00`;
+            const datePart = order.date.split('T')[0];
+            const targetDate = new Date(`${datePart}T${timePart}`);
+            if (isNaN(targetDate.getTime())) return null;
+            const now = currentTime.getTime();
+            const diffMs = targetDate.getTime() - now;
+            if (diffMs <= 0) return null;
+            const hours = Math.floor(diffMs / (1000 * 60 * 60));
+            const mins = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+            if (hours > 24) return `${Math.floor(hours / 24)}${t({ en: 'd left', fr: 'j restants', ar: 'ي متبقية' })}`;
+            if (hours > 0) return `${hours}h ${mins}m ${t({ en: 'left', fr: 'restantes', ar: 'متبقية' })}`;
+            return `${mins}${t({ en: 'm left', fr: 'min restantes', ar: 'د متبقية' })}`;
+        } catch (e) { return null; }
+    };
+
+    return { currentTime, getProgress, getReturnProgress, getTimeRemaining };
+};
+
 // ── Calendar Tab Component ──────────────────────────────────────────────
 function CalendarTab({
     orders,
@@ -215,13 +293,85 @@ function CalendarTab({
 }
 
 export default function ClientOrdersView({ orders, onViewMessages, initialShowHistory = false, onResumeDraft }: ClientOrdersViewProps) {
-    const { t } = useLanguage();
+    const { t, language } = useLanguage();
     const { showToast } = useToast();
+
+    // ── Shared Helpers & State ──────────────────────────────────────────
+    const [currentTime, setCurrentTime] = React.useState(new Date());
+
+    React.useEffect(() => {
+        const timer = setInterval(() => setCurrentTime(new Date()), 60000);
+        return () => clearInterval(timer);
+    }, []);
+
+    const getProgress = (order: OrderDetails) => {
+        if (!order.date || !order.time) return 10;
+        try {
+            const rawTime = order.time.split('-')[0].trim();
+            const timePart = rawTime.includes(':') ? (rawTime.split(':').length === 2 ? `${rawTime}:00` : rawTime) : `${rawTime}:00:00`;
+            const datePart = order.date.split('T')[0];
+            const targetDate = new Date(`${datePart}T${timePart}`);
+            if (isNaN(targetDate.getTime())) return 10;
+            const now = currentTime.getTime();
+            const target = targetDate.getTime();
+            const diffMs = target - now;
+            if (diffMs <= 0) return 100;
+            const windowMs = 24 * 60 * 60 * 1000;
+            if (diffMs > windowMs) return 5;
+            return Math.max(5, Math.floor(((windowMs - diffMs) / windowMs) * 100));
+        } catch (e) { return 10; }
+    };
+
+    const getReturnProgress = (order: OrderDetails) => {
+        if (!order.carReturnDate || !order.carReturnTime || !order.date || !order.time) return 0;
+        try {
+            const rawStartTime = order.time.split('-')[0].trim();
+            const startTimePart = rawStartTime.includes(':') && rawStartTime.split(':').length === 2 ? `${rawStartTime}:00` : rawStartTime;
+            const startDatePart = order.date.substring(0, 10);
+            const startDateTime = new Date(`${startDatePart}T${startTimePart}`);
+            const rawEndTime = order.carReturnTime.split('-')[0].trim();
+            const endTimePart = rawEndTime.includes(':') && rawEndTime.split(':').length === 2 ? `${rawEndTime}:00` : rawEndTime;
+            const endDatePart = order.carReturnDate.substring(0, 10);
+            const endDateTime = new Date(`${endDatePart}T${endTimePart}`);
+            if (isNaN(startDateTime.getTime()) || isNaN(endDateTime.getTime())) return 0;
+            const totalDuration = endDateTime.getTime() - startDateTime.getTime();
+            const elapsed = currentTime.getTime() - startDateTime.getTime();
+            if (elapsed <= 0) return 0;
+            if (elapsed >= totalDuration) return 100;
+            return Math.floor((elapsed / totalDuration) * 100);
+        } catch (e) { return 0; }
+    };
+
+    const getTimeRemaining = (order: OrderDetails) => {
+        if (!order.date || !order.time) return null;
+        try {
+            const isCarRental = order.service === 'car_rental';
+            const pickupProgress = getProgress(order);
+            const isRentalInProgress = isCarRental && pickupProgress === 100 && !['done', 'delivered'].includes(order.status || '');
+            let rawTime = order.time.split('-')[0].trim();
+            let datePart = order.date.substring(0, 10);
+            if (isRentalInProgress && order.carReturnDate && order.carReturnTime) {
+                rawTime = order.carReturnTime.split('-')[0].trim();
+                datePart = order.carReturnDate.substring(0, 10);
+            }
+            const timePart = rawTime.includes(':') && rawTime.split(':').length === 2 ? `${rawTime}:00` : rawTime;
+            const targetDate = new Date(`${datePart}T${timePart}`);
+            if (isNaN(targetDate.getTime())) return null;
+            const diffMs = targetDate.getTime() - currentTime.getTime();
+            if (diffMs < 0) return null;
+            const diffMins = Math.floor(diffMs / 60000);
+            const hours = Math.floor(diffMins / 60);
+            const mins = diffMins % 60;
+            if (hours > 24) return `${Math.floor(hours / 24)} ${t({ en: 'days left', fr: 'jours restants', ar: 'أيام متبقية' })}`;
+            if (hours > 0) return `${hours}${t({ en: 'h', fr: 'h', ar: 'س' })} ${mins}${t({ en: 'm left', fr: 'min restantes', ar: 'د متبقية' })}`;
+            return `${mins}${t({ en: 'm left', fr: 'min restantes', ar: 'د متبقية' })}`;
+        } catch (e) { return null; }
+    };
     const [activeTab, setActiveTab] = useState<'activity' | 'calendar'>('activity');
     const [selectedOrder, setSelectedOrder] = useState<OrderDetails | null>(null);
     const [liveBricolerInfo, setLiveBricolerInfo] = useState<{ rating: number, jobsCount: number } | null>(null);
 
-    const openWhatsApp = async (number?: string, bricolerId?: string) => {
+    const openWhatsApp = async (number?: string | null, bricolerId?: string) => {
         let targetNumber = number;
 
         if (!targetNumber && bricolerId) {
@@ -343,12 +493,16 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
     };
 
     const handleCancelOrder = (orderId: string, isFromRedistributed: boolean = false) => {
-        setIsRedistributeCancellation(isFromRedistributed);
-        setShowCancelModal(true);
-        if (isFromRedistributed) {
-            setCancelReason("Redistributed order cancelled by client");
-        } else {
-            setCancelReason('');
+        const orderToCancel = orders.find(o => o.id === orderId);
+        if (orderToCancel) {
+            setSelectedOrder(orderToCancel);
+            setIsRedistributeCancellation(isFromRedistributed);
+            setShowCancelModal(true);
+            if (isFromRedistributed) {
+                setCancelReason("Redistributed order cancelled by client");
+            } else {
+                setCancelReason("");
+            }
         }
     };
 
@@ -581,7 +735,7 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
                             <div className="flex items-center gap-2">
                                 {selectedOrder.bricolerWhatsApp && (
                                     <button
-                                        onClick={() => openWhatsApp(selectedOrder.bricolerWhatsApp)}
+                                        onClick={() => selectedOrder.bricolerWhatsApp && openWhatsApp(selectedOrder.bricolerWhatsApp)}
                                         className="w-12 h-12 md:w-14 md:h-14 rounded-full flex items-center justify-center text-[#25D366] hover:scale-110 active:scale-95 transition-all group"
                                         title={t({ en: 'Contact Bricoler via WhatsApp', fr: 'Contacter le Bricoler via WhatsApp', ar: 'اتصل بالبريكولر عبر واتساب' })}
                                     >
@@ -594,7 +748,14 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
                         {/* Content */}
                         <div className="flex-1 overflow-y-auto no-scrollbar">
                             <div className="pb-10">
-                                <div className="px-6 md:px-12 pt-10 pb-6 flex flex-col sm:flex-row items-center gap-6 text-center sm:text-left">
+                                {(() => {
+                                    const isCarRental = selectedOrder.service === 'car_rental';
+                                    const progress = getProgress(selectedOrder);
+                                    const isRentalInProgress = isCarRental && progress === 100 && !['done', 'delivered'].includes(selectedOrder.status || '');
+                                    
+                                    return (
+                                        <>
+                                            <div className="px-6 md:px-12 pt-10 pb-6 flex flex-col sm:flex-row items-center gap-6 text-center sm:text-left">
                                     <div className="w-32 h-32 md:w-35 md:h-50 flex-shrink-0 overflow-hidden rounded-2xl bg-neutral-100 flex items-center justify-center border border-neutral-100">
                                         {selectedOrder.images && selectedOrder.images.length > 0 ? (
                                             <img
@@ -611,17 +772,43 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
                                         )}
                                     </div>
                                     <div className="flex flex-col">
-                                        <h2 className="text-[32px] md:text-[42px] font-black text-black leading-[1.1] tracking-tighter">
+                                        <h2 className={cn(
+                                            "text-[32px] md:text-[42px] font-black leading-[1.1] tracking-tighter",
+                                            (isRentalInProgress) ? "text-rose-500" : "text-black"
+                                        )}>
                                             {selectedOrder.status === 'done' ? t({ en: 'Completed', fr: 'Terminé', ar: 'مكتمل' }) :
                                                 selectedOrder.status === 'delivered' ? t({ en: 'Job Delivered', fr: 'Job Livré', ar: 'تم التسليم' }) :
                                                     selectedOrder.status === 'cancelled' ? t({ en: 'Cancelled', fr: 'Annulé', ar: 'ملغى' }) :
+                                                        isRentalInProgress ? t({ en: 'In Progress', fr: 'En cours', ar: 'قيد التنفيذ' }) :
                                                         selectedOrder.status === 'confirmed' || selectedOrder.status === 'programmed' ? t({ en: 'Programmed', fr: 'Programmé', ar: 'مجدول' }) :
                                                             t({ en: 'Ongoing', fr: 'En cours', ar: 'جاري' })}
                                         </h2>
-                                        <div className="flex items-center gap-2 text-[18px] font-semibold text-black mt-1">
-                                            <span>{selectedOrder.date ? format(parseISO(selectedOrder.date), 'MMM d, yyyy') : t({ en: 'Date TBD', fr: 'Date à définir', ar: 'التاريخ يحدد لاحقاً' })}</span>
-                                            <span className="text-neutral-200">|</span>
-                                            <span>{selectedOrder.time || t({ en: 'Flexible', fr: 'Flexible', ar: 'مرن' })}</span>
+                                        <div className={cn(
+                                            "flex flex-wrap items-center gap-x-2 gap-y-1 text-[18px] font-semibold mt-1",
+                                            isRentalInProgress ? "text-rose-500" : "text-black"
+                                        )}>
+                                            {selectedOrder.service === 'car_rental' ? (
+                                                <div className="flex items-center gap-2 flex-wrap">
+                                                    <div className="flex items-center gap-1.5 font-black">
+                                                        <span>{selectedOrder.date ? format(parseISO(selectedOrder.date), 'MMM d') : '---'}</span>
+                                                        <span className="opacity-50">|</span>
+                                                        <span>{selectedOrder.time || '---'}</span>
+                                                    </div>
+                                                    <span className="mx-1">→</span>
+                                                    <div className="flex items-center gap-1.5 font-black">
+                                                        <span>{selectedOrder.carReturnDate ? format(parseISO(selectedOrder.carReturnDate), 'MMM d') : (selectedOrder as any).carReturnDate ? format(parseISO((selectedOrder as any).carReturnDate), 'MMM d') : '---'}</span>
+                                                        <span className="opacity-30">|</span>
+                                                        <span>{selectedOrder.carReturnTime || (selectedOrder as any).carReturnTime || '---'}</span>
+                                                    </div>
+                                                    <span className="opacity-40 ml-1">, {selectedOrder.date ? (selectedOrder.date.includes('-') ? format(parseISO(selectedOrder.date), 'yyyy') : selectedOrder.date.split(',').pop()?.trim()) : ''}</span>
+                                                </div>
+                                            ) : (
+                                                <div className="flex items-center gap-2">
+                                                    <span>{selectedOrder.date ? format(parseISO(selectedOrder.date), 'MMM d, yyyy') : t({ en: 'Date TBD', fr: 'Date à définir', ar: 'التاريخ يحدد لاحقاً' })}</span>
+                                                    <span className="text-neutral-200">|</span>
+                                                    <span>{selectedOrder.time || t({ en: 'Flexible', fr: 'Flexible', ar: 'مرن' })}</span>
+                                                </div>
+                                            )}
                                         </div>
                                         <p className="text-[12px] font-light text-black uppercase tracking-[0.2em] mt-2">
                                             {t({ en: 'ORDER ID', fr: 'ID DE COMMANDE', ar: 'رقم الطلب' })}: #{selectedOrder.id?.slice(-8).toUpperCase() || '---'}
@@ -635,7 +822,7 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
                                         {/* Contact Bricoler CTA - shown when a bricoler is assigned */}
                                         {selectedOrder.bricolerWhatsApp && (
                                             <button
-                                                onClick={() => openWhatsApp(selectedOrder.bricolerWhatsApp)}
+                                                onClick={() => selectedOrder.bricolerWhatsApp && openWhatsApp(selectedOrder.bricolerWhatsApp)}
                                                 className="w-full flex items-center justify-center gap-4 py-6 rounded-[24px] bg-[#25D366] text-white font-[1000] text-[18px] hover:bg-[#128C7E] active:scale-95 transition-all group relative overflow-hidden"
                                             >
                                                 <div className="absolute inset-0 bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -645,38 +832,44 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
                                         )}
 
                                         {/* Selected Car Details section */}
-                                        {(selectedOrder as any).selectedCar && (
-                                            <div className="bg-[#F0FBF8] rounded-2xl p-5 border border-[#00A082]/20 flex flex-col gap-4">
+                                        {(selectedOrder.service === 'car_rental' && (selectedOrder.selectedCar || (selectedOrder as any).car || (selectedOrder as any).orderDetails?.car)) && (
+                                            <div className="bg-[#F0FBF8] rounded-2xl p-5 border border-[#00A082]/20 shadow-sm flex flex-col gap-4">
                                                 <div className="flex justify-between items-start">
-                                                    <div>
+                                                    <div className="flex-1 min-w-0">
                                                         <h4 className="text-[12px] font-black text-[#00A082] uppercase tracking-wider mb-1">{t({ en: 'Rented Vehicle', fr: 'Véhicule Loué' })}</h4>
-                                                        <p className="text-[20px] font-[1000] text-black leading-tight">{(selectedOrder as any).selectedCar.brandName} {(selectedOrder as any).selectedCar.modelName}</p>
+                                                        <p className="text-[20px] font-[1000] text-black leading-tight uppercase">
+                                                            {(selectedOrder.selectedCar?.brandName || (selectedOrder as any).car?.brandName || (selectedOrder as any).orderDetails?.car?.brandName) || ''} {(selectedOrder.selectedCar?.modelName || (selectedOrder as any).car?.modelName || (selectedOrder as any).orderDetails?.car?.modelName) || ''}
+                                                        </p>
                                                     </div>
-                                                    <div className="w-20 h-14 bg-white rounded-xl flex items-center justify-center p-2 border border-neutral-100 shadow-sm overflow-hidden">
-                                                        <img src={(selectedOrder as any).selectedCar.modelImage || (selectedOrder as any).selectedCar.image} alt="car" className="w-full h-full object-contain" />
+                                                    <div className="w-24 h-16 bg-white rounded-xl flex items-center justify-center p-2 border border-neutral-100 shadow-sm overflow-hidden flex-shrink-0">
+                                                        <img 
+                                                            src={selectedOrder.selectedCar?.modelImage || selectedOrder.selectedCar?.image || (selectedOrder as any).car?.modelImage || (selectedOrder as any).car?.image || (selectedOrder as any).orderDetails?.car?.modelImage} 
+                                                            alt="car" 
+                                                            className="w-full h-full object-contain" 
+                                                        />
                                                     </div>
                                                 </div>
-                                                <div className="flex items-center gap-6 pt-2 border-t border-[#00A082]/10">
+                                                <div className="flex items-center justify-between pt-2 border-t border-[#00A082]/10">
                                                     <div className="flex flex-col">
-                                                        <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-tighter">{t({ en: 'Daily Rate', fr: 'Prix/Jour' })}</span>
-                                                        <span className="text-[16px] font-black text-black">{(selectedOrder as any).selectedCar.pricePerDay || (selectedOrder as any).selectedCar.price} MAD</span>
-                                                    </div>
-                                                    <div className="flex flex-col">
-                                                        <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-tighter">{t({ en: 'Return Date', fr: 'Retour' })}</span>
-                                                        <span className="text-[16px] font-black text-[#00A082]">
-                                                            {(selectedOrder as any).carReturnDate ? format(parseISO((selectedOrder as any).carReturnDate), 'MMM d, yyyy') : '---'}
-                                                        </span>
+                                                        <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-tighter">{t({ en: 'Rate', fr: 'Prix' })}</span>
+                                                        <span className="text-[15px] font-black text-black">{(selectedOrder.selectedCar?.pricePerDay || (selectedOrder as any).car?.pricePerDay || selectedOrder.selectedCar?.price || (selectedOrder as any).car?.price || (selectedOrder as any).orderDetails?.car?.pricePerDay)} MAD/j</span>
                                                     </div>
                                                     <div className="flex flex-col">
                                                         <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-tighter">{t({ en: 'Duration', fr: 'Durée' })}</span>
-                                                        <span className="text-[16px] font-black text-black">
+                                                        <span className="text-[15px] font-black text-black">
                                                             {(() => {
-                                                                if (selectedOrder.date && (selectedOrder as any).carReturnDate) {
-                                                                    const d = Math.max(1, Math.round((new Date((selectedOrder as any).carReturnDate).getTime() - new Date(selectedOrder.date).getTime()) / 86400000));
+                                                                if (selectedOrder.date && selectedOrder.carReturnDate) {
+                                                                    const d = Math.max(1, Math.round((new Date(selectedOrder.carReturnDate).getTime() - new Date(selectedOrder.date).getTime()) / 86400000));
                                                                     return `${d} ${t({ en: d > 1 ? 'days' : 'day', fr: d > 1 ? 'jours' : 'jour' })}`;
                                                                 }
-                                                                return selectedOrder.duration || '1 day';
+                                                                return selectedOrder.duration || 'N/A';
                                                             })()}
+                                                        </span>
+                                                    </div>
+                                                    <div className="flex flex-col items-end">
+                                                        <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-tighter">{t({ en: 'Total Price', fr: 'Prix Total' })}</span>
+                                                        <span className="text-[15px] font-black text-[#00A082]">
+                                                            {selectedOrder.totalPrice || selectedOrder.price} MAD
                                                         </span>
                                                     </div>
                                                 </div>
@@ -688,7 +881,23 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
                                             </div>
                                             <div className="flex flex-col">
                                                 <span className="text-[12px] font-bold text-neutral-400 uppercase tracking-wider">{t({ en: 'Duration', fr: 'Durée', ar: 'المدة' })}</span>
-                                                <span className="text-[16px] font-black text-black">≈ {selectedOrder.duration || '2h-3h'}</span>
+                                                <span className="text-[16px] font-black text-black">
+                                                    {(() => {
+                                                        const pDate = selectedOrder.date || (selectedOrder as any).date;
+                                                        const rDate = selectedOrder.carReturnDate || (selectedOrder as any).carReturnDate;
+                                                        if (pDate && rDate) {
+                                                            try {
+                                                                const d = Math.max(1, Math.round((new Date(rDate).getTime() - new Date(pDate).getTime()) / 86400000));
+                                                                return `${d} ${t({ en: d > 1 ? 'days' : 'day', fr: d > 1 ? 'jours' : 'jour' })}`;
+                                                            } catch (e) { }
+                                                        }
+                                                        if (selectedOrder.duration) return selectedOrder.duration;
+                                                        if (typeof selectedOrder.durationDays === 'number') {
+                                                             return `${selectedOrder.durationDays} ${t({ en: selectedOrder.durationDays > 1 ? 'days' : 'day', fr: selectedOrder.durationDays > 1 ? 'jours' : 'jour' })}`;
+                                                        }
+                                                        return 'N/A';
+                                                    })()}
+                                                </span>
                                             </div>
                                         </div>
                                         <div className="bg-neutral-50 rounded-2xl p-4 flex items-center gap-4 border border-neutral-100/50">
@@ -765,14 +974,14 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
                                                     <div className="flex items-center gap-2 mt-1.5">
                                                         <div className="flex items-center gap-0.5">
                                                             {[1, 2, 3, 4, 5].map((s) => {
-                                                                const r = liveBricolerInfo?.rating ?? Number(selectedOrder.bricolerRating) ?? 0;
+                                                                const r = (liveBricolerInfo?.rating ?? selectedOrder.bricolerRating ?? 0);
                                                                 return (
                                                                     <Star
                                                                         key={s}
                                                                         size={14}
                                                                         className={cn(
                                                                             "transition-all",
-                                                                            s <= Math.floor(r)
+                                                                            s <= Math.round(r || 5)
                                                                                 ? "fill-[#FFC244] text-[#FFC244]"
                                                                                 : "fill-neutral-100 text-neutral-200"
                                                                         )}
@@ -780,7 +989,10 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
                                                                 );
                                                             })}
                                                         </div>
-                                                        <span className="text-[15px] font-black text-[#D89B1A] ml-1">{(liveBricolerInfo?.rating ?? Number(selectedOrder.bricolerRating) ?? 0).toFixed(1)}</span>
+                                                        {(() => {
+                                                            const r = (liveBricolerInfo?.rating ?? selectedOrder.bricolerRating ?? 0);
+                                                            return <span className="text-[15px] font-black text-[#D89B1A] ml-1">{r > 0 ? r.toFixed(1) : "5.0"}</span>;
+                                                        })()}
                                                         <span className="text-[13px] text-neutral-400 font-bold ml-1">({liveBricolerInfo?.jobsCount ?? selectedOrder.bricolerJobsCount ?? 0} {t({ en: 'reviews', fr: 'avis', ar: 'تقييم' })})</span>
                                                     </div>
                                                 </div>
@@ -788,7 +1000,7 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
                                             <div className="flex items-center gap-3">
                                                 {selectedOrder.bricolerWhatsApp && (
                                                     <button
-                                                        onClick={() => openWhatsApp(selectedOrder.bricolerWhatsApp)}
+                                                        onClick={() => selectedOrder.bricolerWhatsApp && openWhatsApp(selectedOrder.bricolerWhatsApp)}
                                                         className="p-1 rounded-full flex items-center justify-center text-[#25D366] hover:scale-110 active:scale-90 transition-all group"
                                                     >
                                                         <WhatsAppBrandIcon size={48} className="md:w-[56px] md:h-[56px]" />
@@ -817,7 +1029,13 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
 
                                             </div>
                                             <div className="flex-shrink-0 px-3 py-1 bg-[#FFC244]/20 text-black text-[13px] font-black rounded-md whitespace-nowrap">
-                                                ≈ {selectedOrder.duration || '2h-3h'}
+                                                {(() => {
+                                                    if (selectedOrder.date && selectedOrder.carReturnDate) {
+                                                        const d = Math.max(1, Math.round((new Date(selectedOrder.carReturnDate).getTime() - new Date(selectedOrder.date).getTime()) / 86400000));
+                                                        return `${d} ${t({ en: d > 1 ? 'days' : 'day', fr: d > 1 ? 'jours' : 'jour' })}`;
+                                                    }
+                                                    return selectedOrder.duration || 'N/A';
+                                                })()}
                                             </div>
                                         </div>
                                         <div className="space-y-2">
@@ -911,9 +1129,8 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
                                         </div>
                                     )}
                                 </div>
-                            </div>
 
-                            <div className="mt-6 bg-[#FFFFFF] relative">
+                                <div className="mt-6 bg-[#FFFFFF] relative">
                                 {/* Top ZigZag for Summary */}
                                 <div className="absolute top-0 left-0 right-0 h-[10px] -translate-y-[10px]">
                                     <div className="w-full h-full" style={{
@@ -929,7 +1146,17 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
                                         <div className="flex justify-between items-center">
                                             <div className="flex items-center gap-4">
                                                 <span className="text-[16px] font-semibold text-black">{t({ en: 'Task Fee', fr: 'Frais de tâche', ar: 'رسوم المهمة' })}</span>
-                                                <span className="text-[14px] font-light text-black">≈ {selectedOrder.duration || '2h-3h'}</span>
+                                                <span className="text-[14px] font-light text-black">
+                                                    {(() => {
+                                                        const pDate = selectedOrder?.date || (selectedOrder as any)?.date;
+                                                        const rDate = selectedOrder?.carReturnDate || (selectedOrder as any)?.carReturnDate;
+                                                        if (pDate && rDate) {
+                                                            const d = Math.max(1, Math.round((new Date(rDate).getTime() - new Date(pDate).getTime()) / 86400000));
+                                                            return `${d} ${t({ en: d > 1 ? 'days' : 'day', fr: d > 1 ? 'jours' : 'jour' })}`;
+                                                        }
+                                                        return selectedOrder?.duration || 'N/A';
+                                                    })()}
+                                                </span>
                                             </div>
                                             <span className="text-[16px] font-bold text-black tracking-tight">{((selectedOrder.totalPrice || parseFloat(String(selectedOrder.price || '0'))) * 0.85).toFixed(0)} MAD</span>
                                         </div>
@@ -942,6 +1169,10 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
                                         </div>
                                     </div>
                                 </div>
+                            </div>
+                                        </>
+                                    );
+                                })()}
                             </div>
                         </div>
 
@@ -1076,10 +1307,10 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
                         <div className="absolute bottom-0 left-0 right-0 p-6 bg-white border-t border-neutral-100 pb-12">
                             <button
                                 onClick={handleConfirmCancel}
-                                disabled={!cancelReason || isCancelling}
+                                disabled={(!isRedistributeCancellation && !cancelReason) || isCancelling}
                                 className={cn(
                                     "w-full py-5 rounded-2xl font-black text-[18px] text-white transition-all active:scale-95 flex items-center justify-center h-16",
-                                    cancelReason && !isCancelling ? "bg-red-500" : "bg-neutral-200 pointer-events-none"
+                                    (!isRedistributeCancellation && !cancelReason) || isCancelling ? "bg-neutral-200 pointer-events-none" : "bg-red-500 hover:bg-red-600"
                                 )}
                             >
                                 {isCancelling ? (
@@ -1113,9 +1344,10 @@ function ActivityTab({
     onCancelOrder: (id: string, isFromRedistributed?: boolean) => void
 }) {
     const { t } = useLanguage();
+    const { getProgress, getReturnProgress, getTimeRemaining } = useOrderProgress();
 
     const pendingOrders = useMemo(() => {
-        return orders.filter(o => o.status === 'pending')
+        return orders.filter(o => o.status === 'pending' && !o.providerConfirmed)
             .sort((a, b) => new Date(b.date || 0).getTime() - new Date(a.date || 0).getTime());
     }, [orders]);
 
@@ -1125,7 +1357,7 @@ function ActivityTab({
     }, [orders]);
 
     const activeOrders = useMemo(() => {
-        return orders.filter(o => ['confirmed', 'accepted', 'programmed'].includes(o.status || ''))
+        return orders.filter(o => ['confirmed', 'accepted', 'programmed'].includes(o.status || '') || (o.status === 'pending' && o.providerConfirmed))
             .sort((a, b) => new Date(b.date || 0).getTime() - new Date(a.date || 0).getTime());
     }, [orders]);
 
@@ -1185,64 +1417,6 @@ function ActivityTab({
         return activeOrders;
     }, [activeOrders]);
 
-    const [currentTime, setCurrentTime] = React.useState(new Date());
-
-    React.useEffect(() => {
-        const timer = setInterval(() => setCurrentTime(new Date()), 60000);
-        return () => clearInterval(timer);
-    }, []);
-
-    const getTimeRemaining = (order: OrderDetails) => {
-        if (!order.date || !order.time) return null;
-        try {
-            // Extract the start time from "HH:MM" or "HH:MM-HH:MM" or "HH:MM:SS"
-            const rawTime = order.time.split('-')[0].trim();
-            // Ensure we have HH:MM:SS format for parseISO
-            const timePart = rawTime.includes(':') && rawTime.split(':').length === 2
-                ? `${rawTime}:00`  // HH:MM → HH:MM:00
-                : rawTime;          // already has seconds or other form
-
-            // Try to parse the date — works for yyyy-MM-dd
-            // also handle dates like "2026-03-07" or "2026-3-7" 
-            const datePart = order.date.substring(0, 10); // take first 10 chars
-            const targetDate = new Date(`${datePart}T${timePart}`);
-            if (isNaN(targetDate.getTime())) return null;
-
-            const diffMs = targetDate.getTime() - currentTime.getTime();
-            if (diffMs < 0) return null;
-
-            const diffMins = Math.floor(diffMs / 60000);
-            const hours = Math.floor(diffMins / 60);
-            const mins = diffMins % 60;
-
-            if (hours > 24) return `${Math.floor(hours / 24)} ${t({ en: 'days left', fr: 'jours restants', ar: 'أيام متبقية' })}`;
-            if (hours > 0) return `${hours}${t({ en: 'h', fr: 'h', ar: 'س' })} ${mins}${t({ en: 'm left', fr: 'min restantes', ar: 'د متبقية' })}`;
-            return `${mins}${t({ en: 'm left', fr: 'min restantes', ar: 'د متبقية' })}`;
-        } catch (e) {
-            return null;
-        }
-    };
-
-    const getProgress = (order: OrderDetails) => {
-        if (!order.date || !order.time) return 10;
-        try {
-            const rawTime = order.time.split('-')[0].trim();
-            const timePart = rawTime.includes(':') && rawTime.split(':').length === 2 ? `${rawTime}:00` : rawTime;
-            const datePart = order.date.substring(0, 10);
-            const targetDate = new Date(`${datePart}T${timePart}`);
-            if (isNaN(targetDate.getTime())) return 10;
-            const diffMs = targetDate.getTime() - currentTime.getTime();
-
-            // Window of 24 hours for filling
-            const windowMs = 24 * 60 * 60 * 1000;
-            if (diffMs <= 0) return 100;
-            if (diffMs > windowMs) return 5;
-
-            return Math.floor(((windowMs - diffMs) / windowMs) * 100);
-        } catch (e) {
-            return 10;
-        }
-    };
 
     const renderEmptyState = (title: string, subtitle: string, icon: React.ReactNode) => (
         <div className="bg-white rounded-[16px] border border-[#BABABA] p-5 flex flex-col items-center text-center">
@@ -1301,6 +1475,10 @@ function ActivityTab({
         const timeLeft = getTimeRemaining(order);
         const progress = getProgress(order);
 
+        const isCarRental = order.service === 'car_rental';
+        const isRentalInProgress = isCarRental && progress === 100 && !['done', 'delivered'].includes(order.status || '');
+        const returnProgress = isRentalInProgress ? getReturnProgress(order) : 0;
+
         return (
             <motion.div
                 key={order.id}
@@ -1319,11 +1497,22 @@ function ActivityTab({
                     <div className="flex items-center gap-2 mb-1">
                         <span className={cn(
                             "px-2 py-0.5 text-[11px] font-black rounded-md uppercase tracking-wider",
-                            order.status === 'pending' ? "bg-orange-100 text-orange-600" : "bg-[#E6F7F4] text-[#00A082]"
+                            (order.status === 'pending' && !order.providerConfirmed) ? "bg-orange-100 text-orange-600" : 
+                            isRentalInProgress ? "bg-rose-50 text-rose-500" : "bg-[#E6F7F4] text-[#00A082]"
                         )}>
-                            {order.status === 'pending'
-                                ? t({ en: 'In Progress', fr: 'En cours', ar: 'قيد التنفيذ' })
-                                : t({ en: 'On time', fr: 'À l’heure', ar: 'في الوقت' })}
+                            {(() => {
+                                const isDelayedStatus = order.status === 'pending' && !order.providerConfirmed;
+                                if (isDelayedStatus) {
+                                    return t({ en: 'Pending', fr: 'En attente', ar: 'قيد الانتظار' });
+                                }
+                                if (isRentalInProgress) {
+                                    return t({ en: 'In Progress', fr: 'En cours', ar: 'قيد التنفيذ' });
+                                }
+                                if (progress === 100 && !['done', 'delivered'].includes(order.status || '')) {
+                                    return t({ en: 'In Progress', fr: 'En cours', ar: 'قيد التنفيذ' });
+                                }
+                                return t({ en: 'On time', fr: 'À l’heure', ar: 'في الوقت' });
+                            })()}
                         </span>
                     </div>
 
@@ -1331,11 +1520,31 @@ function ActivityTab({
                         {order.service} {order.subServiceDisplayName ? `› ${order.subServiceDisplayName}` : ''}
                     </h3>
                     <div className="flex items-end gap-2 mt-1">
-                        <p className="text-[20px] font-black text-black">
-                            {order.time || '12:00-13:00'}
-                        </p>
+                        <div className="text-[14px] font-black text-black leading-tight">
+                            {isCarRental && order.date && order.carReturnDate ? (
+                                <div className="flex flex-col gap-0.5">
+                                    <div className="flex items-center gap-1.5">
+                                        <span className="text-[16px]">{format(parseISO(order.date), 'MMM d')}</span>
+                                        <span className="opacity-30">|</span>
+                                        <span className="text-[16px]">{order.time?.split('-')[0] || '09:00'}</span>
+                                    </div>
+                                    <div className="flex items-center gap-1.5 text-neutral-400">
+                                        <span>{format(parseISO(order.carReturnDate), 'MMM d')}</span>
+                                        <span className="opacity-30">|</span>
+                                        <span>{order.carReturnTime?.split('-')[0] || '09:00'}</span>
+                                    </div>
+                                </div>
+                            ) : (
+                                <p className="text-[20px] font-black">
+                                    {order.time || '12:00-13:00'}
+                                </p>
+                            )}
+                        </div>
                         {timeLeft && (
-                            <span className="text-[14px] font-bold text-[#00A082] mb-[2px]">
+                            <span className={cn(
+                                "text-[14px] font-bold mb-[2px]",
+                                isRentalInProgress ? "text-rose-500" : "text-[#00A082]"
+                            )}>
                                 ({timeLeft})
                             </span>
                         )}
@@ -1349,14 +1558,17 @@ function ActivityTab({
                         <motion.div
                             initial={{ width: 0 }}
                             animate={{
-                                width: `${progress}%`,
+                                width: isRentalInProgress ? `${returnProgress}%` : `${progress}%`,
                                 filter: ['brightness(1)', 'brightness(1.5)', 'brightness(1)']
                             }}
                             transition={{
                                 width: { duration: 1, ease: "easeOut" },
                                 filter: { repeat: Infinity, duration: 2, ease: "easeInOut" }
                             }}
-                            className="h-full bg-[#00A082] rounded-full relative"
+                            className={cn(
+                                "h-full rounded-full relative",
+                                isRentalInProgress ? "bg-rose-500" : "bg-[#00A082]"
+                            )}
                         />
                     </div>
                 </div>
@@ -1429,114 +1641,6 @@ function ActivityTab({
                 </div>
             ))}
 
-            {/* Delayed/Pending Warning Section */}
-            {pendingOrders.map(order => {
-                const createdAt = (order as any).createdAt?.seconds ? (order as any).createdAt.seconds * 1000 : Date.now();
-                const isDelayed = Date.now() - createdAt > 3600000; // 1 hour
-
-                if (!isDelayed) return null;
-
-                return (
-                    <div key={`delayed-${order.id}`} className="bg-[#FFF9E5] border-2 border-[#FFC244]/30 rounded-2xl p-6 mb-6">
-                        <div className="flex items-start gap-4">
-                            <div className="w-12 h-12 bg-[#FFC244] rounded-2xl flex items-center justify-center shrink-0">
-                                <AlertTriangle size={24} className="text-white" />
-                            </div>
-                            <div className="flex-1">
-                                <h3 className="text-[18px] font-black text-black mb-1">
-                                    {t({
-                                        en: `Still Waiting for ${order.bricolerName}?`,
-                                        fr: `Toujours en attente de ${order.bricolerName} ?`,
-                                        ar: `ما زلت تنتظر ${order.bricolerName}؟`
-                                    })}
-                                </h3>
-                                <p className="text-[14px] font-medium text-neutral-600 leading-tight">
-                                    {t({
-                                        en: 'It has been over an hour. We can try matching you with another available professional right now.',
-                                        fr: 'Cela fait plus d’une heure. Nous pouvons vous associer maintenant à un autre professionnel disponible.',
-                                        ar: 'مرّ أكثر من ساعة. يمكننا الآن محاولة ربطك بمحترف آخر متاح.'
-                                    })}
-                                </p>
-                                <div className="flex flex-col gap-2 mt-4">
-                                    <button
-                                        onClick={() => {
-                                            // Take back to step 2 (bricoler list)
-                                            if (onResumeDraft) {
-                                                onResumeDraft({
-                                                    id: order.id as string,
-                                                    service: order.service,
-                                                    subService: order.subService,
-                                                    city: order.city || '',
-                                                    area: order.area || '',
-                                                    taskSize: order.taskSize || null,
-                                                    description: order.description || '',
-                                                    selectedBricolerId: null,
-                                                    selectedDate: order.date || null,
-                                                    selectedTime: order.time || null,
-                                                    uploadedImages: order.images || [],
-                                                    paymentMethod: order.paymentMethod as any || 'cash',
-                                                    bankReceipt: order.bankReceipt || null,
-                                                    step: 2,
-                                                    subStep1: 'location',
-                                                    updatedAt: Date.now()
-                                                });
-                                            }
-                                        }}
-                                        className="w-full py-3 bg-[#00A082] text-white rounded-xl text-[14px] font-black flex items-center justify-center gap-2 transition-all active:scale-95"
-                                    >
-                                        <RefreshCw size={16} />
-                                        {t({ en: 'Redistribute Order', fr: 'Réattribuer la commande', ar: 'إعادة توزيع الطلب' })}
-                                    </button>
-                                    <div className="flex gap-2">
-                                        <button
-                                            onClick={async () => {
-                                                if (order.date && order.time) {
-                                                    try {
-                                                        const timeStr = order.time.split('-')[0].trim();
-                                                        const targetDate = new Date(`${order.date}T${timeStr}:00`).getTime();
-                                                        if (targetDate < Date.now()) {
-                                                            alert(t({
-                                                                en: 'Cannot extend wait time. The booked time slot has already passed.',
-                                                                fr: 'Impossible de prolonger lattente. Le créneau horaire réservé est déjà passé.',
-                                                                ar: 'لا يمكن تمديد وقت الانتظار. لقد مر الموعد المحجوز بالفعل.'
-                                                            }));
-                                                            return;
-                                                        }
-                                                    } catch (e) { }
-                                                }
-                                                try {
-                                                    await updateDoc(doc(db, 'jobs', order.id!), {
-                                                        createdAt: serverTimestamp()
-                                                    });
-                                                } catch (e) {
-                                                    console.error(e);
-                                                }
-                                            }}
-                                            className="flex-1 py-3 bg-white border border-neutral-200 text-black hover:bg-neutral-50 rounded-xl text-[14px] font-bold transition-all active:scale-95"
-                                        >
-                                            {t({ en: 'Extend wait time', fr: 'Prolonger l\'attente', ar: 'تمديد وقت الانتظار' })}
-                                        </button>
-                                        <button
-                                            onClick={() => onCancelOrder(order.id!, true)}
-                                            className="flex-1 py-3 bg-white border border-red-200 text-red-500 hover:bg-red-50 rounded-xl text-[14px] font-bold transition-all active:scale-95"
-                                        >
-                                            {t({ en: 'Cancel', fr: 'Annuler', ar: 'إلغاء' })}
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                );
-            })}
-
-            {/* Pending Orders Section */}
-            {pendingOrders.length > 0 && (
-                <div className="space-y-4">
-                    <h2 className="text-[26px] font-black text-black">{t({ en: 'Pending orders', fr: 'Commandes en attente', ar: 'طلبات قيد الانتظار' })}</h2>
-                    <div className="pt-2">{pendingOrders.map(renderOrderCard)}</div>
-                </div>
-            )}
 
             {/* Active Orders Section */}
             <div className="space-y-6">
@@ -1556,6 +1660,14 @@ function ActivityTab({
                     </div>
                 )}
             </div>
+
+            {/* Pending Orders Section */}
+            {pendingOrders.length > 0 && (
+                <div className="space-y-4">
+                    <h2 className="text-[26px] font-black text-black">{t({ en: 'Pending orders', fr: 'Commandes en attente', ar: 'طلبات قيد الانتظار' })}</h2>
+                    <div className="pt-2">{pendingOrders.map(renderOrderCard)}</div>
+                </div>
+            )}
 
             {/* Continue Your Order Section */}
             <div className="space-y-4">

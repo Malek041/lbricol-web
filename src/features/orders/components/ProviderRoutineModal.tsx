@@ -207,7 +207,7 @@ export default function ProviderRoutineModal({
                                                         onChange={(e) => handleTimeChange(day, 'from', e.target.value)}
                                                         className="bg-transparent text-[15px] font-bold text-black outline-none w-full appearance-none pb-1"
                                                     >
-                                                        {TIME_SLOTS.map(t => (
+                                                        {(Array.isArray(TIME_SLOTS) ? TIME_SLOTS : []).map(t => (
                                                             <option key={t} value={t}>{t}</option>
                                                         ))}
                                                     </select>
@@ -220,7 +220,7 @@ export default function ProviderRoutineModal({
                                                         onChange={(e) => handleTimeChange(day, 'to', e.target.value)}
                                                         className="bg-transparent text-[15px] font-bold text-black outline-none w-full appearance-none pb-1"
                                                     >
-                                                        {TIME_SLOTS.map(t => (
+                                                        {(Array.isArray(TIME_SLOTS) ? TIME_SLOTS : []).map(t => (
                                                             <option key={t} value={t}>{t}</option>
                                                         ))}
                                                     </select>

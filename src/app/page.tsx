@@ -2169,7 +2169,8 @@ const Home = () => {
         service, subService, taskSize, description, bricolerId,
         bricolerName, bricolerAvatar, bricolerRating, bricolerRank, bricolerJobsCount,
         city, area, date, time, totalPrice, basePrice, serviceFee,
-        frequency, images, paymentMethod, bankReceipt
+        frequency, images, paymentMethod, bankReceipt,
+        carReturnDate, carReturnTime, selectedCar
       } = data;
 
       let finalTotalPrice = totalPrice || 0;
@@ -2214,8 +2215,11 @@ const Home = () => {
         service: service || "General",
         subService: subService || null,
         subServiceDisplayName: subService ? (data.subServiceName || subService) : null,
+        selectedCar: selectedCar || null,
         date: date || new Date().toLocaleDateString('default', { month: 'long', day: 'numeric', year: 'numeric' }),
         time: time || "As soon as possible",
+        carReturnDate: carReturnDate || null,
+        carReturnTime: carReturnTime || null,
         status: bricolerId && bricolerId !== 'open' ? 'programmed' : 'new',
         offers: [],
         bricolerId: bricolerId || null,
@@ -2461,7 +2465,7 @@ const Home = () => {
         jobId={jobToRate?.id || ''}
         bricolerId={jobToRate?.bricolerId || ''}
         bricolerName={jobToRate?.bricolerName || 'Bricoler'}
-        bricolerAvatar={jobToRate?.bricolerAvatar}
+        bricolerAvatar={jobToRate?.bricolerAvatar || undefined}
         serviceName={jobToRate?.service || ''}
         serviceId={jobToRate?.service}
         subServiceName={jobToRate?.subServiceDisplayName || jobToRate?.subService}
@@ -2728,7 +2732,10 @@ const Home = () => {
                   const finalSvc = cfg?.id || serviceName;
                   let finalSub = sub || null;
                   if (cfg && sub) {
-                    const subCfg = cfg.subServices.find(ss => ss.id === sub || ss.name === sub);
+                    const subCfg = cfg.subServices.find(ss => 
+                      ss.id === sub || ss.name === sub || 
+                      ss.id.toLowerCase().replace(/[_\s-]/g, '') === sub.toLowerCase().replace(/[_\s-]/g, '')
+                    );
                     if (subCfg) finalSub = subCfg.id;
                   }
                   setService(finalSvc);

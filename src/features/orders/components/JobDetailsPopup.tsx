@@ -17,7 +17,7 @@ import {
 import { cn } from '@/lib/utils';
 import { useIsMobileViewport } from '@/lib/mobileOnly';
 import { useLanguage } from '@/context/LanguageContext';
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { WhatsAppBrandIcon } from '@/components/shared/WhatsAppIcon';
 
 export interface JobDetails {
@@ -162,15 +162,39 @@ const JobDetailsPopup: React.FC<JobDetailsPopupProps> = ({ job, onClose, onAccep
 
                         {/* Date & Time */}
                         <div className="flex items-center gap-4 text-neutral-600 mb-6">
-                            <div className="flex items-center gap-2">
-                                <Calendar size={16} />
-                                <span className="text-sm font-semibold">{job.date}</span>
-                            </div>
-                            <span className="text-neutral-300">•</span>
-                            <div className="flex items-center gap-2">
-                                <Clock size={16} />
-                                <span className="text-sm font-semibold">{job.time}</span>
-                            </div>
+                            {job.service === 'car_rental' && job.date && job.carReturnDate ? (
+                                <div className="flex items-center gap-3 bg-neutral-50 px-4 py-3 rounded-xl w-full">
+                                    <div className="flex flex-col">
+                                        <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">{t({ en: 'Pickup', fr: 'Départ' })}</span>
+                                        <div className="flex items-center gap-1.5 font-bold text-neutral-900">
+                                            <span>{format(parseISO(job.date), 'MMM d')}</span>
+                                            <span className="opacity-30">|</span>
+                                            <span>{job.time?.split('-')[0] || '09:00'}</span>
+                                        </div>
+                                    </div>
+                                    <div className="h-8 w-px bg-neutral-200 mx-2" />
+                                    <div className="flex flex-col">
+                                        <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">{t({ en: 'Return', fr: 'Retour' })}</span>
+                                        <div className="flex items-center gap-1.5 font-bold text-neutral-900">
+                                            <span>{format(parseISO(job.carReturnDate), 'MMM d')}</span>
+                                            <span className="opacity-30">|</span>
+                                            <span>{job.carReturnTime?.split('-')[0] || '09:00'}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            ) : (
+                                <>
+                                    <div className="flex items-center gap-2">
+                                        <Calendar size={16} />
+                                        <span className="text-sm font-semibold">{job.date}</span>
+                                    </div>
+                                    <span className="text-neutral-300">•</span>
+                                    <div className="flex items-center gap-2">
+                                        <Clock size={16} />
+                                        <span className="text-sm font-semibold">{job.time}</span>
+                                    </div>
+                                </>
+                            )}
                         </div>
 
                         {/* Client Info */}
@@ -209,10 +233,10 @@ const JobDetailsPopup: React.FC<JobDetailsPopupProps> = ({ job, onClose, onAccep
                                         <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-tighter">{t({ en: 'Daily Rate', fr: 'Prix/Jour' })}</span>
                                         <span className="text-[16px] font-black text-black">{job.selectedCar.pricePerDay || job.selectedCar.price} MAD</span>
                                     </div>
-                                    <div className="flex flex-col">
-                                        <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-tighter">{t({ en: 'Return Date', fr: 'Retour' })}</span>
+                                    <div className="flex flex-col items-end ml-auto">
+                                        <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-tighter">{t({ en: 'Total Price', fr: 'Prix Total' })}</span>
                                         <span className="text-[16px] font-black text-[#00A082]">
-                                            {job.carReturnDate ? format(new Date(job.carReturnDate), 'MMM d, yyyy') : '---'}
+                                            {job.totalPrice || job.price} MAD
                                         </span>
                                     </div>
                                     <div className="flex flex-col">
@@ -241,7 +265,17 @@ const JobDetailsPopup: React.FC<JobDetailsPopupProps> = ({ job, onClose, onAccep
                                 <span className="text-xl font-semibold text-neutral-500">MAD</span>
                             </div>
                             <div className="text-sm text-neutral-500 mt-1">
-                                {t({ en: `For ${job.duration}`, fr: `Pour ${job.duration}`, ar: `لمدة ${job.duration}` })}
+                                {(() => {
+                                    if (job.service === 'car_rental' && job.date && job.carReturnDate) {
+                                        const d = Math.max(1, Math.round((new Date(job.carReturnDate).getTime() - new Date(job.date).getTime()) / 86400000));
+                                        return t({ 
+                                            en: `For ${d} ${d > 1 ? 'days' : 'day'}`, 
+                                            fr: `Pour ${d} ${d > 1 ? 'jours' : 'jour'}`,
+                                            ar: `لمدة ${d} ${d > 1 ? 'أيام' : 'يوم'}`
+                                        });
+                                    }
+                                    return t({ en: `For ${job.duration}`, fr: `Pour ${job.duration}`, ar: `لمدة ${job.duration}` });
+                                })()}
                             </div>
                         </div>
 

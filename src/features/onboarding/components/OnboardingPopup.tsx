@@ -655,6 +655,7 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                 }).flat().map(id => String(id).toLowerCase()).filter(Boolean))],
                 portfolio: allPortfolioUrls,
                 images: allPortfolioUrls,
+                bio: finalCategoryEntries[0]?.pitch || "",
                 experience: finalCategoryEntries[0]?.experience || "",
                 city: selectedCity || "",
                 workAreas: selectedAreas || [],
@@ -662,7 +663,7 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                 createdAt: existingBricoler?.createdAt || (isClaimingShadow ? localUserData.createdAt : null) || serverTimestamp(),
                 isActive: true,
                 isVerified: existingBricoler?.isVerified || (isClaimingShadow ? localUserData.isVerified : false) || false,
-                rating: existingBricoler?.rating || (isClaimingShadow ? localUserData.rating : 5.0) || 5.0,
+                rating: existingBricoler?.rating || (isClaimingShadow ? localUserData.rating : 0) || 0,
                 completedJobs: existingBricoler?.completedJobs || (isClaimingShadow ? localUserData.completedJobs : 0) || 0,
                 numReviews: existingBricoler?.numReviews || (isClaimingShadow ? localUserData.numReviews : 0) || 0,
                 isBricoler: true,
@@ -1714,21 +1715,35 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                                                 return (
                                                     <motion.button
                                                         key={brand.id}
+                                                        whileTap={{ scale: 0.95 }}
+                                                        whileHover={{ y: -2 }}
                                                         onClick={() => setActiveBrandId(brand.id)}
                                                         className="flex flex-col items-center gap-2 flex-shrink-0"
                                                     >
-                                                        <div className={cn(
-                                                            "w-16 h-16 rounded-2xl flex items-center justify-center p-2 transition-all relative",
-                                                            isActive ? "bg-[#00A082]/10 border-2 border-[#00A082]" : "bg-white border-2 border-neutral-100"
-                                                        )}>
+                                                        <motion.div 
+                                                            animate={{ 
+                                                                scale: isActive ? 1.05 : 1,
+                                                                borderColor: isActive ? '#00A082' : '#F0F0F0'
+                                                            }}
+                                                            className={cn(
+                                                                "w-16 h-16 rounded-2xl flex items-center justify-center p-2 transition-all relative",
+                                                                isActive ? "bg-[#00A082]/10 border-2" : "bg-white border-2 border-neutral-100"
+                                                            )}
+                                                        >
                                                             <img src={brand.logo} alt={brand.name} className="w-full h-full object-contain" />
                                                             {hasSelected && (
-                                                                <div className="absolute -top-1 -right-1 w-5 h-5 bg-[#00A082] rounded-full flex items-center justify-center border-2 border-white">
+                                                                <motion.div 
+                                                                    initial={{ scale: 0 }}
+                                                                    animate={{ scale: 1 }}
+                                                                    className="absolute -top-1 -right-1 w-5 h-5 bg-[#00A082] rounded-full flex items-center justify-center border-2 border-white"
+                                                                >
                                                                     <Check size={10} className="text-white" strokeWidth={4} />
-                                                                </div>
+                                                                </motion.div>
                                                             )}
-                                                        </div>
-                                                        <span className={cn("text-xs font-bold", isActive ? "text-[#00A082]" : "text-neutral-500")}>{brand.name}</span>
+                                                        </motion.div>
+                                                        <span className={cn("text-xs font-black transition-colors", isActive ? "text-[#00A082]" : "text-neutral-500")}>
+                                                            {brand.name}
+                                                        </span>
                                                     </motion.button>
                                                 );
                                             })}
@@ -1736,47 +1751,65 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
 
                                         {/* Car Models Grid */}
                                         <div className="grid grid-cols-2 gap-4">
-                                            {CAR_BRANDS.find(b => b.id === activeBrandId)?.models.map((model) => {
-                                                const isSelected = selectedCars.some(c => c.modelId === model.id);
-                                                return (
-                                                    <motion.button
-                                                        key={model.id}
-                                                        onClick={() => {
-                                                            if (isSelected) {
-                                                                setSelectedCars(prev => prev.filter(c => c.modelId !== model.id));
-                                                            } else {
-                                                                const brand = CAR_BRANDS.find(b => b.id === activeBrandId);
-                                                                setSelectedCars(prev => [...prev, {
-                                                                    brandId: activeBrandId,
-                                                                    brandName: brand?.name,
-                                                                    modelId: model.id,
-                                                                    modelName: model.name,
-                                                                    modelImage: model.image,
-                                                                    quantity: 1,
-                                                                    pricePerDay: 300 // default price
-                                                                }]);
-                                                            }
-                                                        }}
-                                                        className={cn(
-                                                            "group p-4 rounded-3xl border-2 transition-all text-left space-y-3",
-                                                            isSelected ? "border-[#00A082] bg-[#E6F6F2]" : "border-neutral-100 bg-white"
-                                                        )}
-                                                    >
-                                                        <div className="aspect-[4/3] w-full overflow-hidden rounded-xl bg-neutral-50 p-2">
-                                                            <img src={model.image} alt={model.name} className="w-full h-full object-contain group-hover:scale-110 transition-transform duration-500" />
-                                                        </div>
-                                                        <div className="flex items-center justify-between">
-                                                            <span className="font-bold text-neutral-900">{model.name}</span>
-                                                            <div className={cn(
-                                                                "w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all",
-                                                                isSelected ? "bg-[#00A082] border-[#00A082] text-white" : "border-neutral-200"
-                                                            )}>
-                                                                {isSelected && <Check size={14} strokeWidth={4} />}
+                                            <AnimatePresence mode="popLayout">
+                                                {CAR_BRANDS.find(b => b.id === activeBrandId)?.models.map((model, idx) => {
+                                                    const isSelected = selectedCars.some(c => c.modelId === model.id);
+                                                    return (
+                                                        <motion.button
+                                                            key={`${activeBrandId}-${model.id}`}
+                                                            initial={{ opacity: 0, scale: 0.9, y: 15, rotateX: 15 }}
+                                                            animate={{ opacity: 1, scale: 1, y: 0, rotateX: 0 }}
+                                                            exit={{ opacity: 0, scale: 0.9, y: 10, rotateX: -10 }}
+                                                            transition={{ 
+                                                                duration: 0.4,
+                                                                delay: idx * 0.04,
+                                                                ease: [0.165, 0.84, 0.44, 1] // easeOutQuart for smooth emergence
+                                                            }}
+                                                            // ...rest stays same
+                                                            onClick={() => {
+                                                                if (isSelected) {
+                                                                    setSelectedCars(prev => prev.filter(c => c.modelId !== model.id));
+                                                                } else {
+                                                                    const brand = CAR_BRANDS.find(b => b.id === activeBrandId);
+                                                                    setSelectedCars(prev => [...prev, {
+                                                                        brandId: activeBrandId,
+                                                                        brandName: brand?.name,
+                                                                        modelId: model.id,
+                                                                        modelName: model.name,
+                                                                        modelImage: model.image,
+                                                                        quantity: 1,
+                                                                        pricePerDay: 300 // default price
+                                                                    }]);
+                                                                }
+                                                            }}
+                                                            className={cn(
+                                                                "group p-4 rounded-3xl border-2 transition-all text-left space-y-3",
+                                                                isSelected ? "border-[#00A082] bg-[#E6F6F2]" : "border-neutral-100 bg-white"
+                                                            )}
+                                                        >
+                                                            <div className="aspect-[4/3] w-full overflow-hidden rounded-xl bg-neutral-50 p-2">
+                                                                <motion.img 
+                                                                    initial={{ scale: 1.2, opacity: 0 }}
+                                                                    animate={{ scale: 1, opacity: 1 }}
+                                                                    transition={{ delay: idx * 0.03 + 0.1, duration: 0.5 }}
+                                                                    src={model.image} 
+                                                                    alt={model.name} 
+                                                                    className="w-full h-full object-contain group-hover:scale-110 transition-transform duration-500" 
+                                                                />
                                                             </div>
-                                                        </div>
-                                                    </motion.button>
-                                                );
-                                            })}
+                                                            <div className="flex items-center justify-between">
+                                                                <span className="font-bold text-neutral-900">{model.name}</span>
+                                                                <div className={cn(
+                                                                    "w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all",
+                                                                    isSelected ? "bg-[#00A082] border-[#00A082] text-white" : "border-neutral-200"
+                                                                )}>
+                                                                    {isSelected && <Check size={14} strokeWidth={4} />}
+                                                                </div>
+                                                            </div>
+                                                        </motion.button>
+                                                    );
+                                                })}
+                                            </AnimatePresence>
                                         </div>
                                     </motion.div>
                                 )}
