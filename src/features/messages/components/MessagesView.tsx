@@ -133,7 +133,7 @@ const MessagesView: React.FC<MessagesViewProps> = ({
                         jobId: order.id!,
                         participantId: participantId,
                         participantName: (currentUser.uid === order.clientId ? order.bricolerName : order.clientName) || 'User',
-                        participantAvatar: currentUser.uid === order.clientId ? order.bricolerAvatar : order.clientAvatar,
+                        participantAvatar: (currentUser.uid === order.clientId ? order.bricolerAvatar : order.clientAvatar) || undefined,
                         lastMessage: lastMsgData?.text || t({ en: 'Send a message to start', fr: 'Envoyez un message pour commencer' }),
                         lastMessageTime: lastMsgData?.timestamp || null,
                         jobTitle: order.service,
