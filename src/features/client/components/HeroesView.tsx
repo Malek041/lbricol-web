@@ -132,7 +132,7 @@ export default function HeroesView({ orders }: HeroesViewProps) {
                 map.set(hid, {
                     id: hid,
                     name: o.bricolerName!,
-                    avatar: o.bricolerAvatar,
+                    avatar: o.bricolerAvatar || undefined,
                     rating: o.bricolerRating || 0, // No longer defaulting to 5.0 if not rated
                     jobsCount: o.bricolerJobsCount || 0, // Ensuring honest jobs count too
                     services: [o.service]
