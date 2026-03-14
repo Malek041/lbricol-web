@@ -185,6 +185,7 @@ interface MobileJobsViewItem {
     statusLabel: string;
     clientName: string;
     clientAvatar?: string;
+    duration?: string;
     clientRating?: number;
     clientReviewCount?: number;
     city: string;
@@ -507,7 +508,8 @@ export default function ProviderPage() {
             selectedCar: raw.selectedCar,
             carReturnDate: raw.carReturnDate,
             carReturnTime: raw.carReturnTime,
-            totalPrice: raw.totalPrice
+            totalPrice: raw.totalPrice,
+            duration: raw.duration || (raw.carReturnDate && raw.date ? `${Math.max(1, Math.round((new Date(raw.carReturnDate).getTime() - new Date(raw.date).getTime()) / 86400000))} j` : undefined)
         };
     }, [user, formatJobPrice, t]);
 
@@ -933,7 +935,12 @@ export default function ProviderPage() {
                         image: data.images && data.images.length > 0 ? data.images[0] : undefined,
                         images: Array.isArray(data.images) ? data.images : [],
                         createdAt: data.createdAt,
-                        clientId: data.clientId
+                        clientId: data.clientId,
+                        selectedCar: data.selectedCar,
+                        carReturnDate: data.carReturnDate,
+                        carReturnTime: data.carReturnTime,
+                        totalPrice: data.totalPrice,
+                        basePrice: data.basePrice
                     } as any);
                 });
 
@@ -1002,7 +1009,12 @@ export default function ProviderPage() {
                         clientAvatar: data.clientAvatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${data.clientId}`,
                         confirmedAt: data.confirmedAt,
                         description: data.description || data.comment || '',
-                        providerConfirmed: data.providerConfirmed
+                        providerConfirmed: data.providerConfirmed,
+                        selectedCar: data.selectedCar,
+                        carReturnDate: data.carReturnDate,
+                        carReturnTime: data.carReturnTime,
+                        totalPrice: data.totalPrice,
+                        basePrice: data.basePrice
                     });
                 });
                 setAcceptedJobs(myJobs);
@@ -2189,18 +2201,24 @@ export default function ProviderPage() {
                                     </h2>
                                     <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[18px] font-semibold text-black mt-1">
                                         <div className="flex items-center gap-2">
-                                            <span>{dateStr}</span>
+                                            <span>{job.rawAccepted?.service?.toLowerCase().includes('rental') || job.rawJob?.craft?.toLowerCase().includes('rental') 
+                                                ? formatJobDate(job.rawAccepted?.date || job.rawJob?.date || job.dateLabel) 
+                                                : job.dateLabel}
+                                            </span>
                                             <span className="text-neutral-200">|</span>
                                             <span>{timeStr}</span>
                                         </div>
                                         {job.carReturnDate && (
                                             <div className="flex items-center gap-2">
-                                                <span className="text-neutral-300">-</span>
+                                                <ChevronRight size={18} className="text-neutral-300" />
                                                 <span>{formatJobDate(job.carReturnDate)}</span>
                                                 <span className="text-neutral-200">|</span>
                                                 <span>{job.carReturnTime || t({ en: 'Flexible', fr: 'Flexible', ar: 'مرن' })}</span>
                                             </div>
                                         )}
+                                        <span className="text-neutral-400 font-light ml-1">
+                                            , {new Date(job.rawAccepted?.date || job.rawJob?.date || Date.now()).getFullYear()}
+                                        </span>
                                     </div>
                                     <p className="text-[12px] font-light text-black uppercase tracking-[0.2em] mt-2">
                                         {t({ en: 'ORDER ID', fr: 'ID DE COMMANDE' })}: #{job.id?.slice(-8).toUpperCase() || '---'}
@@ -2242,7 +2260,7 @@ export default function ProviderPage() {
                                             <div className="flex flex-col items-end">
                                                 <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-tighter">{t({ en: 'Total Price', fr: 'Prix Total', ar: 'السعر الإجمالي' })}</span>
                                                 <span className="text-[16px] font-black text-[#00A082] italic">
-                                                    {job.priceLabel}
+                                                    {job.priceLabel} {t({ en: 'MAD', fr: 'MAD', ar: 'درهم' })}
                                                 </span>
                                             </div>
                                         </div>
@@ -2271,7 +2289,16 @@ export default function ProviderPage() {
                                         </div>
                                         <div className="flex flex-col">
                                             <span className="text-[12px] font-bold text-neutral-400 uppercase tracking-wider">{t({ en: 'Duration', fr: 'Durée' })}</span>
-                                            <span className="text-[16px] font-black text-black">{job.rawAccepted?.duration || job.rawJob?.duration || t({ en: 'Flexible', fr: 'Flexible' })}</span>
+                                            <span className="text-[16px] font-black text-black">
+                                                {(() => {
+                                                    const startDateStr = job.rawAccepted?.date || job.rawJob?.date;
+                                                    if (startDateStr && job.carReturnDate) {
+                                                        const d = Math.max(1, Math.round((new Date(job.carReturnDate).getTime() - new Date(startDateStr).getTime()) / 86400000));
+                                                        return `${d} ${t({ en: d > 1 ? 'days' : 'day', fr: d > 1 ? 'jours' : 'jour' })}`;
+                                                    }
+                                                    return job.rawAccepted?.duration || job.rawJob?.duration || job.duration || t({ en: 'Flexible', fr: 'Flexible' });
+                                                })()}
+                                            </span>
                                         </div>
                                     </div>
                                     <div className="bg-neutral-50 rounded-2xl p-4 flex items-center gap-4 border border-neutral-100/50">
@@ -2289,7 +2316,9 @@ export default function ProviderPage() {
                                         </div>
                                         <div className="flex flex-col overflow-hidden">
                                             <span className="text-[12px] font-bold text-neutral-400 uppercase tracking-wider">{t({ en: 'Service', fr: 'Service' })}</span>
-                                            <span className="text-[16px] font-black text-black truncate">{job.rawAccepted?.service || job.rawJob?.craft}</span>
+                                            <span className="text-[16px] font-black text-black truncate capitalize">
+                                                {(job.rawAccepted?.service || job.rawJob?.craft || '').replace(/_/g, ' ')}
+                                            </span>
                                         </div>
                                     </div>
                                     <div className="bg-neutral-50 rounded-2xl p-4 flex items-center gap-4 border border-neutral-100/50">

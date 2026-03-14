@@ -75,6 +75,7 @@ export interface OrderDetails {
     carReturnDate?: string | null;
     carReturnTime?: string | null;
     durationDays?: number;
+    basePrice?: number;
 }
 
 interface OrderCardProps {

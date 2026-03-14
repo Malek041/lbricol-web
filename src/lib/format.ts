@@ -4,9 +4,8 @@ export const formatJobDate = (value: string) => {
     const parsed = Date.parse(value);
     if (!Number.isNaN(parsed)) {
         return new Date(parsed).toLocaleDateString('en-US', {
-            month: 'long',
-            day: 'numeric',
-            year: 'numeric'
+            month: 'short',
+            day: 'numeric'
         });
     }
     return value;
