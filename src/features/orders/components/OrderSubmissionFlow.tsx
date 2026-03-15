@@ -2657,12 +2657,20 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
         if (isSubmitting) return;
 
         if (isUploadingReceipt) {
-            alert(t({ en: 'Please wait for the receipt photo to finish uploading...', fr: 'Veuillez patienter pendant le téléchargement de la photo du reçu...', ar: 'يرجى الانتظار حتى يتم تحميل صورة الإيصال...' }));
+            showToast({
+                variant: 'info',
+                title: t({ en: 'Notice', fr: 'Remarque', ar: 'ملاحظة' }),
+                description: t({ en: 'Please wait for the receipt photo to finish uploading...', fr: 'Veuillez patienter pendant le téléchargement de la photo du reçu...', ar: 'يرجى الانتظار حتى يتم تحميل صورة الإيصال...' })
+            });
             return;
         }
 
         if (paymentMethod === 'bank' && !bankReceipt) {
-            alert(t({ en: 'Please upload your transfer receipt before programming the mission.', fr: 'Veuillez télécharger votre reçu de virement avant de programmer la mission.', ar: 'يرجى تحميل إيصال التحويل قبل برمجة المهمة.' }));
+            showToast({
+                variant: 'error',
+                title: t({ en: 'Missing Receipt', fr: 'Reçu manquant', ar: 'إيصال مفقود' }),
+                description: t({ en: 'Please upload your transfer receipt before programming the mission.', fr: 'Veuillez télécharger votre reçu de virement avant de programmer la mission.', ar: 'يرجى تحميل إيصال التحويل قبل برمجة المهمة.' })
+            });
             return;
         }
 
@@ -2727,9 +2735,13 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                     const blob = await dataUrlToBlob(bankReceipt);
                     const storagePath = `receipts/${user?.uid || 'anonymous'}/${Date.now()}_receipt.jpg`;
                     finalBankReceiptUrl = await uploadImageToStorage(blob, storagePath);
-                } catch (err) {
+                } catch (err: any) {
                     console.error("Error uploading receipt:", err);
-                    alert(t({ en: 'Failed to upload receipt.', fr: 'Échec du téléchargement du reçu.' }));
+                    showToast({
+                        variant: 'error',
+                        title: t({ en: 'Upload Failed', fr: 'Échec du téléchargement', ar: 'فشل التحميل' }),
+                        description: err.message || t({ en: 'Failed to upload receipt. Please try again.', fr: 'Échec du téléchargement du reçu. Veuillez réessayer.', ar: 'فشل في تحميل الإيصال. يرجى المحاولة مرة أخرى.' })
+                    });
                     setIsSubmitting(false);
                     return;
                 }
@@ -2812,8 +2824,13 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                     } catch (e) { }
                 }
             }
-        } catch (err) {
+        } catch (err: any) {
             console.error("Submission error:", err);
+            showToast({
+                variant: 'error',
+                title: t({ en: 'Submission Failed', fr: 'Échec de la soumission', ar: 'فشل التقديم' }),
+                description: err.message || t({ en: 'An unexpected error occurred while submitting your order.', fr: 'Une erreur inattendue s\'est produite lors de la soumission de votre commande.', ar: 'حدث خطأ غير متوقع أثناء تقديم طلبك.' })
+            });
         } finally {
             setIsSubmitting(false);
         }

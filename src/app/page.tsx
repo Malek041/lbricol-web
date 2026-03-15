@@ -2282,8 +2282,6 @@ const Home = () => {
         jobData.images = resolved.filter(Boolean) as string[];
       }
 
-      const docRef = await addDoc(collection(db, 'jobs'), jobData);
-      console.log("Quick Job saved with ID:", docRef.id);
       // Check and upload bank receipt if it's a data URL
       if (jobData.bankReceipt && isImageDataUrl(jobData.bankReceipt)) {
         try {
@@ -2299,7 +2297,8 @@ const Home = () => {
         }
       }
 
-      // Note: order was already saved above (before image uploads) so docRef is available
+      const docRef = await addDoc(collection(db, 'jobs'), jobData);
+      console.log("Quick Job saved with ID:", docRef.id);
 
       // Activity Log
       await addDoc(collection(db, 'activity'), {
