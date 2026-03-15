@@ -578,9 +578,13 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
                     rating: rating,
                 });
             }
-
             const jobRef = doc(db, 'jobs', order.id);
-            await updateDoc(jobRef, { rated: true });
+            await updateDoc(jobRef, { 
+                rated: true,
+                clientRating: rating,
+                clientReview: review,
+                rating: rating
+            });
 
             setIsRatedLocally(prev => [...prev, order.id!]);
             setRating(0);
@@ -611,9 +615,9 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
                     />
                 ) : (
                     <img
-                        src={getHeroImage(order.service)}
+                        src={getServiceVector(order.service)}
                         alt={order.service}
-                        className="w-full h-full object-cover"
+                        className="w-full h-full object-contain p-2"
                     />
                 )}
             </div>

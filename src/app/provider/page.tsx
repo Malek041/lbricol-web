@@ -831,7 +831,20 @@ export default function ProviderPage() {
                     const startTs = parseDateTime(job.date, job.time);
                     if (!startTs) continue;
 
-                    const endTs = startTs + (durationHours * 60 * 60 * 1000);
+                    let endTs = startTs + (durationHours * 60 * 60 * 1000);
+                    
+                    const isCarRental = job.service === 'car_rental' || job.craft === 'Car rental' || job.craft === 'car_rental';
+                    if (isCarRental && job.carReturnDate) {
+                        const rawReturnTime = (job.carReturnTime || '').split('-')[0].trim();
+                        const returnTimePart = rawReturnTime.includes(':') 
+                            ? (rawReturnTime.split(':').length === 2 ? `${rawReturnTime}:00` : rawReturnTime) 
+                            : '23:59:00';
+                        const returnDatePart = job.carReturnDate.split('T')[0];
+                        const parsedDate = new Date(`${returnDatePart}T${returnTimePart}`);
+                        if (!isNaN(parsedDate.getTime())) {
+                            endTs = parsedDate.getTime();
+                        }
+                    }
 
                     if (now.getTime() > endTs) {
                         console.log(`[Auto-Deliver] Job ${job.id} has passed duration (${durationHours}h). Marking as delivered.`);
@@ -1228,7 +1241,20 @@ export default function ProviderPage() {
                 // Get duration in hours from string like '2h-3h' or '2'
                 const durStr = job.duration || '2';
                 const hours = parseInt(durStr.split('-')[0]) || 2;
-                const endTs = startTs + (hours * 3600 * 1000);
+                let endTs = startTs + (hours * 3600 * 1000);
+
+                const isCarRental = job.service === 'car_rental' || job.craft === 'Car rental' || job.craft === 'car_rental';
+                if (isCarRental && job.carReturnDate) {
+                    const rawReturnTime = (job.carReturnTime || '').split('-')[0].trim();
+                    const returnTimePart = rawReturnTime.includes(':') 
+                        ? (rawReturnTime.split(':').length === 2 ? `${rawReturnTime}:00` : rawReturnTime) 
+                        : '23:59:00';
+                    const returnDatePart = job.carReturnDate.split('T')[0];
+                    const parsedDate = new Date(`${returnDatePart}T${returnTimePart}`);
+                    if (!isNaN(parsedDate.getTime())) {
+                        endTs = parsedDate.getTime();
+                    }
+                }
 
                 if (now.getTime() > endTs) {
                     // Auto mark as done

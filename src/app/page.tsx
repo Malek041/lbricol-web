@@ -34,6 +34,9 @@ import RatingPopup from '@/features/orders/components/RatingPopup';
 import ClientNotificationsView from '@/features/client/components/ClientNotificationsView';
 import AdminNotificationsView from '@/features/admin/components/AdminNotificationsView';
 import AdminReceivablesView from '@/features/admin/components/AdminReceivablesView';
+import LocationPicker from '@/components/location-picker/LocationPicker';
+import LocationPermissionPopup from '@/components/location-picker/LocationPermissionPopup';
+import { SavedAddress } from '@/components/location-picker/types';
 import {
   MapPin,
   ChevronDown,
@@ -86,6 +89,7 @@ import {
 } from 'react-icons/fa6';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLanguage } from '@/context/LanguageContext';
+import { MOROCCAN_CITIES, MOROCCAN_CITIES_AREAS } from '@/config/moroccan_areas';
 import { useTheme } from '@/context/ThemeContext';
 import { useToast } from '@/context/ToastContext';
 import MillionsImpactSection from '@/components/shared/MillionsImpactSection';
@@ -285,9 +289,29 @@ const Home = () => {
   const [showAdminNotifications, setShowAdminNotifications] = useState(false);
   const [showAdminReceivables, setShowAdminReceivables] = useState(false);
   const [unreadNotifsCount, setUnreadNotifsCount] = useState(0);
-
-
   const [mounted, setMounted] = useState(false);
+  const [showLocationPicker, setShowLocationPicker] = useState(false);
+  const [showLocationPermissionPopup, setShowLocationPermissionPopup] = useState(false);
+  const [autoLocateOnPickerOpen, setAutoLocateOnPickerOpen] = useState(false);
+  const [userSavedAddresses, setUserSavedAddresses] = useState<SavedAddress[]>([]);
+
+  // Persist Addresses
+  useEffect(() => {
+    const saved = localStorage.getItem('lbricol_saved_addresses');
+    if (saved) {
+      try {
+        setUserSavedAddresses(JSON.parse(saved));
+      } catch (e) {
+        console.error("Error parsing saved addresses", e);
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    if (mounted) {
+      localStorage.setItem('lbricol_saved_addresses', JSON.stringify(userSavedAddresses));
+    }
+  }, [userSavedAddresses, mounted]);
 
   // Form States
   const [service, setService] = useState("");
@@ -520,7 +544,7 @@ const Home = () => {
       if (!savedLang) {
         setShowLanguagePopup(true);
       } else if (!savedCity) {
-        setShowCityPopup(true);
+        setShowLocationPermissionPopup(true);
       } else {
         // Migration and Sync
         let migratedCity = savedCity;
@@ -886,6 +910,51 @@ const Home = () => {
     } catch (err) {
       console.error(err);
     }
+  };
+
+  const handleLocationConfirm = (result: { pickup: any; dropoff?: any; savedAddress?: SavedAddress }) => {
+    const { pickup, savedAddress } = result;
+    const address = savedAddress?.address || pickup.address || '';
+    const lowerAddress = address.toLowerCase();
+
+    // 1. Find City
+    let city = MOROCCAN_CITIES.find((c: string) => lowerAddress.includes(c.toLowerCase())) || 'Casablanca';
+    
+    // 2. Find Area within that city
+    const areaList = MOROCCAN_CITIES_AREAS[city] || [];
+    let area = '';
+
+    // Sort areaList by length (longest first) to match most specific area
+    const sortedAreas = [...areaList].sort((a, b) => b.length - a.length);
+    const matchedArea = sortedAreas.find((a: string) => lowerAddress.includes(a.toLowerCase()));
+
+    if (matchedArea) {
+      area = matchedArea;
+    } else {
+      // Fallback: Check if any other city's area matches (maybe city detection was wrong)
+      for (const [c, areas] of Object.entries(MOROCCAN_CITIES_AREAS)) {
+        const sorted = [...areas].sort((a, b) => b.length - a.length);
+        const match = sorted.find((a: string) => lowerAddress.includes(a.toLowerCase()));
+        if (match) {
+          city = c;
+          area = match;
+          break;
+        }
+      }
+    }
+
+    // Default to first area if still none found
+    if (!area && areaList.length > 0) {
+      area = areaList[0];
+    }
+
+    setSelectedCity(city);
+    setSelectedArea(area);
+    setLocation(city);
+    localStorage.setItem('lbricol_preferred_city', city);
+    localStorage.setItem('lbricol_preferred_area', area);
+    setShowLocationPicker(false);
+    setShowCityPopup(false);
   };
 
   const handleAdminAction = async (code?: string) => {
@@ -1347,7 +1416,7 @@ const Home = () => {
     setLanguage(lang);
     setShowLanguagePopup(false);
     if (!selectedCity) {
-      setShowCityPopup(true);
+      setShowLocationPermissionPopup(true);
     } else {
       setActiveSearchSection('what');
     }
@@ -2459,6 +2528,43 @@ const Home = () => {
 
 
 
+      <AnimatePresence>
+        {showLocationPicker && (
+          <LocationPicker
+            mode="single"
+            serviceType="general"
+            onConfirm={handleLocationConfirm}
+            onClose={() => setShowLocationPicker(false)}
+            savedAddresses={userSavedAddresses}
+            autoLocate={autoLocateOnPickerOpen}
+            onSaveAddress={(addr) => {
+              setUserSavedAddresses(prev => {
+                const exists = prev.find(a => a.id === addr.id);
+                if (exists) return prev.map(a => a.id === addr.id ? addr : a);
+                return [addr, ...prev];
+              });
+            }}
+            onDeleteAddress={(id) => {
+              setUserSavedAddresses(prev => prev.filter(a => a.id !== id));
+            }}
+          />
+        )}
+      </AnimatePresence>
+
+      <LocationPermissionPopup
+        isOpen={showLocationPermissionPopup}
+        onAllow={() => {
+          setShowLocationPermissionPopup(false);
+          setAutoLocateOnPickerOpen(true);
+          setShowLocationPicker(true);
+        }}
+        onDeny={() => {
+          setShowLocationPermissionPopup(false);
+          setAutoLocateOnPickerOpen(false);
+          setShowLocationPicker(true);
+        }}
+      />
+
       <RatingPopup
         isOpen={!!jobToRate}
         onClose={() => setJobToRate(null)}
@@ -2748,7 +2854,7 @@ const Home = () => {
                 trendingSubServiceIds={trendingSubServices}
                 popularServiceIds={popularServiceIds}
 
-                onChangeLocation={() => setShowCityPopup(true)}
+                onChangeLocation={() => setShowLocationPicker(true)}
                 onNavigateToShare={() => setMobileNavTab('share')}
                 showOnboarding={showClientOnboarding}
                 onOnboardingComplete={() => {
@@ -3528,7 +3634,7 @@ const Home = () => {
             if (!onboardingShown) {
               setShowClientOnboarding(true);
             } else if (!selectedCity && !localStorage.getItem('lbricol_preferred_city')) {
-              setShowCityPopup(true);
+              setShowLocationPermissionPopup(true);
             }
           }}
           onSelectLanguage={handleLanguageSelect}
