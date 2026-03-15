@@ -472,6 +472,9 @@ const BricolerCard = ({
                         src={bricoler.photoURL || "/Images/Logo/Black Lbricol Avatar Face.webp"}
                         alt={bricoler.displayName}
                         className="w-16 h-16 rounded-full object-cover border border-neutral-100 bg-neutral-50"
+                        onError={(e) => {
+                            (e.target as HTMLImageElement).src = "/Images/Logo/Black Lbricol Avatar Face.webp";
+                        }}
                     />
                 </div>
 

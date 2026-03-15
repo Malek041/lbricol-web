@@ -772,13 +772,65 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
             // was being garbage-collected or the promise died after component unmount.
             // We now upload BEFORE calling onComplete so images are guaranteed to save.
 
-            let finalUploadedProfilePhotoUrl = finalProfilePhotoUrl;
-            let finalUploadedCategoryEntries = finalCategoryEntries;
-            let finalUploadedTourGuideUrl = finalTourGuideUrl;
+            let uploadedProfilePhotoUrl = finalProfilePhotoUrl;
+            let finalizedCategoryEntries = finalCategoryEntries;
 
-            // Note: Media uploads are now disabled. The initial setDoc already saved all information.
+            if (hasPendingProfileUpload || hasPendingServiceUploads || hasPendingTourGuideUpload) {
+                setSubmittingStatus("Uploading media...");
+                try {
+                    const uploadProfileTask = resolveProfilePhoto(user.uid, profilePhotoUrl);
+                    const uploadEntriesTask = attachUploadedImagesToEntries(user.uid, initialEntries);
+                    
+                    let uploadTourGuideTask = Promise.resolve(finalTourGuideUrl);
+                    if (hasPendingTourGuideUpload && tourGuideAuthorizationFile) {
+                        uploadTourGuideTask = (async () => {
+                            const res = await safeUploadBlob(ref(storage, `verifications/${user!.uid}/${Date.now()}_tour_guide`), tourGuideAuthorizationFile);
+                            return await getDownloadURL(res.ref);
+                        })();
+                    }
+
+                    const [newProfileUrl, newEntries, newTourGuideUrl] = await Promise.all([
+                        uploadProfileTask,
+                        uploadEntriesTask,
+                        uploadTourGuideTask
+                    ]);
+
+                    uploadedProfilePhotoUrl = newProfileUrl || finalProfilePhotoUrl;
+                    finalizedCategoryEntries = newEntries;
+                    const updatedTourGuideUrl = newTourGuideUrl || finalTourGuideUrl;
+
+                    // Update Firestore with final URLs
+                    setSubmittingStatus("Finalizing...");
+                    const finalPortfolio = Array.from(new Set(finalizedCategoryEntries.flatMap(e => normalizeImageList(e.portfolioImages))));
+                    
+                    await updateDoc(bricolerRef, {
+                        avatar: uploadedProfilePhotoUrl,
+                        profilePhotoURL: uploadedProfilePhotoUrl,
+                        photoURL: uploadedProfilePhotoUrl || bricolerData.photoURL,
+                        services: finalizedCategoryEntries,
+                        portfolio: finalPortfolio,
+                        images: finalPortfolio,
+                        tourGuideAuthorizationUrl: updatedTourGuideUrl
+                    });
+
+                    // Update client doc too
+                    await updateDoc(doc(db, 'clients', user.uid), {
+                        photoURL: uploadedProfilePhotoUrl || bricolerData.photoURL
+                    });
+
+                } catch (mediaError) {
+                    console.error("Media upload failed:", mediaError);
+                    // We don't block the whole process, but we inform the user
+                    showToast({
+                        variant: 'info',
+                        title: t({ en: 'Media upload issue', fr: 'Problème de téléversement' }),
+                        description: t({ en: 'Some photos might not have saved correctly.', fr: 'Certaines photos peuvent ne pas avoir été enregistrées.' })
+                    });
+                }
+            }
+
             setSubmittingStatus("Complete!");
-            onComplete({ services: finalUploadedCategoryEntries, city: selectedCity, availability });
+            onComplete({ services: finalizedCategoryEntries, city: selectedCity, availability });
 
         } catch (error: any) {
             console.error('Signup error:', error);

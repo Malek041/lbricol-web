@@ -212,6 +212,9 @@ const ProfileView: React.FC<ProfileViewProps> = ({
                                     src={userData?.profilePhotoURL || userData?.avatar || userAvatar || userData?.photoURL || "/Images/Vectors Illu/LbricolFaceOY.webp"}
                                     alt={displayName}
                                     className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                                    onError={(e) => {
+                                        (e.target as HTMLImageElement).src = "/Images/Vectors Illu/LbricolFaceOY.webp";
+                                    }}
                                 />
                             </motion.div>
                             <div className="absolute -bottom-1 -right-1 w-10 h-10 bg-[#00A082] rounded-2xl border-4 border-white flex items-center justify-center">

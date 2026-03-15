@@ -347,6 +347,9 @@ export default function HeroesView({ orders }: HeroesViewProps) {
                                     src={hero.avatar || "/Images/Logo/Black Lbricol Avatar Face.webp"}
                                     alt={hero.name}
                                     className="w-16 h-16 rounded-[14px] object-cover bg-neutral-100"
+                                    onError={(e) => {
+                                        (e.target as HTMLImageElement).src = "/Images/Logo/Black Lbricol Avatar Face.webp";
+                                    }}
                                 />
                                 <div className="flex-1">
                                     <div className="flex justify-between items-start">

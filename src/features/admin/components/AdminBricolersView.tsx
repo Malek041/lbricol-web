@@ -257,7 +257,14 @@ const BricolerCard = ({ b, t, expandedId, setExpandedId, toggleStatus, handleDel
       <div className="flex items-start gap-3">
         <div className="w-10 h-10 rounded-2xl bg-neutral-100 flex items-center justify-center overflow-hidden">
           {b.photoURL || b.avatar ? (
-            <img src={b.photoURL || b.avatar} alt="Profile" className="w-full h-full object-cover" />
+            <img
+              src={b.photoURL || b.avatar || "/Images/Logo/Black Lbricol Avatar Face.webp"}
+              alt="Profile"
+              className="w-full h-full object-cover"
+              onError={(e) => {
+                (e.target as HTMLImageElement).src = "/Images/Logo/Black Lbricol Avatar Face.webp";
+              }}
+            />
           ) : (
             <UserIcon size={20} className="text-neutral-500" />
           )}
@@ -352,7 +359,18 @@ const ReceivableCard = ({ b, t, onMarkAsPaid }: any) => (
     <div className="flex items-center justify-between">
       <div className="flex items-center gap-3">
         <div className="w-12 h-12 rounded-2xl bg-neutral-100 flex items-center justify-center overflow-hidden">
-          {b.photoURL || b.avatar ? <img src={b.photoURL || b.avatar} alt="Profile" className="w-full h-full object-cover" /> : <UserIcon size={24} className="text-neutral-500" />}
+          {b.photoURL || b.avatar ? (
+            <img
+              src={b.photoURL || b.avatar}
+              alt="Profile"
+              className="w-full h-full object-cover"
+              onError={(e) => {
+                (e.target as HTMLImageElement).src = "/Images/Logo/Black Lbricol Avatar Face.webp";
+              }}
+            />
+          ) : (
+            <UserIcon size={24} className="text-neutral-500" />
+          )}
         </div>
         <div>
           <h3 className="font-black text-black">{b.name}</h3>
@@ -419,7 +437,14 @@ const BricolerProfileBottomSheet = ({ bricoler, isOpen, onClose, t }: any) => {
               <div className="flex items-center gap-4">
                 <div className="w-16 h-16 rounded-2xl bg-neutral-100 flex items-center justify-center overflow-hidden border-2 border-white shadow-sm">
                   {bricoler.photoURL || bricoler.avatar ? (
-                    <img src={bricoler.photoURL || bricoler.avatar} alt="Profile" className="w-full h-full object-cover" />
+                    <img
+                      src={bricoler.photoURL || bricoler.avatar}
+                      alt="Profile"
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = "/Images/Logo/Black Lbricol Avatar Face.webp";
+                      }}
+                    />
                   ) : (
                     <UserIcon size={32} className="text-neutral-400" />
                   )}
