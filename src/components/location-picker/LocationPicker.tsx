@@ -147,11 +147,8 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
 
   return (
     <div className="fixed inset-0 bg-white z-[6000] flex flex-col font-jakarta transition-all overflow-hidden">
-      {/* 1. Map Area (Resizable Window) */}
-      <div
-        className={`relative bg-neutral-100 overflow-hidden transition-all duration-300 ease-in-out z-0 ${isInteracting ? 'h-[75%]' : 'h-[48%]'
-          }`}
-      >
+      {/* 1. Map Area (Fixed Height) */}
+      <div className="relative h-[48%] bg-neutral-100 overflow-hidden z-0 shrink-0">
         {/* Full-screen under-layer map */}
         <div className="absolute top-0 left-0 w-full h-[100dvh]">
             <MapView
@@ -160,7 +157,7 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
                 flyToPoint={flyToPoint || undefined}
                 onInteractionStart={() => setIsInteracting(true)}
                 onInteractionEnd={() => setIsInteracting(false)}
-                pinY={isInteracting ? 35 : 24} // Adjust pinY when map expands
+                pinY={24}
             />
         </div>
 
@@ -176,7 +173,7 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
             </button>
           </div>
           {/* GPS Locate Button */}
-          <div className="absolute bottom-12 right-4 pointer-events-auto">
+          <div className="absolute bottom-4 right-4 pointer-events-auto">
             <button
               onClick={handleLocate}
               className="w-11 h-11 bg-white rounded-full shadow-[0_2px_8px_rgba(0,0,0,0.15)] flex items-center justify-center text-[#374151] active:scale-95 transition-transform"
@@ -208,8 +205,8 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
 
       {/* 3. TRULY FIXED PIN & CALLOUT — Always in visual center of initial view */}
       <div
-        className="fixed left-1/2 -translate-x-1/2 -translate-y-full pointer-events-none z-[6001]"
-        style={{ top: isInteracting ? '35%' : '24%' }}
+        className="fixed left-1/2 -translate-x-1/2 -translate-y-full pointer-events-none z-[6001] transition-all duration-300 ease-in-out"
+        style={{ top: '24%' }}
       >
         {/* The Address Bubble (appears above the pin) */}
         {currentPoint && (

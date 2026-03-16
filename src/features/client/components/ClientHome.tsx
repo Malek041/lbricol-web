@@ -868,7 +868,7 @@ const ClientHome: React.FC<ClientHomeProps> = ({
                                         transition={{ duration: 0.6, ease: "easeOut" }}
                                         className="font-black leading-[1.05] tracking-tighter text-[#1D1D1D] mx-auto relative overflow-hidden"
                                         style={{
-                                            fontSize: t({ en: 'clamp(22px, 10vw, 36px)', fr: 'clamp(34px, 10vw, 48px)', ar: 'clamp(34px, 10vw, 48px)' }),
+                                            fontSize: t({ en: 'clamp(22px, 10vw, 36px)', fr: 'clamp(34px, 5vw, 48px)', ar: 'clamp(34px, 10vw, 48px)' }),
                                             maxWidth: t({ en: '380px', fr: '420px', ar: '430px' }),
                                             fontWeight: 700
                                         }}

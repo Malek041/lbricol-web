@@ -87,7 +87,7 @@ const CompactHomeMap: React.FC<CompactHomeMapProps> = ({
 
             {/* 3. TRULY FIXED PIN & CALLOUT (Pic 3 Style) */}
             <div
-                className="absolute left-1/2 pointer-events-none z-[1001] flex flex-col items-center"
+                className="absolute left-1/2 pointer-events-none z-[1001] flex flex-col items-center transition-[top] duration-[1500ms] ease-in-out"
                 style={{
                     top: `${activePinY}%`,
                     transform: 'translate(-50%, -100%)'
@@ -114,7 +114,7 @@ const CompactHomeMap: React.FC<CompactHomeMapProps> = ({
             {isFlowActive && onBack && (
                 <div className={cn(
                     "absolute left-6 z-20 flex flex-col gap-3 transition-all duration-500",
-                    isFlowActive ? "bottom-20" : "bottom-24"
+                    isFlowActive ? "bottom-20" : "bottom-32"
                 )}>
                     <button
                         onClick={(e) => {
@@ -164,7 +164,7 @@ const CompactHomeMap: React.FC<CompactHomeMapProps> = ({
 
             {/* Bottom Right Actions */}
             <div className={cn(
-                "absolute right-6 z-20 flex flex-col gap-3",
+                "absolute right-6 z-20 flex flex-col gap-3 transition-all duration-500 rounded-full",
                 isFlowActive ? "bottom-20" : "bottom-24"
             )}>
                 <div
