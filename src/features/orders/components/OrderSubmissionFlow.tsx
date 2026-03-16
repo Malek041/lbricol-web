@@ -22,6 +22,11 @@ import { useToast } from '@/context/ToastContext';
 import SplashScreen from '@/components/layout/SplashScreen';
 import { compressImageFileToDataUrl, dataUrlToBlob, isImageDataUrl } from '@/lib/imageCompression';
 import { WhatsAppBrandIcon } from '@/components/shared/WhatsAppIcon';
+import LocationPicker from '@/components/location-picker/LocationPicker';
+import { SavedAddress } from '@/components/location-picker/types';
+import ServiceFlowLayout from './ServiceFlowLayout';
+import OrderMapCard from './OrderMapCard';
+import AddressRow from '@/components/location-picker/AddressRow';
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -112,6 +117,9 @@ interface OrderSubmissionFlowProps {
     continueDraft?: DraftOrder | null;
     mode?: 'create' | 'edit';
     onRequireLogin?: () => void;
+    isInline?: boolean;
+    onMapUpdate?: (data: { serviceName: string; subServiceName?: string; serviceEmoji: string; step: number }) => void;
+    backSignal?: number;
 }
 
 // ── Pricing Logic Helpers ──────────────────────────────────────────────────
@@ -1099,12 +1107,18 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
     onSubmit,
     continueDraft,
     mode = 'create',
-    onRequireLogin
+    onRequireLogin,
+    isInline = false,
+    onMapUpdate,
+    backSignal
 }) => {
     const { t, language } = useLanguage();
     const { showToast } = useToast();
     const [step, setStep] = useState(mode === 'edit' ? 3 : (continueDraft?.step || 1));
     const [subStep1, setSubStep1] = useState<'location' | 'size' | 'description' | 'languages' | 'moving_vehicle'>(continueDraft?.subStep1 || 'location');
+    const [currentCity, setCurrentCity] = useState(initialCity || '');
+    const [currentArea, setCurrentArea] = useState(initialArea || '');
+    const [activeSubService, setActiveSubService] = useState(subService || continueDraft?.subService || '');
     const [selectedLanguages, setSelectedLanguages] = useState<string[]>(continueDraft?.selectedLanguages || []);
     const [descriptionDrafts, setDescriptionDrafts] = useState<string[]>([]);
     const [taskSize, setTaskSize] = useState<string | null>(null);
@@ -1134,6 +1148,25 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
     const [referralDiscountAvailable, setReferralDiscountAvailable] = useState<number>(0);
     const [applyReferralDiscount, setApplyReferralDiscount] = useState<boolean>(true);
 
+    // Sync map info to parent if inline
+    useEffect(() => {
+        if (isInline && onMapUpdate) {
+            const svcCfg = getServiceById(service);
+            onMapUpdate({
+                serviceName: svcCfg?.name || 'Service',
+                subServiceName: getSubServiceName(service, activeSubService) || undefined,
+                serviceEmoji: '🛠️', // Fallback
+                step
+            });
+        }
+    }, [isInline, step, service, activeSubService, language, onMapUpdate]);
+
+    useEffect(() => {
+        if (backSignal && backSignal > 0) {
+            handleBack();
+        }
+    }, [backSignal]);
+
     // Fetch referral discount when opening modal
     useEffect(() => {
         if (isOpen && auth.currentUser) {
@@ -1155,6 +1188,38 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
             fetchReferralStatus();
         }
     }, [isOpen]);
+
+    const [showInternalLocationPicker, setShowInternalLocationPicker] = useState(false);
+    const [userSavedAddresses, setUserSavedAddresses] = useState<SavedAddress[]>([]);
+
+    useEffect(() => {
+        const saved = localStorage.getItem('lbricol_saved_addresses');
+        if (saved) {
+            try {
+                setUserSavedAddresses(JSON.parse(saved));
+            } catch (e) {
+                console.error("Error parsing saved addresses", e);
+            }
+        }
+    }, [isOpen]);
+
+    const handleInternalLocationConfirm = (result: { pickup: any, savedAddress?: SavedAddress }) => {
+        const { pickup, savedAddress } = result;
+        const address = savedAddress?.address || pickup.address || '';
+        const lowerAddress = address.toLowerCase();
+
+        // Detect City & Area
+        let city = MOROCCAN_CITIES.find((c: string) => lowerAddress.includes(c.toLowerCase())) || 'Casablanca';
+        const areaList = MOROCCAN_CITIES_AREAS[city] || [];
+        const sortedAreas = [...areaList].sort((a, b) => b.length - a.length);
+        const matchedArea = sortedAreas.find((a: string) => lowerAddress.includes(a.toLowerCase()));
+        
+        const finalArea = matchedArea || (areaList.length > 0 ? areaList[0] : '');
+
+        setCurrentCity(city);
+        setCurrentArea(finalArea);
+        setShowInternalLocationPicker(false);
+    };
 
     // Auto-select today/current time defaults when opening
     useEffect(() => {
@@ -1196,8 +1261,6 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
     const [locStep, setLocStep] = useState<'city' | 'area'>('city');
     const [tempCity, setTempCity] = useState(initialCity || '');
     const [tempArea, setTempArea] = useState(initialArea || '');
-    const [currentCity, setCurrentCity] = useState(initialCity || '');
-    const [currentArea, setCurrentArea] = useState(initialArea || '');
     const [areaSearch, setAreaSearch] = useState('');
     const [bookedOrders, setBookedOrders] = useState<any[]>([]);
     // Refs for smooth scroll
@@ -1209,6 +1272,16 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
     const [isLoadingBookings, setIsLoadingBookings] = useState(false);
     const [carRentalBookings, setCarRentalBookings] = useState<any[]>([]);
     const [openCalendarMode, setOpenCalendarMode] = useState<'pickup' | 'return' | null>(null);
+
+    const handleBack = () => {
+        if (step === 2) {
+            setStep(1);
+        } else if (step > 1) {
+            setStep(prev => prev - 1);
+        } else {
+            onClose();
+        }
+    };
 
     const serviceConfig = useMemo(() => {
         const sKey = service?.toLowerCase().replace(/ /g, '_');
@@ -2850,7 +2923,486 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
         }
     };
 
+    const renderStepContent = () => {
+        const categories = getServiceById(service)?.subServices || [];
+        
+        switch (step) {
+            case 1:
+                return (
+                    <div className="space-y-6">
+                        {!isInline && (
+                            <>
+                                <div className="mb-6">
+                                    <h2 className="text-[26px] font-black text-neutral-900 leading-tight">
+                                        {getServiceById(service)?.name || 'Service'}
+                                    </h2>
+                                    <p className="text-neutral-500 font-bold text-sm mt-1">
+                                        {t({ en: 'Choose a service', fr: 'Choisissez un service', ar: 'اختر خدمة' })}
+                                    </p>
+                                </div>
+
+                                <div className="flex flex-wrap gap-3">
+                                    {categories.map((sub: any) => (
+                                        <button
+                                            key={sub.id}
+                                            onClick={() => setActiveSubService(sub.id)}
+                                            className={cn(
+                                                "px-5 py-3.5 rounded-full text-[15px] font-bold transition-all border-2 active:scale-95",
+                                                activeSubService === sub.id 
+                                                    ? "bg-[#F0FDF4] border-[#10B981] text-[#10B981]" 
+                                                    : "bg-white border-neutral-100 text-neutral-900"
+                                            )}
+                                        >
+                                            {sub.name}
+                                        </button>
+                                    ))}
+                                </div>
+                            </>
+                        )}
+
+                        {activeSubService && (
+                            <div className={cn(
+                                "animate-in fade-in slide-in-from-bottom-4 duration-300",
+                                subStep1 === 'location' ? "mt-0" : "space-y-6 pt-4 border-t border-neutral-50"
+                            )}>
+                                {subStep1 === 'location' && (
+                                    <div className="space-y-6">
+                                        {userSavedAddresses.length > 0 ? (
+                                            <div className="px-1">
+                                                <AddressRow 
+                                                    address={userSavedAddresses[0]} 
+                                                    onSelect={() => {}} 
+                                                    onEdit={() => setShowInternalLocationPicker(true)} 
+                                                />
+                                            </div>
+                                        ) : (
+                                            <div className="p-8 rounded-[28px] bg-neutral-50 border-2 border-dashed border-neutral-200 flex flex-col items-center justify-center text-center gap-2">
+                                                 <MapPin size={24} className="text-neutral-300" />
+                                                 <p className="text-[14px] font-bold text-neutral-400">
+                                                     {t({ en: 'No addresses saved yet', fr: 'Aucune adresse enregistrée' })}
+                                                 </p>
+                                            </div>
+                                        )}
+                                        
+                                        <div className="flex flex-col gap-3">
+                                            <button
+                                                onClick={() => {
+                                                    if (userSavedAddresses.length > 0) {
+                                                        const addr = userSavedAddresses[0];
+                                                        const parts = addr.address.split(',');
+                                                        setCurrentCity(parts[parts.length - 2]?.trim() || 'Casablanca');
+                                                        setCurrentArea(parts[parts.length - 3]?.trim() || parts[0]?.trim() || '');
+                                                        setSubStep1(service === 'tour_guide' ? 'languages' : 'size');
+                                                    }
+                                                }}
+                                                disabled={userSavedAddresses.length === 0}
+                                                className={cn(
+                                                    "w-full h-15 rounded-full text-[19px] font-[900] transition-all active:scale-95",
+                                                    userSavedAddresses.length > 0
+                                                        ? "bg-[#00927C] text-white shadow-[0_8px_20px_rgba(0,146,124,0.15)]"
+                                                        : "bg-neutral-100 text-neutral-400 cursor-not-allowed shadow-none"
+                                                )}
+                                            >
+                                                {t({ en: 'Confirm This Location', fr: 'Confirmer cet emplacement', ar: 'تأكيد هذا الموقع' })}
+                                            </button>
+                                            
+                                            <button
+                                                onClick={() => setShowInternalLocationPicker(true)}
+                                                className="w-full py-2 text-[#00927C] text-[19px] font-[900] active:scale-95 transition-transform"
+                                            >
+                                                {t({ en: 'Create New address', fr: 'Créer une nouvelle adresse', ar: 'إنشاء عنوان جديد' })}
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {subStep1 === 'languages' && (
+                                    <div className="space-y-4">
+                                        <h3 className="text-[20px] font-black">{t({ en: 'Tour Guide Languages', fr: 'Langues du guide', ar: 'لغات المرشد' })}</h3>
+                                        <div className="grid grid-cols-2 gap-3">
+                                            {['English', 'French', 'Arabic', 'Spanish', 'German', 'Italian'].map(lang => (
+                                                <button
+                                                    key={lang}
+                                                    onClick={() => setSelectedLanguages(prev => prev.includes(lang) ? prev.filter(l => l !== lang) : [...prev, lang])}
+                                                    className={cn(
+                                                        "p-4 rounded-2xl border-2 font-bold transition-all",
+                                                        selectedLanguages.includes(lang) ? "border-[#00927C] bg-[#00927C]/5 text-[#00927C]" : "border-neutral-100 text-neutral-600"
+                                                    )}
+                                                >
+                                                    {lang}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {subStep1 === 'size' && (
+                                    <div className="space-y-4">
+                                        <h3 className="text-[20px] font-black">{t({ en: 'How big is the task?', fr: 'Quelle est la taille de la tâche ?', ar: 'ما هو حجم المهمة؟' })}</h3>
+                                        <div className="space-y-3">
+                                            {serviceConfig.options.map((opt: any) => (
+                                                <button
+                                                    key={opt.id}
+                                                    onClick={() => setTaskSize(opt.id)}
+                                                    className={cn(
+                                                        "w-full p-5 rounded-[24px] border-2 transition-all text-left flex items-center gap-4",
+                                                        taskSize === opt.id ? "border-[#00927C] bg-[#00927C]/5" : "border-neutral-50 hover:border-neutral-100"
+                                                    )}
+                                                >
+                                                    <div className={cn("w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0", taskSize === opt.id ? "border-[#00927C] bg-[#00927C]" : "border-neutral-200")}>
+                                                        {taskSize === opt.id && <Check size={14} className="text-white" strokeWidth={4} />}
+                                                    </div>
+                                                    <div className="flex-1">
+                                                        <p className="text-[17px] font-black text-neutral-900">{t(opt.label)}</p>
+                                                        <p className="text-[13px] font-bold text-neutral-400">{t(opt.estTime)}</p>
+                                                    </div>
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {subStep1 === 'description' && (
+                                    <div className="space-y-6">
+                                        <div className="space-y-3">
+                                            <h3 className="text-[20px] font-black text-neutral-900">{t({ en: 'Any specific details?', fr: 'Des précisions ?', ar: 'أي تفاصيل محددة؟' })}</h3>
+                                            <textarea
+                                                value={description}
+                                                onChange={e => setDescription(e.target.value)}
+                                                placeholder={t({ en: 'Describe your needs here...', fr: 'Décrivez vos besoins ici...', ar: 'صف احتياجاتك هنا...' })}
+                                                className="w-full h-40 p-5 rounded-[28px] bg-neutral-50 border-2 border-transparent focus:border-[#00927C]/20 focus:bg-white outline-none transition-all text-[16px] font-bold resize-none"
+                                            />
+                                        </div>
+
+                                        <div className="space-y-3">
+                                            <h3 className="text-[16px] font-black text-neutral-900">{t({ en: 'Add Photos (Optional)', fr: 'Ajouter des photos (Optionnel)', ar: 'أضف صوراً (اختياري)' })}</h3>
+                                            <div className="grid grid-cols-4 gap-3">
+                                                {images.map((url, idx) => (
+                                                    <div key={idx} className="relative aspect-square rounded-2xl overflow-hidden border border-neutral-100">
+                                                        <img src={url} className="w-full h-full object-cover" alt="" />
+                                                        <button
+                                                            onClick={() => setImages(prev => prev.filter((_, i) => i !== idx))}
+                                                            className="absolute top-1 right-1 w-6 h-6 rounded-full bg-red-500 text-white flex items-center justify-center shadow-lg"
+                                                        >
+                                                            <X size={14} strokeWidth={3} />
+                                                        </button>
+                                                    </div>
+                                                ))}
+                                                {images.length < 5 && (
+                                                    <label className="aspect-square rounded-2xl border-2 border-dashed border-neutral-200 flex flex-col items-center justify-center gap-1 cursor-pointer hover:bg-neutral-50 transition-colors">
+                                                        <input
+                                                            type="file"
+                                                            accept="image/*"
+                                                            multiple
+                                                            className="hidden"
+                                                            onChange={async (e) => {
+                                                                const files = Array.from(e.target.files || []);
+                                                                if (files.length === 0) return;
+                                                                setIsUploadingImages(true);
+                                                                try {
+                                                                    const uploadPromises = files.slice(0, 5 - images.length).map(async (file) => {
+                                                                        const blob = await compressImageFileToDataUrl(file, { maxWidth: 1000, maxHeight: 1000, quality: 0.5 }).then(dataUrlToBlob);
+                                                                        const path = `orders/${auth.currentUser?.uid || 'anon'}/${Date.now()}_${Math.random().toString(36).substr(2, 5)}.jpg`;
+                                                                        return uploadImageToStorage(blob, path);
+                                                                    });
+                                                                    const urls = await Promise.all(uploadPromises);
+                                                                    setImages(prev => [...prev, ...urls]);
+                                                                } catch (err) {
+                                                                    console.error("Upload failed:", err);
+                                                                } finally {
+                                                                    setIsUploadingImages(false);
+                                                                }
+                                                            }}
+                                                        />
+                                                        {isUploadingImages ? <RefreshCw className="animate-spin text-[#00927C]" size={20} /> : <Camera className="text-neutral-400" size={24} />}
+                                                        <span className="text-[10px] font-black text-neutral-400 uppercase tracking-widest">{t({ en: 'Add', fr: 'Ajouter', ar: 'إضافة' })}</span>
+                                                    </label>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                    </div>
+                );
+            case 2:
+                return (
+                    <div className="space-y-6">
+                        <div className="flex flex-col gap-1">
+                            <h2 className="text-[22px] font-black text-neutral-900">{t({ en: 'Select your Provider', fr: 'Choisissez votre Pro', ar: 'اختر المحترف الخاص بك' })}</h2>
+                            <p className="text-[14px] font-bold text-neutral-400">{t({ en: 'Verified professionals near you', fr: 'Des professionnels vérifiés près de chez vous', ar: 'محترفون معتمدون بالقرب منك' })}</p>
+                        </div>
+
+                        {isLoadingBricolers ? (
+                            <div className="space-y-4">
+                                {[1, 2, 3].map(i => (
+                                    <div key={i} className="h-48 bg-neutral-50 rounded-[28px] animate-pulse" />
+                                ))}
+                            </div>
+                        ) : sortedBricolers.length === 0 ? (
+                            <div className="flex flex-col items-center justify-center py-12 text-center px-4 bg-neutral-50 rounded-[32px] border-2 border-dashed border-neutral-100">
+                                <Search size={40} className="text-neutral-200 mb-4" />
+                                <h4 className="text-[17px] font-black text-neutral-900">{t({ en: 'No matching pros', fr: 'Aucun expert trouvé', ar: 'لم يتم العثور على محترفين' })}</h4>
+                                <p className="text-sm font-bold text-neutral-400 mt-1">{t({ en: 'Try changing your filters or location', fr: 'Essayez de changer vos filtres ou lieu', ar: 'حاول تغيير الفلاتر أو الموقع' })}</p>
+                            </div>
+                        ) : (
+                            <div className="grid grid-cols-1 gap-4">
+                                {sortedBricolers.map((pro: any, idx: number) => (
+                                    <BricolerCard
+                                        key={pro.id}
+                                        index={idx}
+                                        service={service}
+                                        serviceName={getServiceById(service)?.name || 'Service'}
+                                        bricoler={pro}
+                                        isSelected={selectedBricolerId === pro.id}
+                                        onSelect={() => {
+                                            setSelectedBricolerId(pro.id);
+                                            setStep(3);
+                                        }}
+                                        onOpenProfile={() => setViewedBricoler(pro)}
+                                    />
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                );
+            case 3:
+                return (
+                    <div className="space-y-6">
+                        <div className="flex flex-col gap-1">
+                            <h2 className="text-[22px] font-black text-neutral-900">{t({ en: 'When should they come?', fr: 'Quand doivent-ils venir ?', ar: 'متى يجب أن يأتوا؟' })}</h2>
+                            <p className="text-[14px] font-bold text-neutral-400">{t({ en: 'Choose a date and time', fr: 'Choisissez une date et une heure', ar: 'اختر التاريخ والوقت' })}</p>
+                        </div>
+
+                        <div className="p-2 bg-neutral-50 rounded-[32px]">
+                            <div className="flex flex-col gap-4">
+                                <label className="text-sm font-bold text-neutral-500 uppercase tracking-wider">{t({ en: 'Pick a Date', fr: 'Choisir une date', ar: 'اختر تاريخاً' })}</label>
+                                <input
+                                    type="date"
+                                    value={selectedDate || ''}
+                                    onChange={(e) => setSelectedDate(e.target.value)}
+                                    className="w-full p-4 rounded-xl border border-neutral-200 focus:outline-none focus:ring-2 focus:ring-[#00A082] font-semibold"
+                                    min={format(new Date(), 'yyyy-MM-dd')}
+                                />
+                            </div>
+                        </div>
+
+                        {selectedDate && (
+                            <div className="grid grid-cols-3 gap-2">
+                                {['08:00', '10:00', '12:00', '14:00', '16:00', '18:00'].map(slot => (
+                                    <button
+                                        key={slot}
+                                        onClick={() => setSelectedTime(slot)}
+                                        className={cn(
+                                            "py-4 rounded-2xl border-2 font-black transition-all",
+                                            selectedTime === slot ? "border-[#00927C] bg-[#00927C] text-white" : "border-neutral-100 text-neutral-600 bg-white"
+                                        )}
+                                    >
+                                        <Clock size={16} className="inline mr-1 opacity-50" />
+                                        {slot}
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                );
+            case 4:
+                return (
+                    <div className="space-y-6">
+                        <div className="flex flex-col gap-1">
+                            <h2 className="text-[22px] font-black text-neutral-900">{t({ en: 'Review & Payment', fr: 'Récapitulatif & Paiement', ar: 'المراجعة والدفع' })}</h2>
+                        </div>
+
+                        <div className="p-6 rounded-[32px] bg-neutral-900 text-white space-y-4">
+                            <div className="flex justify-between items-center text-neutral-400 uppercase text-[11px] font-black tracking-widest">
+                                <span>{t({ en: 'Task Summary', fr: 'Résumé de la tâche', ar: 'ملخص المهمة' })}</span>
+                                <Wrench size={16} />
+                            </div>
+                            <div>
+                                <h4 className="text-[20px] font-black">{getServiceById(service)?.name}</h4>
+                                <p className="text-neutral-400 font-bold">{currentArea}, {currentCity}</p>
+                            </div>
+                            <div className="flex items-center gap-2 pt-2 text-[#00927C] font-black">
+                                <Calendar size={16} />
+                                <span>{selectedDate} @ {selectedTime}</span>
+                            </div>
+                        </div>
+
+                        <div className="flex flex-col gap-3">
+                            <h4 className="text-[16px] font-black text-neutral-900">{t({ en: 'Payment Method', fr: 'Mode de paiement', ar: 'طريقة الدفع' })}</h4>
+                            <div className="grid grid-cols-1 gap-3">
+                                {['cash', 'bank'].map(method => (
+                                    <button
+                                        key={method}
+                                        onClick={() => setPaymentMethod(method as any)}
+                                        className={cn(
+                                            "p-5 rounded-[24px] border-2 flex items-center gap-4 transition-all",
+                                            paymentMethod === method ? "border-[#00927C] bg-[#00927C]/5" : "border-neutral-100"
+                                        )}
+                                    >
+                                        <div className={cn("w-10 h-10 rounded-2xl flex items-center justify-center", paymentMethod === method ? "bg-[#00927C] text-white" : "bg-neutral-100 text-neutral-400")}>
+                                            {method === 'cash' ? <Banknote size={20} /> : <FileText size={20} />}
+                                        </div>
+                                        <span className="font-black text-[17px]">{method === 'cash' ? t({ en: 'Cash after work', fr: 'Espèces après mission', ar: 'نقداً بعد العمل' }) : t({ en: 'Bank Transfer', fr: 'Virement bancaire', ar: 'تحويل بنكي' })}</span>
+                                        {paymentMethod === method && <Check size={20} className="ml-auto text-[#00927C]" strokeWidth={4} />}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                );
+            default: return null;
+        }
+    };
+
+    const renderStepFooter = () => {
+        if (step === 1) {
+            // Hide footer for location sub-step as we now have explicit buttons in content (Pic 2 style)
+            if (subStep1 === ('location' as any)) return null;
+
+            const isNextDisabled = !activeSubService || (
+                                 subStep1 === 'languages' ? (selectedLanguages.length === 0) :
+                                 subStep1 === 'size' ? (!taskSize) :
+                                 subStep1 === 'description' ? (!description.trim()) : false);
+
+            return (
+                <button
+                    onClick={() => {
+                        if (subStep1 === 'location') setSubStep1(service === 'tour_guide' ? 'languages' : 'size');
+                        else if (subStep1 === 'languages') setSubStep1('size');
+                        else if (subStep1 === 'size') {
+                            if (service === 'moving') setSubStep1('moving_vehicle');
+                            else setSubStep1('description');
+                        }
+                        else if (subStep1 === 'moving_vehicle') setSubStep1('description');
+                        else handleStartMatching();
+                    }}
+                    disabled={isNextDisabled}
+                    className={cn(
+                        "w-full h-15 rounded-full text-white text-[18px] font-black transition-all active:scale-95 shadow-lg",
+                        !isNextDisabled ? "bg-[#00927C] shadow-[#00927C]/20" : "bg-neutral-100 text-neutral-400 cursor-not-allowed"
+                    )}
+                >
+                    {subStep1 === 'description' ? t({ en: 'Find Bricolers', fr: 'Voir les Pros' }) : t({ en: 'Next Step', fr: 'Étape suivante' })}
+                </button>
+            );
+        }
+
+        if (step === 2) return null;
+
+        if (step === 3) {
+            const isNextDisabled = !selectedDate || !selectedTime;
+            return (
+                <button
+                    onClick={() => setStep(4)}
+                    disabled={isNextDisabled}
+                    className={cn(
+                        "w-full h-15 rounded-full text-white text-[18px] font-black transition-all active:scale-95 shadow-lg",
+                        !isNextDisabled ? "bg-[#00927C] shadow-[#00927C]/20" : "bg-neutral-100 text-neutral-400 cursor-not-allowed"
+                    )}
+                >
+                    {t({ en: 'Continue', fr: 'Continuer' })}
+                </button>
+            );
+        }
+
+        if (step === 4) {
+            return (
+                <button
+                    onClick={handleFinalSubmit}
+                    disabled={isSubmitting}
+                    className="w-full h-15 rounded-full bg-[#00927C] text-white text-[18px] font-black transition-all active:scale-95 shadow-lg shadow-[#00927C]/20 flex items-center justify-center gap-2"
+                >
+                    {isSubmitting ? <RefreshCw className="animate-spin" size={24} /> : <>{t({ en: 'Pay & Confirm', fr: 'Payer & Confirmer' })} <CheckCircle2 size={24} /></>}
+                </button>
+            );
+        }
+
+        return null;
+    };
+
     if (!isOpen) return null;
+
+    const flowContent = (
+        <ServiceFlowLayout
+            mapContent={
+                isInline ? null : (
+                    <OrderMapCard
+                        currentAddress={`${currentArea}, ${currentCity}`}
+                        serviceName={getServiceById(service)?.name || 'Service'}
+                        step={step}
+                    />
+                )
+            }
+            footerContent={renderStepFooter()}
+            step={step}
+            onBack={handleBack}
+            showBack={!isInline}
+            isEmbedded={isInline}
+        >
+            {renderStepContent()}
+        </ServiceFlowLayout>
+    );
+
+    const overlayContent = (
+        <>
+            <BricolerProfileModal
+                isOpen={!!viewedBricoler}
+                bricoler={viewedBricoler!}
+                service={service}
+                serviceName={getServiceById(service)?.name || 'Service'}
+                isSelected={selectedBricolerId === viewedBricoler?.id}
+                onClose={() => setViewedBricoler(null)}
+                carRentalBookings={carRentalBookings.filter(job => job.bricolerId === viewedBricoler?.id)}
+                selectedPickUpDate={selectedDate}
+                selectedPickUpTime={selectedTime}
+                selectedReturnDate={carReturnDate}
+                selectedReturnTime={carReturnTime}
+                onSelect={(car, note) => {
+                    setSelectedBricolerId(viewedBricoler?.id!);
+                    if (service === 'car_rental') {
+                        if (car) setSelectedCar(car);
+                        if (note) setDescription(note);
+                        setStep(4);
+                    } else {
+                        setStep(3);
+                    }
+                }}
+            />
+            <SuccessAnimation
+                isVisible={showSuccessAnimation}
+                onComplete={() => {
+                    setShowSuccessAnimation(false);
+                    onClose();
+                }}
+            />
+            <AnimatePresence>
+                {showInternalLocationPicker && (
+                    <div className="fixed inset-0 z-[5000]">
+                        <LocationPicker
+                            mode="single"
+                            serviceType={service}
+                            title={t({ en: 'Set your address', fr: 'Définissez votre adresse' })}
+                            savedAddresses={userSavedAddresses}
+                            onConfirm={handleInternalLocationConfirm}
+                            onClose={() => setShowInternalLocationPicker(false)}
+                            autoLocate={true}
+                        />
+                    </div>
+                )}
+            </AnimatePresence>
+        </>
+    );
+
+    if (isInline) {
+        return (
+            <div className="flex-1 flex flex-col h-full bg-white relative">
+                {!showInternalLocationPicker && flowContent}
+                {overlayContent}
+            </div>
+        );
+    }
 
     return (
         <AnimatePresence>
@@ -2858,1944 +3410,26 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="fixed inset-0 z-[3000] bg-white flex flex-col overflow-hidden h-[100dvh] w-screen pointer-events-auto"
+                className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-end justify-center sm:items-center p-0 sm:p-4"
+                onClick={(e) => {
+                    if (e.target === e.currentTarget) onClose();
+                }}
             >
                 <motion.div
-                    initial={{ x: "100%" }}
-                    animate={{ x: 0 }}
-                    exit={{ x: "100%" }}
-                    transition={{ type: "spring", damping: 30, stiffness: 300, mass: 0.8 }}
-                    className="flex-1 min-h-0 flex flex-col bg-white relative"
+                    initial={{ y: "100%" }}
+                    animate={{ y: 0 }}
+                    exit={{ y: "100%" }}
+                    transition={{ type: "spring", damping: 25, stiffness: 200 }}
+                    className="w-full max-w-lg h-[92vh] sm:h-[85vh] bg-white rounded-t-[32px] sm:rounded-[32px] shadow-2xl overflow-hidden flex flex-col relative"
+                    onClick={(e) => e.stopPropagation()}
                 >
-                    {/* Minimalist Floating Close Button */}
-                    {!isSelectingLocation && (
-                        <button
-                            onClick={onClose}
-                            className="absolute right-4 top-4 z-[3010] flex h-11 w-11 items-center justify-center rounded-full bg-[#F7F7F7] transition-transform active:scale-90 sm:right-6 sm:top-6"
-                        >
-                            <X size={20} strokeWidth={3} className="text-black" />
-                        </button>
-                    )}
-
-                    {/* Content Section */}
-                    <div className={cn(
-                        "relative flex-1 min-h-0 overflow-y-auto px-4 pb-4 overscroll-contain touch-pan-y sm:px-8",
-                        !isSelectingLocation ? "pt-20 sm:pt-16" : "pt-4"
-                    )}>
-                        <AnimatePresence mode="wait">
-                            {isSelectingLocation ? (
-                                <motion.div
-                                    key="loc-sel"
-                                    initial={{ opacity: 0, x: 20 }}
-                                    animate={{ opacity: 1, x: 0 }}
-                                    exit={{ opacity: 0, x: -20 }}
-                                    transition={{ duration: 0.25, ease: "easeOut" }}
-                                    className="flex flex-col h-full bg-white -mx-6 -my-4 px-6 py-6"
-                                >
-                                    <div className="flex items-center gap-3 px-1 pt-4 pb-6 bg-white flex-shrink-0 safe-top">
-                                        <button
-                                            onClick={() => locStep === 'area' ? setLocStep('city') : setIsSelectingLocation(false)}
-                                            className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-neutral-100 transition-colors"
-                                        >
-                                            <ChevronLeft size={24} className="text-neutral-900" />
-                                        </button>
-                                        <div className="flex-1 relative">
-                                            <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-400" />
-                                            <input
-                                                autoFocus
-                                                type="text"
-                                                placeholder={locStep === 'city' ? t({ en: 'Search city...', fr: 'Rechercher une ville...', ar: 'ابحث عن مدينة...' }) : t({ en: 'Search area...', fr: 'Rechercher un quartier...', ar: 'ابحث عن منطقة...' })}
-                                                className="w-full bg-[#F2F2F2] h-11 pl-11 pr-10 rounded-full text-[15px] font-bold outline-none focus:ring-2 focus:ring-[#00A082]/20"
-                                                value={areaSearch}
-                                                onChange={e => setAreaSearch(e.target.value)}
-                                            />
-                                        </div>
-                                    </div>
-                                    <div className="flex-1 overflow-y-auto no-scrollbar pt-2 space-y-1">
-                                        <AnimatePresence mode="popLayout">
-                                            {locStep === 'city' ? (
-                                                MOROCCAN_CITIES
-                                                    .filter(c => c.toLowerCase().includes(areaSearch.toLowerCase()))
-                                                    .map((city, idx) => (
-                                                        <motion.button
-                                                            key={city}
-                                                            initial={{ opacity: 0, y: 10 }}
-                                                            animate={{ opacity: 1, y: 0 }}
-                                                            exit={{ opacity: 0, scale: 0.95 }}
-                                                            transition={{ delay: Math.min(idx * 0.03, 0.3) }}
-                                                            onClick={() => { setTempCity(city); setTempArea(''); setLocStep('area'); setAreaSearch(''); }}
-                                                            className="w-full text-left py-4 px-1 active:bg-neutral-50 transition-colors border-b border-neutral-50 last:border-0"
-                                                        >
-                                                            <p className="text-[17px] font-black text-neutral-900">{city}</p>
-                                                            <p className="text-[13px] font-semibold text-neutral-400 mt-0.5">{t({ en: 'Morocco', fr: 'Maroc', ar: 'المغرب' })}</p>
-                                                        </motion.button>
-                                                    ))
-                                            ) : (
-                                                <>
-                                                    {areaSearch.trim() && !filteredAreas.some(a => a.toLowerCase() === areaSearch.trim().toLowerCase()) && (
-                                                        <motion.button
-                                                            initial={{ opacity: 0, scale: 0.9 }}
-                                                            animate={{ opacity: 1, scale: 1 }}
-                                                            onClick={() => {
-                                                                const newArea = areaSearch.trim();
-                                                                setTempArea(newArea);
-                                                                handleLocationSave(tempCity, newArea);
-                                                            }}
-                                                            className="w-full text-left py-4 px-1 active:bg-neutral-50 transition-colors border-2 border-dashed border-[#00A082]/30 rounded-[12px] mb-2"
-                                                        >
-                                                            <div className="flex items-center gap-2">
-                                                                <div className="w-8 h-8 rounded-full bg-[#00A082]/10 flex items-center justify-center">
-                                                                    <Plus size={16} className="text-[#00A082]" />
-                                                                </div>
-                                                                <div>
-                                                                    <p className="text-[17px] font-black text-[#00A082]">{t({ en: 'Add', fr: 'Ajouter', ar: 'إضافة' })} &quot;{areaSearch.trim()}&quot;</p>
-                                                                    <p className="text-[13px] font-semibold text-neutral-400">{tempCity}</p>
-                                                                </div>
-                                                            </div>
-                                                        </motion.button>
-                                                    )}
-                                                    {/* "All the city" option for clients to see everyone in the city */}
-                                                    <motion.button
-                                                        initial={{ opacity: 0, y: 10 }}
-                                                        animate={{ opacity: 1, y: 0 }}
-                                                        transition={{ delay: 0 }}
-                                                        onClick={() => { setTempArea('Toute la ville'); handleLocationSave(tempCity, 'Toute la ville'); }}
-                                                        className="w-full text-left py-4 px-1 active:bg-neutral-50 transition-colors border-b border-neutral-100 flex items-center justify-between group"
-                                                    >
-                                                        <div>
-                                                            <p className="text-[17px] font-black text-[#00A082]">{t({ en: 'All the city', fr: 'Toute la ville', ar: 'كل المدينة' })}</p>
-                                                            <p className="text-[13px] font-semibold text-neutral-400 mt-0.5">{tempCity}, {t({ en: 'Morocco', fr: 'Maroc', ar: 'المغرب' })}</p>
-                                                        </div>
-                                                        <div className="w-8 h-8 rounded-full bg-[#00A082]/10 flex items-center justify-center opacity-0 group-active:opacity-100 transition-opacity">
-                                                            <Check size={16} className="text-[#00A082]" />
-                                                        </div>
-                                                    </motion.button>
-
-                                                    {filteredAreas.map((area, idx) => (
-                                                        <motion.button
-                                                            key={area}
-                                                            initial={{ opacity: 0, y: 10 }}
-                                                            animate={{ opacity: 1, y: 0 }}
-                                                            exit={{ opacity: 0, scale: 0.95 }}
-                                                            transition={{ delay: Math.min((idx + 1) * 0.03, 0.3) }}
-                                                            onClick={() => { setTempArea(area); handleLocationSave(tempCity, area); }}
-                                                            className="w-full text-left py-4 px-1 active:bg-neutral-50 transition-colors border-b border-neutral-50 last:border-0"
-                                                        >
-                                                            <p className="text-[17px] font-black text-neutral-900">{area}</p>
-                                                            <p className="text-[13px] font-semibold text-neutral-400 mt-0.5">{tempCity}, {t({ en: 'Morocco', fr: 'Maroc', ar: 'المغرب' })}</p>
-                                                        </motion.button>
-                                                    ))}
-                                                </>
-                                            )}
-                                        </AnimatePresence>
-                                    </div>
-                                </motion.div>
-                            ) : step === 1 ? (
-                                <motion.div
-                                    key="step1"
-                                    initial={{ opacity: 0, y: 30 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    exit={{ opacity: 0, x: -100 }}
-                                    transition={{ type: "spring", damping: 25, stiffness: 200 }}
-                                    className="space-y-8"
-                                >
-                                    {/* Service Indicator Pill */}
-                                    <motion.div
-                                        initial={{ opacity: 0, scale: 0.9 }}
-                                        animate={{ opacity: 1, scale: 1 }}
-                                        transition={{ delay: 0.1, duration: 0.4 }}
-                                        className="flex justify-center mt-2 mb-2"
-                                    >
-                                        <div className="inline-flex items-center gap-2 bg-[#FCEBA4] px-4 py-2 rounded-[20px] border border-[#DECD85]/50 shadow-sm shadow-[#FCEBA4]/20">
-                                            {(() => {
-                                                const activeService = getServiceById(service);
-                                                const serviceIconMap: Record<string, string> = {
-                                                    cleaning: 'CleaningVector.png',
-                                                    electricity: 'ElectricityVector.png',
-                                                    plumbing: 'PlumbingVector.png',
-                                                    painting: 'Paintingvector.png',
-                                                    handyman: 'HandymanVector.png',
-                                                    furniture_assembly: 'AsssemblyVector.png',
-                                                    moving: 'MovingHelpVector.png',
-                                                    gardening: 'GardeningVector.png',
-                                                    mounting: 'MountingVector.png',
-                                                    babysitting: 'babysettingnVector.png',
-                                                    errands: 'homerepairVector.png',
-                                                    private_driver: '/Images/Vectors Illu/BWCardirever.png',
-                                                    cooking: '/Images/Vectors Illu/cooking.png',
-                                                    pool_cleaning: '/Images/Vectors Illu/Poolcleaning_VI.png',
-                                                    pets_care: '/Images/Vectors Illu/petscare.png',
-                                                };
-                                                const iconName = activeService ? serviceIconMap[activeService.id] || 'homerepairVector.png' : 'homerepairVector.png';
-                                                const iconPath = iconName.startsWith('/') ? iconName : "/Images/Service Category vectors/" + iconName;
-                                                return <img src={iconPath} className="w-4 h-4 object-contain" />;
-                                            })()}
-                                            <span className="text-[13px] font-semibold text-neutral-900 whitespace-nowrap opacity-90">
-                                                {t({ en: getServiceById(service)?.name || '', fr: getServiceById(service)?.name || '' })} {subService ? "› " + t({ en: getSubServiceName(service, subService) || '', fr: getSubServiceName(service, subService) || '' }) : ''}
-                                            </span>
-                                        </div>
-                                    </motion.div>
-
-                                    {/* Dynamic Step 1 Sub-sections */}
-                                    <AnimatePresence mode="wait">
-                                        {subStep1 === 'location' && (
-                                            <motion.div
-                                                key="sub-loc"
-                                                initial={{ opacity: 0, x: 20 }}
-                                                animate={{ opacity: 1, x: 0 }}
-                                                exit={{ opacity: 0, x: -20 }}
-                                                transition={{ duration: 0.25, ease: "easeOut" }}
-                                                className="space-y-4 pt-30"
-                                            >
-                                                <motion.h4
-                                                    initial={{ opacity: 0, y: 10 }}
-                                                    animate={{ opacity: 1, y: 0 }}
-                                                    transition={{ delay: 0.1 }}
-                                                    className="text-[20px] font-bold text-black ml-1"
-                                                >
-                                                    {(service === 'moving' || service === 'errands')
-                                                        ? t({ en: 'Pickup Location', fr: 'Lieu de départ', ar: 'موقع الاستلام' })
-                                                        : t({ en: 'Select your location', fr: 'Sélectionnez votre lieu d\'intervention', ar: 'اختر موقعك' })}
-                                                </motion.h4>
-                                                <motion.div
-                                                    initial={{ opacity: 0, y: 15 }}
-                                                    animate={{ opacity: 1, y: 0 }}
-                                                    transition={{ delay: 0.2, type: "spring", damping: 20 }}
-                                                    className="flex flex-col gap-4 rounded-[12px] border border-[#00A082]/10 bg-[#FFFFFF] px-4 py-4 min-[420px]:flex-row min-[420px]:items-center min-[420px]:justify-between"
-                                                >
-                                                    <div className="flex min-w-0 items-center gap-3">
-                                                        <img src="/Images/LocationFlag_VI.webp" className="w-[52px] h-auto object-contain" />
-                                                        <div className="flex min-w-0 flex-col">
-                                                            <p className="text-[12px] font-medium text-neutral-500 leading-none mb-1">{t({ en: 'Location', fr: 'Lieu d\'intervention', ar: 'الموقع' })}</p>
-                                                            <p className="text-[16px] font-semibold leading-tight text-[#2D2D2D]">
-                                                                {currentCity}{currentArea ? ", " + currentArea : ""}
-                                                            </p>
-                                                        </div>
-                                                    </div>
-                                                    <button
-                                                        onClick={() => { setTempCity(currentCity); setTempArea(currentArea); setIsSelectingLocation(true); setLocStep('city'); setAreaSearch(''); }}
-                                                        className="self-start whitespace-nowrap px-1 text-[18px] font-semibold text-[#00A082] transition-opacity hover:opacity-70 min-[420px]:self-auto sm:text-[20px]"
-                                                    >
-                                                        {t({ en: 'Edit', fr: 'Modifier', ar: 'تعديل' })}
-                                                    </button>
-                                                </motion.div>
-                                            </motion.div>
-                                        )}
-
-                                        {subStep1 === 'languages' && (
-                                            <motion.div
-                                                key="sub-lang"
-                                                initial={{ opacity: 0, x: 20 }}
-                                                animate={{ opacity: 1, x: 0 }}
-                                                exit={{ opacity: 0, x: -20 }}
-                                                transition={{ duration: 0.25, ease: "easeOut" }}
-                                                className="space-y-4 pt-20"
-                                            >
-                                                <motion.h4
-                                                    initial={{ opacity: 0, y: 10 }}
-                                                    animate={{ opacity: 1, y: 0 }}
-                                                    transition={{ delay: 0.05 }}
-                                                    className="text-[25px] font-bold text-black ml-1"
-                                                >
-                                                    {t({ en: "Preferred Language", fr: "Langue préférée", ar: "اللغة المفضلـة" })}
-                                                </motion.h4>
-                                                <p className="text-neutral-500 text-[15px] font-medium ml-1">
-                                                    {t({
-                                                        en: "Select the language you want your tour guide to speak.",
-                                                        fr: "Sélectionnez la langue que vous souhaitez que votre guide parle.",
-                                                        ar: "اختر اللغة التي تريد أن يتحدث بها مرشدك السياحي."
-                                                    })}
-                                                </p>
-                                                <div className="flex flex-col gap-3">
-                                                    {[
-                                                        { id: 'arabic', label: { en: 'Arabic', fr: 'Arabe', ar: 'العربية' } },
-                                                        { id: 'english', label: { en: 'English', fr: 'Anglais', ar: 'الإنجليزية' } },
-                                                        { id: 'french', label: { en: 'French', fr: 'Français', ar: 'الفرنسية' } },
-                                                        { id: 'spanish', label: { en: 'Spanish', fr: 'Espagnol', ar: 'الإسبانية' } },
-                                                    ].map((lang, idx) => {
-                                                        const isSelected = selectedLanguages.includes(lang.id);
-                                                        return (
-                                                            <motion.button
-                                                                key={lang.id}
-                                                                initial={{ opacity: 0, y: 10 }}
-                                                                animate={{ opacity: 1, y: 0 }}
-                                                                transition={{ delay: 0.1 + idx * 0.05 }}
-                                                                onClick={() => {
-                                                                    const next = isSelected
-                                                                        ? selectedLanguages.filter(l => l !== lang.id)
-                                                                        : [...selectedLanguages, lang.id];
-                                                                    setSelectedLanguages(next);
-                                                                }}
-                                                                className={cn(
-                                                                    "flex items-center justify-between p-6 rounded-[20px] transition-all",
-                                                                    isSelected ? "bg-[#E6F6F2] border-2 border-[#00A082]" : "bg-neutral-50/40 border border-neutral-100 hover:border-neutral-200"
-                                                                )}
-                                                            >
-                                                                <span className="text-[18px] font-bold text-neutral-900">{t(lang.label)}</span>
-                                                                {isSelected && <div className="w-6 h-6 rounded-full bg-[#00A082] flex items-center justify-center"><Check size={14} className="text-white" strokeWidth={4} /></div>}
-                                                            </motion.button>
-                                                        );
-                                                    })}
-                                                </div>
-                                            </motion.div>
-                                        )}
-
-                                        {subStep1 === 'size' && (
-                                            <motion.div
-                                                key="sub-size"
-                                                initial={{ opacity: 0, x: 20 }}
-                                                animate={{ opacity: 1, x: 0 }}
-                                                exit={{ opacity: 0, x: -20 }}
-                                                transition={{ duration: 0.25, ease: "easeOut" }}
-                                                className="space-y-4 pt-20"
-                                            >
-                                                <motion.h4
-                                                    initial={{ opacity: 0, y: 10 }}
-                                                    animate={{ opacity: 1, y: 0 }}
-                                                    transition={{ delay: 0.05 }}
-                                                    className="text-[25px] font-bold text-black ml-1"
-                                                >
-                                                    {service === 'car_rental'
-                                                        ? t({ en: 'When do you want the car and when will you return it?', fr: 'Quand voulez-vous la voiture et quand allez-vous la retourner ?', ar: 'متى تريد السيارة ومتى ستعيدها؟' })
-                                                        : serviceConfig.title}
-                                                </motion.h4>
-                                                <div className="flex flex-col gap-4">
-                                                    {service === 'car_rental' ? (
-                                                        <div className="flex flex-col gap-6 w-full -mx-1 px-1">
-                                                            {/* Range Pickers */}
-                                                            <div className="bg-white rounded-[24px] border border-neutral-100 p-5 shadow-[0_2px_10px_rgba(0,0,0,0.02)] space-y-5">
-                                                                {/* Pick up */}
-                                                                <div className="space-y-2.5">
-                                                                    <label className="text-[14px] font-black text-neutral-900 uppercase tracking-tight">{t({ en: 'Pick up', fr: 'Prise en charge' })}</label>
-                                                                    <div className="flex items-center gap-3">
-                                                                        <button
-                                                                            onClick={() => setOpenCalendarMode(openCalendarMode === 'pickup' ? null : 'pickup')}
-                                                                            className="flex-1 flex items-center justify-between px-4 h-12 bg-neutral-50 rounded-xl border border-neutral-100 transition-colors focus:border-[#00A082] focus:bg-white"
-                                                                        >
-                                                                            <div className="flex items-center gap-2">
-                                                                                <Calendar size={18} className={openCalendarMode === 'pickup' ? "text-[#00A082]" : "text-neutral-500"} />
-                                                                                <span className="font-bold text-[14px] text-neutral-900">
-                                                                                    {selectedDate ? format(new Date(selectedDate), 'E, MMM d') : t({ en: 'Select Date', fr: 'Choisir la date' })}
-                                                                                </span>
-                                                                            </div>
-                                                                        </button>
-                                                                        <div className="relative w-[130px]">
-                                                                            <Clock size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 pointer-events-none z-10" />
-                                                                            <select
-                                                                                className="w-full h-12 bg-neutral-50 rounded-xl border border-neutral-100 pl-8 pr-6 font-bold text-[14px] text-neutral-900 outline-none appearance-none"
-                                                                                value={selectedTime || ''}
-                                                                                onChange={e => setSelectedTime(e.target.value)}
-                                                                            >
-                                                                                <option value="" disabled>-</option>
-                                                                                {Array.from({ length: 48 }).map((_, i) => {
-                                                                                    const totalMinutes = i * 30;
-                                                                                    // Filter slots if today is selected (at least 1 hour from now)
-                                                                                    if (selectedDate && isToday(parseISO(selectedDate))) {
-                                                                                        const now = new Date();
-                                                                                        const currentMinutes = now.getHours() * 60 + now.getMinutes();
-                                                                                        if (totalMinutes < currentMinutes + 60) return null;
-                                                                                    }
-
-                                                                                    const hours24 = Math.floor(totalMinutes / 60);
-                                                                                    const mins = totalMinutes % 60;
-                                                                                    const timeStr = `${hours24.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`;
-                                                                                    return <option key={timeStr} value={timeStr}>{timeStr}</option>;
-                                                                                })}
-                                                                            </select>
-                                                                            <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 pointer-events-none" />
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
-
-                                                                <div className="w-full h-px bg-neutral-100" />
-
-                                                                {/* Return */}
-                                                                <div className="space-y-2.5">
-                                                                    <label className="text-[14px] font-black text-neutral-900 uppercase tracking-tight">{t({ en: 'Return', fr: 'Retour' })}</label>
-                                                                    <div className="flex items-center gap-3">
-                                                                        <button
-                                                                            onClick={() => setOpenCalendarMode(openCalendarMode === 'return' ? null : 'return')}
-                                                                            className="flex-1 flex items-center justify-between px-4 h-12 bg-neutral-50 rounded-xl border border-neutral-100 transition-colors focus:border-[#00A082] focus:bg-white"
-                                                                        >
-                                                                            <div className="flex items-center gap-2">
-                                                                                <Calendar size={18} className={openCalendarMode === 'return' ? "text-[#00A082]" : "text-neutral-500"} />
-                                                                                <span className="font-bold text-[14px] text-neutral-900">
-                                                                                    {carReturnDate ? format(new Date(carReturnDate), 'E, MMM d') : t({ en: 'Select Date', fr: 'Choisir la date' })}
-                                                                                </span>
-                                                                            </div>
-                                                                        </button>
-                                                                        <div className="relative w-[130px]">
-                                                                            <Clock size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 pointer-events-none z-10" />
-                                                                            <select
-                                                                                className="w-full h-12 bg-neutral-50 rounded-xl border border-neutral-100 pl-8 pr-6 font-bold text-[14px] text-neutral-900 outline-none appearance-none"
-                                                                                value={carReturnTime || ''}
-                                                                                onChange={e => setCarReturnTime(e.target.value)}
-                                                                            >
-                                                                                <option value="" disabled>-</option>
-                                                                                {Array.from({ length: 48 }).map((_, i) => {
-                                                                                    const totalMinutes = i * 30;
-                                                                                    // Filter slots if return date is today (at least 1 hour from now)
-                                                                                    if (carReturnDate && isToday(parseISO(carReturnDate))) {
-                                                                                        const now = new Date();
-                                                                                        const currentMinutes = now.getHours() * 60 + now.getMinutes();
-                                                                                        if (totalMinutes < currentMinutes + 60) return null;
-                                                                                    }
-
-                                                                                    const hours24 = Math.floor(totalMinutes / 60);
-                                                                                    const mins = totalMinutes % 60;
-                                                                                    const timeStr = `${hours24.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`;
-                                                                                    return <option key={timeStr} value={timeStr}>{timeStr}</option>;
-                                                                                })}
-                                                                            </select>
-                                                                            <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 pointer-events-none" />
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                            {openCalendarMode && (
-                                                                <div className="bg-white rounded-[24px] border border-[#00A082] p-5 shadow-xl -mx-1 relative z-20">
-                                                                    <div className="text-center mb-6 flex items-center justify-between">
-                                                                        <h4 className="text-[16px] font-black text-neutral-900 tracking-tight pl-2">
-                                                                            {(() => {
-                                                                                const d = new Date();
-                                                                                const currentMonth = d.toLocaleDateString('en-US', { month: 'long' });
-                                                                                const nextMonth = new Date(d.getFullYear(), d.getMonth() + 1).toLocaleDateString('en-US', { month: 'long' });
-                                                                                return `${currentMonth} — ${nextMonth} ${d.getFullYear()} `;
-                                                                            })()}
-                                                                        </h4>
-                                                                        <button onClick={() => setOpenCalendarMode(null)} className="w-8 h-8 flex items-center justify-center rounded-full bg-neutral-100 text-neutral-600 hover:bg-neutral-200 transition-colors">
-                                                                            <X size={16} />
-                                                                        </button>
-                                                                    </div>
-                                                                    <div className="px-1">
-                                                                        <div className="grid grid-cols-7 mb-4">
-                                                                            {(t({ en: 'SUN,MON,TUE,WED,THU,FRI,SAT', fr: 'DIM,LUN,MAR,MER,JEU,VEN,SAM' })).split(',').map(d => (
-                                                                                <div key={d} className="text-[11px] font-black text-neutral-400 text-center">{d}</div>
-                                                                            ))}
-                                                                        </div>
-                                                                        <div className="grid grid-cols-7 gap-y-2">
-                                                                            {carRentalCalendarDays}
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
-                                                            )}
-                                                        </div>
-                                                    ) : ((serviceConfig as any).isDayCounter) ? (
-                                                        <div className="flex flex-col items-center justify-center p-0 bg-transparent gap-8">
-                                                            <div className="relative w-full h-[320px] flex items-center justify-center overflow-hidden">
-                                                                {/* Fixed Middle Oval Lens */}
-                                                                <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[160px] h-[225px] border-[5px] border-[#008C74] rounded-[100px] z-20 pointer-events-none shadow-[0_0_40px_rgba(0,140,116,0.1)]" />
-
-                                                                <div
-                                                                    ref={dayCounterRef}
-                                                                    className="flex items-center gap-20 overflow-x-auto no-scrollbar w-full px-[40%] h-full scroll-smooth"
-                                                                    style={{ scrollSnapType: 'x mandatory', WebkitOverflowScrolling: 'touch' }}
-                                                                    onScroll={(e) => {
-                                                                        const container = e.currentTarget;
-                                                                        const scrollPosition = container.scrollLeft + container.offsetWidth / 2;
-                                                                        const children = Array.from(container.children) as HTMLElement[];
-
-                                                                        const closest = children.reduce((prev, curr) => {
-                                                                            const currCenter = curr.offsetLeft + curr.offsetWidth / 2;
-                                                                            const prevCenter = prev.offsetLeft + prev.offsetWidth / 2;
-                                                                            return Math.abs(currCenter - scrollPosition) < Math.abs(prevCenter - scrollPosition) ? curr : prev;
-                                                                        });
-
-                                                                        const dayId = closest.getAttribute('data-id');
-                                                                        if (dayId && taskSize !== dayId) {
-                                                                            setTaskSize(dayId);
-                                                                        }
-                                                                    }}
-                                                                >
-                                                                    {serviceConfig.options.map((option: any) => {
-                                                                        const dayId = option.id;
-                                                                        const isSelected = taskSize === dayId;
-                                                                        const label = t(option.subLabel);
-
-                                                                        return (
-                                                                            <button
-                                                                                key={option.id}
-                                                                                data-id={option.id}
-                                                                                onClick={(e) => {
-                                                                                    setTaskSize(option.id);
-                                                                                    e.currentTarget.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
-                                                                                }}
-                                                                                className={cn(
-                                                                                    "flex-shrink-0 flex flex-col items-center justify-center transition-all duration-500",
-                                                                                    isSelected ? "w-[160px] h-[225px] scale-100 opacity-100" : "w-[130px] h-full opacity-40 grayscale scale-75"
-                                                                                )}
-                                                                                style={{ scrollSnapAlign: 'center', scrollSnapStop: 'always' }}
-                                                                            >
-                                                                                <div className={cn(
-                                                                                    "w-44 h-44 rounded-full flex flex-col items-center justify-center border-2 transition-all duration-700",
-                                                                                    isSelected ? "border-transparent bg-transparent" : "border-neutral-200 bg-transparent"
-                                                                                )}>
-                                                                                    <span className={cn(
-                                                                                        "font-black tracking-tighter leading-none transition-all duration-700 text-center px-2",
-                                                                                        isSelected ? (option.label.en.length > 5 ? "text-[36px]" : "text-[64px]") : (option.label.en.length > 5 ? "text-[24px]" : "text-[40px]"),
-                                                                                        isSelected ? "text-black" : "text-neutral-400"
-                                                                                    )}>
-                                                                                        {option.label.en}
-                                                                                    </span>
-                                                                                    <span className={cn(
-                                                                                        "font-black uppercase tracking-widest text-center px-4 transition-all duration-700 leading-tight",
-                                                                                        isSelected ? "text-[14px] text-[#008C74] mt-2" : "text-[11px] text-neutral-300 mt-1"
-                                                                                    )}>
-                                                                                        {label}
-                                                                                    </span>
-                                                                                </div>
-                                                                            </button>
-                                                                        );
-                                                                    })}
-                                                                </div>
-                                                            </div>
-
-                                                            <div className="flex flex-col items-center gap-2 text-center -mt-6">
-                                                                <div className="px-4 py-2 rounded-full bg-[#008C74]/10 border border-[#008C74]/20">
-                                                                    <span className="text-[15px] font-black text-[#008C74]">
-                                                                        {(() => {
-                                                                            const opt = serviceConfig.options.find(o => o.id === taskSize);
-                                                                            const rawDuration = opt?.duration ?? parseFloat(taskSize || '1');
-                                                                            const subCoeff = getServiceSubCoefficient(service, subService);
-                                                                            const hours = (serviceConfig as any).isDaily ? rawDuration * 8 : (rawDuration * subCoeff);
-                                                                            return `${hours}h`;
-                                                                        })()} {t({ en: 'of total service', fr: 'de service total', ar: 'إجمالي مدة الخدمة' })}
-                                                                    </span>
-                                                                </div>
-                                                                <p className="text-[14px] text-neutral-400 font-bold max-w-[300px] mt-2">
-                                                                    {(serviceConfig as any).swipeText || t({
-                                                                        en: "Swipe to define exactly how many days you need.",
-                                                                        fr: "Faites défiler pour définir le nombre de jours exact.",
-                                                                        ar: "قم بالتمرير لتحديد عدد الأيام بالضبط."
-                                                                    })}
-                                                                </p>
-                                                            </div>
-                                                        </div>
-                                                    ) : (
-                                                        serviceConfig.options.map((size, idx) => (
-                                                            <motion.button
-                                                                key={size.id}
-                                                                initial={{ opacity: 0, y: 20, scale: 0.95 }}
-                                                                animate={{ opacity: 1, y: 0, scale: 1 }}
-                                                                transition={{
-                                                                    type: "spring",
-                                                                    damping: 20,
-                                                                    stiffness: 250,
-                                                                    delay: 0.1 + idx * 0.08
-                                                                }}
-                                                                onClick={() => {
-                                                                    setTaskSize(size.id);
-                                                                    if (service === 'moving') {
-                                                                        setTimeout(() => setSubStep1('moving_vehicle'), 250);
-                                                                    } else {
-                                                                        setTimeout(() => setSubStep1('description'), 250);
-                                                                    }
-                                                                }}
-                                                                className={cn(
-                                                                    "flex flex-col gap-3 p-8 rounded-[20px] text-left transition-all",
-                                                                    taskSize === size.id ? "bg-[#F7F6F6] border-2 border-[#00A082] shadow-sm" : "bg-neutral-50/40 border border-neutral-100 hover:border-[#008C74]/30"
-                                                                )}
-                                                            >
-
-                                                                <div className="flex-1 relative">
-                                                                    <div className="flex items-center justify-between mb-2">
-                                                                        <div className="flex items-center gap-2">
-                                                                            <span className="text-[20px] font-bold text-neutral-900 leading-none">{t(size.label as any)}</span>
-                                                                        </div>
-                                                                        <span className="text-[16px] font-black text-[#00A082] bg-[#00A082]/10 px-4 py-2 rounded-xl whitespace-nowrap">
-                                                                            ≈ {t(size.estTime as any)}
-                                                                        </span>
-                                                                    </div>
-                                                                    <p className="text-[17px] text-black font-medium leading-normal opacity-70 max-w-[90%]">{t(size.desc as any)}</p>
-
-                                                                    {/* Discount Badge at Top Right */}
-                                                                    {idx === 1 && (
-                                                                        <div className="absolute -top-10 -right-4 rotate-3 px-3 py-1.5 rounded-[12px] bg-[#FFC244] text-black text-[13px] font-black shadow-lg shadow-[#FFC244]/20 border border-white/20">
-                                                                            -5%
-                                                                        </div>
-                                                                    )}
-                                                                    {idx === 2 && (
-                                                                        <div className="absolute -top-10 -right-4 -rotate-3 px-3 py-1.5 rounded-[12px] bg-[#9F7AEA] text-white text-[13px] font-black shadow-lg shadow-[#9F7AEA]/20 border border-white/20">
-                                                                            -10%
-                                                                        </div>
-                                                                    )}
-                                                                </div>
-                                                            </motion.button>
-                                                        ))
-                                                    )}
-                                                </div>
-                                            </motion.div>
-                                        )}
-
-                                        {subStep1 === 'moving_vehicle' && (
-                                            <motion.div
-                                                key="sub-moving-vehicle"
-                                                initial={{ opacity: 0, x: 20 }}
-                                                animate={{ opacity: 1, x: 0 }}
-                                                exit={{ opacity: 0, x: -20 }}
-                                                transition={{ duration: 0.25, ease: "easeOut" }}
-                                                className="space-y-4 pt-20"
-                                            >
-                                                <motion.h4
-                                                    initial={{ opacity: 0, y: 10 }}
-                                                    animate={{ opacity: 1, y: 0 }}
-                                                    transition={{ delay: 0.05 }}
-                                                    className="text-[25px] font-bold text-black ml-1"
-                                                >
-                                                    {t({ en: "Which transport mean do you need?", fr: "De quelle moyen transport avez-vous besoin ?", ar: "ما هي وسيلة النقل التي تحتاجها؟" })}
-                                                </motion.h4>
-                                                <p className="text-neutral-500 text-[15px] font-medium ml-1">
-                                                    {t({
-                                                        en: "We'll match you with Bricolers who have this type of vehicle.",
-                                                        fr: "Nous vous mettrez en relation avec des Bricolers disposant de ce type de véhicule.",
-                                                        ar: "سنقوم بمطابقتك مع Bricolers الذين لديهم هذا النوع من الشاحنات."
-                                                    })}
-                                                </p>
-                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                                    {[
-                                                        { id: 'triporteur', label: { en: '🛵 Triporteur', fr: '🛵 Triporteur', ar: '🛵 تربورتور' } },
-                                                        { id: 'small_van', label: { en: '🚐 Small Van', fr: '🚐 Petit Van', ar: '🚐 سيارة "برلانكو"' } },
-                                                        { id: 'large_van', label: { en: '🚚 Large Van', fr: '🚚 Grand Van', ar: '🚚 شاحنة فورد ترانزيت' } },
-                                                        { id: 'small_truck', label: { en: '🚛 Small Truck', fr: '🚛 Petit Camion', ar: '🚛 شاحنة صغيرة' } },
-                                                        { id: 'large_truck', label: { en: '🚚 Large Truck', fr: '🚚 Grand Camion', ar: '🚚 شاحنة كبيرة' } },
-                                                        { id: 'labor_only', label: { en: '💪 Labor only', fr: '💪 Main-d’œuvre seule', ar: '💪 يد عاملة فقط' } },
-                                                    ].map((opt, idx) => {
-                                                        const isSelected = selectedMovingVehicle === opt.id;
-                                                        return (
-                                                            <motion.button
-                                                                key={opt.id}
-                                                                initial={{ opacity: 0, y: 10 }}
-                                                                animate={{ opacity: 1, y: 0 }}
-                                                                transition={{ delay: 0.1 + idx * 0.05 }}
-                                                                onClick={() => {
-                                                                    setSelectedMovingVehicle(opt.id);
-                                                                    setTimeout(() => setSubStep1('description'), 250);
-                                                                }}
-                                                                className={cn(
-                                                                    "flex items-center justify-between p-5 rounded-[20px] transition-all text-left",
-                                                                    isSelected ? "bg-[#E6F6F2] border-2 border-[#00A082]" : "bg-neutral-50/40 border border-neutral-100 hover:border-neutral-200"
-                                                                )}
-                                                            >
-                                                                <span className="text-[16px] font-bold text-neutral-900">{t(opt.label)}</span>
-                                                                {isSelected && <div className="w-6 h-6 rounded-full bg-[#00A082] flex items-center justify-center"><Check size={14} className="text-white" strokeWidth={4} /></div>}
-                                                            </motion.button>
-                                                        );
-                                                    })}
-                                                </div>
-                                            </motion.div>
-                                        )}
-
-                                        {subStep1 === 'description' && (
-                                            <motion.div
-                                                key="sub-desc"
-                                                initial={{ opacity: 0, x: 20 }}
-                                                animate={{ opacity: 1, x: 0 }}
-                                                exit={{ opacity: 0, x: -20 }}
-                                                transition={{ duration: 0.25, ease: "easeOut" }}
-                                                className="space-y-4 pt-30 pb-12"
-                                            >
-                                                <motion.h4
-                                                    initial={{ opacity: 0, y: 10 }}
-                                                    animate={{ opacity: 1, y: 0 }}
-                                                    transition={{ delay: 0.05 }}
-                                                    className="text-[25px] font-bold text-black ml-1"
-                                                >
-                                                    {t({ en: 'Describe What you need', fr: 'Décrivez votre besoin', ar: 'صف ما تحتاجه' })}
-                                                </motion.h4>
-                                                {(service === 'moving' || service === 'errands' || service === 'courier') && (
-                                                    <motion.p
-                                                        initial={{ opacity: 0 }}
-                                                        animate={{ opacity: 1 }}
-                                                        transition={{ delay: 0.15 }}
-                                                        className="text-[13.5px] text-[#00A082] font-bold ml-1 -mt-3 mb-1"
-                                                    >
-                                                        {t({ en: '* Please include drop-off address and stairs/elevator details.', fr: '* Veuillez indiquer le lieu d\'arrivée et les détails (escaliers, etc.).', ar: '* يرجى تضمين عنوان التوصيل وتفاصيل السلالم/المصعد.' })}
-                                                    </motion.p>
-                                                )}
-
-                                                <motion.div
-                                                    initial={{ opacity: 0, y: 15 }}
-                                                    animate={{ opacity: 1, y: 0 }}
-                                                    transition={{ delay: 0.2 }}
-                                                    className="space-y-3"
-                                                >
-                                                    <div className="bg-[#F7F6F6] rounded-[12px] border border-neutral-100 p-4 shadow-inner">
-                                                        <textarea
-                                                            value={description}
-                                                            onChange={(e) => setDescription(e.target.value)}
-                                                            placeholder={placeholderText}
-                                                            className="w-full h-24 bg-transparent outline-none text-[15px] font-medium text-neutral-800 placeholder:text-neutral-400 resize-none leading-relaxed"
-                                                        />
-                                                    </div>
-
-                                                    {/* Drafts Section */}
-                                                    {descriptionDrafts.length > 0 && (
-                                                        <motion.div
-                                                            initial={{ opacity: 0 }}
-                                                            animate={{ opacity: 1 }}
-                                                            transition={{ delay: 0.3 }}
-                                                            className="flex gap-2 w-full overflow-x-auto no-scrollbar py-3 mt-1"
-                                                        >
-                                                            {descriptionDrafts.map((draft, idx) => (
-                                                                <button
-                                                                    key={idx}
-                                                                    onClick={() => setDescription(draft)}
-                                                                    className="flex-shrink-0 flex items-center gap-2 px-3 py-2 bg-neutral-50 rounded-lg border border-neutral-100 text-[13px] text-neutral-600 font-medium hover:bg-neutral-100 transition-colors active:scale-95"
-                                                                >
-                                                                    <FileText size={14} className="opacity-60 text-neutral-500" />
-                                                                    <span className="max-w-[200px] truncate">{draft}</span>
-                                                                </button>
-                                                            ))}
-                                                        </motion.div>
-                                                    )}
-
-                                                    {/* Mission Photos Section */}
-                                                    <div className="space-y-3 mt-4">
-                                                        <div className="flex items-center justify-between px-1">
-                                                            <span className="text-[13px] font-bold text-neutral-500 uppercase tracking-wider">
-                                                                {t({ en: 'Photos (Optional)', fr: 'Photos (Optionnel)', ar: 'صور (اختياري)' })}
-                                                            </span>
-                                                            <span className="text-[11px] font-medium text-neutral-400">
-                                                                {images.length}/5
-                                                            </span>
-                                                        </div>
-
-                                                        <div className="grid grid-cols-4 gap-2">
-                                                            {images.map((url, idx) => (
-                                                                <motion.div
-                                                                    key={url}
-                                                                    initial={{ opacity: 0, scale: 0.9 }}
-                                                                    animate={{ opacity: 1, scale: 1 }}
-                                                                    className="relative aspect-square rounded-xl overflow-hidden border border-neutral-100 group shadow-sm bg-neutral-50"
-                                                                >
-                                                                    <img src={url} className="w-full h-full object-cover transition-transform group-hover:scale-105" alt={`Task ${idx + 1}`} />
-                                                                    <button
-                                                                        type="button"
-                                                                        onClick={() => setImages(prev => prev.filter((_, i) => i !== idx))}
-                                                                        className="absolute top-1 right-1 w-6 h-6 rounded-full bg-red-500 text-white flex items-center justify-center active:scale-90 transition-transform"
-                                                                    >
-                                                                        <X size={14} strokeWidth={3} />
-                                                                    </button>
-                                                                </motion.div>
-                                                            ))}
-
-                                                            {images.length < 5 && (
-                                                                <label className="relative aspect-square rounded-xl border-2 border-dashed border-neutral-200 hover:border-[#007AFF]/40 hover:bg-[#007AFF]/5 transition-all cursor-pointer flex flex-col items-center justify-center gap-1.5 active:scale-95">
-                                                                    <input
-                                                                        type="file"
-                                                                        accept="image/*"
-                                                                        multiple
-                                                                        className="hidden"
-                                                                        disabled={isUploadingImages}
-                                                                        onChange={async (e) => {
-                                                                            const files = Array.from(e.target.files || []);
-                                                                            if (files.length === 0) return;
-
-                                                                            const limit = 5 - images.length;
-                                                                            const filesToUpload = files.slice(0, limit);
-
-                                                                            setIsUploadingImages(true);
-                                                                            try {
-                                                                                // Parallelize uploads for better speed
-                                                                                const uploadPromises = filesToUpload.map(async (file) => {
-                                                                                    try {
-                                                                                        const blob = await compressImageFileToDataUrl(file, { maxWidth: 1000, maxHeight: 1000, quality: 0.5 }).then(dataUrlToBlob);
-                                                                                        const uid = auth.currentUser?.uid || 'anonymous';
-                                                                                        const path = `orders/${uid}/${Date.now()}_${Math.random().toString(36).substr(2, 5)}.jpg`;
-                                                                                        const url = await uploadImageToStorage(blob, path);
-                                                                                        setImages(prev => [...prev, url]);
-                                                                                        return url;
-                                                                                    } catch (innerErr) {
-                                                                                        console.error("Single image upload failed:", innerErr);
-                                                                                        throw innerErr;
-                                                                                    }
-                                                                                });
-
-                                                                                await Promise.all(uploadPromises);
-                                                                            } catch (err: any) {
-                                                                                console.error("Failed to upload mission images:", err);
-                                                                                const errorMsg = err.message === 'PERMISSION_DENIED'
-                                                                                    ? t({ en: 'Permission denied. Please try logging in.', fr: 'Accès refusé. Veuillez vous connecter.', ar: 'تم رفض الوصول. يرجى تسجيل الدخول.' })
-                                                                                    : t({ en: 'Cloud storage error. Please check your connection.', fr: 'Erreur de stockage. Vérifiez votre connexion.', ar: 'خطأ في التخزين. تحقق من الاتصال.' });
-
-                                                                                showToast({
-                                                                                    variant: 'error',
-                                                                                    title: t({ en: 'Upload failed', fr: 'Échec de l\'envoi', ar: 'فشل الرفع' }), // Matching user's "Echec d l'envoyer" (Échec de l'envoi)
-                                                                                    description: errorMsg
-                                                                                });
-                                                                            } finally {
-                                                                                setIsUploadingImages(false);
-                                                                            }
-                                                                        }}
-                                                                    />
-                                                                    {isUploadingImages ? (
-                                                                        <RefreshCw size={20} className="text-[#007AFF] animate-spin" />
-                                                                    ) : (
-                                                                        <>
-                                                                            <Camera size={20} className="text-[#007AFF]" />
-                                                                            <span className="text-[10px] font-black text-[#007AFF] uppercase">{t({ en: 'Add', fr: 'Ajouter', ar: 'إضافة' })}</span>
-                                                                        </>
-                                                                    )}
-                                                                </label>
-                                                            )}
-                                                        </div>
-                                                    </div>
-
-
-                                                </motion.div>
-
-                                            </motion.div>
-                                        )}
-                                    </AnimatePresence>
-                                </motion.div>
-                            ) : (step === 2 && isMatchingAnimation) ? (
-                                <div className="absolute inset-0 flex items-center justify-center bg-white z-[200] overflow-hidden">
-                                    <SplashScreen />
-                                </div>
-                            ) : step === 2 ? (
-                                <motion.div
-                                    key="step2-results"
-                                    initial={{ opacity: 0, x: 20 }}
-                                    animate={{ opacity: 1, x: 0 }}
-                                    exit={{ opacity: 0, x: -20 }}
-                                    className="space-y-4 pb-24"
-                                >
-                                    {/* Horizontal Order Summary Pills */}
-                                    <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-4 -mx-6 px-6">
-                                        <div className="flex-shrink-0 flex items-center gap-2 bg-[#EBF8F5] px-4 py-2.5 rounded-full border border-[#DECD85]/50">
-                                            {(() => {
-                                                const activeService = getServiceById(service);
-                                                const serviceIconMap: Record<string, string> = {
-                                                    cleaning: 'CleaningVector.png',
-                                                    electricity: 'ElectricityVector.png',
-                                                    plumbing: 'PlumbingVector.png',
-                                                    painting: 'Paintingvector.png',
-                                                    handyman: 'HandymanVector.png',
-                                                    furniture_assembly: 'AsssemblyVector.png',
-                                                    moving: 'MovingHelpVector.png',
-                                                    gardening: 'GardeningVector.png',
-                                                    mounting: 'MountingVector.png',
-                                                    babysitting: 'babysettingnVector.png',
-                                                    errands: 'homerepairVector.png',
-                                                    private_driver: '/Images/Vectors Illu/BWCardirever.png',
-                                                    cooking: '/Images/Vectors Illu/cooking.png',
-                                                    pool_cleaning: '/Images/Vectors Illu/Poolcleaning_VI.png',
-                                                    pets_care: '/Images/Vectors Illu/petscare.png',
-                                                };
-                                                const iconName = activeService ? serviceIconMap[activeService.id] || 'homerepairVector.png' : 'homerepairVector.png';
-                                                const iconPath = iconName.startsWith('/') ? iconName : "/Images/Service Category vectors/" + iconName;
-                                                return <img src={iconPath} className="w-5 h-5 object-contain" />;
-                                            })()}
-                                            <span className="text-[13px] font-black text-neutral-900 whitespace-nowrap opacity-80">
-                                                {getServiceById(service)?.name} {(() => {
-                                                    const subName = subService ? getSubServiceName(service, subService) : null;
-                                                    return subName ? "> " + subName : "";
-                                                })()}
-                                            </span>
-                                        </div>
-
-                                        <div className="flex-shrink-0 flex items-center gap-2 bg-[#FCEBA4] px-4 py-2.5 rounded-full border border-[#DECD85]/50">
-                                            <img src="/Images/LocationFlag_VI.webp" className="w-7 h-4.5 object-contain" />
-
-                                            <span className="text-[13px] font-black text-neutral-900 whitespace-nowrap opacity-80">
-                                                {t({ en: currentCity, fr: currentCity })}, {t({ en: currentArea, fr: currentArea })} - {t(activeTaskSize?.label as any)}
-                                            </span>
-                                        </div>
-                                    </div>
-
-                                    {service !== 'car_rental' && (
-                                        <div className="flex flex-col gap-1 pb-2">
-                                            <h3 className="text-[22px] font-black text-neutral-900">{t({ en: 'Find your Tasker', fr: 'Trouvez votre Pro', ar: 'ابحث عن المحترف الخاص بك' })}</h3>
-                                        </div>
-                                    )}
-
-                                    {isLoadingBricolers ? (
-                                        <div className="space-y-4">
-                                            {[1, 2, 3].map(i => (
-                                                <div key={i} className="h-64 bg-neutral-50 rounded-[28px] animate-pulse" />
-                                            ))}
-                                        </div>
-                                    ) : (
-                                        <div className="space-y-6 pt-2">
-
-                                            {/* Results List */}
-                                            {service === 'car_rental' && (
-                                                <div className="mb-2">
-                                                    <h3 className="text-[22px] font-black text-neutral-900 leading-tight">
-                                                        {t({ en: 'Available Car rental providers', fr: 'Car rental providers Disponibles', ar: 'السيارات المتاحة' })}
-                                                    </h3>
-                                                    <p className="text-[14px] font-bold text-neutral-400 mt-1">
-                                                        {t({ en: 'Select a car from our trusted providers.', fr: 'Choisissez une voiture de nos fournisseurs certifiés.' })}
-                                                    </p>
-                                                </div>
-                                            )}
-
-                                            <div className="grid grid-cols-1 gap-6 pt-2">
-                                                {sortedBricolers.map((bricoler: any, idx) => (
-                                                    <BricolerCard
-                                                        key={bricoler.id}
-                                                        index={idx}
-                                                        service={service}
-                                                        bricoler={bricoler}
-                                                        serviceName={getServiceById(service)?.name || ''}
-                                                        isSelected={selectedBricolerId === bricoler.id}
-                                                        carRentalBookings={carRentalBookings.filter(job => job.bricolerId === bricoler.id)}
-                                                        selectedPickUpDate={selectedDate}
-                                                        selectedPickUpTime={selectedTime}
-                                                        selectedReturnDate={carReturnDate}
-                                                        selectedReturnTime={carReturnTime}
-                                                        onSelect={() => {
-                                                            setSelectedBricolerId(bricoler.id);
-                                                            if (service === 'car_rental') {
-                                                                // For car rental, we MUST select a car model, so opening profile is better than go to step 3
-                                                                setViewedBricoler(bricoler);
-                                                            } else {
-                                                                setStep(3);
-                                                            }
-                                                        }}
-                                                        onOpenProfile={() => setViewedBricoler(bricoler)}
-                                                    />
-                                                ))}
-                                            </div>
-
-                                            {sortedBricolers.length === 0 && (
-                                                <div className="flex flex-col items-center justify-center pt-8 pb-12 text-center px-4 bg-neutral-50 rounded-[32px] border-2 border-dashed border-neutral-100 mt-4">
-                                                    <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mb-4 border border-neutral-100">
-                                                        <Search size={24} className="text-neutral-200" />
-                                                    </div>
-                                                    <h4 className="text-[16px] font-black text-neutral-900 mb-1">{t({ en: 'No matching pros found', fr: 'Aucun expert trouvé', ar: 'لم يتم العثور على محترفين مطابقين' })}</h4>
-                                                    <p className="text-[12px] font-bold text-neutral-400">
-                                                        {t({ en: 'Try changing your location or post an open request.', fr: 'Changez de lieu ou postez une offre ouverte.', ar: 'حاول تغيير موقعك أو انشر طلباً مفتوحاً.' })}
-                                                    </p>
-                                                </div>
-                                            )}
-                                        </div>
-                                    )}
-                                </motion.div>
-                            ) : step === 3 ? (
-                                <motion.div
-                                    key="step3"
-                                    initial={{ opacity: 0, y: 10 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    exit={{ opacity: 0, x: -100 }}
-                                    className="pb-24 pt-4"
-                                >
-                                    {/* Header Section with Pro Avatar */}
-                                    <div className="mb-8 flex items-start justify-between gap-3 px-1">
-                                        <div className="flex min-w-0 items-center gap-3">
-                                            <div className="relative">
-                                                <img
-                                                    src={selectedPro?.photoURL || "/Images/Logo/Black Lbricol Avatar Face.webp"}
-                                                    className="w-12 h-12 rounded-full object-cover bg-neutral-100"
-                                                />
-                                            </div>
-                                            <h3 className="min-w-0 text-[16px] font-black leading-tight tracking-tight text-neutral-900 sm:text-[18px]">
-                                                {selectedPro?.displayName || t({ en: 'Tasker', fr: 'Pro', ar: 'محترف' })} — {t({ en: 'Availability', fr: 'Disponibilités', ar: 'ساعات العمل' })}
-                                            </h3>
-                                        </div>
-                                        <div className="flex items-center gap-2">
-                                            <button
-                                                onClick={() => setStep(2)}
-                                                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-neutral-900 transition-all hover:bg-neutral-100"
-                                            >
-                                                <X size={24} strokeWidth={2.5} />
-                                            </button>
-                                        </div>
-                                    </div>
-
-                                    {/* Month Selection / Display */}
-                                    <div className="text-center mb-6">
-                                        <h4 className="text-[17px] font-black text-neutral-900">
-                                            {(() => {
-                                                const d = new Date();
-                                                const currentMonth = d.toLocaleDateString('en-US', { month: 'long' });
-                                                const nextMonth = new Date(d.getFullYear(), d.getMonth() + 1).toLocaleDateString('en-US', { month: 'long' });
-                                                return `${currentMonth} — ${nextMonth} ${d.getFullYear()} `;
-                                            })()}
-                                        </h4>
-                                    </div>
-
-                                    {/* Calendar Grid */}
-                                    <div className="px-2">
-                                        <div className="grid grid-cols-7 mb-4">
-                                            {(t({ en: 'SUN,MON,TUE,WED,THU,FRI,SAT', fr: 'DIM,LUN,MAR,MER,JEU,VEN,SAM' })).split(',').map(d => (
-                                                <div key={d} className="text-[11px] font-black text-neutral-400 text-center">{d}</div>
-                                            ))}
-                                        </div>
-
-                                        <div className="grid grid-cols-7 gap-y-3">
-                                            {renderedCalendarDays}
-                                        </div>
-                                    </div>
-
-                                    {/* Time Selector Grid */}
-                                    <div className="mt-8 px-1 space-y-8">
-                                        {(() => {
-                                            const generated = generateAvailableSlots();
-                                            // Strict: only show generated if pro selected
-                                            const finalSlotsRaw = (generated.length > 0)
-                                                ? generated
-                                                : (selectedBricolerId === 'open' ? ['08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00', '19:00', '20:00', '21:00'] : []);
-
-                                            const finalSlots = finalSlotsRaw.filter(slot => {
-                                                const isCurrentlyBooked = isSlotBooked(slot);
-                                                if (isCurrentlyBooked) return false;
-
-                                                // Filter out past times if selected day is today (with 15 minute buffer)
-                                                if (selectedDate) {
-                                                    const now = new Date();
-                                                    const todayStr = now.getFullYear() + "-" + String(now.getMonth() + 1).padStart(2, '0') + "-" + String(now.getDate()).padStart(2, '0');
-                                                    const isSelectionToday = selectedDate === todayStr;
-
-                                                    if (isSelectionToday) {
-                                                        const [h, m] = slot.split(':').map(Number);
-                                                        const slotTimeInMins = h * 60 + m;
-                                                        const nowInMins = now.getHours() * 60 + now.getMinutes();
-                                                        if (slotTimeInMins <= nowInMins + 15) return false; // 15-minute buffer minimum
-                                                    }
-                                                }
-                                                return true;
-                                            });
-
-                                            const categories = [
-                                                { label: t({ en: 'MORNING', fr: 'MATIN', ar: 'صباحاً' }), slots: finalSlots.filter(s => parseInt(s.split(':')[0]) < 13) },
-                                                { label: t({ en: 'AFTERNOON', fr: 'APRÈS-MIDI', ar: 'بعد الظهر' }), slots: finalSlots.filter(s => parseInt(s.split(':')[0]) >= 13 && parseInt(s.split(':')[0]) < 18) },
-                                                { label: t({ en: 'EVENING', fr: 'SOIR', ar: 'مساءً' }), slots: finalSlots.filter(s => parseInt(s.split(':')[0]) >= 18) },
-                                            ];
-
-                                            return categories.map((cat, catIdx) => (
-                                                cat.slots.length > 0 && (
-                                                    <div key={catIdx} className="space-y-4">
-                                                        <span className="text-[11px] font-black text-neutral-400 tracking-widest uppercase ml-1">{cat.label}</span>
-                                                        <div className="grid grid-cols-3 gap-3">
-                                                            {cat.slots.map(slot => {
-                                                                const isSelected = selectedTime === slot;
-                                                                return (
-                                                                    <button
-                                                                        key={slot}
-                                                                        onClick={() => setSelectedTime(slot)}
-                                                                        className={cn(
-                                                                            "h-[54px] rounded-[14px] border flex items-center justify-center text-[16px] font-black transition-all active:scale-95",
-                                                                            isSelected
-                                                                                ? "bg-[#00A082] border-[#00A082] text-white"
-                                                                                : "bg-[#F9F9F9]/50 border-neutral-100 text-neutral-900 hover:border-[#008C74]/30"
-                                                                        )}
-                                                                    >
-                                                                        {slot}
-                                                                    </button>
-                                                                );
-                                                            })}
-                                                        </div>
-                                                    </div>
-                                                )
-                                            ));
-                                        })()}
-                                    </div>
-
-                                    {/* Helper Information */}
-                                    <div className="mt-6 px-1 space-y-6">
-                                        <p className="text-[14px] font-medium text-neutral-500 leading-relaxed">
-                                            {t({
-                                                en: 'Choose your task date and start time. You can chat to adjust task details or change start time after confirming.',
-                                                fr: 'Choisissez la date et l\'heure de début. Vous pourrez discuter pour ajuster les détails ou modifier l\'heure après confirmation.',
-                                                ar: 'اختر تاريخ المهمة ووقت البدء. يمكنك الدردشة لتعديل التفاصيل أو تغيير الوقت بعد التأكيد.'
-                                            })}
-                                        </p>
-
-                                        <div className="h-[1px] bg-neutral-100 w-full" />
-                                        <div className="space-y-4">
-                                            <div className="flex items-center justify-between">
-                                                <span className="text-[17px] font-bold text-neutral-900">{t({ en: 'Request for:', fr: 'Demande pour :', ar: 'طلب لـ:' })}</span>
-                                                <span className="text-[17px] font-bold text-neutral-600">
-                                                    {selectedDate && selectedTime ? (() => {
-                                                        const d = safeParseDate(selectedDate);
-                                                        const datePart = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-                                                        const [h, m] = selectedTime.split(':');
-                                                        const hh = parseInt(h);
-                                                        const period = hh >= 12 ? 'pm' : 'am';
-                                                        const displayH = hh > 12 ? hh - 12 : (hh === 0 ? 12 : hh);
-                                                        return `${datePart}, ${displayH}:${m}${period} `;
-                                                    })() : '—'}
-                                                </span>
-                                            </div>
-                                            {activeTaskSize && activeTaskSize.duration >= 2 && (
-                                                <p className="text-[15px] font-black text-[#00A082]">
-                                                    {t({ en: "This Tasker requires " + activeTaskSize.duration + " hour min", fr: "Ce pro requiert un minimum de " + activeTaskSize.duration + " heures", ar: "هذا المحترف يتطلب " + activeTaskSize.duration + " ساعات كحد أدنى" })}
-                                                </p>
-                                            )}
-                                        </div>
-
-
-                                        <div className="flex items-center gap-4 pt-4 px-2">
-                                            <div className="w-12 h-12 rounded-[12px] bg-[#E6F6F2] flex items-center justify-center flex-shrink-0">
-                                                <div className="relative">
-                                                    <div className="w-8 h-8 rounded-md border-2 border-[#00A082] flex flex-col items-center justify-center gap-0.5 p-1">
-                                                        <div className="w-full h-0.5 bg-[#00A082] rounded-full opacity-40" />
-                                                        <div className="w-full h-0.5 bg-[#00A082] rounded-full opacity-40" />
-                                                        <div className="w-full h-0.5 bg-[#00A082] rounded-full opacity-40" />
-                                                    </div>
-                                                    <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-[#FFC244] rounded-full border-2 border-white flex items-center justify-center">
-                                                        <Check size={8} className="text-white" strokeWidth={5} />
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <p className="text-[14px] font-medium text-neutral-600 leading-tight">
-                                                {t({ en: 'Next, confirm your details to get connected with your Tasker.', fr: 'Ensuite, confirmez vos détails pour être mis en relation avec votre Pro.', ar: 'بعد ذلك، قم بتأكيد تفاصيلك للتواصل مع المحترف الخاص بك.' })}
-                                            </p>
-                                        </div>
-                                    </div>
-                                </motion.div>
-                            ) : (
-                                <motion.div
-                                    key="step4"
-                                    initial={{ opacity: 0, y: 100 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    exit={{ opacity: 0 }}
-                                    className="flex flex-col pb-24 -mx-6"
-                                >
-                                    {/* Success/Programmed Header — same as ClientOrdersView */}
-                                    <div className="px-6 md:px-12 pt-10 pb-6 flex flex-col md:flex-row items-center gap-6 text-center md:text-left">
-                                        <div className="w-32 h-32 md:w-35 md:h-50 flex-shrink-0">
-                                            <img src="/Images/Vectors Illu/NewOrder.webp" className="w-full h-full object-contain" />
-                                        </div>
-                                        <div className="flex flex-col">
-                                            <h2 className="text-[32px] md:text-[35px] font-black text-black leading-[1.1] tracking-tighter">
-                                                {t({ en: 'Your Bricol.ma Order', fr: 'Votre commande Bricol.ma', ar: 'طلبك من Bricol.ma' })}
-                                            </h2>
-                                            <div className="flex items-center justify-center md:justify-start gap-2 text-[18px] font-semibold text-black mt-1 flex-wrap">
-                                                <span>{selectedDate ? safeParseDate(selectedDate).toLocaleDateString(t({ en: 'en-US', fr: 'fr-FR', ar: 'ar-MA' }), { day: 'numeric', month: 'short' }) : t({ en: 'Flexible', fr: 'Flexible', ar: 'مرن' })}</span>
-                                                <span className="text-neutral-200">|</span>
-                                                <span>{selectedTime}</span>
-                                                {service === 'car_rental' && carReturnDate && carReturnTime && (
-                                                    <>
-                                                        <span className="text-[#00A082] px-1">→</span>
-                                                        <span>{safeParseDate(carReturnDate).toLocaleDateString(t({ en: 'en-US', fr: 'fr-FR', ar: 'ar-MA' }), { day: 'numeric', month: 'short' })}</span>
-                                                        <span className="text-neutral-200">|</span>
-                                                        <span>{carReturnTime}</span>
-                                                    </>
-                                                )}
-                                            </div>
-                                            <p className="text-[12px] font-light text-black uppercase tracking-[0.2em] mt-2">
-                                                {t({ en: 'ORDER ID', fr: 'ID DE COMMANDE', ar: 'رقم الطلب' })}: #TEMP
-                                            </p>
-                                        </div>
-                                    </div>
-
-                                    {/* Wide ZigZag Separator — same as ClientOrdersView */}
-                                    <div className="w-full relative h-[40px] flex items-center overflow-hidden">
-                                        <div className="absolute w-full h-[2px] bg-neutral-100/50" />
-                                        <div className="w-full h-full flex justify-center opacity-[0.08]" style={{
-                                            backgroundImage: `url("data:image/svg+xml,%3Csvg width='40' height='10' viewBox='0 0 40 10' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 10L20 0L40 10' stroke='black' stroke-width='2'/%3E%3C/svg%3E")`,
-                                            backgroundRepeat: 'repeat-x',
-                                            backgroundPosition: 'center'
-                                        }} />
-                                    </div>
-                                    <div className="px-6 py-6 space-y-10">
-                                        {/* Frequency Selection */}
-                                        {/* Hide Repeat Order section as per user request */}
-                                        {/* 
-                                        <div className="space-y-4 mb-4">
-                                            <h3 className="text-[24px] font-black text-black">{t({ en: 'Repeat this order', fr: 'Répéter cette commande', ar: 'تكرار هذا الطلب' })}</h3>
-                                            <div className="flex flex-wrap gap-2">
-                                                {[
-                                                    { id: 'once', label: { en: 'Just once', fr: 'Juste une fois', ar: 'مرة واحدة فقط' } },
-                                                    { id: 'daily', label: { en: 'Every day', fr: 'Chaque jour', ar: 'كل يوم' } },
-                                                    { id: 'weekly', label: { en: 'Every week', fr: 'Chaque semaine', ar: 'كل أسبوع' } },
-                                                    { id: 'biweekly', label: { en: 'Every 2 weeks', fr: 'Toutes les 2 semaines', ar: 'كل أسبوعين' } },
-                                                    { id: 'monthly', label: { en: 'Every month', fr: 'Chaque mois', ar: 'كل شهر' } }
-                                                ].map(freq => (
-                                                    <button
-                                                        key={freq.id}
-                                                        onClick={() => setFrequency(freq.id as any)}
-                                                        className={cn(
-                                                            "px-4 py-2 rounded-full text-[14px] font-bold transition-all border-2",
-                                                            frequency === freq.id
-                                                                ? "bg-[#00A082] text-white border-[#00A082]"
-                                                                : "bg-white text-neutral-600 border-neutral-200 hover:border-[#008C74]!important"
-                                                        )}
-                                                    >
-                                                        {t(freq.label as any)}
-                                                    </button>
-                                                ))}
-                                            </div>
-                                        </div>
-                                        */}
-
-                                        {/* Payment Method Selection - MOVED ABOVE GRID */}
-                                        <div className="space-y-4 mb-4">
-                                            <div className="flex items-center gap-2">
-                                                <h3 className="text-[24px] font-black text-black">{t({ en: 'Payment', fr: 'Paiement', ar: 'الدفع' })}</h3>
-                                                <div className="w-14 h-14 flex-shrink-0">
-                                                    <img src="/Images/Vectors Illu/Currency_VI.webp" className="w-full h-full object-contain" />
-                                                </div>
-                                            </div>
-                                            <p className="text-[15px] font-medium text-neutral-400 -mt-2">{t({ en: 'Choose your payment method', fr: 'Choisissez votre moyen de paiement', ar: 'اختر طريقة الدفع' })}</p>
-                                            <div className="grid grid-cols-1 gap-3 min-[460px]:grid-cols-2">
-                                                {/* Cash */}
-                                                <button
-                                                    onClick={() => setPaymentMethod('cash')}
-                                                    className={cn(
-                                                        "flex min-w-0 items-start gap-3 rounded-[16px] border-2 px-4 py-4 text-left transition-all min-[520px]:items-center min-[520px]:px-5",
-                                                        paymentMethod === 'cash'
-                                                            ? "bg-[#FFF8E7] border-[#FFC244]"
-                                                            : "bg-neutral-50 border-neutral-100"
-                                                    )}
-                                                >
-                                                    <span className="text-2xl">💵</span>
-                                                    <div className="min-w-0 flex-1 text-left">
-                                                        <p className={cn("text-[15px] font-black leading-tight", paymentMethod === 'cash' ? "text-black" : "text-neutral-600")}>
-                                                            {t({ en: 'Cash', fr: 'Espèces', ar: 'نقداً' })}
-                                                        </p>
-                                                        <p className="text-[12px] font-medium text-neutral-400">{t({ en: 'On delivery', fr: 'À la livraison', ar: 'عند التسليم' })}</p>
-                                                    </div>
-                                                    {paymentMethod === 'cash' && (
-                                                        <div className="ml-auto mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#FFC244] min-[520px]:mt-0">
-                                                            <Check size={11} strokeWidth={4} className="text-white" />
-                                                        </div>
-                                                    )}
-                                                </button>
-                                                {/* Bank Transfer */}
-                                                <button
-                                                    onClick={() => setPaymentMethod('bank')}
-                                                    className={cn(
-                                                        "flex min-w-0 items-start gap-3 rounded-[16px] border-2 px-4 py-4 text-left transition-all min-[520px]:items-center min-[520px]:px-5",
-                                                        paymentMethod === 'bank'
-                                                            ? "bg-[#E6F6F2] border-[#00A082]"
-                                                            : "bg-neutral-50 border-neutral-100"
-                                                    )}
-                                                >
-                                                    <span className="text-2xl">🏦</span>
-                                                    <div className="min-w-0 flex-1 text-left">
-                                                        <p className={cn("text-[15px] font-black leading-tight", paymentMethod === 'bank' ? "text-[#00A082]" : "text-neutral-600")}>
-                                                            {t({ en: 'Bank Transfer', fr: 'Virement', ar: 'تحويل بنكي' })}
-                                                        </p>
-                                                        <p className="text-[12px] font-medium text-neutral-400">{t({ en: 'WhatsApp verify', fr: 'Vérif. WhatsApp', ar: 'تأكيد واتساب' })}</p>
-                                                    </div>
-                                                    {paymentMethod === 'bank' && (
-                                                        <div className="ml-auto mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#00A082] min-[520px]:mt-0">
-                                                            <Check size={11} strokeWidth={4} className="text-white" />
-                                                        </div>
-                                                    )}
-                                                </button>
-                                            </div>
-
-                                            {/* Bank transfer details — only shows when bank is selected */}
-                                            {paymentMethod === 'bank' && (
-                                                <motion.div
-                                                    initial={{ opacity: 0, height: 0 }}
-                                                    animate={{ opacity: 1, height: 'auto' }}
-                                                    exit={{ opacity: 0, height: 0 }}
-                                                    className="overflow-hidden mb-4"
-                                                >
-                                                    <div className="p-5 bg-[#E6F6F2]/30 rounded-[16px] border border-[#00A082]/20 space-y-4">
-                                                        <div className="flex items-center gap-2">
-                                                            <div className="w-8 h-8 rounded-full bg-[#00A082]/10 flex items-center justify-center">
-                                                                <span className="text-[16px]">🏦</span>
-                                                            </div>
-                                                            <p className="text-[15px] font-black text-[#00A082]">{t({ en: 'Account Details', fr: 'Coordonnées Bancaires', ar: 'تفاصيل الحساب' })}</p>
-                                                        </div>
-                                                        <div className="space-y-3">
-                                                            <div className="flex flex-col gap-1 text-[13px] min-[420px]:flex-row min-[420px]:items-center min-[420px]:justify-between">
-                                                                <span className="text-neutral-500 font-medium">{t({ en: 'Bank:', fr: 'Banque :', ar: 'البنك:' })}</span>
-                                                                <span className="font-bold text-black">Barid Bank</span>
-                                                            </div>
-                                                            <div className="flex flex-col gap-1 text-[13px] min-[420px]:flex-row min-[420px]:items-center min-[420px]:justify-between">
-                                                                <span className="text-neutral-500 font-medium">{t({ en: 'Name:', fr: 'Nom :', ar: 'الاسم:' })}</span>
-                                                                <span className="font-bold text-black">Abdelmalek Tahri</span>
-                                                            </div>
-                                                            <div className="flex flex-col gap-1.5 pt-1">
-                                                                <span className="text-neutral-500 text-[13px] font-medium">{t({ en: 'RIB:', fr: 'RIB :', ar: 'رقم الحساب (RIB):' })}</span>
-                                                                <div className="flex flex-col gap-3 rounded-xl border border-[#00A082]/10 bg-white p-3 min-[420px]:flex-row min-[420px]:items-center min-[420px]:justify-between">
-                                                                    <span className="font-mono text-[14px] font-bold tracking-tight text-black">350810000000000880844466</span>
-                                                                    <button
-                                                                        onClick={() => {
-                                                                            navigator.clipboard.writeText('350810000000000880844466');
-                                                                        }}
-                                                                        className="rounded-lg bg-[#00A082] px-2.5 py-1 transition-colors active:scale-95 hover:bg-[#00896F] min-[420px]:self-auto self-start"
-                                                                    >
-                                                                        <span className="text-[11px] font-black text-white uppercase">{t({ en: 'Copy', fr: 'Copier', ar: 'نسخ' })}</span>
-                                                                    </button>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </motion.div>
-                                            )}
-
-                                            {/* Bank receipt instructions & Upload */}
-                                            {paymentMethod === 'bank' && (
-                                                <motion.div
-                                                    initial={{ opacity: 0, height: 0 }}
-                                                    animate={{ opacity: 1, height: 'auto' }}
-                                                    exit={{ opacity: 0, height: 0 }}
-                                                    className="overflow-hidden space-y-4"
-                                                >
-                                                    <div className="flex w-full flex-col gap-4 rounded-[16px] border-2 border-dashed border-[#00A082] bg-[#E6F6F2]/30 p-5">
-                                                        <div className="flex items-center gap-4">
-                                                            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[12px] bg-white shadow-sm">
-                                                                <FileText size={20} className="text-[#00A082]" />
-                                                            </div>
-                                                            <div className="flex-1">
-                                                                <p className="text-[14px] font-black text-[#00A082]">
-                                                                    {t({ en: 'Upload Order Receipt', fr: 'Charger le reçu', ar: 'تحميل الوصل' })}
-                                                                </p>
-                                                                <p className="text-[12px] text-[#00A082]/70 font-bold">
-                                                                    {t({ en: 'Take a photo of your transfer confirmation.', fr: 'Photo de votre confirmation de virement.', ar: 'التقط صورة لتأكيد التحويل.' })}
-                                                                </p>
-                                                            </div>
-                                                        </div>
-
-                                                        {bankReceipt ? (
-                                                            <div className="relative w-full h-40 rounded-xl overflow-hidden border border-[#00A082]/20">
-                                                                <img src={bankReceipt} className="w-full h-full object-cover" />
-                                                                <button
-                                                                    onClick={() => setBankReceipt(null)}
-                                                                    className="absolute top-2 right-2 w-8 h-8 rounded-full bg-red-500 text-white flex items-center justify-center shadow-lg"
-                                                                >
-                                                                    <X size={16} strokeWidth={3} />
-                                                                </button>
-                                                            </div>
-                                                        ) : (
-                                                            <label className="w-full h-32 flex flex-col items-center justify-center gap-2 bg-white/50 rounded-xl border-2 border-dashed border-[#00A082]/20 cursor-pointer hover:bg-white/80 transition-all">
-                                                                <input
-                                                                    type="file"
-                                                                    accept="image/*"
-                                                                    className="hidden"
-                                                                    onChange={async (e) => {
-                                                                        const file = e.target.files?.[0];
-                                                                        if (!file) return;
-                                                                        setIsUploadingReceipt(true);
-                                                                        try {
-                                                                            // 1. Compress
-                                                                            const blob = await compressImageFileToDataUrl(file, { maxWidth: 1000, maxHeight: 1000, quality: 0.5 }).then(dataUrlToBlob);
-
-                                                                            // 2. Upload immediately
-                                                                            const uid = auth.currentUser?.uid || 'anonymous';
-                                                                            const path = `receipts/${uid}/${Date.now()}_receipt.jpg`;
-                                                                            const url = await uploadImageToStorage(blob, path);
-
-                                                                            // 3. Store URL in state
-                                                                            setBankReceipt(url);
-                                                                        } catch (err: any) {
-                                                                            console.error("Failed to upload receipt image:", err);
-                                                                            const errorMsg = err.message === 'PERMISSION_DENIED'
-                                                                                ? t({ en: 'Permission denied. Please try logging in.', fr: 'Accès refusé. Veuillez vous connecter.', ar: 'تم رفض الوصول. يرجى تسجيل الدخول.' })
-                                                                                : t({ en: 'Could not upload receipt.', fr: 'Impossible de téléverser le reçu.', ar: 'تعذر رفع الإيصال.' });
-
-                                                                            showToast({
-                                                                                variant: 'error',
-                                                                                title: t({ en: 'Upload failed', fr: 'Échec de l\'envoi', ar: 'فشل الرفع' }),
-                                                                                description: errorMsg
-                                                                            });
-                                                                        } finally {
-                                                                            setIsUploadingReceipt(false);
-                                                                        }
-                                                                    }}
-                                                                />
-                                                                {isUploadingReceipt ? (
-                                                                    <RefreshCw size={24} className="text-[#00A082] animate-spin" />
-                                                                ) : (
-                                                                    <>
-                                                                        <Camera size={24} className="text-[#00A082]" />
-                                                                        <span className="text-[12px] font-black text-[#00A082] uppercase">{t({ en: 'Select Image', fr: 'Choisir Image', ar: 'اختر صورة' })}</span>
-                                                                    </>
-                                                                )}
-                                                            </label>
-                                                        )}
-                                                    </div>
-
-                                                    <div className="flex w-full flex-col gap-4 rounded-[16px] border border-neutral-100 bg-neutral-50/50 p-5 min-[480px]:flex-row min-[480px]:items-center">
-                                                        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[12px] bg-white shadow-sm">
-                                                            <WhatsAppBrandIcon size={24} className="text-[#00A082]" />
-                                                        </div>
-                                                        <div className="flex-1">
-                                                            <p className="text-[14px] font-black text-neutral-900">
-                                                                {t({ en: 'Need help?', fr: 'Besoin d\'aide ?', ar: 'هل تحتاج مساعدة؟' })}
-                                                            </p>
-                                                            <p className="text-[12px] text-neutral-500 font-bold">
-                                                                {t({ en: 'Chat with our support team.', fr: 'Discutez avec notre support.', ar: 'تحدث مع فريق الدعم.' })}
-                                                            </p>
-                                                        </div>
-                                                        <button
-                                                            onClick={() => window.open('https://wa.me/212702814355', '_blank')}
-                                                            className="w-full rounded-lg bg-[#00A082] px-3 py-2 text-[11px] font-black uppercase text-white min-[480px]:w-auto"
-                                                        >
-                                                            {t({ en: 'Chat', fr: 'Discuter', ar: 'محادثة' })}
-                                                        </button>
-                                                    </div>
-                                                </motion.div>
-                                            )}
-                                        </div>
-
-                                        {/* Separation Divider */}
-                                        <div className="h-px bg-neutral-100 w-full" />
-
-                                        {/* Key Details Grid */}
-                                        <div className="mb-4">
-                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                                <div className="bg-neutral-50 rounded-2xl p-4 flex items-center gap-3 border border-neutral-100/50">
-                                                    <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-sm">
-                                                        <MapPin size={20} className="text-[#00A082]" />
-                                                    </div>
-                                                    <div className="flex flex-col min-w-0">
-                                                        <span className="text-[11px] font-bold text-neutral-400 uppercase tracking-wider">{t({ en: 'Location', fr: 'Lieu', ar: 'الموقع' })}</span>
-                                                        <span className="text-[15px] font-black leading-tight text-black">{t({ en: currentCity, fr: currentCity })}{currentArea ? ", " + t({ en: currentArea, fr: currentArea }) : ''}</span>
-                                                    </div>
-                                                </div>
-                                                <div className="bg-neutral-50 rounded-2xl p-4 flex items-center gap-3 border border-neutral-100/50">
-                                                    <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-sm">
-                                                        <Clock size={20} className="text-[#00A082]" />
-                                                    </div>
-                                                    <div className="flex flex-col">
-                                                        <span className="text-[11px] font-bold text-neutral-400 uppercase tracking-wider">{t({ en: 'Duration', fr: 'Durée', ar: 'المدة' })}</span>
-                                                        <span className="text-[15px] font-black text-black">
-                                                            {service === 'car_rental' && selectedDate && carReturnDate
-                                                                ? (() => { const d = Math.max(1, Math.round((new Date(carReturnDate).getTime() - new Date(selectedDate).getTime()) / 86400000)); return `${d} ${t({ en: d > 1 ? 'days' : 'day', fr: d > 1 ? 'jours' : 'jour', ar: 'يوم' })}`; })()
-                                                                : (activeTaskSize ? `≈ ${t(activeTaskSize.estTime as any)}` : '—')}
-                                                        </span>
-                                                    </div>
-                                                </div>
-                                                <div className="bg-neutral-50 rounded-2xl p-4 flex items-center gap-3 border border-neutral-100/50">
-                                                    <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-sm">
-                                                        <Wrench size={20} className="text-[#00A082]" />
-                                                    </div>
-                                                    <div className="flex flex-col min-w-0">
-                                                        <span className="text-[11px] font-bold text-neutral-400 uppercase tracking-wider">{t({ en: 'Service', fr: 'Service', ar: 'الخدمة' })}</span>
-                                                        <span className="text-[15px] font-black leading-tight text-black">{t({ en: getServiceById(service)?.name || '', fr: getServiceById(service)?.name || '' })}</span>
-                                                    </div>
-                                                </div>
-                                                <div className="bg-neutral-50 rounded-2xl p-4 flex items-center gap-3 border border-neutral-100/50">
-                                                    <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-sm">
-                                                        <Banknote size={20} className="text-[#00A082]" />
-                                                    </div>
-                                                    <div className="flex flex-col">
-                                                        <span className="text-[11px] font-bold text-neutral-400 uppercase tracking-wider">{t({ en: 'Total (Est.)', fr: 'Total (Est.)', ar: 'الإجمالي (تقريبي)' })}</span>
-                                                        <span className="text-[15px] font-black text-black">
-                                                            {service === 'car_rental' && selectedCar && selectedDate && carReturnDate
-                                                                ? calculateTaskPrice(
-                                                                    selectedCar.pricePerDay || selectedCar.price || 0,
-                                                                    String(Math.max(1, Math.round((new Date(carReturnDate).getTime() - new Date(selectedDate).getTime()) / 86400000))),
-                                                                    service,
-                                                                    subService,
-                                                                    [],
-                                                                    applyReferralDiscount,
-                                                                    referralDiscountAvailable
-                                                                )
-                                                                : calculateTaskPrice(selectedProRate, taskSize, service, subService, serviceConfig.options, applyReferralDiscount, referralDiscountAvailable)} MAD
-                                                        </span>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div className="mt-4 bg-neutral-50 rounded-2xl p-4 flex items-start gap-3 border border-neutral-100/50">
-                                                <div className="w-10 h-10 rounded-full bg-white flex-shrink-0 flex items-center justify-center shadow-sm">
-                                                    <Info size={20} className="text-[#00A082]" />
-                                                </div>
-                                                <div className="flex flex-col">
-                                                    <span className="text-[11px] font-bold text-neutral-400 uppercase tracking-wider">{t({ en: 'Instructions', fr: 'Instructions', ar: 'التعليمات' })}</span>
-                                                    <p className="text-[14px] font-semibold text-black line-clamp-3 leading-tight">
-                                                        {description || t({ en: 'No specific instructions.', fr: 'Pas d\'instructions.', ar: 'لا تووجد تعليمات محددة.' })}
-                                                    </p>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        {/* Selected Vehicle */}
-                                        {service === 'car_rental' && selectedCar && (
-                                            <div className="px-0 space-y-4">
-                                                <h3 className="text-[24px] font-black text-black">{t({ en: 'Selected Vehicle', fr: 'Véhicule Choisie', ar: 'السيارة المختارة' })}</h3>
-                                                <div className="relative overflow-hidden rounded-2xl border border-neutral-100 bg-[#F8F9FA] p-4 flex items-center gap-4">
-                                                    <div className="w-24 h-16 rounded-xl bg-white border border-neutral-50 flex items-center justify-center p-2">
-                                                        <img src={selectedCar.modelImage || selectedCar.image} className="w-full h-full object-contain" alt={selectedCar.modelName} />
-                                                    </div>
-                                                    <div className="flex-1 min-w-0">
-                                                        <h4 className="text-[17px] font-black text-black uppercase tracking-tight">{selectedCar.modelName}</h4>
-                                                        <p className="text-[13px] font-bold text-[#00A082]">MAD {selectedCar.pricePerDay || selectedCar.price} / {t({ en: 'day', fr: 'jour' })}</p>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        )}
-
-                                        {/* Selected Moving Vehicle summary */}
-                                        {service === 'moving' && selectedMovingVehicle && (
-                                            <div className="px-0 space-y-4">
-                                                <h3 className="text-[24px] font-black text-black">{t({ en: 'Requested Transport', fr: 'Transport Demandé', ar: 'وسيلة النقل المطلوبة' })}</h3>
-                                                <div className="relative overflow-hidden rounded-2xl border border-neutral-100 bg-[#F8F9FA] p-4 flex items-center gap-4">
-                                                    <div className="flex-1 min-w-0">
-                                                        <h4 className="text-[17px] font-black text-black leading-tight">
-                                                            {(() => {
-                                                                const opts = {
-                                                                    triporteur: { en: '🛵 Triporteur', fr: '🛵 Triporteur', ar: '🛵 تربورتور' },
-                                                                    small_van: { en: '🚐 Small Van', fr: '🚐 Petit Van', ar: '🚐 سيارة "برلانكو"' },
-                                                                    large_van: { en: '🚚 Large Van', fr: '🚚 Grand Van', ar: '🚚 شاحنة فورد ترانزيت' },
-                                                                    small_truck: { en: '🚛 Small Truck', fr: '🚛 Petit Camion', ar: '🚛 شاحنة صغيرة' },
-                                                                    large_truck: { en: '🚚 Large Truck', fr: '🚚 Grand Camion', ar: '🚚 شاحنة كبيرة' },
-                                                                    labor_only: { en: '💪 Labor only', fr: '💪 Main-d’œuvre seule', ar: '💪 يد عاملة فقط' }
-                                                                };
-                                                                return t((opts as any)[selectedMovingVehicle] || { en: selectedMovingVehicle });
-                                                            })()}
-                                                        </h4>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        )}
-
-                                        {/* Your Selected Bricoler */}
-                                        {selectedBricolerId !== 'open' && selectedPro && (
-                                            <div className="px-0 pb-6 space-y-4">
-                                                <h3 className="text-[24px] font-black text-black">{service === 'car_rental' ? t({ en: 'Provider', fr: 'Fournisseur', ar: 'المزود' }) : t({ en: 'Your Tasker', fr: 'Votre Pro', ar: 'المحترف الخاص بك' })}</h3>
-                                                <div className="relative overflow-hidden rounded-2xl border border-neutral-100 bg-white p-4 shadow-sm">
-                                                    <div className="flex items-start gap-4 sm:items-center">
-                                                        <div className="relative">
-                                                            <img src={selectedPro.photoURL || "/Images/Logo/Black Lbricol Avatar Face.webp"} className="w-16 h-16 rounded-full object-cover bg-neutral-100" />
-                                                        </div>
-                                                        <div className="flex-1 min-w-0">
-                                                            <h4 className="text-[17px] font-black text-black">{selectedPro.displayName}</h4>
-                                                            <div className="mt-1 flex flex-wrap items-center gap-2">
-                                                                <div className="flex items-center gap-1.5">
-                                                                    {(selectedPro.rating || (selectedPro.reviews?.length || 0) > 0 || (selectedPro as any).jobsCount > 0) ? (
-                                                                        <>
-                                                                            <div className="flex items-center gap-0.5">
-                                                                                {[1, 2, 3, 4, 5].map((s) => (
-                                                                                    <Star
-                                                                                        key={s}
-                                                                                        size={12}
-                                                                                        className={cn(
-                                                                                            "transition-all",
-                                                                                            s <= Math.round(selectedPro.rating || 5)
-                                                                                                ? "fill-[#FFC244] text-[#FFC244]"
-                                                                                                : "fill-neutral-100 text-neutral-200"
-                                                                                        )}
-                                                                                    />
-                                                                                ))}
-                                                                            </div>
-                                                                            <span className="text-[13px] font-black text-[#D89B1A]">{(selectedPro.rating || 5.0).toFixed(1)}</span>
-                                                                        </>
-                                                                    ) : (
-                                                                        <span className="text-[13px] font-bold text-[#7C73E8] bg-[#7C73E8]/5 px-2 py-0.5 rounded-md uppercase tracking-wide">{t({ en: 'NEW', fr: 'NOUVEAU', ar: 'جديد' })}</span>
-                                                                    )}
-                                                                </div>
-                                                                <span className="text-neutral-300">•</span>
-                                                                <span className="text-[13px] font-medium text-neutral-500">{t({ en: 'Trusted Pro', fr: 'Pro de confiance', ar: 'محترف موثوق' })}</span>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        )}
-
-                                        {/* Summary Section */}
-                                        <div className="mt-4 bg-[#FFFFFF] relative">
-                                            <div className="absolute top-0 left-0 right-0 h-[10px] -translate-y-[10px]">
-                                                <div className="w-full h-full" style={{
-                                                    backgroundImage: 'linear-gradient(135deg, transparent 45%, #F5F5F5 45%, #F5F5F5 55%, transparent 55%), linear-gradient(-135deg, transparent 45%, #F5F5F5 45%, #F5F5F5 55%, transparent 55%)',
-                                                    backgroundSize: '20px 20px',
-                                                    backgroundRepeat: 'repeat-x'
-                                                }} />
-                                            </div>
-                                            <div className="space-y-8 px-4 py-8 sm:px-12 sm:py-12 sm:space-y-10">
-                                                <h3 className="text-[28px] font-black text-black sm:text-[34px]">{t({ en: 'Summary', fr: 'Résumé', ar: 'الملخص' })}</h3>
-                                                <div className="space-y-8">
-                                                    <div className="flex flex-col gap-2 px-2 min-[420px]:flex-row min-[420px]:items-center min-[420px]:justify-between">
-                                                        <div className="flex min-w-0 flex-col gap-1 min-[420px]:flex-row min-[420px]:items-center min-[420px]:gap-4">
-                                                            <span className="text-[18px] font-semibold text-black">{t({ en: 'Task Fee', fr: 'Frais de tâche', ar: 'رسوم المهمة' })}</span>
-                                                            <span className="text-[15px] font-light text-black">
-                                                                {service === 'car_rental' && selectedDate && carReturnDate
-                                                                    ? (() => { const d = Math.max(1, Math.round((new Date(carReturnDate).getTime() - new Date(selectedDate).getTime()) / 86400000)); return `${d} ${t({ en: d > 1 ? 'days' : 'day', fr: d > 1 ? 'jours' : 'jour', ar: 'يوم' })}`; })()
-                                                                    : (activeTaskSize ? `≈ ${t(activeTaskSize.estTime as any)}` : '—')}
-                                                            </span>
-                                                        </div>
-                                                        <span className="self-end text-[18px] font-bold tracking-tight text-black min-[420px]:self-auto">
-                                                            {service === 'car_rental' && selectedCar && selectedDate && carReturnDate
-                                                                ? Math.round(calculateTaskPrice(
-                                                                    selectedCar.pricePerDay || selectedCar.price || 0,
-                                                                    String(Math.max(1, Math.round((new Date(carReturnDate).getTime() - new Date(selectedDate).getTime()) / 86400000))),
-                                                                    service,
-                                                                    subService,
-                                                                    [],
-                                                                    applyReferralDiscount,
-                                                                    referralDiscountAvailable
-                                                                ) * 0.85)
-                                                                : Math.round(calculateTaskPrice(selectedProRate, taskSize, service, subService, serviceConfig.options, applyReferralDiscount, referralDiscountAvailable) * 0.85)} MAD
-                                                        </span>
-                                                    </div>
-                                                    <div className="flex flex-col gap-2 px-2 min-[420px]:flex-row min-[420px]:items-center min-[420px]:justify-between">
-                                                        <div className="flex min-w-0 flex-col gap-1 min-[420px]:flex-row min-[420px]:items-center min-[420px]:gap-4">
-                                                            <span className="text-[18px] font-semibold text-black">{t({ en: 'Lbricol Fee', fr: 'Frais Lbricol', ar: 'رسوم Lbricol' })}</span>
-                                                            <span className="text-[15px] font-light text-black">15%</span>
-                                                        </div>
-                                                        <span className="self-end text-[18px] font-bold tracking-tight text-black min-[420px]:self-auto">
-                                                            {service === 'car_rental' && selectedCar && selectedDate && carReturnDate
-                                                                ? Math.round(calculateTaskPrice(
-                                                                    selectedCar.pricePerDay || selectedCar.price || 0,
-                                                                    String(Math.max(1, Math.round((new Date(carReturnDate).getTime() - new Date(selectedDate).getTime()) / 86400000))),
-                                                                    service,
-                                                                    subService,
-                                                                    [],
-                                                                    applyReferralDiscount,
-                                                                    referralDiscountAvailable
-                                                                ) * 0.15)
-                                                                : Math.round(calculateTaskPrice(selectedProRate, taskSize, service, subService, serviceConfig.options, applyReferralDiscount, referralDiscountAvailable) * 0.15)} MAD
-                                                        </span>
-                                                    </div>
-                                                    {referralDiscountAvailable > 0 && (
-                                                        <div className="mt-6 flex flex-col gap-4 rounded-[16px] border border-[#00A082]/20 bg-[#E6F6F2] p-4 min-[520px]:flex-row min-[520px]:items-center min-[520px]:justify-between">
-                                                            <div className="flex items-start gap-3">
-                                                                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white shadow-sm">
-                                                                    <span className="text-[18px]">🎁</span>
-                                                                </div>
-                                                                <div className="flex flex-col">
-                                                                    <span className="text-[15px] font-black text-[#00A082]">{t({ en: 'Referral Discount', fr: 'Remise Parrainage', ar: 'خصم الإحالة' })}</span>
-                                                                    <span className="text-[13px] font-medium text-[#00A082]/80">{t({ en: "15% discount will be applied", fr: "Une remise de 15% sera appliquée", ar: "سيتم تطبيق خصم 15%" })}</span>
-                                                                </div>
-                                                            </div>
-                                                            <button
-                                                                onClick={(e) => { e.preventDefault(); setApplyReferralDiscount(!applyReferralDiscount); }}
-                                                                className={cn(
-                                                                    "w-full rounded-xl px-6 py-3 text-[15px] font-black transition-all active:scale-95 min-[520px]:w-auto",
-                                                                    applyReferralDiscount
-                                                                        ? "bg-[#00A082] text-white"
-                                                                        : "bg-[#FFC244] text-black hover:bg-[#FDBE33]"
-                                                                )}
-                                                            >
-                                                                {applyReferralDiscount
-                                                                    ? t({ en: 'Implemented', fr: 'Implémenté', ar: 'تم التطبيق' })
-                                                                    : t({ en: 'Apply Credit', fr: 'Appliquer le crédit', ar: 'تطبيق رصيد' })}
-                                                            </button>
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </motion.div>
-                            )}
-                        </AnimatePresence>
+                    <div className="flex-1 overflow-y-auto no-scrollbar">
+                        {flowContent}
                     </div>
-
-                    {/* Persistent Footer */}
-                    <AnimatePresence mode="wait">
-                        {!isMatchingAnimation && !showSuccessAnimation && (
-                            <motion.div
-                                key={`${step} -${subStep1} -${isSelectingLocation} `}
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                exit={{ opacity: 0, y: 10 }}
-                                transition={{ duration: 0.2 }}
-                                className="px-6 py-4 border-t border-neutral-100 bg-white flex-shrink-0"
-                            >
-                                {isSelectingLocation ? (
-                                    <button
-                                        onClick={() => handleLocationSave()}
-                                        disabled={!tempArea}
-                                        className={cn(
-                                            "w-full h-15 rounded-2xl flex items-center justify-center text-[18px] font-semibold transition-all",
-                                            tempArea ? "bg-[#00A082] text-white" : "bg-neutral-100 text-neutral-400 cursor-not-allowed"
-                                        )}
-                                    >
-                                        {t({ en: 'Save Location', fr: 'Enregistrer le lieu', ar: 'حفظ الموقع' })}
-                                    </button>
-                                ) : step === 1 ? (
-                                    <div className="w-full">
-                                        <AnimatePresence mode="wait">
-                                            {subStep1 === 'location' && (
-                                                <motion.button
-                                                    key="btn-loc"
-                                                    initial={{ opacity: 0, x: 20 }}
-                                                    animate={{ opacity: 1, x: 0 }}
-                                                    exit={{ opacity: 0, x: -20 }}
-                                                    onClick={() => setSubStep1(service === 'tour_guide' ? 'languages' : 'size')}
-                                                    disabled={!currentCity || !currentArea}
-                                                    className={cn(
-                                                        "w-full h-14 rounded-full text-[19px] font-semibold active:scale-95 transition-all text-white",
-                                                        currentCity && currentArea ? "bg-[#00A082]" : "bg-neutral-100 text-neutral-400 cursor-not-allowed"
-                                                    )}
-                                                >
-                                                    {t({ en: 'Next', fr: 'Suivant', ar: 'التالي' })}
-                                                </motion.button>
-                                            )}
-
-                                            {subStep1 === 'languages' && (
-                                                <motion.div
-                                                    key="btn-lang"
-                                                    initial={{ opacity: 0, x: 20 }}
-                                                    animate={{ opacity: 1, x: 0 }}
-                                                    exit={{ opacity: 0, x: -20 }}
-                                                    className="flex gap-2 w-full"
-                                                >
-                                                    <button
-                                                        onClick={() => setSubStep1('location')}
-                                                        className="w-14 h-14 rounded-full bg-neutral-100 flex items-center justify-center shrink-0 text-neutral-600 active:scale-95 transition-transform"
-                                                    >
-                                                        <ChevronLeft strokeWidth={2.5} size={22} />
-                                                    </button>
-                                                    <button
-                                                        onClick={() => setSubStep1('size')}
-                                                        disabled={selectedLanguages.length === 0}
-                                                        className={cn(
-                                                            "flex-1 h-14 rounded-full text-[19px] font-semibold active:scale-95 transition-all text-white",
-                                                            selectedLanguages.length > 0 ? "bg-[#00A082]" : "bg-neutral-100 text-neutral-400 cursor-not-allowed"
-                                                        )}
-                                                    >
-                                                        {t({ en: 'Next', fr: 'Suivant', ar: 'التالي' })}
-                                                    </button>
-                                                </motion.div>
-                                            )}
-
-                                            {subStep1 === 'size' && (
-                                                <motion.div
-                                                    key="btn-size"
-                                                    initial={{ opacity: 0, x: 20 }}
-                                                    animate={{ opacity: 1, x: 0 }}
-                                                    exit={{ opacity: 0, x: -20 }}
-                                                    className="flex gap-2 w-full"
-                                                >
-                                                    <button
-                                                        onClick={() => setSubStep1(service === 'tour_guide' ? 'languages' : 'location')}
-                                                        className="w-14 h-14 rounded-full bg-neutral-100 flex items-center justify-center shrink-0 text-neutral-600 active:scale-95 transition-transform"
-                                                    >
-                                                        <ChevronLeft strokeWidth={2.5} size={22} />
-                                                    </button>
-                                                    <button
-                                                        onClick={() => {
-                                                            if (service === 'car_rental') {
-                                                                handleStartMatching(); // Skip description step for Car Rental
-                                                            } else if (service === 'moving') {
-                                                                setSubStep1('moving_vehicle');
-                                                            } else {
-                                                                setSubStep1('description');
-                                                            }
-                                                        }}
-                                                        disabled={service === 'car_rental' ? (!selectedDate || !selectedTime || !carReturnDate || !carReturnTime) : !taskSize}
-                                                        className={cn(
-                                                            "flex-1 h-14 rounded-full text-[19px] font-semibold active:scale-95 transition-all text-white",
-                                                            (service === 'car_rental' ? (selectedDate && selectedTime && carReturnDate && carReturnTime) : taskSize) ? "bg-[#00A082]" : "bg-neutral-100 text-neutral-400 cursor-not-allowed"
-                                                        )}
-                                                    >
-                                                        {t({ en: 'Next', fr: 'Suivant', ar: 'التالي' })}
-                                                    </button>
-                                                </motion.div>
-                                            )}
-
-                                            {subStep1 === 'moving_vehicle' && (
-                                                <motion.div
-                                                    key="btn-moving-vehicle"
-                                                    initial={{ opacity: 0, x: 20 }}
-                                                    animate={{ opacity: 1, x: 0 }}
-                                                    exit={{ opacity: 0, x: -20 }}
-                                                    className="flex gap-2 w-full"
-                                                >
-                                                    <button
-                                                        onClick={() => setSubStep1('size')}
-                                                        className="w-14 h-14 rounded-full bg-neutral-100 flex items-center justify-center shrink-0 text-neutral-600 active:scale-95 transition-transform"
-                                                    >
-                                                        <ChevronLeft strokeWidth={2.5} size={22} />
-                                                    </button>
-                                                    <button
-                                                        onClick={() => setSubStep1('description')}
-                                                        disabled={!selectedMovingVehicle}
-                                                        className={cn(
-                                                            "flex-1 h-14 rounded-full text-[19px] font-semibold active:scale-95 transition-all text-white",
-                                                            selectedMovingVehicle ? "bg-[#00A082]" : "bg-neutral-100 text-neutral-400 cursor-not-allowed"
-                                                        )}
-                                                    >
-                                                        {t({ en: 'Next', fr: 'Suivant', ar: 'التالي' })}
-                                                    </button>
-                                                </motion.div>
-                                            )}
-
-                                            {subStep1 === 'description' && (
-                                                <motion.div
-                                                    key="btn-desc"
-                                                    initial={{ opacity: 0, x: 20 }}
-                                                    animate={{ opacity: 1, x: 0 }}
-                                                    exit={{ opacity: 0, x: -20 }}
-                                                    className="flex gap-2 w-full"
-                                                >
-                                                    <button
-                                                        onClick={() => {
-                                                            if (service === 'moving') setSubStep1('moving_vehicle');
-                                                            else setSubStep1('size');
-                                                        }}
-                                                        className="w-14 h-14 rounded-full bg-neutral-100 flex items-center justify-center shrink-0 text-neutral-600 active:scale-95 transition-transform"
-                                                    >
-                                                        <ChevronLeft strokeWidth={2.5} size={22} />
-                                                    </button>
-                                                    <button
-                                                        onClick={() => (taskSize && description.trim()) ? handleStartMatching() : null}
-                                                        disabled={!description.trim()}
-                                                        className={cn(
-                                                            "flex-1 h-14 rounded-full text-[19px] font-semibold active:scale-95 transition-all text-white flex items-center justify-center gap-2",
-                                                            (description.trim()) ? "bg-[#00A082]" : "bg-neutral-100 text-neutral-400 cursor-not-allowed"
-                                                        )}
-                                                    >
-                                                        {t({ en: 'Find Bricolers', fr: 'Rechercher des Pros', ar: 'ابحث عن محترفين' })}
-                                                    </button>
-                                                </motion.div>
-                                            )}
-                                        </AnimatePresence>
-                                    </div>
-                                ) : step === 2 ? (
-                                    <div className="flex items-center">
-                                        <button
-                                            onClick={() => setStep(1)}
-                                            className="w-14 h-14 flex items-center justify-center rounded-[20px] border-2 border-neutral-100 text-neutral-900 active:scale-95 transition-all"
-                                        >
-                                            <ChevronLeft size={22} strokeWidth={3} />
-                                        </button>
-                                    </div>
-                                ) : step === 3 ? (
-                                    <div className="flex items-center gap-3">
-                                        <button
-                                            onClick={() => setStep(2)}
-                                            className="w-14 h-14 flex items-center justify-center rounded-[20px] border-2 border-neutral-100 text-neutral-900 active:scale-95 transition-all"
-                                        >
-                                            <ChevronLeft size={22} strokeWidth={3} />
-                                        </button>
-                                        <button
-                                            onClick={() => {
-                                                const hasBaseDates = selectedDate && selectedTime;
-                                                const isRental = service === 'car_rental';
-                                                const hasRentalDates = isRental ? (carReturnDate && carReturnTime) : true;
-                                                if (hasBaseDates && hasRentalDates) setStep(4);
-                                            }}
-                                            disabled={service === 'car_rental' ? (!selectedDate || !selectedTime || !carReturnDate || !carReturnTime) : (!selectedDate || !selectedTime)}
-                                            className={cn(
-                                                "flex-1 h-14 rounded-[10px] text-[18px] font-semibold active:scale-95 transition-all flex items-center justify-center",
-                                                (service === 'car_rental' ? (selectedDate && selectedTime && carReturnDate && carReturnTime) : (selectedDate && selectedTime)) ? "bg-[#00A082] text-white" : "bg-neutral-100 text-neutral-400"
-                                            )}
-                                        >
-                                            {t({ en: 'Next Step', fr: 'Étape suivante', ar: 'الخطوة التالية' })}
-                                        </button>
-                                    </div>
-                                ) : (
-                                    <div className="flex flex-col gap-6">
-                                        <div className="flex justify-between items-center px-2">
-                                            <span className="text-[28px] font-black text-black">{t({ en: 'Total', fr: 'Total', ar: 'الإجمالي' })}</span>
-                                            <div className="flex flex-col items-end">
-                                                {(() => {
-                                                    let hourlyRate = selectedPro?.hourlyRate || 75;
-                                                    if (service === 'car_rental' && selectedCar?.pricePerDay) {
-                                                        hourlyRate = selectedCar.pricePerDay;
-                                                    }
-                                                    const opt = serviceConfig.options.find(o => o.id === taskSize);
-
-                                                    let effectiveTaskSize = taskSize;
-                                                    if (service === 'car_rental' && selectedDate && carReturnDate) {
-                                                        const d = Math.max(1, Math.round((new Date(carReturnDate).getTime() - new Date(selectedDate).getTime()) / 86400000));
-                                                        effectiveTaskSize = String(d);
-                                                    }
-
-                                                    const finalCalc = calculateTaskPrice(
-                                                        hourlyRate,
-                                                        effectiveTaskSize,
-                                                        service,
-                                                        subService,
-                                                        serviceConfig.options,
-                                                        applyReferralDiscount,
-                                                        referralDiscountAvailable
-                                                    );
-
-                                                    const strikeCalc = calculateTaskPrice(
-                                                        hourlyRate,
-                                                        effectiveTaskSize,
-                                                        service,
-                                                        subService,
-                                                        serviceConfig.options,
-                                                        false, // No referral discount for strike
-                                                        0
-                                                    );
-
-
-                                                    const hasDiscount = (strikeCalc > finalCalc);
-
-                                                    return (
-                                                        <>
-                                                            {hasDiscount && (
-                                                                <span className="text-[14px] font-bold text-neutral-400 line-through">
-                                                                    {strikeCalc} MAD
-                                                                </span>
-                                                            )}
-                                                            <span className="text-[28px] font-black tracking-tighter" style={{ color: hasDiscount ? '#00A082' : 'black' }}>
-                                                                {finalCalc} MAD
-                                                            </span>
-                                                        </>
-                                                    );
-                                                })()}
-                                            </div>
-                                        </div>
-                                        <div className="flex items-center gap-3">
-                                            <button
-                                                onClick={() => setStep(service === 'car_rental' ? 2 : 3)}
-                                                className="w-14 h-14 flex items-center justify-center rounded-[20px] border-2 border-neutral-100 text-neutral-900 active:scale-95 transition-all"
-                                            >
-                                                <ChevronLeft size={22} strokeWidth={3} />
-                                            </button>
-
-                                            {(() => {
-                                                const isBankTransfer = paymentMethod === 'bank';
-                                                const isReceiptMissing = isBankTransfer && !bankReceipt;
-                                                const isSubmittable = !isReceiptMissing && !isSubmitting;
-
-                                                return (
-                                                    <button
-                                                        disabled={!isSubmittable || (service === 'car_rental' && (!selectedDate || !carReturnDate))}
-                                                        onClick={handleFinalSubmit}
-                                                        className={cn(
-                                                            "flex-1 h-14 rounded-[10px] text-white text-[18px] font-black transition-all active:scale-95 flex items-center justify-center gap-2",
-                                                            isSubmittable ? "bg-[#00A082]" : "bg-neutral-100 text-neutral-400 cursor-not-allowed"
-                                                        )}
-                                                    >
-                                                        {isSubmitting ? (
-                                                            <RefreshCw size={20} className="animate-spin" />
-                                                        ) : (
-                                                            <>
-                                                                {isReceiptMissing ? t({ en: 'Upload Receipt', fr: 'Chargez le reçu', ar: 'تحميل الوصل' }) : t({ en: 'Program Mission', fr: 'Programmer la mission', ar: 'برمجة المهمة' })}
-                                                                {!isReceiptMissing && <CheckCircle2 size={20} />}
-                                                            </>
-                                                        )}
-                                                    </button>
-                                                );
-                                            })()}
-                                        </div>
-                                    </div>
-                                )}
-                            </motion.div>
-                        )}
-                    </AnimatePresence>
-
-                    <BricolerProfileModal
-                        isOpen={!!viewedBricoler}
-                        bricoler={viewedBricoler!}
-                        service={service}
-                        serviceName={getServiceById(service)?.name || 'Service'}
-                        isSelected={selectedBricolerId === viewedBricoler?.id}
-                        onClose={() => setViewedBricoler(null)}
-                        carRentalBookings={carRentalBookings.filter(job => job.bricolerId === viewedBricoler?.id)}
-                        selectedPickUpDate={selectedDate}
-                        selectedPickUpTime={selectedTime}
-                        selectedReturnDate={carReturnDate}
-                        selectedReturnTime={carReturnTime}
-                        onSelect={(car, note) => {
-                            setSelectedBricolerId(viewedBricoler?.id!);
-                            if (service === 'car_rental') {
-                                if (car) setSelectedCar(car);
-                                if (note) setDescription(note);
-                                setStep(4);
-                            } else {
-                                setStep(3);
-                            }
-                        }}
-                    />
-                    <SuccessAnimation
-                        isVisible={showSuccessAnimation}
-                        onComplete={() => {
-                            setShowSuccessAnimation(false);
-                            onClose();
-                        }}
-                    />
+                    {overlayContent}
                 </motion.div>
             </motion.div>
-        </AnimatePresence >
+        </AnimatePresence>
     );
 };
 

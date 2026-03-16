@@ -14,6 +14,7 @@ interface MapViewProps {
   onInteractionEnd?: () => void;
   pinY?: number;
   centerOffset?: string;
+  language?: string;
 }
 
 const MapView: React.FC<MapViewProps> = ({
@@ -24,13 +25,26 @@ const MapView: React.FC<MapViewProps> = ({
   onInteractionStart,
   onInteractionEnd,
   pinY = 50,
-  centerOffset
+  centerOffset,
+  language = 'en'
 }) => {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
   const gpsMarkerRef = useRef<L.Marker | null>(null);
   const [address, setAddress] = useState<string>('Loading address...');
+  const [mapReady, setMapReady] = useState(false);
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const timersRef = useRef<Set<NodeJS.Timeout>>(new Set());
+  const mountedRef = useRef(true);
+
+  const registerTimeout = (fn: () => void, ms: number) => {
+    const id = setTimeout(() => {
+        timersRef.current.delete(id);
+        fn();
+    }, ms);
+    timersRef.current.add(id);
+    return id;
+  };
   const flyToWithOffset = (lat: number, lng: number, zoom = 17) => {
     if (!mapRef.current) return;
     const map = mapRef.current;
@@ -45,13 +59,23 @@ const MapView: React.FC<MapViewProps> = ({
       zoom
     );
     
+    // Safety check for Leaflet internal state
+    if (!(map as any)._container) return;
+    
     map.flyTo(centerLatLng, zoom, { duration: 1.5 });
+    
+    // Ensure map tiles load correctly after flying/resizing
+    registerTimeout(() => {
+      if (mapRef.current && (mapRef.current as any)._container) {
+          mapRef.current.invalidateSize();
+      }
+    }, 400);
   };
 
   const reverseGeocode = async (lat: number, lng: number) => {
     try {
       const response = await fetch(
-        `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=en`,
+        `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=${language}`,
         {
           headers: {
             'User-Agent': 'Lbricol/1.0',
@@ -92,6 +116,22 @@ const MapView: React.FC<MapViewProps> = ({
     }).addTo(map);
 
     mapRef.current = map;
+    setMapReady(true);
+
+    // ✅ Initial view with Offset (Ensures Essaouira/Initial location starts UNDER the pin, not at 50%)
+    const applyInitialOffset = () => {
+        const centerLatLng = map.unproject(
+            map.project(defaultCenter, 16).add(L.point(map.getSize().x / 2, map.getSize().y / 2)).subtract(L.point(map.getSize().x / 2, map.getSize().y * (pinY / 100))),
+            16
+        );
+        if (!(map as any)._container) return;
+        map.setView(centerLatLng, 16);
+    };
+
+    // Small delay to ensure container size is ready
+    registerTimeout(() => {
+        if (mountedRef.current && mapRef.current) applyInitialOffset();
+    }, 100);
 
     // Interaction listeners
     map.on('movestart', () => {
@@ -110,23 +150,39 @@ const MapView: React.FC<MapViewProps> = ({
 
       if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
       debounceTimerRef.current = setTimeout(() => {
-        reverseGeocode(center.lat, center.lng);
+        if (mountedRef.current && mapRef.current && (mapRef.current as any)._container) {
+          reverseGeocode(center.lat, center.lng);
+        }
       }, 800);
     });
 
     // Initial geocode
     reverseGeocode(defaultCenter[0], defaultCenter[1]);
 
+    // Handle container resize (e.g. from height transition in parent)
+    const resizeObserver = new ResizeObserver(() => {
+        if (mountedRef.current && mapRef.current && (mapRef.current as any)._container) {
+            mapRef.current.invalidateSize();
+        }
+    });
+    if (mapContainerRef.current) {
+        resizeObserver.observe(mapContainerRef.current);
+    }
+
     return () => {
-      if (mapRef.current) {
-        mapRef.current.remove();
-        mapRef.current = null;
-      }
+        mountedRef.current = false;
+        timersRef.current.forEach(t => clearTimeout(t));
+        timersRef.current.clear();
+        resizeObserver.disconnect();
+        if (mapRef.current) {
+            mapRef.current.remove();
+            mapRef.current = null;
+        }
     };
   }, []);
 
   useEffect(() => {
-    if (triggerGps && navigator.geolocation && mapRef.current) {
+    if (triggerGps && navigator.geolocation && mapRef.current && mapReady) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
           const { latitude, longitude } = position.coords;
@@ -141,14 +197,14 @@ const MapView: React.FC<MapViewProps> = ({
             const gpsIcon = L.divIcon({
               className: 'gps-pulse-icon',
               html: `
-                <div class="relative flex items-center justify-center">
+                <div class="relative flex items-center justify-center w-5 h-5">
                   <div class="absolute w-3 h-3 bg-[#10B981] rounded-full z-10 border-[1.5px] border-white shadow-sm"></div>
-                  <div class="absolute w-3 h-3 bg-[#10B981] rounded-full animate-radar-pulse opacity-40"></div>
-                  <div class="absolute w-3 h-3 bg-[#10B981] rounded-full animate-radar-pulse-delayed opacity-20"></div>
+                  <div class="absolute w-full h-full bg-[#10B981] rounded-full animate-radar-pulse opacity-40"></div>
+                  <div class="absolute w-full h-full bg-[#10B981] rounded-full animate-radar-pulse-delayed opacity-20"></div>
                 </div>
               `,
-              iconSize: [0, 0],
-              iconAnchor: [0, 0],
+              iconSize: [20, 20],
+              iconAnchor: [10, 10], // Perfectly centered on the lat/lng
             });
             gpsMarkerRef.current = L.marker([latitude, longitude], { icon: gpsIcon }).addTo(mapRef.current);
           }
@@ -164,6 +220,17 @@ const MapView: React.FC<MapViewProps> = ({
     }
   }, [flyToPoint]);
 
+  useEffect(() => {
+    if (mapRef.current && mapReady && (mapRef.current as any)._container && mountedRef.current) {
+        // If pinY changes (e.g. flow starts/ends), re-orient the map center so the location stays under the pin
+        const pinPoint = L.point(
+            mapRef.current.getSize().x / 2,
+            mapRef.current.getSize().y * (pinY / 100)
+        );
+        const mapLatLng = mapRef.current.containerPointToLatLng(pinPoint);
+        flyToWithOffset(mapLatLng.lat, mapLatLng.lng, mapRef.current.getZoom());
+    }
+  }, [pinY]);
   return (
     <div className="relative w-full h-full overflow-hidden">
       <div ref={mapContainerRef} className="w-full h-full z-0" />

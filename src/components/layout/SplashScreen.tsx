@@ -1,7 +1,10 @@
 "use client";
 
 import React from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
+import Lottie from 'lottie-react';
+import jumpingAnimation from '../../../public/Lottifiles Animation/jumping Lbricol.json';
+
 
 interface SplashScreenProps {
     subStatus?: string | null;
@@ -17,7 +20,7 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ subStatus }) => {
                 position: 'fixed',
                 inset: 0,
                 zIndex: 10000,
-                backgroundColor: '#FFFFFF',
+                backgroundColor: '#FFB700', // Vibrant Lbricol Yellow
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
@@ -26,46 +29,48 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ subStatus }) => {
                 padding: '20px'
             }}
         >
-            <div className="relative flex flex-col items-center justify-center z-10 w-full max-h-full">
-                {/* Waving Text Section */}
-                <div className="flex flex-wrap items-center justify-center gap-0 mb-8 sm:mb-12" dir="ltr">
-                    {"Lbricol".split("").map((char, i) => (
-                        <motion.span
-                            key={i}
-                            animate={{
-                                y: [0, -12, 0],
-                                scale: [1, 1.02, 1],
-                            }}
-                            transition={{
-                                duration: 1.2,
-                                repeat: Infinity,
-                                ease: "easeInOut",
-                                delay: i * 0.1
-                            }}
-                            style={{
-                                fontSize: 'clamp(48px, 22vw, 82px)',
-                                fontWeight: 500,
-                                color: '#00A082',
-                                fontFamily: 'var(--font-outfit), sans-serif',
-                                letterSpacing: '-0.05em',
-                                display: 'inline-block'
-                            }}
-                        >
-                            {char}
-                        </motion.span>
-                    ))}
+            <div className="relative flex flex-col items-center justify-center z-10 w-full max-w-[600px] -mt-[8dvh]">
+                {/* Jumping Lottie Animation */}
+                <div style={{ width: '100%', height: 'auto', maxHeight: '105dvh' }}>
+                    <Lottie
+                        animationData={jumpingAnimation}
+                        loop={true}
+                        style={{ width: '100%', height: '100%' }}
+                    />
                 </div>
+
+                {/* Brand Name */}
+                <motion.h1
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ duration: 0.8, delay: 0.3, type: 'spring' }}
+                    style={{
+                        fontSize: 'clamp(38px, 10vw, 76px)',
+                        fontWeight: 650,
+                        color: '#017C3E',
+                        fontFamily: 'sans-serif, var(--font-jakarta)',
+                        marginTop: '-40px', // Pull it up to overlap slightly with the animation base
+                        letterSpacing: '-0.04em'
+                    }}
+                >
+                    Lbricol
+                </motion.h1>
+
                 {subStatus ? (
                     <motion.p
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ duration: 0.25 }}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.5, delay: 0.5 }}
                         style={{
-                            color: '#0F7F71',
-                            fontSize: 'clamp(14px, 3vw, 18px)',
-                            fontWeight: 700,
+                            color: '#00A082', // Dark Green
+                            fontSize: 'clamp(14px, 3.5vw, 16px)',
+                            fontWeight: 800,
                             textAlign: 'center',
-                            maxWidth: '85vw'
+                            maxWidth: '85vw',
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.15em',
+                            marginTop: '2rem',
+                            opacity: 0.8
                         }}
                     >
                         {subStatus}

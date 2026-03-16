@@ -6,7 +6,7 @@ import dynamic from 'next/dynamic';
 import { LocationPoint, SavedAddress, AddressLabel } from './types';
 
 // Dynamically import MapView to avoid SSR issues for the thumbnail
-const MapView = dynamic(() => import('./MapView'), { 
+const MapView = dynamic(() => import('./MapView'), {
   ssr: false,
   loading: () => <div className="w-full h-full bg-neutral-100 animate-pulse" />
 });
@@ -43,11 +43,11 @@ const AddressDetailsForm: React.FC<AddressDetailsFormProps> = ({ initialData, on
   return (
     <div className="fixed inset-0 bg-white z-[2100] flex flex-col font-jakarta overflow-y-auto">
       {/* Header */}
-      <div className="flex items-center px-4 h-14 border-b border-[#F3F4F6] sticky top-0 bg-white z-10">
+      <div className="flex items-center px-4 h-14 sticky top-0 bg-white z-10">
         <button onClick={onBack} className="p-2 -ml-2 text-[#111827]">
           <ArrowLeft size={24} />
         </button>
-        <h2 className="flex-1 text-center font-bold text-[17px] mr-8">
+        <h2 className="flex-1 text-left pl-5 font-bold text-[17px] mr-8">
           Address details
         </h2>
       </div>
@@ -59,7 +59,7 @@ const AddressDetailsForm: React.FC<AddressDetailsFormProps> = ({ initialData, on
             <Building2 size={20} />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-[16px] font-bold text-[#111827] leading-tight break-words">
+            <p className="text-[16px] font-light text-[#111827] leading-tight break-words">
               {initialData.address}
             </p>
             <p className="text-[14px] text-[#6B7280] mt-1">
@@ -72,85 +72,81 @@ const AddressDetailsForm: React.FC<AddressDetailsFormProps> = ({ initialData, on
         <div className="space-y-4">
           {/* Building Name */}
           <div className="relative group">
-             <div className="border border-[#E5E7EB] focus-within:border-[#10B981] rounded-xl h-14 transition-all relative">
-                <input 
-                  type="text"
-                  value={formData.buildingName}
-                  onChange={(e) => setFormData({...formData, buildingName: e.target.value})}
-                  className="w-full h-full px-4 pt-5 pb-1 bg-transparent outline-none text-[15px] font-medium"
-                />
-                <label className={`absolute left-4 transition-all pointer-events-none text-[#6B7280] ${formData.buildingName ? 'top-1.5 text-[11px] font-bold' : 'top-4 text-[15px]'}`}>
-                  Building name
-                </label>
-                {formData.buildingName && (
-                  <button 
-                    onClick={() => setFormData({...formData, buildingName: ''})}
-                    className="absolute right-3 top-4 text-[#9CA3AF]"
-                  >
-                    <X size={18} />
-                  </button>
-                )}
-             </div>
+            <div className="border border-[2px] border-[#D9D9D9] focus-within:border-[#D9D9D9] rounded-xl h-14 transition-all relative">
+              <input
+                type="text"
+                value={formData.buildingName}
+                onChange={(e) => setFormData({ ...formData, buildingName: e.target.value })}
+                className="w-full h-full px-4 pt-5 pb-1 bg-transparent outline-none text-[15px] font-medium"
+              />
+              <label className={`absolute left-4 transition-all pointer-events-none text-[#6B7280] ${formData.buildingName ? 'top-1.5 text-[11px] font-bold' : 'top-4 text-[15px]'}`}>
+                Building name
+              </label>
+              {formData.buildingName && (
+                <button
+                  onClick={() => setFormData({ ...formData, buildingName: '' })}
+                  className="absolute right-3 top-4 text-[#9CA3AF]"
+                >
+                  <X size={18} />
+                </button>
+              )}
+            </div>
           </div>
 
           {/* Floor & Door Side-by-Side */}
           <div className="flex gap-4">
             <div className="flex-1 flex flex-col gap-1">
-              <div className="border border-[#E5E7EB] focus-within:border-[#10B981] rounded-xl h-14 transition-all relative">
-                <input 
+              <div className="border border-[2px] border-[#D9D9D9] focus-within:border-[#D9D9D9] rounded-xl h-14 transition-all relative">
+                <input
                   type="text"
                   value={formData.floorNumber}
-                  onChange={(e) => setFormData({...formData, floorNumber: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, floorNumber: e.target.value })}
                   className="w-full h-full px-4 pt-5 pb-1 bg-transparent outline-none text-[15px] font-medium"
                 />
                 <label className={`absolute left-4 transition-all pointer-events-none text-[#6B7280] ${formData.floorNumber ? 'top-1.5 text-[11px] font-bold' : 'top-4 text-[15px]'}`}>
                   Floor number
                 </label>
                 {formData.floorNumber && (
-                   <button 
-                    onClick={() => setFormData({...formData, floorNumber: ''})}
+                  <button
+                    onClick={() => setFormData({ ...formData, floorNumber: '' })}
                     className="absolute right-3 top-4 text-[#9CA3AF]"
                   >
                     <X size={18} />
                   </button>
                 )}
               </div>
-              <span className={`text-[11px] ml-1 ${formData.floorNumber ? 'text-[#6B7280]' : 'text-red-500 font-medium'}`}>
-                Required
-              </span>
+
             </div>
 
             <div className="flex-1 flex flex-col gap-1">
-              <div className="border border-[#E5E7EB] focus-within:border-[#10B981] rounded-xl h-14 transition-all relative">
-                <input 
+              <div className="border border-[2px] border-[#D9D9D9] focus-within:border-[#D9D9D9] rounded-xl h-14 transition-all relative">
+                <input
                   type="text"
                   value={formData.doorNumber}
-                  onChange={(e) => setFormData({...formData, doorNumber: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, doorNumber: e.target.value })}
                   className="w-full h-full px-4 pt-5 pb-1 bg-transparent outline-none text-[15px] font-medium"
                 />
                 <label className={`absolute left-4 transition-all pointer-events-none text-[#6B7280] ${formData.doorNumber ? 'top-1.5 text-[11px] font-bold' : 'top-4 text-[15px]'}`}>
                   Door number
                 </label>
-                 {formData.doorNumber && (
-                   <button 
-                    onClick={() => setFormData({...formData, doorNumber: ''})}
+                {formData.doorNumber && (
+                  <button
+                    onClick={() => setFormData({ ...formData, doorNumber: '' })}
                     className="absolute right-3 top-4 text-[#9CA3AF]"
                   >
                     <X size={18} />
                   </button>
                 )}
               </div>
-              <span className={`text-[11px] ml-1 ${formData.doorNumber ? 'text-[#6B7280]' : 'text-red-500 font-medium'}`}>
-                Required
-              </span>
+
             </div>
           </div>
 
           {/* Additional Info */}
-          <div className="border border-[#E5E7EB] focus-within:border-[#10B981] rounded-xl h-24 transition-all overflow-hidden relative">
-            <textarea 
+          <div className="border border-[2px] border-[#D9D9D9] focus-within:border-[#D9D9D9] rounded-xl h-24 transition-all overflow-hidden relative">
+            <textarea
               value={formData.additionalInfo}
-              onChange={(e) => setFormData({...formData, additionalInfo: e.target.value})}
+              onChange={(e) => setFormData({ ...formData, additionalInfo: e.target.value })}
               placeholder="Additional information"
               className="w-full h-full p-4 bg-transparent outline-none text-[15px] font-medium resize-none placeholder:text-[#9CA3AF] placeholder:font-normal"
             />
@@ -161,22 +157,22 @@ const AddressDetailsForm: React.FC<AddressDetailsFormProps> = ({ initialData, on
         <div className="space-y-3">
           <div className="flex flex-col">
             <h3 className="text-[17px] font-bold text-[#111827]">Mark your entrance</h3>
-            <div className="flex items-center gap-1.5 text-[#10B981] mt-0.5">
+            <div className="flex items-center gap-1.5 text-[#000000] mt-0.5">
               <CheckCircle2 size={16} />
-              <p className="text-[13px] font-medium">Done! Thanks for helping the courier</p>
+              <p className="text-[13px] font-medium">Done! Thanks for helping the bricoler</p>
             </div>
           </div>
           <div className="w-full h-[140px] rounded-xl overflow-hidden border border-[#F3F4F6]">
             {/* Minimal Map Preview */}
-            <MapView 
+            <MapView
               initialLocation={{ lat: initialData.lat, lng: initialData.lng }}
-              onLocationChange={() => {}} // Non-interactive thumbnail
+              onLocationChange={() => { }} // Non-interactive thumbnail
             />
             {/* Fixed Pin Overlay for Thumbnail */}
             <div className="absolute left-1/2 bottom-[calc(50%+4px)] -translate-x-1/2 z-20 pointer-events-none">
-               <svg width="24" height="32" viewBox="0 0 44 58" fill="none">
-                  <path d="M22 0C10.4 0 1 9.4 1 21C1 36.5 22 58 22 58C22 58 43 36.5 43 21C43 9.4 33.6 0 22 0Z" fill="#0D6B52" />
-                  <circle cx="22" cy="21" r="8" fill="white" />
+              <svg width="24" height="32" viewBox="0 0 44 58" fill="none">
+                <path d="M22 0C10.4 0 1 9.4 1 21C1 36.5 22 58 22 58C22 58 43 36.5 43 21C43 9.4 33.6 0 22 0Z" fill="#0D6B52" />
+                <circle cx="22" cy="21" r="8" fill="white" />
               </svg>
             </div>
           </div>
@@ -192,12 +188,11 @@ const AddressDetailsForm: React.FC<AddressDetailsFormProps> = ({ initialData, on
             {labelOptions.map(l => (
               <button
                 key={l}
-                onClick={() => setFormData({...formData, label: l})}
-                className={`h-11 px-6 rounded-full text-[14px] font-bold transition-all border ${
-                  formData.label === l 
-                  ? 'bg-[#F2C94C] border-[#F2C94C] text-[#111827]' 
+                onClick={() => setFormData({ ...formData, label: l })}
+                className={`h-11 px-6 rounded-full text-[14px] font-bold transition-all border ${formData.label === l
+                  ? 'bg-[#F2C94C] border-[#F2C94C] text-[#111827]'
                   : 'bg-white border-[#E5E7EB] text-[#6B7280]'
-                }`}
+                  }`}
               >
                 {l}
               </button>

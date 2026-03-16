@@ -11,6 +11,8 @@ import { useLanguage } from '@/context/LanguageContext';
 import { ReviewsScrollingSection } from './ReviewsScrollingSection';
 import { ClientOnboarding } from './ClientOnboarding';
 import SplashScreen from '@/components/layout/SplashScreen';
+import CompactHomeMap from '@/components/shared/CompactHomeMap';
+import OrderSubmissionFlow from '@/features/orders/components/OrderSubmissionFlow';
 
 // ── Palette ────────────────────────────────────────────────────────────────
 const G_GREEN = '#00A082';
@@ -604,6 +606,14 @@ const ClientHome: React.FC<ClientHomeProps> = ({
     const [showReferralBanner, setShowReferralBanner] = useState(false);
     const [showBricolerUpsell, setShowBricolerUpsell] = useState(false);
 
+    const [orderFlowData, setOrderFlowData] = useState<{ service: string; subService?: string } | null>(null);
+    const [mapBreadcrumb, setMapBreadcrumb] = useState<{ serviceName: string; subServiceName?: string; serviceEmoji: string; step: number } | null>(null);
+    const [backSignal, setBackSignal] = useState(0);
+
+    const handleMapUpdate = React.useCallback((data: any) => {
+        setMapBreadcrumb(data);
+    }, []);
+
     // Initial load
     useEffect(() => {
         // Onboarding Check
@@ -698,7 +708,7 @@ const ClientHome: React.FC<ClientHomeProps> = ({
 
         if (trendingSubServiceIds.length > 0) {
             // ... (rest of trending logic remains same)
-            const trendingSubs: { en: string; fr: string; ar?: string }[] = [];
+            const trendingSubs: { en: string; fr: string; ar?: string; parentServiceId: string }[] = [];
             for (const subId of trendingSubServiceIds) {
                 SERVICES.forEach(svc => {
                     const svcConfig = require('@/config/services_config').getServiceById(svc.id);
@@ -707,9 +717,9 @@ const ClientHome: React.FC<ClientHomeProps> = ({
                         if (targetSub) {
                             const translatedObj = svc.subServices.find(ts => ts.en === targetSub.name || ts.en.toLowerCase().includes(targetSub.name.toLowerCase()));
                             if (translatedObj) {
-                                trendingSubs.push({ en: translatedObj.en, fr: translatedObj.fr, ar: translatedObj.ar });
+                                trendingSubs.push({ en: translatedObj.en, fr: translatedObj.fr, ar: translatedObj.ar, parentServiceId: svc.id });
                             } else {
-                                trendingSubs.push({ en: targetSub.name, fr: targetSub.name });
+                                trendingSubs.push({ en: targetSub.name, fr: targetSub.name, parentServiceId: svc.id });
                             }
                         }
                     }
@@ -775,284 +785,349 @@ const ClientHome: React.FC<ClientHomeProps> = ({
     const active = filteredServices.find(s => s.id === activeId) || filteredServices[0] || visibleServices[0] || SERVICES[0];
 
     return (
-        <div className="min-h-[100dvh] bg-white flex flex-col pb-28">
-
-            {/* ── Location selector ───────────────────────────────────── */}
-            <div className="flex items-center justify-center pt-10 px-10">
-                <button
-                    onClick={onChangeLocation}
-                    className="flex items-center gap-1.5 px-4 py-2 rounded-full border border-neutral-100 bg-neutral-50/50 active:scale-95 transition-all shadow-sm"
-                >
-                    <MapPin size={14} className="text-[#00A082]" />
-                    <span className="text-[13px] font-black text-neutral-800 tracking-tight">
-                        {localizePlace(selectedCity)}{selectedArea ? `, ${localizePlace(selectedArea)}` : ''}
-                    </span>
-                    <ChevronDown size={14} className="text-neutral-400" />
-                </button>
+        <div className={cn(
+            "fixed inset-0 bg-white flex flex-col overflow-hidden h-[100dvh] w-screen font-jakarta",
+            (orderFlowData && mapBreadcrumb?.step === 1) ? "z-[4000]" : "z-0"
+        )}>
+            {/* 1. Map Background (Dynamic Height for Step 1) */}
+            <div className={cn(
+                "w-full relative bg-neutral-100 overflow-hidden transition-all duration-500 ease-in-out",
+                (orderFlowData && mapBreadcrumb?.step === 1) ? "flex-1" : "h-[42vh] flex-shrink-0"
+            )}>
+                <CompactHomeMap
+                    city={selectedCity}
+                    area={selectedArea}
+                    onInteract={onChangeLocation}
+                    serviceName={mapBreadcrumb?.serviceName}
+                    subServiceName={mapBreadcrumb?.subServiceName}
+                    serviceEmoji={mapBreadcrumb?.serviceEmoji}
+                    onCloseFlow={orderFlowData ? () => {
+                        setOrderFlowData(null);
+                        setMapBreadcrumb(null);
+                    } : undefined}
+                    onBack={orderFlowData ? () => setBackSignal(Date.now()) : undefined}
+                    className="h-full rounded-none border-none shadow-none"
+                    isFlowActive={!!orderFlowData && mapBreadcrumb?.step === 1}
+                />
             </div>
 
-            {/* ── Hero Heading ─────────────────────────────────────────── */}
-            <div className="pt-10 pb-12 flex flex-col text-center w-full overflow-hidden">
-                <motion.h1
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.8, ease: "easeOut" }}
-                    className="font-black leading-[1.05] tracking-tighter text-[#1D1D1D] mx-auto relative overflow-hidden"
-                    style={{
-                        fontSize: t({ en: 'clamp(42px, 12vw, 56px)', fr: 'clamp(34px, 10vw, 48px)', ar: 'clamp(34px, 10vw, 48px)' }),
-                        maxWidth: t({ en: '380px', fr: '420px', ar: '430px' }),
-                        fontWeight: 700
-                    }}
-                >
-                    {t({
-                        en: 'Book trusted help for home tasks',
-                        fr: 'Réservez une aide de confiance pour vos tâches',
-                        ar: 'احجز مساعدة موثوقة لمهام منزلك'
-                    })}
-                    {/* Shine effect overlay */}
-                    <motion.div
-                        initial={{ left: '-100%' }}
-                        animate={{ left: '200%' }}
-                        transition={{ duration: 2.5, ease: "easeInOut", delay: 3 }}
-                        style={{
-                            position: 'absolute',
-                            top: 0,
-                            bottom: 0,
-                            width: '50%',
-                            background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.7), transparent)',
-                            transform: 'skewX(-20deg)',
-                            pointerEvents: 'none',
-                        }}
-                    />
-                </motion.h1>
-            </div>
+            {/* 2. Bottom Sheet Container */}
+            <div className={cn(
+                "bg-white relative flex flex-col overflow-hidden rounded-t-[32px] z-10 shadow-[0_-12px_40px_rgba(0,0,0,0.08)] transition-all duration-500 ease-in-out shrink-0",
+                (orderFlowData && mapBreadcrumb?.step === 1) ? "-mt-10 pb-4" : "flex-1 -mt-16"
+            )}>
 
-            {/* ── Category tabs ───────────────────────────────────────── */}
-            {/* Search bar */}
-            <div className="px-4 pt-2 pb-3 w-[80%] mx-auto">
-                <div className="flex items-center gap-2 bg-neutral-50 border border-neutral-200 rounded-full px-4 py-3">
-                    <Search size={18} className="text-neutral-400 flex-shrink-0" />
-                    <input
-                        type="text"
-                        value={searchQuery}
-                        onChange={e => setSearchQuery(e.target.value)}
-                        placeholder={t({ en: 'Search services...', fr: 'Rechercher un service...', ar: 'ابحث عن خدمة...' })}
-                        className="flex-1 bg-transparent text-[15px] font-medium text-neutral-800 placeholder:text-neutral-400 outline-none"
-                    />
-                    {searchQuery.length > 0 && (
-                        <button onClick={() => setSearchQuery('')} className="text-neutral-400 hover:text-neutral-600 transition-colors active:scale-90">
-                            <X size={16} />
-                        </button>
-                    )}
-                </div>
-            </div>
-
-            {/* No results message */}
-            {searchQuery && filteredServices.length === 0 && (
-                <div className="px-4 py-8 text-center">
-                    <p className="text-[15px] font-medium text-neutral-400">
-                        {t({ en: 'No services found for', fr: 'Aucun service trouvé pour', ar: 'لا توجد خدمات لـ' })} "<span className="text-neutral-600 font-bold">{searchQuery}</span>"
-                    </p>
-                </div>
-            )}
-
-            <div
-                className="flex gap-4 overflow-x-auto border-b border-neutral-100 px-4 flex-shrink-0"
-                style={{ scrollbarWidth: 'none' }}
-            >
-                {filteredServices.map((svc, idx) => {
-                    const isActive = svc.id === activeId;
-                    const isTrending = svc.id === '__trending__';
-                    // Trending uses amber/gold palette; regular tabs use green/yellow
-                    const activeColor = isTrending ? '#B8860B' : G_GREEN;
-                    const activeBg = isTrending ? '#FFF3CD' : '#FFC244';
-                    return (
-                        <motion.button
-                            key={svc.id}
-                            initial={{ opacity: 0, y: 20, scale: 0.8 }}
-                            animate={{ opacity: 1, y: 0, scale: 1 }}
-                            transition={{
-                                type: "spring",
-                                damping: 15,
-                                stiffness: 200,
-                                delay: idx * 0.08
-                            }}
-                            onClick={() => {
-                                setActiveId(svc.id);
-                                setHasManuallySelected(true);
-                            }}
-                            className="flex flex-col items-center gap-3 px-1 pt-4 pb-3 flex-shrink-0 relative transition-all"
+                <AnimatePresence mode="wait">
+                    {orderFlowData ? (
+                        <motion.div
+                            key="order-flow"
+                            initial={{ x: 20, opacity: 0 }}
+                            animate={{ x: 0, opacity: 1 }}
+                            exit={{ x: -20, opacity: 0 }}
+                            transition={{ duration: 0.3 }}
+                            className="flex-1 flex flex-col overflow-hidden"
                         >
-                            {/* Icon circle */}
-                            <motion.div
-                                animate={isActive ? {
-                                    borderRadius: [
-                                        '60% 40% 30% 70% / 60% 30% 70% 40%',
-                                        '30% 60% 70% 40% / 50% 60% 30% 60%',
-                                        '60% 40% 30% 70% / 60% 30% 70% 40%'
-                                    ],
-                                    rotate: [-10, 5, -10],
-                                    scale: [1.05, 1.08, 1.05]
-                                } : {
-                                    borderRadius: '50%',
-                                    rotate: 0,
-                                    scale: 1
+                            <OrderSubmissionFlow
+                                key={`order-flow-${orderFlowData.service}-${orderFlowData.subService}`}
+                                isOpen={true}
+                                isInline={true}
+                                service={orderFlowData.service}
+                                subService={orderFlowData.subService}
+                                initialCity={selectedCity}
+                                initialArea={selectedArea}
+                                onMapUpdate={handleMapUpdate}
+                                backSignal={backSignal}
+                                onSubmit={(data) => {
+                                    // Order submitted successfully
+                                    setOrderFlowData(null);
+                                    setMapBreadcrumb(null);
                                 }}
-                                transition={isActive ? {
-                                    duration: 6,
-                                    repeat: Infinity,
-                                    ease: "easeInOut"
-                                } : {
-                                    duration: 0.3
+                                onClose={() => {
+                                    setOrderFlowData(null);
+                                    setMapBreadcrumb(null);
                                 }}
-                                style={{
-                                    width: 90,
-                                    height: 90,
-                                    backgroundColor: isActive ? activeBg : '#FFFFFF',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    border: isActive ? 'none' : '1.5px solid #F0F0F0',
-                                }}
-                            >
-                                {isTrending ? (
-                                    <span style={{ fontSize: 36 }}>🔥</span>
-                                ) : (
-                                    <img
-                                        src={svc.iconPath}
-                                        className="w-14 h-14 object-contain transition-all duration-300"
-                                        style={{ filter: 'none' }}
-                                        alt={svc.label}
-                                    />
-                                )}
-                            </motion.div>
+                            />
+                        </motion.div>
+                    ) : (
+                        <motion.div
+                            key="services-list"
+                            initial={{ x: -20, opacity: 0 }}
+                            animate={{ x: 0, opacity: 1 }}
+                            exit={{ x: 20, opacity: 0 }}
+                            transition={{ duration: 0.3 }}
+                            className="flex-1 flex flex-col overflow-hidden"
+                        >
+                            {/* Scrollable Content Area */}
+                            <div className="flex-1 overflow-y-auto overscroll-contain pb-32 no-scrollbar">
 
-                            {/* Label */}
-                            <span
-                                className="text-[14px] whitespace-nowrap mt-1"
-                                style={{
-                                    fontWeight: isActive ? 900 : 700,
-                                    color: isActive ? activeColor : '#666',
-                                    letterSpacing: '-0.02em',
-                                }}
-                            >
-                                {t({ en: svc.label, fr: svc.labelFr, ar: svc.labelAr || svc.labelFr })}
-                            </span>
+                                {/* ── Hero Heading ─────────────────────────────────────────── */}
+                                <div className="pt-8 pb-8 flex flex-col text-center w-full overflow-hidden px-6">
+                                    <motion.h1
+                                        initial={{ opacity: 0, y: 15 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        transition={{ duration: 0.6, ease: "easeOut" }}
+                                        className="font-black leading-[1.05] tracking-tighter text-[#1D1D1D] mx-auto relative overflow-hidden"
+                                        style={{
+                                            fontSize: t({ en: 'clamp(22px, 10vw, 36px)', fr: 'clamp(34px, 10vw, 48px)', ar: 'clamp(34px, 10vw, 48px)' }),
+                                            maxWidth: t({ en: '380px', fr: '420px', ar: '430px' }),
+                                            fontWeight: 700
+                                        }}
+                                    >
+                                        {t({
+                                            en: 'Book trusted help for home tasks',
+                                            fr: 'Réservez une aide de confiance pour vos tâches',
+                                            ar: 'احجز مساعدة موثوقة لمهام منزلك'
+                                        })}
+                                        {/* Shine effect overlay using span to avoid div-in-h1 lint */}
+                                        <motion.span
+                                            initial={{ left: '-100%' }}
+                                            animate={{ left: '200%' }}
+                                            transition={{ duration: 2.5, ease: "easeInOut", delay: 3 }}
+                                            style={{
+                                                position: 'absolute',
+                                                top: 0,
+                                                bottom: 0,
+                                                width: '50%',
+                                                background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.7), transparent)',
+                                                transform: 'skewX(-20deg)',
+                                                pointerEvents: 'none',
+                                            }}
+                                        />
+                                    </motion.h1>
+                                </div>
 
-                            {/* Active underline */}
-                            {isActive && (
-                                <motion.div
-                                    layoutId="tab-indicator"
-                                    className="absolute bottom-0 left-0 right-0 rounded-full"
-                                    style={{ height: 3, backgroundColor: activeColor }}
-                                    transition={{ type: 'spring', stiffness: 500, damping: 40 }}
-                                />
+                                {/* ── Category tabs ───────────────────────────────────────── */}
+                                {/* Search bar */}
+                                {/*<div className="px-6 pb-6 w-full max-w-[400px] mx-auto">
+                        <div className="flex items-center gap-2 bg-neutral-50 border border-neutral-200 rounded-full px-5 py-3.5">
+                            <Search size={18} className="text-[#00A082] flex-shrink-0" strokeWidth={2.5} />
+                            <input
+                                type="text"
+                                value={searchQuery}
+                                onChange={e => setSearchQuery(e.target.value)}
+                                placeholder={t({ en: 'Search services...', fr: 'Rechercher un service...', ar: 'ابحث عن خدمة...' })}
+                                className="flex-1 bg-transparent text-[15.5px] font-bold text-neutral-800 placeholder:text-neutral-400 outline-none"
+                            />
+                            {searchQuery.length > 0 && (
+                                <button onClick={() => setSearchQuery('')} className="text-neutral-400 hover:text-neutral-600 transition-colors active:scale-90">
+                                    <X size={18} />
+                                </button>
                             )}
-                        </motion.button>
-                    );
-                })}
+                        </div>
+                    </div>*/}
+
+                                {/* No results message */}
+                                {/*{searchQuery && filteredServices.length === 0 && (
+                        <div className="px-4 py-8 text-center">
+                            <p className="text-[15px] font-medium text-neutral-400">
+                                {t({ en: 'No services found for', fr: 'Aucun service trouvé pour', ar: 'لا توجد خدمات لـ' })} "<span className="text-neutral-600 font-bold">{searchQuery}</span>"
+                            </p>
+                        </div>
+                    )}*/}
+
+                                <div
+                                    className="flex gap-4 overflow-x-auto border-b border-neutral-100 px-4 flex-shrink-0"
+                                    style={{ scrollbarWidth: 'none' }}
+                                >
+                                    {filteredServices.map((svc, idx) => {
+                                        const isActive = svc.id === activeId;
+                                        const isTrending = svc.id === '__trending__';
+                                        // Trending uses amber/gold palette; regular tabs use green/yellow
+                                        const activeColor = isTrending ? '#B8860B' : G_GREEN;
+                                        const activeBg = isTrending ? '#FFF3CD' : '#FFC244';
+                                        return (
+                                            <motion.button
+                                                key={svc.id}
+                                                initial={{ opacity: 0, y: 20, scale: 0.8 }}
+                                                animate={{ opacity: 1, y: 0, scale: 1 }}
+                                                transition={{
+                                                    type: "spring",
+                                                    damping: 15,
+                                                    stiffness: 200,
+                                                    delay: idx * 0.08
+                                                }}
+                                                onClick={() => {
+                                                    setActiveId(svc.id);
+                                                    setHasManuallySelected(true);
+                                                }}
+                                                className="flex flex-col items-center gap-3 px-1 pt-4 pb-3 flex-shrink-0 relative transition-all"
+                                            >
+                                                {/* Icon circle */}
+                                                <motion.div
+                                                    animate={isActive ? {
+                                                        borderRadius: [
+                                                            '60% 40% 30% 70% / 60% 30% 70% 40%',
+                                                            '30% 60% 70% 40% / 50% 60% 30% 60%',
+                                                            '60% 40% 30% 70% / 60% 30% 70% 40%'
+                                                        ],
+                                                        rotate: [-10, 5, -10],
+                                                        scale: [1.05, 1.08, 1.05]
+                                                    } : {
+                                                        borderRadius: '50%',
+                                                        rotate: 0,
+                                                        scale: 1
+                                                    }}
+                                                    transition={isActive ? {
+                                                        duration: 6,
+                                                        repeat: Infinity,
+                                                        ease: "easeInOut"
+                                                    } : {
+                                                        duration: 0.3
+                                                    }}
+                                                    style={{
+                                                        width: 90,
+                                                        height: 90,
+                                                        backgroundColor: isActive ? activeBg : '#FFFFFF',
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        justifyContent: 'center',
+                                                        border: isActive ? 'none' : '1.5px solid #F0F0F0',
+                                                    }}
+                                                >
+                                                    {isTrending ? (
+                                                        <span style={{ fontSize: 36 }}>🔥</span>
+                                                    ) : (
+                                                        <img
+                                                            src={svc.iconPath}
+                                                            className="w-14 h-14 object-contain transition-all duration-300"
+                                                            style={{ filter: 'none' }}
+                                                            alt={svc.label}
+                                                        />
+                                                    )}
+                                                </motion.div>
+
+                                                {/* Label */}
+                                                <span
+                                                    className="text-[14px] whitespace-nowrap mt-1"
+                                                    style={{
+                                                        fontWeight: isActive ? 900 : 700,
+                                                        color: isActive ? activeColor : '#666',
+                                                        letterSpacing: '-0.02em',
+                                                    }}
+                                                >
+                                                    {t({ en: svc.label, fr: svc.labelFr, ar: svc.labelAr || svc.labelFr })}
+                                                </span>
+
+                                                {/* Active underline */}
+                                                {isActive && (
+                                                    <motion.div
+                                                        layoutId="tab-indicator"
+                                                        className="absolute bottom-0 left-0 right-0 rounded-full"
+                                                        style={{ height: 3, backgroundColor: activeColor }}
+                                                        transition={{ type: 'spring', stiffness: 500, damping: 40 }}
+                                                    />
+                                                )}
+                                            </motion.button>
+                                        );
+                                    })}
+                                </div>
+
+                                {/* ── Active service content ──────────────────────────────── */}
+                                <AnimatePresence mode="wait">
+                                    <motion.div
+                                        key={activeId}
+                                        initial={{ opacity: 0, y: 10 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        exit={{ opacity: 0, y: -10 }}
+                                        transition={{ duration: 0.2 }}
+                                        className="flex flex-col flex-1 pt-5"
+                                    >
+                                        {/* Sub-service pill chips */}
+                                        <div className="px-4 pb-6 flex flex-wrap gap-2.5">
+                                            {active.subServices
+                                                .filter(subObj => {
+                                                    // Always show these even if no pro is available yet (forced for growth)
+                                                    const forceShow = [
+                                                        'Electricity (HVAC)',
+                                                        'Electricity (EV)',
+                                                        'Electricity (Cams)',
+                                                        'Cooling & heating systems',
+                                                        'EV charger installation',
+                                                        'Surveillance cameras'
+                                                    ];
+                                                    if (forceShow.includes(subObj.en)) return true;
+
+                                                    if (!availableSubServiceIds || availableSubServiceIds.length === 0) return true;
+                                                    const config = getServiceById(active.id);
+                                                    if (!config) return true;
+
+                                                    // Try to find the sub-service config by matching the English name from the local catalogue
+                                                    const subConfig = config.subServices.find(ss =>
+                                                        ss.name === subObj.en ||
+                                                        ss.id === subObj.en
+                                                    );
+
+                                                    if (!subConfig) return true; // Fallback: if we can't find a config mapping, show it anyway
+
+                                                    // Check if the ID, English name, French name, or Arabic name exists in the available list
+                                                    // This makes the filter robust against data registered in different languages or formats.
+                                                    return (
+                                                        availableSubServiceIds.includes(subConfig.id) ||
+                                                        availableSubServiceIds.includes(subConfig.name) ||
+                                                        availableSubServiceIds.includes(subObj.en) ||
+                                                        availableSubServiceIds.includes(subObj.fr) ||
+                                                        (subObj.ar && availableSubServiceIds.includes(subObj.ar)) ||
+                                                        // Also check for common variants (slugified, lowercase etc)
+                                                        availableSubServiceIds.includes(subConfig.id.replace(/_/g, ' ')) ||
+                                                        availableSubServiceIds.includes(subConfig.id.toLowerCase())
+                                                    );
+                                                })
+                                                .map((sub, idx) => (
+                                                    <motion.button
+                                                        key={sub.en}
+                                                        initial={{ opacity: 0, scale: 0.6 }}
+                                                        animate={{ opacity: 1, scale: 1 }}
+                                                        transition={{
+                                                            type: 'spring',
+                                                            stiffness: 380,
+                                                            damping: 20,
+                                                            delay: idx * 0.07
+                                                        }}
+                                                        whileTap={{ scale: 0.92 }}
+                                                        onClick={() => {
+                                                            localStorage.setItem('last_service_category', active.id);
+                                                            const serviceId = active.id === '__trending__' ? (sub as any).parentServiceId : active.id;
+                                                            setOrderFlowData({ service: serviceId, subService: sub.en });
+                                                        }}
+                                                        className="px-4 py-2.5 rounded-full border border-[#E6E6E6] text-[15px] font-bold text-[#1D1D1D] bg-white hover:border-[#1D1D1D] active:bg-neutral-50 transition-colors shadow-[0_2px_8px_rgba(0,0,0,0.03)]"
+                                                    >
+                                                        {t(sub)}
+                                                    </motion.button>
+                                                ))}
+                                        </div>
+
+                                        {/* Feature bullets */}
+                                        <div className="px-5 pb-5 space-y-3.5">
+                                            {active.bullets.map((b, i) => (
+                                                <motion.div
+                                                    key={i}
+                                                    className="flex items-start gap-3"
+                                                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                                                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                                                    transition={{
+                                                        type: 'spring',
+                                                        stiffness: 260,
+                                                        damping: 22,
+                                                        delay: active.subServices.length * 0.07 + i * 0.08
+                                                    }}
+                                                >
+                                                    <span className="mt-0.5 text-[#B3B3B3] flex-shrink-0 text-[15px]">✓</span>
+                                                    <p className="text-[15px] text-[#4A4A4A] leading-snug font-medium">{t(b)}</p>
+                                                </motion.div>
+                                            ))}
+                                        </div>
+                                    </motion.div>
+                                </AnimatePresence>
+
+                                {/* Horizontal Auto-scrolling Client Reviews Section */}
+                                <ReviewsScrollingSection />
+                            </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
             </div>
 
-            {/* ── Active service content ──────────────────────────────── */}
-            <AnimatePresence mode="wait">
-                <motion.div
-                    key={activeId}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
-                    transition={{ duration: 0.2 }}
-                    className="flex flex-col flex-1 pt-5"
-                >
-                    {/* Sub-service pill chips */}
-                    <div className="px-4 pb-6 flex flex-wrap gap-2.5">
-                        {active.subServices
-                            .filter(subObj => {
-                                // Always show these even if no pro is available yet (forced for growth)
-                                const forceShow = [
-                                    'Electricity (HVAC)',
-                                    'Electricity (EV)',
-                                    'Electricity (Cams)',
-                                    'Cooling & heating systems',
-                                    'EV charger installation',
-                                    'Surveillance cameras'
-                                ];
-                                if (forceShow.includes(subObj.en)) return true;
-
-                                if (!availableSubServiceIds || availableSubServiceIds.length === 0) return true;
-                                const config = getServiceById(active.id);
-                                if (!config) return true;
-
-                                // Try to find the sub-service config by matching the English name from the local catalogue
-                                const subConfig = config.subServices.find(ss =>
-                                    ss.name === subObj.en ||
-                                    ss.id === subObj.en
-                                );
-
-                                if (!subConfig) return true; // Fallback: if we can't find a config mapping, show it anyway
-
-                                // Check if the ID, English name, French name, or Arabic name exists in the available list
-                                // This makes the filter robust against data registered in different languages or formats.
-                                return (
-                                    availableSubServiceIds.includes(subConfig.id) ||
-                                    availableSubServiceIds.includes(subConfig.name) ||
-                                    availableSubServiceIds.includes(subObj.en) ||
-                                    availableSubServiceIds.includes(subObj.fr) ||
-                                    (subObj.ar && availableSubServiceIds.includes(subObj.ar)) ||
-                                    // Also check for common variants (slugified, lowercase etc)
-                                    availableSubServiceIds.includes(subConfig.id.replace(/_/g, ' ')) ||
-                                    availableSubServiceIds.includes(subConfig.id.toLowerCase())
-                                );
-                            })
-                            .map((sub, idx) => (
-                                <motion.button
-                                    key={sub.en}
-                                    initial={{ opacity: 0, scale: 0.6 }}
-                                    animate={{ opacity: 1, scale: 1 }}
-                                    transition={{
-                                        type: 'spring',
-                                        stiffness: 380,
-                                        damping: 20,
-                                        delay: idx * 0.07
-                                    }}
-                                    whileTap={{ scale: 0.92 }}
-                                    onClick={() => {
-                                        localStorage.setItem('last_service_category', active.id);
-                                        onSelectService(active.id, sub.en);
-                                    }}
-                                    className="px-4 py-2.5 rounded-full border border-[#E6E6E6] text-[15px] font-bold text-[#1D1D1D] bg-white hover:border-[#1D1D1D] active:bg-neutral-50 transition-colors shadow-[0_2px_8px_rgba(0,0,0,0.03)]"
-                                >
-                                    {t(sub)}
-                                </motion.button>
-                            ))}
-                    </div>
-
-                    {/* Feature bullets */}
-                    <div className="px-5 pb-5 space-y-3.5">
-                        {active.bullets.map((b, i) => (
-                            <motion.div
-                                key={i}
-                                className="flex items-start gap-3"
-                                initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                                animate={{ opacity: 1, y: 0, scale: 1 }}
-                                transition={{
-                                    type: 'spring',
-                                    stiffness: 260,
-                                    damping: 22,
-                                    delay: active.subServices.length * 0.07 + i * 0.08
-                                }}
-                            >
-                                <span className="mt-0.5 text-[#B3B3B3] flex-shrink-0 text-[15px]">✓</span>
-                                <p className="text-[15px] text-[#4A4A4A] leading-snug font-medium">{t(b)}</p>
-                            </motion.div>
-                        ))}
-                    </div>
-                </motion.div>
-            </AnimatePresence>
-
-            {/* Horizontal Auto-scrolling Client Reviews Section */}
-            <ReviewsScrollingSection />
-
-            {/* Premium Onboarding Overlay */}
+            {/* Premium Onboarding Overlay (Absolute, top level) */}
             <AnimatePresence>
                 {showOnboarding && (
                     <ClientOnboarding

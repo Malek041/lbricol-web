@@ -64,6 +64,7 @@ import {
   Zap,
   Calendar
 } from 'lucide-react';
+import CompactHomeMap from '@/components/shared/CompactHomeMap';
 import { getAllServices, getServiceById, getSubServiceName, getServiceName, type ServiceConfig } from '@/config/services_config';
 import {
   FaHammer,
@@ -295,7 +296,7 @@ const Home = () => {
   const [autoLocateOnPickerOpen, setAutoLocateOnPickerOpen] = useState(false);
   const [userSavedAddresses, setUserSavedAddresses] = useState<SavedAddress[]>([]);
 
-  // Persist Addresses
+  // Persist Addresses & Location Preference
   useEffect(() => {
     const saved = localStorage.getItem('lbricol_saved_addresses');
     if (saved) {
@@ -305,6 +306,11 @@ const Home = () => {
         console.error("Error parsing saved addresses", e);
       }
     }
+    
+    const prefCity = localStorage.getItem('lbricol_preferred_city');
+    const prefArea = localStorage.getItem('lbricol_preferred_area');
+    if (prefCity) setSelectedCity(prefCity);
+    if (prefArea) setSelectedArea(prefArea);
   }, []);
 
   useEffect(() => {
@@ -344,6 +350,13 @@ const Home = () => {
     const minTimer = setTimeout(() => {
       if (mounted && !loadingOrders && !loadingServices) {
         setShowSplash(false);
+        
+        // Forced location flow if not set
+        const onboardingShown = localStorage.getItem('client_onboarding_shown');
+        const prefCity = localStorage.getItem('lbricol_preferred_city');
+        if (onboardingShown && !prefCity && !showLanguagePopup) {
+          setShowLocationPermissionPopup(true);
+        }
       }
     }, 1500);
 
@@ -2518,7 +2531,7 @@ const Home = () => {
     }
   };
 
-  const isFullscreenMobileTab = isMobile && ['profile', 'share', 'promocodes', 'calendar', 'messages', 'heroes'].includes(mobileNavTab);
+  const isFullscreenMobileTab = isMobile && ['home', 'profile', 'share', 'promocodes', 'calendar', 'messages', 'heroes'].includes(mobileNavTab);
 
   return (
     <div style={{ backgroundColor: c.bg, color: c.text, minHeight: '100vh', scrollBehavior: 'smooth' }} className="font-sans">
@@ -2600,7 +2613,7 @@ const Home = () => {
       />
       <main style={{
         backgroundColor: isFullscreenMobileTab ? 'transparent' : c.bg,
-        paddingBottom: isMobile ? ((mobileNavTab === 'calendar' || mobileNavTab === 'messages' || mobileNavTab === 'share' || mobileNavTab === 'promocodes') ? '0' : '80px') : '0',
+        paddingBottom: isMobile ? (['home', 'calendar', 'messages', 'share', 'promocodes', 'heroes'].includes(mobileNavTab) ? '0' : '80px') : '0',
         overflow: isMobile && (mobileNavTab === 'calendar' || mobileNavTab === 'messages' || mobileNavTab === 'share' || mobileNavTab === 'promocodes') ? 'hidden' : 'visible',
         height: isFullscreenMobileTab ? '100dvh' : 'auto'
       }}>
@@ -2854,12 +2867,20 @@ const Home = () => {
                 trendingSubServiceIds={trendingSubServices}
                 popularServiceIds={popularServiceIds}
 
-                onChangeLocation={() => setShowLocationPicker(true)}
+                onChangeLocation={() => {
+                  setAutoLocateOnPickerOpen(true);
+                  setShowLocationPicker(true);
+                }}
                 onNavigateToShare={() => setMobileNavTab('share')}
                 showOnboarding={showClientOnboarding}
                 onOnboardingComplete={() => {
                   localStorage.setItem('client_onboarding_shown', 'true');
                   setShowClientOnboarding(false);
+                  
+                  // Immediately ask for location after onboarding
+                  if (!selectedCity) {
+                    setShowLocationPermissionPopup(true);
+                  }
                 }}
                 onBecomeBricoler={() => {
                   if (currentUser) {
@@ -2900,6 +2921,17 @@ const Home = () => {
                   }}
                 />
 
+                {/* Compact Map Section (Desktop) */}
+                <div className="max-w-[1270px] mx-auto px-6 pb-12 h-[300px]">
+                   <CompactHomeMap 
+                      city={selectedCity}
+                      area={selectedArea}
+                      onInteract={() => {
+                        setAutoLocateOnPickerOpen(true);
+                        setShowLocationPicker(true);
+                      }}
+                   />
+                </div>
 
                 {/* Recent Activity Carousel */}
                 {
@@ -3631,10 +3663,13 @@ const Home = () => {
           onClose={() => {
             setShowLanguagePopup(false);
             const onboardingShown = localStorage.getItem('client_onboarding_shown');
-            if (!onboardingShown) {
+            if (onboardingShown) {
+              const prefCity = localStorage.getItem('lbricol_preferred_city');
+              if (!prefCity && !selectedCity) {
+                setShowLocationPermissionPopup(true);
+              }
+            } else {
               setShowClientOnboarding(true);
-            } else if (!selectedCity && !localStorage.getItem('lbricol_preferred_city')) {
-              setShowLocationPermissionPopup(true);
             }
           }}
           onSelectLanguage={handleLanguageSelect}

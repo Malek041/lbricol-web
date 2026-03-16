@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
-import { X, Loader2 } from 'lucide-react';
+import { X, Loader2, Navigation } from 'lucide-react';
 import { LocationPickerProps, LocationPoint, SavedAddress } from './types';
 
 // Components
@@ -115,9 +115,9 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
     onSaveAddress?.(data);
 
     // 2. Auto-confirm/select this address to finalize the flow
-    onConfirm({ 
-      pickup: { lat: data.lat, lng: data.lng, address: data.address }, 
-      savedAddress: data 
+    onConfirm({
+      pickup: { lat: data.lat, lng: data.lng, address: data.address },
+      savedAddress: data
     });
 
     // 3. Return to Map View (or the picker might be closed by parent onConfirm)
@@ -146,7 +146,7 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
   }
 
   return (
-    <div className="fixed inset-0 bg-white z-[2000] flex flex-col font-jakarta transition-all overflow-hidden">
+    <div className="fixed inset-0 bg-white z-[6000] flex flex-col font-jakarta transition-all overflow-hidden">
       {/* 1. Map Area (Resizable Window) */}
       <div
         className={`relative bg-neutral-100 overflow-hidden transition-all duration-300 ease-in-out z-0 ${isInteracting ? 'h-[75%]' : 'h-[48%]'
@@ -154,14 +154,14 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
       >
         {/* Full-screen under-layer map */}
         <div className="absolute top-0 left-0 w-full h-[100dvh]">
-          <MapView
-            onLocationChange={handleLocationChange}
-            triggerGps={triggerGps}
-            flyToPoint={flyToPoint || undefined}
-            onInteractionStart={() => setIsInteracting(true)}
-            onInteractionEnd={() => setIsInteracting(false)}
-            pinY={24}
-          />
+            <MapView
+                onLocationChange={handleLocationChange}
+                triggerGps={triggerGps}
+                flyToPoint={flyToPoint || undefined}
+                onInteractionStart={() => setIsInteracting(true)}
+                onInteractionEnd={() => setIsInteracting(false)}
+                pinY={isInteracting ? 35 : 24} // Adjust pinY when map expands
+            />
         </div>
 
         {/* Floating Controls (Inside resizable area but sticky) */}
@@ -176,22 +176,15 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
             </button>
           </div>
           {/* GPS Locate Button */}
-          <div className="absolute bottom-4 right-4 pointer-events-auto">
+          <div className="absolute bottom-12 right-4 pointer-events-auto">
             <button
               onClick={handleLocate}
               className="w-11 h-11 bg-white rounded-full shadow-[0_2px_8px_rgba(0,0,0,0.15)] flex items-center justify-center text-[#374151] active:scale-95 transition-transform"
             >
               {isLocating ? (
-                <Loader2 size={20} className="animate-spin text-[#10B981]" />
+                <Loader2 size={20} className="animate-spin text-[#00A082]" />
               ) : (
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
-                  <line x1="12" y1="2" x2="12" y2="5" />
-                  <line x1="12" y1="19" x2="12" y2="22" />
-                  <line x1="2" y1="12" x2="5" y2="12" />
-                  <line x1="19" y1="12" x2="22" y2="12" />
-                  <circle cx="12" cy="12" r="4" strokeWidth="1.5" />
-                  <circle cx="12" cy="12" r="1" fill="currentColor" />
-                </svg>
+                <Navigation size={22} strokeWidth={2.5} className="text-neutral-900" />
               )}
             </button>
           </div>
@@ -199,13 +192,13 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
       </div>
 
       {/* 2. Bottom Sheet Area (Resizable) */}
-      <div className="flex-1 bg-white rounded-t-[20px] shadow-[0_-4px_24px_rgba(0,0,0,0.06)] px-5 py-6 flex flex-col overflow-hidden relative z-10">
+      <div className="flex-1 bg-white rounded-t-[32px] shadow-[0_-8px_30px_rgba(0,0,0,0.08)] px-5 py-8 flex flex-col overflow-hidden relative z-10 -mt-8">
         <SavedAddressList
           addresses={savedAddresses}
           onSelect={handleSavedSelect}
           onEdit={handleEditAddress}
           onAdd={() => setActiveView('SEARCH')}
-          title={mode === 'double' && step === 2 ? "Where are you moving to?" : "Where shall we deliver to?"}
+          title={mode === 'double' && step === 2 ? "Where are you moving to?" : "Where do you need help?"}
         />
 
         <p className="text-center text-[12px] text-[#9CA3AF] mt-4 font-medium">
@@ -214,25 +207,27 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
       </div>
 
       {/* 3. TRULY FIXED PIN & CALLOUT — Always in visual center of initial view */}
-      <div 
-        className="fixed left-1/2 -translate-x-1/2 -translate-y-full pointer-events-none z-[1001]"
-        style={{ top: '24%' }}
+      <div
+        className="fixed left-1/2 -translate-x-1/2 -translate-y-full pointer-events-none z-[6001]"
+        style={{ top: isInteracting ? '35%' : '24%' }}
       >
-         {/* The Address Bubble (appears above the pin) */}
-         {currentPoint && (
-           <AddressCard
-             address={currentPoint.address}
-             icon={serviceIcon}
-             onConfirm={handleConfirmPoint}
-           />
-         )}
+        {/* The Address Bubble (appears above the pin) */}
+        {currentPoint && (
+          <AddressCard
+            address={currentPoint.address}
+            icon={serviceIcon}
+            onConfirm={handleConfirmPoint}
+          />
+        )}
 
-         {/* The Pin Image */}
-         <img 
-           src="/Images/map Assets/LocationPin.png" 
-           alt="Pin"
-           className="w-[45px] h-auto drop-shadow-lg"
-         />
+        {/* The Pin Image */}
+        <div className="flex justify-center">
+            <img
+                src="/Images/map Assets/LocationPin.png"
+                alt="Pin"
+                className="w-[45px] h-auto drop-shadow-lg"
+            />
+        </div>
       </div>
 
       <style jsx global>{`
