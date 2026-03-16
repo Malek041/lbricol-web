@@ -245,10 +245,10 @@ const MapView: React.FC<MapViewProps> = ({
   }, [triggerGps, mapReady]);
 
   useEffect(() => {
-    if (flyToPoint && mapRef.current) {
+    if (flyToPoint && mapRef.current && mapReady) {
       flyToWithOffset(flyToPoint.lat, flyToPoint.lng, 17);
     }
-  }, [flyToPoint]);
+  }, [flyToPoint, mapReady]);
 
   return (
     <div className="relative w-full h-full overflow-hidden">
