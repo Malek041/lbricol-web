@@ -607,21 +607,11 @@ const ClientHome: React.FC<ClientHomeProps> = ({
     const [showBricolerUpsell, setShowBricolerUpsell] = useState(false);
 
     const [orderFlowData, setOrderFlowData] = useState<{ service: string; subService?: string } | null>(null);
-    const [mapBreadcrumb, setMapBreadcrumb] = useState<{ serviceName: string; subServiceName?: string; serviceEmoji: string; step: number; targetPoint?: {lat: number, lng: number} } | null>(null);
+    const [mapBreadcrumb, setMapBreadcrumb] = useState<{ serviceName: string; subServiceName?: string; serviceEmoji: string; step: number } | null>(null);
     const [backSignal, setBackSignal] = useState(0);
 
     const handleMapUpdate = React.useCallback((data: any) => {
-        setMapBreadcrumb(prev => {
-            if (!prev) return data;
-            return {
-                ...prev,
-                step: data.step ?? prev.step,
-                serviceName: data.serviceName ?? prev.serviceName,
-                subServiceName: data.subServiceName ?? prev.subServiceName,
-                serviceEmoji: data.serviceEmoji ?? prev.serviceEmoji,
-                targetPoint: data.targetPoint ?? prev.targetPoint
-            };
-        });
+        setMapBreadcrumb(data);
     }, []);
 
     // Initial load
@@ -818,7 +808,6 @@ const ClientHome: React.FC<ClientHomeProps> = ({
                     onBack={orderFlowData ? () => setBackSignal(Date.now()) : undefined}
                     className="h-full rounded-none border-none shadow-none"
                     isFlowActive={!!orderFlowData && mapBreadcrumb?.step === 1}
-                    flyToPoint={mapBreadcrumb?.targetPoint}
                 />
             </div>
 

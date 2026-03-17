@@ -118,7 +118,7 @@ interface OrderSubmissionFlowProps {
     mode?: 'create' | 'edit';
     onRequireLogin?: () => void;
     isInline?: boolean;
-    onMapUpdate?: (data: { serviceName: string; subServiceName?: string; serviceEmoji: string; step: number; targetPoint?: {lat: number, lng: number} }) => void;
+    onMapUpdate?: (data: { serviceName: string; subServiceName?: string; serviceEmoji: string; step: number }) => void;
     backSignal?: number;
 }
 
@@ -1152,16 +1152,14 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
     useEffect(() => {
         if (isInline && onMapUpdate) {
             const svcCfg = getServiceById(service);
-            const hasSaved = userSavedAddresses.length > 0;
             onMapUpdate({
                 serviceName: svcCfg?.name || 'Service',
                 subServiceName: getSubServiceName(service, activeSubService) || undefined,
                 serviceEmoji: '🛠️', // Fallback
-                step,
-                targetPoint: hasSaved ? userSavedAddresses[0].location : undefined
+                step
             });
         }
-    }, [isInline, step, service, activeSubService, language, onMapUpdate, userSavedAddresses]);
+    }, [isInline, step, service, activeSubService, language, onMapUpdate]);
 
     useEffect(() => {
         if (backSignal && backSignal > 0) {
