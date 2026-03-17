@@ -24,7 +24,7 @@ const MapView: React.FC<MapViewProps> = ({
   flyToPoint,
   onInteractionStart,
   onInteractionEnd,
-  pinY = 50,
+  pinY = 30, // Fixed height to avoid movement during sheet transitions
   centerOffset,
   language = 'en'
 }) => {
@@ -67,16 +67,34 @@ const MapView: React.FC<MapViewProps> = ({
         }
       );
       const data = await response.json();
-      if (data && data.display_name) {
-        const parts = data.display_name.split(',').map((p: string) => p.trim());
-        const shortAddress = parts.slice(0, 3).join(', ');
-        setAddress(shortAddress);
-        onLocationChange({ lat, lng, address: shortAddress });
+      if (data) {
+        let streetAddress = '';
+        if (data.address) {
+          const { road, house_number, building, suburb, city, town, village } = data.address;
+          const roadPart = road || '';
+          const numberPart = house_number || building || '';
+          streetAddress = roadPart + (numberPart ? `, ${numberPart}` : '');
+          
+          const neighborhood = suburb || '';
+          const place = city || town || village || '';
+          
+          const finalAddress = [streetAddress, neighborhood, place]
+            .filter(Boolean)
+            .join(', ');
+            
+          setAddress(finalAddress);
+          onLocationChange({ lat, lng, address: finalAddress });
+        } else if (data.display_name) {
+          const parts = data.display_name.split(',').map((p: string) => p.trim());
+          const shortAddress = parts.slice(0, 3).join(', ');
+          setAddress(shortAddress);
+          onLocationChange({ lat, lng, address: shortAddress });
+        }
         
         // Save to avoid Essaouira fallback on next open
         try {
-            localStorage.setItem('lastKnownLat', lat.toString());
-            localStorage.setItem('lastKnownLng', lng.toString());
+          localStorage.setItem('lastKnownLat', lat.toString());
+          localStorage.setItem('lastKnownLng', lng.toString());
         } catch(e) {}
       }
     } catch (error) {

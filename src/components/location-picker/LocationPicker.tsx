@@ -160,7 +160,7 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
             flyToPoint={flyToPoint || undefined}
             onInteractionStart={() => setIsInteracting(true)}
             onInteractionEnd={() => setIsInteracting(false)}
-            pinY={isInteracting ? 37.5 : 24}
+            pinY={30}
           />
         </div>
 
@@ -209,7 +209,7 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
       {/* 3. TRULY FIXED PIN & CALLOUT — Always in visual center of initial view */}
       <div
         className="fixed left-1/2 -translate-x-1/2 -translate-y-full pointer-events-none z-[6001] transition-all duration-500 ease-in-out"
-        style={{ top: isInteracting ? '37.5%' : '24%' }}
+        style={{ top: '30%' }}
       >
         {/* The Address Bubble (appears above the pin) */}
         {currentPoint && (
