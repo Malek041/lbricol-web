@@ -42,6 +42,7 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
   const [pickupPoint, setPickupPoint] = useState<LocationPoint | null>(null);
   const [step, setStep] = useState<1 | 2>(1);
   const [triggerGps, setTriggerGps] = useState(0);
+  const [isManualSelection, setIsManualSelection] = useState(false);
   const [flyToPoint, setFlyToPoint] = useState<LocationPoint | null>(null);
   const [isLocating, setIsLocating] = useState(false);
   const [isInteracting, setIsInteracting] = useState(false);
@@ -70,16 +71,30 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
   };
 
   const handleLocate = () => {
+    setIsManualSelection(false);
     setIsLocating(true);
     setTriggerGps(Date.now());
   };
 
   const handleConfirmPoint = () => {
     if (!currentPoint) return;
-
+    setIsManualSelection(true);
+    
     if (isBricolerBase) {
       onConfirm({ pickup: currentPoint });
       return;
+    }
+
+    if (mode === 'double') {
+      if (step === 1) {
+        setPickupPoint(currentPoint);
+        setStep(2);
+        // The bubble will stay since currentPoint is still the same
+        return;
+      } else {
+        onConfirm({ pickup: pickupPoint!, dropoff: currentPoint });
+        return;
+      }
     }
 
     // When using map point, go to Details View first to save/confirm
@@ -94,13 +109,15 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
 
   const handleSavedSelect = (addr: SavedAddress) => {
     const point = { lat: addr.lat, lng: addr.lng, address: addr.address };
+    setIsManualSelection(true);
+    setFlyToPoint(point);
+    
     if (mode === 'single') {
       onConfirm({ pickup: point, savedAddress: addr });
     } else {
       if (step === 1) {
         setPickupPoint(point);
         setStep(2);
-        setFlyToPoint(point); // Fly to the point to show where it is
       } else {
         onConfirm({ pickup: pickupPoint!, dropoff: point });
       }
@@ -138,6 +155,7 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
 
   // View C (Search) Actions
   const handleSearchSelect = (lat: number, lng: number, address: string) => {
+    setIsManualSelection(true);
     setFlyToPoint({ lat, lng, address });
 
     if (isBricolerBase) {
@@ -175,7 +193,7 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
         <div className="absolute top-0 left-0 w-full h-[100dvh]">
           <MapView
             onLocationChange={handleLocationChange}
-            triggerGps={triggerGps}
+            triggerGps={isManualSelection ? 0 : triggerGps}
             flyToPoint={flyToPoint || undefined}
             onInteractionStart={() => setIsInteracting(true)}
             onInteractionEnd={() => setIsInteracting(false)}

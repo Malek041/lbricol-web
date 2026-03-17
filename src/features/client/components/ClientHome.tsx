@@ -450,6 +450,7 @@ interface ClientHomeProps {
     onOnboardingComplete: () => void;
     onBecomeBricoler?: () => void; // callback to launch the Bricoler onboarding
     isBricoler?: boolean;
+    initialLocation?: { lat: number; lng: number } | null;
 }
 
 // ── Component ──────────────────────────────────────────────────────────────
@@ -598,6 +599,7 @@ const ClientHome: React.FC<ClientHomeProps> = ({
     onOnboardingComplete,
     onBecomeBricoler,
     isBricoler = false,
+    initialLocation,
 }) => {
     const { t, language } = useLanguage();
 
@@ -798,6 +800,7 @@ const ClientHome: React.FC<ClientHomeProps> = ({
                     city={selectedCity}
                     area={selectedArea}
                     onInteract={onChangeLocation}
+                    initialLocation={initialLocation || undefined}
                     serviceName={mapBreadcrumb?.serviceName}
                     subServiceName={mapBreadcrumb?.subServiceName}
                     serviceEmoji={mapBreadcrumb?.serviceEmoji}

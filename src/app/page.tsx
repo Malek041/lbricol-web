@@ -295,6 +295,7 @@ const Home = () => {
   const [showLocationPermissionPopup, setShowLocationPermissionPopup] = useState(false);
   const [autoLocateOnPickerOpen, setAutoLocateOnPickerOpen] = useState(false);
   const [userSavedAddresses, setUserSavedAddresses] = useState<SavedAddress[]>([]);
+  const [selectedPoint, setSelectedPoint] = useState<{ lat: number; lng: number } | null>(null);
 
   // Persist Addresses & Location Preference
   useEffect(() => {
@@ -311,6 +312,10 @@ const Home = () => {
     const prefArea = localStorage.getItem('lbricol_preferred_area');
     if (prefCity) setSelectedCity(prefCity);
     if (prefArea) setSelectedArea(prefArea);
+
+    const lat = localStorage.getItem('lastKnownLat');
+    const lng = localStorage.getItem('lastKnownLng');
+    if (lat && lng) setSelectedPoint({ lat: parseFloat(lat), lng: parseFloat(lng) });
   }, []);
 
   useEffect(() => {
@@ -963,9 +968,12 @@ const Home = () => {
 
     setSelectedCity(city);
     setSelectedArea(area);
+    setSelectedPoint({ lat: pickup.lat, lng: pickup.lng });
     setLocation(city);
     localStorage.setItem('lbricol_preferred_city', city);
     localStorage.setItem('lbricol_preferred_area', area);
+    localStorage.setItem('lastKnownLat', pickup.lat.toString());
+    localStorage.setItem('lastKnownLng', pickup.lng.toString());
     setShowLocationPicker(false);
     setShowCityPopup(false);
   };
@@ -2895,6 +2903,7 @@ const Home = () => {
                     setShowAuthPopup(true);
                   }
                 }}
+                initialLocation={selectedPoint}
               />
             ) : (
 

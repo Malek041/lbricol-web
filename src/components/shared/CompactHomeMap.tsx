@@ -26,6 +26,7 @@ interface CompactHomeMapProps {
     onCloseFlow?: () => void;
     onBack?: () => void;
     isFlowActive?: boolean;
+    initialLocation?: { lat: number; lng: number };
 }
 
 const CompactHomeMap: React.FC<CompactHomeMapProps> = ({
@@ -39,7 +40,8 @@ const CompactHomeMap: React.FC<CompactHomeMapProps> = ({
     className,
     onCloseFlow,
     onBack,
-    isFlowActive = false
+    isFlowActive = false,
+    initialLocation
 }) => {
     const { t, language } = useLanguage();
     const [isInteracting, setIsInteracting] = useState(false);
@@ -49,11 +51,11 @@ const CompactHomeMap: React.FC<CompactHomeMapProps> = ({
     const activePinY = isFlowActive ? 50 : 62;
 
     useEffect(() => {
-        // Auto-locate on arrival
-        if (autoLocate) {
+        // Only auto-locate if we don't have an initial location or it's the very first time
+        if (autoLocate && !initialLocation) {
             setTriggerGps(Date.now());
         }
-    }, [autoLocate]);
+    }, [autoLocate, initialLocation]);
 
     // Formatted fallback city/area
     const fallbackAddress = area ? `${area}, ${city}` : city || 'Detecting Location...';
@@ -77,7 +79,8 @@ const CompactHomeMap: React.FC<CompactHomeMapProps> = ({
         >
             <MapView
                 onLocationChange={(point) => setLiveAddress(point.address)}
-                initialLocation={undefined} // MapView handles default center
+                initialLocation={initialLocation || undefined}
+                flyToPoint={initialLocation || undefined}
                 triggerGps={triggerGps}
                 pinY={activePinY}
                 language={language}
