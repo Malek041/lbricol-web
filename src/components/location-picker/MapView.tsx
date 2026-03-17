@@ -142,27 +142,17 @@ const MapView: React.FC<MapViewProps> = ({
       }
     }, 50);
 
-    const isUserMoving = { current: false };
-
     // Interaction listeners - only on user drag to avoid loops from programmatic flyTo
     map.on('dragstart', () => {
-      isUserMoving.current = true;
       onInteractionStart?.();
     });
 
-    map.on('zoomstart', () => {
-      isUserMoving.current = true;
-      onInteractionStart?.();
+    map.on('dragend', () => {
+      onInteractionEnd?.();
     });
 
     // Center-pin logic: map moves, pin stays fixed
     map.on('moveend', () => {
-      // Only end interaction if it was a user-initiated movement
-      if (isUserMoving.current) {
-        onInteractionEnd?.();
-        isUserMoving.current = false;
-      }
-      
       const pinPoint = L.point(
         map.getSize().x / 2,
         map.getSize().y * (pinY / 100)
@@ -195,23 +185,6 @@ const MapView: React.FC<MapViewProps> = ({
     };
   }, []);
 
-  // Shift map when pinY changes to keep the current location under the pin
-  useEffect(() => {
-    if (mapReady && mapRef.current) {
-      const map = mapRef.current;
-      const zoom = map.getZoom();
-      
-      const pinPoint = L.point(
-        map.getSize().x / 2,
-        map.getSize().y * (pinY / 100)
-      );
-      // This is the LatLng currently under the pin
-      const currentLatLngUnderPin = map.containerPointToLatLng(pinPoint);
-      
-      // Now fly so this LatLng stays under the pin at the new position
-      flyToWithOffset(currentLatLngUnderPin.lat, currentLatLngUnderPin.lng, zoom);
-    }
-  }, [pinY]);
 
   useEffect(() => {
     if (triggerGps && navigator.geolocation && mapRef.current && mapReady) {

@@ -147,8 +147,9 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
 
   return (
     <div className="fixed inset-0 bg-white z-[6000] flex flex-col font-jakarta transition-all overflow-hidden">
+      {/* 1. Map Area (Fixed Height) */}
       <div
-        className={`relative bg-neutral-100 overflow-hidden transition-all duration-500 ease-in-out z-0 shrink-0 ${isInteracting ? 'h-[72%]' : 'h-[48%]'
+        className={`relative bg-neutral-100 overflow-hidden transition-all duration-500 ease-in-out z-0 shrink-0 ${isInteracting ? 'h-[75%]' : 'h-[48%]'
           }`}
       >
         {/* Full-screen under-layer map */}
@@ -159,7 +160,7 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
             flyToPoint={flyToPoint || undefined}
             onInteractionStart={() => setIsInteracting(true)}
             onInteractionEnd={() => setIsInteracting(false)}
-            pinY={isInteracting ? 34 : 24}
+            pinY={isInteracting ? 37.5 : 24}
           />
         </div>
 
@@ -208,7 +209,7 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
       {/* 3. TRULY FIXED PIN & CALLOUT — Always in visual center of initial view */}
       <div
         className="fixed left-1/2 -translate-x-1/2 -translate-y-full pointer-events-none z-[6001] transition-all duration-500 ease-in-out"
-        style={{ top: isInteracting ? '34%' : '24%' }}
+        style={{ top: isInteracting ? '37.5%' : '24%' }}
       >
         {/* The Address Bubble (appears above the pin) */}
         {currentPoint && (
