@@ -151,14 +151,14 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
       <div className="relative h-[48%] bg-neutral-100 overflow-hidden z-0 shrink-0">
         {/* Full-screen under-layer map */}
         <div className="absolute top-0 left-0 w-full h-[100dvh]">
-            <MapView
-                onLocationChange={handleLocationChange}
-                triggerGps={triggerGps}
-                flyToPoint={flyToPoint || undefined}
-                onInteractionStart={() => setIsInteracting(true)}
-                onInteractionEnd={() => setIsInteracting(false)}
-                pinY={24}
-            />
+          <MapView
+            onLocationChange={handleLocationChange}
+            triggerGps={triggerGps}
+            flyToPoint={flyToPoint || undefined}
+            onInteractionStart={() => setIsInteracting(true)}
+            onInteractionEnd={() => setIsInteracting(false)}
+            pinY={24}
+          />
         </div>
 
         {/* Floating Controls (Inside resizable area but sticky) */}
@@ -173,7 +173,7 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
             </button>
           </div>
           {/* GPS Locate Button */}
-          <div className="absolute bottom-4 right-4 pointer-events-auto">
+          <div className="absolute bottom-12 right-4 pointer-events-auto">
             <button
               onClick={handleLocate}
               className="w-11 h-11 bg-white rounded-full shadow-[0_2px_8px_rgba(0,0,0,0.15)] flex items-center justify-center text-[#374151] active:scale-95 transition-transform"
@@ -219,11 +219,11 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
 
         {/* The Pin Image */}
         <div className="flex justify-center">
-            <img
-                src="/Images/map Assets/LocationPin.png"
-                alt="Pin"
-                className="w-[45px] h-auto drop-shadow-lg"
-            />
+          <img
+            src="/Images/map Assets/LocationPin.png"
+            alt="Pin"
+            className="w-[45px] h-auto drop-shadow-lg"
+          />
         </div>
       </div>
 
