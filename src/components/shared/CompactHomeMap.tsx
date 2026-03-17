@@ -59,7 +59,7 @@ const CompactHomeMap: React.FC<CompactHomeMapProps> = ({
 
     // Formatted fallback city/area
     const fallbackAddress = area ? `${area}, ${city}` : city || 'Detecting Location...';
-    const displayAddress = liveAddress || fallbackAddress;
+    const displayAddress = (liveAddress && !/^\d+\.\d+/.test(liveAddress)) ? liveAddress : ((initialLocation as any)?.address || fallbackAddress);
 
     // Truncate long addresses for the bubble
     const truncatedAddress = displayAddress.length > (isFlowActive ? 25 : 45)

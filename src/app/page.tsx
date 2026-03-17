@@ -315,7 +315,8 @@ const Home = () => {
 
     const lat = localStorage.getItem('lastKnownLat');
     const lng = localStorage.getItem('lastKnownLng');
-    if (lat && lng) setSelectedPoint({ lat: parseFloat(lat), lng: parseFloat(lng) });
+    const addr = localStorage.getItem('lastKnownAddress');
+    if (lat && lng) setSelectedPoint({ lat: parseFloat(lat), lng: parseFloat(lng), address: addr || '' } as any);
   }, []);
 
   useEffect(() => {
@@ -968,12 +969,13 @@ const Home = () => {
 
     setSelectedCity(city);
     setSelectedArea(area);
-    setSelectedPoint({ lat: pickup.lat, lng: pickup.lng });
+    setSelectedPoint(pickup);
     setLocation(city);
     localStorage.setItem('lbricol_preferred_city', city);
     localStorage.setItem('lbricol_preferred_area', area);
     localStorage.setItem('lastKnownLat', pickup.lat.toString());
     localStorage.setItem('lastKnownLng', pickup.lng.toString());
+    localStorage.setItem('lastKnownAddress', pickup.address);
     setShowLocationPicker(false);
     setShowCityPopup(false);
   };
