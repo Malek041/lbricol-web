@@ -16,6 +16,8 @@ export interface SavedAddress {
   floorNumber?: string;
   doorNumber?: string;
   additionalInfo?: string;
+  entranceLat?: number;
+  entranceLng?: number;
 }
 
 export interface LocationPickerProps {

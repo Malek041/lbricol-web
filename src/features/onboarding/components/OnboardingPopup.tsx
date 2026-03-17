@@ -34,6 +34,7 @@ import SplashScreen from '@/components/layout/SplashScreen';
 import { useIsMobileViewport } from '@/lib/mobileOnly';
 import { isImageDataUrl, compressImageFileToDataUrl, dataUrlToBlob } from '@/lib/imageCompression';
 import { CAR_BRANDS } from '@/config/cars_config';
+import LocationPicker from '@/components/location-picker/LocationPicker';
 
 interface OnboardingPopupProps {
     isOpen: boolean;
@@ -281,6 +282,10 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
     );
     const [activeBrandId, setActiveBrandId] = useState<string>(CAR_BRANDS[0]?.id || '');
 
+    const [baseLat, setBaseLat] = useState<number | null>(userData?.base_lat || null);
+    const [baseLng, setBaseLng] = useState<number | null>(userData?.base_lng || null);
+    const [serviceRadiusKm, setServiceRadiusKm] = useState<number>(userData?.service_radius_km || 10);
+
     useEffect(() => {
         if (!fullName && auth.currentUser?.displayName) {
             setFullName(auth.currentUser.displayName);
@@ -315,6 +320,8 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
         steps.push({ id: 'service_details', label: t({ en: 'Details', fr: 'Détails', ar: 'التفاصيل' }) });
 
         if (!isClientEdit) {
+            steps.push({ id: 'base_location', label: t({ en: 'Base Location', fr: 'Emplacement de base', ar: 'الموقع الأساسي' }) });
+            steps.push({ id: 'service_radius', label: t({ en: 'Radius', fr: 'Rayon', ar: 'نطاق الخدمة' }) });
             steps.push({ id: 'city', label: t({ en: 'City', fr: 'Ville', ar: 'المدينة' }) });
             steps.push({ id: 'areas', label: t({ en: 'Work Areas', fr: 'Zones', ar: 'مناطق العمل' }) });
             steps.push({ id: 'profile', label: t({ en: 'Profile', fr: 'Profil', ar: 'الملف الشخصي' }) });
@@ -669,6 +676,9 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                 experience: finalCategoryEntries[0]?.experience || "",
                 city: selectedCity || "",
                 workAreas: selectedAreas || [],
+                base_lat: baseLat,
+                base_lng: baseLng,
+                service_radius_km: serviceRadiusKm,
                 updatedAt: serverTimestamp(),
                 createdAt: existingBricoler?.createdAt || (isClaimingShadow ? localUserData.createdAt : null) || serverTimestamp(),
                 isActive: true,
@@ -1110,6 +1120,8 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
         if (step === 'car_selection') return selectedCars.length > 0;
         if (step === 'car_pricing') return selectedCars.length > 0 && selectedCars.every(c => c.quantity > 0 && (c.pricePerDay > 0 || c.price > 0));
         if (step === 'service_details') return currentEntryValid(currentCatEntry);
+        if (step === 'base_location') return baseLat !== null && baseLng !== null;
+        if (step === 'service_radius') return serviceRadiusKm > 0;
         if (step === 'city') return selectedCity !== '';
         if (step === 'moving_selection') return movingTransports.length > 0;
         if (step === 'areas') return selectedAreas.length > 0;
@@ -2445,6 +2457,76 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                                 )}
 
                                 {/* Availability step removed — bricoler sets availability in their dashboard */}
+
+                                {/* ── STEP: Base Location ── */}
+                                {step === 'base_location' && (
+                                    <div className="flex-1 flex flex-col min-h-0 bg-white">
+                                        <div className="p-6 md:p-10 border-b border-neutral-50 flex-shrink-0">
+                                            <h2 className="text-2xl md:text-3xl font-bold text-neutral-900 tracking-tight">
+                                                {t({ en: 'Where are you based?', fr: 'Où êtes-vous basé ?', ar: 'أين هو مقرك؟' })}
+                                            </h2>
+                                            <p className="text-neutral-500 text-[15px] font-medium leading-relaxed mt-2">
+                                                {t({ en: 'Clients near your location will find you first', fr: 'Les clients proches de vous vous trouveront en premier', ar: 'سيجدك العملاء الأقرب إلى موقعك أولاً' })}
+                                            </p>
+                                        </div>
+                                        <div className="flex-1 relative overflow-hidden h-[450px]">
+                                            <LocationPicker
+                                                mode="single"
+                                                serviceType="bricoler-base"
+                                                serviceIcon="📍"
+                                                autoLocate={true}
+                                                onConfirm={({ pickup }) => {
+                                                    setBaseLat(pickup.lat);
+                                                    setBaseLng(pickup.lng);
+                                                    // Also update city from the address if possible:
+                                                    if (pickup.address) {
+                                                        const parts = pickup.address.split(',');
+                                                        const detectedCity = parts[parts.length - 2]?.trim();
+                                                        if (detectedCity && MOROCCAN_CITIES.includes(detectedCity as any)) {
+                                                            setSelectedCity(detectedCity);
+                                                        }
+                                                    }
+                                                    setDirection(1);
+                                                    setStepIndex(s => s + 1);
+                                                }}
+                                            />
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* ── STEP: Service Radius ── */}
+                                {step === 'service_radius' && (
+                                    <motion.div key="service_radius" custom={direction} variants={slideVariants} initial="enter" animate="center" exit="exit" className="p-6 md:p-10 space-y-8">
+                                        <motion.div variants={itemVariants} className="space-y-1">
+                                            <h2 className="text-2xl md:text-3xl font-bold text-neutral-900 tracking-tight">
+                                                {t({ en: 'Service Radius', fr: 'Rayon de service', ar: 'نطاق الخدمة' })}
+                                            </h2>
+                                            <p className="text-neutral-500 text-[15px] font-medium leading-relaxed">
+                                                {t({ en: 'How far are you willing to travel for tasks?', fr: 'Jusqu\'où êtes-vous prêt à vous déplacer ?', ar: 'ما هي المسافة التي يمكنك قطعها لتنفيذ المهام؟' })}
+                                            </p>
+                                        </motion.div>
+                                        
+                                        <motion.div variants={itemVariants} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                            {[3, 5, 10, 20, 50].map(radius => (
+                                                <button
+                                                    key={radius}
+                                                    onClick={() => {
+                                                        setServiceRadiusKm(radius);
+                                                        setDirection(1);
+                                                        setStepIndex(s => s + 1);
+                                                    }}
+                                                    className={cn(
+                                                        "px-5 py-8 rounded-[12px] border-2 text-center transition-all",
+                                                        serviceRadiusKm === radius ? 'bg-[#E6F6F2] text-[#00A082] border-[#00A082]' : 'bg-white text-neutral-900 border-neutral-100 hover:border-neutral-200'
+                                                    )}
+                                                >
+                                                    <div className="text-3xl font-black mb-1">{radius}</div>
+                                                    <div className="text-sm font-bold opacity-60">KM</div>
+                                                </button>
+                                            ))}
+                                        </motion.div>
+                                    </motion.div>
+                                )}
 
                                 {/* ── STEP: City ── */}
                                 {step === 'city' && (

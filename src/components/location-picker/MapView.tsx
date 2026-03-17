@@ -5,6 +5,11 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { LocationPoint } from './types';
 
+export interface MapViewHandle {
+  flyTo: (lat: number, lng: number, zoom?: number, options?: L.ZoomPanOptions) => void;
+  flyToWithOffset: (lat: number, lng: number, zoom?: number) => void;
+}
+
 interface MapViewProps {
   onLocationChange: (point: LocationPoint) => void;
   initialLocation?: { lat: number; lng: number };
@@ -15,9 +20,11 @@ interface MapViewProps {
   pinY?: number;
   centerOffset?: string;
   language?: string;
+  interactive?: boolean;
+  zoom?: number;
 }
 
-const MapView: React.FC<MapViewProps> = ({
+const MapView = React.forwardRef<MapViewHandle, MapViewProps>(({
   onLocationChange,
   initialLocation,
   triggerGps,
@@ -26,14 +33,25 @@ const MapView: React.FC<MapViewProps> = ({
   onInteractionEnd,
   pinY = 30, // Fixed height to avoid movement during sheet transitions
   centerOffset,
-  language = 'en'
-}) => {
+  language = 'en',
+  interactive = true,
+  zoom: requestedZoom
+}, ref) => {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
   const gpsMarkerRef = useRef<L.Marker | null>(null);
   const [address, setAddress] = useState<string>('Loading address...');
   const [mapReady, setMapReady] = useState(false);
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
+  React.useImperativeHandle(ref, () => ({
+    flyTo: (lat, lng, zoom = 17, options) => {
+      mapRef.current?.flyTo([lat, lng], zoom, options);
+    },
+    flyToWithOffset: (lat, lng, zoom = 17) => {
+      flyToWithOffset(lat, lng, zoom);
+    }
+  }));
+
   const flyToWithOffset = (lat: number, lng: number, zoom = 17) => {
     if (!mapRef.current) return;
     const map = mapRef.current;
@@ -57,62 +75,37 @@ const MapView: React.FC<MapViewProps> = ({
   };
 
   const reverseGeocode = async (lat: number, lng: number) => {
+    let finalAddress = "";
     try {
-      const response = await fetch(
-        `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=${language}&zoom=18&addressdetails=1`,
-        {
-          headers: {
-            'User-Agent': 'Lbricol/1.0',
-          },
-        }
+      const res = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=fr,ar,en`,
+        { headers: { 'User-Agent': 'Lbricol/1.0' } }
       );
-      const data = await response.json();
-      if (data) {
-        let streetAddress = '';
-        if (data.address) {
-          const { 
-            road, house_number, building, 
-            suburb, neighborhood, city_district,
-            city, town, village,
-            amenity, shop, office, tourism
-          } = data.address;
-          
-          const poi = amenity || shop || office || tourism || '';
-          const roadPart = road || '';
-          const numberPart = house_number || building || '';
-          
-          const street = roadPart + (numberPart ? `, ${numberPart}` : '');
-          const district = neighborhood || suburb || city_district || '';
-          const location = city || town || village || '';
-          
-          let finalAddress = [poi, street, district, location]
-            .filter(Boolean)
-            .join(', ');
-            
-          // If the final address is still too generic (e.g. just city), use display_name fallback
-          if (!street && !poi && data.display_name) {
-            const parts = data.display_name.split(',').map((p: string) => p.trim());
-            finalAddress = parts.slice(0, 3).join(', ');
-          }
-            
-          setAddress(finalAddress);
-          onLocationChange({ lat, lng, address: finalAddress });
-        } else if (data.display_name) {
-          const parts = data.display_name.split(',').map((p: string) => p.trim());
-          const shortAddress = parts.slice(0, 3).join(', ');
-          setAddress(shortAddress);
-          onLocationChange({ lat, lng, address: shortAddress });
-        }
-        
-        // Save to avoid Essaouira fallback on next open
-        try {
-          localStorage.setItem('lastKnownLat', lat.toString());
-          localStorage.setItem('lastKnownLng', lng.toString());
-        } catch(e) {}
+      const data = await res.json();
+      if (!data || data.error) {
+        finalAddress = `${lat.toFixed(3)}, ${lng.toFixed(3)}, Morocco`;
+      } else {
+        const a = data.address;
+        const street = a.road || a.pedestrian || a.street || '';
+        const number = a.house_number || '';
+        const neighborhood = a.neighbourhood || a.suburb || '';
+        const city = a.city || a.town || a.village || '';
+
+        if (street) finalAddress = number ? `${street}, ${number}, ${city}` : `${street}, ${city}`;
+        else if (neighborhood) finalAddress = `${neighborhood}, ${city}, Morocco`;
+        else finalAddress = `${city}, Morocco`;
       }
-    } catch (error) {
-      console.error('Reverse geocoding error:', error);
+    } catch {
+      finalAddress = `${lat.toFixed(3)}, ${lng.toFixed(3)}, Morocco`;
     }
+
+    setAddress(finalAddress);
+    onLocationChange({ lat, lng, address: finalAddress });
+
+    try {
+      localStorage.setItem('lastKnownLat', lat.toString());
+      localStorage.setItem('lastKnownLng', lng.toString());
+    } catch (e) { }
   };
 
   useEffect(() => {
@@ -136,15 +129,21 @@ const MapView: React.FC<MapViewProps> = ({
         } catch (e) {}
     }
 
-    const zoom = 16;
+    const zoom = requestedZoom || 16;
 
     const map = L.map(mapContainerRef.current, {
       zoomControl: false,
       attributionControl: false,
+      dragging: interactive,
+      touchZoom: interactive,
+      doubleClickZoom: interactive,
+      scrollWheelZoom: interactive,
+      boxZoom: interactive,
+      keyboard: interactive,
     });
 
-    // ✅ Voyager style tiles
-    L.tileLayer("https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png", {
+    // ✅ Clean, white/gray tiles (Positron style)
+    L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png", {
       attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> © <a href="https://carto.com/attributions">CARTO</a>',
       subdomains: 'abcd',
       maxZoom: 19
@@ -184,6 +183,8 @@ const MapView: React.FC<MapViewProps> = ({
 
     // Center-pin logic: map moves, pin stays fixed
     map.on('moveend', () => {
+      if (!interactive) return; // Don't re-geocode purely on load if static
+      
       const pinPoint = L.point(
         map.getSize().x / 2,
         map.getSize().y * (pinY / 100)
@@ -216,52 +217,6 @@ const MapView: React.FC<MapViewProps> = ({
     };
   }, []);
 
-
-  useEffect(() => {
-    if (triggerGps && navigator.geolocation && mapRef.current && mapReady) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const { latitude, longitude } = position.coords;
-
-          // ✅ SLOW animated fly with Pin offset
-          flyToWithOffset(latitude, longitude, 17);
-          
-          // Force reverseGeocode to ensure parent components clear loading states
-          if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
-          debounceTimerRef.current = setTimeout(() => {
-            reverseGeocode(latitude, longitude);
-          }, 1000);
-
-          // ✅ GPS accuracy circle as separate marker with pulse effect
-          if (gpsMarkerRef.current) {
-            gpsMarkerRef.current.setLatLng([latitude, longitude]);
-          } else if (mapRef.current) {
-            const gpsIcon = L.divIcon({
-              className: 'gps-pulse-icon',
-              html: `
-                <div class="relative flex items-center justify-center w-5 h-5">
-                  <div class="absolute w-3 h-3 bg-[#10B981] rounded-full z-10 border-[1.5px] border-white shadow-sm"></div>
-                  <div class="absolute w-full h-full bg-[#10B981] rounded-full animate-radar-pulse opacity-40"></div>
-                  <div class="absolute w-full h-full bg-[#10B981] rounded-full animate-radar-pulse-delayed opacity-20"></div>
-                </div>
-              `,
-              iconSize: [20, 20],
-              iconAnchor: [10, 10], // Perfectly centered on the lat/lng
-            });
-            gpsMarkerRef.current = L.marker([latitude, longitude], { icon: gpsIcon }).addTo(mapRef.current);
-          }
-        },
-        (error) => console.warn('Geolocation error:', error)
-      );
-    }
-  }, [triggerGps, mapReady]);
-
-  useEffect(() => {
-    if (flyToPoint && mapRef.current && mapReady) {
-      flyToWithOffset(flyToPoint.lat, flyToPoint.lng, 17);
-    }
-  }, [flyToPoint, mapReady]);
-
   return (
     <div className="relative w-full h-full overflow-hidden">
       <div ref={mapContainerRef} className="w-full h-full z-0" />
@@ -288,6 +243,6 @@ const MapView: React.FC<MapViewProps> = ({
       `}</style>
     </div>
   );
-};
+});
 
 export default MapView;

@@ -7,14 +7,18 @@ import 'leaflet/dist/leaflet.css';
 interface OrderMapContentProps {
     step: number;
     providers?: any[];
-    selectedProvider?: any;
+    selectedProviderId?: string | null;
+    onProviderSelect?: (id: string) => void;
+    onMapMove?: (lat: number, lng: number) => void;
     center?: [number, number];
 }
 
 export default function OrderMapContent({
     step,
     providers = [],
-    selectedProvider,
+    selectedProviderId,
+    onProviderSelect,
+    onMapMove,
     center = [31.5085, -9.7595] // Default to Essaouira
 }: OrderMapContentProps) {
     const mapContainerRef = useRef<HTMLDivElement>(null);
@@ -31,10 +35,15 @@ export default function OrderMapContent({
             attributionControl: false,
         });
 
-        L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png", {
+        L.tileLayer("https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png", {
             subdomains: 'abcd',
             maxZoom: 19
         }).addTo(map);
+
+        map.on('moveend', () => {
+            const center = map.getCenter();
+            if (onMapMove) onMapMove(center.lat, center.lng);
+        });
 
         markersRef.current = L.layerGroup().addTo(map);
         mapRef.current = map;
@@ -54,8 +63,8 @@ export default function OrderMapContent({
 
         markersLayer.clearLayers();
 
-        // 1. Common Teal Pin for current location (if not provider step)
-        if (step < 2) {
+        // 1. Common Teal Pin for current location (Step 1 or Step 2)
+        if (step <= 2) {
             const tealIcon = L.divIcon({
                 className: 'custom-teal-pin',
                 html: `
@@ -73,58 +82,90 @@ export default function OrderMapContent({
             L.marker(map.getCenter(), { icon: tealIcon }).addTo(markersLayer);
         }
 
-        // 2. Yellow Pins for available providers (Step 2)
+        // 2. Custom Provider Pins (Step 2)
         if (step === 2 && providers.length > 0) {
-            const yellowIcon = L.icon({
-                iconUrl: '/Images/map%20Assets/locationPinYellowOnly.png',
-                iconSize: [36, 48],
-                iconAnchor: [18, 48],
-            });
-
             const boundsArr: L.LatLngExpression[] = [];
-            providers.forEach(p => {
-                if (p.location) {
-                    const marker = L.marker([p.location.lat, p.location.lng], { icon: yellowIcon }).addTo(markersLayer);
-                    boundsArr.push([p.location.lat, p.location.lng]);
+            
+            providers.forEach(provider => {
+                const isSelected = selectedProviderId === provider.id;
+                const lat = provider.lat || provider.location?.lat;
+                const lng = provider.lng || provider.location?.lng;
+                
+                if (lat && lng) {
+                    const html = `
+                        <div style="display:flex;flex-direction:column;align-items:center;cursor:pointer">
+                          ${!isSelected ? `
+                            <div style="
+                              background:white;
+                              border-radius:8px;
+                              padding:4px 8px;
+                              margin-bottom:4px;
+                              box-shadow:0 2px 8px rgba(0,0,0,0.15);
+                              font-family:sans-serif;
+                              white-space:nowrap;
+                              text-align:center;
+                            ">
+                              <div style="font-size:12px;font-weight:700;color:#111827">${provider.hourlyRate || 80} MAD</div>
+                              <div style="font-size:11px;color:#F59E0B">★ ${(provider.rating || 0).toFixed(1)}</div>
+                            </div>
+                          ` : ''}
+
+                          <div style="position:relative;width:${isSelected ? 56 : 44}px">
+                            <svg viewBox="0 0 44 58" fill="none" width="${isSelected ? 56 : 44}" height="${isSelected ? 74 : 58}">
+                              <path d="M22 0C10.4 0 1 9.4 1 21C1 36.5 22 58 22 58C22 58 43 36.5 43 21C43 9.4 33.6 0 22 0Z"
+                                    fill="${isSelected ? '#F59E0B' : '#FBBF24'}"/>
+                            </svg>
+                            <div style="
+                              position:absolute;
+                              top:4px; left:50%; transform:translateX(-50%);
+                              width:${isSelected ? 38 : 30}px;
+                              height:${isSelected ? 38 : 30}px;
+                              border-radius:50%;
+                              overflow:hidden;
+                              border:2px solid white;
+                            ">
+                              <img src="${provider.photoURL || '/Images/default-avatar.png'}"
+                                   style="width:100%;height:100%;object-fit:cover"/>
+                            </div>
+                          </div>
+                        </div>
+                    `;
+
+                    const icon = L.divIcon({
+                        html,
+                        className: '',
+                        iconSize: [isSelected ? 56 : 44, isSelected ? 74 : 80],
+                        iconAnchor: [isSelected ? 28 : 22, isSelected ? 74 : 80],
+                    });
+
+                    const marker = L.marker([lat, lng], { icon }).addTo(markersLayer);
+                    marker.on('click', () => {
+                        if (onProviderSelect) onProviderSelect(provider.id);
+                    });
+                    
+                    boundsArr.push([lat, lng]);
                 }
             });
 
-            if (boundsArr.length > 0) {
-                map.fitBounds(L.latLngBounds(boundsArr), { padding: [50, 50], maxZoom: 15 });
+            if (boundsArr.length > 0 && !selectedProviderId) {
+                // Initial fit bounds when showing all
+                const userLoc = map.getCenter();
+                const allPoints = [userLoc, ...boundsArr];
+                map.fitBounds(L.latLngBounds(allPoints as L.LatLngExpression[]), { padding: [60, 60], maxZoom: 16 });
+            } else if (selectedProviderId) {
+                // Zoom to focus on selected provider and user
+                const selectedPro = providers.find(p => p.id === selectedProviderId);
+                const proLat = selectedPro?.lat || selectedPro?.location?.lat;
+                const proLng = selectedPro?.lng || selectedPro?.location?.lng;
+                if (proLat && proLng) {
+                    const userLoc = map.getCenter();
+                    const bounds = L.latLngBounds([[userLoc.lat, userLoc.lng], [proLat, proLng]]);
+                    map.fitBounds(bounds, { padding: [80, 80], maxZoom: 17 });
+                }
             }
         }
 
-        // 3. Selected Provider special marker (Step 3)
-        if (step === 3 && selectedProvider && selectedProvider.location) {
-            const avatarIcon = L.divIcon({
-                className: 'provider-avatar-pin',
-                html: `
-                    <div class="relative flex flex-col items-center">
-                        <div class="relative w-14 h-14 bg-[#FBBC04] rounded-full p-1 shadow-xl border-2 border-white overflow-hidden">
-                            <img src="${selectedProvider.photoURL || '/Images/default-avatar.png'}" class="w-full h-full rounded-full object-cover" />
-                        </div>
-                        <div class="w-1 h-4 bg-[#FBBC04] -mt-1 shadow-md"></div>
-                        
-                        <!-- Illustration Pin nearby (as specified in Image 6/7) -->
-                        <div class="absolute -right-12 -top-4 w-12 h-16 pointer-events-none">
-                            <div class="relative flex flex-col items-center">
-                                <div class="w-10 h-10 bg-white rounded-full shadow-lg flex items-center justify-center border-2 border-[#FBBC04]">
-                                    <span class="text-xl">🧒</span>
-                                </div>
-                                <div class="w-0.5 h-4 bg-[#FBBC04]"></div>
-                            </div>
-                        </div>
-                    </div>
-                `,
-                iconSize: [56, 70],
-                iconAnchor: [28, 70],
-            });
-
-            L.marker([selectedProvider.location.lat, selectedProvider.location.lng], { icon: avatarIcon }).addTo(markersLayer);
-            map.flyTo([selectedProvider.location.lat, selectedProvider.location.lng], 16);
-        }
-
-    }, [step, providers, selectedProvider]);
+    }, [step, providers, selectedProviderId]);
 
     return <div ref={mapContainerRef} className="w-full h-full" />;
 }

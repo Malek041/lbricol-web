@@ -24,9 +24,11 @@ import { compressImageFileToDataUrl, dataUrlToBlob, isImageDataUrl } from '@/lib
 import { WhatsAppBrandIcon } from '@/components/shared/WhatsAppIcon';
 import LocationPicker from '@/components/location-picker/LocationPicker';
 import { SavedAddress } from '@/components/location-picker/types';
+import { calculateDistance } from '@/lib/calculateDistance';
 import ServiceFlowLayout from './ServiceFlowLayout';
 import OrderMapCard from './OrderMapCard';
 import AddressRow from '@/components/location-picker/AddressRow';
+import { reverseGeocode } from '../../../lib/reverseGeocode';
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -75,6 +77,13 @@ interface Bricoler {
             pricePerDay: number;
         }[];
     };
+    lat?: number;
+    lng?: number;
+    availableToday?: boolean;
+    isNew?: boolean;
+    base_lat: number | null;
+    base_lng: number | null;
+    service_radius_km: number;
 }
 
 export interface DraftOrder {
@@ -98,7 +107,7 @@ export interface DraftOrder {
     clientNeedImages?: string[];
     images?: string[];
     frequency?: 'once' | 'daily' | 'weekly' | 'biweekly' | 'monthly';
-    step: number;
+    step: 'location-picker' | 'step1-confirm' | 'step2-providers' | 'step3-datetime' | 'step4-review' | number;
     subStep1: 'location' | 'size' | 'description' | 'languages' | 'moving_vehicle';
     selectedLanguages?: string[];
     selectedCar?: any;
@@ -118,7 +127,18 @@ interface OrderSubmissionFlowProps {
     mode?: 'create' | 'edit';
     onRequireLogin?: () => void;
     isInline?: boolean;
-    onMapUpdate?: (data: { serviceName: string; subServiceName?: string; serviceEmoji: string; step: number }) => void;
+    onMapUpdate?: (data: { 
+        serviceName: string; 
+        subServiceName?: string; 
+        serviceEmoji: string; 
+        step: any;
+        currentCity?: string;
+        currentArea?: string;
+        pickupPoint?: any;
+        dropoffPoint?: any;
+        distanceKm?: number;
+        activeSubService?: string;
+    }) => void;
     backSignal?: number;
 }
 
@@ -436,229 +456,138 @@ const BricolerCard = ({
     selectedReturnDate?: string | null, selectedReturnTime?: string | null
 }) => {
     const { t } = useLanguage();
-    // effectiveJobs takes the max of different count fields for robustness (shadow vs real profiles)
-    const effectiveJobs = Math.max(
-        bricoler.completedJobs || 0,
-        bricoler.numReviews || 0,
-        bricoler.jobsDone || 0,
-        (bricoler.reviews || []).length
-    );
-    const effectiveRating = (bricoler.reviews && bricoler.reviews.length > 0)
-        ? (bricoler.reviews.reduce((acc, r: any) => acc + (r.rating || 0), 0) / bricoler.reviews.length)
-        : 0;
-
-    const rank = getBricolerRank(bricoler);
-    const translatedRankLabel = rank.label === 'ELITE'
-        ? t({ en: 'ELITE', fr: 'ÉLITE' })
-        : rank.label === 'PRO'
-            ? t({ en: 'PRO', fr: 'PRO' })
-            : rank.label === 'CLASSIC'
-                ? t({ en: 'CLASSIC', fr: 'CLASSIQUE' })
-                : t({ en: 'NEW', fr: 'NOUVEAU', ar: 'جديد' });
-
-    // Handle car rental price display in the card
-    const minCarPrice = service === 'car_rental' && bricoler.carRentalDetails?.cars && bricoler.carRentalDetails.cars.length > 0
-        ? Math.min(...bricoler.carRentalDetails.cars.map((c: any) => c.pricePerDay || c.price || 9999))
-        : null;
-
+    
     return (
-        <motion.div
-            initial={{ opacity: 0, y: 30, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            transition={{ type: "spring", damping: 18, stiffness: 220, delay: index * 0.12 }}
-
-            onClick={onOpenProfile}
-            className={cn(
-                "flex flex-col gap-2 py-5 border-b border-neutral-100 last:border-0 cursor-pointer transition-all active:opacity-80",
-                isSelected ? "bg-[#F0FBF8] rounded-2xl px-3 -mx-3" : ""
-            )}
+        <div
+            id={`provider-${bricoler.id}`}
+            style={{
+                border: isSelected ? '2px solid #10B981' : '1px solid #F3F4F6',
+                borderRadius: 16,
+                padding: 16,
+                marginBottom: 16,
+                background: '#fff',
+                transition: 'border-color 0.2s',
+                cursor: 'pointer'
+            }}
+            onClick={() => onSelect()}
         >
-            <div className="flex gap-3.5 px-0.5">
+            {/* Top row: avatar + name/price + badges */}
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, marginBottom: 12 }}>
+
                 {/* Avatar */}
-                <div className="relative flex-shrink-0">
-                    <img
-                        src={bricoler.photoURL || "/Images/Logo/Black Lbricol Avatar Face.webp"}
-                        alt={bricoler.displayName}
-                        className="w-16 h-16 rounded-full object-cover border border-neutral-100 bg-neutral-50"
-                        onError={(e) => {
-                            (e.target as HTMLImageElement).src = "/Images/Logo/Black Lbricol Avatar Face.webp";
-                        }}
-                    />
+                <div style={{
+                    width: 52, height: 52, borderRadius: '50%',
+                    overflow: 'hidden', flexShrink: 0,
+                    background: '#F3F4F6',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: 20, fontWeight: 700, color: '#6B7280',
+                }}>
+                    {bricoler.photoURL
+                        ? <img src={bricoler.photoURL} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        : bricoler.displayName.charAt(0).toUpperCase()
+                    }
                 </div>
 
-                {/* Details */}
-                <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between">
-                        <h4 className="text-[17px] font-bold text-neutral-900 truncate tracking-tight">{bricoler.displayName}</h4>
-                        <div className="flex items-center gap-1 flex-shrink-0 ml-auto pl-2">
-                            <span className="text-[16px] font-semibold text-neutral-900 leading-none whitespace-nowrap">
-                                MAD {minCarPrice !== null ? minCarPrice.toFixed(0) : (bricoler.hourlyRate?.toFixed(0) || '75')}
-                            </span>
-                            <span className="text-[12px] text-neutral-400 font-medium whitespace-nowrap">(min)</span>
-                            <div className="w-4 h-4 rounded-full bg-[#00A082]/10 flex-shrink-0 flex items-center justify-center ml-0.5">
-                                <Check size={10} className="text-[#00A082]" strokeWidth={4} />
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
-                        <span className={cn(
-                            "px-2 py-0.5 text-[10px] font-bold uppercase tracking-tight rounded-md flex items-center gap-1",
-                            rank.bg,
-                            rank.color
-                        )}>
-                            {rank.icon}{translatedRankLabel}
+                <div style={{ flex: 1, minWidth: 0 }}>
+                    {/* Name row */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ fontSize: 16, fontWeight: 700, color: '#111827' }}>
+                            {bricoler.displayName}
+                        </span>
+                        <span style={{ fontSize: 13, fontWeight: 700, color: '#111827', whiteSpace: 'nowrap' }}>
+                            MAD {bricoler.hourlyRate || 80}
+                            <span style={{ color: '#9CA3AF', fontWeight: 400 }}> (min)</span>
+                            {' '}
+                            <span style={{ color: '#10B981' }}>✓</span>
                         </span>
                     </div>
 
-                    <div className="flex items-center gap-1 mt-2">
-                        <Star size={12} className="text-neutral-900" fill="currentColor" />
-                        <span className="text-[14px] font-bold text-neutral-900">
-                            {effectiveRating.toFixed(1)}
+                    {/* NEW badge */}
+                    {bricoler.isNew && (
+                        <span style={{
+                            display: 'inline-flex', alignItems: 'center', gap: 4,
+                            background: '#EEF2FF', color: '#6366F1',
+                            fontSize: 11, fontWeight: 700,
+                            padding: '2px 8px', borderRadius: 50,
+                            marginTop: 4,
+                        }}>
+                            ✦ NEW
                         </span>
-                        {effectiveJobs > 0 && <span className="text-[12px] font-medium text-neutral-400">({effectiveJobs} {t({ en: 'reviews', fr: 'avis', ar: 'تقييمات' })})</span>}
+                    )}
 
-                        {/* Availability Badge */}
+                    {/* Rating + availability row */}
+                    <div style={{
+                        display: 'flex', justifyContent: 'space-between',
+                        alignItems: 'center', marginTop: 6,
+                    }}>
+                        <span style={{ fontSize: 13, color: '#374151' }}>
+                            ★ {(bricoler.rating || 0).toFixed(1)}
+                        </span>
                         {(() => {
                             const today = new Date().toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
-                            const routine = bricoler.routine || {};
-                            const isAvailableToday = routine[today]?.active !== false; // Default to true if not set (legacy)
+                            const routine = (bricoler as any).routine || {};
+                            const isAvailableToday = bricoler.availableToday ?? (routine[today]?.active !== false);
 
                             if (isAvailableToday) {
                                 return (
-                                    <div className="flex items-center gap-1 ml-auto bg-[#E6F6F3] px-2 py-0.5 rounded-full border border-[#00A082]/10">
-                                        <div className="w-1.5 h-1.5 bg-[#00A082] rounded-full animate-pulse" />
-                                        <span className="text-[10px] font-black text-[#00A082] uppercase tracking-wider">
-                                            {t({ en: 'Available Today', fr: 'Dispo Aujourd\'hui', ar: 'متاح اليوم' })}
-                                        </span>
-                                    </div>
+                                    <span style={{
+                                        background: '#F0FDF4', color: '#10B981',
+                                        fontSize: 11, fontWeight: 700,
+                                        padding: '3px 10px', borderRadius: 50,
+                                        border: '1px solid #A7F3D0',
+                                    }}>
+                                        ● AVAILABLE TODAY
+                                    </span>
                                 );
                             }
                             return null;
                         })()}
                     </div>
 
-                    <div className="flex flex-col gap-0.5 mt-2">
-                        <div className="flex items-center gap-1.5">
-                            <CheckCircle2 size={13} className="text-neutral-500" />
-                            <span className="text-[13px] font-semibold text-neutral-600">{effectiveJobs} {serviceName} {t({ en: 'tasks', fr: 'missions', ar: 'مهام' })}</span>
-                        </div>
+                    {/* Task count */}
+                    <div style={{ fontSize: 12, color: '#9CA3AF', marginTop: 4 }}>
+                        ⏱ {bricoler.completedJobs || 0} {serviceName} tasks
                     </div>
                 </div>
             </div>
 
-            {/* Bio Box */}
-            <div className="mt-0.5 mx-0.5 bg-[#F8F9FA] p-3 rounded-[10px] relative border border-neutral-50">
-                <p className="text-[13px] font-medium text-neutral-500 leading-relaxed line-clamp-2">
-                    {bricoler.pitch || bricoler.quickPitch || bricoler.bio || t({ en: "Hello 👋 I'm proficient in a wide range of services tailored to your needs. Fast and reliable work.", fr: "Bonjour 👋 Je suis compétent dans une large gamme de services adaptés à vos besoins. Travail rapide et fiable.", ar: "مرحباً 👋 أنا متمكن من مجموعة واسعة من الخدمات لتلبية احتياجاتك. عمل سريع وموثوق." })}
-                </p>
-                <button
-                    onClick={(e) => { e.stopPropagation(); onOpenProfile(); }}
-                    className="mt-1.5 text-[13px] font-bold text-[#00A082] hover:text-[#008C74] block"
-                >
-                    {t({ en: 'Read More', fr: 'Lire plus', ar: 'اقرأ المزيد' })}
-                </button>
-            </div>
+            {/* Bio */}
+            <p style={{
+                fontSize: 13, color: '#374151', lineHeight: 1.55,
+                marginBottom: 8,
+                display: '-webkit-box',
+                WebkitLineClamp: 3,
+                WebkitBoxOrient: 'vertical',
+                overflow: 'hidden',
+            }}>
+                {bricoler.pitch || bricoler.quickPitch || bricoler.bio || "No bio available."}
+            </p>
+            <button 
+                onClick={(e) => { e.stopPropagation(); onOpenProfile(); }}
+                style={{
+                    color: '#10B981', fontSize: 13, fontWeight: 600,
+                    background: 'none', border: 'none', cursor: 'pointer',
+                    padding: 0, marginBottom: 12,
+                }}
+            >
+                Read More
+            </button>
 
-            {/* Brand Logo Strip */}
-            {service === 'car_rental' && bricoler.carRentalDetails?.cars && bricoler.carRentalDetails.cars.length > 0 && (() => {
-                const convertTimeTo24h = (timeStr: string | null) => {
-                    if (!timeStr || timeStr === '-') return "00:00:00";
-                    const parts = timeStr.split(' ');
-                    if (parts.length < 2) return timeStr.includes(':') ? timeStr + ":00" : "00:00:00";
-                    const [time, modifier] = parts;
-                    let [hours, minutes] = time.split(':').map(Number);
-                    if (modifier === 'PM' && hours < 12) hours += 12;
-                    if (modifier === 'AM' && hours === 12) hours = 0;
-                    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:00`;
-                };
-
-                const isCarAvailable = (car: any) => {
-                    if (!selectedPickUpDate || !selectedPickUpTime || !selectedReturnDate || !selectedReturnTime) return true;
-                    try {
-                        const requestStart = new Date(`${selectedPickUpDate}T${convertTimeTo24h(selectedPickUpTime)}`);
-                        const requestEnd = new Date(`${selectedReturnDate}T${convertTimeTo24h(selectedReturnTime)}`);
-                        if (isNaN(requestStart.getTime()) || isNaN(requestEnd.getTime())) return true;
-
-                        const overlaps = carRentalBookings.filter(booking => {
-                            // Check for the same car model
-                            const bModelId = booking.selectedCar?.modelId || booking.car?.modelId || booking.orderDetails?.car?.modelId;
-                            if (bModelId !== car.modelId) return false;
-
-                            // Condition: Must be for the same provider
-                            if (booking.bricolerId !== bricoler.id) return false;
-
-                            // Determine booking start and end times
-                            const startDateStr = booking.date || booking.taskDate || booking.startDate;
-                            const startTimeStr = booking.time || booking.taskTime || booking.startTime;
-                            const endDateStr = booking.carReturnDate || startDateStr; // Fallback to start date if return date is missing
-                            const endTimeStr = booking.carReturnTime || startTimeStr; // Fallback to start time if return time is missing
-
-                            if (!startDateStr || !startTimeStr) return false;
-
-                            const bStart = new Date(`${startDateStr}T${convertTimeTo24h(startTimeStr)}`);
-                            const bEnd = new Date(`${endDateStr}T${convertTimeTo24h(endTimeStr)}`);
-
-                            if (isNaN(bStart.getTime()) || isNaN(bEnd.getTime())) return false;
-
-                            // Standard overlap condition: (StartA < EndB) and (EndA > StartB)
-                            return requestStart < bEnd && requestEnd > bStart;
-                        });
-                        return overlaps.length < (car.quantity || 1);
-                    } catch (e) { return true; }
-                };
-
-                // Deduplicate brands
-                const seenBrands = new Set<string>();
-                const brands: { id: string; name: string; logo: string; availableCount: number; totalCount: number }[] = [];
-                bricoler.carRentalDetails.cars.forEach((car: any) => {
-                    if (!car.brandId || seenBrands.has(car.brandId)) return;
-                    seenBrands.add(car.brandId);
-                    const found = CAR_BRANDS.find(b => b.id === car.brandId);
-                    const sameBrandCars = bricoler.carRentalDetails!.cars.filter((c: any) => c.brandId === car.brandId);
-                    const availableCount = sameBrandCars.filter(c => isCarAvailable(c)).length;
-
-                    brands.push({
-                        id: car.brandId,
-                        name: car.brandName || found?.name || car.brandId,
-                        logo: found?.logo || '',
-                        availableCount,
-                        totalCount: sameBrandCars.length
-                    });
-                });
-                if (brands.length === 0) return null;
-                return (
-                    <div className="mt-3 -mx-3 px-3 overflow-x-auto no-scrollbar" onClick={(e) => e.stopPropagation()}>
-                        <div className="flex gap-2.5 pb-1">
-                            {brands.map((brand) => (
-                                <div key={brand.id} className={cn("flex-shrink-0 flex flex-col items-center gap-1.5 w-[60px]", brand.availableCount === 0 && "opacity-50 grayscale")}>
-                                    <div className="w-[52px] h-[52px] rounded-2xl bg-neutral-50 border border-neutral-100 flex items-center justify-center p-2 overflow-hidden">
-                                        {brand.logo
-                                            ? <img src={brand.logo} className="w-full h-full object-contain" alt={brand.name} />
-                                            : <span className="text-[9px] font-black text-neutral-500 text-center leading-tight">{brand.name}</span>
-                                        }
-                                    </div>
-                                    <p className="text-[10px] font-bold text-neutral-600 truncate w-full text-center leading-none">{brand.name}</p>
-                                    <p className={cn("text-[9px] font-bold leading-none", brand.availableCount > 0 ? "text-[#00A082]" : "text-red-500")}>
-                                        {brand.availableCount > 0 ? `${brand.availableCount}/${brand.totalCount} ${t({ en: 'av.', fr: 'dispo.' })}` : t({ en: 'Full', fr: 'Complet' })}
-                                    </p>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                );
-            })()}
-
-            {/* Action Button */}
-            <div className="px-0.5 mt-1">
-                <button
-                    onClick={(e) => { e.stopPropagation(); service === 'car_rental' ? onOpenProfile() : onSelect(); }}
-                    className="w-full h-[42px] bg-[#00A082] text-white rounded-full text-[16px] font-black active:scale-[0.98] transition-all"
-                >
-                    {service === 'car_rental' ? t({ en: 'Pickup a car', fr: 'Récupérer une voiture', ar: 'استلام السيارة' }) : t({ en: 'Select & Continue', fr: 'Choisir & Continuer', ar: 'اختر وتابع' })}
-                </button>
-            </div>
-        </motion.div>
+            {/* Select & Continue button */}
+            <button
+                onClick={(e) => { e.stopPropagation(); onSelect(); }}
+                style={{
+                    width: '100%', height: 48,
+                    borderRadius: 50,
+                    background: '#10B981', color: '#fff',
+                    border: 'none', fontSize: 15, fontWeight: 700,
+                    cursor: 'pointer',
+                    letterSpacing: 0.2,
+                }}
+            >
+                Select & Continue
+            </button>
+        </div>
     );
 };
 
@@ -1114,7 +1043,8 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
 }) => {
     const { t, language } = useLanguage();
     const { showToast } = useToast();
-    const [step, setStep] = useState(mode === 'edit' ? 3 : (continueDraft?.step || 1));
+    type Step = 'location-picker' | 'step1-confirm' | 'step2-providers' | 'step3-datetime' | 'step4-review';
+    const [step, setStep] = useState<Step>(continueDraft?.step ? (`step${continueDraft.step}` as Step) : 'location-picker');
     const [subStep1, setSubStep1] = useState<'location' | 'size' | 'description' | 'languages' | 'moving_vehicle'>(continueDraft?.subStep1 || 'location');
     const [currentCity, setCurrentCity] = useState(initialCity || '');
     const [currentArea, setCurrentArea] = useState(initialArea || '');
@@ -1144,9 +1074,17 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
     const [selectedCar, setSelectedCar] = useState<any | null>(continueDraft?.selectedCar || null);
     const [selectedMovingVehicle, setSelectedMovingVehicle] = useState<string | null>(continueDraft?.movingVehicle || null);
     const [showSuccessAnimation, setShowSuccessAnimation] = useState(false);
+    
+    // Live location state for Step 1
+    const [liveAddress, setLiveAddress] = useState('');
+    const [liveLocation, setLiveLocation] = useState<{lat: number, lng: number} | null>(null);
+    const [isReverseGeocoding, setIsReverseGeocoding] = useState(false);
 
     const [referralDiscountAvailable, setReferralDiscountAvailable] = useState<number>(0);
     const [applyReferralDiscount, setApplyReferralDiscount] = useState<boolean>(true);
+    const [pickupPoint, setPickupPoint] = useState<any | null>(null);
+    const [dropoffPoint, setDropoffPoint] = useState<any | null>(null);
+    const [distanceKm, setDistanceKm] = useState<number | null>(null);
 
     // Sync map info to parent if inline
     useEffect(() => {
@@ -1154,12 +1092,18 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
             const svcCfg = getServiceById(service);
             onMapUpdate({
                 serviceName: svcCfg?.name || 'Service',
+                currentCity,
+                currentArea,
+                pickupPoint: pickupPoint || undefined,
+                dropoffPoint: dropoffPoint || undefined,
+                distanceKm: distanceKm || undefined,
+                activeSubService,
                 subServiceName: getSubServiceName(service, activeSubService) || undefined,
                 serviceEmoji: '🛠️', // Fallback
-                step
+                step: (step as any)
             });
         }
-    }, [isInline, step, service, activeSubService, language, onMapUpdate]);
+    }, [isInline, step, service, activeSubService, language, onMapUpdate, currentCity, currentArea, pickupPoint, dropoffPoint, distanceKm]);
 
     useEffect(() => {
         if (backSignal && backSignal > 0) {
@@ -1203,12 +1147,26 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
         }
     }, [isOpen]);
 
-    const handleInternalLocationConfirm = (result: { pickup: any, savedAddress?: SavedAddress }) => {
-        const { pickup, savedAddress } = result;
+    const handleMapMove = async (lat: number, lng: number) => {
+        if (step !== 'step1-confirm') return;
+        setLiveLocation({ lat, lng });
+        setIsReverseGeocoding(true);
+        try {
+            const addr = await reverseGeocode(lat, lng);
+            setLiveAddress(addr);
+        } catch (e) {
+            console.error("Map move reverse geocode failed", e);
+        } finally {
+            setIsReverseGeocoding(false);
+        }
+    };
+
+    const handleInternalLocationConfirm = (result: { pickup: any, savedAddress?: SavedAddress, dropoff?: any }) => {
+        const { pickup, savedAddress, dropoff } = result;
         const address = savedAddress?.address || pickup.address || '';
         const lowerAddress = address.toLowerCase();
 
-        // Detect City & Area
+        // 1. Detect City & Area (always from pickup for main context)
         let city = MOROCCAN_CITIES.find((c: string) => lowerAddress.includes(c.toLowerCase())) || 'Casablanca';
         const areaList = MOROCCAN_CITIES_AREAS[city] || [];
         const sortedAreas = [...areaList].sort((a, b) => b.length - a.length);
@@ -1218,6 +1176,20 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
 
         setCurrentCity(city);
         setCurrentArea(finalArea);
+        
+        // 2. Store points & calculate distance if applicable
+        setPickupPoint(pickup);
+        if (dropoff) {
+            setDropoffPoint(dropoff);
+            const dist = calculateDistance(pickup.lat, pickup.lng, dropoff.lat, dropoff.lng);
+            setDistanceKm(dist);
+        } else {
+            setDropoffPoint(null);
+            setDistanceKm(null);
+        }
+
+        // After selecting an address, we go to Step 1 (Confirmation)
+        setStep('step1-confirm');
         setShowInternalLocationPicker(false);
     };
 
@@ -1247,8 +1219,6 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                 const hourStr = `${String(finalHours).padStart(2, '0')}:${String(mins).padStart(2, '0')}`;
                 setSelectedTime(hourStr);
             }
-
-            // Ensure car rental return dates are explicitly null by default (safety)
             if (service === 'car_rental' && !carReturnDate) {
                 setCarReturnDate(null);
                 setCarReturnTime(null);
@@ -1274,11 +1244,21 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
     const [openCalendarMode, setOpenCalendarMode] = useState<'pickup' | 'return' | null>(null);
 
     const handleBack = () => {
-        if (step === 2) {
-            setStep(1);
-        } else if (step > 1) {
-            setStep(prev => prev - 1);
-        } else {
+        if (step === 'step1-confirm') {
+            if (subStep1 === 'location') {
+                 setStep('location-picker');
+            } else if (subStep1 === 'size') {
+                 setSubStep1('location');
+            } else {
+                 setSubStep1('size');
+            }
+        } else if (step === 'step2-providers') {
+            setStep('step1-confirm');
+        } else if (step === 'step3-datetime') {
+            setStep('step2-providers');
+        } else if (step === 'step4-review') {
+            setStep('step3-datetime');
+        } else if (step === 'location-picker') {
             onClose();
         }
     };
@@ -1801,7 +1781,16 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
             }
 
             if (continueDraft) {
-                setStep(continueDraft.step);
+                // Map numeric steps back to string steps for backward compatibility if needed, 
+                // but since we just refactored, we assume string or convert.
+                const mappedStep = (s: any): Step => {
+                    if (s === 1) return 'step1-confirm';
+                    if (s === 2) return 'step2-providers';
+                    if (s === 3) return 'step3-datetime';
+                    if (s === 4) return 'step4-review';
+                    return (s as Step) || 'location-picker';
+                };
+                setStep(mappedStep(continueDraft.step));
                 setSubStep1(continueDraft.subStep1);
                 setTaskSize(continueDraft.taskSize);
                 setDescription(continueDraft.description);
@@ -1819,7 +1808,7 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                 setTempCity(continueDraft.city || '');
                 setTempArea(continueDraft.area || '');
             } else {
-                setStep(1);
+                setStep('location-picker');
                 setSubStep1('location');
                 // Auto-select default task size if available
                 const initialTaskSize = serviceConfig?.defaultDays ? String(serviceConfig.defaultDays) : null;
@@ -1853,7 +1842,7 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
         if (!isOpen) return;
 
         // Skip saving if it's the very initial empty state of step 1 location
-        if (step === 1 && subStep1 === 'location' && !taskSize && !description) return;
+        if (step === 'step1-confirm' && subStep1 === 'location' && !taskSize && !description) return;
 
         const draftData: DraftOrder = {
             id: draftIdRef.current || continueDraft?.id || "draft_" + Date.now() + "_" + service,
@@ -1920,7 +1909,7 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
 
     // Initialize taskSize if a default is provided (e.g. for private_driver)
     useEffect(() => {
-        if (step === 1 && subStep1 === 'size' && !taskSize && (serviceConfig as any).defaultDays) {
+        if (step === 'step1-confirm' && subStep1 === 'size' && !taskSize && (serviceConfig as any).defaultDays) {
             setTaskSize(String((serviceConfig as any).defaultDays));
         }
     }, [step, subStep1, taskSize, serviceConfig]);
@@ -2111,18 +2100,23 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
     }, [service, subService, t]);
 
     const handleStartMatching = () => {
-        // For car_rental, skip taskSize/description validation
-        if (service !== 'car_rental' && (!taskSize || !description.trim())) return;
-
+        // Validation removed for new direct flow
+        const trimmedDesc = (description || '').trim();
+        const finalDesc = trimmedDesc || 'Mission demandée via localisation directe.';
+        if (!trimmedDesc) setDescription(finalDesc);
+        
+        // Ensure a default task size is selected if none exists
+        if (!taskSize) setTaskSize('medium');
+        
         if (service !== 'car_rental') {
             try {
-                const drafts = [description.trim(), ...descriptionDrafts.filter(d => d !== description.trim())].slice(0, 5);
+                const drafts = [finalDesc, ...descriptionDrafts.filter(d => d !== finalDesc)].slice(0, 5);
                 setDescriptionDrafts(drafts);
                 localStorage.setItem('lbricol_description_drafts', JSON.stringify(drafts));
             } catch (e) { }
         }
 
-        setStep(2);
+        setStep('step2-providers');
         setIsMatchingAnimation(true);
         setSelectedBricolerId(null);
         fetchBricolers();
@@ -2351,67 +2345,25 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
     };
 
     const fetchBricolers = async () => {
-        if (!currentCity || !service) return;
+        if (!service) return;
         setIsLoadingBricolers(true);
+        const targetServiceId = service;
+        const clientLat = pickupPoint?.lat || liveLocation?.lat;
+        const clientLng = pickupPoint?.lng || liveLocation?.lng;
 
-        const baseCity = currentCity.trim();
-        const targetSvc = getServiceById(service);
-        const targetServiceId = targetSvc?.id?.toLowerCase() || service?.toLowerCase() || '';
-
-        // ── Shared: area normalization & service matching (used for both index + fallback) ──
-        const normalize = (s: string) => s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, "");
-        const isStrictCity = ['Casablanca', 'Marrakech'].includes(baseCity);
-
+        // Helper for area/service matching
+        const normalize = (s: string) => (s || '').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, "");
         const areaMatches = (proAreas: string[]): boolean => {
             if (!currentArea) return true;
             const targetAreaNorm = normalize(currentArea);
-
-            // If client selected "All the city", everything matches
             if (targetAreaNorm === 'toutelaville' || targetAreaNorm === 'all' || targetAreaNorm === 'toutemaghrib' || targetAreaNorm === 'toute_la_ville') return true;
-
             const normalized = proAreas.map(a => normalize(String(a)));
-
-            // If Bricoler serves "All the city", they match any area
             if (normalized.some(pa =>
-                pa === 'all' ||
-                pa === 'toutelaville' ||
-                pa === 'toute_la_ville' ||
-                pa === 'tout_marrakech' ||
-                pa === 'tout_casablanca' ||
-                pa === 'toutemaroc'
-            )) {
-                return true;
-            }
-
+                pa === 'all' || pa === 'toutelaville' || pa === 'toute_la_ville' ||
+                pa === 'tout_marrakech' || pa === 'tout_casablanca' || pa === 'toutemaroc'
+            )) return true;
             return normalized.some(pa => pa.includes(targetAreaNorm) || targetAreaNorm.includes(pa));
         };
-
-        const serviceMatches = (services: any[], rawData: any): { matched: boolean; svcData: any } => {
-            const matchingService = services?.find((s: any) => {
-                const sId = typeof s === 'string' ? s : (s.categoryId || s.serviceId || '');
-                if (sId.toLowerCase() !== targetServiceId) return false;
-                if (typeof s === 'object' && s.isActive === false) return false;
-                if (subService) {
-                    if (typeof s === 'string') return true;
-                    const ssId = s.subServiceId || (s.subServices?.includes(subService) ? subService : null);
-                    if (!ssId) return false;
-                    const normSsId = ssId.toLowerCase().replace(/[_\s-]/g, '');
-                    const normSubSvc = subService.toLowerCase().replace(/[_\s-]/g, '');
-                    if (!(normSsId === normSubSvc || (Array.isArray(s.subServices) && s.subServices.some((sub: string) => sub.toLowerCase().replace(/[_\s-]/g, '') === normSubSvc)))) return false;
-                }
-                if (service === 'tour_guide' && selectedLanguages.length > 0) {
-                    const bricolerLangs = s.spokenLanguages || (typeof s === 'object' ? s.languages : []) || [];
-                    if (!selectedLanguages.some(l => bricolerLangs.includes(l))) return false;
-                }
-                if (service === 'moving' && selectedMovingVehicle) {
-                    const vehicles = rawData.movingTransports || (rawData.movingTransport ? [rawData.movingTransport] : []);
-                    if (!vehicles.includes(selectedMovingVehicle)) return false;
-                }
-                return true;
-            });
-            return { matched: !!matchingService, svcData: matchingService };
-        };
-
         const buildBricoler = (docId: string, data: any, svcData: any, servesArea: boolean): Bricoler => ({
             id: docId,
             displayName: data.displayName || data.name || 'Bricoler',
@@ -2421,7 +2373,7 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
             hourlyRate: (typeof svcData === 'object' ? svcData.hourlyRate : null) || (data.services?.find((s: any) => (s.categoryId || s.serviceId) === targetServiceId)?.hourlyRate) || data.hourlyRate || 75,
             pitch: (typeof svcData === 'object' ? svcData.pitch : null) || (data.services?.find((s: any) => (s.categoryId || s.serviceId) === targetServiceId)?.pitch) || data.pitch,
             quickPitch: data.quickPitch,
-            city: data.city || baseCity,
+            city: data.city || 'Casablanca',
             areas: data.workAreas || data.areas || [],
             isVerified: data.isVerified,
             services: data.services || [],
@@ -2441,105 +2393,71 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
             whatsappNumber: data.whatsappNumber,
             servesArea,
             carRentalDetails: data.carRentalDetails,
+            base_lat: data.base_lat || null,
+            base_lng: data.base_lng || null,
+            service_radius_km: data.service_radius_km || 10,
         });
 
-        let results: Bricoler[] = [];
+        const serviceMatches = (services: any[], rawData: any): { matched: boolean; svcData: any } => {
+            const matchingService = services?.find((s: any) => {
+                const sId = typeof s === 'string' ? s : (s.categoryId || s.serviceId || '');
+                if (normalize(String(sId)) !== normalize(String(targetServiceId))) return false;
+                if (typeof s === 'object' && s.isActive === false) return false;
+                if (subService) {
+                    const ssId = s.subServiceId || (s.subServices?.includes(subService) ? subService : null);
+                    if (!ssId) return false;
+                    const normSsId = normalize(String(ssId)).replace(/[_\s-]/g, '');
+                    const normSubSvc = normalize(String(subService)).replace(/[_\s-]/g, '');
+                    if (!(normSsId === normSubSvc || (Array.isArray(s.subServices) && s.subServices.some((sub: string) => normalize(sub).replace(/[_\s-]/g, '') === normSubSvc)))) return false;
+                }
+                return true;
+            });
+            return { matched: !!matchingService, svcData: matchingService };
+        };
 
         try {
-            // ── PRIMARY: Query the fast city_index (pre-sorted by matchScore) ──────────
-            // Wrap in its own try/catch to ensure fallback always runs if this fails
-            try {
-                const indexSnap = await getDocs(
-                    query(
-                        collection(db, 'city_index', baseCity, 'providers'),
-                        where('isActive', '==', true),
-                        limit(100) // Increased limit to find more matches during server-side filtering
-                    )
-                );
+            // Fetch active bricolers - fetch a larger set to filter in JS
+            const snap = await getDocs(query(
+                collection(db, 'bricolers'),
+                where('isActive', '==', true),
+                limit(150)
+            ));
 
-                if (indexSnap.size > 0) {
-                    indexSnap.docs.forEach(docSnap => {
-                        const data = docSnap.data();
-                        const servesArea = areaMatches([...(data.workAreas || []), ...(data.areas || [])]);
-                        if (!servesArea && isStrictCity) return;
-                        const { matched, svcData } = serviceMatches(data.services || [], data);
-                        if (matched) {
-                            results.push(buildBricoler(docSnap.id, data, svcData, servesArea));
-                        }
-                    });
-
-                    // Sort: area first, then by pre-computed score fields
-                    results.sort((a, b) => {
-                        if (a.servesArea && !b.servesArea) return -1;
-                        if (!a.servesArea && b.servesArea) return 1;
-                        const aScore = (a.rating || 0) * Math.log10((a.completedJobs || 0) + 2);
-                        const bScore = (b.rating || 0) * Math.log10((b.completedJobs || 0) + 2);
-                        return bScore - aScore;
-                    });
-
-                    results = results.slice(0, 30); // final cap
-                }
-            } catch (indexErr) {
-                console.warn("[fetchBricolers] city_index query failed, will use fallback:", indexErr);
-            }
-
-            // ── FALLBACK: If index found nothing or failed, use full scan ──
-            if (results.length === 0) {
-                console.info('[fetchBricolers] Index returned 0 matches, scanning full bricolers collection for', baseCity);
-                // Try exact city match first
-                const fallbackSnap = await getDocs(
-                    query(collection(db, 'bricolers'), where('city', '==', baseCity))
-                );
-                fallbackSnap.docs.forEach(docSnap => {
-                    const data = docSnap.data();
-                    if (data.isActive === false) return; // Lenient: skip ONLY if explicitly false
-                    const servesArea = areaMatches([...(data.workAreas || []), ...(data.areas || [])]);
-                    if (!servesArea && isStrictCity) return;
+            const results = snap.docs
+                .map(d => {
+                    const data = d.data();
                     const { matched, svcData } = serviceMatches(data.services || [], data);
-                    if (matched) results.push(buildBricoler(docSnap.id, data, svcData, servesArea));
-                });
-                results.sort((a, b) => {
-                    if (a.servesArea && !b.servesArea) return -1;
-                    if (!a.servesArea && b.servesArea) return 1;
-                    return ((b.rating || 0) * Math.log10((b.completedJobs || 0) + 2))
-                        - ((a.rating || 0) * Math.log10((a.completedJobs || 0) + 2));
-                });
-            }
-
-            // ── car_rental SUPER-FALLBACK: if still empty, scan all docs with carRentalDetails ──
-            // This handles spelling mismatches in city or stale city_index entries
-            if (results.length === 0 && service === 'car_rental') {
-                console.info('[fetchBricolers] car_rental super-fallback: scanning all docs with carRentalDetails');
-                const carSnap = await getDocs(
-                    query(collection(db, 'bricolers'), where('isActive', '==', true))
-                );
-                const citySim = (a: string, b: string) => normalize(a).includes(normalize(b)) || normalize(b).includes(normalize(a));
-                carSnap.docs.forEach(docSnap => {
-                    const data = docSnap.data();
-                    if (!data.carRentalDetails?.cars?.length) return;
-                    // Only include if city roughly matches
-                    if (!citySim(data.city || '', baseCity)) return;
                     const servesArea = areaMatches([...(data.workAreas || []), ...(data.areas || [])]);
-                    const { matched, svcData } = serviceMatches(data.services || [], data);
-                    // For car rental super-fallback, also accept if carRentalDetails has cars even without service entry
-                    if (matched || data.carRentalDetails?.cars?.length > 0) {
-                        results.push(buildBricoler(docSnap.id, data, svcData || {}, servesArea));
-                    }
+                    return buildBricoler(d.id, data, svcData || {}, servesArea);
+                })
+                .filter(b => {
+                    // 1. Service match
+                    const hasService = b.services?.some((s: any) => String(s.categoryId || s.serviceId).toLowerCase() === String(targetServiceId).toLowerCase());
+                    if (!hasService) return false;
+
+                    // 2. Distance match
+                    if (!clientLat || !clientLng) return true; 
+                    if (!b.base_lat || !b.base_lng) return false;
+                    const dist = calculateDistance(clientLat, clientLng, b.base_lat, b.base_lng);
+                    return dist <= (b.service_radius_km || 10);
+                })
+                .sort((a, b) => {
+                    if (!clientLat || !clientLng) return 0;
+                    const distA = calculateDistance(clientLat, clientLng, a.base_lat || 0, a.base_lng || 0);
+                    const distB = calculateDistance(clientLat, clientLng, b.base_lat || 0, b.base_lng || 0);
+                    
+                    // Score = availability(40) + rating(40) + distance(20)
+                    const scoreA = (a.availableToday ? 40 : 0) + (((a.rating || 0) / 5) * 40) + (20 * (1 - distA / (a.service_radius_km || 10)));
+                    const scoreB = (b.availableToday ? 40 : 0) + (((b.rating || 0) / 5) * 40) + (20 * (1 - distB / (b.service_radius_km || 10)));
+                    
+                    return scoreB - scoreA;
                 });
-                results.sort((a, b) => {
-                    if (a.servesArea && !b.servesArea) return -1;
-                    if (!a.servesArea && b.servesArea) return 1;
-                    return ((b.rating || 0) * Math.log10((b.completedJobs || 0) + 2))
-                        - ((a.rating || 0) * Math.log10((a.completedJobs || 0) + 2));
-                });
-            }
 
             if (results.length > 0 && service === 'car_rental') {
                 const bIds = results.map(r => r.id);
                 try {
                     const chunks = [];
                     for (let i = 0; i < bIds.length; i += 10) chunks.push(bIds.slice(i, i + 10));
-
                     let allJobs: any[] = [];
                     for (const chunk of chunks) {
                         const jobsSnap = await getDocs(
@@ -2549,7 +2467,7 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                     }
                     setCarRentalBookings(allJobs);
                 } catch (e) {
-                    console.error("Failed to fetch car rental bookings for smart availability", e);
+                    console.error("Failed to fetch car rental bookings", e);
                 }
             }
 
@@ -2872,6 +2790,7 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                 referralApplied: applyReferralDiscount && referralDiscountAvailable > 0,
                 durationDays,
                 movingVehicle: selectedMovingVehicle,
+                distance_km: distanceKm,
                 images: images,
                 clientNeedImages: images,
                 paymentMethod,
@@ -2910,16 +2829,20 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
     };
 
     const handleNext = () => {
-        if (step === 2) {
+        if (step === 'step2-providers') {
             if (selectedBricolerId === 'open') {
                 handleFinalSubmit();
             } else {
-                setStep(3);
+                setStep('step3-datetime');
             }
-        } else if (step === 3) {
-            setStep(4);
+        } else if (step === 'step3-datetime') {
+            setStep('step4-review');
         } else {
-            setStep(step + 1);
+            // This logic is now handled by subStep1 transitions for step1-confirm
+            // and the explicit handleStartMatching for step1-confirm to step2-providers
+            // This `handleNext` might become redundant or need re-evaluation based on flow.
+            // For now, it's not directly called for step1-confirm.
+            // If it were, it would need to transition to the next logical step.
         }
     };
 
@@ -2927,7 +2850,7 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
         const categories = getServiceById(service)?.subServices || [];
         
         switch (step) {
-            case 1:
+            case 'step1-confirm':
                 return (
                     <div className="space-y-6">
                         {!isInline && (
@@ -2966,54 +2889,106 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                                 subStep1 === 'location' ? "mt-0" : "space-y-6 pt-4 border-t border-neutral-50"
                             )}>
                                 {subStep1 === 'location' && (
-                                    <div className="space-y-6">
-                                        {userSavedAddresses.length > 0 ? (
-                                            <div className="px-1">
-                                                <AddressRow 
-                                                    address={userSavedAddresses[0]} 
-                                                    onSelect={() => {}} 
-                                                    onEdit={() => setShowInternalLocationPicker(true)} 
-                                                />
+                                    <div style={{
+                                        background: '#fff',
+                                        borderRadius: '20px 20px 0 0',
+                                        padding: '0px 0px 36px',
+                                      }}>
+                                      
+                                        {/* Address row */}
+                                        <div style={{
+                                          display: 'flex',
+                                          alignItems: 'center',
+                                          gap: 14,
+                                          marginBottom: 24,
+                                        }}>
+                                          {/* Service icon — gray rounded square */}
+                                          <div style={{
+                                            width: 44, height: 44,
+                                            borderRadius: 10,
+                                            background: '#F3F4F6',
+                                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                            fontSize: 20, flexShrink: 0,
+                                          }}>
+                                            🚲
+                                          </div>
+                                      
+                                          {/* Address text */}
+                                          <div style={{ flex: 1, minWidth: 0 }}>
+                                            <div style={{
+                                              fontSize: 15, fontWeight: 700, color: '#111827',
+                                              whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+                                            }}>
+                                              {liveAddress?.split(',')[0] || pickupPoint?.address?.split(',')[0] || t({ en: 'Loading address...', fr: 'Chargement...' })}
                                             </div>
-                                        ) : (
-                                            <div className="p-8 rounded-[28px] bg-neutral-50 border-2 border-dashed border-neutral-200 flex flex-col items-center justify-center text-center gap-2">
-                                                 <MapPin size={24} className="text-neutral-300" />
-                                                 <p className="text-[14px] font-bold text-neutral-400">
-                                                     {t({ en: 'No addresses saved yet', fr: 'Aucune adresse enregistrée' })}
-                                                 </p>
+                                            <div style={{ fontSize: 13, color: '#6B7280', marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                              {liveAddress?.split(',').slice(1).join(',').trim() || pickupPoint?.address?.split(',').slice(1).join(',').trim() || ''}
                                             </div>
-                                        )}
-                                        
-                                        <div className="flex flex-col gap-3">
-                                            <button
-                                                onClick={() => {
-                                                    if (userSavedAddresses.length > 0) {
-                                                        const addr = userSavedAddresses[0];
-                                                        const parts = addr.address.split(',');
-                                                        setCurrentCity(parts[parts.length - 2]?.trim() || 'Casablanca');
-                                                        setCurrentArea(parts[parts.length - 3]?.trim() || parts[0]?.trim() || '');
-                                                        setSubStep1(service === 'tour_guide' ? 'languages' : 'size');
-                                                    }
-                                                }}
-                                                disabled={userSavedAddresses.length === 0}
-                                                className={cn(
-                                                    "w-full h-15 rounded-full text-[19px] font-[900] transition-all active:scale-95",
-                                                    userSavedAddresses.length > 0
-                                                        ? "bg-[#00927C] text-white shadow-[0_8px_20px_rgba(0,146,124,0.15)]"
-                                                        : "bg-neutral-100 text-neutral-400 cursor-not-allowed shadow-none"
-                                                )}
-                                            >
-                                                {t({ en: 'Confirm This Location', fr: 'Confirmer cet emplacement', ar: 'تأكيد هذا الموقع' })}
-                                            </button>
-                                            
-                                            <button
-                                                onClick={() => setShowInternalLocationPicker(true)}
-                                                className="w-full py-2 text-[#00927C] text-[19px] font-[900] active:scale-95 transition-transform"
-                                            >
-                                                {t({ en: 'Create New address', fr: 'Créer une nouvelle adresse', ar: 'إنشاء عنوان جديد' })}
-                                            </button>
+                                          </div>
+                                      
+                                          {/* Edit icon button */}
+                                          <button 
+                                            onClick={() => setStep('location-picker')}
+                                            style={{
+                                              width: 36, height: 36, borderRadius: '50%',
+                                              border: '1.5px solid #E5E7EB',
+                                              background: '#fff',
+                                              display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                              cursor: 'pointer', flexShrink: 0,
+                                            }}
+                                          >
+                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                                                 stroke="#6B7280" strokeWidth="2" strokeLinecap="round">
+                                              <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
+                                              <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                                            </svg>
+                                          </button>
                                         </div>
-                                    </div>
+                                      
+                                        {/* Confirm This Location — solid green pill */}
+                                        <button
+                                          onClick={() => {
+                                            if (liveAddress) {
+                                              const parts = liveAddress.split(',');
+                                              setCurrentCity(parts[parts.length - 2]?.trim() || 'Casablanca');
+                                              setCurrentArea(parts[parts.length - 3]?.trim() || parts[0]?.trim() || '');
+                                              handleStartMatching();
+                                            } else {
+                                              handleStartMatching(); // Try anyway
+                                            }
+                                          }}
+                                          disabled={!liveAddress && !pickupPoint}
+                                          style={{
+                                            width: '100%',
+                                            height: 54,
+                                            borderRadius: 50,
+                                            background: userSavedAddresses.length > 0 ? '#10B981' : '#E5E7EB',
+                                            color: '#fff',
+                                            border: 'none',
+                                            fontSize: 16,
+                                            fontWeight: 700,
+                                            cursor: userSavedAddresses.length > 0 ? 'pointer' : 'not-allowed',
+                                            marginBottom: 16,
+                                            letterSpacing: 0.2,
+                                          }}
+                                        >
+                                          Confirm This Location
+                                        </button>
+                                      
+                                        {/* Select Another address — text link */}
+                                        <div
+                                          onClick={() => setStep('location-picker')}
+                                          style={{
+                                            textAlign: 'center',
+                                            fontSize: 15,
+                                            fontWeight: 600,
+                                            color: '#10B981',
+                                            cursor: 'pointer',
+                                          }}
+                                        >
+                                          Select Another address
+                                        </div>
+                                      </div>
                                 )}
 
                                 {subStep1 === 'languages' && (
@@ -3100,13 +3075,10 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                                                                 if (files.length === 0) return;
                                                                 setIsUploadingImages(true);
                                                                 try {
-                                                                    const uploadPromises = files.slice(0, 5 - images.length).map(async (file) => {
-                                                                        const blob = await compressImageFileToDataUrl(file, { maxWidth: 1000, maxHeight: 1000, quality: 0.5 }).then(dataUrlToBlob);
-                                                                        const path = `orders/${auth.currentUser?.uid || 'anon'}/${Date.now()}_${Math.random().toString(36).substr(2, 5)}.jpg`;
-                                                                        return uploadImageToStorage(blob, path);
-                                                                    });
-                                                                    const urls = await Promise.all(uploadPromises);
-                                                                    setImages(prev => [...prev, ...urls]);
+                                                                    const blob = await compressImageFileToDataUrl(files[0], { maxWidth: 1000, maxHeight: 1000, quality: 0.5 }).then(dataUrlToBlob);
+                                                                    const path = `orders/${auth.currentUser?.uid || 'anon'}/${Date.now()}_${Math.random().toString(36).substr(2, 5)}.jpg`;
+                                                                    const url = await uploadImageToStorage(blob, path);
+                                                                    setImages(prev => [...prev, url]);
                                                                 } catch (err) {
                                                                     console.error("Upload failed:", err);
                                                                 } finally {
@@ -3126,13 +3098,15 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                         )}
                     </div>
                 );
-            case 2:
+            case 'step2-providers':
                 return (
                     <div className="space-y-6">
-                        <div className="flex flex-col gap-1">
-                            <h2 className="text-[22px] font-black text-neutral-900">{t({ en: 'Select your Provider', fr: 'Choisissez votre Pro', ar: 'اختر المحترف الخاص بك' })}</h2>
-                            <p className="text-[14px] font-bold text-neutral-400">{t({ en: 'Verified professionals near you', fr: 'Des professionnels vérifiés près de chez vous', ar: 'محترفون معتمدون بالقرب منك' })}</p>
-                        </div>
+                        <h2 style={{
+                            fontSize: 22, fontWeight: 800, color: '#111827',
+                            margin: '0 0 20px 0', letterSpacing: -0.3,
+                        }}>
+                            Find your Tasker
+                        </h2>
 
                         {isLoadingBricolers ? (
                             <div className="space-y-4">
@@ -3147,27 +3121,38 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                                 <p className="text-sm font-bold text-neutral-400 mt-1">{t({ en: 'Try changing your filters or location', fr: 'Essayez de changer vos filtres ou lieu', ar: 'حاول تغيير الفلاتر أو الموقع' })}</p>
                             </div>
                         ) : (
-                            <div className="grid grid-cols-1 gap-4">
+                            <div style={{
+                                display: 'flex',
+                                overflowX: 'auto',
+                                gap: 16,
+                                padding: '4px 4px 20px',
+                                scrollSnapType: 'x mandatory',
+                                WebkitOverflowScrolling: 'touch',
+                            }} className="no-scrollbar">
                                 {sortedBricolers.map((pro: any, idx: number) => (
-                                    <BricolerCard
-                                        key={pro.id}
-                                        index={idx}
-                                        service={service}
-                                        serviceName={getServiceById(service)?.name || 'Service'}
-                                        bricoler={pro}
-                                        isSelected={selectedBricolerId === pro.id}
-                                        onSelect={() => {
-                                            setSelectedBricolerId(pro.id);
-                                            setStep(3);
-                                        }}
-                                        onOpenProfile={() => setViewedBricoler(pro)}
-                                    />
+                                    <div key={pro.id} style={{
+                                        flex: '0 0 300px',
+                                        scrollSnapAlign: 'start',
+                                    }}>
+                                        <BricolerCard
+                                            index={idx}
+                                            service={service}
+                                            serviceName={getServiceById(service)?.name || 'Service'}
+                                            bricoler={pro}
+                                            isSelected={selectedBricolerId === pro.id}
+                                            onSelect={() => {
+                                                setSelectedBricolerId(pro.id);
+                                                setStep('step3-datetime');
+                                            }}
+                                            onOpenProfile={() => setViewedBricoler(pro)}
+                                        />
+                                    </div>
                                 ))}
                             </div>
                         )}
                     </div>
                 );
-            case 3:
+            case 'step3-datetime':
                 return (
                     <div className="space-y-6">
                         <div className="flex flex-col gap-1">
@@ -3207,7 +3192,7 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                         )}
                     </div>
                 );
-            case 4:
+            case 'step4-review':
                 return (
                     <div className="space-y-6">
                         <div className="flex flex-col gap-1">
@@ -3227,6 +3212,12 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                                 <Calendar size={16} />
                                 <span>{selectedDate} @ {selectedTime}</span>
                             </div>
+                            {distanceKm !== null && (
+                                <div className="flex items-center gap-2 pt-1 text-[#00927C] font-black text-sm">
+                                    <MapPin size={14} />
+                                    <span>Estimated distance: {distanceKm} km</span>
+                                </div>
+                            )}
                         </div>
 
                         <div className="flex flex-col gap-3">
@@ -3257,7 +3248,7 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
     };
 
     const renderStepFooter = () => {
-        if (step === 1) {
+        if (step === 'step1-confirm') {
             // Hide footer for location sub-step as we now have explicit buttons in content (Pic 2 style)
             if (subStep1 === ('location' as any)) return null;
 
@@ -3289,13 +3280,40 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
             );
         }
 
-        if (step === 2) return null;
+        if (step === 'step2-providers') {
+            return (
+                <div style={{
+                  position: 'sticky', bottom: 0,
+                  background: '#fff',
+                  padding: '12px 20px 28px',
+                  borderTop: '1px solid #F3F4F6',
+                  display: 'flex',
+                  gap: 16
+                }}>
+                  <button
+                    onClick={() => setStep('step1-confirm')}
+                    style={{
+                      width: 48, height: 48,
+                      borderRadius: '50%',
+                      background: '#F3F4F6',
+                      border: 'none', fontSize: 20,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    }}
+                  >
+                    ‹
+                  </button>
+                </div>
+            );
+        }
 
-        if (step === 3) {
+        if (step === 'step3-datetime') {
             const isNextDisabled = !selectedDate || !selectedTime;
             return (
                 <button
-                    onClick={() => setStep(4)}
+                    onClick={() => setStep('step4-review')}
                     disabled={isNextDisabled}
                     className={cn(
                         "w-full h-15 rounded-full text-white text-[18px] font-black transition-all active:scale-95 shadow-lg",
@@ -3307,7 +3325,7 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
             );
         }
 
-        if (step === 4) {
+        if (step === 'step4-review') {
             return (
                 <button
                     onClick={handleFinalSubmit}
@@ -3324,52 +3342,162 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
 
     if (!isOpen) return null;
 
-    const flowContent = (
-        <ServiceFlowLayout
-            mapContent={
-                isInline ? null : (
-                    <OrderMapCard
-                        currentAddress={`${currentArea}, ${currentCity}`}
-                        serviceName={getServiceById(service)?.name || 'Service'}
-                        step={step}
-                    />
-                )
-            }
-            footerContent={renderStepFooter()}
-            step={step}
-            onBack={handleBack}
-            showBack={!isInline}
-            isEmbedded={isInline}
-        >
-            {renderStepContent()}
-        </ServiceFlowLayout>
-    );
+    // Helper to get numeric step for components that still need it
+    const getStepNumber = (s: Step): number => {
+        switch(s) {
+            case 'location-picker': return 0;
+            case 'step1-confirm': return 1;
+            case 'step2-providers': return 2;
+            case 'step3-datetime': return 3;
+            case 'step4-review': return 4;
+            default: return 1;
+        }
+    };
 
-    const overlayContent = (
+    const renderMainLayout = () => {
+        if (step === 'location-picker') {
+            return (
+                <div className="fixed inset-0 z-[5000] bg-white">
+                    <LocationPicker
+                        mode={service === 'moving' ? 'double' : 'single'}
+                        serviceType={service}
+                        title={service === 'moving' 
+                            ? t({ en: 'Set Pickup & Drop-off', fr: 'Point de départ & arrivée', ar: 'نقطة الانطلاق والوصول' })
+                            : t({ en: 'Set your address', fr: 'Définissez votre adresse' })
+                        }
+                        savedAddresses={userSavedAddresses}
+                        onConfirm={handleInternalLocationConfirm}
+                        onClose={onClose}
+                        autoLocate={true}
+                    />
+                </div>
+            );
+        }
+
+        const MOCK_PROVIDERS: any[] = [
+            {
+                id: 'mock1',
+                displayName: 'Mery Majjoud',
+                photoURL: null,
+                hourlyRate: 80,
+                rating: 4.8,
+                completedJobs: 42,
+                pitch: 'أتعامل مع الأطفال بلطف وصبر، وأهتم بسلامتهم ونظافتهم وأوفر لهم جواً مريحاً وآمناً.',
+                isVerified: true,
+                isActive: true,
+                whatsappNumber: '212600000000',
+                lat: (liveLocation?.lat || 31.513) + 0.002,
+                lng: (liveLocation?.lng || -9.756) + 0.002,
+                experience: 'Elite',
+                services: [{ serviceId: service, hourlyRate: 80 }]
+            },
+            {
+                id: 'mock2',
+                displayName: 'Nadia B.',
+                photoURL: null,
+                hourlyRate: 85,
+                rating: 4.5,
+                completedJobs: 18,
+                pitch: 'خبرة في رعاية الأطفال من جميع الأعمار.',
+                isVerified: true,
+                isActive: true,
+                whatsappNumber: '212611111111',
+                lat: (liveLocation?.lat || 31.513) - 0.002,
+                lng: (liveLocation?.lng || -9.756) - 0.002,
+                experience: 'Pro',
+                services: [{ serviceId: service, hourlyRate: 85 }]
+            },
+        ];
+
+        const displayProviders = (bricolers && bricolers.length > 0) ? bricolers : MOCK_PROVIDERS;
+
+        return (
+            <ServiceFlowLayout
+                mapContent={
+                    <OrderMapCard
+                        currentAddress={liveAddress || `${currentArea}, ${currentCity}`}
+                        serviceName={getServiceById(service)?.name || 'Service'}
+                        step={getStepNumber(step)}
+                        providers={displayProviders}
+                        selectedProviderId={selectedBricolerId}
+                        onAddressClick={() => setStep('location-picker')}
+                        onMapMove={handleMapMove}
+                        onProviderSelect={(id) => {
+                            setSelectedBricolerId(id);
+                            const el = document.getElementById(`provider-${id}`);
+                            if (el) el.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+                        }}
+                    />
+                }
+                footerContent={renderStepFooter()}
+                step={getStepNumber(step)}
+                onBack={handleBack}
+                showBack={!isInline}
+                isEmbedded={isInline}
+            >
+                {renderStepContent()}
+            </ServiceFlowLayout>
+        );
+    };
+
+    return (
         <>
-            <BricolerProfileModal
-                isOpen={!!viewedBricoler}
-                bricoler={viewedBricoler!}
-                service={service}
-                serviceName={getServiceById(service)?.name || 'Service'}
-                isSelected={selectedBricolerId === viewedBricoler?.id}
-                onClose={() => setViewedBricoler(null)}
-                carRentalBookings={carRentalBookings.filter(job => job.bricolerId === viewedBricoler?.id)}
-                selectedPickUpDate={selectedDate}
-                selectedPickUpTime={selectedTime}
-                selectedReturnDate={carReturnDate}
-                selectedReturnTime={carReturnTime}
-                onSelect={(car, note) => {
-                    setSelectedBricolerId(viewedBricoler?.id!);
-                    if (service === 'car_rental') {
-                        if (car) setSelectedCar(car);
-                        if (note) setDescription(note);
-                        setStep(4);
-                    } else {
-                        setStep(3);
-                    }
-                }}
-            />
+            <AnimatePresence mode="wait">
+                <motion.div
+                    key={step === 'location-picker' ? 'picker' : 'flow'}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className={cn(
+                        "fixed inset-0 z-[100] flex items-end justify-center sm:items-center p-0 sm:p-4",
+                        step === 'location-picker' ? "bg-white" : "bg-black/60 backdrop-blur-sm"
+                    )}
+                >
+                    {step === 'location-picker' ? (
+                        <div className="w-full h-full">
+                            {renderMainLayout()}
+                        </div>
+                    ) : (
+                        <motion.div
+                            initial={{ y: "100%" }}
+                            animate={{ y: 0 }}
+                            exit={{ y: "100%" }}
+                            transition={{ type: "spring", damping: 25, stiffness: 200 }}
+                            className="w-full max-w-lg h-[92vh] sm:h-[85vh] bg-white rounded-t-[32px] sm:rounded-[32px] shadow-2xl overflow-hidden flex flex-col relative"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <div className="flex-1 overflow-y-auto no-scrollbar">
+                                {renderMainLayout()}
+                            </div>
+                            
+                            <BricolerProfileModal
+                                isOpen={!!viewedBricoler}
+                                bricoler={viewedBricoler!}
+                                service={service}
+                                serviceName={getServiceById(service)?.name || 'Service'}
+                                isSelected={selectedBricolerId === viewedBricoler?.id}
+                                onClose={() => setViewedBricoler(null)}
+                                carRentalBookings={carRentalBookings.filter(job => job.bricolerId === viewedBricoler?.id)}
+                                selectedPickUpDate={selectedDate}
+                                selectedPickUpTime={selectedTime}
+                                selectedReturnDate={carReturnDate}
+                                selectedReturnTime={carReturnTime}
+                                onSelect={(car, note) => {
+                                    setSelectedBricolerId(viewedBricoler?.id!);
+                                    if (service === 'car_rental') {
+                                        if (car) setSelectedCar(car);
+                                        if (note) setDescription(note);
+                                        setStep('step4-review');
+                                    } else {
+                                        setStep('step3-datetime');
+                                    }
+                                }}
+                            />
+                        </motion.div>
+                    )}
+                </motion.div>
+            </AnimatePresence>
+
             <SuccessAnimation
                 isVisible={showSuccessAnimation}
                 onComplete={() => {
@@ -3377,59 +3505,7 @@ const OrderSubmissionFlow: React.FC<OrderSubmissionFlowProps> = ({
                     onClose();
                 }}
             />
-            <AnimatePresence>
-                {showInternalLocationPicker && (
-                    <div className="fixed inset-0 z-[5000]">
-                        <LocationPicker
-                            mode="single"
-                            serviceType={service}
-                            title={t({ en: 'Set your address', fr: 'Définissez votre adresse' })}
-                            savedAddresses={userSavedAddresses}
-                            onConfirm={handleInternalLocationConfirm}
-                            onClose={() => setShowInternalLocationPicker(false)}
-                            autoLocate={true}
-                        />
-                    </div>
-                )}
-            </AnimatePresence>
         </>
-    );
-
-    if (isInline) {
-        return (
-            <div className="flex-1 flex flex-col h-full bg-white relative">
-                {!showInternalLocationPicker && flowContent}
-                {overlayContent}
-            </div>
-        );
-    }
-
-    return (
-        <AnimatePresence>
-            <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-end justify-center sm:items-center p-0 sm:p-4"
-                onClick={(e) => {
-                    if (e.target === e.currentTarget) onClose();
-                }}
-            >
-                <motion.div
-                    initial={{ y: "100%" }}
-                    animate={{ y: 0 }}
-                    exit={{ y: "100%" }}
-                    transition={{ type: "spring", damping: 25, stiffness: 200 }}
-                    className="w-full max-w-lg h-[92vh] sm:h-[85vh] bg-white rounded-t-[32px] sm:rounded-[32px] shadow-2xl overflow-hidden flex flex-col relative"
-                    onClick={(e) => e.stopPropagation()}
-                >
-                    <div className="flex-1 overflow-y-auto no-scrollbar">
-                        {flowContent}
-                    </div>
-                    {overlayContent}
-                </motion.div>
-            </motion.div>
-        </AnimatePresence>
     );
 };
 

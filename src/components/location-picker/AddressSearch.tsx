@@ -4,10 +4,10 @@ import React, { useState, useEffect, useRef } from 'react';
 import { ArrowLeft, Search, X, Loader2 } from 'lucide-react';
 
 interface SearchResult {
-  place_id: number;
+  place_id: string | number;
   display_name: string;
-  lat: string;
-  lon: string;
+  lat: number;
+  lng: number;
 }
 
 interface AddressSearchProps {
@@ -36,18 +36,24 @@ const AddressSearch: React.FC<AddressSearchProps> = ({ onSelect, onBack }) => {
     }
     setIsLoading(true);
     try {
-      const response = await fetch(
-        `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&format=json&limit=8&accept-language=en&countrycodes=ma`,
-        {
-          headers: {
-            'User-Agent': 'Lbricol/1.0',
-          },
-        }
+      const res = await fetch(
+        `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&format=json&limit=5&accept-language=fr,ar,en&countrycodes=ma`,
+        { headers: { 'User-Agent': 'Lbricol/1.0' } }
       );
-      const data = await response.json();
-      setResults(data);
-    } catch (error) {
-      console.error('Search error:', error);
+      const data = await res.json();
+      if (!Array.isArray(data)) {
+        setResults([]);
+        return;
+      }
+      const mappedResults = data.map((r: any) => ({
+        display_name: r.display_name.split(',').slice(0, 3).join(',').trim(),
+        lat: parseFloat(r.lat),
+        lng: parseFloat(r.lon),
+        place_id: r.place_id,
+      }));
+      setResults(mappedResults);
+    } catch {
+      setResults([]);
     } finally {
       setIsLoading(false);
     }
@@ -104,7 +110,7 @@ const AddressSearch: React.FC<AddressSearchProps> = ({ onSelect, onBack }) => {
         )}
 
         <div className="divide-y divide-[#F3F4F6]">
-          {results.map((res) => {
+          {(results || []).map((res) => {
             const parts = res.display_name.split(',');
             const primary = parts[0];
             const secondary = parts.slice(1).join(',').trim();
@@ -112,7 +118,7 @@ const AddressSearch: React.FC<AddressSearchProps> = ({ onSelect, onBack }) => {
             return (
               <button
                 key={res.place_id}
-                onClick={() => onSelect(parseFloat(res.lat), parseFloat(res.lon), res.display_name)}
+                onClick={() => onSelect(res.lat, res.lng, res.display_name)}
                 className="w-full px-5 py-4 text-left active:bg-neutral-50 transition-colors"
               >
                 <div className="flex flex-col">

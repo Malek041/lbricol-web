@@ -22,9 +22,11 @@ interface OrderMapCardProps {
     serviceEmoji?: string;
     step: number;
     providers?: any[];
-    selectedProvider?: any;
+    selectedProviderId?: string | null;
     onAddressClick?: () => void;
     onTriggerGps?: () => void;
+    onProviderSelect?: (id: string) => void;
+    onMapMove?: (lat: number, lng: number) => void;
 }
 
 export default function OrderMapCard({
@@ -34,9 +36,11 @@ export default function OrderMapCard({
     serviceEmoji = '🛠️',
     step,
     providers = [],
-    selectedProvider,
+    selectedProviderId,
     onAddressClick,
-    onTriggerGps
+    onTriggerGps,
+    onProviderSelect,
+    onMapMove
 }: OrderMapCardProps) {
     const { t } = useLanguage();
 
@@ -45,7 +49,9 @@ export default function OrderMapCard({
             <MapContent 
                 step={step}
                 providers={providers}
-                selectedProvider={selectedProvider}
+                selectedProviderId={selectedProviderId}
+                onProviderSelect={onProviderSelect}
+                onMapMove={onMapMove}
             />
 
             {/* Address Card (top-left) */}
@@ -66,25 +72,35 @@ export default function OrderMapCard({
                             onClick={onAddressClick}
                             className="text-[13px] font-bold text-[#00A082] hover:opacity-70 transition-opacity"
                         >
-                            {step > 0 ? t({ en: 'Define another Address', fr: 'Définir une autre adresse', ar: 'تحديد عنوان آخر' }) : t({ en: 'Use this point →', fr: 'Utiliser ce point →', ar: 'استخدم هذه النقطة ←' })}
+                            {step > 1 ? t({ en: 'Define another Address', fr: 'Définir une autre adresse', ar: 'تحديد عنوان آخر' }) : t({ en: 'Use this point →', fr: 'Utiliser ce point →', ar: 'استخدم هذه النقطة ←' })}
                         </button>
                     </div>
                 </motion.div>
             </div>
 
             {/* Service Breadcrumb Pill (bottom area) */}
-            {step >= 0 && (
-                <div className="absolute bottom-6 left-4 right-20 z-[900]">
-                    <motion.div 
-                        initial={{ scale: 0.9, opacity: 0 }}
-                        animate={{ scale: 1, opacity: 1 }}
-                        className="bg-[#FEF9C3] rounded-full px-4 py-2.5 shadow-lg flex items-center gap-2.5 border border-[#FEF08A]"
-                    >
-                        <span className="text-lg">{serviceEmoji}</span>
-                        <span className="text-[13px] font-bold text-[#854D0E] whitespace-nowrap overflow-hidden text-ellipsis">
-                            {serviceName} {subServiceName ? `› ${subServiceName}` : ''}
-                        </span>
-                    </motion.div>
+            {step !== 0 && (
+                <div style={{
+                    position: 'absolute',
+                    bottom: 14,
+                    left: 16,
+                    right: 64,              // leave room for GPS button
+                    zIndex: 900,
+                    background: '#FEF9C3',
+                    borderRadius: 50,
+                    padding: '8px 14px',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 8,
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                }}>
+                    <span style={{ fontSize: 14 }}>{serviceEmoji}</span>
+                    <span style={{ fontSize: 13, fontWeight: 600, color: '#78350F' }}>
+                        {serviceName} {subServiceName ? `› ${subServiceName}` : ''}
+                    </span>
                 </div>
             )}
 

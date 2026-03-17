@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Building2, X, CheckCircle2 } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import { LocationPoint, SavedAddress, AddressLabel } from './types';
+import EntrancePicker from './EntrancePicker';
 
 // Dynamically import MapView to avoid SSR issues for the thumbnail
 const MapView = dynamic(() => import('./MapView'), {
@@ -24,9 +25,12 @@ const AddressDetailsForm: React.FC<AddressDetailsFormProps> = ({ initialData, on
     doorNumber: initialData.doorNumber || '',
     additionalInfo: initialData.additionalInfo || '',
     label: initialData.label || 'Home' as AddressLabel,
+    entranceLat: initialData.entranceLat,
+    entranceLng: initialData.entranceLng,
   });
 
-  const [isMarked, setIsMarked] = useState(true); // Assuming initial point is marked
+  const [isPickingEntrance, setIsPickingEntrance] = useState(false);
+  const [isMarked, setIsMarked] = useState(true); // Default to true as per Pic 2 starting state
 
   const handleSave = () => {
     onSave({
@@ -157,25 +161,40 @@ const AddressDetailsForm: React.FC<AddressDetailsFormProps> = ({ initialData, on
         <div className="space-y-3">
           <div className="flex flex-col">
             <h3 className="text-[17px] font-bold text-[#111827]">Mark your entrance</h3>
-            <div className="flex items-center gap-1.5 text-[#000000] mt-0.5">
-              <CheckCircle2 size={16} />
-              <p className="text-[13px] font-medium">Done! Thanks for helping the bricoler</p>
+            <div className={`flex items-center gap-1.5 mt-0.5 ${isMarked ? 'text-[#111827]' : 'text-[#111827]'}`}>
+              <CheckCircle2 size={16} fill={isMarked ? "#000000ff" : "none"} className={isMarked ? "text-white" : ""} />
+              <p className="text-[13px] font-medium">
+                {isMarked ? "Done! Thanks for helping the courier" : "Help the courier find the right spot"}
+              </p>
             </div>
           </div>
-          <div className="w-full h-[140px] rounded-xl overflow-hidden border border-[#F3F4F6]">
+          <button
+            onClick={() => setIsPickingEntrance(true)}
+            className="w-full h-[160px] rounded-xl overflow-hidden border border-[#F3F4F6] relative active:scale-[0.99] transition-transform text-left"
+          >
             {/* Minimal Map Preview */}
             <MapView
-              initialLocation={{ lat: initialData.lat, lng: initialData.lng }}
+              initialLocation={{
+                lat: formData.entranceLat || initialData.lat,
+                lng: formData.entranceLng || initialData.lng
+              }}
               onLocationChange={() => { }} // Non-interactive thumbnail
+              interactive={false}
+              pinY={50} // Center for snapshot
+              zoom={16}
             />
-            {/* Fixed Pin Overlay for Thumbnail */}
-            <div className="absolute left-1/2 bottom-[calc(50%+4px)] -translate-x-1/2 z-20 pointer-events-none">
-              <svg width="24" height="32" viewBox="0 0 44 58" fill="none">
-                <path d="M22 0C10.4 0 1 9.4 1 21C1 36.5 22 58 22 58C22 58 43 36.5 43 21C43 9.4 33.6 0 22 0Z" fill="#0D6B52" />
-                <circle cx="22" cy="21" r="8" fill="white" />
-              </svg>
+            {/* Overlay to catch clicks and prevent map interaction */}
+            <div className="absolute inset-0 bg-transparent z-10" />
+
+            {/* Fixed Lbricol Yellow Pin for Snapshot */}
+            <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-[calc(100%-4px)] z-20 pointer-events-none flex flex-col items-center">
+              <img
+                src="/Images/map Assets/LocationPin.png"
+                alt="Lbricol location pin"
+                className="w-[36px] h-auto drop-shadow-lg"
+              />
             </div>
-          </div>
+          </button>
         </div>
 
         {/* Add Label */}
@@ -205,12 +224,32 @@ const AddressDetailsForm: React.FC<AddressDetailsFormProps> = ({ initialData, on
       <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t border-[#F3F4F6] z-20">
         <button
           onClick={handleSave}
-          disabled={!formData.floorNumber || !formData.doorNumber}
+          disabled={!formData.floorNumber || !formData.doorNumber || !isMarked}
           className="w-full h-14 rounded-full bg-[#10B981] text-white font-bold text-[17px] shadow-lg active:scale-[0.98] transition-all disabled:opacity-50 disabled:scale-100"
         >
           Save address
         </button>
       </div>
+
+      {/* Entrance Picker Overlay */}
+      {isPickingEntrance && (
+        <EntrancePicker
+          initialLocation={{
+            lat: formData.entranceLat || initialData.lat,
+            lng: formData.entranceLng || initialData.lng
+          }}
+          onConfirm={(location) => {
+            setFormData({
+              ...formData,
+              entranceLat: location.lat,
+              entranceLng: location.lng
+            });
+            setIsMarked(true);
+            setIsPickingEntrance(false);
+          }}
+          onBack={() => setIsPickingEntrance(false)}
+        />
+      )}
     </div>
   );
 };
