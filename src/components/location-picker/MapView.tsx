@@ -59,7 +59,7 @@ const MapView: React.FC<MapViewProps> = ({
   const reverseGeocode = async (lat: number, lng: number) => {
     try {
       const response = await fetch(
-        `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=${language}`,
+        `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=${language}&zoom=18&addressdetails=1`,
         {
           headers: {
             'User-Agent': 'Lbricol/1.0',
@@ -70,17 +70,30 @@ const MapView: React.FC<MapViewProps> = ({
       if (data) {
         let streetAddress = '';
         if (data.address) {
-          const { road, house_number, building, suburb, city, town, village } = data.address;
+          const { 
+            road, house_number, building, 
+            suburb, neighborhood, city_district,
+            city, town, village,
+            amenity, shop, office, tourism
+          } = data.address;
+          
+          const poi = amenity || shop || office || tourism || '';
           const roadPart = road || '';
           const numberPart = house_number || building || '';
-          streetAddress = roadPart + (numberPart ? `, ${numberPart}` : '');
           
-          const neighborhood = suburb || '';
-          const place = city || town || village || '';
+          const street = roadPart + (numberPart ? `, ${numberPart}` : '');
+          const district = neighborhood || suburb || city_district || '';
+          const location = city || town || village || '';
           
-          const finalAddress = [streetAddress, neighborhood, place]
+          let finalAddress = [poi, street, district, location]
             .filter(Boolean)
             .join(', ');
+            
+          // If the final address is still too generic (e.g. just city), use display_name fallback
+          if (!street && !poi && data.display_name) {
+            const parts = data.display_name.split(',').map((p: string) => p.trim());
+            finalAddress = parts.slice(0, 3).join(', ');
+          }
             
           setAddress(finalAddress);
           onLocationChange({ lat, lng, address: finalAddress });
