@@ -8,6 +8,7 @@ import { LocationPoint } from './types';
 export interface MapViewHandle {
   flyTo: (lat: number, lng: number, zoom?: number, options?: L.ZoomPanOptions) => void;
   flyToWithOffset: (lat: number, lng: number, zoom?: number) => void;
+  locate: (onSuccess?: (lat: number, lng: number) => void, onError?: (error: any) => void) => void;
 }
 
 interface MapViewProps {
@@ -39,39 +40,83 @@ const MapView = React.forwardRef<MapViewHandle, MapViewProps>(({
 }, ref) => {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
-  const gpsMarkerRef = useRef<L.Marker | null>(null);
+  const gpsMarkerRef = useRef<any>(null);
   const [address, setAddress] = useState<string>('Loading address...');
   const [mapReady, setMapReady] = useState(false);
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
   React.useImperativeHandle(ref, () => ({
     flyTo: (lat, lng, zoom = 17, options) => {
-      mapRef.current?.flyTo([lat, lng], zoom, options);
+      const map = mapRef.current;
+      if (!map || !map.getCenter) return;
+      try {
+        map.flyTo([lat, lng], zoom, options);
+      } catch (e) {
+        console.warn('flyTo called before map ready:', e);
+      }
     },
     flyToWithOffset: (lat, lng, zoom = 17) => {
       flyToWithOffset(lat, lng, zoom);
+    },
+    locate: (onSuccess, onError) => {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const { latitude, longitude } = position.coords;
+          const map = mapRef.current;
+          if (!map || !map.getCenter) {
+            onError?.('Map not ready');
+            return;
+          }
+
+          map.flyTo([latitude, longitude], 17, { duration: 1.5 });
+
+          // ✅ Restore blue GPS accuracy dot:
+          if (gpsMarkerRef.current) {
+            gpsMarkerRef.current.setLatLng([latitude, longitude]);
+          } else {
+            gpsMarkerRef.current = L.circleMarker([latitude, longitude], {
+              radius: 8,
+              fillColor: '#3B82F6',
+              color: '#ffffff',
+              weight: 2,
+              fillOpacity: 1,
+            }).addTo(map);
+          }
+
+          reverseGeocode(latitude, longitude);
+          onSuccess?.(latitude, longitude);
+        },
+        (error) => {
+          console.warn('Geolocation error:', error);
+          onError?.(error);
+        }
+      );
     }
   }));
 
   const flyToWithOffset = (lat: number, lng: number, zoom = 17) => {
-    if (!mapRef.current) return;
     const map = mapRef.current;
+    if (!map || !map.getCenter) return; // ← guard: map not ready yet
     
-    const mapSize = map.getSize();
-    const centerPoint = L.point(mapSize.x / 2, mapSize.y / 2);
-    const targetPoint = L.point(mapSize.x / 2, mapSize.y * (pinY / 100));
-    
-    const targetLatLng = L.latLng(lat, lng);
-    const centerLatLng = map.unproject(
-      map.project(targetLatLng, zoom).add(centerPoint).subtract(targetPoint),
-      zoom
-    );
-    
-    map.flyTo(centerLatLng, zoom, { duration: 1.5 });
-    
-    // Ensure map tiles load correctly after flying/resizing
-    setTimeout(() => {
-      map.invalidateSize();
-    }, 400);
+    try {
+      const mapSize = map.getSize();
+      const centerPoint = L.point(mapSize.x / 2, mapSize.y / 2);
+      const targetPoint = L.point(mapSize.x / 2, mapSize.y * (pinY / 100));
+      
+      const targetLatLng = L.latLng(lat, lng);
+      const centerLatLng = map.unproject(
+        map.project(targetLatLng, zoom).add(centerPoint).subtract(targetPoint),
+        zoom
+      );
+      
+      map.flyTo(centerLatLng, zoom, { duration: 1.5 });
+      
+      // Ensure map tiles load correctly after flying/resizing
+      setTimeout(() => {
+        if (mapRef.current) mapRef.current.invalidateSize();
+      }, 400);
+    } catch (e) {
+      console.warn('flyTo called before map ready:', e);
+    }
   };
 
   const reverseGeocode = async (lat: number, lng: number) => {
@@ -183,6 +228,7 @@ const MapView = React.forwardRef<MapViewHandle, MapViewProps>(({
 
     // Center-pin logic: map moves, pin stays fixed
     map.on('moveend', () => {
+      if (!map || !map.getCenter) return; // ← guard
       if (!interactive) return; // Don't re-geocode purely on load if static
       
       const pinPoint = L.point(

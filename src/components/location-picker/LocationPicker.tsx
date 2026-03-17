@@ -70,17 +70,14 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
 
   const handleLocate = () => {
     setIsLocating(true);
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        if (mapRef.current) {
-          mapRef.current.flyToWithOffset(pos.coords.latitude, pos.coords.longitude, 17);
-        }
-      },
-      (error) => {
-        console.warn('Geolocation error:', error);
-        setIsLocating(false);
-      }
-    );
+    if (mapRef.current?.locate) {
+      mapRef.current.locate(
+        () => setIsLocating(false),
+        () => setIsLocating(false)
+      );
+    } else {
+      setIsLocating(false);
+    }
   };
 
   const handleConfirmPoint = () => {
