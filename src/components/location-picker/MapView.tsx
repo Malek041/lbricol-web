@@ -5,12 +5,6 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { LocationPoint } from './types';
 
-export interface MapViewHandle {
-  flyTo: (lat: number, lng: number, zoom?: number, options?: L.ZoomPanOptions) => void;
-  flyToWithOffset: (lat: number, lng: number, zoom?: number) => void;
-  locate: (onSuccess?: (lat: number, lng: number) => void, onError?: (error: any) => void) => void;
-}
-
 interface MapViewProps {
   onLocationChange: (point: LocationPoint) => void;
   initialLocation?: { lat: number; lng: number };
@@ -25,7 +19,7 @@ interface MapViewProps {
   zoom?: number;
 }
 
-const MapView = React.forwardRef<MapViewHandle, MapViewProps>(({
+const MapView: React.FC<MapViewProps> = ({
   onLocationChange,
   initialLocation,
   triggerGps,
@@ -37,86 +31,33 @@ const MapView = React.forwardRef<MapViewHandle, MapViewProps>(({
   language = 'en',
   interactive = true,
   zoom: requestedZoom
-}, ref) => {
+}) => {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
-  const gpsMarkerRef = useRef<any>(null);
+  const gpsMarkerRef = useRef<L.Marker | null>(null);
   const [address, setAddress] = useState<string>('Loading address...');
   const [mapReady, setMapReady] = useState(false);
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
-  React.useImperativeHandle(ref, () => ({
-    flyTo: (lat, lng, zoom = 17, options) => {
-      const map = mapRef.current;
-      if (!map || !map.getCenter) return;
-      try {
-        map.flyTo([lat, lng], zoom, options);
-      } catch (e) {
-        console.warn('flyTo called before map ready:', e);
-      }
-    },
-    flyToWithOffset: (lat, lng, zoom = 17) => {
-      flyToWithOffset(lat, lng, zoom);
-    },
-    locate: (onSuccess, onError) => {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const { latitude, longitude } = position.coords;
-          const map = mapRef.current;
-          if (!map || !map.getCenter) {
-            onError?.('Map not ready');
-            return;
-          }
-
-          map.flyTo([latitude, longitude], 17, { duration: 1.5 });
-
-          // ✅ Restore blue GPS accuracy dot:
-          if (gpsMarkerRef.current) {
-            gpsMarkerRef.current.setLatLng([latitude, longitude]);
-          } else {
-            gpsMarkerRef.current = L.circleMarker([latitude, longitude], {
-              radius: 8,
-              fillColor: '#3B82F6',
-              color: '#ffffff',
-              weight: 2,
-              fillOpacity: 1,
-            }).addTo(map);
-          }
-
-          reverseGeocode(latitude, longitude);
-          onSuccess?.(latitude, longitude);
-        },
-        (error) => {
-          console.warn('Geolocation error:', error);
-          onError?.(error);
-        }
-      );
-    }
-  }));
-
   const flyToWithOffset = (lat: number, lng: number, zoom = 17) => {
+    if (!mapRef.current) return;
     const map = mapRef.current;
-    if (!map || !map.getCenter) return; // ← guard: map not ready yet
     
-    try {
-      const mapSize = map.getSize();
-      const centerPoint = L.point(mapSize.x / 2, mapSize.y / 2);
-      const targetPoint = L.point(mapSize.x / 2, mapSize.y * (pinY / 100));
-      
-      const targetLatLng = L.latLng(lat, lng);
-      const centerLatLng = map.unproject(
-        map.project(targetLatLng, zoom).add(centerPoint).subtract(targetPoint),
-        zoom
-      );
-      
-      map.flyTo(centerLatLng, zoom, { duration: 1.5 });
-      
-      // Ensure map tiles load correctly after flying/resizing
-      setTimeout(() => {
-        if (mapRef.current) mapRef.current.invalidateSize();
-      }, 400);
-    } catch (e) {
-      console.warn('flyTo called before map ready:', e);
-    }
+    const mapSize = map.getSize();
+    const centerPoint = L.point(mapSize.x / 2, mapSize.y / 2);
+    const targetPoint = L.point(mapSize.x / 2, mapSize.y * (pinY / 100));
+    
+    const targetLatLng = L.latLng(lat, lng);
+    const centerLatLng = map.unproject(
+      map.project(targetLatLng, zoom).add(centerPoint).subtract(targetPoint),
+      zoom
+    );
+    
+    map.flyTo(centerLatLng, zoom, { duration: 1.5 });
+    
+    // Ensure map tiles load correctly after flying/resizing
+    setTimeout(() => {
+      map.invalidateSize();
+    }, 400);
   };
 
   const reverseGeocode = async (lat: number, lng: number) => {
@@ -228,7 +169,6 @@ const MapView = React.forwardRef<MapViewHandle, MapViewProps>(({
 
     // Center-pin logic: map moves, pin stays fixed
     map.on('moveend', () => {
-      if (!map || !map.getCenter) return; // ← guard
       if (!interactive) return; // Don't re-geocode purely on load if static
       
       const pinPoint = L.point(
@@ -263,6 +203,52 @@ const MapView = React.forwardRef<MapViewHandle, MapViewProps>(({
     };
   }, []);
 
+
+  useEffect(() => {
+    if (triggerGps && navigator.geolocation && mapRef.current && mapReady) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const { latitude, longitude } = position.coords;
+
+          // ✅ SLOW animated fly with Pin offset
+          flyToWithOffset(latitude, longitude, 17);
+          
+          // Force reverseGeocode to ensure parent components clear loading states
+          if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
+          debounceTimerRef.current = setTimeout(() => {
+            reverseGeocode(latitude, longitude);
+          }, 1000);
+
+          // ✅ GPS accuracy circle as separate marker with pulse effect
+          if (gpsMarkerRef.current) {
+            gpsMarkerRef.current.setLatLng([latitude, longitude]);
+          } else if (mapRef.current) {
+            const gpsIcon = L.divIcon({
+              className: 'gps-pulse-icon',
+              html: `
+                <div class="relative flex items-center justify-center w-5 h-5">
+                  <div class="absolute w-3 h-3 bg-[#10B981] rounded-full z-10 border-[1.5px] border-white shadow-sm"></div>
+                  <div class="absolute w-full h-full bg-[#10B981] rounded-full animate-radar-pulse opacity-40"></div>
+                  <div class="absolute w-full h-full bg-[#10B981] rounded-full animate-radar-pulse-delayed opacity-20"></div>
+                </div>
+              `,
+              iconSize: [20, 20],
+              iconAnchor: [10, 10], // Perfectly centered on the lat/lng
+            });
+            gpsMarkerRef.current = L.marker([latitude, longitude], { icon: gpsIcon }).addTo(mapRef.current);
+          }
+        },
+        (error) => console.warn('Geolocation error:', error)
+      );
+    }
+  }, [triggerGps, mapReady]);
+
+  useEffect(() => {
+    if (flyToPoint && mapRef.current && mapReady) {
+      flyToWithOffset(flyToPoint.lat, flyToPoint.lng, 17);
+    }
+  }, [flyToPoint, mapReady]);
+
   return (
     <div className="relative w-full h-full overflow-hidden">
       <div ref={mapContainerRef} className="w-full h-full z-0" />
@@ -289,6 +275,6 @@ const MapView = React.forwardRef<MapViewHandle, MapViewProps>(({
       `}</style>
     </div>
   );
-});
+};
 
 export default MapView;

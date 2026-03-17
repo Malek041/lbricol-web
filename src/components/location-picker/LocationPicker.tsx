@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import { X, Loader2, Navigation, Search } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -41,11 +41,12 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
   // Interaction State
   const [pickupPoint, setPickupPoint] = useState<LocationPoint | null>(null);
   const [step, setStep] = useState<1 | 2>(1);
+  const [triggerGps, setTriggerGps] = useState(0);
+  const [flyToPoint, setFlyToPoint] = useState<LocationPoint | null>(null);
   const [isLocating, setIsLocating] = useState(false);
   const [isInteracting, setIsInteracting] = useState(false);
   const [hasAutoLocated, setHasAutoLocated] = useState(false);
   const [showSearchInput, setShowSearchInput] = useState(false);
-  const mapRef = useRef<any>(null);
 
   const isBricolerBase = serviceType === 'bricoler-base';
 
@@ -70,14 +71,7 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
 
   const handleLocate = () => {
     setIsLocating(true);
-    if (mapRef.current?.locate) {
-      mapRef.current.locate(
-        () => setIsLocating(false),
-        () => setIsLocating(false)
-      );
-    } else {
-      setIsLocating(false);
-    }
+    setTriggerGps(Date.now());
   };
 
   const handleConfirmPoint = () => {
@@ -106,9 +100,7 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
       if (step === 1) {
         setPickupPoint(point);
         setStep(2);
-        if (mapRef.current) {
-          mapRef.current.flyToWithOffset(point.lat, point.lng, 17);
-        }
+        setFlyToPoint(point); // Fly to the point to show where it is
       } else {
         onConfirm({ pickup: pickupPoint!, dropoff: point });
       }
@@ -146,15 +138,17 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
 
   // View C (Search) Actions
   const handleSearchSelect = (lat: number, lng: number, address: string) => {
-    if (mapRef.current) {
-      mapRef.current.flyToWithOffset(lat, lng, 17);
+    setFlyToPoint({ lat, lng, address });
+
+    if (isBricolerBase) {
+      setActiveView('MAP');
+      setShowSearchInput(false);
+      return;
     }
-    
-    // Switch to map view immediately.
-    // The map's 'moveend' will automatically fire reverseGeocode
-    // which calls handleLocationChange(currentPoint) and updates the address card
-    setActiveView('MAP');
-    setShowSearchInput(false);
+
+    setSelectedForDetails({ lat, lng, address, label: 'Home' });
+    // Go directly to details as per spec, MapView thumbnail will show the location
+    setActiveView('DETAILS');
   };
 
   if (activeView === 'SEARCH') {
@@ -180,8 +174,9 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
         {/* Full-screen under-layer map */}
         <div className="absolute top-0 left-0 w-full h-[100dvh]">
           <MapView
-            ref={mapRef}
             onLocationChange={handleLocationChange}
+            triggerGps={triggerGps}
+            flyToPoint={flyToPoint || undefined}
             onInteractionStart={() => setIsInteracting(true)}
             onInteractionEnd={() => setIsInteracting(false)}
             pinY={30}
