@@ -143,8 +143,8 @@ const MapView: React.FC<MapViewProps> = ({
       attributionControl: false,
     });
 
-    // ✅ Clean, white/gray tiles (Positron style)
-    L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png", {
+    // ✅ Voyager style tiles
+    L.tileLayer("https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png", {
       attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> © <a href="https://carto.com/attributions">CARTO</a>',
       subdomains: 'abcd',
       maxZoom: 19
