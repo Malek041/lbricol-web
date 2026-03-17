@@ -187,21 +187,25 @@ const MapView: React.FC<MapViewProps> = ({
     };
   }, []);
 
+  const prevPinY = useRef(pinY);
+
   // Shift map when pinY changes to keep the current location under the pin
   useEffect(() => {
-    if (mapReady && mapRef.current) {
+    if (mapReady && mapRef.current && prevPinY.current !== pinY) {
       const map = mapRef.current;
       const zoom = map.getZoom();
       
-      const pinPoint = L.point(
+      const oldPinPoint = L.point(
         map.getSize().x / 2,
-        map.getSize().y * (pinY / 100)
+        map.getSize().y * (prevPinY.current / 100)
       );
-      // This is the LatLng currently under the pin
-      const currentLatLngUnderPin = map.containerPointToLatLng(pinPoint);
+      // This is the LatLng currently under the OLD pin
+      const currentLatLngUnderPin = map.containerPointToLatLng(oldPinPoint);
       
       // Now fly so this LatLng stays under the pin at the new position
       flyToWithOffset(currentLatLngUnderPin.lat, currentLatLngUnderPin.lng, zoom);
+      
+      prevPinY.current = pinY;
     }
   }, [pinY]);
 
