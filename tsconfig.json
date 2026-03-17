@@ -41,6 +41,7 @@
     "_backups",
     "_builds",
     "Backup_*",
-    "backups"
+    "backups",
+    "scripts"
   ]
 }
