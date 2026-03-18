@@ -37,4 +37,7 @@ export interface LocationPickerProps {
   autoLocate?: boolean;
   onSaveAddress?: (addr: SavedAddress) => void;
   onDeleteAddress?: (id: string) => void;
+  isInline?: boolean;
+  onConfirmRadius?: (radius: number) => void;
+  initialRadius?: number;
 }

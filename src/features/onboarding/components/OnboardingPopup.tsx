@@ -321,9 +321,6 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
 
         if (!isClientEdit) {
             steps.push({ id: 'base_location', label: t({ en: 'Base Location', fr: 'Emplacement de base', ar: 'الموقع الأساسي' }) });
-            steps.push({ id: 'service_radius', label: t({ en: 'Radius', fr: 'Rayon', ar: 'نطاق الخدمة' }) });
-            steps.push({ id: 'city', label: t({ en: 'City', fr: 'Ville', ar: 'المدينة' }) });
-            steps.push({ id: 'areas', label: t({ en: 'Work Areas', fr: 'Zones', ar: 'مناطق العمل' }) });
             steps.push({ id: 'profile', label: t({ en: 'Profile', fr: 'Profil', ar: 'الملف الشخصي' }) });
         }
 
@@ -2475,6 +2472,11 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                                                 serviceType="bricoler-base"
                                                 serviceIcon="📍"
                                                 autoLocate={true}
+                                                isInline={true}
+                                                initialRadius={serviceRadiusKm}
+                                                onConfirmRadius={(radius) => {
+                                                    setServiceRadiusKm(radius);
+                                                }}
                                                 onConfirm={({ pickup }) => {
                                                     setBaseLat(pickup.lat);
                                                     setBaseLng(pickup.lng);
@@ -2494,151 +2496,7 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                                     </div>
                                 )}
 
-                                {/* ── STEP: Service Radius ── */}
-                                {step === 'service_radius' && (
-                                    <motion.div key="service_radius" custom={direction} variants={slideVariants} initial="enter" animate="center" exit="exit" className="p-6 md:p-10 space-y-8">
-                                        <motion.div variants={itemVariants} className="space-y-1">
-                                            <h2 className="text-2xl md:text-3xl font-bold text-neutral-900 tracking-tight">
-                                                {t({ en: 'Service Radius', fr: 'Rayon de service', ar: 'نطاق الخدمة' })}
-                                            </h2>
-                                            <p className="text-neutral-500 text-[15px] font-medium leading-relaxed">
-                                                {t({ en: 'How far are you willing to travel for tasks?', fr: 'Jusqu\'où êtes-vous prêt à vous déplacer ?', ar: 'ما هي المسافة التي يمكنك قطعها لتنفيذ المهام؟' })}
-                                            </p>
-                                        </motion.div>
-                                        
-                                        <motion.div variants={itemVariants} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                            {[3, 5, 10, 20, 50].map(radius => (
-                                                <button
-                                                    key={radius}
-                                                    onClick={() => {
-                                                        setServiceRadiusKm(radius);
-                                                        setDirection(1);
-                                                        setStepIndex(s => s + 1);
-                                                    }}
-                                                    className={cn(
-                                                        "px-5 py-8 rounded-[12px] border-2 text-center transition-all",
-                                                        serviceRadiusKm === radius ? 'bg-[#E6F6F2] text-[#00A082] border-[#00A082]' : 'bg-white text-neutral-900 border-neutral-100 hover:border-neutral-200'
-                                                    )}
-                                                >
-                                                    <div className="text-3xl font-black mb-1">{radius}</div>
-                                                    <div className="text-sm font-bold opacity-60">KM</div>
-                                                </button>
-                                            ))}
-                                        </motion.div>
-                                    </motion.div>
-                                )}
 
-                                {/* ── STEP: City ── */}
-                                {step === 'city' && (
-                                    <motion.div key="city" custom={direction} variants={slideVariants} initial="enter" animate="center" exit="exit" className="p-6 md:p-10 space-y-8">
-                                        <motion.div variants={itemVariants} initial="hidden" animate="show" className="space-y-1">
-                                            <h2 className="text-2xl md:text-3xl font-bold text-neutral-900 tracking-tight">{t({ en: 'Your City', fr: 'Votre Ville', ar: 'مدينتك' })}</h2>
-                                            <p className="text-neutral-500 text-[15px] font-medium leading-relaxed">{t({ en: 'Tap a city to continue automatically.', fr: 'Appuyez sur une ville pour continuer automatiquement.', ar: 'اضغط على مدينة للمتابعة تلقائياً.' })}</p>
-                                        </motion.div>
-                                        <motion.div variants={itemVariants} initial="hidden" animate="show" className="grid grid-cols-2 lg:grid-cols-3 gap-4">
-                                            {MOROCCAN_CITIES.map(city => (
-                                                <button
-                                                    key={city}
-                                                    onClick={() => {
-                                                        setSelectedCity(city);
-                                                        setSelectedAreas([]);
-                                                        // Auto-advance to Service Areas step
-                                                        setDirection(1);
-                                                        setTimeout(() => setStepIndex(s => s + 1), 300);
-                                                    }}
-                                                    className={cn(
-                                                        'px-5 py-8 rounded-[12px] border-2 text-[15px] font-bold transition-all',
-                                                        selectedCity === city ? 'bg-[#E6F6F2] text-[#00A082] border-[#00A082]' : 'bg-white text-neutral-900 border-neutral-100 hover:border-neutral-200'
-                                                    )}
-                                                >
-                                                    {city}
-                                                </button>
-                                            ))}
-                                        </motion.div>
-                                    </motion.div>
-                                )}
-
-                                {/* ── STEP: Work Areas ── */}
-                                {step === 'areas' && (
-                                    <motion.div key="areas" custom={direction} variants={slideVariants} initial="enter" animate="center" exit="exit" className="p-6 md:p-10 space-y-8">
-                                        <motion.div variants={itemVariants} initial="hidden" animate="show" className="space-y-1">
-                                            <h2 className="text-2xl md:text-3xl font-bold text-neutral-900 tracking-tight">{t({ en: 'Service Areas You can serve in city', fr: 'Quartiers que vous pouvez desservir dans la ville', ar: 'مناطق الخدمة التي يمكنك تغطيتها في المدينة' })}</h2>
-                                            <p className="text-neutral-500 text-[15px] font-medium leading-relaxed">{t({ en: 'Select the neighborhoods you cover.', fr: 'Sélectionnez les quartiers que vous couvrez.', ar: 'اختر الأحياء التي تغطيها.' })}</p>
-                                        </motion.div>
-                                        <motion.div variants={itemVariants} initial="hidden" animate="show" className="flex items-center gap-3 bg-white border-2 border-neutral-100 rounded-[12px] px-6 py-5 focus-within:border-[#00A082] transition-all">
-                                            <Search size={24} className="text-neutral-400" />
-                                            <input type="text" placeholder={t({ en: 'Search neighborhood...', fr: 'Rechercher un quartier...', ar: 'البحث عن حي...' })} value={areaSearch} onChange={e => setAreaSearch(e.target.value)} className="flex-1 bg-transparent outline-none text-[17px] font-bold text-neutral-900 placeholder:text-neutral-400 placeholder:font-medium" />
-                                        </motion.div>
-                                        <motion.div variants={itemVariants} initial="hidden" animate="show" className="grid grid-cols-2 gap-2 max-h-[400px] overflow-y-auto no-scrollbar pr-1">
-                                            {/* All the city button */}
-                                            <button
-                                                onClick={() => {
-                                                    const allAreas = (selectedCity && MOROCCAN_CITIES_AREAS[selectedCity]) || [];
-                                                    setSelectedAreas(prev => {
-                                                        const current = Array.isArray(prev) ? prev : [];
-                                                        return current.length === allAreas.length ? [] : [...allAreas];
-                                                    });
-                                                }}
-                                                className={cn(
-                                                    'col-span-2 flex items-center justify-center gap-2 px-5 py-5 rounded-[12px] border-2 text-[14px] font-bold transition-all mb-2',
-                                                    Array.isArray(selectedAreas) && selectedAreas.length === ((selectedCity && MOROCCAN_CITIES_AREAS[selectedCity]) || []).length && ((selectedCity && MOROCCAN_CITIES_AREAS[selectedCity]) || []).length > 0
-                                                        ? 'bg-[#E6F6F2] text-[#00A082] border-[#00A082]'
-                                                        : 'bg-white text-neutral-800 border-neutral-100 hover:border-neutral-200'
-                                                )}
-                                            >
-                                                {Array.isArray(selectedAreas) && selectedAreas.length === ((selectedCity && MOROCCAN_CITIES_AREAS[selectedCity]) || []).length && ((selectedCity && MOROCCAN_CITIES_AREAS[selectedCity]) || []).length > 0 && <Check size={16} strokeWidth={4} />}
-                                                {t({ en: 'All the city', fr: 'Toute la ville', ar: 'كل المدينة' })}
-                                            </button>
-                                            {/* Option to add custom area if search doesn't match exactly */}
-                                            {areaSearch.trim() && !filteredAreas.some(a => a.toLowerCase() === areaSearch.trim().toLowerCase()) && (
-                                                <button
-                                                    onClick={() => {
-                                                        const newArea = areaSearch.trim();
-                                                        if (!selectedAreas.includes(newArea)) {
-                                                            setSelectedAreas(prev => [...prev, newArea]);
-                                                        }
-                                                        setAreaSearch('');
-                                                    }}
-                                                    className="col-span-2 flex items-center justify-center gap-2 px-5 py-5 rounded-[12px] border-2 border-dashed border-[#00A082] text-[14px] font-bold text-[#00A082] bg-[#E6F6F2]/30 hover:bg-[#E6F6F2]/50 transition-all mb-2"
-                                                >
-                                                    <Plus size={18} />
-                                                    {t({ en: `Add "${areaSearch}"`, fr: `Ajouter "${areaSearch}"`, ar: `إضافة "${areaSearch}"` })}
-                                                </button>
-                                            )}
-
-                                            {filteredAreas.map(area => {
-                                                const currentAreas = Array.isArray(selectedAreas) ? selectedAreas : [];
-                                                const sel = currentAreas.includes(area);
-                                                return (
-                                                    <button
-                                                        key={area}
-                                                        onClick={() => setSelectedAreas(prev => {
-                                                            const current = Array.isArray(prev) ? prev : [];
-                                                            return sel ? current.filter(x => x !== area) : [...current, area];
-                                                        })}
-                                                        className={cn(
-                                                            'flex items-center justify-center gap-2 px-5 py-5 rounded-[12px] border-2 text-[14px] font-bold transition-all',
-                                                            sel ? 'bg-[#E6F6F2] text-[#00A082] border-[#00A082]' : 'bg-white text-neutral-800 border-neutral-100 hover:border-neutral-200'
-                                                        )}
-                                                    >
-                                                        {sel && <Check size={16} strokeWidth={4} />}{t({ en: area, fr: area })}
-                                                    </button>
-                                                );
-                                            })}
-
-                                            {/* Display selected custom areas that might have been filtered out of the suggestions */}
-                                            {selectedAreas.filter(a => !filteredAreas.includes(a) && (areaSearch ? a.toLowerCase().includes(areaSearch.toLowerCase()) : true)).map(area => (
-                                                <button
-                                                    key={area}
-                                                    onClick={() => setSelectedAreas(prev => prev.filter(x => x !== area))}
-                                                    className="flex items-center justify-center gap-2 px-5 py-5 rounded-[12px] border-2 bg-[#E6F6F2] text-[#00A082] border-[#00A082] text-[14px] font-bold transition-all"
-                                                >
-                                                    <Check size={16} strokeWidth={4} />{area}
-                                                </button>
-                                            ))}
-                                        </motion.div>
-                                    </motion.div>
-                                )}
 
                                 {/* ── STEP: Profile ── */}
                                 {step === 'profile' && (

@@ -2,8 +2,9 @@
 
 import React, { useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
-import { X, Loader2, Navigation, Search } from 'lucide-react';
+import { X, Loader2, Navigation, Search, ChevronLeft } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { cn } from '@/lib/utils';
 import { LocationPickerProps, LocationPoint, SavedAddress } from './types';
 
 // Components
@@ -31,6 +32,9 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
   autoLocate,
   onSaveAddress,
   onDeleteAddress,
+  isInline = false,
+  onConfirmRadius,
+  initialRadius = 10,
 }) => {
   // Views & State
   const [activeView, setActiveView] = useState<PickerView>('MAP');
@@ -48,6 +52,8 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
   const [isInteracting, setIsInteracting] = useState(false);
   const [hasAutoLocated, setHasAutoLocated] = useState(false);
   const [showSearchInput, setShowSearchInput] = useState(false);
+  const [radiusView, setRadiusView] = useState(false);
+  const [selectedRadius, setSelectedRadius] = useState(initialRadius);
 
   const isBricolerBase = serviceType === 'bricoler-base';
 
@@ -81,7 +87,11 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
     setIsManualSelection(true);
     
     if (isBricolerBase) {
-      onConfirm({ pickup: currentPoint });
+      if (onConfirmRadius) {
+        setRadiusView(true);
+      } else {
+        onConfirm({ pickup: currentPoint });
+      }
       return;
     }
 
@@ -182,7 +192,10 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
   }
 
   return (
-    <div className="fixed inset-0 bg-white z-[6000] flex flex-col font-jakarta transition-all overflow-hidden">
+    <div className={cn(
+      "bg-white flex flex-col font-jakarta transition-all overflow-hidden",
+      isInline ? "relative w-full h-full" : "fixed inset-0 z-[6000]"
+    )}>
       {/* 1. Map Area (Fixed Height) */}
       <div
         className={`relative bg-neutral-100 overflow-hidden transition-all duration-500 ease-in-out z-0 shrink-0 ${
@@ -206,10 +219,10 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
           {/* X Close Button */}
           <div className="absolute top-4 left-4 pointer-events-auto">
             <button
-              onClick={onClose}
+              onClick={radiusView ? () => setRadiusView(false) : onClose}
               className="w-9 h-9 bg-white rounded-full shadow-[0_2px_8px_rgba(0,0,0,0.15)] flex items-center justify-center active:scale-95 transition-transform"
             >
-              <X size={18} className="text-[#374151]" />
+              <ChevronLeft size={20} className="text-[#374151]" />
             </button>
           </div>
           {/* GPS Locate Button */}
@@ -233,7 +246,50 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
         {isBricolerBase ? (
           <div className="flex flex-col h-full">
             <AnimatePresence mode="wait">
-              {!showSearchInput ? (
+              {radiusView ? (
+                <motion.div
+                  key="radius-view"
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -20 }}
+                  className="space-y-6"
+                >
+                  <div className="space-y-1">
+                    <h3 className="text-xl font-bold text-neutral-900 tracking-tight">Service Radius</h3>
+                    <p className="text-neutral-500 text-[14px] font-medium leading-relaxed">
+                      How far are you willing to travel for tasks?
+                    </p>
+                  </div>
+                  
+                  <div className="grid grid-cols-5 gap-2">
+                    {[3, 5, 10, 20, 50].map(radius => (
+                      <button
+                        key={radius}
+                        onClick={() => setSelectedRadius(radius)}
+                        className={cn(
+                          "py-3 rounded-[12px] border-2 text-center transition-all flex flex-col items-center justify-center",
+                          selectedRadius === radius ? 'bg-[#E6F6F2] text-[#00A082] border-[#00A082]' : 'bg-white text-neutral-900 border-neutral-100 hover:border-neutral-200'
+                        )}
+                      >
+                        <span className="text-lg font-black leading-none">{radius}</span>
+                        <span className="text-[10px] font-bold opacity-60 mt-0.5">KM</span>
+                      </button>
+                    ))}
+                  </div>
+
+                  <button
+                    onClick={() => {
+                      if (currentPoint) {
+                        onConfirm({ pickup: currentPoint });
+                        onConfirmRadius?.(selectedRadius);
+                      }
+                    }}
+                    className="w-full h-13 bg-[#00A082] text-white rounded-full font-bold text-[18px] active:scale-95 transition-all mt-2"
+                  >
+                    Continue
+                  </button>
+                </motion.div>
+              ) : !showSearchInput ? (
                 <motion.div
                   key="confirm-view"
                   initial={{ opacity: 0, y: 10 }}
@@ -262,9 +318,17 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
                   exit={{ opacity: 0, y: -10 }}
                   className="flex flex-col gap-6"
                 >
-                  <p className="text-center text-[15px] font-medium text-neutral-600">
-                    Trouble locating your address?<br />Try using search instead
-                  </p>
+                  <div className="relative">
+                    <button 
+                      onClick={() => setShowSearchInput(false)}
+                      className="absolute -top-1 -left-2 p-2 text-neutral-400 hover:text-neutral-600 active:scale-90 transition-all"
+                    >
+                      <ChevronLeft size={20} />
+                    </button>
+                    <p className="text-center text-[15px] font-medium text-neutral-600">
+                      Trouble locating your address?<br />Try using search instead
+                    </p>
+                  </div>
 
                   <div
                     onClick={() => setActiveView('SEARCH')}
