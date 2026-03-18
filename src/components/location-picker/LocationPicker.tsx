@@ -222,7 +222,11 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
               onClick={radiusView ? () => setRadiusView(false) : onClose}
               className="w-9 h-9 bg-white rounded-full shadow-[0_2px_8px_rgba(0,0,0,0.15)] flex items-center justify-center active:scale-95 transition-transform"
             >
-              <ChevronLeft size={20} className="text-[#374151]" />
+              {radiusView ? (
+                <ChevronLeft size={20} className="text-[#374151]" />
+              ) : (
+                <X size={18} className="text-[#374151]" />
+              )}
             </button>
           </div>
           {/* GPS Locate Button */}

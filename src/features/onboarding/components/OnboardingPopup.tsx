@@ -1457,49 +1457,52 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                         {isMobile && <div className="w-10 h-1 bg-neutral-200 rounded-full mx-auto mt-4 mb-2 flex-shrink-0" />}
 
                         {/* Header */}
-                        {/* Header: Glovo Rider Style */}
-                        <div className="flex items-center justify-between px-6 pt-8 pb-4 flex-shrink-0 relative">
-                            <div className="w-12">
-                                {stepIndex > 0 && (
-                                    <motion.button
-                                        whileTap={{ scale: 0.9 }}
-                                        onClick={goBack}
-                                        className="w-10 h-10 flex items-center justify-center rounded-full bg-neutral-50 text-neutral-400 hover:text-neutral-900 transition-colors"
+                        {step !== 'base_location' && (
+                            <>
+                                <div className="flex items-center justify-between px-6 pt-8 pb-4 flex-shrink-0 relative">
+                                    <div className="w-12">
+                                        {stepIndex > 0 && (
+                                            <motion.button
+                                                whileTap={{ scale: 0.9 }}
+                                                onClick={goBack}
+                                                className="w-10 h-10 flex items-center justify-center rounded-full bg-neutral-50 text-neutral-400 hover:text-neutral-900 transition-colors"
+                                            >
+                                                <ChevronLeft size={24} strokeWidth={2.5} />
+                                            </motion.button>
+                                        )}
+                                    </div>
+
+                                    <h1 className="text-[19px] font-black text-neutral-900 tracking-tight">
+                                        {step === 'services'
+                                            ? t({ en: 'Start working', fr: 'Commencer à travailler', ar: 'ابدأ العمل' })
+                                            : step === 'profile'
+                                                ? t({ en: 'Your Profile', fr: 'Votre profil', ar: 'ملفك الشخصي' })
+                                                : step === 'availability'
+                                                    ? t({ en: 'Availability', fr: 'Disponibilité', ar: 'ساعات العمل' })
+                                                    : t({ en: 'Onboarding', fr: 'Intégration', ar: 'الإعداد' })}
+                                    </h1>
+
+                                    <button
+                                        onClick={onClose}
+                                        className="w-10 h-10 flex items-center justify-center rounded-full text-[#00A082] hover:bg-[#E6F6F2] transition-colors"
                                     >
-                                        <ChevronLeft size={24} strokeWidth={2.5} />
-                                    </motion.button>
-                                )}
-                            </div>
+                                        <X size={26} strokeWidth={2.5} />
+                                    </button>
+                                </div>
 
-                            <h1 className="text-[19px] font-black text-neutral-900 tracking-tight">
-                                {step === 'services'
-                                    ? t({ en: 'Start working', fr: 'Commencer à travailler', ar: 'ابدأ العمل' })
-                                    : step === 'profile'
-                                        ? t({ en: 'Your Profile', fr: 'Votre profil', ar: 'ملفك الشخصي' })
-                                        : step === 'availability'
-                                            ? t({ en: 'Availability', fr: 'Disponibilité', ar: 'ساعات العمل' })
-                                            : t({ en: 'Onboarding', fr: 'Intégration', ar: 'الإعداد' })}
-                            </h1>
-
-                            <button
-                                onClick={onClose}
-                                className="w-10 h-10 flex items-center justify-center rounded-full text-[#00A082] hover:bg-[#E6F6F2] transition-colors"
-                            >
-                                <X size={26} strokeWidth={2.5} />
-                            </button>
-                        </div>
-
-                        {/* Simple Progress Bar */}
-                        <div className="px-6 pb-2">
-                            <div className="h-1 w-full bg-neutral-100 rounded-full overflow-hidden">
-                                <motion.div
-                                    initial={{ width: 0 }}
-                                    animate={{ width: `${(stepIndex / (totalSteps - 1)) * 100}%` }}
-                                    className="h-full bg-[#00A082]"
-                                    transition={{ type: "spring", bounce: 0, duration: 0.5 }}
-                                />
-                            </div>
-                        </div>
+                                {/* Simple Progress Bar */}
+                                <div className="px-6 pb-2">
+                                    <div className="h-1 w-full bg-neutral-100 rounded-full overflow-hidden">
+                                        <motion.div
+                                            initial={{ width: 0 }}
+                                            animate={{ width: `${(stepIndex / (totalSteps - 1)) * 100}%` }}
+                                            className="h-full bg-[#00A082]"
+                                            transition={{ type: "spring", bounce: 0, duration: 0.5 }}
+                                        />
+                                    </div>
+                                </div>
+                            </>
+                        )}
 
                         {/* Content */}
                         <div ref={scrollContainerRef} className="flex-1 overflow-y-auto w-full relative z-[1]" style={{ paddingBottom: '70px', scrollbarWidth: 'none' }}>
@@ -2457,16 +2460,8 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
 
                                 {/* ── STEP: Base Location ── */}
                                 {step === 'base_location' && (
-                                    <div className="flex-1 flex flex-col min-h-0 bg-white">
-                                        <div className="p-6 md:p-10 border-b border-neutral-50 flex-shrink-0">
-                                            <h2 className="text-2xl md:text-3xl font-bold text-neutral-900 tracking-tight">
-                                                {t({ en: 'Where are you based?', fr: 'Où êtes-vous basé ?', ar: 'أين هو مقرك؟' })}
-                                            </h2>
-                                            <p className="text-neutral-500 text-[15px] font-medium leading-relaxed mt-2">
-                                                {t({ en: 'Clients near your location will find you first', fr: 'Les clients proches de vous vous trouveront en premier', ar: 'سيجدك العملاء الأقرب إلى موقعك أولاً' })}
-                                            </p>
-                                        </div>
-                                        <div className="flex-1 relative overflow-hidden h-[450px]">
+                                    <div className="absolute inset-0 z-[100] bg-white">
+                                        <div className="w-full h-full relative">
                                             <LocationPicker
                                                 mode="single"
                                                 serviceType="bricoler-base"
@@ -2679,7 +2674,7 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
 
                         {/* Footer */}
                         {
-                            step !== 'finish' && step !== 'google_signin' && (
+                            step !== 'finish' && step !== 'google_signin' && step !== 'base_location' && (
                                 <div className="p-4 md:p-6 pb-6 md:pb-8 bg-white border-t border-neutral-100 flex-shrink-0 shadow-[0_-8px_30px_rgba(0,0,0,0.04)]">
                                     <motion.button
                                         whileTap={{ scale: 0.98 }}
