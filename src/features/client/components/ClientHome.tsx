@@ -2,9 +2,9 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import {
-    MapPin, ChevronDown, Search, X
-} from 'lucide-react';
+import { MapPin, ChevronDown, Search, X } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { useOrder } from '@/context/OrderContext';
 import { cn } from '@/lib/utils';
 import { getServiceById } from '@/config/services_config';
 import { useLanguage } from '@/context/LanguageContext';
@@ -602,6 +602,8 @@ const ClientHome: React.FC<ClientHomeProps> = ({
     initialLocation,
 }) => {
     const { t, language } = useLanguage();
+    const router = useRouter();
+    const { setOrderField, resetOrder } = useOrder();
 
     const [lastCategoryId, setLastCategoryId] = useState<string | null>(null);
     const [searchQuery, setSearchQuery] = useState('');
@@ -1042,9 +1044,14 @@ const ClientHome: React.FC<ClientHomeProps> = ({
                                                         }}
                                                         whileTap={{ scale: 0.92 }}
                                                         onClick={() => {
-                                                            alert("Order flow is under maintenance. Please try again later.");
+                                                            resetOrder();
+                                                            setOrderField('serviceType', active.id);
+                                                            setOrderField('serviceName', active.label);
+                                                            setOrderField('subServiceId', (sub as any).id || sub.en); // Cast to any to access potential id, fallback to en
+                                                            setOrderField('subServiceName', t(sub));
+                                                            router.push('/order/step1');
                                                         }}
-                                                        className="px-4 py-2.5 rounded-full border border-[#E6E6E6] text-[15px] font-bold text-[#1D1D1D] bg-white hover:border-[#1D1D1D] active:bg-neutral-50 transition-colors shadow-[0_2px_8px_rgba(0,0,0,0.03)]"
+                                                        className="px-4 py-2.5 rounded-full border border-[#E6E6E6] text-[15px] font-bold text-[#1D1D1D] bg-white hover:border-[#1D1D1D] active:bg-neutral-50 transition-colors shadow-[0_2px_8_rgba(0,0,0,0.03)]"
                                                     >
                                                         {t(sub)}
                                                     </motion.button>

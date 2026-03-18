@@ -20,3 +20,15 @@ export async function reverseGeocode(lat: number, lng: number): Promise<string> 
     return `${lat.toFixed(3)}, ${lng.toFixed(3)}, Morocco`;
   }
 }
+export async function searchAddress(query: string): Promise<any[]> {
+  try {
+    const res = await fetch(
+      `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&addressdetails=1&limit=5&accept-language=fr,ar,en&countrycodes=ma`,
+      { headers: { 'User-Agent': 'Lbricol/1.0' } }
+    );
+    const data = await res.json();
+    return data || [];
+  } catch {
+    return [];
+  }
+}
