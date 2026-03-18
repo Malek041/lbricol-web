@@ -21,6 +21,7 @@ import OrderHistoryCarousel from '@/features/orders/components/OrderHistoryCarou
 import LanguagePreferencePopup from '@/features/onboarding/components/LanguagePreferencePopup';
 import MobileBottomNav from '@/components/layout/MobileBottomNav';
 import MessagesView from '@/features/messages/components/MessagesView';
+import ProfileView from '@/features/provider/components/ProfileView';
 import ComingSoon from '@/components/layout/ComingSoon';
 import ClientHome from '@/features/client/components/ClientHome';
 import OnboardingPopup from '@/features/onboarding/components/OnboardingPopup';
