@@ -40,4 +40,5 @@ export interface LocationPickerProps {
   isInline?: boolean;
   onConfirmRadius?: (radius: number) => void;
   initialRadius?: number;
+  pinImage?: string;
 }

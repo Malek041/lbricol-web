@@ -284,6 +284,7 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
 
     const [baseLat, setBaseLat] = useState<number | null>(userData?.base_lat || null);
     const [baseLng, setBaseLng] = useState<number | null>(userData?.base_lng || null);
+    const [baseAddress, setBaseAddress] = useState<string>(userData?.base_address || userData?.address || '');
     const [serviceRadiusKm, setServiceRadiusKm] = useState<number>(userData?.service_radius_km || 10);
 
     useEffect(() => {
@@ -675,6 +676,7 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                 workAreas: selectedAreas || [],
                 base_lat: baseLat,
                 base_lng: baseLng,
+                base_address: baseAddress,
                 service_radius_km: serviceRadiusKm,
                 updatedAt: serverTimestamp(),
                 createdAt: existingBricoler?.createdAt || (isClaimingShadow ? localUserData.createdAt : null) || serverTimestamp(),
@@ -1451,10 +1453,13 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                         initial={{ y: 20, opacity: 0 }}
                         animate={{ y: 0, opacity: 1 }}
                         exit={{ y: 20, opacity: 0 }}
-                        className="flex-1 flex flex-col h-full w-full max-w-[600px] mx-auto overflow-hidden bg-white"
+                        className={cn(
+                            "flex-1 flex flex-col h-full w-full mx-auto overflow-hidden bg-white",
+                            step !== 'base_location' && "max-w-[600px]"
+                        )}
                         onClick={e => e.stopPropagation()}
                     >
-                        {isMobile && <div className="w-10 h-1 bg-neutral-200 rounded-full mx-auto mt-4 mb-2 flex-shrink-0" />}
+                        {isMobile && step !== 'base_location' && <div className="w-10 h-1 bg-neutral-200 rounded-full mx-auto mt-4 mb-2 flex-shrink-0" />}
 
                         {/* Header */}
                         {step !== 'base_location' && (
@@ -1505,7 +1510,7 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                         )}
 
                         {/* Content */}
-                        <div ref={scrollContainerRef} className="flex-1 overflow-y-auto w-full relative z-[1]" style={{ paddingBottom: '70px', scrollbarWidth: 'none' }}>
+                        <div ref={scrollContainerRef} className="flex-1 overflow-y-auto w-full relative z-[1]" style={{ paddingBottom: step === 'base_location' ? '0' : '70px', scrollbarWidth: 'none' }}>
                             <AnimatePresence mode="wait" custom={direction}>
                                 {/* ── STEP: Language Selection ── */}
                                 {step === 'language' && (
@@ -2467,6 +2472,7 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                                                 serviceType="bricoler-base"
                                                 serviceIcon="📍"
                                                 autoLocate={true}
+                                                onClose={goBack}
                                                 isInline={true}
                                                 initialRadius={serviceRadiusKm}
                                                 onConfirmRadius={(radius) => {
@@ -2475,14 +2481,7 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                                                 onConfirm={({ pickup }) => {
                                                     setBaseLat(pickup.lat);
                                                     setBaseLng(pickup.lng);
-                                                    // Also update city from the address if possible:
-                                                    if (pickup.address) {
-                                                        const parts = pickup.address.split(',');
-                                                        const detectedCity = parts[parts.length - 2]?.trim();
-                                                        if (detectedCity && MOROCCAN_CITIES.includes(detectedCity as any)) {
-                                                            setSelectedCity(detectedCity);
-                                                        }
-                                                    }
+                                                    setBaseAddress(pickup.address);
                                                     setDirection(1);
                                                     setStepIndex(s => s + 1);
                                                 }}
@@ -2567,9 +2566,9 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                                             </div>
 
                                             <div className="space-y-4">
-                                                <div className="flex items-center gap-2 text-neutral-600 font-bold text-[15px] bg-white/50 backdrop-blur-sm px-4 py-2 rounded-[8px] w-fit">
-                                                    <MapPin size={18} className="text-[#0CB380]" />
-                                                    {mode === 'onboarding' ? selectedCity : (userData?.city || selectedCity)}
+                                                <div className="flex items-center gap-2 text-neutral-600 font-bold text-[15px] bg-white/50 backdrop-blur-sm px-4 py-2 rounded-[8px] w-fit italic opacity-50">
+                                                    <MapPin size={18} className="text-neutral-400" />
+                                                    {baseAddress || "Location set"}
                                                 </div>
                                                 <div className="flex flex-wrap gap-2">
                                                     {selectedSubServices.map(id => {

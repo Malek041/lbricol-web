@@ -12,7 +12,7 @@ import { ReviewsScrollingSection } from './ReviewsScrollingSection';
 import { ClientOnboarding } from './ClientOnboarding';
 import SplashScreen from '@/components/layout/SplashScreen';
 import CompactHomeMap from '@/components/shared/CompactHomeMap';
-import OrderSubmissionFlow from '@/features/orders/components/OrderSubmissionFlow';
+
 
 // ── Palette ────────────────────────────────────────────────────────────────
 const G_GREEN = '#00A082';
@@ -608,13 +608,6 @@ const ClientHome: React.FC<ClientHomeProps> = ({
     const [showReferralBanner, setShowReferralBanner] = useState(false);
     const [showBricolerUpsell, setShowBricolerUpsell] = useState(false);
 
-    const [orderFlowData, setOrderFlowData] = useState<{ service: string; subService?: string } | null>(null);
-    const [mapBreadcrumb, setMapBreadcrumb] = useState<{ serviceName: string; subServiceName?: string; serviceEmoji: string; step: number } | null>(null);
-    const [backSignal, setBackSignal] = useState(0);
-
-    const handleMapUpdate = React.useCallback((data: any) => {
-        setMapBreadcrumb(data);
-    }, []);
 
     // Initial load
     useEffect(() => {
@@ -789,70 +782,31 @@ const ClientHome: React.FC<ClientHomeProps> = ({
     return (
         <div className={cn(
             "fixed inset-0 bg-white flex flex-col overflow-hidden h-[100dvh] w-screen font-jakarta",
-            (orderFlowData && mapBreadcrumb?.step === 1) ? "z-[4000]" : "z-0"
+            "z-0"
         )}>
             {/* 1. Map Background (Dynamic Height for Step 1) */}
             <div className={cn(
                 "w-full relative bg-neutral-100 overflow-hidden transition-all duration-500 ease-in-out",
-                (orderFlowData && mapBreadcrumb?.step === 1) ? "flex-1" : "h-[42vh] flex-shrink-0"
+                "h-[42vh] flex-shrink-0"
             )}>
                 <CompactHomeMap
                     city={selectedCity}
                     area={selectedArea}
                     onInteract={onChangeLocation}
                     initialLocation={initialLocation || undefined}
-                    serviceName={mapBreadcrumb?.serviceName}
-                    subServiceName={mapBreadcrumb?.subServiceName}
-                    serviceEmoji={mapBreadcrumb?.serviceEmoji}
-                    onCloseFlow={orderFlowData ? () => {
-                        setOrderFlowData(null);
-                        setMapBreadcrumb(null);
-                    } : undefined}
-                    onBack={orderFlowData ? () => setBackSignal(Date.now()) : undefined}
                     className="h-full rounded-none border-none shadow-none"
-                    isFlowActive={!!orderFlowData && mapBreadcrumb?.step === 1}
+                    isFlowActive={false}
                 />
             </div>
 
             {/* 2. Bottom Sheet Container */}
             <div className={cn(
                 "bg-white relative flex flex-col overflow-hidden rounded-t-[32px] z-10 shadow-[0_-12px_40px_rgba(0,0,0,0.08)] transition-all duration-500 ease-in-out shrink-0",
-                (orderFlowData && mapBreadcrumb?.step === 1) ? "-mt-10 pb-4" : "flex-1 -mt-16"
+                "flex-1 -mt-16"
             )}>
 
                 <AnimatePresence mode="wait">
-                    {orderFlowData ? (
-                        <motion.div
-                            key="order-flow"
-                            initial={{ x: 20, opacity: 0 }}
-                            animate={{ x: 0, opacity: 1 }}
-                            exit={{ x: -20, opacity: 0 }}
-                            transition={{ duration: 0.3 }}
-                            className="flex-1 flex flex-col overflow-hidden"
-                        >
-                            <OrderSubmissionFlow
-                                key={`order-flow-${orderFlowData.service}-${orderFlowData.subService}`}
-                                isOpen={true}
-                                isInline={true}
-                                service={orderFlowData.service}
-                                subService={orderFlowData.subService}
-                                initialCity={selectedCity}
-                                initialArea={selectedArea}
-                                onMapUpdate={handleMapUpdate}
-                                backSignal={backSignal}
-                                onSubmit={(data) => {
-                                    // Order submitted successfully
-                                    setOrderFlowData(null);
-                                    setMapBreadcrumb(null);
-                                }}
-                                onClose={() => {
-                                    setOrderFlowData(null);
-                                    setMapBreadcrumb(null);
-                                }}
-                            />
-                        </motion.div>
-                    ) : (
-                        <motion.div
+                    <motion.div
                             key="services-list"
                             initial={{ x: -20, opacity: 0 }}
                             animate={{ x: 0, opacity: 1 }}
@@ -1088,9 +1042,7 @@ const ClientHome: React.FC<ClientHomeProps> = ({
                                                         }}
                                                         whileTap={{ scale: 0.92 }}
                                                         onClick={() => {
-                                                            localStorage.setItem('last_service_category', active.id);
-                                                            const serviceId = active.id === '__trending__' ? (sub as any).parentServiceId : active.id;
-                                                            setOrderFlowData({ service: serviceId, subService: sub.en });
+                                                            alert("Order flow is under maintenance. Please try again later.");
                                                         }}
                                                         className="px-4 py-2.5 rounded-full border border-[#E6E6E6] text-[15px] font-bold text-[#1D1D1D] bg-white hover:border-[#1D1D1D] active:bg-neutral-50 transition-colors shadow-[0_2px_8px_rgba(0,0,0,0.03)]"
                                                     >
@@ -1126,7 +1078,6 @@ const ClientHome: React.FC<ClientHomeProps> = ({
                                 <ReviewsScrollingSection />
                             </div>
                         </motion.div>
-                    )}
                 </AnimatePresence>
             </div>
 

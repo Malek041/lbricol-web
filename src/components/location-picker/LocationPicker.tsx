@@ -35,6 +35,7 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
   isInline = false,
   onConfirmRadius,
   initialRadius = 10,
+  pinImage,
 }) => {
   // Views & State
   const [activeView, setActiveView] = useState<PickerView>('MAP');
@@ -85,7 +86,7 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
   const handleConfirmPoint = () => {
     if (!currentPoint) return;
     setIsManualSelection(true);
-    
+
     if (isBricolerBase) {
       if (onConfirmRadius) {
         setRadiusView(true);
@@ -121,7 +122,7 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
     const point = { lat: addr.lat, lng: addr.lng, address: addr.address };
     setIsManualSelection(true);
     setFlyToPoint(point);
-    
+
     if (mode === 'single') {
       onConfirm({ pickup: point, savedAddress: addr });
     } else {
@@ -198,9 +199,10 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
     )}>
       {/* 1. Map Area (Fixed Height) */}
       <div
-        className={`relative bg-neutral-100 overflow-hidden transition-all duration-500 ease-in-out z-0 shrink-0 ${
-          isInteracting ? 'h-[75%]' : (isBricolerBase ? 'h-[82%]' : 'h-[48%]')
-        }`}
+        className={cn(
+          "relative bg-neutral-100 overflow-hidden transition-all duration-500 ease-in-out z-0 shrink-0",
+          isInteracting ? 'h-[75%]' : (radiusView ? 'h-[58%]' : (isBricolerBase ? 'h-[82%]' : 'h-[48%]'))
+        )}
       >
         {/* Full-screen under-layer map */}
         <div className="absolute top-0 left-0 w-full h-[100dvh]">
@@ -264,12 +266,18 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
                       How far are you willing to travel for tasks?
                     </p>
                   </div>
-                  
+
                   <div className="grid grid-cols-5 gap-2">
                     {[3, 5, 10, 20, 50].map(radius => (
                       <button
                         key={radius}
-                        onClick={() => setSelectedRadius(radius)}
+                        onClick={() => {
+                          setSelectedRadius(radius);
+                          if (currentPoint) {
+                            onConfirm({ pickup: currentPoint });
+                            onConfirmRadius?.(radius);
+                          }
+                        }}
                         className={cn(
                           "py-3 rounded-[12px] border-2 text-center transition-all flex flex-col items-center justify-center",
                           selectedRadius === radius ? 'bg-[#E6F6F2] text-[#00A082] border-[#00A082]' : 'bg-white text-neutral-900 border-neutral-100 hover:border-neutral-200'
@@ -281,17 +289,6 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
                     ))}
                   </div>
 
-                  <button
-                    onClick={() => {
-                      if (currentPoint) {
-                        onConfirm({ pickup: currentPoint });
-                        onConfirmRadius?.(selectedRadius);
-                      }
-                    }}
-                    className="w-full h-13 bg-[#00A082] text-white rounded-full font-bold text-[18px] active:scale-95 transition-all mt-2"
-                  >
-                    Continue
-                  </button>
                 </motion.div>
               ) : !showSearchInput ? (
                 <motion.div
@@ -303,13 +300,13 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
                 >
                   <button
                     onClick={handleConfirmPoint}
-                    className="w-full h-13 bg-[#00A082] text-white rounded-full font-bold text-[18px] active:scale-95 transition-all"
+                    className="w-full h-15 bg-[#00A082] text-white rounded-full font-black text-[18px] active:scale-95 transition-all shadow-lg"
                   >
                     Confirm This Location
                   </button>
                   <button
                     onClick={() => setShowSearchInput(true)}
-                    className="w-full py-2 text-[#00A082] font-bold text-[18px] hover:bg-neutral-50 rounded-[12px] transition-all"
+                    className="w-full mt-4 text-[#00A082] font-bold text-[18px] transition-all"
                   >
                     Set Another address
                   </button>
@@ -323,7 +320,7 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
                   className="flex flex-col gap-6"
                 >
                   <div className="relative">
-                    <button 
+                    <button
                       onClick={() => setShowSearchInput(false)}
                       className="absolute -top-1 -left-2 p-2 text-neutral-400 hover:text-neutral-600 active:scale-90 transition-all"
                     >
@@ -365,9 +362,18 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
       </div>
 
       {/* 3. TRULY FIXED PIN & CALLOUT — Always in visual center of initial view */}
-      <div 
-        className="fixed left-1/2 -translate-x-1/2 pointer-events-none z-[6001] transition-all duration-500 ease-in-out"
+      <motion.div
+        className={cn(
+          "left-1/2 -translate-x-1/2 pointer-events-none z-[6001] transition-all duration-500 ease-in-out",
+          isInline ? "absolute" : "fixed"
+        )}
         style={{ top: '30%' }}
+        animate={{ y: [0, -12, 0] }}
+        transition={{
+          duration: 2.5,
+          repeat: Infinity,
+          ease: "easeInOut"
+        }}
       >
         <div className="relative">
           {/* The Address Bubble (appears above the pin) */}
@@ -384,13 +390,13 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
           {/* The Pin Image - anchored at the bottom-center point */}
           <div className="absolute bottom-0 left-1/2 -translate-x-1/2 flex justify-center w-[45px]">
             <img
-              src="/Images/map Assets/LocationPin.png"
+              src={pinImage || "/Images/map Assets/LocationPin.png"}
               alt="Pin"
               className="w-full h-auto drop-shadow-lg"
             />
           </div>
         </div>
-      </div>
+      </motion.div>
 
       <style jsx global>{`
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');

@@ -146,24 +146,8 @@ const CompactHomeMap: React.FC<CompactHomeMapProps> = ({
                 </div>
             )}
 
-            {/* Service Breadcrumb Pill (Pic 2/3 style) - HIDDEN during flow to match Pic 2 */}
-            <AnimatePresence>
-                {serviceName && !isFlowActive && (
-                    <div className="absolute bottom-44 left-6 right-20 z-[900]">
-                        <motion.div
-                            initial={{ scale: 0.9, opacity: 0, y: 10 }}
-                            animate={{ scale: 1, opacity: 1, y: 0 }}
-                            exit={{ scale: 0.9, opacity: 0, y: 10 }}
-                            className="bg-[#FEF9C3] rounded-full px-4 py-2.5 shadow-lg flex items-center gap-2.5 border border-[#FEF08A] backdrop-blur-sm pointer-events-none"
-                        >
-                            <span className="text-lg">{serviceEmoji}</span>
-                            <span className="text-[13px] font-bold text-[#854D0E] whitespace-nowrap overflow-hidden text-ellipsis">
-                                {serviceName} {subServiceName ? `› ${subServiceName}` : ''}
-                            </span>
-                        </motion.div>
-                    </div>
-                )}
-            </AnimatePresence>
+            {/* Service Breadcrumb Pill removed */}
+
 
             {/* Bottom Right Actions */}
             <div className={cn(

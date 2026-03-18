@@ -21,10 +21,10 @@ import OrderHistoryCarousel from '@/features/orders/components/OrderHistoryCarou
 import LanguagePreferencePopup from '@/features/onboarding/components/LanguagePreferencePopup';
 import MobileBottomNav from '@/components/layout/MobileBottomNav';
 import MessagesView from '@/features/messages/components/MessagesView';
-import ProfileView from '@/features/provider/components/ProfileView';
+import ComingSoon from '@/components/layout/ComingSoon';
 import ClientHome from '@/features/client/components/ClientHome';
 import OnboardingPopup from '@/features/onboarding/components/OnboardingPopup';
-import OrderSubmissionFlow, { DraftOrder } from '@/features/orders/components/OrderSubmissionFlow';
+
 import AdminDashboard from '@/features/admin/components/AdminDashboard';
 import AdminOrdersView from '@/features/orders/components/AdminOrdersView';
 import AdminBricolerCreator from '@/features/admin/components/AdminBricolerCreator';
@@ -272,7 +272,7 @@ const Home = () => {
   const [activeSearchSection, setActiveSearchSection] = useState<string | null>(null);
   const [serviceSearchQuery, setServiceSearchQuery] = useState('');
   const [showAllServices, setShowAllServices] = useState(false);
-  const [showOrderFlow, setShowOrderFlow] = useState(false);
+
   const [availableServices, setAvailableServices] = useState<string[]>([]);
   const [availableSubServices, setAvailableSubServices] = useState<string[]>([]);
   const [isBricoler, setIsBricoler] = useState(false);
@@ -347,7 +347,7 @@ const Home = () => {
   const [newlyProgrammedOrderId, setNewlyProgrammedOrderId] = useState<string | null>(null);
   const [heroImageIndex, setHeroImageIndex] = useState(0);
   const [showHistoryInOrders, setShowHistoryInOrders] = useState(false);
-  const [selectedDraft, setSelectedDraft] = useState<DraftOrder | null>(null);
+
 
   // Handle Splash Dismissal based on data syncing
   useEffect(() => {
@@ -420,7 +420,7 @@ const Home = () => {
   const [showAuthPopup, setShowAuthPopup] = useState(false);
   const [authIntent, setAuthIntent] = useState<'bricoler' | 'program_order' | 'login_only' | null>(null);
   const [showClientWhatsAppPopup, setShowClientWhatsAppPopup] = useState(false);
-  const [pendingQuickOrder, setPendingQuickOrder] = useState<any>(null);
+
   const [cityServices, setCityServices] = useState<string[]>([]);
   const [citySubServices, setCitySubServices] = useState<string[]>([]);
   const [popularServiceIds, setPopularServiceIds] = useState<string[]>([]);
@@ -541,15 +541,7 @@ const Home = () => {
       setShowClientOnboarding(true);
     }
 
-    // RESTORE PENDING ORDER after auth redirect (mobile hack)
-    const savedPending = localStorage.getItem('lbricol_pending_quick_order');
-    if (savedPending) {
-      try {
-        setPendingQuickOrder(JSON.parse(savedPending));
-      } catch (e) {
-        console.error("Error parsing saved pending order:", e);
-      }
-    }
+
 
     setMounted(true);
   }, []);
@@ -1378,6 +1370,8 @@ const Home = () => {
   const daysInMonth = new Date(year, calendarDate.getMonth() + 1, 0).getDate();
   const startDay = new Date(year, calendarDate.getMonth(), 1).getDay();
 
+
+
   const nextMonth = () => setCalendarDate(new Date(year, calendarDate.getMonth() + 1, 1));
   const prevMonth = () => setCalendarDate(new Date(year, calendarDate.getMonth() - 1, 1));
 
@@ -2070,12 +2064,7 @@ const Home = () => {
         }
       }
 
-      if (pendingQuickOrder) {
-        const data = { ...pendingQuickOrder };
-        setPendingQuickOrder(null);
-        await handleQuickOrderSubmit(data, whatsappNumber, currentUser || undefined);
-        return;
-      }
+
 
       // Retry order programming IMMEDIATELY with the new number
       handleProgramOrder(currentUser || undefined, whatsappNumber);
@@ -2232,215 +2221,7 @@ const Home = () => {
     }
   };
 
-  const handleQuickOrderSubmit = async (data: any, whatsappOverride?: string, userOverride?: FirebaseUser) => {
-    console.log("[handleQuickOrderSubmit] Starting flow submission", data);
-    const effectiveUser = userOverride || currentUser;
-    if (!effectiveUser) {
-      setPendingQuickOrder(data);
-      localStorage.setItem('lbricol_pending_quick_order', JSON.stringify(data));
-      setShowAuthPopup(true);
-      return;
-    }
 
-    const effectiveWhatsApp = whatsappOverride || userData?.whatsappNumber || data.clientWhatsApp || "";
-    if (!effectiveWhatsApp) {
-      setPendingQuickOrder(data);
-      localStorage.setItem('lbricol_pending_quick_order', JSON.stringify(data));
-      setShowClientWhatsAppPopup(true);
-      return;
-    }
-
-    // Association Check: if we found a WA but it's not in userData yet, associate it
-    if (effectiveWhatsApp && effectiveUser && !userData?.whatsappNumber) {
-      setDoc(doc(db, 'users', effectiveUser.uid), { whatsappNumber: effectiveWhatsApp }, { merge: true }).catch(console.error);
-      setDoc(doc(db, 'clients', effectiveUser.uid), { whatsappNumber: effectiveWhatsApp }, { merge: true }).catch(console.error);
-    }
-
-    setIsProgramming(true);
-    try {
-      const {
-        service, subService, taskSize, description, bricolerId,
-        bricolerName, bricolerAvatar, bricolerRating, bricolerRank, bricolerJobsCount,
-        city, area, date, time, totalPrice, basePrice, serviceFee,
-        frequency, images, paymentMethod, bankReceipt,
-        carReturnDate, carReturnTime, selectedCar
-      } = data;
-
-      let finalTotalPrice = totalPrice || 0;
-      let usedDiscount = 0;
-
-      // Check if we should apply a referral discount
-      try {
-        const userRef = doc(db, 'users', effectiveUser.uid);
-        const userSnap = await getDoc(userRef);
-        if (userSnap.exists() && userSnap.data().referralDiscountAvailable) {
-          usedDiscount = userSnap.data().referralDiscountAvailable;
-          if (!data.referralApplied) {
-            finalTotalPrice = Math.max(0, finalTotalPrice * 0.85);
-          }
-          await updateDoc(userRef, { referralDiscountAvailable: increment(-15) });
-
-          const referrerId = userSnap.data().referredBy;
-          if (referrerId) {
-            const referrerRef = doc(db, 'users', referrerId);
-            const referrerSnap = await getDoc(referrerRef);
-            if (referrerSnap.exists()) {
-              const rData = referrerSnap.data();
-              if (rData.isProvider) {
-                await updateDoc(referrerRef, { bricolerReferralBalance: increment(15) });
-              } else {
-                await updateDoc(referrerRef, { referralBalance: increment(15) });
-              }
-            }
-          }
-          await updateDoc(userRef, { referralRewardIssued: true });
-
-        }
-      } catch (e) {
-        console.warn("Could not check referral discount in quick order:", e);
-      }
-
-      const jobData = {
-
-        clientId: effectiveUser.uid,
-        clientName: effectiveUser.displayName || "Anonymous",
-        clientAvatar: effectiveUser.photoURL || "",
-        service: service || "General",
-        subService: subService || null,
-        subServiceDisplayName: subService ? (data.subServiceName || subService) : null,
-        selectedCar: selectedCar || null,
-        date: date || new Date().toLocaleDateString('default', { month: 'long', day: 'numeric', year: 'numeric' }),
-        time: time || "As soon as possible",
-        carReturnDate: carReturnDate || null,
-        carReturnTime: carReturnTime || null,
-        status: bricolerId && bricolerId !== 'open' ? 'programmed' : 'new',
-        offers: [],
-        bricolerId: bricolerId || null,
-        bricolerName: bricolerName || null,
-        bricolerAvatar: bricolerAvatar || null,
-        bricolerRating: bricolerRating || null,
-        bricolerRank: bricolerRank || null,
-        bricolerJobsCount: bricolerJobsCount || null,
-        bricolerWhatsApp: data.bricolerWhatsApp || null,
-        offeredTo: bricolerId && bricolerId !== 'open' ? [bricolerId] : [],
-        city: city || "",
-        area: area || "",
-        createdAt: serverTimestamp(),
-        title: service || "New Job",
-        description: description || "",
-        taskSize: taskSize || "medium",
-        clientWhatsApp: effectiveWhatsApp || "",
-        bricolersCount: 1,
-        price: finalTotalPrice || 0,
-        basePrice: finalTotalPrice ? (finalTotalPrice / 1.15) : 0,
-        serviceFee: finalTotalPrice ? (finalTotalPrice - (finalTotalPrice / 1.15)) : 0,
-        totalPrice: finalTotalPrice || 0,
-        frequency: frequency || 'once',
-        images: images || [],
-        paymentMethod: paymentMethod || 'cash',
-        bankReceipt: bankReceipt || null
-      };
-
-      if (frequency && frequency !== 'once') {
-        const baseDate = date && date !== 'Flexible' ? new Date(date) : new Date();
-        const nextDate = new Date(baseDate);
-        if (frequency === 'daily') nextDate.setDate(nextDate.getDate() + 1);
-        else if (frequency === 'weekly') nextDate.setDate(nextDate.getDate() + 7);
-        else if (frequency === 'biweekly') nextDate.setDate(nextDate.getDate() + 14);
-        else if (frequency === 'monthly') nextDate.setMonth(nextDate.getMonth() + 1);
-        (jobData as any).nextRunDate = nextDate.toISOString();
-      }
-
-      // Upload images synchronously before saving — isProgramming/SplashScreen is already showing.
-      // Each upload races against a 60s timeout so a single slow upload can't hang the flow.
-      if (jobData.images && jobData.images.length > 0) {
-        const uploadPromises = (jobData.images as string[]).map(async (img: string, idx: number) => {
-          if (!isImageDataUrl(img)) return img; // already a URL, keep as-is
-          try {
-            const blob = await dataUrlToBlob(img);
-            const path = `orders/${effectiveUser.uid}/${Date.now()}_${idx}.jpg`;
-            const storageRef = ref(storage, path);
-            const result = await Promise.race([
-              uploadBytes(storageRef, blob, { contentType: blob.type || 'image/jpeg' }).then(() => getDownloadURL(storageRef)),
-              new Promise<null>((_, reject) => setTimeout(() => reject(new Error('IMAGE_UPLOAD_TIMEOUT')), 60000))
-            ]);
-            return result;
-          } catch (err) {
-            console.error(`Order image upload failed (idx ${idx}):`, err);
-            return null; // skip failed images, don't block the order
-          }
-        });
-        const resolved = await Promise.all(uploadPromises);
-        jobData.images = resolved.filter(Boolean) as string[];
-      }
-
-      // Check and upload bank receipt if it's a data URL
-      if (jobData.bankReceipt && isImageDataUrl(jobData.bankReceipt)) {
-        try {
-          const blob = await dataUrlToBlob(jobData.bankReceipt);
-          const path = `receipts/${effectiveUser.uid}/${Date.now()}_receipt.jpg`;
-          const storageRef = ref(storage, path);
-          const uploadPromise = uploadBytes(storageRef, blob, { contentType: 'image/jpeg' }).then(() => getDownloadURL(storageRef));
-          const timeoutPromise = new Promise<string>((_, reject) => setTimeout(() => reject(new Error('IMAGE_UPLOAD_TIMEOUT')), 30000));
-          jobData.bankReceipt = await Promise.race([uploadPromise, timeoutPromise]);
-        } catch (err) {
-          console.error("Failed to upload pending data URL receipt", err);
-          jobData.bankReceipt = null;
-        }
-      }
-
-      const docRef = await addDoc(collection(db, 'jobs'), jobData);
-      console.log("Quick Job saved with ID:", docRef.id);
-
-      // Activity Log
-      await addDoc(collection(db, 'activity'), {
-        type: 'new_order',
-        clientId: effectiveUser.uid,
-        service: service || "General",
-        city: city || selectedCity || "",
-        jobId: docRef.id,
-        timestamp: serverTimestamp()
-      });
-
-      confetti({
-        particleCount: 150,
-        spread: 70,
-        origin: { y: 0.6 }
-      });
-
-      showToast({
-        variant: 'success',
-        title: t({ en: "Mission Posted!", fr: "Mission Publiée !" }),
-        description: t({ en: "Pros are being notified.", fr: "Les pros sont prévenus." })
-      });
-
-      setShowOrderFlow(false);
-      setSelectedOrderId(docRef.id);
-
-      // GUARANTEE CLIENT STATUS
-      await setDoc(doc(db, 'clients', effectiveUser.uid), {
-        uid: effectiveUser.uid,
-        name: effectiveUser.displayName,
-        email: effectiveUser.email,
-        whatsappNumber: effectiveWhatsApp,
-        userType: 'client',
-        createdAt: serverTimestamp()
-      }, { merge: true });
-
-      if (isMobile) {
-        setMobileNavTab('calendar');
-      } else {
-        setShowFloatingCalendar(true);
-        setIsCalendarExpanded(true);
-      }
-
-    } catch (error: any) {
-      console.error("Error in Quick Order Submit:", error);
-      showToast({ variant: 'error', title: t({ en: "Failed to post mission.", fr: "Échec de la publication de la mission." }) });
-    } finally {
-      setIsProgramming(false);
-    }
-  };
 
 
   const [isLoggingIn, setIsLoggingIn] = useState(false);
@@ -2542,6 +2323,12 @@ const Home = () => {
   };
 
   const isFullscreenMobileTab = isMobile && ['home', 'profile', 'share', 'promocodes', 'calendar', 'messages', 'heroes'].includes(mobileNavTab);
+
+  // --- PAUSE DEPLOYMENT ---
+  const isMaintenanceMode = true; // Set to false to bypass during development
+  if (isMaintenanceMode) {
+    return <ComingSoon />;
+  }
 
   return (
     <div style={{ backgroundColor: c.bg, color: c.text, minHeight: '100vh', scrollBehavior: 'smooth' }} className="font-sans">
@@ -2652,13 +2439,8 @@ const Home = () => {
                     setSelectedOrderId(jobId);
                   }}
                   initialShowHistory={showHistoryInOrders}
-                  onResumeDraft={(draft: DraftOrder) => {
-                    setService(draft.service);
-                    setSubService(draft.subService || '');
-                    setSelectedCity(draft.city || null);
-                    setSelectedArea(draft.area || null);
-                    setSelectedDraft(draft);
-                    setShowOrderFlow(true);
+                   onResumeDraft={() => {
+                    alert("Drafts currently disabled");
                   }}
                 />
               )
@@ -2869,8 +2651,7 @@ const Home = () => {
                   }
                   setService(finalSvc);
                   setSubService(finalSub);
-                  setSelectedDraft(null);
-                  setShowOrderFlow(true);
+                  alert("Order flow is under maintenance. Please try again later.");
                 }}
                 availableServiceIds={availableServices.length > 0 ? availableServices : cityServices}
                 availableSubServiceIds={availableSubServices.length > 0 ? availableSubServices : citySubServices}
@@ -2916,8 +2697,7 @@ const Home = () => {
                   onOrderClick={(serviceId) => {
                     setService(serviceId || "");
                     setSubService(null);
-                    setSelectedDraft(null);
-                    setShowOrderFlow(true);
+                    alert("Order flow is under maintenance. Please try again later.");
                   }}
                   onBecomeBricolerClick={() => {
                     if (currentUser && isBricoler) {
@@ -3418,16 +3198,8 @@ const Home = () => {
                   return;
                 }
 
-                if (authIntent === 'program_order' || !authIntent) {
-                  const pendingData = pendingQuickOrder || (localStorage.getItem('lbricol_pending_quick_order') ? JSON.parse(localStorage.getItem('lbricol_pending_quick_order')!) : null);
-
-                  if (pendingData) {
-                    setPendingQuickOrder(null);
-                    localStorage.removeItem('lbricol_pending_quick_order');
-                    handleQuickOrderSubmit(pendingData, result.userData?.whatsappNumber, result.user);
-                  } else {
-                    handleProgramOrder(result.user, result.userData?.whatsappNumber);
-                  }
+                 if (authIntent === 'program_order' || !authIntent) {
+                  handleProgramOrder(result.user, result.userData?.whatsappNumber);
                   setAuthIntent(null);
                 }
               }, 400);
@@ -3702,23 +3474,6 @@ const Home = () => {
           }}
         />
 
-        <OrderSubmissionFlow
-          isOpen={showOrderFlow}
-          onClose={() => {
-            setShowOrderFlow(false);
-            setSelectedDraft(null);
-          }}
-          service={service}
-          subService={subService || undefined}
-          initialCity={selectedCity}
-          initialArea={selectedArea}
-          onSubmit={handleQuickOrderSubmit}
-          continueDraft={selectedDraft}
-          onRequireLogin={() => {
-            setAuthIntent('program_order');
-            setShowAuthPopup(true);
-          }}
-        />
 
       </main>
     </div>

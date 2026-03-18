@@ -37,9 +37,12 @@ const MapView: React.FC<MapViewProps> = ({
   const gpsMarkerRef = useRef<L.Marker | null>(null);
   const [address, setAddress] = useState<string>('Loading address...');
   const [mapReady, setMapReady] = useState(false);
+  const mapReadyTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const flyToTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
+
   const flyToWithOffset = (lat: number, lng: number, zoom = 17) => {
-    if (!mapRef.current) return;
+    if (!mapRef.current || !mapRef.current.getContainer()) return;
     const map = mapRef.current;
     
     const mapSize = map.getSize();
@@ -54,9 +57,11 @@ const MapView: React.FC<MapViewProps> = ({
     
     map.flyTo(centerLatLng, zoom, { duration: 1.5 });
     
-    // Ensure map tiles load correctly after flying/resizing
-    setTimeout(() => {
-      map.invalidateSize();
+    if (flyToTimeoutRef.current) clearTimeout(flyToTimeoutRef.current);
+    flyToTimeoutRef.current = setTimeout(() => {
+      if (mapRef.current && mapRef.current.getContainer()) {
+        mapRef.current.invalidateSize();
+      }
     }, 400);
   };
 
@@ -138,8 +143,9 @@ const MapView: React.FC<MapViewProps> = ({
     mapRef.current = map;
 
     // Set initial view with offset
-    setTimeout(() => {
-      if (mapRef.current) {
+    if (mapReadyTimeoutRef.current) clearTimeout(mapReadyTimeoutRef.current);
+    mapReadyTimeoutRef.current = setTimeout(() => {
+      if (mapRef.current && mapRef.current.getContainer()) {
         const mapSize = mapRef.current.getSize();
         if (mapSize.x > 0) {
           const centerPoint = L.point(mapSize.x / 2, mapSize.y / 2);
@@ -186,7 +192,7 @@ const MapView: React.FC<MapViewProps> = ({
 
     // Handle container resize (e.g. from height transition in parent)
     const resizeObserver = new ResizeObserver(() => {
-        if (mapRef.current) {
+        if (mapRef.current && mapRef.current.getContainer()) {
             mapRef.current.invalidateSize();
         }
     });
@@ -196,6 +202,10 @@ const MapView: React.FC<MapViewProps> = ({
 
     return () => {
         resizeObserver.disconnect();
+        if (mapReadyTimeoutRef.current) clearTimeout(mapReadyTimeoutRef.current);
+        if (flyToTimeoutRef.current) clearTimeout(flyToTimeoutRef.current);
+        if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
+        
         if (mapRef.current) {
             mapRef.current.remove();
             mapRef.current = null;
