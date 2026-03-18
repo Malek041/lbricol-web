@@ -2326,7 +2326,8 @@ const Home = () => {
   const isFullscreenMobileTab = isMobile && ['home', 'profile', 'share', 'promocodes', 'calendar', 'messages', 'heroes'].includes(mobileNavTab);
 
   // --- PAUSE DEPLOYMENT ---
-  const isMaintenanceMode = true; // Set to false to bypass during development
+  // isMaintenanceMode is true in production, but false in local development to allow oversight.
+  const isMaintenanceMode = process.env.NODE_ENV === 'production'; 
   if (isMaintenanceMode) {
     return <ComingSoon />;
   }
