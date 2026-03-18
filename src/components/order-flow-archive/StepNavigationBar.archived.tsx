@@ -1,3 +1,4 @@
+// @ts-nocheck
 // ARCHIVED — do not import this file in active pages.
 // Extracted from: src/features/orders/components/ServiceFlowLayout.tsx (March 2026)
 // Use as reference when rebuilding the order flow from scratch.
