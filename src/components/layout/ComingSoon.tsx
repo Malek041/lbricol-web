@@ -1,5 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
+import Image from 'next/image';
 
 const ComingSoon: React.FC = () => {
   const images = [
@@ -31,7 +32,7 @@ const ComingSoon: React.FC = () => {
           {doubledImages.map((src, idx) => (
             <div
               key={idx}
-              className="w-[280px] h-[480px] rounded-[20px] overflow-hidden  shrink-0 "
+              className="w-[280px] h-[380px] rounded-[20px] overflow-hidden  shrink-0 "
             >
               <img
                 src={src}
