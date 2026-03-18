@@ -32,12 +32,16 @@ const ComingSoon: React.FC = () => {
           {doubledImages.map((src, idx) => (
             <div
               key={idx}
-              className="w-[280px] h-[380px] rounded-[20px] overflow-hidden  shrink-0 "
+              className="w-[280px] h-[480px] rounded-[20px] overflow-hidden shrink-0 relative"
             >
-              <img
+              <Image
                 src={src}
                 alt={`Splash ${idx}`}
-                className="w-full h-full object-cover"
+                fill
+                priority={idx < 4}
+                quality={80}
+                sizes="280px"
+                className="object-cover"
               />
             </div>
           ))}
