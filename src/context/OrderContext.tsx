@@ -15,6 +15,7 @@ interface OrderState {
   location: LocationPoint | null;
   providerId: string | null;
   providerName: string | null;
+  providerRate: number | null;
   scheduledDate: string | null;
   scheduledTime: string | null;
 }
@@ -33,6 +34,7 @@ const defaultOrder: OrderState = {
   location: null,
   providerId: null,
   providerName: null,
+  providerRate: null,
   scheduledDate: null,
   scheduledTime: null,
 };
