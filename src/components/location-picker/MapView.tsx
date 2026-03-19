@@ -32,6 +32,7 @@ interface MapViewProps {
   serviceIconUrl?: string; // e.g. from service category
   centerAddress?: string;
   showCenterPin?: boolean;
+  onProviderClick?: (id: string) => void;
 }
 
 const MapView: React.FC<MapViewProps> = ({
@@ -52,6 +53,7 @@ const MapView: React.FC<MapViewProps> = ({
   serviceIconUrl,
   centerAddress,
   showCenterPin = false,
+  onProviderClick,
 }) => {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
@@ -66,22 +68,25 @@ const MapView: React.FC<MapViewProps> = ({
   const flyToTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-  const flyToWithOffset = (lat: number, lng: number, zoom = 17, skipOffset = false) => {
+  const flyToWithOffset = (lat: number, lng: number, zoom?: number, skipOffset = false) => {
     if (!mapRef.current || !mapRef.current.getContainer()) return;
     const map = mapRef.current;
+    
+    // If zoom is not provided, use current map zoom to prevent resets
+    const targetZoom = zoom !== undefined ? zoom : map.getZoom();
 
     if (skipOffset) {
-      map.flyTo([lat, lng], zoom, { duration: 1.5 });
+      map.flyTo([lat, lng], targetZoom, { duration: 1.5 });
     } else {
       const mapSize = map.getSize();
       const centerPoint = L.point(mapSize.x / 2, mapSize.y / 2);
       const targetPoint = L.point(mapSize.x / 2, mapSize.y * (pinY / 100));
       const targetLatLng = L.latLng(lat, lng);
       const centerLatLng = map.unproject(
-        map.project(targetLatLng, zoom).add(centerPoint).subtract(targetPoint),
-        zoom
+        map.project(targetLatLng, targetZoom).add(centerPoint).subtract(targetPoint),
+        targetZoom
       );
-      map.flyTo(centerLatLng, zoom, { duration: 1.5 });
+      map.flyTo(centerLatLng, targetZoom, { duration: 1.5 });
     }
 
     if (flyToTimeoutRef.current) clearTimeout(flyToTimeoutRef.current);
@@ -409,25 +414,31 @@ const MapView: React.FC<MapViewProps> = ({
         iconAnchor: [60, 140],
       });
 
-      const marker = L.marker([pin.lat, pin.lng], { icon, zIndexOffset: isFocused ? 2000 : 0 }).addTo(map);
+      const marker = L.marker([pin.lat, pin.lng], { icon, zIndexOffset: isFocused ? 2000 : 0 })
+        .addTo(map)
+        .on('click', (e) => {
+          L.DomEvent.stopPropagation(e);
+          onProviderClick?.(pin.id);
+        });
+      
       providerMarkersRef.current[pin.id] = marker;
-
-      marker.on('click', () => {
-        // We can handle click here if needed, but Step 2 uses scroll sync
-      });
     });
 
-    // Auto-fit bounds ONLY when entire list changes or becomes available
-    // Increase padding to ensure "zoomed out" city view
-    if (providerPins.length > 0 && mapReady) {
-      const allPoints: L.LatLngTuple[] = [
-        [initialLocation!.lat, initialLocation!.lng],
-        ...providerPins.map(p => [p.lat, p.lng] as L.LatLngTuple)
-      ];
-      const bounds = L.latLngBounds(allPoints);
-      map.fitBounds(bounds, { padding: [100, 100], animate: true });
-    }
-  }, [providerPins, mapReady, focusedProviderId, serviceIconUrl]);
+    // Removed fitBounds from here to prevent zoom resets on focus changes
+  }, [providerPins, mapReady, focusedProviderId, serviceIconUrl, onProviderClick]);
+
+  // ── Auto-fit bounds ONLY when the LIST of providers changes ────────────────
+  useEffect(() => {
+    if (!mapRef.current || !mapReady || !providerPins || providerPins.length === 0) return;
+    const map = mapRef.current;
+
+    const allPoints: L.LatLngTuple[] = [
+      [initialLocation!.lat, initialLocation!.lng],
+      ...providerPins.map(p => [p.lat, p.lng] as L.LatLngTuple)
+    ];
+    const bounds = L.latLngBounds(allPoints);
+    map.fitBounds(bounds, { padding: [100, 100], animate: true });
+  }, [providerPins?.length, mapReady]); // Dependency on length/exists, not focus
 
   return (
     <div className="relative w-full h-full overflow-hidden">

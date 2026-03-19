@@ -117,6 +117,20 @@ service cloud.firestore {
     }
 
     // ── 4. System & Notifications ────────────────────────────────────────
+    match /city_index/{city}/providers/{bricolerId} {
+      allow read: if true;
+      allow write: if isSignedIn() && (request.auth.uid == bricolerId || isAdmin());
+    }
+
+    match /accepted_jobs/{orderId} {
+      allow read: if isAdmin() || (isSignedIn() && (
+        !('clientId' in resource.data) || 
+        resource.data.clientId == request.auth.uid || 
+        resource.data.bricolerId == request.auth.uid
+      ));
+      allow write: if isSignedIn(); // Basic write for now, specialized below if needed
+    }
+
     match /activity/{activityId} {
       allow read: if isAdmin();
       allow create: if isSignedIn();

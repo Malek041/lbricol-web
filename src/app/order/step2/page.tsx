@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState, Suspense } from 'react';
+import { useEffect, useState, Suspense, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useOrder } from '@/context/OrderContext';
 import { collection, getDocs, query, where, limit } from 'firebase/firestore';
@@ -62,6 +62,7 @@ function Step2Content() {
   const [providers, setProviders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [focusedId, setFocusedId] = useState<string | null>(null);
+  const cardsRef = useRef<HTMLDivElement>(null);
 
   const clientLat = order.location?.lat || 31.5085;
   const clientLng = order.location?.lng || -9.7595;
@@ -121,6 +122,19 @@ function Step2Content() {
     const index = Math.round(scrollLeft / cardWidth);
     if (providers[index] && focusedId !== providers[index].id) {
       setFocusedId(providers[index].id);
+    }
+  };
+
+  const handleProviderClick = (id: string) => {
+    setFocusedId(id);
+    const index = providers.findIndex(p => p.id === id);
+    if (index !== -1 && cardsRef.current) {
+      const container = cardsRef.current;
+      const cardWidth = container.offsetWidth * 0.85; // match .provider-card width in CSS
+      container.scrollTo({
+        left: index * cardWidth,
+        behavior: 'smooth'
+      });
     }
   };
 
@@ -199,6 +213,7 @@ function Step2Content() {
             serviceIconUrl={order.serviceIcon || undefined}
             centerAddress={order.location?.address || undefined}
             showCenterPin={true}
+            onProviderClick={handleProviderClick}
           />
 
           {/* X close button */}
@@ -244,7 +259,7 @@ function Step2Content() {
           </div>
 
           {/* Provider cards (Horizontal Scroll) */}
-          <div className="step2-cards" onScroll={handleScroll}>
+          <div className="step2-cards" ref={cardsRef} onScroll={handleScroll}>
             {loading ? (
               <div style={{ textAlign: 'center', padding: 32, flex: 1, color: '#9CA3AF', fontSize: 14 }}>
                 Finding Bricolers...
