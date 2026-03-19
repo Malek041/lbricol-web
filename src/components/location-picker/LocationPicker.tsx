@@ -204,16 +204,49 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
           isInteracting ? 'h-[75%]' : (radiusView ? 'h-[58%]' : (isBricolerBase ? 'h-[82%]' : 'h-[48%]'))
         )}
       >
-        {/* Full-screen under-layer map */}
-        <div className="absolute top-0 left-0 w-full h-[100dvh]">
+        {/* Full-screen under-layer map -> Now dynamically matches flex height */}
+        <div className="absolute top-0 left-0 w-full h-full">
           <MapView
             onLocationChange={handleLocationChange}
             triggerGps={isManualSelection ? 0 : triggerGps}
             flyToPoint={flyToPoint || undefined}
             onInteractionStart={() => setIsInteracting(true)}
             onInteractionEnd={() => setIsInteracting(false)}
-            pinY={30}
           />
+        </div>
+
+        {/* 3. TRULY FIXED PIN & CALLOUT — Always in visual center of Map */}
+        <div className="absolute left-1/2 top-1/2 pointer-events-none z-[1001]" style={{ transform: 'translate(-50%, -100%)' }}>
+          <motion.div
+            animate={{ y: [0, -12, 0] }}
+            transition={{
+              duration: 2.5,
+              repeat: Infinity,
+              ease: "easeInOut"
+            }}
+          >
+            <div className="relative flex flex-col items-center">
+              {/* The Address Bubble */}
+              {currentPoint && (
+                <div className="absolute bottom-[45px] min-w-max">
+                  <AddressCard
+                    address={currentPoint.address}
+                    icon={serviceIcon}
+                    onConfirm={handleConfirmPoint}
+                  />
+                </div>
+              )}
+
+              {/* The Pin Image */}
+              <div className="w-[45px]">
+                <img
+                  src={pinImage || "/Images/map Assets/LocationPin.png"}
+                  alt="Pin"
+                  className="w-full h-auto drop-shadow-lg"
+                />
+              </div>
+            </div>
+          </motion.div>
         </div>
 
         {/* Floating Controls (Inside resizable area but sticky) */}
@@ -360,43 +393,6 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
           </>
         )}
       </div>
-
-      {/* 3. TRULY FIXED PIN & CALLOUT — Always in visual center of initial view */}
-      <motion.div
-        className={cn(
-          "left-1/2 -translate-x-1/2 pointer-events-none z-[6001] transition-all duration-500 ease-in-out",
-          isInline ? "absolute" : "fixed"
-        )}
-        style={{ top: '30%' }}
-        animate={{ y: [0, -12, 0] }}
-        transition={{
-          duration: 2.5,
-          repeat: Infinity,
-          ease: "easeInOut"
-        }}
-      >
-        <div className="relative">
-          {/* The Address Bubble (appears above the pin) */}
-          {currentPoint && (
-            <div className="absolute bottom-[65px] left-1/2 -translate-x-1/2 min-w-max">
-              <AddressCard
-                address={currentPoint.address}
-                icon={serviceIcon}
-                onConfirm={handleConfirmPoint}
-              />
-            </div>
-          )}
-
-          {/* The Pin Image - anchored at the bottom-center point */}
-          <div className="absolute bottom-0 left-1/2 -translate-x-1/2 flex justify-center w-[45px]">
-            <img
-              src={pinImage || "/Images/map Assets/LocationPin.png"}
-              alt="Pin"
-              className="w-full h-auto drop-shadow-lg"
-            />
-          </div>
-        </div>
-      </motion.div>
 
       <style jsx global>{`
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');

@@ -64,6 +64,7 @@ const MapView: React.FC<MapViewProps> = ({
   const providerMarkersRef = useRef<{ [id: string]: L.Marker }>({});
   const [address, setAddress] = useState<string>('Loading address...');
   const [mapReady, setMapReady] = useState(false);
+  const [internalUserPos, setInternalUserPos] = useState<{lat: number, lng: number} | null>(null);
   const mapReadyTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const flyToTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -71,7 +72,7 @@ const MapView: React.FC<MapViewProps> = ({
   const flyToWithOffset = (lat: number, lng: number, zoom?: number, skipOffset = false) => {
     if (!mapRef.current || !mapRef.current.getContainer()) return;
     const map = mapRef.current;
-    
+
     // If zoom is not provided, use current map zoom to prevent resets
     const targetZoom = zoom !== undefined ? zoom : map.getZoom();
 
@@ -226,9 +227,22 @@ const MapView: React.FC<MapViewProps> = ({
     };
   }, []);
 
+  // ── Watch internal user position if permitted ───────────────────────
+  useEffect(() => {
+    if (typeof window !== 'undefined' && navigator.geolocation) {
+      const watchId = navigator.geolocation.watchPosition(
+        (pos) => setInternalUserPos({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+        () => {},
+        { enableHighAccuracy: true }
+      );
+      return () => navigator.geolocation.clearWatch(watchId);
+    }
+  }, []);
+
   // ── Render userPosition as green radar dot ───────────────────────────
   useEffect(() => {
-    if (!userPosition) return;
+    const activePos = userPosition || internalUserPos;
+    if (!activePos) return;
 
     const render = () => {
       const map = mapRef.current;
@@ -238,7 +252,7 @@ const MapView: React.FC<MapViewProps> = ({
       if (gpsPulseRef.current) { map.removeLayer(gpsPulseRef.current); gpsPulseRef.current = null; }
       if (gpsMarkerRef.current) { map.removeLayer(gpsMarkerRef.current); gpsMarkerRef.current = null; }
 
-      const { lat, lng } = userPosition;
+      const { lat, lng } = activePos;
 
       const radarIcon = L.divIcon({
         className: 'gps-pulse-icon',
@@ -292,7 +306,7 @@ const MapView: React.FC<MapViewProps> = ({
       const timer = setTimeout(render, 500);
       return () => clearTimeout(timer);
     }
-  }, [userPosition]);
+  }, [userPosition, internalUserPos]);
 
   useEffect(() => {
     if (triggerGps && navigator.geolocation && mapRef.current && mapReady) {
@@ -352,7 +366,7 @@ const MapView: React.FC<MapViewProps> = ({
               <span style="font-size:16px">🚲</span>
               <div style="min-width:0;overflow:hidden;">
                 <div style="font-size:13px;font-weight:700;color:#111827;overflow:hidden;text-overflow:ellipsis;">${centerAddress}</div>
-                <div style="font-size:11px;font-weight:700;color:#01A083;margin-top:1px;">Confirm localiation</div>
+                <div style="font-size:11px;font-weight:700;color:#01A083;margin-top:1px;">Confirm localisation</div>
               </div>
               <div style="position:absolute;bottom:-6px;left:50%;transform:translateX(-50%);
                 width:0;height:0;border-left:8px solid transparent;border-right:8px solid transparent;border-top:8px solid #fff;"></div>
@@ -388,7 +402,7 @@ const MapView: React.FC<MapViewProps> = ({
       const isFocused = pin.id === focusedProviderId;
       const size = isFocused ? 72 : 56;
       const opacity = isFocused ? 1 : 0.8;
-      
+
       const icon = L.divIcon({
         className: '',
         html: `
@@ -403,10 +417,10 @@ const MapView: React.FC<MapViewProps> = ({
               </div>
             </div>
             <div style="position:relative;width:${size}px;height:${size}px;transform: scale(${isFocused ? 1.15 : 1}); transition: transform 0.3s;">
-              ${serviceIconUrl 
-                ? `<img src="${serviceIconUrl}" style="width:100%;height:100%;object-fit:contain"/>`
-                : `<div style="width:100%;height:100%;background:#F3F4F6;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:24px">👤</div>`
-              }
+              ${serviceIconUrl
+            ? `<img src="${serviceIconUrl}" style="width:100%;height:100%;object-fit:contain"/>`
+            : `<div style="width:100%;height:100%;background:#F3F4F6;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:24px">👤</div>`
+          }
             </div>
           </div>
         `,
@@ -420,7 +434,7 @@ const MapView: React.FC<MapViewProps> = ({
           L.DomEvent.stopPropagation(e);
           onProviderClick?.(pin.id);
         });
-      
+
       providerMarkersRef.current[pin.id] = marker;
     });
 
