@@ -228,7 +228,7 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
             <div className="relative flex flex-col items-center">
               {/* The Address Bubble */}
               {currentPoint && (
-                <div className="absolute bottom-[45px] min-w-max">
+                <div className="absolute bottom-[65px] min-w-max">
                   <AddressCard
                     address={currentPoint.address}
                     icon={serviceIcon}

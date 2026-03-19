@@ -46,14 +46,24 @@ const CompactHomeMap: React.FC<CompactHomeMapProps> = ({
     const { t, language } = useLanguage();
     const [isInteracting, setIsInteracting] = useState(false);
     const [liveAddress, setLiveAddress] = useState<string | null>(null);
-    const [triggerGps, setTriggerGps] = useState(0);
+    const [manualFlyTo, setManualFlyTo] = useState<{lat: number, lng: number, skipOffset?: boolean} | undefined>(undefined);
 
     const activePinY = isFlowActive ? 50 : 62;
+
+    const handleLocateMe = () => {
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                (pos) => setManualFlyTo({ lat: pos.coords.latitude, lng: pos.coords.longitude, skipOffset: false }),
+                () => {},
+                { enableHighAccuracy: true, timeout: 5000 }
+            );
+        }
+    };
 
     useEffect(() => {
         // Only auto-locate if we don't have an initial location or it's the very first time
         if (autoLocate && !initialLocation) {
-            setTriggerGps(Date.now());
+            handleLocateMe();
         }
     }, [autoLocate, initialLocation]);
 
@@ -80,8 +90,7 @@ const CompactHomeMap: React.FC<CompactHomeMapProps> = ({
             <MapView
                 onLocationChange={(point) => setLiveAddress(point.address)}
                 initialLocation={initialLocation || undefined}
-                flyToPoint={initialLocation || undefined}
-                triggerGps={triggerGps}
+                flyToPoint={manualFlyTo || initialLocation || undefined}
                 pinY={activePinY}
                 language={language}
                 onInteractionStart={() => setIsInteracting(true)}
@@ -157,7 +166,7 @@ const CompactHomeMap: React.FC<CompactHomeMapProps> = ({
                 <div
                     onClick={(e) => {
                         e.stopPropagation();
-                        setTriggerGps(Date.now());
+                        handleLocateMe();
                     }}
                     className="w-12 h-12 bg-white rounded-full shadow-[0_2px_8px_rgba(0,0,0,0.15)] flex items-center justify-center text-[#374151] pointer-events-auto active:scale-95 transition-transform cursor-pointer"
                 >
