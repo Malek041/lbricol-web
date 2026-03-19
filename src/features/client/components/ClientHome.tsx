@@ -1045,10 +1045,35 @@ const ClientHome: React.FC<ClientHomeProps> = ({
                                                         whileTap={{ scale: 0.92 }}
                                                         onClick={() => {
                                                             resetOrder();
+                                                            const currentSub = sub as any;
+                                                            const config = getServiceById(active.id);
+                                                            const actualSubConfig = config?.subServices.find(ss => 
+                                                                ss.id === currentSub.id || ss.name === currentSub.en
+                                                            );
+
                                                             setOrderField('serviceType', active.id);
                                                             setOrderField('serviceName', active.label);
-                                                            setOrderField('subServiceId', (sub as any).id || sub.en); // Cast to any to access potential id, fallback to en
-                                                            setOrderField('subServiceName', t(sub));
+                                                            setOrderField('subServiceId', currentSub.id || currentSub.en);
+                                                            setOrderField('subServiceName', t(currentSub));
+                                                            
+                                                            // Category Vector Mapping (matches file names in 'Service Category vectors')
+                                                            const categoryVectors: Record<string, string> = {
+                                                                handyman: '/Images/Service Category vectors/HandymanVector.webp',
+                                                                babysitting: '/Images/Service Category vectors/babysettingnVector.webp',
+                                                                cleaning: '/Images/Service Category vectors/CleaningVector.webp',
+                                                                plumbing: '/Images/Service Category vectors/PlumbingVector.webp',
+                                                                electricity: '/Images/Service Category vectors/ElectricityVector.webp',
+                                                                painting: '/Images/Service Category vectors/Paintingvector.webp',
+                                                                moving: '/Images/Service Category vectors/MovingHelpVector.webp',
+                                                                gardening: '/Images/Service Category vectors/GardeningVector.webp',
+                                                                assembly: '/Images/Service Category vectors/AsssemblyVector.webp',
+                                                                mounting: '/Images/Service Category vectors/MountingVector.webp'
+                                                            };
+
+                                                            const icon = categoryVectors[active.id] || (actualSubConfig as any)?.image;
+                                                            if (icon) {
+                                                                setOrderField('serviceIcon', icon);
+                                                            }
                                                             router.push('/order/step1');
                                                         }}
                                                         className="px-4 py-2.5 rounded-full border border-[#E6E6E6] text-[15px] font-bold text-[#1D1D1D] bg-white hover:border-[#1D1D1D] active:bg-neutral-50 transition-colors shadow-[0_2px_8_rgba(0,0,0,0.03)]"

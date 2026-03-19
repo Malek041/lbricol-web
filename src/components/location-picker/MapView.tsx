@@ -27,6 +27,8 @@ interface MapViewProps {
     avatarUrl?: string | null;
     isSelected: boolean;
   }>;
+  focusedProviderId?: string | null;
+  serviceIconUrl?: string; // e.g. from service category
 }
 
 const MapView: React.FC<MapViewProps> = ({
@@ -43,12 +45,15 @@ const MapView: React.FC<MapViewProps> = ({
   interactive = true,
   zoom: requestedZoom,
   providerPins,
+  focusedProviderId,
+  serviceIconUrl,
 }) => {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
   const gpsMarkerRef = useRef<L.Marker | null>(null);
   const gpsDotRef = useRef<L.CircleMarker | null>(null);
   const gpsPulseRef = useRef<L.CircleMarker | null>(null);
+  const centerMarkerRef = useRef<L.Marker | null>(null);
   const providerMarkersRef = useRef<{ [id: string]: L.Marker }>({});
   const [address, setAddress] = useState<string>('Loading address...');
   const [mapReady, setMapReady] = useState(false);
@@ -318,65 +323,85 @@ const MapView: React.FC<MapViewProps> = ({
     }
   }, [flyToPoint, mapReady]);
 
+  // ── Render Center Confirmed Pin ──────────────────────────────────────
+  useEffect(() => {
+    if (!mapRef.current || !mapReady || !initialLocation) return;
+    const map = mapRef.current;
+
+    if (centerMarkerRef.current) map.removeLayer(centerMarkerRef.current);
+
+    const centerIcon = L.divIcon({
+      className: '',
+      html: `
+        <div style="position:relative;width:48px;height:62px;animation:pinBounce 1.2s ease-in-out infinite;">
+          <img src="/Images/map Assets/LocationPin.png" style="width:100%;height:100%" />
+        </div>
+      `,
+      iconSize: [48, 62],
+      iconAnchor: [24, 62],
+    });
+
+    centerMarkerRef.current = L.marker([initialLocation.lat, initialLocation.lng], { icon: centerIcon, zIndexOffset: 1000 }).addTo(map);
+
+    return () => {
+      if (centerMarkerRef.current) map.removeLayer(centerMarkerRef.current);
+    };
+  }, [initialLocation, mapReady]);
+
   // ── Render provider pins in Step 2 ──────────────────────────────────
   useEffect(() => {
     if (!mapRef.current || !mapReady) return;
     const map = mapRef.current;
 
-    // Remove all existing provider markers
     Object.values(providerMarkersRef.current).forEach(m => map.removeLayer(m));
     providerMarkersRef.current = {};
 
     if (!providerPins || providerPins.length === 0) return;
 
     providerPins.forEach(pin => {
-      const size = pin.isSelected ? 56 : 44;
-      const initial = pin.avatarUrl ? '' : (pin.id?.startsWith('mock') ? 'M' : '?');
-
+      const isFocused = pin.id === focusedProviderId;
+      const size = isFocused ? 64 : 52;
+      const opacity = isFocused ? 1 : 0.75;
+      
       const icon = L.divIcon({
         className: '',
         html: `
-          <div style="display:flex;flex-direction:column;align-items:center;cursor:pointer">
-            ${!pin.isSelected ? `
-              <div style="background:white;border-radius:8px;padding:3px 8px;margin-bottom:3px;
-                box-shadow:0 2px 6px rgba(0,0,0,0.15);font-family:sans-serif;text-align:center;white-space:nowrap;">
-                <div style="font-size:11px;font-weight:700;color:#111827">${pin.rate} MAD</div>
-                <div style="font-size:10px;color:#F59E0B">★ ${pin.rating.toFixed(1)}</div>
-              </div>
-            ` : ''}
-            <div style="position:relative;width:${size}px">
-              <svg viewBox="0 0 44 58" fill="none" width="${size}" height="${Math.round(size * 1.32)}">
-                <path d="M22 0C10.4 0 1 9.4 1 21C1 36.5 22 58 22 58C22 58 43 36.5 43 21C43 9.4 33.6 0 22 0Z"
-                  fill="${pin.isSelected ? '#F59E0B' : '#FBBF24'}"/>
-              </svg>
-              <div style="position:absolute;top:4px;left:50%;transform:translateX(-50%);
-                width:${size - 14}px;height:${size - 14}px;border-radius:50%;
-                overflow:hidden;border:2px solid white;background:#FEF3C7;
-                display:flex;align-items:center;justify-content:center;
-                font-size:${Math.round((size - 14) * 0.4)}px;font-weight:700;color:#92400E;">
-                ${pin.avatarUrl
-                  ? `<img src="${pin.avatarUrl}" style="width:100%;height:100%;object-fit:cover"/>`
-                  : initial
+          <div style="display:flex;flex-direction:column;align-items:center;cursor:pointer;opacity:${opacity};transition:all 0.3s ease;">
+            <div style="background:white;border-radius:10px;padding:4px 10px;margin-bottom:4px;
+              box-shadow:0 3px 10px rgba(0,0,0,0.18);font-family:sans-serif;text-align:center;white-space:nowrap;
+              transform: scale(${isFocused ? 1.15 : 1}); transition: transform 0.3s;">
+              <div style="font-size:12px;font-weight:800;color:#111827">${pin.rate} MAD</div>
+              <div style="font-size:11px;color:#F59E0B;font-weight:700">★ ${pin.rating.toFixed(1)}</div>
+            </div>
+            <div style="position:relative;width:${size}px;height:${Math.round(size * 1.32)}px;transform: scale(${isFocused ? 1.15 : 1}); transition: transform 0.3s;">
+              <img src="/Images/map Assets/locationPinYellow2.png" style="width:100%;height:100%;display:block" />
+              <div style="position:absolute;top:10%;left:50%;transform:translateX(-50%);
+                width:70%;height:53%;border-radius:50%;
+                overflow:hidden;background:#fff;
+                display:flex;align-items:center;justify-content:center;">
+                ${serviceIconUrl 
+                  ? `<img src="${serviceIconUrl}" style="width:80%;height:80%;object-fit:contain"/>`
+                  : `<span style="font-size:16px">😊</span>`
                 }
               </div>
             </div>
           </div>
         `,
-        iconSize: [size, Math.round(size * 1.32) + 32],
-        iconAnchor: [size / 2, Math.round(size * 1.32) + 32],
+        iconSize: [size + 60, size * 1.32 + 60],
+        iconAnchor: [(size + 60) / 2, size * 1.32 + 32],
       });
 
-      const marker = L.marker([pin.lat, pin.lng], { icon }).addTo(map);
+      const marker = L.marker([pin.lat, pin.lng], { icon, zIndexOffset: isFocused ? 2000 : 0 }).addTo(map);
       providerMarkersRef.current[pin.id] = marker;
+
+      marker.on('click', () => {
+        // We can handle click here if needed, but Step 2 uses scroll sync
+      });
     });
 
-    // Fit map to show all provider pins + client location
-    if (providerPins.length > 0) {
-      const allPoints: L.LatLngTuple[] = providerPins.map(p => [p.lat, p.lng]);
-      const bounds = L.latLngBounds(allPoints);
-      map.fitBounds(bounds, { padding: [60, 60], maxZoom: 15, animate: true });
-    }
-  }, [providerPins, mapReady]);
+    // Auto-fit bounds ONLY the first time or when entire list changes significantly
+    // If just focusedId changed, don't refit to avoid jumping
+  }, [providerPins, mapReady, focusedProviderId, serviceIconUrl]);
 
   return (
     <div className="relative w-full h-full overflow-hidden">

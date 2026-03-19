@@ -18,6 +18,7 @@ interface OrderState {
   providerRate: number | null;
   scheduledDate: string | null;
   scheduledTime: string | null;
+  serviceIcon: string | null;
 }
 
 interface OrderContextType {
@@ -37,6 +38,7 @@ const defaultOrder: OrderState = {
   providerRate: null,
   scheduledDate: null,
   scheduledTime: null,
+  serviceIcon: null,
 };
 
 const OrderContext = createContext<OrderContextType | null>(null);

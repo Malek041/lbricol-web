@@ -17,42 +17,42 @@ const MOCK_PROVIDERS = [
     name: 'Mery Majjoud',
     avatarUrl: null,
     minRate: 80,
-    rating: 3.5,
+    rating: 0.0,
     taskCount: 0,
     bio: 'أتعامل مع الأطفال بلطف وصبر، وأهتم بسلامتهم ونظافتهم وأوفر لهم جواً مريحاً وآمناً.',
     isNew: true,
     availableToday: true,
     base_lat: 31.514,
     base_lng: -9.758,
-    service_radius_km: 10,
+    service_radius_km: 15,
   },
   {
     id: 'mock2',
-    name: 'Nadia B.',
+    name: 'Khadija Dol',
     avatarUrl: null,
-    minRate: 80,
-    rating: 3.5,
-    taskCount: 0,
-    bio: 'خبرة في رعاية الأطفال من جميع الأعمار.',
-    isNew: true,
+    minRate: 85,
+    rating: 4.8,
+    taskCount: 12,
+    bio: 'مرحباً، أنا خديجة، لدي خبرة 5 سنوات في رعاية الأطفال والأنشطة التعليمية.',
+    isNew: false,
     availableToday: true,
     base_lat: 31.511,
     base_lng: -9.762,
-    service_radius_km: 10,
+    service_radius_km: 15,
   },
   {
     id: 'mock3',
-    name: 'Sara M.',
+    name: 'Fatoma Ajroud',
     avatarUrl: null,
-    minRate: 80,
-    rating: 3.5,
-    taskCount: 0,
-    bio: 'متخصصة في خدمات المنزل مع خبرة 3 سنوات.',
+    minRate: 90,
+    rating: 5.0,
+    taskCount: 24,
+    bio: 'أقدم خدمات رعاية الأطفال باحترافية عالية مع التركيز على الترفيه والتعليم.',
     isNew: false,
-    availableToday: true,
+    availableToday: false,
     base_lat: 31.508,
     base_lng: -9.755,
-    service_radius_km: 10,
+    service_radius_km: 15,
   },
 ];
 
@@ -61,12 +61,11 @@ function Step2Content() {
   const { order, setOrderField } = useOrder();
   const [providers, setProviders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [focusedId, setFocusedId] = useState<string | null>(null);
 
   const clientLat = order.location?.lat || 31.5085;
   const clientLng = order.location?.lng || -9.7595;
   const serviceType = order.serviceType || '';
-  const subServiceId = order.subServiceId || '';
 
   // ── Fetch providers ──────────────────────────────────────────────────
   useEffect(() => {
@@ -76,7 +75,7 @@ function Step2Content() {
         const snap = await getDocs(query(
           collection(db, 'bricolers'),
           where('isActive', '==', true),
-          limit(100)
+          limit(30)
         ));
 
         const all = snap.docs.map(d => ({ id: d.id, ...d.data() })) as any[];
@@ -89,45 +88,57 @@ function Step2Content() {
 
         // Filter: must have GPS and client must be within their radius
         const inRange = filtered.filter(b => {
-          if (!b.base_lat || !b.base_lng) return true; // include if no GPS yet (MVP)
+          if (!b.base_lat || !b.base_lng) return true; // include if no GPS yet for MVP
           const dist = calculateDistance(clientLat, clientLng, b.base_lat, b.base_lng);
-          return dist <= (b.service_radius_km || 10);
+          return dist <= (b.service_radius_km || 15);
         });
 
-        // Sort: availableToday first, then by rating, then by distance
-        const sorted = inRange.sort((a: any, b: any) => {
-          const distA = a.base_lat ? calculateDistance(clientLat, clientLng, a.base_lat, a.base_lng) : 999;
-          const distB = b.base_lat ? calculateDistance(clientLat, clientLng, b.base_lat, b.base_lng) : 999;
-          const scoreA = (a.availableToday ? 40 : 0) + ((a.rating / 5) * 40) + (20 * (1 - Math.min(distA, 10) / 10));
-          const scoreB = (b.availableToday ? 40 : 0) + ((b.rating / 5) * 40) + (20 * (1 - Math.min(distB, 10) / 10));
-          return scoreB - scoreA;
+        const sorted = inRange.sort((a, b) => {
+           const distA = a.base_lat ? calculateDistance(clientLat, clientLng, a.base_lat, a.base_lng) : 999;
+           const distB = b.base_lat ? calculateDistance(clientLat, clientLng, b.base_lat, b.base_lng) : 999;
+           return distA - distB;
         });
 
-        setProviders(sorted.length > 0 ? sorted : MOCK_PROVIDERS);
+        const finalProviders = sorted.length > 0 ? sorted : MOCK_PROVIDERS;
+        setProviders(finalProviders);
+        if (finalProviders.length > 0) setFocusedId(finalProviders[0].id);
+
       } catch (e) {
         console.error('Failed to load providers:', e);
         setProviders(MOCK_PROVIDERS);
+        setFocusedId(MOCK_PROVIDERS[0].id);
       }
       setLoading(false);
     }
     load();
   }, [serviceType, clientLat, clientLng]);
 
+  // ── Scroll Sync ──────────────────────────────────────────────────────
+  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const container = e.currentTarget;
+    const scrollLeft = container.scrollLeft;
+    const cardWidth = container.offsetWidth * 0.85; // matching .provider-card width
+    const index = Math.round(scrollLeft / cardWidth);
+    if (providers[index] && focusedId !== providers[index].id) {
+      setFocusedId(providers[index].id);
+    }
+  };
+
   // ── Provider pin data for MapView ────────────────────────────────────
   const providerPins = providers.map(p => ({
     id: p.id,
     lat: p.base_lat || clientLat + (Math.random() - 0.5) * 0.015,
     lng: p.base_lng || clientLng + (Math.random() - 0.5) * 0.015,
-    rate: p.minRate,
-    rating: p.rating,
+    rate: p.minRate || 80,
+    rating: p.rating || 5.0,
     avatarUrl: p.avatarUrl,
-    isSelected: p.id === selectedId,
+    isSelected: p.id === focusedId,
   }));
 
   const handleSelect = (provider: any) => {
     setOrderField('providerId', provider.id);
     setOrderField('providerName', provider.name);
-    setOrderField('providerRate', provider.minRate);
+    setOrderField('providerRate', provider.minRate || 80);
     router.push('/order/step3');
   };
 
@@ -143,31 +154,35 @@ function Step2Content() {
           overflow: hidden;
         }
         .step2-map {
-          flex: 1;
+          flex: 0.7; /* 70% MAP */
           position: relative;
           min-height: 0;
         }
         .step2-sheet {
-          flex-shrink: 0;
+          flex: 0.3; /* 30% SHEET */
           background: #fff;
           border-radius: 24px 24px 0 0;
           box-shadow: 0 -4px 20px rgba(0,0,0,0.08);
-          padding: 20px 20px 0 20px;
-          padding-bottom: max(28px, env(safe-area-inset-bottom));
+          padding: 20px 0 0 0;
+          padding-bottom: max(24px, env(safe-area-inset-bottom));
           display: flex;
           flex-direction: column;
-          gap: 0;
           z-index: 1002;
-          max-height: 55vh;
           overflow: hidden;
         }
         .step2-cards {
-          overflow-y: auto;
-          flex: 1;
-          padding-bottom: 16px;
+          display: flex;
+          overflow-x: auto;
+          scroll-snap-type: x mandatory;
+          padding: 0 20px 16px;
+          gap: 16px;
           -webkit-overflow-scrolling: touch;
         }
         .step2-cards::-webkit-scrollbar { display: none; }
+        .provider-card-wrapper {
+          flex: 0 0 85%;
+          scroll-snap-align: center;
+        }
       `}</style>
 
       <div className="step2-root">
@@ -179,6 +194,8 @@ function Step2Content() {
             interactive={true}
             onLocationChange={() => {}}
             providerPins={providerPins}
+            focusedProviderId={focusedId}
+            serviceIconUrl={order.serviceIcon || undefined}
           />
 
           {/* X close button */}
@@ -238,41 +255,36 @@ function Step2Content() {
 
           {/* Title */}
           <div style={{
-            fontSize: 20, fontWeight: 800, color: '#111827',
-            marginBottom: 16, flexShrink: 0,
+            fontSize: 17, fontWeight: 800, color: '#111827',
+            marginBottom: 12, paddingLeft: 20,
           }}>
-            Find your Tasker
+            Available Bricolers nearby
           </div>
 
-          {/* Provider cards */}
-          <div className="step2-cards">
+          {/* Provider cards (Horizontal Scroll) */}
+          <div className="step2-cards" onScroll={handleScroll}>
             {loading ? (
-              <div style={{ textAlign: 'center', padding: 32, color: '#9CA3AF', fontSize: 14 }}>
-                Finding Bricolers near you...
+              <div style={{ textAlign: 'center', padding: 32, flex: 1, color: '#9CA3AF', fontSize: 14 }}>
+                Finding Bricolers...
               </div>
             ) : providers.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: 32 }}>
-                <div style={{ fontSize: 32, marginBottom: 12 }}>😔</div>
-                <div style={{ fontSize: 16, fontWeight: 700, color: '#111827', marginBottom: 8 }}>
-                  No Bricolers available yet
-                </div>
-                <div style={{ fontSize: 14, color: '#6B7280' }}>
-                  We're expanding soon — check back shortly!
+              <div style={{ textAlign: 'center', padding: 32, flex: 1 }}>
+                <div style={{ fontSize: 16, fontWeight: 700, color: '#111827' }}>
+                  No Bricolers available
                 </div>
               </div>
             ) : (
               providers.map(provider => (
-                <ProviderCard
-                  key={provider.id}
-                  provider={provider}
-                  clientLat={clientLat}
-                  clientLng={clientLng}
-                  isSelected={selectedId === provider.id}
-                  onSelect={() => {
-                    setSelectedId(provider.id);
-                    handleSelect(provider);
-                  }}
-                />
+                <div key={provider.id} className="provider-card-wrapper">
+                  <ProviderCard
+                    provider={provider}
+                    clientLat={clientLat}
+                    clientLng={clientLng}
+                    isSelected={focusedId === provider.id}
+                    onSelect={() => handleSelect(provider)}
+                    order={order}
+                  />
+                </div>
               ))
             )}
           </div>
@@ -284,13 +296,14 @@ function Step2Content() {
 
 // ── Provider Card Component ──────────────────────────────────────────────────
 function ProviderCard({
-  provider, clientLat, clientLng, isSelected, onSelect
+  provider, clientLat, clientLng, isSelected, onSelect, order
 }: {
   provider: any;
   clientLat: number;
   clientLng: number;
   isSelected: boolean;
   onSelect: () => void;
+  order: any;
 }) {
   const [expanded, setExpanded] = useState(false);
   const distance = provider.base_lat
@@ -300,130 +313,123 @@ function ProviderCard({
   return (
     <div style={{
       border: isSelected ? '2px solid #01A083' : '1px solid #F3F4F6',
-      borderRadius: 16,
-      padding: 16,
-      marginBottom: 16,
+      borderRadius: 20,
+      padding: '20px 16px',
       background: '#fff',
-      transition: 'border-color 0.2s',
+      transition: 'all 0.3s ease',
+      boxShadow: isSelected ? '0 4px 12px rgba(1, 160, 131, 0.12)' : '0 2px 4px rgba(0,0,0,0.02)',
+      height: '100%',
+      display: 'flex',
+      flexDirection: 'column',
     }}>
 
-      {/* Top row */}
-      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, marginBottom: 12 }}>
+      {/* Main Info Row */}
+      <div style={{ display: 'flex', gap: 14, marginBottom: 14 }}>
 
-        {/* Avatar */}
-        <div style={{
-          width: 52, height: 52, borderRadius: '50%',
-          background: provider.avatarUrl ? 'transparent' : '#E0F2FE',
-          overflow: 'hidden', flexShrink: 0,
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: 20, fontWeight: 700, color: '#0369A1',
-        }}>
-          {provider.avatarUrl
-            ? <img src={provider.avatarUrl} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-            : provider.name?.charAt(0).toUpperCase()
-          }
-        </div>
-
-        <div style={{ flex: 1, minWidth: 0 }}>
-          {/* Name + rate */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: 15, fontWeight: 700, color: '#111827' }}>
-              {provider.name}
-            </span>
-            <span style={{ fontSize: 13, fontWeight: 700, color: '#111827', whiteSpace: 'nowrap' }}>
-              MAD {provider.minRate}
-              <span style={{ color: '#9CA3AF', fontWeight: 400 }}> (min)</span>
-              {' '}
-              <span style={{ color: '#01A083' }}>✓</span>
-            </span>
+        {/* Left: Avatar & Availability */}
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+          <div style={{
+            width: 64, height: 64, borderRadius: '50%',
+            background: provider.avatarUrl ? 'transparent' : '#F3F4F6',
+            overflow: 'hidden', flexShrink: 0,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: 24, fontWeight: 700, color: '#374151',
+            border: '2px solid #fff',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.06)'
+          }}>
+            {provider.avatarUrl
+              ? <img src={provider.avatarUrl} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              : provider.name?.charAt(0).toUpperCase()
+            }
           </div>
-
-          {/* NEW badge */}
-          {provider.isNew && (
+          {provider.availableToday && (
             <span style={{
-              display: 'inline-flex', alignItems: 'center', gap: 4,
-              background: '#EEF2FF', color: '#6366F1',
-              fontSize: 11, fontWeight: 700,
-              padding: '2px 8px', borderRadius: 50, marginTop: 4,
+              background: '#F0FDF4', color: '#01A083',
+              fontSize: 10, fontWeight: 700,
+              padding: '3px 8px', borderRadius: 50,
+              border: '1px solid #D1FAE5',
+              whiteSpace: 'nowrap'
             }}>
-              ✦ NEW
+              ● AVAILABLE TODAY
             </span>
           )}
+        </div>
 
-          {/* Rating + availability */}
-          <div style={{
-            display: 'flex', justifyContent: 'space-between',
-            alignItems: 'center', marginTop: 6,
-          }}>
-            <span style={{ fontSize: 13, color: '#374151', display: 'flex', alignItems: 'center', gap: 3 }}>
-              ★ {(provider.rating || 0).toFixed(1)}
-            </span>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              {distance !== null && (
-                <span style={{ fontSize: 11, color: '#9CA3AF' }}>
-                  {distance.toFixed(1)} km away
-                </span>
-              )}
-              {provider.availableToday && (
+        {/* Center/Right Info */}
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+            <div>
+              <div style={{ fontSize: 16, fontWeight: 800, color: '#111827', marginBottom: 2 }}>
+                {provider.name}
+              </div>
+              {provider.isNew && (
                 <span style={{
-                  background: '#F0FDF4', color: '#01A083',
-                  fontSize: 11, fontWeight: 700,
-                  padding: '3px 8px', borderRadius: 50,
-                  border: '1px solid #A7F3D0',
+                  display: 'inline-flex', alignItems: 'center', gap: 4,
+                  background: '#EEF2FF', color: '#6366F1',
+                  fontSize: 10, fontWeight: 800,
+                  padding: '1px 8px', borderRadius: 4, marginBottom: 6
                 }}>
-                  ● AVAILABLE TODAY
+                  ✦ NEW
                 </span>
               )}
             </div>
+            <div style={{ textAlign: 'right' }}>
+              <div style={{ fontSize: 13, fontWeight: 800, color: '#111827' }}>
+                MAD {provider.minRate || 80} <span style={{fontSize: 11, color: '#6B7280', fontWeight: 400}}>(min)</span> <span style={{color: '#01A083'}}>✓</span>
+              </div>
+            </div>
           </div>
 
-          {/* Task count */}
-          <div style={{ fontSize: 12, color: '#9CA3AF', marginTop: 4 }}>
-            ⏱ {provider.taskCount || 0} tasks completed
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 4 }}>
+            <span style={{ fontSize: 13, fontWeight: 700, color: '#111827', display: 'flex', alignItems: 'center', gap: 4 }}>
+              ★ {(provider.rating || 5.0).toFixed(1)}
+            </span>
+            <span style={{ fontSize: 12, color: '#6B7280', display: 'flex', alignItems: 'center', gap: 4 }}>
+              ⏱ {provider.taskCount || 0} {order.serviceName || 'tasks'} completed
+            </span>
           </div>
         </div>
       </div>
 
-      {/* Bio */}
-      {provider.bio && (
-        <div>
-          <p style={{
-            fontSize: 13, color: '#374151', lineHeight: 1.55,
-            marginBottom: 4,
-            display: expanded ? 'block' : '-webkit-box',
-            WebkitLineClamp: expanded ? undefined : 2,
-            WebkitBoxOrient: 'vertical' as any,
-            overflow: expanded ? 'visible' : 'hidden',
-          }}>
-            {provider.bio}
-          </p>
-          {provider.bio.length > 80 && (
-            <button
-              onClick={() => setExpanded(!expanded)}
-              style={{
-                color: '#01A083', fontSize: 13, fontWeight: 600,
-                background: 'none', border: 'none', cursor: 'pointer',
-                padding: 0, marginBottom: 10,
-              }}
-            >
-              {expanded ? 'Show Less' : 'Read More'}
-            </button>
-          )}
-        </div>
-      )}
+      {/* Bio / About */}
+      <div style={{ flex: 1 }}>
+        <p style={{
+          fontSize: 13, color: '#4B5563', lineHeight: 1.5,
+          display: expanded ? 'block' : '-webkit-box',
+          WebkitLineClamp: expanded ? undefined : 2,
+          WebkitBoxOrient: 'vertical' as any,
+          overflow: expanded ? 'visible' : 'hidden',
+          marginBottom: 4,
+        }}>
+          {provider.aboutMe || provider.bio || 'Experienced Bricoler offering quality services in your area. Always dedicated and professional.'}
+        </p>
+        {(provider.bio?.length > 80 || !provider.bio) && (
+          <button
+            onClick={(e) => { e.stopPropagation(); setExpanded(!expanded); }}
+            style={{
+              color: '#01A083', fontSize: 12, fontWeight: 700,
+              background: 'none', border: 'none', cursor: 'pointer',
+              padding: 0, marginBottom: 12
+            }}
+          >
+            {expanded ? 'Read Less' : 'Read More'}
+          </button>
+        )}
+      </div>
 
-      {/* Select button */}
+      {/* Action */}
       <button
         onClick={onSelect}
         style={{
-          width: '100%', height: 48, marginTop: 8,
-          borderRadius: 50,
+          width: '100%', height: 46,
+          borderRadius: 12,
           background: '#01A083', color: '#fff',
           border: 'none', fontSize: 15, fontWeight: 700,
-          cursor: 'pointer', letterSpacing: 0.2,
+          cursor: 'pointer',
+          boxShadow: '0 2px 8px rgba(1, 160, 131, 0.2)'
         }}
       >
-        Select &amp; Continue
+        Select & Continue
       </button>
     </div>
   );
