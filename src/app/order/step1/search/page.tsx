@@ -30,7 +30,7 @@ export default function Step1SearchPage() {
     <div style={{ height: '100vh', background: '#fff', display: 'flex', flexDirection: 'column' }}>
 
       {/* Search bar */}
-      <div style={{ padding: '12px 16px', borderBottom: '1px solid #F3F4F6', pt: 20 }}>
+      <div style={{ padding: '12px 16px', borderBottom: '1px solid #F3F4F6', paddingTop: 20 }}>
         <div style={{
           display: 'flex', alignItems: 'center', gap: 10,
           background: '#F3F4F6', borderRadius: 50, padding: '12px 16px',
