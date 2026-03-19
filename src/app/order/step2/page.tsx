@@ -18,7 +18,7 @@ const MOCK_PROVIDERS = [
     avatarUrl: null,
     minRate: 80,
     rating: 0.0,
-    taskCount: 0,
+    taskCount: 20,
     bio: 'أتعامل مع الأطفال بلطف وصبر، وأهتم بسلامتهم ونظافتهم وأوفر لهم جواً مريحاً وآمناً.',
     isNew: true,
     availableToday: true,
@@ -131,6 +131,7 @@ function Step2Content() {
     lng: p.base_lng || clientLng + (Math.random() - 0.5) * 0.015,
     rate: p.minRate || 80,
     rating: p.rating || 5.0,
+    taskCount: p.taskCount || 0,
     avatarUrl: p.avatarUrl,
     isSelected: p.id === focusedId,
   }));
@@ -196,6 +197,7 @@ function Step2Content() {
             providerPins={providerPins}
             focusedProviderId={focusedId}
             serviceIconUrl={order.serviceIcon || undefined}
+            centerAddress={order.location?.address || undefined}
           />
 
           {/* X close button */}
@@ -212,27 +214,6 @@ function Step2Content() {
           >
             <X size={18} />
           </button>
-
-          {/* Address card */}
-          <div style={{
-            position: 'absolute', top: 16, left: 64, right: 16, zIndex: 999,
-            background: '#fff', borderRadius: 14, padding: '12px 16px',
-            boxShadow: '0 2px 12px rgba(0,0,0,0.12)',
-            display: 'flex', alignItems: 'center', gap: 12,
-          }}>
-            <span style={{ fontSize: 18 }}>🚲</span>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{
-                fontSize: 14, fontWeight: 700, color: '#111827',
-                whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-              }}>
-                {order.location?.address || 'Your location'}
-              </div>
-              <div style={{ fontSize: 12, fontWeight: 600, color: '#01A083', marginTop: 2 }}>
-                Use this point
-              </div>
-            </div>
-          </div>
 
           {/* Back button */}
           <button
@@ -251,12 +232,12 @@ function Step2Content() {
         </div>
 
         {/* ── BOTTOM SHEET ── */}
-        <div className="step2-sheet">
+        <div className="step2-sheet" style={{ height: '32vh' }}>
 
           {/* Title */}
           <div style={{
-            fontSize: 17, fontWeight: 800, color: '#111827',
-            marginBottom: 12, paddingLeft: 20,
+            fontSize: 16, fontWeight: 800, color: '#111827',
+            marginBottom: 10, paddingLeft: 20,
           }}>
             Available Bricolers nearby
           </div>
@@ -313,27 +294,28 @@ function ProviderCard({
   return (
     <div style={{
       border: isSelected ? '2px solid #01A083' : '1px solid #F3F4F6',
-      borderRadius: 20,
-      padding: '20px 16px',
+      borderRadius: 18,
+      padding: '12px 14px',
       background: '#fff',
       transition: 'all 0.3s ease',
       boxShadow: isSelected ? '0 4px 12px rgba(1, 160, 131, 0.12)' : '0 2px 4px rgba(0,0,0,0.02)',
       height: '100%',
       display: 'flex',
       flexDirection: 'column',
+      justifyContent: 'space-between',
     }}>
 
       {/* Main Info Row */}
-      <div style={{ display: 'flex', gap: 14, marginBottom: 14 }}>
+      <div style={{ display: 'flex', gap: 12, marginBottom: 8 }}>
 
         {/* Left: Avatar & Availability */}
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
           <div style={{
-            width: 64, height: 64, borderRadius: '50%',
+            width: 50, height: 50, borderRadius: '50%',
             background: provider.avatarUrl ? 'transparent' : '#F3F4F6',
             overflow: 'hidden', flexShrink: 0,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 24, fontWeight: 700, color: '#374151',
+            fontSize: 20, fontWeight: 700, color: '#374151',
             border: '2px solid #fff',
             boxShadow: '0 2px 8px rgba(0,0,0,0.06)'
           }}>
@@ -345,8 +327,8 @@ function ProviderCard({
           {provider.availableToday && (
             <span style={{
               background: '#F0FDF4', color: '#01A083',
-              fontSize: 10, fontWeight: 700,
-              padding: '3px 8px', borderRadius: 50,
+              fontSize: 9, fontWeight: 700,
+              padding: '2px 6px', borderRadius: 50,
               border: '1px solid #D1FAE5',
               whiteSpace: 'nowrap'
             }}>
@@ -359,57 +341,57 @@ function ProviderCard({
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
             <div>
-              <div style={{ fontSize: 16, fontWeight: 800, color: '#111827', marginBottom: 2 }}>
+              <div style={{ fontSize: 14, fontWeight: 800, color: '#111827', marginBottom: 1 }}>
                 {provider.name}
               </div>
               {provider.isNew && (
                 <span style={{
                   display: 'inline-flex', alignItems: 'center', gap: 4,
                   background: '#EEF2FF', color: '#6366F1',
-                  fontSize: 10, fontWeight: 800,
-                  padding: '1px 8px', borderRadius: 4, marginBottom: 6
+                  fontSize: 9, fontWeight: 800,
+                  padding: '1px 6px', borderRadius: 4, marginBottom: 4
                 }}>
                   ✦ NEW
                 </span>
               )}
             </div>
             <div style={{ textAlign: 'right' }}>
-              <div style={{ fontSize: 13, fontWeight: 800, color: '#111827' }}>
-                MAD {provider.minRate || 80} <span style={{fontSize: 11, color: '#6B7280', fontWeight: 400}}>(min)</span> <span style={{color: '#01A083'}}>✓</span>
+              <div style={{ fontSize: 12, fontWeight: 800, color: '#111827' }}>
+                MAD {provider.minRate || 80} <span style={{fontSize: 9, color: '#6B7280', fontWeight: 400}}>(min)</span> <span style={{color: '#01A083'}}>✓</span>
               </div>
             </div>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 4 }}>
-            <span style={{ fontSize: 13, fontWeight: 700, color: '#111827', display: 'flex', alignItems: 'center', gap: 4 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 2 }}>
+            <span style={{ fontSize: 12, fontWeight: 700, color: '#111827', display: 'flex', alignItems: 'center', gap: 3 }}>
               ★ {(provider.rating || 5.0).toFixed(1)}
             </span>
-            <span style={{ fontSize: 12, color: '#6B7280', display: 'flex', alignItems: 'center', gap: 4 }}>
-              ⏱ {provider.taskCount || 0} {order.serviceName || 'tasks'} completed
+            <span style={{ fontSize: 11, color: '#6B7280', display: 'flex', alignItems: 'center', gap: 3 }}>
+              ⏱ {provider.taskCount || 0} {order.serviceName || 'tasks'}
             </span>
           </div>
         </div>
       </div>
 
       {/* Bio / About */}
-      <div style={{ flex: 1 }}>
+      <div style={{ flex: 1, overflow: 'hidden' }}>
         <p style={{
-          fontSize: 13, color: '#4B5563', lineHeight: 1.5,
+          fontSize: 12, color: '#4B5563', lineHeight: 1.4,
           display: expanded ? 'block' : '-webkit-box',
           WebkitLineClamp: expanded ? undefined : 2,
           WebkitBoxOrient: 'vertical' as any,
           overflow: expanded ? 'visible' : 'hidden',
-          marginBottom: 4,
+          marginBottom: 2,
         }}>
-          {provider.aboutMe || provider.bio || 'Experienced Bricoler offering quality services in your area. Always dedicated and professional.'}
+          {provider.aboutMe || provider.bio || 'Experienced Bricoler offering quality services in your area.'}
         </p>
-        {(provider.bio?.length > 80 || !provider.bio) && (
+        {(provider.bio?.length > 60 || !provider.bio) && (
           <button
             onClick={(e) => { e.stopPropagation(); setExpanded(!expanded); }}
             style={{
-              color: '#01A083', fontSize: 12, fontWeight: 700,
+              color: '#01A083', fontSize: 11, fontWeight: 700,
               background: 'none', border: 'none', cursor: 'pointer',
-              padding: 0, marginBottom: 12
+              padding: 0, marginBottom: 4
             }}
           >
             {expanded ? 'Read Less' : 'Read More'}
@@ -421,10 +403,10 @@ function ProviderCard({
       <button
         onClick={onSelect}
         style={{
-          width: '100%', height: 46,
-          borderRadius: 12,
+          width: '100%', height: 40,
+          borderRadius: 10,
           background: '#01A083', color: '#fff',
-          border: 'none', fontSize: 15, fontWeight: 700,
+          border: 'none', fontSize: 14, fontWeight: 700,
           cursor: 'pointer',
           boxShadow: '0 2px 8px rgba(1, 160, 131, 0.2)'
         }}

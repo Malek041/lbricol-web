@@ -24,11 +24,13 @@ interface MapViewProps {
     lng: number;
     rate: number;
     rating: number;
+    taskCount: number;
     avatarUrl?: string | null;
     isSelected: boolean;
   }>;
   focusedProviderId?: string | null;
   serviceIconUrl?: string; // e.g. from service category
+  centerAddress?: string;
 }
 
 const MapView: React.FC<MapViewProps> = ({
@@ -47,6 +49,7 @@ const MapView: React.FC<MapViewProps> = ({
   providerPins,
   focusedProviderId,
   serviceIconUrl,
+  centerAddress,
 }) => {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
@@ -323,7 +326,7 @@ const MapView: React.FC<MapViewProps> = ({
     }
   }, [flyToPoint, mapReady]);
 
-  // ── Render Center Confirmed Pin ──────────────────────────────────────
+  // ── Render Center Confirmed Pin with Address Bubble ──────────────────
   useEffect(() => {
     if (!mapRef.current || !mapReady || !initialLocation) return;
     const map = mapRef.current;
@@ -333,20 +336,35 @@ const MapView: React.FC<MapViewProps> = ({
     const centerIcon = L.divIcon({
       className: '',
       html: `
-        <div style="position:relative;width:48px;height:62px;animation:pinBounce 1.2s ease-in-out infinite;">
-          <img src="/Images/map Assets/LocationPin.png" style="width:100%;height:100%" />
+        <div style="position:relative;display:flex;flex-direction:column;align-items:center;">
+          ${centerAddress ? `
+            <div style="background:#fff;border-radius:14px;padding:10px 14px;margin-bottom:8px;
+              box-shadow:0 4px 15px rgba(0,0,0,0.15);display:flex;align-items:center;gap:8px;
+              white-space:nowrap;max-width:240px;position:relative;z-index:2000;">
+              <span style="font-size:16px">🚲</span>
+              <div style="min-width:0;overflow:hidden;">
+                <div style="font-size:13px;font-weight:700;color:#111827;overflow:hidden;text-overflow:ellipsis;">${centerAddress}</div>
+                <div style="font-size:11px;font-weight:700;color:#01A083;margin-top:1px;">Confirm localiation</div>
+              </div>
+              <div style="position:absolute;bottom:-6px;left:50%;transform:translateX(-50%);
+                width:0;height:0;border-left:8px solid transparent;border-right:8px solid transparent;border-top:8px solid #fff;"></div>
+            </div>
+          ` : ''}
+          <div style="position:relative;width:48px;height:62px;animation:pinBounce 1.2s ease-in-out infinite;">
+            <img src="/Images/map Assets/LocationPin.png" style="width:100%;height:100%" />
+          </div>
         </div>
       `,
-      iconSize: [48, 62],
-      iconAnchor: [24, 62],
+      iconSize: [260, 140],
+      iconAnchor: [130, 110], // Adjusted to keep pin tip at coordinate
     });
 
-    centerMarkerRef.current = L.marker([initialLocation.lat, initialLocation.lng], { icon: centerIcon, zIndexOffset: 1000 }).addTo(map);
+    centerMarkerRef.current = L.marker([initialLocation.lat, initialLocation.lng], { icon: centerIcon, zIndexOffset: 2500 }).addTo(map);
 
     return () => {
       if (centerMarkerRef.current) map.removeLayer(centerMarkerRef.current);
     };
-  }, [initialLocation, mapReady]);
+  }, [initialLocation, mapReady, centerAddress]);
 
   // ── Render provider pins in Step 2 ──────────────────────────────────
   useEffect(() => {
@@ -360,35 +378,32 @@ const MapView: React.FC<MapViewProps> = ({
 
     providerPins.forEach(pin => {
       const isFocused = pin.id === focusedProviderId;
-      const size = isFocused ? 64 : 52;
-      const opacity = isFocused ? 1 : 0.75;
+      const size = isFocused ? 72 : 56;
+      const opacity = isFocused ? 1 : 0.8;
       
       const icon = L.divIcon({
         className: '',
         html: `
           <div style="display:flex;flex-direction:column;align-items:center;cursor:pointer;opacity:${opacity};transition:all 0.3s ease;">
-            <div style="background:white;border-radius:10px;padding:4px 10px;margin-bottom:4px;
-              box-shadow:0 3px 10px rgba(0,0,0,0.18);font-family:sans-serif;text-align:center;white-space:nowrap;
-              transform: scale(${isFocused ? 1.15 : 1}); transition: transform 0.3s;">
-              <div style="font-size:12px;font-weight:800;color:#111827">${pin.rate} MAD</div>
-              <div style="font-size:11px;color:#F59E0B;font-weight:700">★ ${pin.rating.toFixed(1)}</div>
-            </div>
-            <div style="position:relative;width:${size}px;height:${Math.round(size * 1.32)}px;transform: scale(${isFocused ? 1.15 : 1}); transition: transform 0.3s;">
-              <img src="/Images/map Assets/locationPinYellow2.png" style="width:100%;height:100%;display:block" />
-              <div style="position:absolute;top:10%;left:50%;transform:translateX(-50%);
-                width:70%;height:53%;border-radius:50%;
-                overflow:hidden;background:#fff;
-                display:flex;align-items:center;justify-content:center;">
-                ${serviceIconUrl 
-                  ? `<img src="${serviceIconUrl}" style="width:80%;height:80%;object-fit:contain"/>`
-                  : `<span style="font-size:16px">😊</span>`
-                }
+            <div style="background:#fff;border-radius:12px;padding:6px 12px;margin-bottom:6px;
+              box-shadow:0 4px 15px rgba(0,0,0,0.18);font-family:sans-serif;text-align:center;white-space:nowrap;
+              transform: scale(${isFocused ? 1.15 : 1}); transition: transform 0.3s;
+              display: flex; flex-direction: column; align-items: center; border: 1px solid #f3f4f6;">
+              <div style="font-size:14px;font-weight:900;color:#111827">${pin.taskCount || 0} Jobs</div>
+              <div style="font-size:13px;color:#FBBF24;font-weight:900;display:flex;align-items:center;gap:3px;">
+                ★ <span style="color:#111827">${pin.rating.toFixed(1)}</span>
               </div>
+            </div>
+            <div style="position:relative;width:${size}px;height:${size}px;transform: scale(${isFocused ? 1.15 : 1}); transition: transform 0.3s;">
+              ${serviceIconUrl 
+                ? `<img src="${serviceIconUrl}" style="width:100%;height:100%;object-fit:contain"/>`
+                : `<div style="width:100%;height:100%;background:#F3F4F6;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:24px">👤</div>`
+              }
             </div>
           </div>
         `,
-        iconSize: [size + 60, size * 1.32 + 60],
-        iconAnchor: [(size + 60) / 2, size * 1.32 + 32],
+        iconSize: [120, 160],
+        iconAnchor: [60, 140],
       });
 
       const marker = L.marker([pin.lat, pin.lng], { icon, zIndexOffset: isFocused ? 2000 : 0 }).addTo(map);
@@ -399,8 +414,16 @@ const MapView: React.FC<MapViewProps> = ({
       });
     });
 
-    // Auto-fit bounds ONLY the first time or when entire list changes significantly
-    // If just focusedId changed, don't refit to avoid jumping
+    // Auto-fit bounds ONLY when entire list changes or becomes available
+    // Increase padding to ensure "zoomed out" city view
+    if (providerPins.length > 0 && mapReady) {
+      const allPoints: L.LatLngTuple[] = [
+        [initialLocation!.lat, initialLocation!.lng],
+        ...providerPins.map(p => [p.lat, p.lng] as L.LatLngTuple)
+      ];
+      const bounds = L.latLngBounds(allPoints);
+      map.fitBounds(bounds, { padding: [100, 100], animate: true });
+    }
   }, [providerPins, mapReady, focusedProviderId, serviceIconUrl]);
 
   return (
