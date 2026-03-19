@@ -55,7 +55,7 @@ const CompactHomeMap: React.FC<CompactHomeMapProps> = ({
             navigator.geolocation.getCurrentPosition(
                 (pos) => setManualFlyTo({ lat: pos.coords.latitude, lng: pos.coords.longitude, skipOffset: false }),
                 () => {},
-                { enableHighAccuracy: true, timeout: 5000 }
+                { enableHighAccuracy: true, timeout: 5000, maximumAge: 30000 }
             );
         }
     };

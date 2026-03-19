@@ -336,7 +336,8 @@ const MapView: React.FC<MapViewProps> = ({
             gpsMarkerRef.current = L.marker([latitude, longitude], { icon: gpsIcon }).addTo(mapRef.current);
           }
         },
-        (error) => console.warn('Geolocation error:', error)
+        (error) => console.warn('Geolocation error:', error),
+        { enableHighAccuracy: true, timeout: 5000, maximumAge: 30000 }
       );
     }
   }, [triggerGps, mapReady]);
