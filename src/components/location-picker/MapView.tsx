@@ -359,7 +359,7 @@ const MapView: React.FC<MapViewProps> = ({
     const centerIcon = L.divIcon({
       className: '',
       html: `
-        <div style="position:relative;display:flex;flex-direction:column;align-items:center;">
+        <div style="position:relative;display:flex;flex-direction:column;align-items:center;height:100%;justify-content:flex-end;">
           ${centerAddress ? `
             <div style="background:#fff;border-radius:14px;padding:10px 14px;margin-bottom:8px;
               box-shadow:0 4px 15px rgba(0,0,0,0.15);display:flex;align-items:center;gap:8px;
@@ -401,23 +401,26 @@ const MapView: React.FC<MapViewProps> = ({
 
     providerPins.forEach(pin => {
       const isFocused = pin.id === focusedProviderId;
+      const hasFocus = !!focusedProviderId;
+      const opacity = hasFocus && !isFocused ? 0.6 : 1;
+      const scale = hasFocus && !isFocused ? 0.8 : (isFocused ? 1.15 : 1);
       const size = isFocused ? 72 : 56;
-      const opacity = isFocused ? 1 : 0.8;
+      
+      const bounceStyle = isFocused ? "animation: pinBounce 2s ease-in-out infinite;" : "";
 
       const icon = L.divIcon({
         className: '',
         html: `
-          <div style="display:flex;flex-direction:column;align-items:center;cursor:pointer;opacity:${opacity};transition:all 0.3s ease;">
+          <div style="display:flex;flex-direction:column;align-items:center;cursor:pointer;opacity:${opacity};transform:scale(${scale});transition:all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);${bounceStyle}">
             <div style="background:#fff;border-radius:12px;padding:6px 12px;margin-bottom:6px;
               box-shadow:0 4px 15px rgba(0,0,0,0.18);font-family:sans-serif;text-align:center;white-space:nowrap;
-              transform: scale(${isFocused ? 1.15 : 1}); transition: transform 0.3s;
               display: flex; flex-direction: column; align-items: center; border: 1px solid #f3f4f6;">
               <div style="font-size:14px;font-weight:900;color:#111827">${pin.taskCount || 0} Jobs</div>
               <div style="font-size:13px;color:#FBBF24;font-weight:900;display:flex;align-items:center;gap:3px;">
                 ★ <span style="color:#111827">${pin.rating.toFixed(1)}</span>
               </div>
             </div>
-            <div style="position:relative;width:${size}px;height:${size}px;transform: scale(${isFocused ? 1.15 : 1}); transition: transform 0.3s;">
+            <div style="position:relative;width:${size}px;height:${size}px;transition: width 0.3s, height 0.3s;">
               ${serviceIconUrl
             ? `<img src="${serviceIconUrl}" style="width:100%;height:100%;object-fit:contain"/>`
             : `<div style="width:100%;height:100%;background:#F3F4F6;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:24px">👤</div>`
@@ -462,6 +465,10 @@ const MapView: React.FC<MapViewProps> = ({
         @keyframes radarPulse {
           0% { transform: scale(1); opacity: 0.6; }
           100% { transform: scale(4); opacity: 0; }
+        }
+        @keyframes pinBounce {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-8px); }
         }
         .animate-radar-pulse {
           animation: radarPulse 2s cubic-bezier(0, 0, 0.2, 1) infinite;
