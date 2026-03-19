@@ -39,28 +39,35 @@ export interface CityIndexEntry {
     whatsappNumber?: string | null;
     serviceIds?: string[];      // Flat array of category IDs for future Firestore filtering
     subServiceIds?: string[];   // Flat array of subservice IDs
+    badge: string;
     matchScore: number;    // pre-baked for Firestore orderBy
     updatedAt: number;
 }
 
+import { 
+  ratingScore, 
+  jobsScore, 
+  BADGE_SCORES, 
+  experienceScore 
+} from './matchBricolers';
+
 /**
- * Computes a deterministic matchScore for a Bricoler.
- * Higher = better ranked in search results.
- *
- * Formula:
- *   rating (0–5) × 20          → max 100 pts
- *   completedJobs × 0.5        → unbounded, but practical ceiling ~50 pts for 100 jobs
- *   isVerified bonus            → +15 pts
+ * Computes a deterministic matchScore for a Bricoler (Static part only).
+ * This score is used for pre-baking in Firestore and does NOT include distance.
  */
-export const computeMatchScore = (
+export const computeStaticMatchScore = (
     rating: number,
+    numReviews: number,
     completedJobs: number,
-    isVerified: boolean
+    badge: string,
+    experience: string
 ): number => {
-    const ratingScore = (rating || 0) * 20;
-    const jobScore = Math.min((completedJobs || 0) * 0.5, 50); // cap at 50
-    const verifiedBonus = isVerified ? 15 : 0;
-    return Math.round(ratingScore + jobScore + verifiedBonus);
+    const rScore = ratingScore(rating, numReviews) * 0.25;
+    const jScore = jobsScore(completedJobs) * 0.20;
+    const bScore = (BADGE_SCORES[badge?.toLowerCase()] ?? 25) * 0.15;
+    const eScore = experienceScore(experience) * 0.10;
+    
+    return Math.round(rScore + jScore + bScore + eScore);
 };
 
 /**
@@ -140,7 +147,14 @@ export const writeCityIndex = async (
         movingTransport: data.movingTransport,
         movingTransports: data.movingTransports || [],
         whatsappNumber: data.whatsappNumber,
-        matchScore: computeMatchScore(rating, completedJobs, isVerified),
+        badge: data.badge || (data.isVerified ? 'pro' : 'new'),
+        matchScore: computeStaticMatchScore(
+            rating, 
+            data.numReviews || 0, 
+            completedJobs, 
+            data.badge || (data.isVerified ? 'pro' : 'new'),
+            data.experience || ''
+        ),
         updatedAt: Date.now(),
     };
 

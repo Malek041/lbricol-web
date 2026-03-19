@@ -5,6 +5,7 @@ import { useOrder } from '@/context/OrderContext';
 import { collection, getDocs, query, where, limit } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { calculateDistance } from '@/lib/calculateDistance';
+import { sortBricolers } from '@/lib/matchBricolers';
 import dynamic from 'next/dynamic';
 import { X, Star, Clock, MapPin } from 'lucide-react';
 
@@ -87,18 +88,8 @@ function Step2Content() {
           b.services.some((s: any) => s.categoryId === serviceType)
         );
 
-        // Filter: must have GPS and client must be within their radius
-        const inRange = filtered.filter(b => {
-          if (!b.base_lat || !b.base_lng) return true; // include if no GPS yet for MVP
-          const dist = calculateDistance(clientLat, clientLng, b.base_lat, b.base_lng);
-          return dist <= (b.service_radius_km || 15);
-        });
-
-        const sorted = inRange.sort((a, b) => {
-           const distA = a.base_lat ? calculateDistance(clientLat, clientLng, a.base_lat, a.base_lng) : 999;
-           const distB = b.base_lat ? calculateDistance(clientLat, clientLng, b.base_lat, b.base_lng) : 999;
-           return distA - distB;
-        });
+        // Filter and Sort using the new matchScore algorithm
+        const sorted = sortBricolers(filtered, clientLat, clientLng, serviceType);
 
         const finalProviders = sorted.length > 0 ? sorted : MOCK_PROVIDERS;
         setProviders(finalProviders);
