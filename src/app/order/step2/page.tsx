@@ -198,6 +198,7 @@ function Step2Content() {
             focusedProviderId={focusedId}
             serviceIconUrl={order.serviceIcon || undefined}
             centerAddress={order.location?.address || undefined}
+            showCenterPin={true}
           />
 
           {/* X close button */}

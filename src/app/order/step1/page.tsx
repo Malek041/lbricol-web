@@ -37,19 +37,24 @@ function Step1Content() {
 
   useEffect(() => {
     if (!navigator.geolocation) return;
-    const timer = setTimeout(() => {
-      navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          setUserPosition({
-            lat: pos.coords.latitude,
-            lng: pos.coords.longitude,
-          });
-        },
-        () => { },
-        { enableHighAccuracy: true, timeout: 10000 }
-      );
-    }, 800);
-    return () => clearTimeout(timer);
+
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const { latitude, longitude } = pos.coords;
+
+        // Set as initial center so map opens here
+        setCurrentLat(latitude);
+        setCurrentLng(longitude);
+
+        // Set GPS dot
+        setUserPosition({ lat: latitude, lng: longitude });
+
+        // Fly to it (skipOffset: true so pin lands exactly on dot)
+        setFlyToPoint({ lat: latitude, lng: longitude, skipOffset: true });
+      },
+      () => { },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
   }, []);
 
   const handleLocateMe = () => {

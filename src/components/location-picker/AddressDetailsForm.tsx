@@ -182,18 +182,10 @@ const AddressDetailsForm: React.FC<AddressDetailsFormProps> = ({ initialData, on
               interactive={false}
               pinY={50} // Center for snapshot
               zoom={16}
+              showCenterPin={true}
             />
             {/* Overlay to catch clicks and prevent map interaction */}
-            <div className="absolute inset-0 bg-transparent z-10" />
-
-            {/* Fixed Lbricol Yellow Pin for Snapshot */}
-            <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-[calc(100%-4px)] z-20 pointer-events-none flex flex-col items-center">
-              <img
-                src="/Images/map Assets/LocationPin.png"
-                alt="Lbricol location pin"
-                className="w-[36px] h-auto drop-shadow-lg"
-              />
-            </div>
+            <div className="absolute inset-0 bg-transparent z-30" />
           </button>
         </div>
 

@@ -31,6 +31,7 @@ interface MapViewProps {
   focusedProviderId?: string | null;
   serviceIconUrl?: string; // e.g. from service category
   centerAddress?: string;
+  showCenterPin?: boolean;
 }
 
 const MapView: React.FC<MapViewProps> = ({
@@ -50,6 +51,7 @@ const MapView: React.FC<MapViewProps> = ({
   focusedProviderId,
   serviceIconUrl,
   centerAddress,
+  showCenterPin = false,
 }) => {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
@@ -328,6 +330,7 @@ const MapView: React.FC<MapViewProps> = ({
 
   // ── Render Center Confirmed Pin with Address Bubble ──────────────────
   useEffect(() => {
+    if (!showCenterPin) return;
     if (!mapRef.current || !mapReady || !initialLocation) return;
     const map = mapRef.current;
 
@@ -356,7 +359,7 @@ const MapView: React.FC<MapViewProps> = ({
         </div>
       `,
       iconSize: [260, 140],
-      iconAnchor: [130, 110], // Adjusted to keep pin tip at coordinate
+      iconAnchor: [130, 140], // Adjusted to keep pin tip at coordinate
     });
 
     centerMarkerRef.current = L.marker([initialLocation.lat, initialLocation.lng], { icon: centerIcon, zIndexOffset: 2500 }).addTo(map);
@@ -364,7 +367,7 @@ const MapView: React.FC<MapViewProps> = ({
     return () => {
       if (centerMarkerRef.current) map.removeLayer(centerMarkerRef.current);
     };
-  }, [initialLocation, mapReady, centerAddress]);
+  }, [initialLocation, mapReady, centerAddress, showCenterPin]);
 
   // ── Render provider pins in Step 2 ──────────────────────────────────
   useEffect(() => {
