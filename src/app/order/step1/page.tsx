@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState, Suspense } from 'react';
+import { useEffect, useState, Suspense, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useOrder } from '@/context/OrderContext';
 import dynamic from 'next/dynamic';
@@ -20,6 +20,7 @@ function Step1Content() {
   const [flyToPoint, setFlyToPoint] = useState<{ lat: number; lng: number; skipOffset?: boolean } | undefined>(undefined);
   const [isLocating, setIsLocating] = useState(false);
   const [userPosition, setUserPosition] = useState<{ lat: number; lng: number } | null>(null);
+  const hasInitializedRef = useRef(false);
 
   useEffect(() => {
     const latStr = searchParams.get('lat');
@@ -32,6 +33,7 @@ function Step1Content() {
       setCurrentLng(lng);
       setCurrentAddress(decodeURIComponent(address));
       setFlyToPoint({ lat, lng, skipOffset: false });
+      hasInitializedRef.current = true; // Prevents GPS from overwriting search result
     }
   }, [searchParams]);
 
@@ -41,19 +43,19 @@ function Step1Content() {
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         const { latitude, longitude } = pos.coords;
-
-        // Set as initial center so map opens here
-        setCurrentLat(latitude);
-        setCurrentLng(longitude);
-
-        // Set GPS dot
+        // ALWAYS update the user radar dot:
         setUserPosition({ lat: latitude, lng: longitude });
 
-        // Fly to it (skipOffset: true so pin lands exactly on dot)
-        setFlyToPoint({ lat: latitude, lng: longitude, skipOffset: true });
+        // ONLY fly/center if we haven't already searched/navigated back
+        if (!hasInitializedRef.current) {
+          hasInitializedRef.current = true;
+          setCurrentLat(latitude);
+          setCurrentLng(longitude);
+          setFlyToPoint({ lat: latitude, lng: longitude, skipOffset: true });
+        }
       },
       () => { },
-      { enableHighAccuracy: true, timeout: 10000 }
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 30000 }
     );
   }, []);
 

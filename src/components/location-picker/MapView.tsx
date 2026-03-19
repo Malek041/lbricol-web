@@ -64,7 +64,7 @@ const MapView: React.FC<MapViewProps> = ({
   const providerMarkersRef = useRef<{ [id: string]: L.Marker }>({});
   const [address, setAddress] = useState<string>('Loading address...');
   const [mapReady, setMapReady] = useState(false);
-  const [internalUserPos, setInternalUserPos] = useState<{lat: number, lng: number} | null>(null);
+  const [internalUserPos, setInternalUserPos] = useState<{ lat: number, lng: number } | null>(null);
   const mapReadyTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const flyToTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -232,7 +232,7 @@ const MapView: React.FC<MapViewProps> = ({
     if (typeof window !== 'undefined' && navigator.geolocation) {
       const watchId = navigator.geolocation.watchPosition(
         (pos) => setInternalUserPos({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
-        () => {},
+        () => { },
         { enableHighAccuracy: true }
       );
       return () => navigator.geolocation.clearWatch(watchId);
@@ -405,7 +405,7 @@ const MapView: React.FC<MapViewProps> = ({
       const opacity = hasFocus && !isFocused ? 0.6 : 1;
       const scale = hasFocus && !isFocused ? 0.8 : (isFocused ? 1.15 : 1);
       const size = isFocused ? 72 : 56;
-      
+
       const bounceStyle = isFocused ? "animation: pinBounce 2s ease-in-out infinite;" : "";
 
       const icon = L.divIcon({
