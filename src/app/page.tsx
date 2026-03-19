@@ -22,7 +22,7 @@ import LanguagePreferencePopup from '@/features/onboarding/components/LanguagePr
 import MobileBottomNav from '@/components/layout/MobileBottomNav';
 import MessagesView from '@/features/messages/components/MessagesView';
 import ProfileView from '@/features/provider/components/ProfileView';
-// import ComingSoon from '@/components/layout/ComingSoon';
+import ComingSoon from '@/components/layout/ComingSoon';
 import ClientHome from '@/features/client/components/ClientHome';
 import OnboardingPopup from '@/features/onboarding/components/OnboardingPopup';
 
@@ -2327,10 +2327,10 @@ const Home = () => {
 
   // --- PAUSE DEPLOYMENT ---
   // isMaintenanceMode is true in production, but false in local development to allow oversight.
-  // const isMaintenanceMode = process.env.NODE_ENV === 'production'; 
-  // if (isMaintenanceMode) {
-  //   return <ComingSoon />;
-  // }
+  const isMaintenanceMode = process.env.NODE_ENV === 'production'; 
+  if (isMaintenanceMode) {
+    return <ComingSoon />;
+  }
 
   return (
     <div style={{ backgroundColor: c.bg, color: c.text, minHeight: '100vh', scrollBehavior: 'smooth' }} className="font-sans">
