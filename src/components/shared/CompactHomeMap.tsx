@@ -46,19 +46,14 @@ const CompactHomeMap: React.FC<CompactHomeMapProps> = ({
     const { t, language } = useLanguage();
     const [isInteracting, setIsInteracting] = useState(false);
     const [liveAddress, setLiveAddress] = useState<string | null>(null);
-    const [manualFlyTo, setManualFlyTo] = useState<{lat: number, lng: number, skipOffset?: boolean, ts: number} | undefined>(undefined);
+    const [manualFlyTo, setManualFlyTo] = useState<{lat: number, lng: number, skipOffset?: boolean} | undefined>(undefined);
 
     const activePinY = isFlowActive ? 50 : 62;
 
     const handleLocateMe = () => {
         if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(
-                (pos) => setManualFlyTo({ 
-                    lat: pos.coords.latitude, 
-                    lng: pos.coords.longitude, 
-                    skipOffset: false,
-                    ts: Date.now() 
-                }),
+                (pos) => setManualFlyTo({ lat: pos.coords.latitude, lng: pos.coords.longitude, skipOffset: false }),
                 () => {},
                 { enableHighAccuracy: true, timeout: 5000, maximumAge: 30000 }
             );
@@ -110,24 +105,20 @@ const CompactHomeMap: React.FC<CompactHomeMapProps> = ({
                     transform: 'translate(-50%, -100%)'
                 }}
             >
-                <div className="relative">
-                    {/* The Address Bubble (appears above the pin) */}
-                    <div className="absolute bottom-[65px] left-1/2 -translate-x-1/2">
-                        <AddressCard
-                            address={bubbleText}
-                            icon={'🚲'}
-                            ctaText={bubbleCta}
-                            onConfirm={onInteract || (() => { })}
-                        />
-                    </div>
+                {/* The Address Bubble (appears above the pin) */}
+                <AddressCard
+                    address={bubbleText}
+                    icon={'🚲'}
+                    ctaText={bubbleCta}
+                    onConfirm={onInteract || (() => { })}
+                />
 
-                    {/* The Pin Image */}
-                    <img
-                        src="/Images/map Assets/LocationPin.png"
-                        alt="Pin"
-                        className="w-[45px] h-auto drop-shadow-lg animate-bounce-subtle"
-                    />
-                </div>
+                {/* The Pin Image */}
+                <img
+                    src="/Images/map Assets/LocationPin.png"
+                    alt="Pin"
+                    className="w-[45px] h-auto drop-shadow-lg animate-bounce-subtle"
+                />
             </div>
 
 

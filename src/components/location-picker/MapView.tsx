@@ -9,7 +9,7 @@ interface MapViewProps {
   onLocationChange: (point: LocationPoint) => void;
   initialLocation?: { lat: number; lng: number };
   triggerGps?: number;
-  flyToPoint?: { lat: number; lng: number; skipOffset?: boolean; ts?: number };
+  flyToPoint?: { lat: number; lng: number; skipOffset?: boolean };
   userPosition?: { lat: number; lng: number } | null;
   onInteractionStart?: () => void;
   onInteractionEnd?: () => void;
