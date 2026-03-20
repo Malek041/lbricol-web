@@ -2372,7 +2372,7 @@ const Home = () => {
 
   // --- PAUSE DEPLOYMENT ---
   // isMaintenanceMode is true in production, but false in local development to allow oversight.
-  const isMaintenanceMode = false;
+  const isMaintenanceMode = process.env.NODE_ENV === 'production';
   if (isMaintenanceMode) {
     return <ComingSoon />;
   }
