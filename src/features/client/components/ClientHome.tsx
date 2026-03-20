@@ -451,6 +451,7 @@ interface ClientHomeProps {
     onBecomeBricoler?: () => void; // callback to launch the Bricoler onboarding
     isBricoler?: boolean;
     initialLocation?: { lat: number; lng: number } | null;
+    onAddressUpdate?: (address: string) => void;
 }
 
 // ── Component ──────────────────────────────────────────────────────────────
@@ -600,6 +601,7 @@ const ClientHome: React.FC<ClientHomeProps> = ({
     onBecomeBricoler,
     isBricoler = false,
     initialLocation,
+    onAddressUpdate
 }) => {
     const { t, language } = useLanguage();
     const router = useRouter();
@@ -794,6 +796,7 @@ const ClientHome: React.FC<ClientHomeProps> = ({
                 <CompactHomeMap
                     city={selectedCity}
                     area={selectedArea}
+                    onAddressUpdate={onAddressUpdate}
                     onInteract={onChangeLocation}
                     initialLocation={initialLocation || undefined}
                     className="h-full rounded-none border-none shadow-none"

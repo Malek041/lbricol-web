@@ -27,6 +27,7 @@ interface CompactHomeMapProps {
     onBack?: () => void;
     isFlowActive?: boolean;
     initialLocation?: { lat: number; lng: number };
+    onAddressUpdate?: (address: string) => void;
 }
 
 const CompactHomeMap: React.FC<CompactHomeMapProps> = ({
@@ -41,10 +42,12 @@ const CompactHomeMap: React.FC<CompactHomeMapProps> = ({
     onCloseFlow,
     onBack,
     isFlowActive = false,
-    initialLocation
+    initialLocation,
+    onAddressUpdate
 }) => {
     const { t, language } = useLanguage();
     const [isInteracting, setIsInteracting] = useState(false);
+    const [isLocating, setIsLocating] = useState(false);
     const [liveAddress, setLiveAddress] = useState<string | null>(null);
     const [manualFlyTo, setManualFlyTo] = useState<{lat: number, lng: number, skipOffset?: boolean} | undefined>(undefined);
 
@@ -52,10 +55,14 @@ const CompactHomeMap: React.FC<CompactHomeMapProps> = ({
 
     const handleLocateMe = () => {
         if (navigator.geolocation) {
+            setIsLocating(true);
             navigator.geolocation.getCurrentPosition(
-                (pos) => setManualFlyTo({ lat: pos.coords.latitude, lng: pos.coords.longitude, skipOffset: false }),
-                () => {},
-                { enableHighAccuracy: true, timeout: 5000, maximumAge: 30000 }
+                (pos) => {
+                    setManualFlyTo({ lat: pos.coords.latitude, lng: pos.coords.longitude, skipOffset: false });
+                    setIsLocating(false);
+                },
+                () => setIsLocating(false),
+                { enableHighAccuracy: true, timeout: 15000, maximumAge: 30000 }
             );
         }
     };
@@ -65,7 +72,15 @@ const CompactHomeMap: React.FC<CompactHomeMapProps> = ({
         if (autoLocate && !initialLocation) {
             handleLocateMe();
         }
-    }, [autoLocate, initialLocation]);
+    }, [autoLocate, !!initialLocation]);
+
+    // Clear manualFlyTo if initialLocation changes (e.g. from picker)
+    useEffect(() => {
+        if (initialLocation?.lat && initialLocation?.lng) {
+            setManualFlyTo(undefined);
+        }
+    }, [initialLocation?.lat, initialLocation?.lng]);
+
 
     // Formatted fallback city/area
     const fallbackAddress = area ? `${area}, ${city}` : city || 'Detecting Location...';
@@ -88,7 +103,14 @@ const CompactHomeMap: React.FC<CompactHomeMapProps> = ({
             onClick={onInteract}
         >
             <MapView
-                onLocationChange={(point) => setLiveAddress(point.address)}
+                onLocationChange={(point) => {
+                    setLiveAddress(point.address);
+                    setIsLocating(false);
+                    if (onAddressUpdate && point.address) {
+                        onAddressUpdate(point.address);
+                    }
+                }}
+                onLocationError={() => setIsLocating(false)}
                 initialLocation={initialLocation || undefined}
                 flyToPoint={manualFlyTo || initialLocation || undefined}
                 pinY={activePinY}
@@ -170,7 +192,11 @@ const CompactHomeMap: React.FC<CompactHomeMapProps> = ({
                     }}
                     className="w-12 h-12 bg-white rounded-full shadow-[0_2px_8px_rgba(0,0,0,0.15)] flex items-center justify-center text-[#374151] pointer-events-auto active:scale-95 transition-transform cursor-pointer"
                 >
-                    <Navigation size={22} strokeWidth={2.5} />
+                    {isLocating ? (
+                        <div className="w-5 h-5 border-2 border-[#00A082] border-t-transparent rounded-full animate-spin" />
+                    ) : (
+                        <Navigation size={22} strokeWidth={2.5} />
+                    )}
                 </div>
             </div>
 

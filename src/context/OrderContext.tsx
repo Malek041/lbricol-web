@@ -19,11 +19,17 @@ interface OrderState {
   scheduledDate: string | null;
   scheduledTime: string | null;
   serviceIcon: string | null;
+  selectedCar?: any;
+  carRentalNote?: string;
+  carRentalDates?: any;
+  date?: string;
+  time?: string;
 }
 
 interface OrderContextType {
   order: OrderState;
   setOrderField: (key: keyof OrderState, value: any) => void;
+  setOrderState: (state: OrderState) => void;
   resetOrder: () => void;
 }
 
@@ -50,10 +56,14 @@ export function OrderProvider({ children }: { children: ReactNode }) {
     setOrder(prev => ({ ...prev, [key]: value }));
   };
 
+  const setOrderState = (state: OrderState) => {
+    setOrder(state);
+  };
+
   const resetOrder = () => setOrder(defaultOrder);
 
   return (
-    <OrderContext.Provider value={{ order, setOrderField, resetOrder }}>
+    <OrderContext.Provider value={{ order, setOrderField, setOrderState, resetOrder }}>
       {children}
     </OrderContext.Provider>
   );

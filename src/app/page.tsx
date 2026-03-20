@@ -25,6 +25,7 @@ import ProfileView from '@/features/provider/components/ProfileView';
 import ComingSoon from '@/components/layout/ComingSoon';
 import ClientHome from '@/features/client/components/ClientHome';
 import OnboardingPopup from '@/features/onboarding/components/OnboardingPopup';
+import { useOrder } from '@/context/OrderContext';
 
 import AdminDashboard from '@/features/admin/components/AdminDashboard';
 import AdminOrdersView from '@/features/orders/components/AdminOrdersView';
@@ -66,7 +67,7 @@ import {
   Calendar
 } from 'lucide-react';
 import CompactHomeMap from '@/components/shared/CompactHomeMap';
-import { getAllServices, getServiceById, getSubServiceName, getServiceName, type ServiceConfig } from '@/config/services_config';
+import { getAllServices, getServiceById, getSubServiceName, getServiceName, getServiceVector, type ServiceConfig } from '@/config/services_config';
 import {
   FaHammer,
   FaScrewdriverWrench,
@@ -248,6 +249,7 @@ const Home = () => {
   const router = useRouter();
   const { t, setLanguage } = useLanguage();
   const { theme } = useTheme();
+  const { setOrderState, resetOrder } = useOrder();
   const { showToast } = useToast();
 
   const c = {
@@ -296,11 +298,54 @@ const Home = () => {
   const [showLocationPermissionPopup, setShowLocationPermissionPopup] = useState(false);
   const [autoLocateOnPickerOpen, setAutoLocateOnPickerOpen] = useState(false);
   const [userSavedAddresses, setUserSavedAddresses] = useState<SavedAddress[]>([]);
-  const [selectedPoint, setSelectedPoint] = useState<{ lat: number; lng: number } | null>(null);
+  const [selectedPoint, setSelectedPoint] = useState<{ lat: number; lng: number, address?: string } | null>(null);
+
+  const handleAddressUpdate = (address: string) => {
+    if (!address) return;
+    
+    const parts = address.split(',').map(p => p.trim());
+    const cities = ['Casablanca', 'Marrakech', 'Essaouira', 'Agadir', 'Tangier', 'Rabat', 'Fes', 'Meknes', 'Oujda', 'Kenitra', 'Tetouan', 'Safi', 'Mohammedia', 'Khouribga', 'El Jadida', 'Beni Mellal', 'Nador', 'Taza', 'Settat'];
+    
+    let foundCity = null;
+    let foundArea = null;
+
+    for (const p of parts) {
+      if (cities.includes(p)) {
+        foundCity = p;
+        break;
+      }
+    }
+
+    if (foundCity) {
+      const cityIdx = parts.indexOf(foundCity);
+      if (cityIdx > 0) {
+        foundArea = parts[cityIdx - 1];
+      }
+      
+      if (foundCity !== selectedCity) {
+        setSelectedCity(foundCity);
+        localStorage.setItem('lbricol_preferred_city', foundCity);
+      }
+      if (foundArea && foundArea !== selectedArea) {
+        setSelectedArea(foundArea);
+        localStorage.setItem('lbricol_preferred_area', foundArea);
+      }
+    }
+  };
 
   // Persist Addresses & Location Preference
   useEffect(() => {
+    setMounted(true);
+    
+    // Check for tab search param
+    const params = new URLSearchParams(window.location.search);
+    const tabParam = params.get('tab');
+    if (tabParam && ['home', 'search', 'heroes', 'calendar', 'messages', 'profile'].includes(tabParam)) {
+      setMobileNavTab(tabParam as any);
+    }
+
     const saved = localStorage.getItem('lbricol_saved_addresses');
+
     if (saved) {
       try {
         setUserSavedAddresses(JSON.parse(saved));
@@ -2327,7 +2372,7 @@ const Home = () => {
 
   // --- PAUSE DEPLOYMENT ---
   // isMaintenanceMode is true in production, but false in local development to allow oversight.
-  const isMaintenanceMode = process.env.NODE_ENV === 'production'; 
+  const isMaintenanceMode = false;
   if (isMaintenanceMode) {
     return <ComingSoon />;
   }
@@ -2441,8 +2486,23 @@ const Home = () => {
                     setSelectedOrderId(jobId);
                   }}
                   initialShowHistory={showHistoryInOrders}
-                   onResumeDraft={() => {
-                    alert("Drafts currently disabled");
+                   onResumeDraft={(draft) => {
+                    const normalizedDraft = {
+                      serviceType: draft.service || '',
+                      serviceName: draft.serviceName || draft.service || '',
+                      subServiceId: draft.subService || '',
+                      subServiceName: draft.subServiceName || '',
+                      location: draft.location || null,
+                      providerId: draft.providerId || null,
+                      providerName: draft.providerName || null,
+                      providerRate: draft.providerRate || null,
+                      scheduledDate: draft.scheduledDate || null,
+                      scheduledTime: draft.scheduledTime || null,
+                      serviceIcon: draft.serviceIcon || null
+                    };
+                    setOrderState(normalizedDraft);
+                    const targetStep = draft.providerId ? '/order/step3' : '/order/step2';
+                    router.push(targetStep);
                   }}
                 />
               )
@@ -2639,21 +2699,48 @@ const Home = () => {
                 userName={currentUser?.displayName || undefined}
                 selectedCity={selectedCity}
                 selectedArea={selectedArea}
+                onAddressUpdate={handleAddressUpdate}
                 recentOrders={orders.filter(o => o.status !== 'cancelled')}
                 onSelectService={(serviceName: string, sub?: string) => {
                   const cfg = getServiceById(serviceName);
-                  const finalSvc = cfg?.id || serviceName;
+                  if (!cfg) return;
+                  
+                  const finalSvc = cfg.id;
                   let finalSub = sub || null;
-                  if (cfg && sub) {
+                  let finalSubName = sub || '';
+                  
+                  if (sub) {
                     const subCfg = cfg.subServices.find(ss => 
                       ss.id === sub || ss.name === sub || 
                       ss.id.toLowerCase().replace(/[_\s-]/g, '') === sub.toLowerCase().replace(/[_\s-]/g, '')
                     );
-                    if (subCfg) finalSub = subCfg.id;
+                    if (subCfg) {
+                      finalSub = subCfg.id;
+                      finalSubName = subCfg.name;
+                    }
                   }
-                  setService(finalSvc);
-                  setSubService(finalSub);
-                  alert("Order flow is under maintenance. Please try again later.");
+
+                  const icon = getServiceVector(finalSvc);
+                  
+                  setOrderState({
+                    serviceType: finalSvc,
+                    serviceName: cfg.name,
+                    subServiceId: finalSub || '',
+                    subServiceName: finalSubName,
+                    location: selectedPoint ? {
+                      lat: selectedPoint.lat,
+                      lng: selectedPoint.lng,
+                      address: selectedPoint.address || ''
+                    } : null,
+                    providerId: null,
+                    providerName: null,
+                    providerRate: null,
+                    scheduledDate: null,
+                    scheduledTime: null,
+                    serviceIcon: icon
+                  });
+                  
+                  router.push('/order/step1');
                 }}
                 availableServiceIds={availableServices.length > 0 ? availableServices : cityServices}
                 availableSubServiceIds={availableSubServices.length > 0 ? availableSubServices : citySubServices}
@@ -2688,7 +2775,7 @@ const Home = () => {
                     setShowAuthPopup(true);
                   }
                 }}
-                initialLocation={selectedPoint}
+                initialLocation={selectedPoint as any}
               />
             ) : (
 
@@ -2719,6 +2806,7 @@ const Home = () => {
                    <CompactHomeMap 
                       city={selectedCity}
                       area={selectedArea}
+                      onAddressUpdate={handleAddressUpdate}
                       onInteract={() => {
                         setAutoLocateOnPickerOpen(true);
                         setShowLocationPicker(true);

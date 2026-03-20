@@ -33,6 +33,7 @@ interface MapViewProps {
   centerAddress?: string;
   showCenterPin?: boolean;
   onProviderClick?: (id: string) => void;
+  onLocationError?: (error: any) => void;
 }
 
 const MapView: React.FC<MapViewProps> = ({
@@ -54,6 +55,7 @@ const MapView: React.FC<MapViewProps> = ({
   centerAddress,
   showCenterPin = false,
   onProviderClick,
+  onLocationError,
 }) => {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
@@ -61,6 +63,8 @@ const MapView: React.FC<MapViewProps> = ({
   const gpsDotRef = useRef<L.CircleMarker | null>(null);
   const gpsPulseRef = useRef<L.CircleMarker | null>(null);
   const centerMarkerRef = useRef<L.Marker | null>(null);
+  const routeLayerRef = useRef<L.Polyline | null>(null);
+  const routeLabelRef = useRef<L.Marker | null>(null);
   const providerMarkersRef = useRef<{ [id: string]: L.Marker }>({});
   const [address, setAddress] = useState<string>('Loading address...');
   const [mapReady, setMapReady] = useState(false);
@@ -192,6 +196,8 @@ const MapView: React.FC<MapViewProps> = ({
 
     map.on('dragstart', () => { onInteractionStart?.(); });
     map.on('dragend', () => { onInteractionEnd?.(); });
+    map.on('touchstart', () => { onInteractionStart?.(); });
+    map.on('touchend', () => { onInteractionEnd?.(); });
 
     map.on('moveend', () => {
       if (!interactive) return;
@@ -314,10 +320,18 @@ const MapView: React.FC<MapViewProps> = ({
         (position) => {
           const { latitude, longitude } = position.coords;
           flyToWithOffset(latitude, longitude, 17, true);
+          
           if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
           debounceTimerRef.current = setTimeout(() => {
             reverseGeocode(latitude, longitude);
           }, 1000);
+
+          // Safety: if map doesn't move significantly, moveend might not fire
+          // so we force a geocode update after 2s to clear any loading states
+          setTimeout(() => {
+            if (mapRef.current) reverseGeocode(latitude, longitude);
+          }, 2000);
+
           if (gpsMarkerRef.current) {
             gpsMarkerRef.current.setLatLng([latitude, longitude]);
           } else if (mapRef.current) {
@@ -336,8 +350,11 @@ const MapView: React.FC<MapViewProps> = ({
             gpsMarkerRef.current = L.marker([latitude, longitude], { icon: gpsIcon }).addTo(mapRef.current);
           }
         },
-        (error) => console.warn('Geolocation error:', error),
-        { enableHighAccuracy: true, timeout: 5000, maximumAge: 30000 }
+        (error) => {
+          console.warn('Geolocation error:', error);
+          onLocationError?.(error);
+        },
+        { enableHighAccuracy: true, timeout: 15000, maximumAge: 30000 }
       );
     }
   }, [triggerGps, mapReady]);
@@ -373,13 +390,13 @@ const MapView: React.FC<MapViewProps> = ({
                 width:0;height:0;border-left:8px solid transparent;border-right:8px solid transparent;border-top:8px solid #fff;"></div>
             </div>
           ` : ''}
-          <div style="position:relative;width:48px;height:62px;animation:pinBounce 1.2s ease-in-out infinite;">
+          <div style="position:relative;width:38px;height:50px;">
             <img src="/Images/map Assets/LocationPin.png" style="width:100%;height:100%" />
           </div>
         </div>
       `,
       iconSize: [260, 140],
-      iconAnchor: [130, 140], // Adjusted to keep pin tip at coordinate
+      iconAnchor: [130, 140], 
     });
 
     centerMarkerRef.current = L.marker([initialLocation.lat, initialLocation.lng], { icon: centerIcon, zIndexOffset: 2500 }).addTo(map);
@@ -387,7 +404,7 @@ const MapView: React.FC<MapViewProps> = ({
     return () => {
       if (centerMarkerRef.current) map.removeLayer(centerMarkerRef.current);
     };
-  }, [initialLocation, mapReady, centerAddress, showCenterPin]);
+  }, [initialLocation, mapReady, centerAddress, showCenterPin, userPosition, internalUserPos]);
 
   // ── Render provider pins in Step 2 ──────────────────────────────────
   useEffect(() => {
@@ -411,7 +428,7 @@ const MapView: React.FC<MapViewProps> = ({
       const icon = L.divIcon({
         className: '',
         html: `
-          <div style="display:flex;flex-direction:column;align-items:center;cursor:pointer;opacity:${opacity};transform:scale(${scale});transition:all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);${bounceStyle}">
+          <div style="display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:160px;cursor:pointer;opacity:${opacity};transform:scale(${scale});transition:all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);${bounceStyle}">
             <div style="background:#fff;border-radius:12px;padding:6px 12px;margin-bottom:6px;
               box-shadow:0 4px 15px rgba(0,0,0,0.18);font-family:sans-serif;text-align:center;white-space:nowrap;
               display: flex; flex-direction: column; align-items: center; border: 1px solid #f3f4f6;">
@@ -420,7 +437,7 @@ const MapView: React.FC<MapViewProps> = ({
                 ★ <span style="color:#111827">${pin.rating.toFixed(1)}</span>
               </div>
             </div>
-            <div style="position:relative;width:${size}px;height:${size}px;transition: width 0.3s, height 0.3s;">
+            <div style="position:relative;width:${size}px;height:${size}px;transition: width 0.3s, height 0.3s; margin-bottom: 0px;">
               ${serviceIconUrl
             ? `<img src="${serviceIconUrl}" style="width:100%;height:100%;object-fit:contain"/>`
             : `<div style="width:100%;height:100%;background:#F3F4F6;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:24px">👤</div>`
@@ -429,7 +446,7 @@ const MapView: React.FC<MapViewProps> = ({
           </div>
         `,
         iconSize: [120, 160],
-        iconAnchor: [60, 140],
+        iconAnchor: [60, 160],
       });
 
       const marker = L.marker([pin.lat, pin.lng], { icon, zIndexOffset: isFocused ? 2000 : 0 })
@@ -444,6 +461,91 @@ const MapView: React.FC<MapViewProps> = ({
 
     // Removed fitBounds from here to prevent zoom resets on focus changes
   }, [providerPins, mapReady, focusedProviderId, serviceIconUrl, onProviderClick]);
+
+  // ── Render route between client and focused provider ──────────────────
+  useEffect(() => {
+    if (!mapRef.current || !mapReady || !focusedProviderId || !initialLocation) {
+      if (routeLayerRef.current) { mapRef.current?.removeLayer(routeLayerRef.current); routeLayerRef.current = null; }
+      if (routeLabelRef.current) { mapRef.current?.removeLayer(routeLabelRef.current); routeLabelRef.current = null; }
+      return;
+    }
+    const map = mapRef.current;
+    
+    const focusPin = providerPins?.find(p => p.id === focusedProviderId);
+    if (!focusPin) return;
+
+    const start = [initialLocation.lng, initialLocation.lat];
+    const end = [focusPin.lng, focusPin.lat];
+
+    const loadRoute = async () => {
+      try {
+        const res = await fetch(`https://router.project-osrm.org/route/v1/driving/${start[0]},${start[1]};${end[0]},${end[1]}?overview=full&geometries=geojson`);
+        const data = await res.json();
+        
+        if (routeLayerRef.current) map.removeLayer(routeLayerRef.current);
+        if (routeLabelRef.current) map.removeLayer(routeLabelRef.current);
+
+        if (data.code === 'Ok' && data.routes?.[0]) {
+          const route = data.routes[0];
+          const coords = route.geometry.coordinates.map((c: any) => [c[1], c[0]]);
+          const durationMin = Math.round(route.duration / 60);
+          
+          routeLayerRef.current = L.polyline(coords, {
+            color: '#3B82F6',
+            weight: 6,
+            opacity: 0.9,
+            lineCap: 'round',
+            lineJoin: 'round',
+          }).addTo(map);
+
+          // Find midpoint index for the time bubble
+          const midIdx = Math.floor(coords.length / 2);
+          const midPoint = coords[midIdx];
+
+          const labelIcon = L.divIcon({
+            className: '',
+            html: `
+              <div style="
+                background: white; 
+                padding: 6px 12px; 
+                border-radius: 50px; 
+                box-shadow: 0 4px 15px rgba(0,0,0,0.2); 
+                display: flex; 
+                align-items: center; 
+                gap: 6px;
+                white-space: nowrap;
+                border: 2px solid #3B82F6;
+                animation: fadeIn 0.3s ease-out;
+                pointer-events: none;
+              ">
+                <span style="font-size: 14px">🚗</span>
+                <span style="font-size: 13px; font-weight: 800; color: #111827">${durationMin} min</span>
+              </div>
+            `,
+            iconSize: [100, 40],
+            iconAnchor: [50, 20],
+          });
+
+          routeLabelRef.current = L.marker(midPoint, { icon: labelIcon, zIndexOffset: 3000 }).addTo(map);
+
+        } else {
+          // Fallback to straight line if OSRM fails
+          routeLayerRef.current = L.polyline([[initialLocation.lat, initialLocation.lng], [focusPin.lat, focusPin.lng]], {
+            color: '#3B82F6', weight: 4, opacity: 0.6, dashArray: '8, 8'
+          }).addTo(map);
+        }
+      } catch (e) {
+        console.warn("Routing failed", e);
+      }
+    };
+
+    loadRoute();
+
+    return () => {
+      if (routeLayerRef.current) map.removeLayer(routeLayerRef.current);
+      if (routeLabelRef.current) map.removeLayer(routeLabelRef.current);
+    };
+  }, [focusedProviderId, initialLocation, mapReady, providerPins]);
 
   // ── Auto-fit bounds ONLY when the LIST of providers changes ────────────────
   useEffect(() => {

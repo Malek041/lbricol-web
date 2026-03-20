@@ -4,6 +4,8 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useOrder } from '@/context/OrderContext';
 import dynamic from 'next/dynamic';
 import { MapPin, X } from 'lucide-react';
+import { auth, db } from '@/lib/firebase';
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 
 const MapView = dynamic(() => import('@/components/location-picker/MapView'), { ssr: false });
 
@@ -38,7 +40,19 @@ function Step1Content() {
   useEffect(() => {
     if (!navigator.geolocation) return;
 
+    // 1. If we have query params (just came back from search), don't auto-reset to GPS
+    if (searchParams.get('lat') || searchParams.get('lng')) {
+      return;
+    }
+
+    // 2. If we already have a location (manual selection in state or confirm), don't auto-reset to GPS
+    if (order.location?.lat && order.location?.lng) {
+      setUserPosition(null); // Just for visualization
+      return;
+    }
+
     navigator.geolocation.getCurrentPosition(
+
       (pos) => {
         const { latitude, longitude } = pos.coords;
 
@@ -57,6 +71,7 @@ function Step1Content() {
     );
   }, []);
 
+
   const handleLocateMe = () => {
     setIsLocating(true);
     if (!navigator.geolocation) { setIsLocating(false); return; }
@@ -72,7 +87,38 @@ function Step1Content() {
     );
   };
 
+  const saveDraftAndExit = async () => {
+    const user = auth.currentUser;
+    const draftData = {
+      ...order,
+      location: { lat: currentLat, lng: currentLng, address: currentAddress },
+      clientId: user?.uid || null,
+      status: 'draft',
+      updatedAt: new Date().toISOString(),
+    };
+
+    if (user) {
+      try {
+        await addDoc(collection(db, 'jobs'), {
+          ...draftData,
+          createdAt: serverTimestamp(),
+        });
+      } catch (e) {
+        console.error("Error saving draft to DB:", e);
+      }
+    } else {
+      // Local fallback if no user
+      const existing = JSON.parse(localStorage.getItem('lbricol_order_drafts') || '[]');
+      // Add id if missing
+      const draftWithId = { ...draftData, id: `draft_${Date.now()}` };
+      existing.push(draftWithId);
+      localStorage.setItem('lbricol_order_drafts', JSON.stringify(existing));
+    }
+    router.push('/?tab=calendar');
+  };
+
   return (
+
     <>
       <style>{`
         @keyframes pinBounce {
@@ -118,6 +164,7 @@ function Step1Content() {
             initialLocation={{ lat: currentLat, lng: currentLng }}
             flyToPoint={flyToPoint}
             userPosition={userPosition}
+            pinY={50}
             onLocationChange={(point) => {
               setCurrentLat(point.lat);
               setCurrentLng(point.lng);
@@ -127,18 +174,18 @@ function Step1Content() {
 
           {/* X close button */}
           <button
-            onClick={() => router.back()}
-            style={{
-              position: 'absolute', top: 16, left: 16, zIndex: 1000,
-              width: 36, height: 36, borderRadius: '50%',
-              background: '#fff', border: 'none',
-              boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
-              cursor: 'pointer',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-            }}
-          >
-            <X size={18} />
-          </button>
+          onClick={saveDraftAndExit}
+          style={{
+            position: 'absolute', top: 16, left: 16, zIndex: 1000,
+            width: 36, height: 36, borderRadius: '50%',
+            background: '#fff', border: 'none',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+            cursor: 'pointer',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}
+        >
+          <X size={20} className="text-[#111827]" />
+        </button>
 
           {/* Address card — bounces with pin */}
           <div style={{

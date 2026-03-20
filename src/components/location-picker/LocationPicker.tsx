@@ -208,6 +208,7 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
         <div className="absolute top-0 left-0 w-full h-full">
           <MapView
             onLocationChange={handleLocationChange}
+            onLocationError={() => setIsLocating(false)}
             triggerGps={isManualSelection ? 0 : triggerGps}
             flyToPoint={flyToPoint || undefined}
             onInteractionStart={() => setIsInteracting(true)}
