@@ -3678,7 +3678,6 @@ export default function ProviderPage() {
                                                         setShowRedistributeModal(true);
                                                     }
                                                 }}
-                                                userData={userData}
                                             />
                                         </motion.div>
                                     )}
