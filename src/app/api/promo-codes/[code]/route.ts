@@ -4,9 +4,9 @@ import { collection, query, where, getDocs, limit } from 'firebase/firestore';
 
 export async function GET(
   request: Request,
-  { params }: { params: { code: string } }
+  { params }: { params: Promise<{ code: string }> }
 ) {
-  const { code } = params;
+  const { code } = await params;
 
   if (!code) {
     return NextResponse.json({ message: 'Code required' }, { status: 400 });
