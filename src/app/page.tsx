@@ -2342,11 +2342,10 @@ const Home = () => {
   const isFullscreenMobileTab = isMobile && ['home', 'profile', 'share', 'promocodes', 'calendar', 'messages', 'heroes'].includes(mobileNavTab);
 
   // --- PAUSE DEPLOYMENT ---
-  // isMaintenanceMode is true in production, but false in local development to allow oversight.
-  // const isMaintenanceMode = process.env.NODE_ENV === 'production';
-  // if (isMaintenanceMode) {
-  //   return <ComingSoon />;
-  // }
+  const isMaintenanceMode = true;
+  if (isMaintenanceMode) {
+    return <ComingSoon />;
+  }
 
   return (
     <div style={{ backgroundColor: c.bg, color: c.text, minHeight: '100vh', scrollBehavior: 'smooth' }} className="font-sans">
