@@ -378,3 +378,41 @@ L.tileLayer(
 6. View B (Address Details) is a required screen — do not skip it
 7. Auto-focus the search input in View C so keyboard opens immediately
 8. All 3 views are separate routes or conditional renders — not stacked modals
+
+---
+
+## MAP CONTEXT MODES (Current Implementation)
+
+To prevent regressions, the map engine (`MapView.tsx`) supports 3 distinct modes with specific behavioral overrides.
+
+### 1. Client Home Mode (`CompactHomeMap.tsx`)
+*   **Zoom**: `17` (Building level).
+*   **Pin**: `showCenterPin={true}` (CSS overlay).
+*   **Panning**: standard (follows center).
+*   **Purpose**: Quick visual of the user's active sector.
+
+### 2. Location Selection Mode (`Step1/page.tsx`)
+*   **Zoom**: `16` (Initial) -> `17` (on GPS fly).
+*   **Pin**: `showCenterPin={true}` (Teardrop SVG with reverse geocode on `moveend`).
+*   **Panning**: Fluid center-fix.
+*   **Purpose**: Interactive address identification.
+
+### 3. Order Review Mode (`Step2/page.tsx`)
+*   **Zoom**: `16` (Balanced neighborhood view).
+*   **Pin**: `clientPin` (Leaftlet-anchored marker).
+*   **Address Bubble**: Hidden (to avoid covering providers/route).
+*   **Center Pin**: `showCenterPin={false}` (CSS overlay REMOVED).
+*   **Center Lock**: `lockCenterOnFocus={false}` (Map FLIES to Bricolers on card swipe to identify them).
+*   **FitBounds**: `disableFitBounds={true}` (Map does NOT reframe on provider load).
+*   **Purpose**: Identify selected providers and see their distance to the confirmed job location.
+
+---
+
+## TECHNICAL PROPS (`MapView.tsx`)
+
+| Prop | Type | Default | Description |
+|---|---|---|---|
+| `lockCenterOnFocus` | `boolean` | `false` | If `true`, the map stays centered on the client address even when a provider pin is selected. |
+| `disableFitBounds` | `boolean` | `false` | If `true`, skips the automated `fitBounds` that happens when the provider list loads. |
+| `clientPin` | `{lat, lng}` | `undefined` | If provided, renders a geographic Leaflet marker + address bubble at the specified coordinates (Step 2 style). |
+| `zoom` | `number` | `15` | Sets the initial and target zoom level. In modern build, `17` is the preferred "reasonable" zoom for Client UI. |

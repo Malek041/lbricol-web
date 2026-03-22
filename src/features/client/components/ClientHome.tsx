@@ -439,8 +439,8 @@ interface ClientHomeProps {
     selectedCity?: string | null;
     selectedArea?: string | null;
     recentOrders?: any[];
-    availableServiceIds?: string[];
-    availableSubServiceIds?: string[];
+    availableServiceIds: string[] | null;
+    availableSubServiceIds: string[] | null;
     trendingSubServiceIds?: string[]; // array of subService ids
     popularServiceIds?: string[]; // ordered list of service ids by popularity
     onSelectService: (service: string, subService?: string) => void;
@@ -675,9 +675,11 @@ const ClientHome: React.FC<ClientHomeProps> = ({
     };
     // Supply-driven filtering + optional Trending tab appended
     const visibleServices = React.useMemo(() => {
-        let base = availableServiceIds && availableServiceIds.length > 0
-            ? SERVICES.filter(s => availableServiceIds.includes(s.id))
-            : SERVICES;
+        // If availableServiceIds is null, we are still loading or detecting.
+        // If it's [], it means we explicitly found NO services in this city.
+        if (availableServiceIds === null) return SERVICES;
+        
+        let base = SERVICES.filter(s => availableServiceIds.includes(s.id));
 
         // 1) Popularity-based ordering for this city/month, when provided
         if (popularServiceIds && popularServiceIds.length > 0) {
@@ -832,7 +834,8 @@ const ClientHome: React.FC<ClientHomeProps> = ({
                                         style={{
                                             fontSize: t({ en: 'clamp(22px, 10vw, 36px)', fr: 'clamp(34px, 5vw, 48px)', ar: 'clamp(34px, 10vw, 48px)' }),
                                             maxWidth: t({ en: '380px', fr: '420px', ar: '430px' }),
-                                            fontWeight: 700
+                                            fontWeight: 700,
+                                            fontFamily: 'var(--font-fredoka-one), sans-serif'
                                         }}
                                     >
                                         {t({
@@ -891,97 +894,113 @@ const ClientHome: React.FC<ClientHomeProps> = ({
                                     className="flex gap-4 overflow-x-auto border-b border-neutral-100 px-4 flex-shrink-0"
                                     style={{ scrollbarWidth: 'none' }}
                                 >
-                                    {filteredServices.map((svc, idx) => {
-                                        const isActive = svc.id === activeId;
-                                        const isTrending = svc.id === '__trending__';
-                                        // Trending uses amber/gold palette; regular tabs use green/yellow
-                                        const activeColor = isTrending ? '#B8860B' : G_GREEN;
-                                        const activeBg = isTrending ? '#FFF3CD' : '#FFC244';
-                                        return (
-                                            <motion.button
-                                                key={svc.id}
-                                                initial={{ opacity: 0, y: 20, scale: 0.8 }}
-                                                animate={{ opacity: 1, y: 0, scale: 1 }}
-                                                transition={{
-                                                    type: "spring",
-                                                    damping: 15,
-                                                    stiffness: 200,
-                                                    delay: idx * 0.08
-                                                }}
-                                                onClick={() => {
-                                                    setActiveId(svc.id);
-                                                    setHasManuallySelected(true);
-                                                }}
-                                                className="flex flex-col items-center gap-3 px-1 pt-4 pb-3 flex-shrink-0 relative transition-all"
-                                            >
-                                                {/* Icon circle */}
-                                                <motion.div
-                                                    animate={isActive ? {
-                                                        borderRadius: [
-                                                            '60% 40% 30% 70% / 60% 30% 70% 40%',
-                                                            '30% 60% 70% 40% / 50% 60% 30% 60%',
-                                                            '60% 40% 30% 70% / 60% 30% 70% 40%'
-                                                        ],
-                                                        rotate: [-10, 5, -10],
-                                                        scale: [1.05, 1.08, 1.05]
-                                                    } : {
-                                                        borderRadius: '50%',
-                                                        rotate: 0,
-                                                        scale: 1
+                                    {filteredServices.length > 0 ? (
+                                        filteredServices.map((svc, idx) => {
+                                            const isActive = svc.id === activeId;
+                                            const isTrending = svc.id === '__trending__';
+                                            const activeColor = isTrending ? '#B8860B' : G_GREEN;
+                                            const activeBg = isTrending ? '#FFF3CD' : '#FFC244';
+                                            return (
+                                                <motion.button
+                                                    key={svc.id}
+                                                    initial={{ opacity: 0, y: 20, scale: 0.8 }}
+                                                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                                                    transition={{
+                                                        type: "spring",
+                                                        damping: 15,
+                                                        stiffness: 200,
+                                                        delay: idx * 0.08
                                                     }}
-                                                    transition={isActive ? {
-                                                        duration: 6,
-                                                        repeat: Infinity,
-                                                        ease: "easeInOut"
-                                                    } : {
-                                                        duration: 0.3
+                                                    onClick={() => {
+                                                        setActiveId(svc.id);
+                                                        setHasManuallySelected(true);
                                                     }}
-                                                    style={{
-                                                        width: 90,
-                                                        height: 90,
-                                                        backgroundColor: isActive ? activeBg : '#FFFFFF',
-                                                        display: 'flex',
-                                                        alignItems: 'center',
-                                                        justifyContent: 'center',
-                                                        border: isActive ? 'none' : '1.5px solid #F0F0F0',
-                                                    }}
+                                                    className="flex flex-col items-center gap-3 px-1 pt-4 pb-3 flex-shrink-0 relative transition-all"
                                                 >
-                                                    {isTrending ? (
-                                                        <span style={{ fontSize: 36 }}>🔥</span>
-                                                    ) : (
-                                                        <img
-                                                            src={svc.iconPath}
-                                                            className="w-14 h-14 object-contain transition-all duration-300"
-                                                            style={{ filter: 'none' }}
-                                                            alt={svc.label}
+                                                    <motion.div
+                                                        animate={isActive ? {
+                                                            borderRadius: [
+                                                                '60% 40% 30% 70% / 60% 30% 70% 40%',
+                                                                '30% 60% 70% 40% / 50% 60% 30% 60%',
+                                                                '60% 40% 30% 70% / 60% 30% 70% 40%'
+                                                            ],
+                                                            rotate: [-10, 5, -10],
+                                                            scale: [1.05, 1.08, 1.05]
+                                                        } : {
+                                                            borderRadius: '50%',
+                                                            rotate: 0,
+                                                            scale: 1
+                                                        }}
+                                                        transition={isActive ? {
+                                                            duration: 6,
+                                                            repeat: Infinity,
+                                                            ease: "easeInOut"
+                                                        } : {
+                                                            duration: 0.3
+                                                        }}
+                                                        style={{
+                                                            width: 90,
+                                                            height: 90,
+                                                            backgroundColor: isActive ? activeBg : '#FFFFFF',
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                            justifyContent: 'center',
+                                                            border: isActive ? 'none' : '1.5px solid #F0F0F0',
+                                                        }}
+                                                    >
+                                                        {isTrending ? (
+                                                            <span style={{ fontSize: 36 }}>🔥</span>
+                                                        ) : (
+                                                            <img
+                                                                src={svc.iconPath}
+                                                                className="w-14 h-14 object-contain transition-all duration-300"
+                                                                style={{ filter: 'none' }}
+                                                                alt={svc.label}
+                                                            />
+                                                        )}
+                                                    </motion.div>
+
+                                                    <span
+                                                        className="text-[14px] whitespace-nowrap mt-1"
+                                                        style={{
+                                                            fontWeight: isActive ? 900 : 700,
+                                                            color: isActive ? activeColor : '#666',
+                                                            letterSpacing: '-0.02em',
+                                                        }}
+                                                    >
+                                                        {t({ en: svc.label, fr: svc.labelFr, ar: svc.labelAr || svc.labelFr })}
+                                                    </span>
+
+                                                    {isActive && (
+                                                        <motion.div
+                                                            layoutId="tab-indicator"
+                                                            className="absolute bottom-0 left-0 right-0 rounded-full"
+                                                            style={{ height: 3, backgroundColor: activeColor }}
+                                                            transition={{ type: 'spring', stiffness: 500, damping: 40 }}
                                                         />
                                                     )}
-                                                </motion.div>
-
-                                                {/* Label */}
-                                                <span
-                                                    className="text-[14px] whitespace-nowrap mt-1"
-                                                    style={{
-                                                        fontWeight: isActive ? 900 : 700,
-                                                        color: isActive ? activeColor : '#666',
-                                                        letterSpacing: '-0.02em',
-                                                    }}
-                                                >
-                                                    {t({ en: svc.label, fr: svc.labelFr, ar: svc.labelAr || svc.labelFr })}
-                                                </span>
-
-                                                {/* Active underline */}
-                                                {isActive && (
-                                                    <motion.div
-                                                        layoutId="tab-indicator"
-                                                        className="absolute bottom-0 left-0 right-0 rounded-full"
-                                                        style={{ height: 3, backgroundColor: activeColor }}
-                                                        transition={{ type: 'spring', stiffness: 500, damping: 40 }}
-                                                    />
-                                                )}
-                                            </motion.button>
-                                        );
-                                    })}
+                                                </motion.button>
+                                            );
+                                        })
+                                    ) : (
+                                        availableServiceIds !== null && (
+                                            <div className="w-full py-12 px-6 text-center">
+                                                <div className="w-16 h-16 bg-neutral-50 rounded-full flex items-center justify-center mx-auto mb-4 border border-dashed border-neutral-200">
+                                                    <span className="text-2xl text-neutral-300">📍</span>
+                                                </div>
+                                                <p className="text-[16px] font-black text-neutral-800 mb-1">
+                                                    {t({ en: 'Not available here yet', fr: 'Pas encore disponible ici', ar: 'غير متوفر هنا بعد' })}
+                                                </p>
+                                                <p className="text-[13px] font-bold text-neutral-500 max-w-[280px] mx-auto leading-relaxed">
+                                                    {t({ 
+                                                        en: 'We are expanding fast! Try selecting a major city nearby.', 
+                                                        fr: 'Nous nous développons rapidement ! Essayez de sélectionner une grande ville à proximité.',
+                                                        ar: 'نحن نتوسع بسرعة! حاول اختيار مدينة كبرى قريبة.'
+                                                    })}
+                                                </p>
+                                            </div>
+                                        )
+                                    )}
                                 </div>
 
                                 {/* ── Active service content ──────────────────────────────── */}

@@ -12,6 +12,9 @@ import WeekCalendar from '@/features/calendar/components/WeekCalendar';
 import ProfileView from '@/features/provider/components/ProfileView';
 import MobileBottomNav from '@/components/layout/MobileBottomNav';
 import ProviderOrdersView from '@/features/orders/components/ProviderOrdersView';
+import ActivityTab from '@/features/orders/components/ActivityTab';
+import AvailabilityTab from '@/features/orders/components/AvailabilityTab';
+import ProviderRoutineModal from '@/features/orders/components/ProviderRoutineModal';
 import PromoteYourselfView from '@/features/provider/components/PromoteYourselfView';
 import PromocodesView from '@/features/client/components/PromocodesView';
 import { isToday, isThisWeek, parseISO, startOfDay, addDays, format } from 'date-fns';
@@ -168,6 +171,7 @@ export interface Job {
     basePrice?: number | string;
     area?: string;
     clientWhatsApp?: string;
+    locationDetails?: any;
 }
 
 interface ServiceCategory {
@@ -376,7 +380,8 @@ export default function ProviderPage() {
     const [isClientRatedLocally, setIsClientRatedLocally] = useState<string[]>([]);
     const [showMonthPicker, setShowMonthPicker] = useState(false);
     const [viewingJobDetails, setViewingJobDetails] = useState<MobileJobsViewItem | null>(null);
-    const [performanceDetail, setPerformanceDetail] = useState<'none' | 'financial' | 'operational' | 'reputation' | 'marketing' | 'growth' | 'tips-profile' | 'tips-pricing' | 'tips-stars' | 'tips-visibility'>('none');
+    const [performanceTab, setPerformanceTab] = useState<'activity' | 'insights' | 'availability'>('activity');
+    const [performanceDetail, setPerformanceDetail] = useState<'none' | 'financial' | 'operational' | 'reputation' | 'marketing' | 'growth' | 'tips-profile' | 'tips-pricing' | 'tips-stars' | 'tips-visibility' | 'availability'>('none');
     const [tempSelectedServices, setTempSelectedServices] = useState<string[]>([]);
     const [dailySlots, setDailySlots] = useState<{ from: string, to: string }[]>([]);
     const [isSavingSlots, setIsSavingSlots] = useState(false);
@@ -389,6 +394,7 @@ export default function ProviderPage() {
     const [isSubmittingSettlement, setIsSubmittingSettlement] = useState(false);
     const [settlementAmount, setSettlementAmount] = useState<number>(0);
     const [cityDoneJobs, setCityDoneJobs] = useState<{ craft: string }[]>([]);
+    const [showRoutineModal, setShowRoutineModal] = useState(false);
 
     // --- Helpers ---
     const getJobDateTime = useCallback((rawDate: string) => {
@@ -832,12 +838,12 @@ export default function ProviderPage() {
                     if (!startTs) continue;
 
                     let endTs = startTs + (durationHours * 60 * 60 * 1000);
-                    
+
                     const isCarRental = job.service === 'car_rental' || job.craft === 'Car rental' || job.craft === 'car_rental';
                     if (isCarRental && job.carReturnDate) {
                         const rawReturnTime = (job.carReturnTime || '').split('-')[0].trim();
-                        const returnTimePart = rawReturnTime.includes(':') 
-                            ? (rawReturnTime.split(':').length === 2 ? `${rawReturnTime}:00` : rawReturnTime) 
+                        const returnTimePart = rawReturnTime.includes(':')
+                            ? (rawReturnTime.split(':').length === 2 ? `${rawReturnTime}:00` : rawReturnTime)
                             : '23:59:00';
                         const returnDatePart = job.carReturnDate.split('T')[0];
                         const parsedDate = new Date(`${returnDatePart}T${returnTimePart}`);
@@ -953,7 +959,8 @@ export default function ProviderPage() {
                         carReturnDate: data.carReturnDate,
                         carReturnTime: data.carReturnTime,
                         totalPrice: data.totalPrice,
-                        basePrice: data.basePrice
+                        basePrice: data.basePrice,
+                        locationDetails: data.locationDetails
                     } as any);
                 });
 
@@ -1246,8 +1253,8 @@ export default function ProviderPage() {
                 const isCarRental = job.service === 'car_rental' || job.craft === 'Car rental' || job.craft === 'car_rental';
                 if (isCarRental && job.carReturnDate) {
                     const rawReturnTime = (job.carReturnTime || '').split('-')[0].trim();
-                    const returnTimePart = rawReturnTime.includes(':') 
-                        ? (rawReturnTime.split(':').length === 2 ? `${rawReturnTime}:00` : rawReturnTime) 
+                    const returnTimePart = rawReturnTime.includes(':')
+                        ? (rawReturnTime.split(':').length === 2 ? `${rawReturnTime}:00` : rawReturnTime)
                         : '23:59:00';
                     const returnDatePart = job.carReturnDate.split('T')[0];
                     const parsedDate = new Date(`${returnDatePart}T${returnTimePart}`);
@@ -2258,8 +2265,8 @@ export default function ProviderPage() {
                                     </h2>
                                     <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[18px] font-semibold text-black mt-1">
                                         <div className="flex items-center gap-2">
-                                            <span>{job.rawAccepted?.service?.toLowerCase().includes('rental') || job.rawJob?.craft?.toLowerCase().includes('rental') 
-                                                ? formatJobDate(job.rawAccepted?.date || job.rawJob?.date || job.dateLabel) 
+                                            <span>{job.rawAccepted?.service?.toLowerCase().includes('rental') || job.rawJob?.craft?.toLowerCase().includes('rental')
+                                                ? formatJobDate(job.rawAccepted?.date || job.rawJob?.date || job.dateLabel)
                                                 : job.dateLabel}
                                             </span>
                                             <span className="text-neutral-200">|</span>
@@ -2458,15 +2465,15 @@ export default function ProviderPage() {
                                                             const hasReviews = (job.clientReviewCount || 0) > 0;
                                                             const rating = hasReviews ? (job.clientRating || 0) : 0;
                                                             return (
-                                                                <Star 
-                                                                    key={s} 
-                                                                    size={14} 
+                                                                <Star
+                                                                    key={s}
+                                                                    size={14}
                                                                     className={cn(
                                                                         "transition-all",
                                                                         s <= Math.floor(rating)
                                                                             ? "fill-[#FFC244] text-[#FFC244]"
                                                                             : "fill-neutral-100 text-neutral-200"
-                                                                    )} 
+                                                                    )}
                                                                 />
                                                             );
                                                         })}
@@ -2682,47 +2689,46 @@ export default function ProviderPage() {
             </AnimatePresence>
             {renderJobDetailsModal()}
             <AnimatePresence key="main-app-presence">
-                {isMobileLayout && activeNav === 'calendar' && (
+                {isMobileLayout && (activeNav === 'jobs' || activeNav === 'performance') && (
                     <header key="bricoler-mobile-header" className="pt-10 pb-3 px-6 flex flex-col flex-none sticky top-0 z-[100] transition-colors duration-300 bg-white border-b border-neutral-100">
-                        <div className="flex items-center justify-between mb-4">
-                            <h2 className="text-black text-[22px] font-black tracking-tight" style={{ fontFamily: 'Uber Move, var(--font-sans)' }}>
-                                {activeNav === 'calendar' ? t({ en: 'Missions', fr: 'Missions' }) :
-                                    activeNav === 'performance' ? t({ en: 'Performance', fr: 'Performance' }) :
-                                        activeNav === 'messages' ? t({ en: 'Messages', fr: 'Messages' }) :
-                                            activeNav === 'profile' || activeNav === 'services' ? t({ en: 'Profile', fr: 'Profil' }) :
-                                                t({ en: 'Missions', fr: 'Missions' })}
-                            </h2>
-                            <button
-                                onClick={() => setShowNotificationsPage(true)}
-                                className="w-10 h-10 flex items-center justify-center text-black relative active:scale-90 transition-transform bg-neutral-50 rounded-full"
-                            >
-                                <Bell size={22} strokeWidth={2.5} />
-                                {mobileNotificationsCount > 0 && (
-                                    <span className="absolute top-[10px] right-[10px] h-2.5 w-2.5 rounded-full bg-[#E51B24] border-2 border-white" />
-                                )}
-                            </button>
-                        </div>
+                        {(activeNav as string) === 'jobs' && (
+                            <div className="flex items-center justify-between mb-4">
+                                <h2 className="text-black text-[22px] font-black tracking-tight" style={{ fontFamily: 'Uber Move, var(--font-sans)' }}>
+                                    {t({ en: 'Market', fr: 'Missions' })}
+                                </h2>
+                                <button
+                                    onClick={() => setShowNotificationsPage(true)}
+                                    className="w-10 h-10 flex items-center justify-center text-black relative active:scale-90 transition-transform bg-neutral-50 rounded-full"
+                                >
+                                    <Bell size={22} strokeWidth={2.5} />
+                                    {mobileNotificationsCount > 0 && (
+                                        <span className="absolute top-[10px] right-[10px] h-2.5 w-2.5 rounded-full bg-[#E51B24] border-2 border-white" />
+                                    )}
+                                </button>
+                            </div>
+                        )}
 
-                        {activeNav === 'calendar' && (
+                        {(activeNav as string) === 'performance' && (
                             <div className="flex items-center gap-6 overflow-x-auto no-scrollbar">
                                 {[
                                     { id: 'activity' as const, label: t({ en: 'Activity', fr: 'Activité' }) },
-                                    { id: 'availability' as const, label: t({ en: 'Availability', fr: 'Disponibilité' }) }
+                                    { id: 'insights' as const, label: t({ en: 'Insights', fr: 'Analyses' }) },
+                                    { id: 'availability' as const, label: t({ en: 'Availability', fr: 'Dispo' }) }
                                 ].map((tab) => (
                                     <button
                                         key={tab.id}
                                         onClick={() => {
-                                            setOrdersActiveTab(tab.id as any);
-                                            if (activeNav !== 'calendar') setActiveNav('calendar');
+                                            setPerformanceTab(tab.id as any);
+                                            if ((activeNav as string) !== 'performance') setActiveNav('performance');
                                         }}
                                         className={cn(
                                             "pb-2 text-[15px] transition-all relative shrink-0",
-                                            ordersActiveTab === tab.id ? "font-black text-black" : "font-bold text-neutral-400"
+                                            performanceTab === tab.id ? "font-black text-black" : "font-bold text-neutral-400"
                                         )}
                                     >
                                         {tab.label}
-                                        {ordersActiveTab === tab.id && (
-                                            <motion.div layoutId="orders-header-tab" className="absolute bottom-0 left-0 right-0 h-[3px] bg-[#00A082] rounded-t-full" />
+                                        {performanceTab === tab.id && (
+                                            <motion.div layoutId="performance-header-tab" className="absolute bottom-0 left-0 right-0 h-[3px] bg-[#00A082] rounded-t-full" />
                                         )}
                                     </button>
                                 ))}
@@ -3004,7 +3010,7 @@ export default function ProviderPage() {
                                                                                     returnLocked = true;
                                                                                     returnLabel = ra.carReturnDate.split('T')[0];
                                                                                 }
-                                                                            } catch (e) {}
+                                                                            } catch (e) { }
                                                                         }
                                                                         return (
                                                                             <button
@@ -3439,7 +3445,7 @@ export default function ProviderPage() {
                                                                                     returnLocked = true;
                                                                                     returnLabel = ra.carReturnDate.split('T')[0];
                                                                                 }
-                                                                            } catch (e) {}
+                                                                            } catch (e) { }
                                                                         }
                                                                         return (
                                                                             <button
@@ -3602,9 +3608,10 @@ export default function ProviderPage() {
 
                     {activeNav === 'calendar' && (
                         <ProviderOrdersView
-                            orders={acceptedJobsSorted}
-                            activeTab={ordersActiveTab}
-                            setActiveTab={setOrdersActiveTab}
+                            confirmedOrders={acceptedJobsSorted}
+                            availableJobs={marketJobsOpen}
+                            userData={userData}
+                            setUserData={setUserData as any}
                             onConfirmJob={handleConfirmJob}
                             onRedistributeJob={(order) => {
                                 const job = acceptedJobs.find(j => j.id === order.id);
@@ -3631,862 +3638,802 @@ export default function ProviderPage() {
                                     setViewingJobDetails(toMobileItem(accepted, 'accepted'));
                                 }
                             }}
-                            userData={userData}
-                            setUserData={setUserData}
-                            horizontalSelectedDate={horizontalSelectedDate}
-                            setHorizontalSelectedDate={setHorizontalSelectedDate}
-                            handleSaveSlotsManual={handleSaveSlotsManual}
-                            AVAILABILITY_SLOTS={AVAILABILITY_SLOTS}
-                            TIME_SLOTS={TIME_SLOTS}
                         />
                     )}
 
-                    {
-                        activeNav === 'performance' && (
-                            <div ref={performanceScrollRef} className="h-full overflow-y-auto pb-10 no-scrollbar">
-                                <div className="space-y-6 max-w-4xl mx-auto px-6 pt-10">
-                                    {/* Month Selection Header */}
-                                    <div className="flex items-center justify-between mb-8">
-                                        <div
-                                            className="relative inline-flex items-center gap-3 cursor-pointer group"
-                                            onClick={() => setShowMonthPicker(!showMonthPicker)}
+                    {activeNav === 'performance' && (
+                        <div ref={performanceScrollRef} className="h-full overflow-y-auto pb-10 no-scrollbar">
+                            <div className="space-y-6 max-w-4xl mx-auto px-6 pt-10">
+
+
+                                <AnimatePresence mode="wait">
+                                    {performanceTab === 'activity' && (
+                                        <motion.div
+                                            key="performance-activity"
+                                            initial={{ opacity: 0, y: 10 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            exit={{ opacity: 0, y: -10 }}
+                                            transition={{ duration: 0.2 }}
                                         >
-                                            <div className="w-12 h-12 bg-neutral-50 rounded-2xl flex items-center justify-center border border-neutral-100 group-hover:bg-neutral-100 transition-colors">
-                                                <Calendar size={20} className="text-black" />
-                                            </div>
-                                            <div>
-                                                <p className="text-[11px] font-black text-neutral-400 uppercase tracking-widest leading-none mb-1">{t({ en: 'Selected Period', fr: 'Période sélectionnée' })}</p>
-                                                <div className="flex items-center gap-2">
-                                                    <span className="text-[20px] font-black text-black leading-none tracking-tight" style={{ fontFamily: 'Uber Move, var(--font-sans)' }}>
-                                                        {monthLabel}
-                                                    </span>
-                                                    <motion.div animate={{ rotate: showMonthPicker ? 180 : 0 }} transition={{ duration: 0.2 }}>
-                                                        <ChevronDown size={18} className="text-black stroke-[2.5px]" />
-                                                    </motion.div>
+                                            <ActivityTab
+                                                userData={userData}
+                                                orders={acceptedJobsSorted}
+                                                onSelect={(order) => {
+                                                    const job = availableJobs.find(j => j.id === order.id);
+                                                    if (job) {
+                                                        setViewingJobDetails(toMobileItem(job, 'market'));
+                                                        return;
+                                                    }
+                                                    const accepted = acceptedJobs.find(j => j.id === order.id);
+                                                    if (accepted) {
+                                                        setViewingJobDetails(toMobileItem(accepted, 'accepted'));
+                                                    }
+                                                }}
+                                                onShowHistory={() => setShowNotificationsPage(true)}
+                                                onConfirmJob={handleConfirmJob}
+                                                onRedistributeJob={(order) => {
+                                                    const job = acceptedJobs.find(j => j.id === order.id);
+                                                    if (job) {
+                                                        setRedistributeJob(job);
+                                                        setShowRedistributeModal(true);
+                                                    }
+                                                }}
+                                                userData={userData}
+                                            />
+                                        </motion.div>
+                                    )}
+                                    {performanceTab === 'insights' ? (
+                                        <motion.div
+                                            key="performance-insights"
+                                            initial={{ opacity: 0, y: 10 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            exit={{ opacity: 0, y: -10 }}
+                                            transition={{ duration: 0.2 }}
+                                            className="space-y-6"
+                                        >
+                                            {/* Insights Header */}
+                                            <div className="flex items-center justify-between mb-8">
+                                                <div
+                                                    className="relative inline-flex items-center gap-3 cursor-pointer group"
+                                                    onClick={() => setShowMonthPicker(!showMonthPicker)}
+                                                >
+                                                    <div className="w-12 h-12 bg-neutral-50 rounded-2xl flex items-center justify-center border border-neutral-100 group-hover:bg-neutral-100 transition-colors">
+                                                        <Calendar size={20} className="text-black" />
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-[11px] font-black text-neutral-400 uppercase tracking-widest leading-none mb-1">{t({ en: 'Selected Period', fr: 'Période sélectionnée' })}</p>
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="text-[20px] font-black text-black leading-none tracking-tight" style={{ fontFamily: 'Uber Move, var(--font-sans)' }}>
+                                                                {monthLabel}
+                                                            </span>
+                                                            <motion.div animate={{ rotate: showMonthPicker ? 180 : 0 }} transition={{ duration: 0.2 }}>
+                                                                <ChevronDown size={18} className="text-black stroke-[2.5px]" />
+                                                            </motion.div>
+                                                        </div>
+                                                    </div>
                                                 </div>
-                                            </div>
-                                        </div>
 
-                                        <button
-                                            onClick={() => setShowNotificationsPage(true)}
-                                            className="w-12 h-12 flex items-center justify-center text-black relative active:scale-90 transition-transform bg-neutral-50 rounded-2xl border border-neutral-100"
-                                        >
-                                            <Bell size={22} strokeWidth={2.5} />
-                                            {mobileNotificationsCount > 0 && (
-                                                <span className="absolute top-[10px] right-[10px] h-2.5 w-2.5 rounded-full bg-[#E51B24] border-2 border-white" />
-                                            )}
-                                        </button>
-                                    </div>
-
-                                    {/* Monthly Performance Summary */}
-                                    {(() => {
-                                        const COMMISSION_RATE = 0.15;
-
-                                        // ── All figures are month-scoped via selectedMonthDt ──
-                                        const referralBonus = (userData as any)?.bricolerReferralBalance || 0;
-                                        const totalEarnings = monthRevenueNum;
-                                        const lbricolCommission = Math.round(totalEarnings * COMMISSION_RATE);
-                                        const netEarnings = totalEarnings - lbricolCommission + referralBonus;
-
-                                        // Rating: month-scoped AVG; fallback to all-time
-                                        const avgRating = monthAvgRating;
-
-                                        const ratingBreakdown = [5, 4, 3, 2, 1].map(star => {
-                                            const count = monthRatings.filter(r => Math.round(r) === star).length;
-                                            const pct = monthRatings.length > 0 ? Math.round((count / monthRatings.length) * 100) : 0;
-                                            return { star, pct };
-                                        });
-
-                                        const monthCancelled = monthJobs.filter(j => j.status === 'cancelled').length;
-                                        const monthTotal = monthJobs.length;
-                                        const completionRate = monthTotal > 0
-                                            ? Math.round((monthDoneJobs.length / monthTotal) * 100)
-                                            : 0;
-
-                                        // Real Health Score Calculation
-                                        const qScore = (Number(avgRating) || 0) / 5; // 0 to 1
-                                        const rTotal = monthTotal;
-                                        const rDone = monthDoneJobs.length;
-                                        const rScore = rTotal > 0 ? rDone / rTotal : 0; // 0 to 1
-                                        const vScore = Math.min(rDone / 4, 1); // Max volume reached at 4 jobs per month
-
-                                        // Combined Score: (70% Rating + 30% Reliability) * VolumeFactor
-                                        // This ensures users with more done missions have higher scores
-                                        const healthScore = Math.round(((qScore * 70) + (rScore * 30)) * vScore);
-
-                                        // Dynamic Status Label
-                                        const statusLabel = healthScore >= 90
-                                            ? t({ en: 'Elite', fr: 'Élite' })
-                                            : healthScore >= 70
-                                                ? t({ en: 'Professional', fr: 'Professionnel' })
-                                                : healthScore >= 40
-                                                    ? t({ en: 'Steady', fr: 'Stable' })
-                                                    : rDone > 0
-                                                        ? t({ en: 'Active', fr: 'Actif' })
-                                                        : t({ en: 'Starter', fr: 'Débutant' });
-
-                                        return (
-                                            <div className="space-y-6 max-w-lg mx-auto pb-20 relative">
-                                                {/* ── Month Picker Dropdown Overlay ── */}
-                                                <AnimatePresence key="performance-month-picker-presence">
-                                                    {showMonthPicker && (
-                                                        <motion.div
-                                                            key="performance-month-picker"
-                                                            initial={{ opacity: 0, y: -8, scale: 0.97 }}
-                                                            animate={{ opacity: 1, y: 0, scale: 1 }}
-                                                            exit={{ opacity: 0, y: -8, scale: 0.97 }}
-                                                            transition={{ duration: 0.18 }}
-                                                            className="absolute inset-x-6 top-0 z-[100] bg-white rounded-2xl border border-neutral-200 overflow-hidden shadow-2xl"
-                                                        >
-                                                            {/* Year row */}
-                                                            <div className="flex items-center justify-between px-5 py-4 border-b border-neutral-100">
-                                                                <button
-                                                                    onClick={() => setSelectedMonthDt(new Date(selectedMonthDt.getFullYear() - 1, selectedMonthDt.getMonth(), 1))}
-                                                                    className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-neutral-100 transition-colors"
-                                                                >
-                                                                    <ChevronDown style={{ transform: 'rotate(90deg)' }} size={16} />
-                                                                </button>
-                                                                <span className="text-[16px] font-black text-neutral-900">{selectedMonthDt.getFullYear()}</span>
-                                                                <button
-                                                                    onClick={() => setSelectedMonthDt(new Date(selectedMonthDt.getFullYear() + 1, selectedMonthDt.getMonth(), 1))}
-                                                                    className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-neutral-100 transition-colors"
-                                                                >
-                                                                    <ChevronDown style={{ transform: 'rotate(-90deg)' }} size={16} />
-                                                                </button>
-                                                            </div>
-                                                            {/* Month grid */}
-                                                            <div className="grid grid-cols-4 gap-1 p-3">
-                                                                {['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'].map((m, idx) => {
-                                                                    const isSelectedMonth = idx === selectedMonthDt.getMonth();
-                                                                    const isNowMonth = idx === new Date().getMonth() && selectedMonthDt.getFullYear() === new Date().getFullYear();
-                                                                    return (
-                                                                        <button
-                                                                            key={m}
-                                                                            onClick={() => {
-                                                                                setSelectedMonthDt(new Date(selectedMonthDt.getFullYear(), idx, 1));
-                                                                                setShowMonthPicker(false);
-                                                                            }}
-                                                                            className={cn(
-                                                                                'h-10 rounded-xl text-[13px] font-bold transition-all',
-                                                                                isSelectedMonth
-                                                                                    ? 'bg-black text-white'
-                                                                                    : isNowMonth
-                                                                                        ? 'bg-neutral-100 text-black ring-1 ring-neutral-300'
-                                                                                        : 'text-neutral-700 hover:bg-neutral-100 transition-colors'
-                                                                            )}
-                                                                        >
-                                                                            {m}
-                                                                        </button>
-                                                                    );
-                                                                })}
-                                                            </div>
-                                                        </motion.div>
+                                                <button
+                                                    onClick={() => setShowNotificationsPage(true)}
+                                                    className="w-12 h-12 flex items-center justify-center text-black relative active:scale-90 transition-transform bg-neutral-50 rounded-2xl border border-neutral-100"
+                                                >
+                                                    <Bell size={22} strokeWidth={2.5} />
+                                                    {mobileNotificationsCount > 0 && (
+                                                        <span className="absolute top-[10px] right-[10px] h-2.5 w-2.5 rounded-full bg-[#E51B24] border-2 border-white" />
                                                     )}
-                                                </AnimatePresence>
-                                                <AnimatePresence mode="wait">
-                                                    {performanceDetail === 'none' ? (
-                                                        <motion.div
-                                                            key="main-performance"
-                                                            initial={{ opacity: 0 }}
-                                                            animate={{ opacity: 1 }}
-                                                            exit={{ opacity: 0 }}
-                                                            className="space-y-8 pt-20 pb-32"
-                                                        >
-                                                            {/* HERO SECTION: SIMPLE METRIC */}
-                                                            <div className="px-6 relative">
-                                                                <button
-                                                                    onClick={() => setPerformanceDetail('financial')}
-                                                                    className="absolute top-0 right-6 w-12 h-12 bg-[#00A082] text-white rounded-full flex items-center justify-center shadow-lg active:scale-95 transition-all z-20"
-                                                                    title={t({ en: 'Commissions', fr: 'Commissions' })}
-                                                                >
-                                                                    <Banknote size={24} />
-                                                                </button>
-                                                                <div className="p-10 bg-white rounded-[15px] border border-[#C5C5C5] flex flex-col items-center text-center">
-                                                                    <div className="w-[120px] h-[120px] rounded-full bg-white shadow-[0_8px_30px_rgba(0,0,0,0.04)] flex items-center justify-center relative mb-6">
-                                                                        <span className="text-[40px] font-[1000] text-black tracking-tighter" style={{ fontFamily: 'Uber Move, var(--font-sans)' }}>{healthScore}</span>
+                                                </button>
+                                            </div>
 
-                                                                        <svg className="absolute inset-0 w-full h-full -rotate-90">
-                                                                            <circle
-                                                                                cx="60" cy="60" r="54"
-                                                                                fill="none" stroke="#E5E5E5" strokeWidth="8"
-                                                                            />
-                                                                            <motion.circle
-                                                                                cx="60" cy="60" r="54"
-                                                                                fill="none" stroke="black" strokeWidth="8"
-                                                                                strokeDasharray="339.29"
-                                                                                initial={{ strokeDashoffset: 339.29 }}
-                                                                                animate={{ strokeDashoffset: 339.29 - (339.29 * healthScore / 100) }}
-                                                                                transition={{ duration: 1.2, ease: "easeOut" }}
-                                                                                strokeLinecap="round"
-                                                                            />
-                                                                        </svg>
-                                                                    </div>
+                                            {(() => {
+                                                const COMMISSION_RATE = 0.15;
 
-                                                                    <div className="space-y-1 mb-8">
-                                                                        <div className="inline-flex px-3 py-1 bg-black rounded-full mb-2">
-                                                                            <span className="text-white text-[10px] font-black uppercase tracking-[0.2em]">{statusLabel}</span>
-                                                                        </div>
-                                                                        <h2 className="text-black text-[22px] font-[1000] tracking-tight">{t({ en: 'Global Performance', fr: 'Performance Globale' })}</h2>
-                                                                        <p className="text-neutral-500 text-[13px] font-extrabold leading-relaxed px-4">
-                                                                            {healthScore > 80 ? t({ en: 'You are among the top tier providers!', fr: 'Vous faites partie des meilleurs prestataires !' }) : t({ en: 'Complete more missions to boost your score', fr: 'Réalisez plus de missions pour booster votre score' })}
-                                                                        </p>
-                                                                    </div>
+                                                // ── All figures are month-scoped via selectedMonthDt ──
+                                                const referralBonus = (userData as any)?.bricolerReferralBalance || 0;
+                                                const totalEarnings = monthRevenueNum;
+                                                const lbricolCommission = Math.round(totalEarnings * COMMISSION_RATE);
+                                                const netEarnings = totalEarnings - lbricolCommission + referralBonus;
 
-                                                                    <div className="mt-8 grid grid-cols-2 gap-8 w-full border-t border-neutral-200 pt-6">
-                                                                        <div>
-                                                                            <p className="text-neutral-400 text-[10px] uppercase font-black tracking-widest mb-0.5">{t({ en: 'Missions', fr: 'Missions' })}</p>
-                                                                            <p className="text-black text-[16px] font-black">{monthDoneJobs.length}</p>
-                                                                        </div>
-                                                                        <div>
-                                                                            <p className="text-neutral-400 text-[10px] uppercase font-black tracking-widest mb-0.5">{t({ en: 'Rating', fr: 'Note' })}</p>
-                                                                            <p className="text-black text-[16px] font-black">{Number(avgRating) > 0 ? avgRating : '--'}</p>
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
-                                                            </div>
+                                                // Rating: month-scoped AVG; fallback to all-time
+                                                const avgRating = monthAvgRating;
 
-                                                            {/* MAIN STATS GRID - MINIMALIST */}
-                                                            <div className="px-6 space-y-3">
+                                                const ratingBreakdown = [5, 4, 3, 2, 1].map(star => {
+                                                    const count = monthRatings.filter(r => Math.round(r) === star).length;
+                                                    const pct = monthRatings.length > 0 ? Math.round((count / monthRatings.length) * 100) : 0;
+                                                    return { star, pct };
+                                                });
+
+                                                const monthCancelled = monthJobs.filter(j => j.status === 'cancelled').length;
+                                                const monthTotal = monthJobs.length;
+                                                const completionRate = monthTotal > 0
+                                                    ? Math.round((monthDoneJobs.length / monthTotal) * 100)
+                                                    : 0;
+
+                                                // Real Health Score Calculation
+                                                const qScore = (Number(avgRating) || 0) / 5; // 0 to 1
+                                                const rTotal = monthTotal;
+                                                const rDone = monthDoneJobs.length;
+                                                const rScore = rTotal > 0 ? rDone / rTotal : 0; // 0 to 1
+                                                const vScore = Math.min(rDone / 4, 1); // Max volume reached at 4 jobs per month
+
+                                                // Combined Score: (70% Rating + 30% Reliability) * VolumeFactor
+                                                // This ensures users with more done missions have higher scores
+                                                const healthScore = Math.round(((qScore * 70) + (rScore * 30)) * vScore);
+
+                                                // Dynamic Status Label
+                                                const statusLabel = healthScore >= 90
+                                                    ? t({ en: 'Elite', fr: 'Élite' })
+                                                    : healthScore >= 70
+                                                        ? t({ en: 'Professional', fr: 'Professionnel' })
+                                                        : healthScore >= 40
+                                                            ? t({ en: 'Steady', fr: 'Stable' })
+                                                            : rDone > 0
+                                                                ? t({ en: 'Active', fr: 'Actif' })
+                                                                : t({ en: 'Starter', fr: 'Débutant' });
+
+                                                return (
+                                                    <div className="space-y-6 max-w-lg mx-auto pb-20 relative">
+                                                        {/* ── Month Picker Dropdown Overlay ── */}
+                                                        <AnimatePresence key="performance-month-picker-presence">
+                                                            {showMonthPicker && (
                                                                 <motion.div
-                                                                    onClick={() => setPerformanceDetail('financial')}
-                                                                    whileTap={{ scale: 0.98 }}
-                                                                    className="p-5 bg-white rounded-[13px] border border-[#C5C5C5] cursor-pointer flex items-center justify-between group"
+                                                                    key="performance-month-picker"
+                                                                    initial={{ opacity: 0, y: -8, scale: 0.97 }}
+                                                                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                                                                    exit={{ opacity: 0, y: -8, scale: 0.97 }}
+                                                                    transition={{ duration: 0.18 }}
+                                                                    className="absolute inset-x-6 top-0 z-[100] bg-white rounded-2xl border border-neutral-200 overflow-hidden shadow-2xl"
                                                                 >
-                                                                    <div className="flex items-center gap-4">
-                                                                        <div className="w-12 h-12 bg-emerald-100 rounded-xl flex items-center justify-center text-emerald-700">
-                                                                            <Wallet size={24} />
-                                                                        </div>
-                                                                        <div>
-                                                                            <p className="text-[11px] font-black text-neutral-400 uppercase tracking-widest leading-none mb-1">{t({ en: 'Your earnings', fr: 'Vos gains' })}</p>
-                                                                            <div className="flex items-baseline gap-1">
-                                                                                <span className="text-[20px] font-black text-black">{netEarnings.toFixed(0)}</span>
-                                                                                <span className="text-[12px] font-black text-neutral-300 uppercase">{t({ en: 'MAD', fr: 'MAD' })}</span>
-                                                                            </div>
-                                                                        </div>
-                                                                    </div>
-                                                                    <ChevronRight size={18} className="text-neutral-300 group-hover:text-black transition-colors" />
-                                                                </motion.div>
-
-                                                                <div className="grid grid-cols-2 gap-3">
-                                                                    <motion.div
-                                                                        onClick={() => setPerformanceDetail('reputation')}
-                                                                        whileTap={{ scale: 0.98 }}
-                                                                        className="p-5 bg-white rounded-[13px] border border-[#C5C5C5] cursor-pointer group"
-                                                                    >
-                                                                        <Star size={20} className="text-[#FFC244] mb-3" fill="#FFC244" />
-                                                                        <p className="text-neutral-500 text-[11px] font-black uppercase tracking-widest mb-0.5">{t({ en: 'Rating', fr: 'Note' })}</p>
-                                                                        <span className="text-[20px] font-black text-black">{Number(avgRating) > 0 ? avgRating : '--'}/5</span>
-                                                                    </motion.div>
-
-                                                                    <motion.div
-                                                                        onClick={() => setPerformanceDetail('operational')}
-                                                                        whileTap={{ scale: 0.98 }}
-                                                                        className="p-5 bg-white rounded-[13px] border border-[#C5C5C5] cursor-pointer group"
-                                                                    >
-                                                                        <TrendingUp size={20} className="text-black mb-3" />
-                                                                        <p className="text-neutral-400 text-[11px] font-black uppercase tracking-widest mb-0.5">{t({ en: 'Efficiency', fr: 'Efficacité' })}</p>
-                                                                        <span className="text-[20px] font-black text-black">{completionRate}%</span>
-                                                                    </motion.div>
-
-                                                                    <motion.div
-                                                                        onClick={() => setPerformanceDetail('marketing')}
-                                                                        whileTap={{ scale: 0.98 }}
-                                                                        className="p-5 bg-white rounded-[13px] border border-[#C5C5C5] cursor-pointer opacity-60"
-                                                                    >
-                                                                        <Eye size={20} className="text-black mb-3" />
-                                                                        <p className="text-black text-[11px] font-black uppercase tracking-widest mb-0.5">{t({ en: 'Visibilty', fr: 'Visibilité' })}</p>
-                                                                        <span className="text-[20px] font-black text-neutral-400">--</span>
-                                                                    </motion.div>
-
-
-                                                                </div>
-                                                            </div>
-
-                                                            {/* TIPS SECTION - SIMPLE CARDS */}
-                                                            <div className="space-y-4 pt-4">
-                                                                <div className="px-6 flex items-center justify-between">
-                                                                    <h3 className="text-[18px] font-[900] text-black tracking-tight">{t({ en: 'Tips on how to make more money on Lbricol', fr: 'Conseils pour gagner plus sur Lbricol' })}</h3>
-                                                                    <div className="flex gap-1">
-                                                                        <div className="w-1.5 h-1.5 rounded-full bg-[#FFC244]" />
-                                                                        <div className="w-1.5 h-1.5 rounded-full bg-neutral-100" />
-                                                                    </div>
-                                                                </div>
-
-                                                                <div className="px-4 overflow-x-auto no-scrollbar flex gap-3 pb-4">
-                                                                    {[
-                                                                        { id: 'tips-profile', title: t({ en: 'Profile', fr: 'Profil' }), desc: t({ en: 'Get more clicks', fr: 'Plus de clics' }), color: '#F8F9FA', icon: User },
-                                                                        { id: 'tips-pricing', title: t({ en: 'Pricing', fr: 'Tarifs' }), desc: t({ en: 'Optimize rates', fr: 'Optimisez prix' }), color: '#F1F3F5', icon: Tag },
-                                                                        { id: 'tips-stars', title: t({ en: 'Service', fr: 'Service' }), desc: t({ en: '5-star secrets', fr: 'Secrets 5 étoiles' }), color: '#E9ECEF', icon: Gift },
-                                                                        { id: 'tips-visibility', title: t({ en: 'Ranking', fr: 'Classement' }), desc: t({ en: 'Boost ranking', fr: 'Montez en haut' }), color: '#DEE2E6', icon: Eye }
-                                                                    ].map((tip) => (
-                                                                        <motion.button
-                                                                            key={tip.id}
-                                                                            onClick={() => setPerformanceDetail(tip.id as any)}
-                                                                            whileTap={{ scale: 0.95 }}
-                                                                            className="w-[160px] flex-none bg-[#F7F6F6] rounded-[13px] border border-neutral-100 p-5 text-left flex flex-col gap-3"
+                                                                    {/* Year row */}
+                                                                    <div className="flex items-center justify-between px-5 py-4 border-b border-neutral-100">
+                                                                        <button
+                                                                            onClick={() => setSelectedMonthDt(new Date(selectedMonthDt.getFullYear() - 1, selectedMonthDt.getMonth(), 1))}
+                                                                            className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-neutral-100 transition-colors"
                                                                         >
-                                                                            <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ backgroundColor: tip.color }}>
-                                                                                <tip.icon size={18} className="text-black/70" />
-                                                                            </div>
-                                                                            <div>
-                                                                                <h4 className="text-[15px] font-black text-neutral-900 leading-none mb-1">{tip.title}</h4>
-                                                                                <p className="text-[11px] font-medium text-neutral-400 leading-tight">{tip.desc}</p>
-                                                                            </div>
-                                                                        </motion.button>
-                                                                    ))}
-                                                                </div>
-                                                            </div>
-
-                                                            {/* SERVICE BREAKDOWN STRIP */}
-                                                            {serviceBreakdown.length > 0 && (
-                                                                <div className="space-y-4 pt-6 pb-2">
-                                                                    <div className="px-6 flex items-center justify-between">
-                                                                        <div>
-                                                                            <h3 className="text-[18px] font-[900] text-black tracking-tight">{t({ en: 'My Services', fr: 'Mes Services', ar: 'خدماتي' })}</h3>
-                                                                            <p className="text-[11px] font-black text-neutral-400 uppercase tracking-widest mt-0.5">{t({ en: 'This month breakdown', fr: 'Récap du mois', ar: 'ملخص الشهر' })}</p>
-                                                                        </div>
-                                                                        <div className="flex gap-1">
-                                                                            <div className="w-1.5 h-1.5 rounded-full bg-[#00A082]" />
-                                                                            <div className="w-1.5 h-1.5 rounded-full bg-neutral-100" />
-                                                                        </div>
+                                                                            <ChevronDown style={{ transform: 'rotate(90deg)' }} size={16} />
+                                                                        </button>
+                                                                        <span className="text-[16px] font-black text-neutral-900">{selectedMonthDt.getFullYear()}</span>
+                                                                        <button
+                                                                            onClick={() => setSelectedMonthDt(new Date(selectedMonthDt.getFullYear() + 1, selectedMonthDt.getMonth(), 1))}
+                                                                            className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-neutral-100 transition-colors"
+                                                                        >
+                                                                            <ChevronDown style={{ transform: 'rotate(-90deg)' }} size={16} />
+                                                                        </button>
                                                                     </div>
-
-                                                                    <div className="px-4 overflow-x-auto no-scrollbar flex gap-3 pb-6">
-                                                                        {serviceBreakdown.map(({ serviceId, earnings, avgRating, demandScore, jobCount }) => {
-                                                                            const cat = SERVICE_CATEGORIES.find(c => c.id === serviceId);
-                                                                            const catName = cat ? t(cat.name) : serviceId;
-                                                                            const CatIcon = (cat as any)?.icon as React.ElementType | undefined;
+                                                                    {/* Month grid */}
+                                                                    <div className="grid grid-cols-4 gap-1 p-3">
+                                                                        {['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'].map((m, idx) => {
+                                                                            const isSelectedMonth = idx === selectedMonthDt.getMonth();
+                                                                            const isNowMonth = idx === new Date().getMonth() && selectedMonthDt.getFullYear() === new Date().getFullYear();
                                                                             return (
-                                                                                <motion.div
-                                                                                    key={serviceId}
-                                                                                    initial={{ opacity: 0, y: 16 }}
-                                                                                    animate={{ opacity: 1, y: 0 }}
-                                                                                    className="w-[190px] flex-none bg-white rounded-[20px] border border-neutral-100 p-5 flex flex-col gap-4 shadow-sm"
+                                                                                <button
+                                                                                    key={m}
+                                                                                    onClick={() => {
+                                                                                        setSelectedMonthDt(new Date(selectedMonthDt.getFullYear(), idx, 1));
+                                                                                        setShowMonthPicker(false);
+                                                                                    }}
+                                                                                    className={cn(
+                                                                                        "py-3 rounded-xl text-[12px] font-black uppercase tracking-widest transition-all",
+                                                                                        isSelectedMonth ? "bg-black text-white" : "bg-neutral-50 text-neutral-400 hover:bg-neutral-100",
+                                                                                        isNowMonth && !isSelectedMonth && "border border-neutral-200"
+                                                                                    )}
                                                                                 >
-                                                                                    {/* Service header */}
-                                                                                    <div className="flex items-center gap-2.5">
-                                                                                        <div className="w-10 h-10 rounded-xl bg-neutral-50 border border-neutral-100 flex items-center justify-center">
-                                                                                            {CatIcon ? <CatIcon size={20} className="text-black/70" /> : <span className="text-[18px]">🔧</span>}
-                                                                                        </div>
-                                                                                        <div className="min-w-0">
-                                                                                            <p className="text-[13px] font-black text-black leading-none truncate">{catName}</p>
-                                                                                            <p className="text-[10px] font-bold text-neutral-400 mt-0.5">{jobCount} {t({ en: jobCount === 1 ? 'mission' : 'missions', fr: jobCount === 1 ? 'mission' : 'missions', ar: jobCount === 1 ? 'مهمة' : 'مهام' })}</p>
-                                                                                        </div>
-                                                                                    </div>
-
-                                                                                    {/* KPIs */}
-                                                                                    <div className="space-y-3">
-                                                                                        {/* Earnings */}
-                                                                                        <div className="flex items-center justify-between">
-                                                                                            <span className="text-[10px] font-black text-neutral-400 uppercase tracking-widest">{t({ en: 'Earned', fr: 'Gains', ar: 'الأرباح' })}</span>
-                                                                                            <span className="text-[15px] font-black text-black">
-                                                                                                {earnings > 0 ? `${earnings.toFixed(0)} MAD` : '--'}
-                                                                                            </span>
-                                                                                        </div>
-
-                                                                                        {/* Avg Rating */}
-                                                                                        <div className="flex items-center justify-between">
-                                                                                            <span className="text-[10px] font-black text-neutral-400 uppercase tracking-widest">{t({ en: 'Rating', fr: 'Note', ar: 'التقييم' })}</span>
-                                                                                            <div className="flex items-center gap-1">
-                                                                                                {avgRating > 0 ? (
-                                                                                                    <>
-                                                                                                        <Star size={12} fill="#FFC244" className="text-[#FFC244]" />
-                                                                                                        <span className="text-[15px] font-black text-black">{avgRating.toFixed(1)}</span>
-                                                                                                    </>
-                                                                                                ) : (
-                                                                                                    <span className="text-[15px] font-black text-neutral-300">--</span>
-                                                                                                )}
-                                                                                            </div>
-                                                                                        </div>
-
-                                                                                        {/* Demand score */}
-                                                                                        <div>
-                                                                                            <div className="flex items-center justify-between mb-1.5">
-                                                                                                <span className="text-[10px] font-black text-neutral-400 uppercase tracking-widest">{t({ en: 'City Demand', fr: 'Demande Ville', ar: 'طلب المدينة' })}</span>
-                                                                                                {demandScore === null ? (
-                                                                                                    <span className="px-2 py-0.5 bg-[#00A082]/10 text-[#00A082] text-[10px] font-black rounded-full">{t({ en: 'New', fr: 'Nouveau', ar: 'جديد' })}</span>
-                                                                                                ) : (
-                                                                                                    <span className="text-[15px] font-black text-black">{demandScore}%</span>
-                                                                                                )}
-                                                                                            </div>
-                                                                                            {/* Progress bar */}
-                                                                                            <div className="w-full h-1.5 bg-neutral-100 rounded-full overflow-hidden">
-                                                                                                <motion.div
-                                                                                                    initial={{ width: 0 }}
-                                                                                                    animate={{ width: `${demandScore ?? 0}%` }}
-                                                                                                    transition={{ duration: 0.8, ease: 'easeOut' }}
-                                                                                                    className="h-full rounded-full"
-                                                                                                    style={{ background: demandScore !== null && demandScore >= 50 ? '#00A082' : demandScore !== null && demandScore > 0 ? '#FFC244' : '#E5E5E5' }}
-                                                                                                />
-                                                                                            </div>
-                                                                                        </div>
-                                                                                    </div>
-                                                                                </motion.div>
+                                                                                    {t({ en: m, fr: m })}
+                                                                                </button>
                                                                             );
                                                                         })}
                                                                     </div>
-                                                                </div>
+                                                                </motion.div>
                                                             )}
-                                                        </motion.div>
-                                                    ) : (
-                                                        <motion.div
-                                                            key="detail-performance"
-                                                            initial={{ opacity: 0, y: 10 }}
-                                                            animate={{ opacity: 1, y: 0 }}
-                                                            exit={{ opacity: 0, y: 10 }}
-                                                            transition={{ duration: 0.3 }}
-                                                            className="bg-white min-h-[100vh] flex flex-col pt-4 relative"
-                                                        >
-                                                            {/* DETAIL HEADER */}
-                                                            <div className="px-6 pt-6 pb-2 flex items-center sticky top-0 z-10 bg-white">
-                                                                <button
-                                                                    onClick={() => setPerformanceDetail('none')}
-                                                                    className="w-10 h-10 flex items-center justify-center rounded-full bg-neutral-100 transition-all hover:scale-105 active:scale-95"
-                                                                >
-                                                                    <ChevronLeft size={24} className="text-neutral-500" />
-                                                                </button>
-                                                            </div>
+                                                        </AnimatePresence>
 
-                                                            <div className="p-8 pb-40 space-y-10 overflow-y-auto no-scrollbar flex-1">
-                                                                {/* FINANCIAL DETAIL */}
-                                                                {performanceDetail === 'financial' && (
-                                                                    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                                                                        {/* TOP CARD: YOUR EARNINGS */}
-                                                                        <div className="p-8 bg-neutral-900 rounded-[28px] relative overflow-hidden group shadow-xl">
-                                                                            <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -mr-16 -mt-16 blur-2xl" />
-                                                                            <div className="relative z-10">
-                                                                                <p className="text-white/60 text-[11px] font-black uppercase tracking-widest mb-2">{t({ en: 'Your earnings', fr: 'Vos gains' })}</p>
-                                                                                <div className="flex items-center gap-3">
-                                                                                    <p className="text-white text-[38px] font-[1000] tracking-tighter">{netEarnings.toFixed(0)} <span className="text-[18px] text-white/40 uppercase">{t({ en: 'MAD', fr: 'MAD' })}</span></p>
-                                                                                    <div className="px-2 py-1 bg-emerald-500/20 backdrop-blur-md rounded-lg text-[10px] font-black text-emerald-400 uppercase tracking-tighter">{t({ en: 'Net', fr: 'Net' })}</div>
+                                                        <AnimatePresence mode="wait">
+                                                            {performanceDetail === 'none' ? (
+                                                                <motion.div
+                                                                    key="main-performance"
+                                                                    initial={{ opacity: 0 }}
+                                                                    animate={{ opacity: 1 }}
+                                                                    exit={{ opacity: 0 }}
+                                                                    className="space-y-8 pt-4 pb-32"
+                                                                >
+                                                                    <div className="px-6 relative">
+                                                                        <button
+                                                                            onClick={() => setPerformanceDetail('financial')}
+                                                                            className="absolute top-0 right-6 w-12 h-12 bg-[#00A082] text-white rounded-full flex items-center justify-center shadow-lg active:scale-95 transition-all z-20"
+                                                                        >
+                                                                            <Banknote size={24} />
+                                                                        </button>
+                                                                        <div className="p-10 bg-white rounded-[15px] border border-[#C5C5C5] flex flex-col items-center text-center">
+                                                                            <div className="w-[120px] h-[120px] rounded-full bg-white shadow-[0_8px_30px_rgba(0,0,0,0.04)] flex items-center justify-center relative mb-6">
+                                                                                <span className="text-[40px] font-[1000] text-black tracking-tighter">{healthScore}</span>
+                                                                                <svg className="absolute inset-0 w-full h-full -rotate-90">
+                                                                                    <circle cx="60" cy="60" r="54" fill="none" stroke="#E5E5E5" strokeWidth="8" />
+                                                                                    <motion.circle
+                                                                                        cx="60" cy="60" r="54" fill="none" stroke="black" strokeWidth="8" strokeDasharray="339.29"
+                                                                                        initial={{ strokeDashoffset: 339.29 }}
+                                                                                        animate={{ strokeDashoffset: 339.29 - (339.29 * healthScore / 100) }}
+                                                                                        transition={{ duration: 1.2, ease: "easeOut" }}
+                                                                                        strokeLinecap="round"
+                                                                                    />
+                                                                                </svg>
+                                                                            </div>
+                                                                            <div className="space-y-1 mb-8">
+                                                                                <div className="inline-flex px-3 py-1 bg-black rounded-full mb-2">
+                                                                                    <span className="text-white text-[10px] font-black uppercase tracking-[0.2em]">{statusLabel}</span>
                                                                                 </div>
-                                                                                <p className="text-white/70 text-[13px] font-bold mt-4 leading-relaxed">
-                                                                                    {t({
-                                                                                        en: 'This is the net amount after platform fees based on your completed missions for this period.',
-                                                                                        fr: 'C\'est le montant net après frais de plateforme basé sur vos missions terminées pour cette période.'
-                                                                                    })}
+                                                                                <h2 className="text-black text-[22px] font-[1000] tracking-tight">{t({ en: 'Global Performance', fr: 'Performance Globale' })}</h2>
+                                                                                <p className="text-neutral-500 text-[13px] font-extrabold leading-relaxed px-4">
+                                                                                    {healthScore > 80 ? t({ en: 'You are among the top tier providers!', fr: 'Vous faites partie des meilleurs prestataires !' }) : t({ en: 'Complete more missions to boost your score', fr: 'Réalisez plus de missions pour booster votre score' })}
                                                                                 </p>
                                                                             </div>
-                                                                        </div>
-
-                                                                        <div className="grid grid-cols-2 gap-4">
-                                                                            <div className="p-6 rounded-[24px] border border-neutral-100 bg-neutral-50/50 flex flex-col justify-between h-[120px]">
-                                                                                <p className="text-[11px] font-black text-neutral-400 uppercase tracking-widest">{t({ en: 'Total Gross', fr: 'Brut Total' })}</p>
-                                                                                <p className="text-[24px] font-black text-black leading-none">{(totalEarnings).toFixed(0)} <span className="text-[14px] text-neutral-300 uppercase">{t({ en: 'MAD', fr: 'MAD' })}</span></p>
-                                                                            </div>
-                                                                            <div className="p-6 rounded-[24px] border border-neutral-100 bg-neutral-50/50 flex flex-col justify-between h-[120px]">
-                                                                                <p className="text-[11px] font-black text-neutral-400 uppercase tracking-widest">{t({ en: 'Referral Bonus', fr: 'Bonus Parrainage' })}</p>
-                                                                                <p className="text-[24px] font-black text-[#00A082] leading-none">+{referralBonus} <span className="text-[14px] text-[#00A082]/30 uppercase">{t({ en: 'MAD', fr: 'MAD' })}</span></p>
-                                                                            </div>
-                                                                        </div>
-
-                                                                        <div className="grid grid-cols-1 gap-4">
-                                                                            <div className="p-6 rounded-[24px] border border-neutral-100 bg-neutral-50/50 flex flex-col justify-between h-[100px]">
-                                                                                <p className="text-[11px] font-black text-neutral-400 uppercase tracking-widest">{t({ en: 'Platform Fee', fr: 'Frais Plateforme' })}</p>
-                                                                                <p className="text-[24px] font-black text-red-500 leading-none">-{lbricolCommission} <span className="text-[14px] text-red-200 uppercase">{t({ en: 'MAD', fr: 'MAD' })}</span></p>
+                                                                            <div className="mt-8 grid grid-cols-2 gap-8 w-full border-t border-neutral-200 pt-6">
+                                                                                <div>
+                                                                                    <p className="text-neutral-400 text-[10px] uppercase font-black tracking-widest mb-0.5">{t({ en: 'Missions', fr: 'Missions' })}</p>
+                                                                                    <p className="text-black text-[16px] font-black">{rDone}</p>
+                                                                                </div>
+                                                                                <div>
+                                                                                    <p className="text-neutral-400 text-[10px] uppercase font-black tracking-widest mb-0.5">{t({ en: 'Rating', fr: 'Note' })}</p>
+                                                                                    <p className="text-black text-[16px] font-black">{Number(avgRating) > 0 ? avgRating : '--'}</p>
+                                                                                </div>
                                                                             </div>
                                                                         </div>
+                                                                    </div>
 
-                                                                        <div className="p-7 bg-black rounded-[15px] text-white shadow-xl shadow-black/20 space-y-6 relative overflow-hidden">
-                                                                            <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -mr-16 -mt-16 blur-2xl" />
-                                                                            <div className="relative z-10">
-                                                                                <div className="flex items-center justify-between mb-2">
-                                                                                    <p className="text-[12px] font-black text-neutral-400 uppercase tracking-widest">{t({ en: 'Total Due', fr: 'Total dû' })}</p>
-                                                                                    <div className="flex items-center gap-1.5 px-2 py-1 bg-red-500/10 rounded-full">
-                                                                                        <div className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
-                                                                                        <span className="text-[10px] font-black text-red-500 uppercase">{t({ en: 'Pending', fr: 'En attente' })}</span>
+                                                                    <div className="px-6 space-y-3">
+                                                                        <motion.div
+                                                                            onClick={() => setPerformanceDetail('financial')}
+                                                                            whileTap={{ scale: 0.98 }}
+                                                                            className="p-5 bg-white rounded-[13px] border border-[#C5C5C5] cursor-pointer flex items-center justify-between group"
+                                                                        >
+                                                                            <div className="flex items-center gap-4">
+                                                                                <div className="w-12 h-12 bg-emerald-100 rounded-xl flex items-center justify-center text-emerald-700">
+                                                                                    <Wallet size={24} />
+                                                                                </div>
+                                                                                <div>
+                                                                                    <p className="text-[11px] font-black text-neutral-400 uppercase tracking-widest leading-none mb-1">{t({ en: 'Your earnings', fr: 'Vos gains' })}</p>
+                                                                                    <div className="flex items-baseline gap-1">
+                                                                                        <span className="text-[20px] font-black text-black">{netEarnings.toFixed(0)}</span>
+                                                                                        <span className="text-[12px] font-black text-neutral-300 uppercase">{t({ en: 'MAD', fr: 'MAD' })}</span>
                                                                                     </div>
                                                                                 </div>
-                                                                                <p className="text-[36px] font-[1000] tracking-tighter">{lbricolCommission} {t({ en: 'MAD', fr: 'MAD' })}</p>
                                                                             </div>
+                                                                            <ChevronRight size={18} className="text-neutral-300 group-hover:text-black transition-colors" />
+                                                                        </motion.div>
 
-                                                                            <div className="pt-4 space-y-4 border-t border-white/10 relative z-10">
-                                                                                <p className="text-[13px] font-bold text-neutral-300">{t({ en: 'Bank Transfer Details:', fr: 'Détails du virement :' })}</p>
-                                                                                <div className="space-y-3 bg-white/5 rounded-xl p-4">
-                                                                                    <div className="grid grid-cols-[80px_1fr] gap-2 items-start">
-                                                                                        <span className="text-[11px] font-black text-neutral-500 uppercase">{t({ en: 'Name', fr: 'Nom' })}</span>
-                                                                                        <span className="text-[14px] font-bold">{t({ en: 'Abdelmalek Tahri', fr: 'Abdelmalek Tahri' })}</span>
+                                                                        <div className="grid grid-cols-2 gap-3">
+                                                                            <motion.div
+                                                                                onClick={() => setPerformanceDetail('reputation')}
+                                                                                whileTap={{ scale: 0.98 }}
+                                                                                className="p-5 bg-white rounded-[13px] border border-[#C5C5C5] cursor-pointer group"
+                                                                            >
+                                                                                <Star size={20} className="text-[#FFC244] mb-3" fill="#FFC244" />
+                                                                                <p className="text-neutral-500 text-[11px] font-black uppercase tracking-widest mb-0.5">{t({ en: 'Rating', fr: 'Note' })}</p>
+                                                                                <span className="text-[20px] font-black text-black">{Number(avgRating) > 0 ? avgRating : '--'}/5</span>
+                                                                            </motion.div>
+
+                                                                            <motion.div
+                                                                                onClick={() => setPerformanceDetail('operational')}
+                                                                                whileTap={{ scale: 0.98 }}
+                                                                                className="p-5 bg-white rounded-[13px] border border-[#C5C5C5] cursor-pointer group"
+                                                                            >
+                                                                                <TrendingUp size={20} className="text-black mb-3" />
+                                                                                <p className="text-neutral-400 text-[11px] font-black uppercase tracking-widest mb-0.5">{t({ en: 'Efficiency', fr: 'Efficacité' })}</p>
+                                                                                <span className="text-[20px] font-black text-black">{completionRate}%</span>
+                                                                            </motion.div>
+                                                                        </div>
+                                                                    </div>
+
+                                                                    <div className="space-y-4 pt-4">
+                                                                        <div className="px-6 flex items-center justify-between">
+                                                                            <h3 className="text-[18px] font-[900] text-black tracking-tight">{t({ en: 'Optimization Tips', fr: 'Conseils d\'optimisation' })}</h3>
+                                                                        </div>
+                                                                        <div className="px-4 overflow-x-auto no-scrollbar flex gap-3 pb-4">
+                                                                            {[
+                                                                                { id: 'tips-profile', title: t({ en: 'Profile', fr: 'Profil' }), desc: t({ en: 'Get more clicks', fr: 'Plus de clics' }), icon: User },
+                                                                                { id: 'tips-pricing', title: t({ en: 'Pricing', fr: 'Tarifs' }), desc: t({ en: 'Optimize earnings', fr: 'Gains optimisés' }), icon: Tag },
+                                                                                { id: 'tips-stars', title: t({ en: '5 Stars', fr: '5 Étoiles' }), desc: t({ en: 'Protocol for success', fr: 'Le succès garanti' }), icon: Star },
+                                                                                { id: 'tips-visibility', title: t({ en: 'Visibility', fr: 'Visibilité' }), desc: t({ en: 'Rank higher', fr: 'Mieux classé' }), icon: Eye }
+                                                                            ].map((tip) => (
+                                                                                <motion.div
+                                                                                    key={tip.id}
+                                                                                    whileTap={{ scale: 0.95 }}
+                                                                                    onClick={() => setPerformanceDetail(tip.id as any)}
+                                                                                    className="flex-none w-[180px] p-5 bg-neutral-50 rounded-[22px] cursor-pointer border border-neutral-100"
+                                                                                >
+                                                                                    <tip.icon size={24} className="text-black mb-10" />
+                                                                                    <p className="text-[14px] font-[900] text-black leading-tight mb-1">{tip.title}</p>
+                                                                                    <p className="text-[11px] font-bold text-neutral-400">{tip.desc}</p>
+                                                                                </motion.div>
+                                                                            ))}
+                                                                        </div>
+                                                                    </div>
+                                                                </motion.div>
+                                                            ) : (
+                                                                <motion.div
+                                                                    key="performance-detail"
+                                                                    initial={{ opacity: 0, y: 10 }}
+                                                                    animate={{ opacity: 1, y: 0 }}
+                                                                    exit={{ opacity: 0, y: 10 }}
+                                                                    transition={{ duration: 0.3 }}
+                                                                    className="bg-white min-h-[100vh] flex flex-col pt-4 relative"
+                                                                >
+                                                                    <div className="px-6 pt-6 pb-2 flex items-center sticky top-0 z-10 bg-white">
+                                                                        <button
+                                                                            onClick={() => setPerformanceDetail('none')}
+                                                                            className="w-10 h-10 flex items-center justify-center rounded-full bg-neutral-100 transition-all hover:scale-105 active:scale-95"
+                                                                        >
+                                                                            <ChevronLeft size={24} className="text-neutral-500" />
+                                                                        </button>
+                                                                    </div>
+
+                                                                    <div className="p-8 pb-40 space-y-10 overflow-y-auto no-scrollbar flex-1">
+                                                                        {/* FINANCIAL DETAIL */}
+                                                                        {performanceDetail === 'financial' && (
+                                                                            <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                                                                                {/* TOP CARD: YOUR EARNINGS */}
+                                                                                <div className="p-8 bg-neutral-900 rounded-[28px] relative overflow-hidden group shadow-xl">
+                                                                                    <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -mr-16 -mt-16 blur-2xl" />
+                                                                                    <div className="relative z-10">
+                                                                                        <p className="text-white/60 text-[11px] font-black uppercase tracking-widest mb-2">{t({ en: 'Your earnings', fr: 'Vos gains' })}</p>
+                                                                                        <div className="flex items-center gap-3">
+                                                                                            <p className="text-white text-[38px] font-[1000] tracking-tighter">{netEarnings.toFixed(0)} <span className="text-[18px] text-white/40 uppercase">{t({ en: 'MAD', fr: 'MAD' })}</span></p>
+                                                                                            <div className="px-2 py-1 bg-emerald-500/20 backdrop-blur-md rounded-lg text-[10px] font-black text-emerald-400 uppercase tracking-tighter">{t({ en: 'Net', fr: 'Net' })}</div>
+                                                                                        </div>
+                                                                                        <p className="text-white/70 text-[13px] font-bold mt-4 leading-relaxed">
+                                                                                            {t({
+                                                                                                en: 'This is the net amount after platform fees based on your completed missions for this period.',
+                                                                                                fr: 'C\'est le montant net après frais de plateforme basé sur vos missions terminées pour cette période.'
+                                                                                            })}
+                                                                                        </p>
                                                                                     </div>
-                                                                                    <div className="grid grid-cols-[80px_1fr] gap-2 items-start">
-                                                                                        <span className="text-[11px] font-black text-neutral-500 uppercase">{t({ en: 'Bank', fr: 'Banque' })}</span>
-                                                                                        <span className="text-[14px] font-bold">{t({ en: 'Al Barid Bank', fr: 'Al Barid Bank' })}</span>
+                                                                                </div>
+
+                                                                                <div className="grid grid-cols-2 gap-4">
+                                                                                    <div className="p-6 rounded-[24px] border border-neutral-100 bg-neutral-50/50 flex flex-col justify-between h-[120px]">
+                                                                                        <p className="text-[11px] font-black text-neutral-400 uppercase tracking-widest">{t({ en: 'Total Gross', fr: 'Brut Total' })}</p>
+                                                                                        <p className="text-[24px] font-black text-black leading-none">{(totalEarnings).toFixed(0)} <span className="text-[14px] text-neutral-300 uppercase">{t({ en: 'MAD', fr: 'MAD' })}</span></p>
                                                                                     </div>
-                                                                                    <div className="grid grid-cols-1 sm:grid-cols-[100px_1fr] gap-2 items-center">
-                                                                                        <span className="text-[11px] font-black text-neutral-500 uppercase">RIB</span>
-                                                                                        <div className="flex items-center justify-between gap-2 bg-black/40 px-3 py-2 rounded-lg border border-white/10 group cursor-pointer" onClick={() => { navigator.clipboard.writeText('350810000000000880844466'); alert(t({ en: 'Copied!', fr: 'Copié !' })); }}>
-                                                                                            <span className="text-[11px] sm:text-[12px] font-black font-mono tracking-tight text-neutral-200 break-all">350810000000000880844466</span>
-                                                                                            <Copy size={12} className="text-neutral-500 flex-shrink-0" />
+                                                                                    <div className="p-6 rounded-[24px] border border-neutral-100 bg-neutral-50/50 flex flex-col justify-between h-[120px]">
+                                                                                        <p className="text-[11px] font-black text-neutral-400 uppercase tracking-widest">{t({ en: 'Referral Bonus', fr: 'Bonus Parrainage' })}</p>
+                                                                                        <p className="text-[24px] font-black text-[#00A082] leading-none">+{referralBonus} <span className="text-[14px] text-[#00A082]/30 uppercase">{t({ en: 'MAD', fr: 'MAD' })}</span></p>
+                                                                                    </div>
+                                                                                </div>
+
+                                                                                <div className="grid grid-cols-1 gap-4">
+                                                                                    <div className="p-6 rounded-[24px] border border-neutral-100 bg-neutral-50/50 flex flex-col justify-between h-[100px]">
+                                                                                        <p className="text-[11px] font-black text-neutral-400 uppercase tracking-widest">{t({ en: 'Platform Fee', fr: 'Frais Plateforme' })}</p>
+                                                                                        <p className="text-[24px] font-black text-red-500 leading-none">-{lbricolCommission} <span className="text-[14px] text-red-200 uppercase">{t({ en: 'MAD', fr: 'MAD' })}</span></p>
+                                                                                    </div>
+                                                                                </div>
+
+                                                                                <div className="p-7 bg-black rounded-[15px] text-white shadow-xl shadow-black/20 space-y-6 relative overflow-hidden">
+                                                                                    <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -mr-16 -mt-16 blur-2xl" />
+                                                                                    <div className="relative z-10">
+                                                                                        <div className="flex items-center justify-between mb-2">
+                                                                                            <p className="text-[12px] font-black text-neutral-400 uppercase tracking-widest">{t({ en: 'Total Due', fr: 'Total dû' })}</p>
+                                                                                            <div className="flex items-center gap-1.5 px-2 py-1 bg-red-500/10 rounded-full">
+                                                                                                <div className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
+                                                                                                <span className="text-[10px] font-black text-red-500 uppercase">{t({ en: 'Pending', fr: 'En attente' })}</span>
+                                                                                            </div>
+                                                                                        </div>
+                                                                                        <p className="text-[36px] font-[1000] tracking-tighter">{lbricolCommission} {t({ en: 'MAD', fr: 'MAD' })}</p>
+                                                                                    </div>
+
+                                                                                    <div className="pt-4 space-y-4 border-t border-white/10 relative z-10">
+                                                                                        <p className="text-[13px] font-bold text-neutral-300">{t({ en: 'Bank Transfer Details:', fr: 'Détails du virement :' })}</p>
+                                                                                        <div className="space-y-3 bg-white/5 rounded-xl p-4">
+                                                                                            <div className="grid grid-cols-[80px_1fr] gap-2 items-start">
+                                                                                                <span className="text-[11px] font-black text-neutral-500 uppercase">{t({ en: 'Name', fr: 'Nom' })}</span>
+                                                                                                <span className="text-[14px] font-bold">{t({ en: 'Abdelmalek Tahri', fr: 'Abdelmalek Tahri' })}</span>
+                                                                                            </div>
+                                                                                            <div className="grid grid-cols-[80px_1fr] gap-2 items-start">
+                                                                                                <span className="text-[11px] font-black text-neutral-500 uppercase">{t({ en: 'Bank', fr: 'Banque' })}</span>
+                                                                                                <span className="text-[14px] font-bold">{t({ en: 'Al Barid Bank', fr: 'Al Barid Bank' })}</span>
+                                                                                            </div>
+                                                                                            <div className="grid grid-cols-1 sm:grid-cols-[100px_1fr] gap-2 items-center">
+                                                                                                <span className="text-[11px] font-black text-neutral-500 uppercase">RIB</span>
+                                                                                                <div className="flex items-center justify-between gap-2 bg-black/40 px-3 py-2 rounded-lg border border-white/10 group cursor-pointer" onClick={() => { navigator.clipboard.writeText('350810000000000880844466'); alert(t({ en: 'Copied!', fr: 'Copié !' })); }}>
+                                                                                                    <span className="text-[11px] sm:text-[12px] font-black font-mono tracking-tight text-neutral-200 break-all">350810000000000880844466</span>
+                                                                                                    <Copy size={12} className="text-neutral-500 flex-shrink-0" />
+                                                                                                </div>
+                                                                                            </div>
+                                                                                        </div>
+
+                                                                                        <div className="pt-2">
+                                                                                            <div className="flex flex-col sm:flex-row gap-3">
+                                                                                                <button
+                                                                                                    onClick={() => {
+                                                                                                        const input = document.createElement('input');
+                                                                                                        input.type = 'file';
+                                                                                                        input.accept = 'image/*';
+                                                                                                        input.onchange = (e: any) => {
+                                                                                                            const file = e.target.files[0];
+                                                                                                            if (file) {
+                                                                                                                const reader = new FileReader();
+                                                                                                                reader.onload = (re) => {
+                                                                                                                    setSettlementReceipt(re.target?.result as string);
+                                                                                                                    setSettlementAmount(lbricolCommission);
+                                                                                                                    showToast({
+                                                                                                                        variant: 'success',
+                                                                                                                        title: t({ en: 'Receipt Selected', fr: 'Reçu sélectionné' }),
+                                                                                                                        description: t({ en: 'Click submit to send for verification.', fr: 'Cliquez sur envoyer pour vérification.' })
+                                                                                                                    });
+                                                                                                                };
+                                                                                                                reader.readAsDataURL(file);
+                                                                                                            }
+                                                                                                        };
+                                                                                                        input.click();
+                                                                                                    }}
+                                                                                                    className={cn(
+                                                                                                        "flex-1 py-4 rounded-xl font-black text-[14px] flex items-center justify-center gap-2 transition-all border-2",
+                                                                                                        settlementReceipt
+                                                                                                            ? "bg-white text-black border-white"
+                                                                                                            : "bg-transparent text-white border-white/20 hover:border-white/40"
+                                                                                                    )}
+                                                                                                >
+                                                                                                    {settlementReceipt ? <PenTool size={18} /> : <CreditCard size={18} />}
+                                                                                                    {settlementReceipt ? t({ en: 'Modifier', fr: 'Modifier' }) : t({ en: 'Payer cet Hero', fr: 'Payer cet Hero' })}
+                                                                                                </button>
+                                                                                                {settlementReceipt && (
+                                                                                                    <button
+                                                                                                        disabled={isSubmittingSettlement}
+                                                                                                        onClick={async () => {
+                                                                                                            if (!auth.currentUser) return;
+                                                                                                            setIsSubmittingSettlement(true);
+                                                                                                            try {
+                                                                                                                const settlementDoc = await addDoc(collection(db, 'commission_settlements'), {
+                                                                                                                    bricolerId: auth.currentUser.uid,
+                                                                                                                    bricolerName: userData?.name || auth.currentUser.displayName || 'Unknown',
+                                                                                                                    amount: settlementAmount,
+                                                                                                                    receipt: settlementReceipt,
+                                                                                                                    status: 'pending',
+                                                                                                                    month: format(selectedMonthDt, 'yyyy-MM'),
+                                                                                                                    timestamp: serverTimestamp()
+                                                                                                                });
+
+                                                                                                                await addDoc(collection(db, 'admin_notifications'), {
+                                                                                                                    type: 'commission_paid',
+                                                                                                                    settlementId: settlementDoc.id,
+                                                                                                                    bricolerId: auth.currentUser.uid,
+                                                                                                                    bricolerName: userData?.name || auth.currentUser.displayName || 'Unknown',
+                                                                                                                    amount: settlementAmount,
+                                                                                                                    read: false,
+                                                                                                                    createdAt: serverTimestamp()
+                                                                                                                });
+
+                                                                                                                setSettlementReceipt(null);
+                                                                                                                showToast({
+                                                                                                                    variant: 'success',
+                                                                                                                    title: t({ en: 'Submission Received!', fr: 'Envoi reçu !' }),
+                                                                                                                    description: t({ en: 'Admin will verify and update your status within 24h.', fr: 'L\'admin vérifiera et mettra à jour votre statut sous 24h.' })
+                                                                                                                });
+                                                                                                            } catch (error) {
+                                                                                                                console.error('Error submitting settlement:', error);
+                                                                                                                showToast({ variant: 'error', title: 'Error', description: 'Failed to submit. Please try again.' });
+                                                                                                            } finally {
+                                                                                                                setIsSubmittingSettlement(false);
+                                                                                                            }
+                                                                                                        }}
+                                                                                                        className="flex-1 py-4 bg-[#00A082] hover:bg-[#008C74] text-white rounded-xl font-black text-[14px] flex items-center justify-center gap-2 transition-all shadow-lg active:scale-95 disabled:opacity-50"
+                                                                                                    >
+                                                                                                        {isSubmittingSettlement ? <RefreshCw className="animate-spin" size={18} /> : <Send size={18} />}
+                                                                                                        {t({ en: 'Envoyer', fr: 'Envoyer' })}
+                                                                                                    </button>
+                                                                                                )}
+                                                                                            </div>
+                                                                                            <p className="text-center text-[10px] text-neutral-500 mt-3 uppercase font-black tracking-widest">{t({ en: 'Verification time: ~24 hours', fr: 'Délai de vérification : ~24 heures' })}</p>
+                                                                                        </div>
+                                                                                    </div>
+                                                                                </div>
+                                                                            </div>
+                                                                        )}
+
+                                                                        {/* OPERATIONAL DETAIL */}
+                                                                        {performanceDetail === 'operational' && (
+                                                                            <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                                                                                <div className="bg-neutral-50 p-8 rounded-[32px] border border-neutral-100 relative overflow-hidden group">
+                                                                                    <p className="text-[11px] font-black text-neutral-400 uppercase tracking-widest mb-6">{t({ en: 'Reliability Score', fr: 'Score de Fiabilité' })}</p>
+                                                                                    <div className="flex items-center justify-between mb-8">
+                                                                                        <div>
+                                                                                            <span className="text-[40px] font-[900] leading-none text-black">{completionRate}%</span>
+                                                                                            <div className="flex items-center gap-2 mt-2">
+                                                                                                <div className="w-2 h-2 rounded-full bg-emerald-500" />
+                                                                                                <span className="text-[12px] font-bold text-neutral-500 uppercase tracking-wider">{completionRate >= 90 ? t({ en: 'High Stability', fr: 'Haute stabilité' }) : t({ en: 'Standard', fr: 'Standard' })}</span>
+                                                                                            </div>
+                                                                                        </div>
+                                                                                        <div className="w-14 h-14 rounded-full bg-white border border-neutral-100 flex items-center justify-center">
+                                                                                            <TrendingUp size={20} className="text-black" />
+                                                                                        </div>
+                                                                                    </div>
+                                                                                    <div className="space-y-2">
+                                                                                        <div className="w-full h-2 bg-neutral-200 rounded-full overflow-hidden">
+                                                                                            <motion.div initial={{ width: 0 }} animate={{ width: `${completionRate}%` }} className="h-full bg-[#00A082]" />
                                                                                         </div>
                                                                                     </div>
                                                                                 </div>
 
-                                                                                <div className="pt-2">
-                                                                                    <div className="flex flex-col sm:flex-row gap-3">
-                                                                                        <button
-                                                                                            onClick={() => {
-                                                                                                const input = document.createElement('input');
-                                                                                                input.type = 'file';
-                                                                                                input.accept = 'image/*';
-                                                                                                input.onchange = (e: any) => {
-                                                                                                    const file = e.target.files[0];
-                                                                                                    if (file) {
-                                                                                                        const reader = new FileReader();
-                                                                                                        reader.onload = (re) => {
-                                                                                                            setSettlementReceipt(re.target?.result as string);
-                                                                                                            setSettlementAmount(lbricolCommission);
-                                                                                                            showToast({
-                                                                                                                variant: 'success',
-                                                                                                                title: t({ en: 'Receipt Selected', fr: 'Reçu sélectionné' }),
-                                                                                                                description: t({ en: 'Click submit to send for verification.', fr: 'Cliquez sur envoyer pour vérification.' })
-                                                                                                            });
-                                                                                                        };
-                                                                                                        reader.readAsDataURL(file);
-                                                                                                    }
-                                                                                                };
-                                                                                                input.click();
-                                                                                            }}
-                                                                                            className={cn(
-                                                                                                "flex-1 py-4 rounded-xl font-black text-[14px] flex items-center justify-center gap-2 transition-all border-2",
-                                                                                                settlementReceipt
-                                                                                                    ? "bg-white text-black border-white"
-                                                                                                    : "bg-transparent text-white border-white/20 hover:border-white/40"
-                                                                                            )}
-                                                                                        >
-                                                                                            {settlementReceipt ? <PenTool size={18} /> : <CreditCard size={18} />}
-                                                                                            {settlementReceipt ? t({ en: 'Modifier', fr: 'Modifier' }) : t({ en: 'Payer cet Hero', fr: 'Payer cet Hero' })}
-                                                                                        </button>
-                                                                                        {settlementReceipt && (
-                                                                                            <button
-                                                                                                disabled={isSubmittingSettlement}
-                                                                                                onClick={async () => {
-                                                                                                    if (!auth.currentUser) return;
-                                                                                                    setIsSubmittingSettlement(true);
-                                                                                                    try {
-                                                                                                        const settlementDoc = await addDoc(collection(db, 'commission_settlements'), {
-                                                                                                            bricolerId: auth.currentUser.uid,
-                                                                                                            bricolerName: userData?.name || auth.currentUser.displayName || 'Unknown',
-                                                                                                            amount: settlementAmount,
-                                                                                                            receipt: settlementReceipt,
-                                                                                                            status: 'pending',
-                                                                                                            month: format(selectedMonthDt, 'yyyy-MM'),
-                                                                                                            timestamp: serverTimestamp()
-                                                                                                        });
-
-                                                                                                        await addDoc(collection(db, 'admin_notifications'), {
-                                                                                                            type: 'commission_paid',
-                                                                                                            settlementId: settlementDoc.id,
-                                                                                                            bricolerId: auth.currentUser.uid,
-                                                                                                            bricolerName: userData?.name || auth.currentUser.displayName || 'Unknown',
-                                                                                                            amount: settlementAmount,
-                                                                                                            read: false,
-                                                                                                            createdAt: serverTimestamp()
-                                                                                                        });
-
-                                                                                                        setSettlementReceipt(null);
-                                                                                                        showToast({
-                                                                                                            variant: 'success',
-                                                                                                            title: t({ en: 'Submission Received!', fr: 'Envoi reçu !' }),
-                                                                                                            description: t({ en: 'Admin will verify and update your status within 24h.', fr: 'L\'admin vérifiera et mettra à jour votre statut sous 24h.' })
-                                                                                                        });
-                                                                                                    } catch (error) {
-                                                                                                        console.error('Error submitting settlement:', error);
-                                                                                                        showToast({ variant: 'error', title: 'Error', description: 'Failed to submit. Please try again.' });
-                                                                                                    } finally {
-                                                                                                        setIsSubmittingSettlement(false);
-                                                                                                    }
-                                                                                                }}
-                                                                                                className="flex-1 py-4 bg-[#00A082] hover:bg-[#008C74] text-white rounded-xl font-black text-[14px] flex items-center justify-center gap-2 transition-all shadow-lg active:scale-95 disabled:opacity-50"
-                                                                                            >
-                                                                                                {isSubmittingSettlement ? <RefreshCw className="animate-spin" size={18} /> : <Send size={18} />}
-                                                                                                {t({ en: 'Envoyer', fr: 'Envoyer' })}
-                                                                                            </button>
-                                                                                        )}
-                                                                                    </div>
-                                                                                    <p className="text-center text-[10px] text-neutral-500 mt-3 uppercase font-black tracking-widest">{t({ en: 'Verification time: ~24 hours', fr: 'Délai de vérification : ~24 heures' })}</p>
-                                                                                </div>
-                                                                            </div>
-                                                                        </div>
-                                                                    </div>
-                                                                )}
-
-                                                                {/* OPERATIONAL DETAIL */}
-                                                                {performanceDetail === 'operational' && (
-                                                                    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                                                                        <div className="bg-neutral-50 p-8 rounded-[32px] border border-neutral-100 relative overflow-hidden group">
-                                                                            <p className="text-[11px] font-black text-neutral-400 uppercase tracking-widest mb-6">{t({ en: 'Reliability Score', fr: 'Score de Fiabilité' })}</p>
-                                                                            <div className="flex items-center justify-between mb-8">
-                                                                                <div>
-                                                                                    <span className="text-[40px] font-[900] leading-none text-black">{completionRate}%</span>
-                                                                                    <div className="flex items-center gap-2 mt-2">
-                                                                                        <div className="w-2 h-2 rounded-full bg-emerald-500" />
-                                                                                        <span className="text-[12px] font-bold text-neutral-500 uppercase tracking-wider">{completionRate >= 90 ? t({ en: 'High Stability', fr: 'Haute stabilité' }) : t({ en: 'Standard', fr: 'Standard' })}</span>
+                                                                                <div className="grid grid-cols-1 gap-4">
+                                                                                    <div className="p-7 bg-neutral-50 rounded-[32px] border border-neutral-100 flex flex-col justify-between h-[140px]">
+                                                                                        <div className="w-10 h-10 rounded-2xl bg-white border border-neutral-100 flex items-center justify-center mb-2">
+                                                                                            <Check size={18} className="text-emerald-500" />
+                                                                                        </div>
+                                                                                        <div>
+                                                                                            <p className="text-[11px] font-black text-neutral-400 uppercase tracking-widest mb-1">{t({ en: 'Month Done', fr: 'Terminées ce mois' })}</p>
+                                                                                            <p className="text-[26px] font-black text-black">{monthDoneJobs.length}</p>
+                                                                                        </div>
                                                                                     </div>
                                                                                 </div>
-                                                                                <div className="w-14 h-14 rounded-full bg-white border border-neutral-100 flex items-center justify-center">
-                                                                                    <TrendingUp size={20} className="text-black" />
-                                                                                </div>
-                                                                            </div>
-                                                                            <div className="space-y-2">
-                                                                                <div className="w-full h-2 bg-neutral-200 rounded-full overflow-hidden">
-                                                                                    <motion.div initial={{ width: 0 }} animate={{ width: `${completionRate}%` }} className="h-full bg-[#00A082]" />
-                                                                                </div>
-                                                                            </div>
-                                                                        </div>
 
-                                                                        <div className="grid grid-cols-1 gap-4">
-                                                                            <div className="p-7 bg-neutral-50 rounded-[32px] border border-neutral-100 flex flex-col justify-between h-[140px]">
-                                                                                <div className="w-10 h-10 rounded-2xl bg-white border border-neutral-100 flex items-center justify-center mb-2">
-                                                                                    <Check size={18} className="text-emerald-500" />
-                                                                                </div>
-                                                                                <div>
-                                                                                    <p className="text-[11px] font-black text-neutral-400 uppercase tracking-widest mb-1">{t({ en: 'Month Done', fr: 'Terminées ce mois' })}</p>
-                                                                                    <p className="text-[26px] font-black text-black">{monthDoneJobs.length}</p>
-                                                                                </div>
-                                                                            </div>
-                                                                        </div>
-
-                                                                        <div className="p-6 bg-neutral-50 rounded-[24px] border border-neutral-100 flex items-center gap-4">
-                                                                            <div className="w-10 h-10 bg-white border border-neutral-100 rounded-xl flex items-center justify-center flex-none">
-                                                                                <Info size={18} className="text-neutral-400" />
-                                                                            </div>
-                                                                            <p className="text-[12px] font-medium text-neutral-500 leading-tight">
-                                                                                {t({
-                                                                                    en: 'Cancellations impact your search rank. Keep your rate above 90% for maximum visibility.',
-                                                                                    fr: 'Les annulations impactent votre classement. Gardez un taux au-dessus de 90% pour une visibilité maximale.'
-                                                                                })}
-                                                                            </p>
-                                                                        </div>
-                                                                    </div>
-                                                                )}
-
-                                                                {/* REPUTATION DETAIL */}
-                                                                {performanceDetail === 'reputation' && (
-                                                                    <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                                                                        <div className="flex flex-col items-center text-center py-4">
-                                                                            <div className="text-[64px] font-[900] tracking-tighter leading-none text-black mb-2">{Number(avgRating) > 0 ? avgRating : '--'}</div>
-                                                                            <div className="flex gap-1.5 mb-4">
-                                                                                {Array.from({ length: 5 }).map((_, i) => (
-                                                                                    <Star key={i} size={24} className={cn(i < Math.floor(Number(avgRating)) ? "text-[#FFC244] fill-[#FFC244]" : "text-neutral-100 fill-neutral-100")} />
-                                                                                ))}
-                                                                            </div>
-                                                                            <div className="px-4 py-1.5 bg-emerald-50 rounded-full text-[12px] font-black text-emerald-600 uppercase tracking-widest border border-emerald-100">
-                                                                                {Number(avgRating) >= 4.5
-                                                                                    ? t({ en: 'Excellent Quality', fr: 'Qualité excellente' })
-                                                                                    : t({ en: 'Needs Focus', fr: 'À améliorer' })}
-                                                                            </div>
-                                                                        </div>
-
-                                                                        <div className="space-y-5 bg-neutral-50 p-8 rounded-[32px] border border-neutral-100">
-                                                                            <h4 className="text-[13px] font-black uppercase tracking-widest text-neutral-400 mb-2">{t({ en: 'Rating Distribution', fr: 'Distribution des Notes' })}</h4>
-                                                                            {ratingBreakdown.map(rb => (
-                                                                                <div key={rb.star} className="flex items-center gap-4">
-                                                                                    <div className="flex items-center gap-1 w-8">
-                                                                                        <span className="text-[14px] font-black">{rb.star}</span>
-                                                                                        <Star size={12} className="text-neutral-300 fill-neutral-300" />
+                                                                                <div className="p-6 bg-neutral-50 rounded-[24px] border border-neutral-100 flex items-center gap-4">
+                                                                                    <div className="w-10 h-10 bg-white border border-neutral-100 rounded-xl flex items-center justify-center flex-none">
+                                                                                        <Info size={18} className="text-neutral-400" />
                                                                                     </div>
-                                                                                    <div className="flex-1 h-3 bg-white rounded-full overflow-hidden border border-neutral-100">
-                                                                                        <motion.div initial={{ width: 0 }} animate={{ width: `${rb.pct}%` }} className="h-full bg-[#FFC244]" />
+                                                                                    <p className="text-[12px] font-medium text-neutral-500 leading-tight">
+                                                                                        {t({
+                                                                                            en: 'Cancellations impact your search rank. Keep your rate above 90% for maximum visibility.',
+                                                                                            fr: 'Les annulations impactent votre classement. Gardez un taux au-dessus de 90% pour une visibilité maximale.'
+                                                                                        })}
+                                                                                    </p>
+                                                                                </div>
+                                                                            </div>
+                                                                        )}
+
+                                                                        {/* REPUTATION DETAIL */}
+                                                                        {performanceDetail === 'reputation' && (
+                                                                            <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                                                                                <div className="flex flex-col items-center text-center py-4">
+                                                                                    <div className="text-[64px] font-[900] tracking-tighter leading-none text-black mb-2">{Number(avgRating) > 0 ? avgRating : '--'}</div>
+                                                                                    <div className="flex gap-1.5 mb-4">
+                                                                                        {Array.from({ length: 5 }).map((_, i) => (
+                                                                                            <Star key={i} size={24} className={cn(i < Math.floor(Number(avgRating)) ? "text-[#FFC244] fill-[#FFC244]" : "text-neutral-100 fill-neutral-100")} />
+                                                                                        ))}
                                                                                     </div>
-                                                                                    <span className="text-[12px] font-black text-neutral-400 w-10 text-right">{rb.pct}%</span>
+                                                                                    <div className="px-4 py-1.5 bg-emerald-50 rounded-full text-[12px] font-black text-emerald-600 uppercase tracking-widest border border-emerald-100">
+                                                                                        {Number(avgRating) >= 4.5
+                                                                                            ? t({ en: 'Excellent Quality', fr: 'Qualité excellente' })
+                                                                                            : t({ en: 'Needs Focus', fr: 'À améliorer' })}
+                                                                                    </div>
                                                                                 </div>
-                                                                            ))}
-                                                                        </div>
 
-                                                                        <div className="p-6 bg-white border border-neutral-100 rounded-[32px]">
-                                                                            <p className="text-[14px] font-bold text-neutral-800 mb-2">{t({ en: 'Recent Reviews', fr: 'Avis Récents' })}</p>
-                                                                            <p className="text-[13px] font-medium text-neutral-400 leading-relaxed italic">
-                                                                                &quot;{monthRatings.length > 0 ? t({ en: 'You have solid feedback from your clients this month.', fr: 'Vous avez de bons retours de vos clients ce mois-ci.' }) : t({ en: 'No reviews yet for this month. Complete more tasks to earn stars!', fr: 'Pas encore d\'avis ce mois-ci. Finalisez plus de tâches pour gagner des étoiles !' })}&quot;
-                                                                            </p>
-                                                                        </div>
-                                                                    </div>
-                                                                )}
-
-                                                                {/* MARKETING DETAIL */}
-                                                                {performanceDetail === 'marketing' && (
-                                                                    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                                                                        <div className="bg-[#00A082] p-8 rounded-[32px] text-white relative overflow-hidden shadow-lg shadow-emerald-900/10">
-                                                                            <h3 className="text-[18px] font-black mb-2">{t({ en: 'Visibility Metrics', fr: 'Indicateurs de visibilité' })}</h3>
-                                                                            <p className="text-white/80 text-[13px] font-medium leading-relaxed">
-                                                                                {t({ en: 'We are currently calibrating your search performance data. You will soon see exactly how many times your profile appears in search results.', fr: 'Nous calibrons actuellement vos données de performance dans la recherche. Vous verrez bientôt exactement combien de fois votre profil apparaît dans les résultats.' })}
-                                                                            </p>
-                                                                            <div className="mt-6 flex items-center gap-3 px-3 py-1.5 bg-white rounded-full w-fit">
-                                                                                <div className="w-1.5 h-1.5 rounded-full bg-[#00A082]" />
-                                                                                <span className="text-[10px] font-black uppercase tracking-widest text-[#00A082]">{t({ en: 'BETA Access', fr: 'Accès BÊTA' })}</span>
-                                                                            </div>
-                                                                        </div>
-
-                                                                        <div className="p-8 border border-neutral-100 rounded-[32px] flex flex-col items-center text-center space-y-4 bg-neutral-50/50">
-                                                                            <div className="w-12 h-12 bg-white border border-neutral-100 rounded-full flex items-center justify-center">
-                                                                                <TrendingUp size={20} className="text-neutral-300" />
-                                                                            </div>
-                                                                            <div>
-                                                                                <p className="text-[15px] font-black text-neutral-900">{t({ en: 'Reach Data Incoming', fr: 'Données de portée à venir' })}</p>
-                                                                                <p className="text-[12px] text-neutral-400 font-medium px-4">{t({ en: 'Complete more missions to unlock depth analytics for your city ranking.', fr: 'Réalisez plus de missions pour débloquer des analyses avancées de votre classement dans la ville.' })}</p>
-                                                                            </div>
-                                                                        </div>
-                                                                    </div>
-                                                                )}
-
-                                                                {/* GROWTH DETAIL */}
-                                                                {performanceDetail === 'growth' && (
-                                                                    <div className="space-y-8">
-                                                                        <div className="p-8 bg-[#FFC244] rounded-[32px] text-black">
-                                                                            <div className="flex items-center gap-4 mb-4">
-                                                                                <div className="w-10 h-10 bg-black text-[#FFC244] rounded-xl flex items-center justify-center">
-                                                                                    <Zap size={20} />
+                                                                                <div className="space-y-5 bg-neutral-50 p-8 rounded-[32px] border border-neutral-100">
+                                                                                    <h4 className="text-[13px] font-black uppercase tracking-widest text-neutral-400 mb-2">{t({ en: 'Rating Distribution', fr: 'Distribution des Notes' })}</h4>
+                                                                                    {ratingBreakdown.map(rb => (
+                                                                                        <div key={rb.star} className="flex items-center gap-4">
+                                                                                            <div className="flex items-center gap-1 w-8">
+                                                                                                <span className="text-[14px] font-black">{rb.star}</span>
+                                                                                                <Star size={12} className="text-neutral-300 fill-neutral-300" />
+                                                                                            </div>
+                                                                                            <div className="flex-1 h-3 bg-white rounded-full overflow-hidden border border-neutral-100">
+                                                                                                <motion.div initial={{ width: 0 }} animate={{ width: `${rb.pct}%` }} className="h-full bg-[#FFC244]" />
+                                                                                            </div>
+                                                                                            <span className="text-[12px] font-black text-neutral-400 w-10 text-right">{rb.pct}%</span>
+                                                                                        </div>
+                                                                                    ))}
                                                                                 </div>
-                                                                                <h3 className="text-[18px] font-black">{t({ en: 'Unlock Rewards', fr: 'Débloquer des récompenses' })}</h3>
-                                                                            </div>
-                                                                            <p className="text-[13px] font-bold text-black/60 leading-relaxed mb-8">{t({ en: 'Refer other Bricolers and earn 50 MAD for each one who completes their first mission.', fr: 'Parrainez d’autres Bricoleurs et gagnez 50 MAD pour chacun qui termine sa première mission.' })}</p>
-                                                                            <button
-                                                                                onClick={() => { setPerformanceDetail('none'); setShowPromotePage(true); }}
-                                                                                className="w-full py-5 bg-black text-white rounded-[20px] text-[14px] font-black shadow-lg"
-                                                                            >
-                                                                                {t({ en: 'Open Referrals', fr: 'Ouvrir les parrainages' })}
-                                                                            </button>
-                                                                        </div>
-                                                                    </div>
-                                                                )}
 
-                                                                {/* OPTIMIZATION TIPS DETAIL VIEWS */}
-                                                                {performanceDetail === 'tips-profile' && (
-                                                                    <div className="space-y-8 pb-10 animate-in fade-in slide-in-from-right-4 duration-500">
-                                                                        <div className="w-full h-48 bg-[#F7F6F6] rounded-[32px] flex items-center justify-center relative overflow-hidden border border-neutral-100">
-                                                                            <User size={80} className="text-black opacity-5 absolute -right-4 -bottom-4 rotate-12" />
-                                                                            <div className="text-center z-10 px-6">
-                                                                                <h3 className="text-black text-[24px] font-[900] tracking-tight">{t({ en: 'The Magnet Profile', fr: 'Le Profil Aimant' })}</h3>
-                                                                                <p className="text-neutral-500 text-[14px] font-bold">{t({ en: 'Get +35% more client interest', fr: '+35% d\'intérêt client en plus' })}</p>
-                                                                            </div>
-                                                                        </div>
-                                                                        <div className="space-y-8">
-                                                                            <div className="space-y-4">
-                                                                                <h4 className="text-[14px] font-black uppercase tracking-widest text-neutral-400">{t({ en: 'Step 1: The Bio Formula', fr: 'Étape 1 : La formule de bio' })}</h4>
-                                                                                <p className="text-[15px] font-medium text-neutral-600 leading-relaxed border-l-4 border-[#FFC244] pl-5 bg-neutral-50 p-4 rounded-xl">
-                                                                                    {t({
-                                                                                        en: '"I am a [Niche] expert with [Years] exp. I help clients with [Problem A] and [Problem B]. My goal is [Benefit]."',
-                                                                                        fr: '"Je suis expert en [Niche] avec [Années] d\'exp. J\'aide mes clients pour [Problème A] et [Problème B]."'
-                                                                                    })}
-                                                                                </p>
-                                                                            </div>
-                                                                            <div className="space-y-4">
-                                                                                <h4 className="text-[14px] font-black uppercase tracking-widest text-neutral-400">{t({ en: 'Step 2: Social Proof', fr: 'Étape 2 : La preuve sociale' })}</h4>
-                                                                                <p className="text-[15px] font-medium text-neutral-600 leading-relaxed">
-                                                                                    {t({ en: 'Adding just 3 high-quality photos of your work increases your trust score by 50%.', fr: 'Ajouter seulement 3 photos de qualité de votre travail augmente votre score de confiance de 50 %.' })}
-                                                                                </p>
-                                                                            </div>
-
-                                                                        </div>
-                                                                    </div>
-                                                                )}
-
-                                                                {performanceDetail === 'tips-pricing' && (
-                                                                    <div className="space-y-8 pb-10 animate-in fade-in slide-in-from-right-4 duration-500">
-                                                                        <div className="w-full h-48 bg-[#F7F6F6] rounded-[32px] flex items-center justify-center relative overflow-hidden border border-neutral-100">
-                                                                            <Tag size={80} className="text-black opacity-5 absolute -right-4 -bottom-4 rotate-12" />
-                                                                            <div className="text-center z-10 px-6">
-                                                                                <h3 className="text-black text-[24px] font-[900] tracking-tight">{t({ en: 'Market Legend', fr: 'Légende du Marché' })}</h3>
-                                                                                <p className="text-neutral-500 text-[14px] font-bold">{t({ en: 'Master your unit economics', fr: 'Maîtrisez votre rentabilité' })}</p>
-                                                                            </div>
-                                                                        </div>
-                                                                        <div className="space-y-6">
-                                                                            <div className="p-6 bg-neutral-50 rounded-[28px] border border-neutral-100 flex gap-4">
-                                                                                <div className="w-10 h-10 rounded-full bg-white border border-neutral-100 flex items-center justify-center flex-none">
-                                                                                    <TrendingUp size={18} className="text-emerald-600" />
-                                                                                </div>
-                                                                                <div>
-                                                                                    <h4 className="text-[16px] font-black mb-1">{t({ en: 'Competitive Anchoring', fr: 'Positionnement concurrentiel' })}</h4>
-                                                                                    <p className="text-[14px] text-neutral-500 leading-relaxed">{t({ en: 'Check similar services in your city. Start 5% lower to build reviews, then scale up once you hit legendary status.', fr: 'Vérifiez les services similaires dans votre ville. Commencez 5 % plus bas pour obtenir des avis, puis augmentez vos tarifs une fois votre statut renforcé.' })}</p>
+                                                                                <div className="p-6 bg-white border border-neutral-100 rounded-[32px]">
+                                                                                    <p className="text-[14px] font-bold text-neutral-800 mb-2">{t({ en: 'Recent Reviews', fr: 'Avis Récents' })}</p>
+                                                                                    <p className="text-[13px] font-medium text-neutral-400 leading-relaxed italic">
+                                                                                        &quot;{monthRatings.length > 0 ? t({ en: 'You have solid feedback from your clients this month.', fr: 'Vous avez de bons retours de vos clients ce mois-ci.' }) : t({ en: 'No reviews yet for this month. Complete more tasks to earn stars!', fr: 'Pas encore d\'avis ce mois-ci. Finalisez plus de tâches pour gagner des étoiles !' })}&quot;
+                                                                                    </p>
                                                                                 </div>
                                                                             </div>
-                                                                            <div className="p-6 bg-neutral-50 rounded-[28px] border border-neutral-100 flex gap-4">
-                                                                                <div className="w-10 h-10 rounded-full bg-white border border-neutral-100 flex items-center justify-center flex-none">
-                                                                                    <Zap size={18} className="text-orange-600" />
-                                                                                </div>
-                                                                                <div>
-                                                                                    <h4 className="text-[16px] font-black mb-1">{t({ en: 'Add-on Strategy', fr: 'Stratégie d’options complémentaires' })}</h4>
-                                                                                    <p className="text-[14px] text-neutral-500 leading-relaxed">{t({ en: 'Don’t just sell the main task. Suggest maintenance or extra parts for a higher average ticket.', fr: 'Ne vendez pas seulement la tâche principale. Proposez maintenance ou options supplémentaires pour augmenter le panier moyen.' })}</p>
-                                                                                </div>
-                                                                            </div>
-                                                                        </div>
-                                                                    </div>
-                                                                )}
+                                                                        )}
 
-                                                                {performanceDetail === 'tips-stars' && (
-                                                                    <div className="space-y-8 pb-10 animate-in fade-in slide-in-from-right-4 duration-500">
-                                                                        <div className="w-full h-48 bg-[#F7F6F6] rounded-[32px] flex items-center justify-center relative overflow-hidden border border-neutral-100">
-                                                                            <Star size={80} className="text-black opacity-5 absolute -right-4 -bottom-4 rotate-12" fill="currentColor" />
-                                                                            <div className="text-center z-10 px-6">
-                                                                                <h3 className="text-black text-[24px] font-[900] tracking-tight">{t({ en: '5-Star Protocol', fr: 'Protocole 5 Étoiles' })}</h3>
-                                                                                <p className="text-neutral-500 text-[14px] font-bold">{t({ en: 'Building lifelong clients', fr: 'Fidéliser vos clients à vie' })}</p>
-                                                                            </div>
-                                                                        </div>
-                                                                        <div className="space-y-4">
-                                                                            {[
-                                                                                { t: t({ en: 'Be Early', fr: 'Soyez en avance' }), d: t({ en: 'Arriving 5 mins early = 4.8 star average.', fr: 'Arriver 5 minutes en avance = moyenne de 4,8 étoiles.' }) },
-                                                                                { t: t({ en: 'Clean Up', fr: 'Nettoyez après' }), d: t({ en: 'Never leave tools or dust. The finish is what they remember.', fr: 'Ne laissez jamais d’outils ni de poussière. La finition est ce dont ils se souviennent.' }) },
-                                                                                { t: t({ en: 'The Follow Up', fr: 'Le suivi' }), d: t({ en: 'Message 24h later: "Is everything working perfectly?"', fr: 'Envoyez un message 24h plus tard : "Tout fonctionne parfaitement ?"' }) }
-                                                                            ].map((item, idx) => (
-                                                                                <div key={idx} className="flex items-center gap-4 bg-neutral-50 p-5 rounded-[24px] border border-neutral-100">
-                                                                                    <div className="w-8 h-8 rounded-full bg-white border border-neutral-100 text-black flex items-center justify-center font-black text-[12px]">{idx + 1}</div>
+                                                                        {/* MARKETING DETAIL */}
+                                                                        {performanceDetail === 'marketing' && (
+                                                                            <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                                                                                <div className="bg-[#00A082] p-8 rounded-[32px] text-white relative overflow-hidden shadow-lg shadow-emerald-900/10">
+                                                                                    <h3 className="text-[18px] font-black mb-2">{t({ en: 'Visibility Metrics', fr: 'Indicateurs de visibilité' })}</h3>
+                                                                                    <p className="text-white/80 text-[13px] font-medium leading-relaxed">
+                                                                                        {t({ en: 'We are currently calibrating your search performance data. You will soon see exactly how many times your profile appears in search results.', fr: 'Nous calibrons actuellement vos données de performance dans la recherche. Vous verrez bientôt exactement combien de fois votre profil apparaît dans les résultats.' })}
+                                                                                    </p>
+                                                                                    <div className="mt-6 flex items-center gap-3 px-3 py-1.5 bg-white rounded-full w-fit">
+                                                                                        <div className="w-1.5 h-1.5 rounded-full bg-[#00A082]" />
+                                                                                        <span className="text-[10px] font-black uppercase tracking-widest text-[#00A082]">{t({ en: 'BETA Access', fr: 'Accès BÊTA' })}</span>
+                                                                                    </div>
+                                                                                </div>
+
+                                                                                <div className="p-8 border border-neutral-100 rounded-[32px] flex flex-col items-center text-center space-y-4 bg-neutral-50/50">
+                                                                                    <div className="w-12 h-12 bg-white border border-neutral-100 rounded-full flex items-center justify-center">
+                                                                                        <TrendingUp size={20} className="text-neutral-300" />
+                                                                                    </div>
                                                                                     <div>
-                                                                                        <p className="text-[15px] font-[900]">{item.t}</p>
-                                                                                        <p className="text-[13px] text-neutral-400 font-bold">{item.d}</p>
+                                                                                        <p className="text-[15px] font-black text-neutral-900">{t({ en: 'Reach Data Incoming', fr: 'Données de portée à venir' })}</p>
+                                                                                        <p className="text-[12px] text-neutral-400 font-medium px-4">{t({ en: 'Complete more missions to unlock depth analytics for your city ranking.', fr: 'Réalisez plus de missions pour débloquer des analyses avancées de votre classement dans la ville.' })}</p>
                                                                                     </div>
                                                                                 </div>
-                                                                            ))}
-                                                                        </div>
-                                                                    </div>
-                                                                )}
-
-                                                                {performanceDetail === 'tips-visibility' && (
-                                                                    <div className="space-y-8 pb-10 animate-in fade-in slide-in-from-right-4 duration-500">
-                                                                        <div className="w-full h-48 bg-[#F7F6F6] rounded-[32px] flex items-center justify-center relative overflow-hidden border border-neutral-100">
-                                                                            <Eye size={80} className="text-black opacity-5 absolute -right-4 -bottom-4 rotate-12" />
-                                                                            <div className="text-center z-10 px-6">
-                                                                                <h3 className="text-black text-[24px] font-[900] tracking-tight">{t({ en: 'Ranking Hacker', fr: 'Hacker de Classement' })}</h3>
-                                                                                <p className="text-neutral-500 text-[14px] font-bold">{t({ en: 'Master the algorithm', fr: 'Maîtrisez l\'algorithme' })}</p>
                                                                             </div>
-                                                                        </div>
-                                                                        <div className="bg-neutral-50 p-8 rounded-[32px] border border-neutral-100 space-y-5">
-                                                                            <h4 className="text-black text-[16px] font-black">{t({ en: 'Top Ranking Factors', fr: 'Facteurs clés de classement' })}</h4>
-                                                                            <ul className="space-y-4">
-                                                                                <li className="flex items-center gap-4 text-[13px] font-bold text-neutral-600">
-                                                                                    <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center flex-none">
-                                                                                        <Check size={16} />
+                                                                        )}
+
+                                                                        {/* GROWTH DETAIL */}
+                                                                        {performanceDetail === 'growth' && (
+                                                                            <div className="space-y-8">
+                                                                                <div className="p-8 bg-[#FFC244] rounded-[32px] text-black">
+                                                                                    <div className="flex items-center gap-4 mb-4">
+                                                                                        <div className="w-10 h-10 bg-black text-[#FFC244] rounded-xl flex items-center justify-center">
+                                                                                            <Zap size={20} />
+                                                                                        </div>
+                                                                                        <h3 className="text-[18px] font-black">{t({ en: 'Unlock Rewards', fr: 'Débloquer des récompenses' })}</h3>
                                                                                     </div>
-                                                                                    {t({ en: 'High completion rate (>90%)', fr: 'Taux d’achèvement élevé (>90%)' })}
-                                                                                </li>
-                                                                                <li className="flex items-center gap-4 text-[13px] font-bold text-neutral-600">
-                                                                                    <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center flex-none">
-                                                                                        <Zap size={16} />
+                                                                                    <p className="text-[13px] font-bold text-black/60 leading-relaxed mb-8">{t({ en: 'Refer other Bricolers and earn 50 MAD for each one who completes their first mission.', fr: 'Parrainez d’autres Bricoleurs et gagnez 50 MAD pour chacun qui termine sa première mission.' })}</p>
+                                                                                    <button
+                                                                                        onClick={() => { setPerformanceDetail('none'); setShowPromotePage(true); }}
+                                                                                        className="w-full py-5 bg-black text-white rounded-[20px] text-[14px] font-black shadow-lg"
+                                                                                    >
+                                                                                        {t({ en: 'Open Referrals', fr: 'Ouvrir les parrainages' })}
+                                                                                    </button>
+                                                                                </div>
+                                                                            </div>
+                                                                        )}
+
+                                                                        {/* OPTIMIZATION TIPS DETAIL VIEWS */}
+                                                                        {performanceDetail === 'tips-profile' && (
+                                                                            <div className="space-y-8 pb-10 animate-in fade-in slide-in-from-right-4 duration-500">
+                                                                                <div className="w-full h-48 bg-[#F7F6F6] rounded-[32px] flex items-center justify-center relative overflow-hidden border border-neutral-100">
+                                                                                    <User size={80} className="text-black opacity-5 absolute -right-4 -bottom-4 rotate-12" />
+                                                                                    <div className="text-center z-10 px-6">
+                                                                                        <h3 className="text-black text-[24px] font-[900] tracking-tight">{t({ en: 'The Magnet Profile', fr: 'Le Profil Aimant' })}</h3>
+                                                                                        <p className="text-neutral-500 text-[14px] font-bold">{t({ en: 'Get +35% more client interest', fr: '+35% d\'intérêt client en plus' })}</p>
                                                                                     </div>
-                                                                                    {t({ en: 'Response time under 15 mins', fr: 'Temps de réponse inférieur à 15 min' })}
-                                                                                </li>
-                                                                                <li className="flex items-center gap-4 text-[13px] font-bold text-neutral-600">
-                                                                                    <div className="w-8 h-8 rounded-lg bg-orange-50 text-orange-600 flex items-center justify-center flex-none">
-                                                                                        <TrendingUp size={16} />
+                                                                                </div>
+                                                                                <div className="space-y-8">
+                                                                                    <div className="space-y-4">
+                                                                                        <h4 className="text-[14px] font-black uppercase tracking-widest text-neutral-400">{t({ en: 'Step 1: The Bio Formula', fr: 'Étape 1 : La formule de bio' })}</h4>
+                                                                                        <p className="text-[15px] font-medium text-neutral-600 leading-relaxed border-l-4 border-[#FFC244] pl-5 bg-neutral-50 p-4 rounded-xl">
+                                                                                            {t({
+                                                                                                en: '"I am a [Niche] expert with [Years] exp. I help clients with [Problem A] and [Problem B]. My goal is [Benefit]."',
+                                                                                                fr: '"Je suis expert en [Niche] avec [Années] d\'exp. J\'aide mes clients pour [Problème A] et [Problème B]."'
+                                                                                            })}
+                                                                                        </p>
                                                                                     </div>
-                                                                                    {t({ en: 'Frequent commission settlements', fr: 'Règlements de commission fréquents' })}
-                                                                                </li>
-                                                                            </ul>
-                                                                        </div>
+                                                                                    <div className="space-y-4">
+                                                                                        <h4 className="text-[14px] font-black uppercase tracking-widest text-neutral-400">{t({ en: 'Step 2: Social Proof', fr: 'Étape 2 : La preuve sociale' })}</h4>
+                                                                                        <p className="text-[15px] font-medium text-neutral-600 leading-relaxed">
+                                                                                            {t({ en: 'Adding just 3 high-quality photos of your work increases your trust score by 50%.', fr: 'Ajouter seulement 3 photos de qualité de votre travail augmente votre score de confiance de 50 %.' })}
+                                                                                        </p>
+                                                                                    </div>
+
+                                                                                </div>
+                                                                            </div>
+                                                                        )}
+
+                                                                        {performanceDetail === 'tips-pricing' && (
+                                                                            <div className="space-y-8 pb-10 animate-in fade-in slide-in-from-right-4 duration-500">
+                                                                                <div className="w-full h-48 bg-[#F7F6F6] rounded-[32px] flex items-center justify-center relative overflow-hidden border border-neutral-100">
+                                                                                    <Tag size={80} className="text-black opacity-5 absolute -right-4 -bottom-4 rotate-12" />
+                                                                                    <div className="text-center z-10 px-6">
+                                                                                        <h3 className="text-black text-[24px] font-[900] tracking-tight">{t({ en: 'Market Legend', fr: 'Légende du Marché' })}</h3>
+                                                                                        <p className="text-neutral-500 text-[14px] font-bold">{t({ en: 'Master your unit economics', fr: 'Maîtrisez votre rentabilité' })}</p>
+                                                                                    </div>
+                                                                                </div>
+                                                                                <div className="space-y-6">
+                                                                                    <div className="p-6 bg-neutral-50 rounded-[28px] border border-neutral-100 flex gap-4">
+                                                                                        <div className="w-10 h-10 rounded-full bg-white border border-neutral-100 flex items-center justify-center flex-none">
+                                                                                            <TrendingUp size={18} className="text-emerald-600" />
+                                                                                        </div>
+                                                                                        <div>
+                                                                                            <h4 className="text-[16px] font-black mb-1">{t({ en: 'Competitive Anchoring', fr: 'Positionnement concurrentiel' })}</h4>
+                                                                                            <p className="text-[14px] text-neutral-500 leading-relaxed">{t({ en: 'Check similar services in your city. Start 5% lower to build reviews, then scale up once you hit legendary status.', fr: 'Vérifiez les services similaires dans votre ville. Commencez 5 % plus bas pour obtenir des avis, puis augmentez vos tarifs une fois votre statut renforcé.' })}</p>
+                                                                                        </div>
+                                                                                    </div>
+                                                                                    <div className="p-6 bg-neutral-50 rounded-[28px] border border-neutral-100 flex gap-4">
+                                                                                        <div className="w-10 h-10 rounded-full bg-white border border-neutral-100 flex items-center justify-center flex-none">
+                                                                                            <Zap size={18} className="text-orange-600" />
+                                                                                        </div>
+                                                                                        <div>
+                                                                                            <h4 className="text-[16px] font-black mb-1">{t({ en: 'Add-on Strategy', fr: 'Stratégie d’options complémentaires' })}</h4>
+                                                                                            <p className="text-[14px] text-neutral-500 leading-relaxed">{t({ en: 'Don’t just sell the main task. Suggest maintenance or extra parts for a higher average ticket.', fr: 'Ne vendez pas seulement la tâche principale. Proposez maintenance ou options supplémentaires pour augmenter le panier moyen.' })}</p>
+                                                                                        </div>
+                                                                                    </div>
+                                                                                </div>
+                                                                            </div>
+                                                                        )}
+
+                                                                        {performanceDetail === 'tips-stars' && (
+                                                                            <div className="space-y-8 pb-10 animate-in fade-in slide-in-from-right-4 duration-500">
+                                                                                <div className="w-full h-48 bg-[#F7F6F6] rounded-[32px] flex items-center justify-center relative overflow-hidden border border-neutral-100">
+                                                                                    <Star size={80} className="text-black opacity-5 absolute -right-4 -bottom-4 rotate-12" fill="currentColor" />
+                                                                                    <div className="text-center z-10 px-6">
+                                                                                        <h3 className="text-black text-[24px] font-[900] tracking-tight">{t({ en: '5-Star Protocol', fr: 'Protocole 5 Étoiles' })}</h3>
+                                                                                        <p className="text-neutral-500 text-[14px] font-bold">{t({ en: 'Building lifelong clients', fr: 'Fidéliser vos clients à vie' })}</p>
+                                                                                    </div>
+                                                                                </div>
+                                                                                <div className="space-y-4">
+                                                                                    {[
+                                                                                        { t: t({ en: 'Be Early', fr: 'Soyez en avance' }), d: t({ en: 'Arriving 5 mins early = 4.8 star average.', fr: 'Arriver 5 minutes en avance = moyenne de 4,8 étoiles.' }) },
+                                                                                        { t: t({ en: 'Clean Up', fr: 'Nettoyez après' }), d: t({ en: 'Never leave tools or dust. The finish is what they remember.', fr: 'Ne laissez jamais d’outils ni de poussière. La finition est ce dont ils se souviennent.' }) },
+                                                                                        { t: t({ en: 'The Follow Up', fr: 'Le suivi' }), d: t({ en: 'Message 24h later: "Is everything working perfectly?"', fr: 'Envoyez un message 24h plus tard : "Tout fonctionne parfaitement ?"' }) }
+                                                                                    ].map((item, idx) => (
+                                                                                        <div key={idx} className="flex items-center gap-4 bg-neutral-50 p-5 rounded-[24px] border border-neutral-100">
+                                                                                            <div className="w-8 h-8 rounded-full bg-white border border-neutral-100 text-black flex items-center justify-center font-black text-[12px]">{idx + 1}</div>
+                                                                                            <div>
+                                                                                                <p className="text-[15px] font-[900]">{item.t}</p>
+                                                                                                <p className="text-[13px] text-neutral-400 font-bold">{item.d}</p>
+                                                                                            </div>
+                                                                                        </div>
+                                                                                    ))}
+                                                                                </div>
+                                                                            </div>
+                                                                        )}
+
+                                                                        {performanceDetail === 'tips-visibility' && (
+                                                                            <div className="space-y-8 pb-10 animate-in fade-in slide-in-from-right-4 duration-500">
+                                                                                <div className="w-full h-48 bg-[#F7F6F6] rounded-[32px] flex items-center justify-center relative overflow-hidden border border-neutral-100">
+                                                                                    <Eye size={80} className="text-black opacity-5 absolute -right-4 -bottom-4 rotate-12" />
+                                                                                    <div className="text-center z-10 px-6">
+                                                                                        <h3 className="text-black text-[24px] font-[900] tracking-tight">{t({ en: 'Ranking Hacker', fr: 'Hacker de Classement' })}</h3>
+                                                                                        <p className="text-neutral-500 text-[14px] font-bold">{t({ en: 'Master the algorithm', fr: 'Maîtrisez l\'algorithme' })}</p>
+                                                                                    </div>
+                                                                                </div>
+                                                                                <div className="bg-neutral-50 p-8 rounded-[32px] border border-neutral-100 space-y-5">
+                                                                                    <h4 className="text-black text-[16px] font-black">{t({ en: 'Top Ranking Factors', fr: 'Facteurs clés de classement' })}</h4>
+                                                                                    <ul className="space-y-4">
+                                                                                        <li className="flex items-center gap-4 text-[13px] font-bold text-neutral-600">
+                                                                                            <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center flex-none">
+                                                                                                <Check size={16} />
+                                                                                            </div>
+                                                                                            {t({ en: 'High completion rate (>90%)', fr: 'Taux d\'achèvement élevé (>90%)' })}
+                                                                                        </li>
+                                                                                        <li className="flex items-center gap-4 text-[13px] font-bold text-neutral-600">
+                                                                                            <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center flex-none">
+                                                                                                <Zap size={16} />
+                                                                                            </div>
+                                                                                            {t({ en: 'Response time under 15 mins', fr: 'Temps de réponse inférieur à 15 min' })}
+                                                                                        </li>
+                                                                                        <li className="flex items-center gap-4 text-[13px] font-bold text-neutral-600">
+                                                                                            <div className="w-8 h-8 rounded-lg bg-orange-50 text-orange-600 flex items-center justify-center flex-none">
+                                                                                                <TrendingUp size={16} />
+                                                                                            </div>
+                                                                                            {t({ en: 'Frequent commission settlements', fr: 'Règlements de commission fréquents' })}
+                                                                                        </li>
+                                                                                    </ul>
+                                                                                </div>
+                                                                            </div>
+                                                                        )}
                                                                     </div>
-                                                                )}
-                                                            </div>
-
-
-
-                                                        </motion.div>
-                                                    )}
-                                                </AnimatePresence>
+                                                                </motion.div>
+                                                            )}
+                                                        </AnimatePresence>
+                                                    </div>
+                                                );
+                                            })()}
+                                        </motion.div>
+                                    ) : (
+                                        <motion.div
+                                            key="performance-availability"
+                                            initial={{ opacity: 0, x: 20 }}
+                                            animate={{ opacity: 1, x: 0 }}
+                                            exit={{ opacity: 0, x: -20 }}
+                                            transition={{ duration: 0.3 }}
+                                            className="space-y-8"
+                                        >
+                                            <div className="flex-1 min-h-0 bg-[#FAFAFA] flex flex-col">
+                                                <AvailabilityTab
+                                                    userData={userData}
+                                                    setUserData={setUserData as any}
+                                                    horizontalSelectedDate={horizontalSelectedDate}
+                                                    setHorizontalSelectedDate={setHorizontalSelectedDate}
+                                                    handleSaveSlotsManual={handleSaveSlotsManual}
+                                                    AVAILABILITY_SLOTS={AVAILABILITY_SLOTS}
+                                                    TIME_SLOTS={TIME_SLOTS}
+                                                    orders={acceptedJobs}
+                                                    showRoutineModal={showRoutineModal}
+                                                    setShowRoutineModal={setShowRoutineModal}
+                                                />
                                             </div>
-                                        );
-                                    })()}
-                                </div>
-                            </div >
-                        )
-                    }
-
+                                            <ProviderRoutineModal
+                                                isOpen={showRoutineModal}
+                                                onClose={() => setShowRoutineModal(false)}
+                                                userData={userData}
+                                                setUserData={setUserData as any}
+                                                TIME_SLOTS={TIME_SLOTS}
+                                            />
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
+                            </div>
+                        </div>
+                    )}
                     {
                         activeNav === 'services' && (
                             <motion.div
@@ -4695,961 +4642,962 @@ export default function ProviderPage() {
                             </motion.div>
                         )
                     }
-                </main >
 
 
-                {/* ── Redistribute Modal ── */}
-                < AnimatePresence key="redistribute-presence" >
-                    {
-                        showRedistributeModal && redistributeJob && (
-                            <motion.div
-                                key="redistribute-modal-overlay"
-                                initial={{ opacity: 0 }}
-                                animate={{ opacity: 1 }}
-                                exit={{ opacity: 0 }}
-                                className="fixed inset-0 z-[120] flex items-end justify-center p-0"
-                            >
-                                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowRedistributeModal(false)} className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+
+                    {/* ── Redistribute Modal ── */}
+                    <AnimatePresence key="redistribute-presence">
+                        {
+                            showRedistributeModal && redistributeJob && (
                                 <motion.div
-                                    initial={{ y: '100%' }}
-                                    animate={{ y: 0 }}
-                                    exit={{ y: '100%' }}
-                                    transition={{ type: 'spring', damping: 28, stiffness: 300 }}
-                                    className="relative bg-white w-full rounded-t-[32px] p-6 pb-24 shadow-xl border-t border-neutral-100 max-h-[80vh] overflow-y-auto"
+                                    key="redistribute-modal-overlay"
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    exit={{ opacity: 0 }}
+                                    className="fixed inset-0 z-[120] flex items-end justify-center p-0"
                                 >
-                                    <div className="w-10 h-1 bg-neutral-200 rounded-full mx-auto mb-6" />
-                                    <div className="flex items-center gap-3 mb-4">
-                                        <div className="w-10 h-10 bg-amber-50 rounded-2xl flex items-center justify-center">
-                                            <RefreshCw size={20} className="text-amber-500" />
-                                        </div>
-                                        <div>
-                                            <h2 className="text-[20px] font-black text-neutral-900">{t({ en: 'Redistribute Job', fr: 'Redistribuer la mission' })}</h2>
-                                            <p className="text-[12px] text-neutral-500 font-medium">{redistributeJob.service} · {redistributeJob.date}</p>
-                                        </div>
-                                    </div>
-
-                                    <div className="bg-amber-50 border border-amber-100 rounded-2xl p-4 mb-5">
-                                        <p className="text-[13px] font-bold text-amber-700">{t({ en: '⚠️ Financial Penalty Notice', fr: '⚠️ Avis de pénalité financière' })}</p>
-                                        <p className="text-[12px] font-medium text-amber-600 mt-1 leading-relaxed">
-                                            {t({ en: 'Redistributing a confirmed job applies a', fr: 'La redistribution d’une mission confirmée applique une' })} <strong>{t({ en: 'penalty deduction', fr: 'déduction de pénalité' })}</strong> {t({ en: 'to your next earnings. Use this only for urgent, genuine circumstances.', fr: 'sur vos prochains gains. Utilisez cela uniquement pour des circonstances urgentes et réelles.' })}
-                                        </p>
-                                    </div>
-
-                                    <div className="mb-5">
-                                        <label className="block text-xs font-black text-neutral-400 uppercase tracking-widest mb-2">{t({ en: 'Reason for redistribution *', fr: 'Raison de redistribution *' })}</label>
-                                        <textarea
-                                            value={redistributeReason}
-                                            onChange={(e) => setRedistributeReason(e.target.value)}
-                                            placeholder={t({ en: 'Describe your urgent circumstance clearly...', fr: 'Décrivez clairement votre situation urgente...' })}
-                                            className="w-full px-4 py-3 bg-neutral-50 border border-neutral-200 rounded-2xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-black/10 resize-none min-h-[100px]"
-                                        />
-                                    </div>
-
-                                    <div className="flex gap-3">
-                                        <button
-                                            onClick={() => setShowRedistributeModal(false)}
-                                            className="flex-1 h-12 rounded-2xl border border-neutral-200 text-sm font-black text-neutral-600 hover:bg-neutral-50 transition-colors"
-                                        >
-                                            {t({ en: 'Cancel', fr: 'Annuler' })}
-                                        </button>
-                                        <button
-                                            disabled={!redistributeReason.trim() || isRedistributing}
-                                            onClick={async () => {
-                                                if (!redistributeReason.trim() || !redistributeJob.id) return;
-                                                setIsRedistributing(true);
-                                                try {
-                                                    await handleUpdateJob(redistributeJob.id, {
-                                                        status: 'redistributed_by_provider',
-                                                        redistributedBy: user?.uid,
-                                                        redistributeReason,
-                                                        penaltyApplied: true,
-                                                        redistributedAt: new Date().toISOString(),
-                                                    });
-
-                                                    // Send notification to client
-                                                    try {
-                                                        const { sendClientNotification } = await import('@/features/client/components/ClientNotificationsView');
-                                                        await sendClientNotification({
-                                                            clientId: redistributeJob.clientId!,
-                                                            type: 'job_status_update',
-                                                            title: t({ en: 'Order Redistributed', fr: 'Commande redistribuée' }),
-                                                            body: t({
-                                                                en: `${userData?.name || 'Your professional'} had to redistribute your job. Please choose someone else or cancel.`,
-                                                                fr: `${userData?.name || 'Votre professionnel'} a dû redistribuer votre mission. Veuillez choisir quelqu'un d'autre ou annuler.`
-                                                            }),
-                                                            orderId: redistributeJob.id
-                                                        });
-                                                    } catch (notifErr) {
-                                                        console.warn("Failed to notify client about redistribution:", notifErr);
-                                                    }
-
-                                                    showToast({ variant: 'info', title: t({ en: 'Job redistributed', fr: 'Mission redistribuée' }), description: t({ en: 'A penalty has been applied to your earnings.', fr: 'Une pénalité a été appliquée à vos revenus.' }) });
-                                                    setShowRedistributeModal(false);
-                                                    setRedistributeReason('');
-                                                } catch (e) {
-                                                    showToast({ variant: 'error', title: t({ en: 'Error', fr: 'Erreur' }), description: t({ en: 'Could not redistribute. Please try again.', fr: 'Impossible de redistribuer. Veuillez réessayer.' }) });
-                                                } finally {
-                                                    setIsRedistributing(false);
-                                                }
-                                            }}
-                                            className="flex-1 h-12 rounded-2xl bg-black text-white text-sm font-black disabled:opacity-40 disabled:cursor-not-allowed hover:bg-neutral-800 transition-colors"
-                                        >
-                                            {isRedistributing ? t({ en: 'Processing…', fr: 'En cours…' }) : t({ en: 'Confirm Redistribution', fr: 'Confirmer la redistribution' })}
-                                        </button>
-                                    </div>
-                                </motion.div>
-                            </motion.div>
-                        )
-                    }
-                </AnimatePresence >
-
-                {/* ── Rate Client Modal ── */}
-                < AnimatePresence key="rate-client-presence" >
-                    {
-                        showRateClientModal && rateClientJob && (
-                            <div key="rate-client-modal" className="fixed inset-0 z-[120] flex items-end justify-center p-0">
-                                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowRateClientModal(false)} className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
-                                <motion.div
-                                    initial={{ y: '100%' }}
-                                    animate={{ y: 0 }}
-                                    exit={{ y: '100%' }}
-                                    transition={{ type: 'spring', damping: 28, stiffness: 300 }}
-                                    className="relative bg-white w-full rounded-t-[32px] p-6 pb-24 shadow-xl border-t border-neutral-100"
-                                >
-                                    <div className="w-10 h-1 bg-neutral-200 rounded-full mx-auto mb-6" />
-                                    <div className="text-center mb-6">
-                                        <p className="text-[12px] font-black text-neutral-400 uppercase tracking-widest mb-1">{t({ en: 'Rate your client', fr: 'Évaluez votre client' })}</p>
-                                        <h2 className="text-[22px] font-black text-neutral-900" style={{ fontFamily: 'Uber Move, var(--font-sans)' }}>{rateClientJob.service}</h2>
-                                        <p className="text-[13px] font-medium text-neutral-500 mt-1">{rateClientJob.clientName} · {rateClientJob.date}</p>
-                                    </div>
-
-                                    {/* Star rating */}
-                                    <div className="flex items-center justify-center gap-3 mb-6">
-                                        {[1, 2, 3, 4, 5].map((s) => (
-                                            <button key={s} onClick={() => setClientRating(s)} className="transition-transform hover:scale-110 active:scale-95">
-                                                <Star
-                                                    size={40}
-                                                    strokeWidth={1.5}
-                                                    className={cn('transition-colors', s <= clientRating ? 'text-black fill-black' : 'text-neutral-300')}
-                                                />
-                                            </button>
-                                        ))}
-                                    </div>
-
-                                    <div className="mb-5">
-                                        <label className="block text-xs font-black text-neutral-400 uppercase tracking-widest mb-2">{t({ en: 'Comment (optional)', fr: 'Commentaire (optionnel)' })}</label>
-                                        <textarea
-                                            value={clientRatingComment}
-                                            onChange={(e) => setClientRatingComment(e.target.value)}
-                                            placeholder={t({ en: 'How was the client to work with?', fr: 'Comment était le client ?' })}
-                                            className="w-full px-4 py-3 bg-neutral-50 border border-neutral-200 rounded-2xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-black/10 resize-none min-h-[80px]"
-                                        />
-                                    </div>
-
-                                    <button
-                                        disabled={clientRating === 0 || isSubmittingRating}
-                                        onClick={async () => {
-                                            if (clientRating === 0 || !rateClientJob.id) return;
-                                            setIsSubmittingRating(true);
-                                            try {
-                                                await handleUpdateJob(rateClientJob.id, {
-                                                    bricolerRating: clientRating,
-                                                    bricolerComment: clientRatingComment,
-                                                });
-                                                confetti({ particleCount: 80, spread: 60, origin: { y: 0.7 } });
-                                                showToast({ variant: 'success', title: t({ en: 'Rating submitted!', fr: 'Évaluation envoyée !' }), description: t({ en: 'Thank you for your feedback.', fr: 'Merci pour votre retour.' }) });
-                                                setShowRateClientModal(false);
-                                            } catch (e) {
-                                                showToast({ variant: 'error', title: t({ en: 'Error', fr: 'Erreur' }), description: t({ en: 'Could not submit rating. Try again.', fr: 'Impossible d\'envoyer l\'évaluation. Réessayez.' }) });
-                                            } finally {
-                                                setIsSubmittingRating(false);
-                                            }
-                                        }}
-                                        className="w-full h-14 rounded-2xl bg-black text-white text-[15px] font-black disabled:opacity-40 disabled:cursor-not-allowed hover:bg-neutral-800 transition-colors"
+                                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowRedistributeModal(false)} className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+                                    <motion.div
+                                        initial={{ y: '100%' }}
+                                        animate={{ y: 0 }}
+                                        exit={{ y: '100%' }}
+                                        transition={{ type: 'spring', damping: 28, stiffness: 300 }}
+                                        className="relative bg-white w-full rounded-t-[32px] p-6 pb-24 shadow-xl border-t border-neutral-100 max-h-[80vh] overflow-y-auto"
                                     >
-                                        {isSubmittingRating ? t({ en: 'Submitting…', fr: 'Envoi…' }) : `${t({ en: 'Submit', fr: 'Envoyer' })} ${clientRating > 0 ? `${clientRating}★` : t({ en: 'Rating', fr: 'l\'évaluation' })}`}
-                                    </button>
-                                </motion.div>
-                            </div>
-                        )
-                    }
-                </AnimatePresence >
-
-
-
-                {/* Chat and Other Overlays */}
-                <AnimatePresence key="other-overlays-presence">
-                    {
-                        selectedChat && (
-                            <motion.div
-                                key="chat-modal-overlay"
-                                initial={{ opacity: 0 }}
-                                animate={{ opacity: 1 }}
-                                exit={{ opacity: 0 }}
-                                className="fixed inset-0 z-[110] flex items-center justify-center p-4"
-                            >
-                                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setSelectedChat(null)} className="absolute inset-0 bg-black/60 backdrop-blur-md" />
-                                <motion.div
-                                    initial={{ opacity: 0, scale: 0.95, y: 30 }}
-                                    animate={{ opacity: 1, scale: 1, y: 0 }}
-                                    exit={{ opacity: 0, scale: 0.95, y: 30 }}
-                                    className="relative bg-white w-full max-w-2xl h-[700px] rounded-[40px] shadow-xl border border-neutral-100 overflow-hidden flex flex-col"
-                                >
-                                    {/* Chat Header */}
-                                    <div className="p-6 border-b border-neutral-100 flex items-center justify-between">
-                                        <div className="flex items-center gap-4">
-                                            <div className="w-12 h-12 rounded-full bg-neutral-100 overflow-hidden">
-                                                <img src={selectedChat.clientAvatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${selectedChat.id}`} alt="Client" />
+                                        <div className="w-10 h-1 bg-neutral-200 rounded-full mx-auto mb-6" />
+                                        <div className="flex items-center gap-3 mb-4">
+                                            <div className="w-10 h-10 bg-amber-50 rounded-2xl flex items-center justify-center">
+                                                <RefreshCw size={20} className="text-amber-500" />
                                             </div>
                                             <div>
-                                                <h3 className="font-black text-neutral-900 leading-tight">
-                                                    {selectedChat.clientName || 'Client'}
-                                                </h3>
-                                                <p className="text-[10px] font-bold text-green-500 uppercase tracking-widest">{t({ en: 'Online', fr: 'En ligne' })}</p>
-                                            </div>
-                                        </div>
-                                        <div className="flex items-center gap-2">
-
-                                            <button onClick={() => setSelectedChat(null)} className="p-2 hover:bg-neutral-50 rounded-full transition-all text-neutral-400 hover:text-neutral-900">
-                                                <X size={20} />
-                                            </button>
-                                        </div>
-                                    </div>
-
-                                    {/* Chat Context Box */}
-                                    <div className="bg-neutral-50 p-4 border-b border-neutral-100 flex items-center justify-between">
-                                        <div className="flex items-center gap-3">
-                                            <div className="p-2 bg-white rounded-xl border border-neutral-100 shadow-sm">
-                                                <Briefcase size={16} className="text-black" />
-                                            </div>
-                                            <div>
-                                                <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest">{t({ en: 'Subject', fr: 'Objet' })}</p>
-                                                <p className="text-xs font-bold text-neutral-900">{selectedChat.service} in {selectedChat.location}</p>
-                                            </div>
-                                        </div>
-                                        <div className="text-right">
-                                            <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest">{t({ en: 'Agreed Price', fr: 'Prix convenu' })}</p>
-                                            <p className="text-xs font-bold text-black">{selectedChat.price} {t({ en: 'MAD', fr: 'MAD' })}</p>
-                                        </div>
-                                    </div>
-
-                                    {/* Chat Messages */}
-                                    <div className="flex-1 overflow-y-auto p-8 space-y-6 bg-white">
-                                        {chatMessages.length === 0 ? (
-                                            <div className="flex flex-col items-center justify-center h-full opacity-40">
-                                                <MessageSquare size={48} className="mb-2" />
-                                                <p className="text-sm font-bold">{t({ en: 'No messages yet', fr: 'Aucun message pour l\'instant' })}</p>
-                                            </div>
-                                        ) : (
-                                            chatMessages.map((msg: any) => {
-                                                const isProvider = msg.senderId === user?.uid;
-                                                return (
-                                                    <div key={msg.id} className={cn("flex gap-3 max-w-[85%]", isProvider ? "ml-auto flex-row-reverse" : "")}>
-                                                        {!isProvider && (
-                                                            <div className="w-8 h-8 rounded-full bg-neutral-100 flex-shrink-0 overflow-hidden mt-auto">
-                                                                <img src={selectedChat.clientAvatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${selectedChat.id}`} alt="Client" />
-                                                            </div>
-                                                        )}
-                                                        <div className={cn(
-                                                            "p-4 rounded-3xl",
-                                                            isProvider ? "bg-black text-white rounded-br-none" : "bg-neutral-50 text-neutral-900 rounded-bl-none"
-                                                        )}>
-                                                            <p className="text-sm font-medium leading-relaxed">{msg.text}</p>
-                                                            <span className={cn("text-[8px] font-bold uppercase mt-1.5 block", isProvider ? "text-white/40 text-right" : "text-neutral-400")}>
-                                                                {msg.timestamp?.toDate ? msg.timestamp.toDate().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Just now'}
-                                                            </span>
-                                                        </div>
-                                                    </div>
-                                                );
-                                            })
-                                        )}
-                                        <div ref={chatEndRef} />
-                                    </div>
-
-                                    {/* Chat Input */}
-                                    <div className="p-6 border-t border-neutral-100 bg-white">
-                                        <form
-                                            onSubmit={handleSubmitChatMessage}
-                                            className="relative"
-                                        >
-                                            <input
-                                                type="text"
-                                                placeholder={t({ en: 'Write your message...', fr: 'Écrivez votre message...' })}
-                                                value={chatMessage}
-                                                onChange={(e) => setChatMessage(e.target.value)}
-                                                className="w-full pl-6 pr-16 py-4 bg-neutral-50 border border-neutral-100 rounded-2xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-black/5 transition-all"
-                                            />
-                                            <button
-                                                type="submit"
-                                                className="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 bg-black text-white rounded-xl flex items-center justify-center hover:scale-105 active:scale-95 transition-all"
-                                            >
-                                                <Send size={18} />
-                                            </button>
-                                        </form>
-                                    </div>
-                                </motion.div>
-                            </motion.div>
-                        )
-                    }
-                    {
-                        showCashOutModal && (
-                            <div key="cashout-modal" className="fixed inset-0 z-[110] flex items-center justify-center p-6 pb-20 md:pb-6">
-                                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowCashOutModal(false)} className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
-                                <motion.div initial={{ opacity: 0, scale: 0.9, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.9, y: 20 }} className="relative bg-white w-full max-w-lg rounded-[40px] p-10 shadow-xl border border-neutral-100 overflow-hidden">
-                                    <div className="absolute top-0 right-0 p-6">
-                                        <button onClick={() => setShowCashOutModal(false)} className="p-2 hover:bg-neutral-50 rounded-full transition-colors text-neutral-400">
-                                            <X size={20} />
-                                        </button>
-                                    </div>
-
-                                    <h2 className="text-3xl font-black text-neutral-900 mb-2">{t({ en: 'Request Payout', fr: 'Demande de paiement' })}</h2>
-                                    <p className="text-neutral-500 text-sm mb-8 font-medium">{t({ en: 'Choose your preferred withdrawal method. Payouts are usually processed within 24-48 hours.', fr: 'Choisissez votre méthode de retrait préférée. Les paiements sont généralement traités sous 24-48 heures.' })}</p>
-
-                                    <div className="space-y-4 mb-8">
-                                        <div
-                                            onClick={() => setCashOutMethod('bank')}
-                                            className={cn(
-                                                "p-5 rounded-2xl border-2 transition-all cursor-pointer flex items-center justify-between",
-                                                cashOutMethod === 'bank' ? "border-black bg-neutral-50" : "border-neutral-100 opacity-60 hover:opacity-100"
-                                            )}
-                                        >
-                                            <div className="flex items-center gap-4">
-                                                <div className="w-10 h-10 bg-white rounded-xl border border-neutral-100 flex items-center justify-center shadow-sm">
-                                                    <Wallet size={20} className="text-blue-500" />
-                                                </div>
-                                                <div>
-                                                    <p className="font-bold text-sm text-neutral-900">{t({ en: 'Bank Transfer (RIB)', fr: 'Virement bancaire (RIB)' })}</p>
-                                                    <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest">{t({ en: 'Free • 2 days', fr: 'Gratuit • 2 jours' })}</p>
-                                                </div>
-                                            </div>
-                                            {cashOutMethod === 'bank' && <CheckCircle2 size={20} className="text-black" />}
-                                        </div>
-
-                                        <div
-                                            onClick={() => setCashOutMethod('wafacash')}
-                                            className={cn(
-                                                "p-5 rounded-2xl border-2 transition-all cursor-pointer flex items-center justify-between",
-                                                cashOutMethod === 'wafacash' ? "border-black bg-neutral-50" : "border-neutral-100 opacity-60 hover:opacity-100"
-                                            )}
-                                        >
-                                            <div className="flex items-center gap-4">
-                                                <div className="w-10 h-10 bg-white rounded-xl border border-neutral-100 flex items-center justify-center shadow-sm">
-                                                    <Navigation size={20} className="text-red-500" />
-                                                </div>
-                                                <div>
-                                                    <p className="font-bold text-sm text-neutral-900">{t({ en: 'Wafacash / Cash Plus', fr: 'Wafacash / Cash Plus' })}</p>
-                                                    <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest">{t({ en: '20 MAD fee • Instant', fr: 'Frais 20 MAD • Instantané' })}</p>
-                                                </div>
-                                            </div>
-                                            {cashOutMethod === 'wafacash' && <CheckCircle2 size={20} className="text-black" />}
-                                        </div>
-                                    </div>
-
-                                    <div className="space-y-6">
-                                        <div>
-                                            <label className="block text-xs font-black text-neutral-400 uppercase tracking-widest mb-2">{t({ en: 'Payout Details', fr: 'Informations de paiement' })}</label>
-                                            <textarea
-                                                placeholder={cashOutMethod === 'bank' ? t({ en: 'Enter your 24-digit RIB number...', fr: 'Entrez votre numéro RIB de 24 chiffres...' }) : t({ en: 'Enter your Full Name and Phone Number...', fr: 'Entrez votre nom complet et numéro de téléphone...' })}
-                                                className="w-full px-5 py-4 bg-neutral-50 border border-neutral-100 rounded-2xl focus:outline-none focus:ring-2 focus:ring-black transition-all min-h-[100px] text-sm"
-                                            />
-                                        </div>
-                                        <button
-                                            onClick={() => {
-                                                showToast({
-                                                    variant: 'success',
-                                                    title: t({ en: 'Payout request sent.', fr: 'Demande de paiement envoyée.' }),
-                                                    description: t({ en: 'You will receive a confirmation message shortly.', fr: 'Vous recevrez un message de confirmation prochainement.' })
-                                                });
-                                                setShowCashOutModal(false);
-                                            }}
-                                            className="w-full py-5 bg-black text-white font-black rounded-2xl transition-all active:scale-[0.98]"
-                                        >
-                                            {t({ en: 'Submit Request', fr: 'Envoyer la demande' })}
-                                        </button>
-                                    </div>
-                                </motion.div>
-                            </div>
-                        )
-                    }
-                    {
-                        showProfileModal && (
-                            <div key="profile-modal" className="fixed inset-0 z-[110] flex items-center justify-center p-6">
-                                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowProfileModal(false)} className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
-                                <motion.div initial={{ opacity: 0, scale: 0.9, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.9, y: 20 }} className="relative bg-white w-full max-w-lg rounded-[40px] p-10 shadow-xl border border-neutral-100 overflow-hidden">
-                                    <div className="absolute top-0 right-0 p-6">
-                                        <button onClick={() => setShowProfileModal(false)} className="p-2 hover:bg-neutral-50 rounded-full transition-colors text-neutral-400">
-                                            <X size={20} />
-                                        </button>
-                                    </div>
-
-                                    <h2 className="text-3xl font-black text-neutral-900 mb-2">{t({ en: 'Profile Settings', fr: 'Paramètres du profil' })}</h2>
-                                    <p className="text-neutral-500 text-sm mb-8 font-medium">{t({ en: 'Update your professional details and contact information.', fr: 'Mettez à jour vos informations professionnelles et vos coordonnées.' })}</p>
-
-                                    <div className="space-y-6">
-                                        <div>
-                                            <label className="block text-xs font-black text-neutral-400 uppercase tracking-widest mb-2">{t({ en: 'Display Name', fr: 'Nom affiché' })}</label>
-                                            <input
-                                                ref={nameInputRef}
-                                                type="text"
-                                                defaultValue={userData?.name || user?.displayName || ''}
-                                                className="w-full px-5 py-4 bg-neutral-50 border border-neutral-100 rounded-2xl focus:outline-none focus:ring-2 focus:ring-black transition-all text-sm"
-                                            />
-                                        </div>
-                                        <div className="grid grid-cols-2 gap-4">
-                                            <div className="relative">
-                                                <label className="block text-xs font-black text-neutral-400 uppercase tracking-widest mb-2">{t({ en: 'City', fr: 'Ville' })}</label>
-                                                <select
-                                                    ref={cityInputRef}
-                                                    defaultValue={providerCity}
-                                                    className="w-full px-5 py-4 bg-neutral-50 border border-neutral-100 rounded-2xl focus:outline-none focus:ring-2 focus:ring-black transition-all text-sm appearance-none cursor-pointer hover:bg-neutral-100 font-bold"
-                                                >
-                                                    <option disabled>{t({ en: 'Select City', fr: 'Choisir une ville' })}</option>
-                                                    <option>{t({ en: 'Casablanca', fr: 'Casablanca' })}</option>
-                                                    <option>{t({ en: 'Rabat', fr: 'Rabat' })}</option>
-                                                    <option>{t({ en: 'Marrakech', fr: 'Marrakech' })}</option>
-                                                    <option>{t({ en: 'Tangier', fr: 'Tanger' })}</option>
-                                                    <option>{t({ en: 'Essaouira', fr: 'Essaouira' })}</option>
-                                                </select>
-                                                <div className="absolute right-4 top-[42px] pointer-events-none">
-                                                    <ChevronDown size={16} className="text-neutral-400" />
-                                                </div>
-                                            </div>
-                                            <div>
-                                                <label className="block text-xs font-black text-neutral-400 uppercase tracking-widest mb-2">{t({ en: 'Language', fr: 'Langue' })}</label>
-                                                <div className="w-full px-5 py-4 bg-neutral-100 border border-neutral-100 rounded-2xl text-sm opacity-50 cursor-not-allowed flex items-center gap-2">
-                                                    <Globe size={14} /> {t({ en: 'English', fr: 'Anglais' })}
-                                                </div>
+                                                <h2 className="text-[20px] font-black text-neutral-900">{t({ en: 'Redistribute Job', fr: 'Redistribuer la mission' })}</h2>
+                                                <p className="text-[12px] text-neutral-500 font-medium">{redistributeJob.service} · {redistributeJob.date}</p>
                                             </div>
                                         </div>
 
-                                        {/* Work Areas Selector */}
-                                        <div>
-                                            <label className="block text-xs font-black text-neutral-400 uppercase tracking-widest mb-3">{t({ en: 'Work Areas (Neighborhoods)', fr: 'Zones de travail (quartiers)' })}</label>
-                                            <div className="flex flex-wrap gap-2 mb-3">
-                                                {selectedWorkAreas.map(area => (
-                                                    <div key={area} className="pl-3 pr-2 py-1.5 bg-neutral-100 rounded-full text-xs font-bold text-neutral-700 flex items-center gap-2 border border-transparent">
-                                                        {area}
-                                                        <button
-                                                            onClick={() => setSelectedWorkAreas(prev => prev.filter(a => a !== area))}
-                                                            className="p-1 hover:bg-white rounded-full transition-colors text-neutral-400 hover:text-red-500"
-                                                        >
-                                                            <X size={12} />
-                                                        </button>
-                                                    </div>
-                                                ))}
-
-                                                <div className="relative inline-block">
-                                                    <select
-                                                        value=""
-                                                        onChange={(e) => {
-                                                            const val = e.target.value;
-                                                            if (val && !selectedWorkAreas.includes(val)) {
-                                                                setSelectedWorkAreas([...selectedWorkAreas, val]);
-                                                            }
-                                                        }}
-                                                        className="appearance-none pl-3 pr-8 py-1.5 bg-black text-white rounded-full text-xs font-bold hover:bg-neutral-800 transition-colors cursor-pointer outline-none"
-                                                    >
-                                                        <option value="" disabled>{t({ en: '+ Add Neighborhood', fr: '+ Ajouter un quartier' })}</option>
-                                                        {(providerCity ? MOROCCAN_CITIES_AREAS[providerCity] || [] : [])
-                                                            .filter(a => !selectedWorkAreas.includes(a))
-                                                            .map(a => <option key={a} value={a} className="text-black bg-white">{a}</option>)
-                                                        }
-                                                    </select>
-                                                    <div className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none flex items-center justify-center">
-                                                        <Plus size={12} className="text-white" />
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        {/* Services Section */}
-                                        <div>
-                                            <label className="block text-xs font-black text-neutral-400 uppercase tracking-widest mb-3">{t({ en: 'My Services', fr: 'Mes services' })}</label>
-                                            <div className="flex flex-wrap gap-2 mb-3">
-                                                {tempSelectedServices.map(sId => {
-                                                    const s = getServiceById(sId);
-                                                    return (
-                                                        <div key={sId} className="pl-3 pr-2 py-1.5 bg-neutral-100 rounded-full text-xs font-bold text-neutral-700 flex items-center gap-2 group border border-transparent hover:border-neutral-200 transition-all">
-                                                            {s?.icon && <s.icon size={12} className="text-neutral-500" />}
-                                                            {s?.name || sId}
-                                                            <button
-                                                                onClick={() => setTempSelectedServices(prev => prev.filter(id => id !== sId))}
-                                                                className="p-1 hover:bg-white rounded-full transition-colors text-neutral-400 hover:text-red-500 hover:shadow-sm"
-                                                            >
-                                                                <X size={12} />
-                                                            </button>
-                                                        </div>
-                                                    );
-                                                })}
-
-                                                <div className="relative inline-block">
-                                                    <select
-                                                        value=""
-                                                        onChange={(e) => {
-                                                            const val = e.target.value;
-                                                            if (val && !tempSelectedServices.includes(val)) {
-                                                                setTempSelectedServices([...tempSelectedServices, val]);
-                                                            }
-                                                        }}
-                                                        className="appearance-none pl-3 pr-8 py-1.5 bg-black text-white rounded-full text-xs font-bold hover:bg-neutral-800 transition-colors cursor-pointer outline-none border border-transparent focus:ring-2 focus:ring-offset-1 focus:ring-black"
-                                                    >
-                                                        <option value="" disabled>{t({ en: '+ Add Service', fr: '+ Ajouter un service' })}</option>
-                                                        {getAllServices()
-                                                            .filter(s => !tempSelectedServices.includes(s.id))
-                                                            .map(s => (
-                                                                <option key={s.id} value={s.id} className="text-black bg-white py-1">{s.name}</option>
-                                                            ))
-                                                        }
-                                                    </select>
-                                                    <div className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none flex items-center justify-center">
-                                                        <Plus size={12} className="text-white" />
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <p className="text-[10px] text-neutral-400 font-medium ml-1">
-                                                {t({ en: 'Adding services increases your job visibility.', fr: 'Ajouter des services augmente votre visibilité sur les missions.' })}
+                                        <div className="bg-amber-50 border border-amber-100 rounded-2xl p-4 mb-5">
+                                            <p className="text-[13px] font-bold text-amber-700">{t({ en: '⚠️ Financial Penalty Notice', fr: '⚠️ Avis de pénalité financière' })}</p>
+                                            <p className="text-[12px] font-medium text-amber-600 mt-1 leading-relaxed">
+                                                {t({ en: 'Redistributing a confirmed job applies a', fr: 'La redistribution d’une mission confirmée applique une' })} <strong>{t({ en: 'penalty deduction', fr: 'déduction de pénalité' })}</strong> {t({ en: 'to your next earnings. Use this only for urgent, genuine circumstances.', fr: 'sur vos prochains gains. Utilisez cela uniquement pour des circonstances urgentes et réelles.' })}
                                             </p>
                                         </div>
 
-                                        <div>
-                                            <label className="block text-xs font-black text-neutral-400 uppercase tracking-widest mb-2">{t({ en: 'WhatsApp Number', fr: 'Numéro WhatsApp' })}</label>
-                                            <input
-                                                ref={whatsappInputRef}
-                                                type="tel"
-                                                defaultValue={userData?.whatsappNumber || ''}
-                                                className="w-full px-5 py-4 bg-neutral-50 border border-neutral-100 rounded-2xl focus:outline-none focus:ring-2 focus:ring-black transition-all text-sm"
+                                        <div className="mb-5">
+                                            <label className="block text-xs font-black text-neutral-400 uppercase tracking-widest mb-2">{t({ en: 'Reason for redistribution *', fr: 'Raison de redistribution *' })}</label>
+                                            <textarea
+                                                value={redistributeReason}
+                                                onChange={(e) => setRedistributeReason(e.target.value)}
+                                                placeholder={t({ en: 'Describe your urgent circumstance clearly...', fr: 'Décrivez clairement votre situation urgente...' })}
+                                                className="w-full px-4 py-3 bg-neutral-50 border border-neutral-200 rounded-2xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-black/10 resize-none min-h-[100px]"
                                             />
                                         </div>
 
-                                        <div className="pt-4 flex gap-4">
+                                        <div className="flex gap-3">
                                             <button
-                                                onClick={() => setShowProfileModal(false)}
-                                                className="flex-1 py-4 border border-neutral-200 text-neutral-900 font-black rounded-2xl hover:bg-neutral-50 transition-all"
+                                                onClick={() => setShowRedistributeModal(false)}
+                                                className="flex-1 h-12 rounded-2xl border border-neutral-200 text-sm font-black text-neutral-600 hover:bg-neutral-50 transition-colors"
                                             >
                                                 {t({ en: 'Cancel', fr: 'Annuler' })}
                                             </button>
                                             <button
-                                                disabled={isSavingProfile}
-                                                onClick={handleSaveProfile}
-                                                className="flex-[2] py-4 bg-black text-white font-black rounded-2xl transition-all active:scale-[0.98] disabled:opacity-40"
+                                                disabled={!redistributeReason.trim() || isRedistributing}
+                                                onClick={async () => {
+                                                    if (!redistributeReason.trim() || !redistributeJob.id) return;
+                                                    setIsRedistributing(true);
+                                                    try {
+                                                        await handleUpdateJob(redistributeJob.id, {
+                                                            status: 'redistributed_by_provider',
+                                                            redistributedBy: user?.uid,
+                                                            redistributeReason,
+                                                            penaltyApplied: true,
+                                                            redistributedAt: new Date().toISOString(),
+                                                        });
+
+                                                        // Send notification to client
+                                                        try {
+                                                            const { sendClientNotification } = await import('@/features/client/components/ClientNotificationsView');
+                                                            await sendClientNotification({
+                                                                clientId: redistributeJob.clientId!,
+                                                                type: 'job_status_update',
+                                                                title: t({ en: 'Order Redistributed', fr: 'Commande redistribuée' }),
+                                                                body: t({
+                                                                    en: `${userData?.name || 'Your professional'} had to redistribute your job. Please choose someone else or cancel.`,
+                                                                    fr: `${userData?.name || 'Votre professionnel'} a dû redistribuer votre mission. Veuillez choisir quelqu'un d'autre ou annuler.`
+                                                                }),
+                                                                orderId: redistributeJob.id
+                                                            });
+                                                        } catch (notifErr) {
+                                                            console.warn("Failed to notify client about redistribution:", notifErr);
+                                                        }
+
+                                                        showToast({ variant: 'info', title: t({ en: 'Job redistributed', fr: 'Mission redistribuée' }), description: t({ en: 'A penalty has been applied to your earnings.', fr: 'Une pénalité a été appliquée à vos revenus.' }) });
+                                                        setShowRedistributeModal(false);
+                                                        setRedistributeReason('');
+                                                    } catch (e) {
+                                                        showToast({ variant: 'error', title: t({ en: 'Error', fr: 'Erreur' }), description: t({ en: 'Could not redistribute. Please try again.', fr: 'Impossible de redistribuer. Veuillez réessayer.' }) });
+                                                    } finally {
+                                                        setIsRedistributing(false);
+                                                    }
+                                                }}
+                                                className="flex-1 h-12 rounded-2xl bg-black text-white text-sm font-black disabled:opacity-40 disabled:cursor-not-allowed hover:bg-neutral-800 transition-colors"
                                             >
-                                                {isSavingProfile ? <RefreshCw className="animate-spin" size={20} /> : t({ en: 'Save Profile', fr: 'Enregistrer le profil' })}
+                                                {isRedistributing ? t({ en: 'Processing…', fr: 'En cours…' }) : t({ en: 'Confirm Redistribution', fr: 'Confirmer la redistribution' })}
+                                            </button>
+                                        </div>
+                                    </motion.div>
+                                </motion.div>
+                            )
+                        }
+                    </AnimatePresence >
+
+                    {/* ── Rate Client Modal ── */}
+                    < AnimatePresence key="rate-client-presence" >
+                        {
+                            showRateClientModal && rateClientJob && (
+                                <div key="rate-client-modal" className="fixed inset-0 z-[120] flex items-end justify-center p-0">
+                                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowRateClientModal(false)} className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+                                    <motion.div
+                                        initial={{ y: '100%' }}
+                                        animate={{ y: 0 }}
+                                        exit={{ y: '100%' }}
+                                        transition={{ type: 'spring', damping: 28, stiffness: 300 }}
+                                        className="relative bg-white w-full rounded-t-[32px] p-6 pb-24 shadow-xl border-t border-neutral-100"
+                                    >
+                                        <div className="w-10 h-1 bg-neutral-200 rounded-full mx-auto mb-6" />
+                                        <div className="text-center mb-6">
+                                            <p className="text-[12px] font-black text-neutral-400 uppercase tracking-widest mb-1">{t({ en: 'Rate your client', fr: 'Évaluez votre client' })}</p>
+                                            <h2 className="text-[22px] font-black text-neutral-900" style={{ fontFamily: 'Uber Move, var(--font-sans)' }}>{rateClientJob.service}</h2>
+                                            <p className="text-[13px] font-medium text-neutral-500 mt-1">{rateClientJob.clientName} · {rateClientJob.date}</p>
+                                        </div>
+
+                                        {/* Star rating */}
+                                        <div className="flex items-center justify-center gap-3 mb-6">
+                                            {[1, 2, 3, 4, 5].map((s) => (
+                                                <button key={s} onClick={() => setClientRating(s)} className="transition-transform hover:scale-110 active:scale-95">
+                                                    <Star
+                                                        size={40}
+                                                        strokeWidth={1.5}
+                                                        className={cn('transition-colors', s <= clientRating ? 'text-black fill-black' : 'text-neutral-300')}
+                                                    />
+                                                </button>
+                                            ))}
+                                        </div>
+
+                                        <div className="mb-5">
+                                            <label className="block text-xs font-black text-neutral-400 uppercase tracking-widest mb-2">{t({ en: 'Comment (optional)', fr: 'Commentaire (optionnel)' })}</label>
+                                            <textarea
+                                                value={clientRatingComment}
+                                                onChange={(e) => setClientRatingComment(e.target.value)}
+                                                placeholder={t({ en: 'How was the client to work with?', fr: 'Comment était le client ?' })}
+                                                className="w-full px-4 py-3 bg-neutral-50 border border-neutral-200 rounded-2xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-black/10 resize-none min-h-[80px]"
+                                            />
+                                        </div>
+
+                                        <button
+                                            disabled={clientRating === 0 || isSubmittingRating}
+                                            onClick={async () => {
+                                                if (clientRating === 0 || !rateClientJob.id) return;
+                                                setIsSubmittingRating(true);
+                                                try {
+                                                    await handleUpdateJob(rateClientJob.id, {
+                                                        bricolerRating: clientRating,
+                                                        bricolerComment: clientRatingComment,
+                                                    });
+                                                    confetti({ particleCount: 80, spread: 60, origin: { y: 0.7 } });
+                                                    showToast({ variant: 'success', title: t({ en: 'Rating submitted!', fr: 'Évaluation envoyée !' }), description: t({ en: 'Thank you for your feedback.', fr: 'Merci pour votre retour.' }) });
+                                                    setShowRateClientModal(false);
+                                                } catch (e) {
+                                                    showToast({ variant: 'error', title: t({ en: 'Error', fr: 'Erreur' }), description: t({ en: 'Could not submit rating. Try again.', fr: 'Impossible d\'envoyer l\'évaluation. Réessayez.' }) });
+                                                } finally {
+                                                    setIsSubmittingRating(false);
+                                                }
+                                            }}
+                                            className="w-full h-14 rounded-2xl bg-black text-white text-[15px] font-black disabled:opacity-40 disabled:cursor-not-allowed hover:bg-neutral-800 transition-colors"
+                                        >
+                                            {isSubmittingRating ? t({ en: 'Submitting…', fr: 'Envoi…' }) : `${t({ en: 'Submit', fr: 'Envoyer' })} ${clientRating > 0 ? `${clientRating}★` : t({ en: 'Rating', fr: 'l\'évaluation' })}`}
+                                        </button>
+                                    </motion.div>
+                                </div>
+                            )
+                        }
+                    </AnimatePresence >
+
+
+
+                    {/* Chat and Other Overlays */}
+                    <AnimatePresence key="other-overlays-presence">
+                        {
+                            selectedChat && (
+                                <motion.div
+                                    key="chat-modal-overlay"
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    exit={{ opacity: 0 }}
+                                    className="fixed inset-0 z-[110] flex items-center justify-center p-4"
+                                >
+                                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setSelectedChat(null)} className="absolute inset-0 bg-black/60 backdrop-blur-md" />
+                                    <motion.div
+                                        initial={{ opacity: 0, scale: 0.95, y: 30 }}
+                                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                                        exit={{ opacity: 0, scale: 0.95, y: 30 }}
+                                        className="relative bg-white w-full max-w-2xl h-[700px] rounded-[40px] shadow-xl border border-neutral-100 overflow-hidden flex flex-col"
+                                    >
+                                        {/* Chat Header */}
+                                        <div className="p-6 border-b border-neutral-100 flex items-center justify-between">
+                                            <div className="flex items-center gap-4">
+                                                <div className="w-12 h-12 rounded-full bg-neutral-100 overflow-hidden">
+                                                    <img src={selectedChat.clientAvatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${selectedChat.id}`} alt="Client" />
+                                                </div>
+                                                <div>
+                                                    <h3 className="font-black text-neutral-900 leading-tight">
+                                                        {selectedChat.clientName || 'Client'}
+                                                    </h3>
+                                                    <p className="text-[10px] font-bold text-green-500 uppercase tracking-widest">{t({ en: 'Online', fr: 'En ligne' })}</p>
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+
+                                                <button onClick={() => setSelectedChat(null)} className="p-2 hover:bg-neutral-50 rounded-full transition-all text-neutral-400 hover:text-neutral-900">
+                                                    <X size={20} />
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        {/* Chat Context Box */}
+                                        <div className="bg-neutral-50 p-4 border-b border-neutral-100 flex items-center justify-between">
+                                            <div className="flex items-center gap-3">
+                                                <div className="p-2 bg-white rounded-xl border border-neutral-100 shadow-sm">
+                                                    <Briefcase size={16} className="text-black" />
+                                                </div>
+                                                <div>
+                                                    <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest">{t({ en: 'Subject', fr: 'Objet' })}</p>
+                                                    <p className="text-xs font-bold text-neutral-900">{selectedChat.service} in {selectedChat.location}</p>
+                                                </div>
+                                            </div>
+                                            <div className="text-right">
+                                                <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest">{t({ en: 'Agreed Price', fr: 'Prix convenu' })}</p>
+                                                <p className="text-xs font-bold text-black">{selectedChat.price} {t({ en: 'MAD', fr: 'MAD' })}</p>
+                                            </div>
+                                        </div>
+
+                                        {/* Chat Messages */}
+                                        <div className="flex-1 overflow-y-auto p-8 space-y-6 bg-white">
+                                            {chatMessages.length === 0 ? (
+                                                <div className="flex flex-col items-center justify-center h-full opacity-40">
+                                                    <MessageSquare size={48} className="mb-2" />
+                                                    <p className="text-sm font-bold">{t({ en: 'No messages yet', fr: 'Aucun message pour l\'instant' })}</p>
+                                                </div>
+                                            ) : (
+                                                chatMessages.map((msg: any) => {
+                                                    const isProvider = msg.senderId === user?.uid;
+                                                    return (
+                                                        <div key={msg.id} className={cn("flex gap-3 max-w-[85%]", isProvider ? "ml-auto flex-row-reverse" : "")}>
+                                                            {!isProvider && (
+                                                                <div className="w-8 h-8 rounded-full bg-neutral-100 flex-shrink-0 overflow-hidden mt-auto">
+                                                                    <img src={selectedChat.clientAvatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${selectedChat.id}`} alt="Client" />
+                                                                </div>
+                                                            )}
+                                                            <div className={cn(
+                                                                "p-4 rounded-3xl",
+                                                                isProvider ? "bg-black text-white rounded-br-none" : "bg-neutral-50 text-neutral-900 rounded-bl-none"
+                                                            )}>
+                                                                <p className="text-sm font-medium leading-relaxed">{msg.text}</p>
+                                                                <span className={cn("text-[8px] font-bold uppercase mt-1.5 block", isProvider ? "text-white/40 text-right" : "text-neutral-400")}>
+                                                                    {msg.timestamp?.toDate ? msg.timestamp.toDate().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Just now'}
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })
+                                            )}
+                                            <div ref={chatEndRef} />
+                                        </div>
+
+                                        {/* Chat Input */}
+                                        <div className="p-6 border-t border-neutral-100 bg-white">
+                                            <form
+                                                onSubmit={handleSubmitChatMessage}
+                                                className="relative"
+                                            >
+                                                <input
+                                                    type="text"
+                                                    placeholder={t({ en: 'Write your message...', fr: 'Écrivez votre message...' })}
+                                                    value={chatMessage}
+                                                    onChange={(e) => setChatMessage(e.target.value)}
+                                                    className="w-full pl-6 pr-16 py-4 bg-neutral-50 border border-neutral-100 rounded-2xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-black/5 transition-all"
+                                                />
+                                                <button
+                                                    type="submit"
+                                                    className="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 bg-black text-white rounded-xl flex items-center justify-center hover:scale-105 active:scale-95 transition-all"
+                                                >
+                                                    <Send size={18} />
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </motion.div>
+                                </motion.div>
+                            )
+                        }
+                        {
+                            showCashOutModal && (
+                                <div key="cashout-modal" className="fixed inset-0 z-[110] flex items-center justify-center p-6 pb-20 md:pb-6">
+                                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowCashOutModal(false)} className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+                                    <motion.div initial={{ opacity: 0, scale: 0.9, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.9, y: 20 }} className="relative bg-white w-full max-w-lg rounded-[40px] p-10 shadow-xl border border-neutral-100 overflow-hidden">
+                                        <div className="absolute top-0 right-0 p-6">
+                                            <button onClick={() => setShowCashOutModal(false)} className="p-2 hover:bg-neutral-50 rounded-full transition-colors text-neutral-400">
+                                                <X size={20} />
+                                            </button>
+                                        </div>
+
+                                        <h2 className="text-3xl font-black text-neutral-900 mb-2">{t({ en: 'Request Payout', fr: 'Demande de paiement' })}</h2>
+                                        <p className="text-neutral-500 text-sm mb-8 font-medium">{t({ en: 'Choose your preferred withdrawal method. Payouts are usually processed within 24-48 hours.', fr: 'Choisissez votre méthode de retrait préférée. Les paiements sont généralement traités sous 24-48 heures.' })}</p>
+
+                                        <div className="space-y-4 mb-8">
+                                            <div
+                                                onClick={() => setCashOutMethod('bank')}
+                                                className={cn(
+                                                    "p-5 rounded-2xl border-2 transition-all cursor-pointer flex items-center justify-between",
+                                                    cashOutMethod === 'bank' ? "border-black bg-neutral-50" : "border-neutral-100 opacity-60 hover:opacity-100"
+                                                )}
+                                            >
+                                                <div className="flex items-center gap-4">
+                                                    <div className="w-10 h-10 bg-white rounded-xl border border-neutral-100 flex items-center justify-center shadow-sm">
+                                                        <Wallet size={20} className="text-blue-500" />
+                                                    </div>
+                                                    <div>
+                                                        <p className="font-bold text-sm text-neutral-900">{t({ en: 'Bank Transfer (RIB)', fr: 'Virement bancaire (RIB)' })}</p>
+                                                        <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest">{t({ en: 'Free • 2 days', fr: 'Gratuit • 2 jours' })}</p>
+                                                    </div>
+                                                </div>
+                                                {cashOutMethod === 'bank' && <CheckCircle2 size={20} className="text-black" />}
+                                            </div>
+
+                                            <div
+                                                onClick={() => setCashOutMethod('wafacash')}
+                                                className={cn(
+                                                    "p-5 rounded-2xl border-2 transition-all cursor-pointer flex items-center justify-between",
+                                                    cashOutMethod === 'wafacash' ? "border-black bg-neutral-50" : "border-neutral-100 opacity-60 hover:opacity-100"
+                                                )}
+                                            >
+                                                <div className="flex items-center gap-4">
+                                                    <div className="w-10 h-10 bg-white rounded-xl border border-neutral-100 flex items-center justify-center shadow-sm">
+                                                        <Navigation size={20} className="text-red-500" />
+                                                    </div>
+                                                    <div>
+                                                        <p className="font-bold text-sm text-neutral-900">{t({ en: 'Wafacash / Cash Plus', fr: 'Wafacash / Cash Plus' })}</p>
+                                                        <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest">{t({ en: '20 MAD fee • Instant', fr: 'Frais 20 MAD • Instantané' })}</p>
+                                                    </div>
+                                                </div>
+                                                {cashOutMethod === 'wafacash' && <CheckCircle2 size={20} className="text-black" />}
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-6">
+                                            <div>
+                                                <label className="block text-xs font-black text-neutral-400 uppercase tracking-widest mb-2">{t({ en: 'Payout Details', fr: 'Informations de paiement' })}</label>
+                                                <textarea
+                                                    placeholder={cashOutMethod === 'bank' ? t({ en: 'Enter your 24-digit RIB number...', fr: 'Entrez votre numéro RIB de 24 chiffres...' }) : t({ en: 'Enter your Full Name and Phone Number...', fr: 'Entrez votre nom complet et numéro de téléphone...' })}
+                                                    className="w-full px-5 py-4 bg-neutral-50 border border-neutral-100 rounded-2xl focus:outline-none focus:ring-2 focus:ring-black transition-all min-h-[100px] text-sm"
+                                                />
+                                            </div>
+                                            <button
+                                                onClick={() => {
+                                                    showToast({
+                                                        variant: 'success',
+                                                        title: t({ en: 'Payout request sent.', fr: 'Demande de paiement envoyée.' }),
+                                                        description: t({ en: 'You will receive a confirmation message shortly.', fr: 'Vous recevrez un message de confirmation prochainement.' })
+                                                    });
+                                                    setShowCashOutModal(false);
+                                                }}
+                                                className="w-full py-5 bg-black text-white font-black rounded-2xl transition-all active:scale-[0.98]"
+                                            >
+                                                {t({ en: 'Submit Request', fr: 'Envoyer la demande' })}
+                                            </button>
+                                        </div>
+                                    </motion.div>
+                                </div>
+                            )
+                        }
+                        {
+                            showProfileModal && (
+                                <div key="profile-modal" className="fixed inset-0 z-[110] flex items-center justify-center p-6">
+                                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowProfileModal(false)} className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+                                    <motion.div initial={{ opacity: 0, scale: 0.9, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.9, y: 20 }} className="relative bg-white w-full max-w-lg rounded-[40px] p-10 shadow-xl border border-neutral-100 overflow-hidden">
+                                        <div className="absolute top-0 right-0 p-6">
+                                            <button onClick={() => setShowProfileModal(false)} className="p-2 hover:bg-neutral-50 rounded-full transition-colors text-neutral-400">
+                                                <X size={20} />
+                                            </button>
+                                        </div>
+
+                                        <h2 className="text-3xl font-black text-neutral-900 mb-2">{t({ en: 'Profile Settings', fr: 'Paramètres du profil' })}</h2>
+                                        <p className="text-neutral-500 text-sm mb-8 font-medium">{t({ en: 'Update your professional details and contact information.', fr: 'Mettez à jour vos informations professionnelles et vos coordonnées.' })}</p>
+
+                                        <div className="space-y-6">
+                                            <div>
+                                                <label className="block text-xs font-black text-neutral-400 uppercase tracking-widest mb-2">{t({ en: 'Display Name', fr: 'Nom affiché' })}</label>
+                                                <input
+                                                    ref={nameInputRef}
+                                                    type="text"
+                                                    defaultValue={userData?.name || user?.displayName || ''}
+                                                    className="w-full px-5 py-4 bg-neutral-50 border border-neutral-100 rounded-2xl focus:outline-none focus:ring-2 focus:ring-black transition-all text-sm"
+                                                />
+                                            </div>
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <div className="relative">
+                                                    <label className="block text-xs font-black text-neutral-400 uppercase tracking-widest mb-2">{t({ en: 'City', fr: 'Ville' })}</label>
+                                                    <select
+                                                        ref={cityInputRef}
+                                                        defaultValue={providerCity}
+                                                        className="w-full px-5 py-4 bg-neutral-50 border border-neutral-100 rounded-2xl focus:outline-none focus:ring-2 focus:ring-black transition-all text-sm appearance-none cursor-pointer hover:bg-neutral-100 font-bold"
+                                                    >
+                                                        <option disabled>{t({ en: 'Select City', fr: 'Choisir une ville' })}</option>
+                                                        <option>{t({ en: 'Casablanca', fr: 'Casablanca' })}</option>
+                                                        <option>{t({ en: 'Rabat', fr: 'Rabat' })}</option>
+                                                        <option>{t({ en: 'Marrakech', fr: 'Marrakech' })}</option>
+                                                        <option>{t({ en: 'Tangier', fr: 'Tanger' })}</option>
+                                                        <option>{t({ en: 'Essaouira', fr: 'Essaouira' })}</option>
+                                                    </select>
+                                                    <div className="absolute right-4 top-[42px] pointer-events-none">
+                                                        <ChevronDown size={16} className="text-neutral-400" />
+                                                    </div>
+                                                </div>
+                                                <div>
+                                                    <label className="block text-xs font-black text-neutral-400 uppercase tracking-widest mb-2">{t({ en: 'Language', fr: 'Langue' })}</label>
+                                                    <div className="w-full px-5 py-4 bg-neutral-100 border border-neutral-100 rounded-2xl text-sm opacity-50 cursor-not-allowed flex items-center gap-2">
+                                                        <Globe size={14} /> {t({ en: 'English', fr: 'Anglais' })}
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {/* Work Areas Selector */}
+                                            <div>
+                                                <label className="block text-xs font-black text-neutral-400 uppercase tracking-widest mb-3">{t({ en: 'Work Areas (Neighborhoods)', fr: 'Zones de travail (quartiers)' })}</label>
+                                                <div className="flex flex-wrap gap-2 mb-3">
+                                                    {selectedWorkAreas.map(area => (
+                                                        <div key={area} className="pl-3 pr-2 py-1.5 bg-neutral-100 rounded-full text-xs font-bold text-neutral-700 flex items-center gap-2 border border-transparent">
+                                                            {area}
+                                                            <button
+                                                                onClick={() => setSelectedWorkAreas(prev => prev.filter(a => a !== area))}
+                                                                className="p-1 hover:bg-white rounded-full transition-colors text-neutral-400 hover:text-red-500"
+                                                            >
+                                                                <X size={12} />
+                                                            </button>
+                                                        </div>
+                                                    ))}
+
+                                                    <div className="relative inline-block">
+                                                        <select
+                                                            value=""
+                                                            onChange={(e) => {
+                                                                const val = e.target.value;
+                                                                if (val && !selectedWorkAreas.includes(val)) {
+                                                                    setSelectedWorkAreas([...selectedWorkAreas, val]);
+                                                                }
+                                                            }}
+                                                            className="appearance-none pl-3 pr-8 py-1.5 bg-black text-white rounded-full text-xs font-bold hover:bg-neutral-800 transition-colors cursor-pointer outline-none"
+                                                        >
+                                                            <option value="" disabled>{t({ en: '+ Add Neighborhood', fr: '+ Ajouter un quartier' })}</option>
+                                                            {(providerCity ? MOROCCAN_CITIES_AREAS[providerCity] || [] : [])
+                                                                .filter(a => !selectedWorkAreas.includes(a))
+                                                                .map(a => <option key={a} value={a} className="text-black bg-white">{a}</option>)
+                                                            }
+                                                        </select>
+                                                        <div className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none flex items-center justify-center">
+                                                            <Plus size={12} className="text-white" />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {/* Services Section */}
+                                            <div>
+                                                <label className="block text-xs font-black text-neutral-400 uppercase tracking-widest mb-3">{t({ en: 'My Services', fr: 'Mes services' })}</label>
+                                                <div className="flex flex-wrap gap-2 mb-3">
+                                                    {tempSelectedServices.map(sId => {
+                                                        const s = getServiceById(sId);
+                                                        return (
+                                                            <div key={sId} className="pl-3 pr-2 py-1.5 bg-neutral-100 rounded-full text-xs font-bold text-neutral-700 flex items-center gap-2 group border border-transparent hover:border-neutral-200 transition-all">
+                                                                {s?.icon && <s.icon size={12} className="text-neutral-500" />}
+                                                                {s?.name || sId}
+                                                                <button
+                                                                    onClick={() => setTempSelectedServices(prev => prev.filter(id => id !== sId))}
+                                                                    className="p-1 hover:bg-white rounded-full transition-colors text-neutral-400 hover:text-red-500 hover:shadow-sm"
+                                                                >
+                                                                    <X size={12} />
+                                                                </button>
+                                                            </div>
+                                                        );
+                                                    })}
+
+                                                    <div className="relative inline-block">
+                                                        <select
+                                                            value=""
+                                                            onChange={(e) => {
+                                                                const val = e.target.value;
+                                                                if (val && !tempSelectedServices.includes(val)) {
+                                                                    setTempSelectedServices([...tempSelectedServices, val]);
+                                                                }
+                                                            }}
+                                                            className="appearance-none pl-3 pr-8 py-1.5 bg-black text-white rounded-full text-xs font-bold hover:bg-neutral-800 transition-colors cursor-pointer outline-none border border-transparent focus:ring-2 focus:ring-offset-1 focus:ring-black"
+                                                        >
+                                                            <option value="" disabled>{t({ en: '+ Add Service', fr: '+ Ajouter un service' })}</option>
+                                                            {getAllServices()
+                                                                .filter(s => !tempSelectedServices.includes(s.id))
+                                                                .map(s => (
+                                                                    <option key={s.id} value={s.id} className="text-black bg-white py-1">{s.name}</option>
+                                                                ))
+                                                            }
+                                                        </select>
+                                                        <div className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none flex items-center justify-center">
+                                                            <Plus size={12} className="text-white" />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <p className="text-[10px] text-neutral-400 font-medium ml-1">
+                                                    {t({ en: 'Adding services increases your job visibility.', fr: 'Ajouter des services augmente votre visibilité sur les missions.' })}
+                                                </p>
+                                            </div>
+
+                                            <div>
+                                                <label className="block text-xs font-black text-neutral-400 uppercase tracking-widest mb-2">{t({ en: 'WhatsApp Number', fr: 'Numéro WhatsApp' })}</label>
+                                                <input
+                                                    ref={whatsappInputRef}
+                                                    type="tel"
+                                                    defaultValue={userData?.whatsappNumber || ''}
+                                                    className="w-full px-5 py-4 bg-neutral-50 border border-neutral-100 rounded-2xl focus:outline-none focus:ring-2 focus:ring-black transition-all text-sm"
+                                                />
+                                            </div>
+
+                                            <div className="pt-4 flex gap-4">
+                                                <button
+                                                    onClick={() => setShowProfileModal(false)}
+                                                    className="flex-1 py-4 border border-neutral-200 text-neutral-900 font-black rounded-2xl hover:bg-neutral-50 transition-all"
+                                                >
+                                                    {t({ en: 'Cancel', fr: 'Annuler' })}
+                                                </button>
+                                                <button
+                                                    disabled={isSavingProfile}
+                                                    onClick={handleSaveProfile}
+                                                    className="flex-[2] py-4 bg-black text-white font-black rounded-2xl transition-all active:scale-[0.98] disabled:opacity-40"
+                                                >
+                                                    {isSavingProfile ? <RefreshCw className="animate-spin" size={20} /> : t({ en: 'Save Profile', fr: 'Enregistrer le profil' })}
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </motion.div>
+                                </div>
+                            )
+                        }
+
+                        {/* ── Add Service Modal (PicStyle) ── */}
+                        {
+                            showAddServiceModal && (
+                                <div key="add-service-modal" className="fixed inset-0 z-[120] flex items-end justify-center p-0">
+                                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowAddServiceModal(false)} className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+                                    <motion.div
+                                        initial={{ y: '100%' }}
+                                        animate={{ y: 0 }}
+                                        exit={{ y: '100%' }}
+                                        transition={{ type: 'spring', damping: 28, stiffness: 300 }}
+                                        className="relative bg-white w-full rounded-t-[32px] p-6 pb-24 shadow-xl border-t border-neutral-100 max-h-[85vh] overflow-y-auto"
+                                    >
+                                        <div className="w-10 h-1 bg-neutral-200 rounded-full mx-auto mb-6" />
+
+                                        <h2 className="text-[24px] font-black text-neutral-900 mb-2" style={{ fontFamily: 'Uber Move, var(--font-sans)' }}>{t({ en: 'Offer New Service', fr: 'Proposer un nouveau service' })}</h2>
+                                        <p className="text-[13px] font-medium text-neutral-500 mb-8 font-medium">{t({ en: 'Add a new specialty to your profile to receive more job offers.', fr: 'Ajoutez une nouvelle spécialité à votre profil pour recevoir plus d’offres de missions.' })}</p>
+
+                                        <div className="space-y-8">
+                                            {/* Step 1: Category */}
+                                            <div>
+                                                <label className="block text-xs font-black text-neutral-400 uppercase tracking-widest mb-4">{t({ en: 'Select Category', fr: 'Choisir une catégorie' })}</label>
+                                                <div className="grid grid-cols-2 gap-3">
+                                                    {getAllServices().filter(s => !selectedServices.includes(s.id)).map(s => (
+                                                        <button
+                                                            key={s.id}
+                                                            onClick={() => setNewServiceData({ ...newServiceData, id: s.id, rate: SERVICE_TIER_RATES[s.id]?.suggestedMin || 75 })}
+                                                            className={cn(
+                                                                "p-4 rounded-2xl border-2 transition-all text-left flex flex-col gap-3",
+                                                                newServiceData.id === s.id ? "border-black bg-neutral-50 shadow-sm" : "border-neutral-100 hover:border-neutral-200"
+                                                            )}
+                                                        >
+                                                            <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center", newServiceData.id === s.id ? "bg-black text-white" : "bg-neutral-100 text-neutral-400")}>
+                                                                <s.icon size={20} />
+                                                            </div>
+                                                            <span className="text-[14px] font-black">{s.name}</span>
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            </div>
+
+                                            {newServiceData.id && (
+                                                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-8">
+                                                    {/* Step 2: Rate */}
+                                                    <div>
+                                                        <label className="block text-xs font-black text-neutral-400 uppercase tracking-widest mb-4">{t({ en: 'Your Hourly Rate (MAD)', fr: 'Votre tarif horaire (MAD)' })}</label>
+                                                        <div className="flex items-center gap-6">
+                                                            <div className="flex-1">
+                                                                <div className="flex items-center justify-between mb-2">
+                                                                    <span className="text-[12px] font-bold text-neutral-400">{t({ en: 'Low', fr: 'Bas' })}</span>
+                                                                    <span className="text-[12px] font-black text-black">{newServiceData.rate} {t({ en: 'MAD', fr: 'MAD' })}</span>
+                                                                    <span className="text-[12px] font-bold text-neutral-400">{t({ en: 'High', fr: 'Élevé' })}</span>
+                                                                </div>
+                                                                <input
+                                                                    type="range"
+                                                                    min={SERVICE_TIER_RATES[newServiceData.id]?.suggestedMin || 50}
+                                                                    max={SERVICE_TIER_RATES[newServiceData.id]?.suggestedMax || 500}
+                                                                    value={newServiceData.rate}
+                                                                    onChange={(e) => setNewServiceData({ ...newServiceData, rate: parseInt(e.target.value) })}
+                                                                    className="w-full h-1.5 bg-neutral-100 rounded-full appearance-none cursor-pointer accent-black"
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Step 3: Pitch */}
+                                                    <div>
+                                                        <label className="block text-xs font-black text-neutral-400 uppercase tracking-widest mb-4">{t({ en: 'Your Professional Pitch', fr: 'Votre présentation professionnelle' })}</label>
+                                                        <textarea
+                                                            value={newServiceData.pitch}
+                                                            onChange={(e) => setNewServiceData({ ...newServiceData, pitch: e.target.value })}
+                                                            placeholder={t({ en: `Describe your experience in ${getServiceById(newServiceData.id)?.name}...`, fr: `Décrivez votre expérience en ${getServiceById(newServiceData.id)?.name}...` })}
+                                                            className="w-full px-5 py-4 bg-neutral-50 border border-neutral-100 rounded-2xl focus:outline-none focus:ring-2 focus:ring-black transition-all min-h-[120px] text-[15px] font-medium"
+                                                        />
+                                                        <p className="text-[10px] text-neutral-400 font-medium mt-2 ml-1">{t({ en: 'Example: "I have 5 years of experience in furniture assembly and tiling."', fr: 'Exemple : "J’ai 5 ans d’expérience en montage de meubles et carrelage."' })}</p>
+                                                    </div>
+
+                                                    <button
+                                                        disabled={isSavingProfile || newServiceData.pitch.length < 10}
+                                                        onClick={handleAddService}
+                                                        className="w-full h-14 bg-black text-white rounded-2xl text-[16px] font-black uppercase tracking-widest shadow-xl hover:shadow-2xl transition-all active:scale-[0.98] disabled:opacity-40"
+                                                    >
+                                                        {isSavingProfile ? <RefreshCw className="animate-spin" size={20} /> : t({ en: 'List Service', fr: 'Publier le service' })}
+                                                    </button>
+                                                </motion.div>
+                                            )}
+                                        </div>
+                                    </motion.div>
+                                </div>
+                            )
+                        }
+
+                        {/* success toast moved inside the main AnimatePresence below */}
+                        {/* --- Counter Offer Modal --- */}
+                        <AnimatePresence key="counter-offer-presence">
+                            {showCounterModal && counterJob && (
+                                <div key="counter-modal" className="fixed inset-0 z-[120] flex items-center justify-center p-4">
+                                    <motion.div
+                                        initial={{ opacity: 0 }}
+                                        animate={{ opacity: 1 }}
+                                        exit={{ opacity: 0 }}
+                                        onClick={() => setShowCounterModal(false)}
+                                        className="absolute inset-0 bg-black/25 backdrop-blur-sm"
+                                    />
+
+                                    <motion.div
+                                        initial={{ opacity: 0, scale: 0.96, y: 30 }}
+                                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                                        exit={{ opacity: 0, scale: 0.96, y: 30 }}
+                                        className="relative bg-white w-full max-w-[760px] rounded-[40px] p-14 shadow-[0_24px_80px_rgba(0,0,0,0.18)] overflow-hidden"
+                                    >
+                                        <div className="text-left mb-8">
+                                            <h2
+                                                className="text-[48px] md:text-[56px] font-black text-neutral-900 leading-[1.05]"
+                                                style={{ fontFamily: 'Uber Move, var(--font-sans)' }}
+                                            >
+                                                {t({ en: 'How Much', fr: 'Combien' })}<br />{t({ en: 'do you want?', fr: 'voulez-vous ?' })}
+                                            </h2>
+                                        </div>
+
+                                        <div className="mb-10">
+                                            <div className="relative flex items-baseline gap-3 pb-3 border-b border-neutral-200">
+                                                <span className="text-[40px] font-black text-[#BFBFBF] uppercase">{t({ en: 'MAD', fr: 'MAD' })}</span>
+                                                <input
+                                                    type="number"
+                                                    value={counterPrice}
+                                                    onChange={(e) => setCounterPrice(e.target.value)}
+                                                    className="w-full bg-transparent border-none p-0 text-[64px] font-black text-neutral-400 focus:text-neutral-900 focus:ring-0 placeholder-neutral-300 outline-none transition-colors"
+                                                    placeholder="150"
+                                                    autoFocus
+                                                />
+                                            </div>
+                                            <p className="mt-3 text-neutral-400 font-semibold text-[14px]">
+                                                {t({ en: `Client Suggested ${counterJob.price} MAD`, fr: `Le client propose ${counterJob.price} MAD` })}
+                                            </p>
+                                        </div>
+
+                                        <div className="flex items-center justify-end">
+                                            <button
+                                                onClick={handleSubmitCounter}
+                                                disabled={isSubmittingOffer || !counterPrice}
+                                                className="px-12 py-4 bg-black text-white rounded-full font-semibold text-[15px] hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_16px_30px_rgba(0,0,0,0.2)]"
+                                            >
+                                                {isSubmittingOffer ? t({ en: 'Sending...', fr: 'Envoi...' }) : t({ en: 'Send', fr: 'Envoyer' })}
+                                            </button>
+                                        </div>
+                                    </motion.div>
+                                </div>
+                            )}
+                        </AnimatePresence>
+                    </AnimatePresence>
+
+                    {/* New Job Floating Notification */}
+                    <AnimatePresence key="new-job-presence">
+                        {
+                            showNewJobPopup && latestJob && (
+                                <motion.div
+                                    key="new-job-floating-notification"
+                                    initial={{ opacity: 0, y: 100, scale: 0.9 }}
+                                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                                    exit={{ opacity: 0, y: 100, scale: 0.9 }}
+                                    className="fixed bottom-24 left-4 right-4 z-[100] md:bottom-10 md:right-10 md:left-auto md:w-[400px]"
+                                >
+                                    <div
+                                        className="bg-black text-white p-6 rounded-[32px] shadow-2xl overflow-hidden relative border border-white/10"
+                                        style={{
+                                            background: 'linear-gradient(135deg, #000 0%, #1a1a1a 100%)',
+                                        }}
+                                    >
+                                        {/* Animated Background Pulse */}
+                                        <motion.div
+                                            className="absolute -top-20 -right-20 w-40 h-40 bg-blue-500/20 blur-[80px] rounded-full"
+                                            animate={{ scale: [1, 1.5, 1], opacity: [0.3, 0.6, 0.3] }}
+                                            transition={{ duration: 3, repeat: Infinity }}
+                                        />
+
+                                        <div className="flex items-start justify-between mb-4 relative z-10">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center">
+                                                    <Briefcase className="text-blue-400" size={24} />
+                                                </div>
+                                                <div>
+                                                    <h4 className="font-black text-[18px] leading-tight">{t({ en: 'New Job!', fr: 'Nouvelle mission !' })}</h4>
+                                                    <p className="text-[11px] font-bold text-blue-400 uppercase tracking-widest">{latestJob.service}</p>
+                                                </div>
+                                            </div>
+                                            <button
+                                                onClick={() => setShowNewJobPopup(false)}
+                                                className="p-2 hover:bg-white/10 rounded-full transition-colors"
+                                            >
+                                                <X size={20} className="text-neutral-500" />
+                                            </button>
+                                        </div>
+
+                                        <div className="space-y-4 relative z-10">
+                                            <div className="flex items-center justify-between">
+                                                <div className="flex items-center gap-2">
+                                                    <MapPin size={14} className="text-neutral-400" />
+                                                    <span className="text-sm font-bold text-neutral-300">{latestJob.location}</span>
+                                                </div>
+                                                <div className="text-right">
+                                                    <p className="text-[10px] font-black text-neutral-500 uppercase tracking-widest">{t({ en: 'Offer', fr: 'Offre' })}</p>
+                                                    <p className="text-xl font-black text-white">{latestJob.price} {t({ en: 'MAD', fr: 'MAD' })}</p>
+                                                </div>
+                                            </div>
+
+                                            <button
+                                                onClick={() => {
+                                                    setActiveNav('jobs');
+                                                    setShowNewJobPopup(false);
+                                                    // Optionally scroll to job or highlight it
+                                                }}
+                                                className="w-full py-4 bg-white text-black font-black rounded-2xl flex items-center justify-center gap-2 hover:scale-[1.02] active:scale-[0.98] transition-all shadow-xl"
+                                            >
+                                                View Details
                                             </button>
                                         </div>
                                     </div>
                                 </motion.div>
-                            </div>
-                        )
-                    }
+                            )
+                        }
+                    </AnimatePresence >
 
-                    {/* ── Add Service Modal (PicStyle) ── */}
-                    {
-                        showAddServiceModal && (
-                            <div key="add-service-modal" className="fixed inset-0 z-[120] flex items-end justify-center p-0">
-                                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowAddServiceModal(false)} className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
-                                <motion.div
-                                    initial={{ y: '100%' }}
-                                    animate={{ y: 0 }}
-                                    exit={{ y: '100%' }}
-                                    transition={{ type: 'spring', damping: 28, stiffness: 300 }}
-                                    className="relative bg-white w-full rounded-t-[32px] p-6 pb-24 shadow-xl border-t border-neutral-100 max-h-[85vh] overflow-y-auto"
-                                >
-                                    <div className="w-10 h-1 bg-neutral-200 rounded-full mx-auto mb-6" />
-
-                                    <h2 className="text-[24px] font-black text-neutral-900 mb-2" style={{ fontFamily: 'Uber Move, var(--font-sans)' }}>{t({ en: 'Offer New Service', fr: 'Proposer un nouveau service' })}</h2>
-                                    <p className="text-[13px] font-medium text-neutral-500 mb-8 font-medium">{t({ en: 'Add a new specialty to your profile to receive more job offers.', fr: 'Ajoutez une nouvelle spécialité à votre profil pour recevoir plus d’offres de missions.' })}</p>
-
-                                    <div className="space-y-8">
-                                        {/* Step 1: Category */}
-                                        <div>
-                                            <label className="block text-xs font-black text-neutral-400 uppercase tracking-widest mb-4">{t({ en: 'Select Category', fr: 'Choisir une catégorie' })}</label>
-                                            <div className="grid grid-cols-2 gap-3">
-                                                {getAllServices().filter(s => !selectedServices.includes(s.id)).map(s => (
-                                                    <button
-                                                        key={s.id}
-                                                        onClick={() => setNewServiceData({ ...newServiceData, id: s.id, rate: SERVICE_TIER_RATES[s.id]?.suggestedMin || 75 })}
-                                                        className={cn(
-                                                            "p-4 rounded-2xl border-2 transition-all text-left flex flex-col gap-3",
-                                                            newServiceData.id === s.id ? "border-black bg-neutral-50 shadow-sm" : "border-neutral-100 hover:border-neutral-200"
-                                                        )}
-                                                    >
-                                                        <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center", newServiceData.id === s.id ? "bg-black text-white" : "bg-neutral-100 text-neutral-400")}>
-                                                            <s.icon size={20} />
-                                                        </div>
-                                                        <span className="text-[14px] font-black">{s.name}</span>
-                                                    </button>
-                                                ))}
-                                            </div>
-                                        </div>
-
-                                        {newServiceData.id && (
-                                            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-8">
-                                                {/* Step 2: Rate */}
-                                                <div>
-                                                    <label className="block text-xs font-black text-neutral-400 uppercase tracking-widest mb-4">{t({ en: 'Your Hourly Rate (MAD)', fr: 'Votre tarif horaire (MAD)' })}</label>
-                                                    <div className="flex items-center gap-6">
-                                                        <div className="flex-1">
-                                                            <div className="flex items-center justify-between mb-2">
-                                                                <span className="text-[12px] font-bold text-neutral-400">{t({ en: 'Low', fr: 'Bas' })}</span>
-                                                                <span className="text-[12px] font-black text-black">{newServiceData.rate} {t({ en: 'MAD', fr: 'MAD' })}</span>
-                                                                <span className="text-[12px] font-bold text-neutral-400">{t({ en: 'High', fr: 'Élevé' })}</span>
-                                                            </div>
-                                                            <input
-                                                                type="range"
-                                                                min={SERVICE_TIER_RATES[newServiceData.id]?.suggestedMin || 50}
-                                                                max={SERVICE_TIER_RATES[newServiceData.id]?.suggestedMax || 500}
-                                                                value={newServiceData.rate}
-                                                                onChange={(e) => setNewServiceData({ ...newServiceData, rate: parseInt(e.target.value) })}
-                                                                className="w-full h-1.5 bg-neutral-100 rounded-full appearance-none cursor-pointer accent-black"
-                                                            />
-                                                        </div>
-                                                    </div>
-                                                </div>
-
-                                                {/* Step 3: Pitch */}
-                                                <div>
-                                                    <label className="block text-xs font-black text-neutral-400 uppercase tracking-widest mb-4">{t({ en: 'Your Professional Pitch', fr: 'Votre présentation professionnelle' })}</label>
-                                                    <textarea
-                                                        value={newServiceData.pitch}
-                                                        onChange={(e) => setNewServiceData({ ...newServiceData, pitch: e.target.value })}
-                                                        placeholder={t({ en: `Describe your experience in ${getServiceById(newServiceData.id)?.name}...`, fr: `Décrivez votre expérience en ${getServiceById(newServiceData.id)?.name}...` })}
-                                                        className="w-full px-5 py-4 bg-neutral-50 border border-neutral-100 rounded-2xl focus:outline-none focus:ring-2 focus:ring-black transition-all min-h-[120px] text-[15px] font-medium"
-                                                    />
-                                                    <p className="text-[10px] text-neutral-400 font-medium mt-2 ml-1">{t({ en: 'Example: "I have 5 years of experience in furniture assembly and tiling."', fr: 'Exemple : "J’ai 5 ans d’expérience en montage de meubles et carrelage."' })}</p>
-                                                </div>
-
-                                                <button
-                                                    disabled={isSavingProfile || newServiceData.pitch.length < 10}
-                                                    onClick={handleAddService}
-                                                    className="w-full h-14 bg-black text-white rounded-2xl text-[16px] font-black uppercase tracking-widest shadow-xl hover:shadow-2xl transition-all active:scale-[0.98] disabled:opacity-40"
-                                                >
-                                                    {isSavingProfile ? <RefreshCw className="animate-spin" size={20} /> : t({ en: 'List Service', fr: 'Publier le service' })}
-                                                </button>
-                                            </motion.div>
-                                        )}
-                                    </div>
-                                </motion.div>
-                            </div>
-                        )
-                    }
-
-                    {/* success toast moved inside the main AnimatePresence below */}
-                    {/* --- Counter Offer Modal --- */}
-                    <AnimatePresence key="counter-offer-presence">
-                        {showCounterModal && counterJob && (
-                            <div key="counter-modal" className="fixed inset-0 z-[120] flex items-center justify-center p-4">
-                                <motion.div
-                                    initial={{ opacity: 0 }}
-                                    animate={{ opacity: 1 }}
-                                    exit={{ opacity: 0 }}
-                                    onClick={() => setShowCounterModal(false)}
-                                    className="absolute inset-0 bg-black/25 backdrop-blur-sm"
+                    <AnimatePresence key="promote-promocodes-presence">
+                        {showPromotePage && (
+                            <motion.div
+                                key="promote_overlay"
+                                initial={{ opacity: 0, x: 20 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                exit={{ opacity: 0, x: 20 }}
+                                className="fixed inset-0 z-[200] bg-white lg:absolute lg:inset-auto lg:top-0 lg:right-0 lg:w-[480px] lg:h-full lg:shadow-[-5px_0_30px_rgba(0,0,0,0.1)]"
+                            >
+                                <PromoteYourselfView
+                                    currentUser={auth.currentUser}
+                                    onBack={() => setShowPromotePage(false)}
+                                    onLogin={handleGoogleLogin}
                                 />
-
-                                <motion.div
-                                    initial={{ opacity: 0, scale: 0.96, y: 30 }}
-                                    animate={{ opacity: 1, scale: 1, y: 0 }}
-                                    exit={{ opacity: 0, scale: 0.96, y: 30 }}
-                                    className="relative bg-white w-full max-w-[760px] rounded-[40px] p-14 shadow-[0_24px_80px_rgba(0,0,0,0.18)] overflow-hidden"
-                                >
-                                    <div className="text-left mb-8">
-                                        <h2
-                                            className="text-[48px] md:text-[56px] font-black text-neutral-900 leading-[1.05]"
-                                            style={{ fontFamily: 'Uber Move, var(--font-sans)' }}
-                                        >
-                                            {t({ en: 'How Much', fr: 'Combien' })}<br />{t({ en: 'do you want?', fr: 'voulez-vous ?' })}
-                                        </h2>
-                                    </div>
-
-                                    <div className="mb-10">
-                                        <div className="relative flex items-baseline gap-3 pb-3 border-b border-neutral-200">
-                                            <span className="text-[40px] font-black text-[#BFBFBF] uppercase">{t({ en: 'MAD', fr: 'MAD' })}</span>
-                                            <input
-                                                type="number"
-                                                value={counterPrice}
-                                                onChange={(e) => setCounterPrice(e.target.value)}
-                                                className="w-full bg-transparent border-none p-0 text-[64px] font-black text-neutral-400 focus:text-neutral-900 focus:ring-0 placeholder-neutral-300 outline-none transition-colors"
-                                                placeholder="150"
-                                                autoFocus
-                                            />
-                                        </div>
-                                        <p className="mt-3 text-neutral-400 font-semibold text-[14px]">
-                                            {t({ en: `Client Suggested ${counterJob.price} MAD`, fr: `Le client propose ${counterJob.price} MAD` })}
-                                        </p>
-                                    </div>
-
-                                    <div className="flex items-center justify-end">
-                                        <button
-                                            onClick={handleSubmitCounter}
-                                            disabled={isSubmittingOffer || !counterPrice}
-                                            className="px-12 py-4 bg-black text-white rounded-full font-semibold text-[15px] hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_16px_30px_rgba(0,0,0,0.2)]"
-                                        >
-                                            {isSubmittingOffer ? t({ en: 'Sending...', fr: 'Envoi...' }) : t({ en: 'Send', fr: 'Envoyer' })}
-                                        </button>
-                                    </div>
-                                </motion.div>
-                            </div>
+                            </motion.div>
+                        )}
+                        {showPromocodesPage && (
+                            <motion.div
+                                key="promocodes_overlay"
+                                initial={{ opacity: 0, x: 20 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                exit={{ opacity: 0, x: 20 }}
+                                className="fixed inset-0 z-[200] bg-white lg:absolute lg:inset-auto lg:top-0 lg:right-0 lg:w-[480px] lg:h-full lg:shadow-[-5px_0_30px_rgba(0,0,0,0.1)]"
+                            >
+                                <PromocodesView
+                                    currentUser={auth.currentUser}
+                                    onBack={() => setShowPromocodesPage(false)}
+                                    isBricoler={true}
+                                />
+                            </motion.div>
                         )}
                     </AnimatePresence>
-                </AnimatePresence>
 
-                {/* New Job Floating Notification */}
-                <AnimatePresence key="new-job-presence">
+                    <LanguagePreferencePopup
+                        key="language-preference-popup"
+                        isOpen={showLanguagePopup}
+                        onClose={() => setShowLanguagePopup(false)}
+                        onSelectLanguage={(lang) => {
+                            setLanguage(lang);
+                            setShowLanguagePopup(false);
+                        }}
+                    />
+
                     {
-                        showNewJobPopup && latestJob && (
-                            <motion.div
-                                key="new-job-floating-notification"
-                                initial={{ opacity: 0, y: 100, scale: 0.9 }}
-                                animate={{ opacity: 1, y: 0, scale: 1 }}
-                                exit={{ opacity: 0, y: 100, scale: 0.9 }}
-                                className="fixed bottom-24 left-4 right-4 z-[100] md:bottom-10 md:right-10 md:left-auto md:w-[400px]"
-                            >
-                                <div
-                                    className="bg-black text-white p-6 rounded-[32px] shadow-2xl overflow-hidden relative border border-white/10"
-                                    style={{
-                                        background: 'linear-gradient(135deg, #000 0%, #1a1a1a 100%)',
+                        isMobileLayout && (
+                            <div key="mobile-bottom-nav-wrapper">
+                                <MobileBottomNav
+                                    activeTab={activeNav}
+                                    onTabChange={(tab) => {
+                                        setActiveNav(tab as any);
+                                        setShowNotificationsPage(false);
+
+                                        // Reset views to main screens when clicking nav
+                                        if (tab === 'calendar') setOrdersActiveTab('activity');
+                                        if (tab === 'performance') setPerformanceDetail('none');
+                                        // ProfileView automatically starts at 'main' if not controlled, 
+                                        // but we ensure other overlays are closed
+                                        setShowPromotePage(false);
+                                        setShowPromocodesPage(false);
                                     }}
-                                >
-                                    {/* Animated Background Pulse */}
-                                    <motion.div
-                                        className="absolute -top-20 -right-20 w-40 h-40 bg-blue-500/20 blur-[80px] rounded-full"
-                                        animate={{ scale: [1, 1.5, 1], opacity: [0.3, 0.6, 0.3] }}
-                                        transition={{ duration: 3, repeat: Infinity }}
-                                    />
-
-                                    <div className="flex items-start justify-between mb-4 relative z-10">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center">
-                                                <Briefcase className="text-blue-400" size={24} />
-                                            </div>
-                                            <div>
-                                                <h4 className="font-black text-[18px] leading-tight">{t({ en: 'New Job!', fr: 'Nouvelle mission !' })}</h4>
-                                                <p className="text-[11px] font-bold text-blue-400 uppercase tracking-widest">{latestJob.service}</p>
-                                            </div>
-                                        </div>
-                                        <button
-                                            onClick={() => setShowNewJobPopup(false)}
-                                            className="p-2 hover:bg-white/10 rounded-full transition-colors"
-                                        >
-                                            <X size={20} className="text-neutral-500" />
-                                        </button>
-                                    </div>
-
-                                    <div className="space-y-4 relative z-10">
-                                        <div className="flex items-center justify-between">
-                                            <div className="flex items-center gap-2">
-                                                <MapPin size={14} className="text-neutral-400" />
-                                                <span className="text-sm font-bold text-neutral-300">{latestJob.location}</span>
-                                            </div>
-                                            <div className="text-right">
-                                                <p className="text-[10px] font-black text-neutral-500 uppercase tracking-widest">{t({ en: 'Offer', fr: 'Offre' })}</p>
-                                                <p className="text-xl font-black text-white">{latestJob.price} {t({ en: 'MAD', fr: 'MAD' })}</p>
-                                            </div>
-                                        </div>
-
-                                        <button
-                                            onClick={() => {
-                                                setActiveNav('jobs');
-                                                setShowNewJobPopup(false);
-                                                // Optionally scroll to job or highlight it
-                                            }}
-                                            className="w-full py-4 bg-white text-black font-black rounded-2xl flex items-center justify-center gap-2 hover:scale-[1.02] active:scale-[0.98] transition-all shadow-xl"
-                                        >
-                                            View Details
-                                        </button>
-                                    </div>
-                                </div>
-                            </motion.div>
+                                    variant="provider"
+                                />
+                            </div>
                         )
                     }
-                </AnimatePresence >
 
-                <AnimatePresence key="promote-promocodes-presence">
-                    {showPromotePage && (
-                        <motion.div
-                            key="promote_overlay"
-                            initial={{ opacity: 0, x: 20 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            exit={{ opacity: 0, x: 20 }}
-                            className="fixed inset-0 z-[200] bg-white lg:absolute lg:inset-auto lg:top-0 lg:right-0 lg:w-[480px] lg:h-full lg:shadow-[-5px_0_30px_rgba(0,0,0,0.1)]"
-                        >
-                            <PromoteYourselfView
-                                currentUser={auth.currentUser}
-                                onBack={() => setShowPromotePage(false)}
-                                onLogin={handleGoogleLogin}
-                            />
-                        </motion.div>
-                    )}
-                    {showPromocodesPage && (
-                        <motion.div
-                            key="promocodes_overlay"
-                            initial={{ opacity: 0, x: 20 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            exit={{ opacity: 0, x: 20 }}
-                            className="fixed inset-0 z-[200] bg-white lg:absolute lg:inset-auto lg:top-0 lg:right-0 lg:w-[480px] lg:h-full lg:shadow-[-5px_0_30px_rgba(0,0,0,0.1)]"
-                        >
-                            <PromocodesView
-                                currentUser={auth.currentUser}
-                                onBack={() => setShowPromocodesPage(false)}
-                                isBricoler={true}
-                            />
-                        </motion.div>
-                    )}
-                </AnimatePresence>
+                    {/* Notifications Overlay Rendering */}
+                    <AnimatePresence key="notifications-overlay-presence">
+                        {showNotificationsPage && (
+                            <motion.div
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: 20 }}
+                                className="fixed inset-0 z-[5000] bg-[#F3F3F3] h-full overflow-y-auto no-scrollbar pb-32"
+                            >
+                                <div className="sticky top-0 z-10 bg-white px-5 py-4 flex items-center gap-4 border-b border-neutral-100">
+                                    <button
+                                        onClick={() => setShowNotificationsPage(false)}
+                                        className="w-10 h-10 rounded-full bg-neutral-100 flex items-center justify-center text-black hover:bg-neutral-200 transition-colors"
+                                    >
+                                        <ChevronLeft size={20} />
+                                    </button>
+                                    <h2 className="text-[22px] font-black text-black tracking-tight flex-1" style={{ fontFamily: 'Uber Move, var(--font-sans)' }}>
+                                        {t({ en: 'Notifications', fr: 'Notifications' })}
+                                    </h2>
+                                    {mergedNotifications.filter((n: any) => !n.read).length > 0 && (
+                                        <span className="h-6 px-3 bg-red-500 text-white rounded-full text-[11px] font-black flex items-center">
+                                            {mergedNotifications.filter((n: any) => !n.read).length} {t({ en: 'new', fr: 'nouvelles' })}
+                                        </span>
+                                    )}
+                                </div>
+                                <div className="px-4 pt-4 pb-24 space-y-3 max-w-[480px] mx-auto">
+                                    {mergedNotifications.length === 0 ? (
+                                        <div className="text-center py-20">
+                                            <Bell size={48} className="text-neutral-200 mx-auto mb-4" />
+                                            <h3 className="text-[20px] font-black text-neutral-800 mb-1">{t({ en: 'All caught up!', fr: 'Tout est à jour !' })}</h3>
+                                            <p className="text-[13px] font-medium text-neutral-400">{t({ en: 'New job alerts and client messages will appear here.', fr: 'Les nouvelles alertes de mission et messages clients apparaîtront ici.' })}</p>
+                                        </div>
+                                    ) : (
+                                        mergedNotifications.map((noti: any, index: number) => {
+                                            const isNewJob = noti.type === 'new_job';
+                                            const isAccepted = noti.type === 'offer_accepted';
+                                            const isDeclined = noti.type === 'offer_declined';
+                                            const isCounter = noti.type === 'counter_offer_received';
+                                            const isMessage = noti.type === 'new_message';
 
-                <LanguagePreferencePopup
-                    key="language-preference-popup"
-                    isOpen={showLanguagePopup}
-                    onClose={() => setShowLanguagePopup(false)}
-                    onSelectLanguage={(lang) => {
-                        setLanguage(lang);
-                        setShowLanguagePopup(false);
-                    }}
-                />
+                                            const iconBg = isNewJob ? 'bg-blue-50' : isAccepted ? 'bg-emerald-50' : isDeclined ? 'bg-red-50' : isMessage ? 'bg-indigo-50' : 'bg-neutral-100';
+                                            const iconColor = isNewJob ? 'text-blue-500' : isAccepted ? 'text-emerald-500' : isDeclined ? 'text-red-500' : isMessage ? 'text-indigo-500' : 'text-neutral-500';
 
-                {
-                    isMobileLayout && (
-                        <div key="mobile-bottom-nav-wrapper">
-                            <MobileBottomNav
-                                activeTab={activeNav}
-                                onTabChange={(tab) => {
-                                    setActiveNav(tab as any);
-                                    setShowNotificationsPage(false);
+                                            const title = isNewJob
+                                                ? `${t({ en: 'New Job', fr: 'Nouvelle mission' })}: ${noti.serviceName || t({ en: 'Service needed', fr: 'Service demandé' })}`
+                                                : isAccepted
+                                                    ? t({ en: '✅ Offer Accepted!', fr: '✅ Offre acceptée !' })
+                                                    : isDeclined
+                                                        ? t({ en: 'Offer Declined', fr: 'Offre refusée' })
+                                                        : isCounter
+                                                            ? t({ en: '💰 Counter Offer', fr: '💰 Contre-offre' })
+                                                            : isMessage
+                                                                ? `${t({ en: 'Message from', fr: 'Message de' })} ${noti.clientName || t({ en: 'Client', fr: 'Client' })}`
+                                                                : t({ en: 'Notification', fr: 'Notification' });
 
-                                    // Reset views to main screens when clicking nav
-                                    if (tab === 'calendar') setOrdersActiveTab('activity');
-                                    if (tab === 'performance') setPerformanceDetail('none');
-                                    // ProfileView automatically starts at 'main' if not controlled, 
-                                    // but we ensure other overlays are closed
-                                    setShowPromotePage(false);
-                                    setShowPromocodesPage(false);
-                                }}
-                                variant="provider"
-                            />
-                        </div>
-                    )
-                }
+                                            const body = isNewJob
+                                                ? `${noti.city || ''} · ${t({ en: 'MAD', fr: 'MAD' })} ${noti.price || '?'}`
+                                                : isAccepted
+                                                    ? t({ en: `Your offer for ${noti.serviceName || 'a job'} was accepted!`, fr: `Votre offre pour ${noti.serviceName || 'une mission'} a été acceptée !` })
+                                                    : isDeclined
+                                                        ? t({ en: `Offer declined for ${noti.serviceName || 'a job'}.`, fr: `Offre refusée pour ${noti.serviceName || 'une mission'}.` })
+                                                        : isCounter
+                                                            ? t({ en: `Client proposed MAD ${noti.price} for ${noti.serviceName || 'a job'}.`, fr: `Le client propose ${noti.price} MAD pour ${noti.serviceName || 'une mission'}.` })
+                                                            : isMessage
+                                                                ? (noti.message || t({ en: 'Tap to view conversation.', fr: 'Touchez pour voir la conversation.' }))
+                                                                : t({ en: 'You have a new update.', fr: 'Vous avez une nouvelle mise à jour.' });
 
-                {/* Notifications Overlay Rendering */}
-                <AnimatePresence key="notifications-overlay-presence">
-                    {showNotificationsPage && (
-                        <motion.div
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: 20 }}
-                            className="fixed inset-0 z-[5000] bg-[#F3F3F3] h-full overflow-y-auto no-scrollbar pb-32"
-                        >
-                            <div className="sticky top-0 z-10 bg-white px-5 py-4 flex items-center gap-4 border-b border-neutral-100">
-                                <button
-                                    onClick={() => setShowNotificationsPage(false)}
-                                    className="w-10 h-10 rounded-full bg-neutral-100 flex items-center justify-center text-black hover:bg-neutral-200 transition-colors"
-                                >
-                                    <ChevronLeft size={20} />
-                                </button>
-                                <h2 className="text-[22px] font-black text-black tracking-tight flex-1" style={{ fontFamily: 'Uber Move, var(--font-sans)' }}>
-                                    {t({ en: 'Notifications', fr: 'Notifications' })}
-                                </h2>
-                                {mergedNotifications.filter((n: any) => !n.read).length > 0 && (
-                                    <span className="h-6 px-3 bg-red-500 text-white rounded-full text-[11px] font-black flex items-center">
-                                        {mergedNotifications.filter((n: any) => !n.read).length} {t({ en: 'new', fr: 'nouvelles' })}
-                                    </span>
-                                )}
-                            </div>
-                            <div className="px-4 pt-4 pb-24 space-y-3 max-w-[480px] mx-auto">
-                                {mergedNotifications.length === 0 ? (
-                                    <div className="text-center py-20">
-                                        <Bell size={48} className="text-neutral-200 mx-auto mb-4" />
-                                        <h3 className="text-[20px] font-black text-neutral-800 mb-1">{t({ en: 'All caught up!', fr: 'Tout est à jour !' })}</h3>
-                                        <p className="text-[13px] font-medium text-neutral-400">{t({ en: 'New job alerts and client messages will appear here.', fr: 'Les nouvelles alertes de mission et messages clients apparaîtront ici.' })}</p>
-                                    </div>
-                                ) : (
-                                    mergedNotifications.map((noti: any, index: number) => {
-                                        const isNewJob = noti.type === 'new_job';
-                                        const isAccepted = noti.type === 'offer_accepted';
-                                        const isDeclined = noti.type === 'offer_declined';
-                                        const isCounter = noti.type === 'counter_offer_received';
-                                        const isMessage = noti.type === 'new_message';
+                                            const timeAgo = (() => {
+                                                const secs = noti.timestamp?.seconds || 0;
+                                                if (!secs) return '';
+                                                const diff = Math.floor(Date.now() / 1000 - secs);
+                                                if (diff < 60) return `${diff}s ago`;
+                                                if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+                                                if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+                                                return new Date(secs * 1000).toLocaleDateString();
+                                            })();
 
-                                        const iconBg = isNewJob ? 'bg-blue-50' : isAccepted ? 'bg-emerald-50' : isDeclined ? 'bg-red-50' : isMessage ? 'bg-indigo-50' : 'bg-neutral-100';
-                                        const iconColor = isNewJob ? 'text-blue-500' : isAccepted ? 'text-emerald-500' : isDeclined ? 'text-red-500' : isMessage ? 'text-indigo-500' : 'text-neutral-500';
-
-                                        const title = isNewJob
-                                            ? `${t({ en: 'New Job', fr: 'Nouvelle mission' })}: ${noti.serviceName || t({ en: 'Service needed', fr: 'Service demandé' })}`
-                                            : isAccepted
-                                                ? t({ en: '✅ Offer Accepted!', fr: '✅ Offre acceptée !' })
-                                                : isDeclined
-                                                    ? t({ en: 'Offer Declined', fr: 'Offre refusée' })
-                                                    : isCounter
-                                                        ? t({ en: '💰 Counter Offer', fr: '💰 Contre-offre' })
-                                                        : isMessage
-                                                            ? `${t({ en: 'Message from', fr: 'Message de' })} ${noti.clientName || t({ en: 'Client', fr: 'Client' })}`
-                                                            : t({ en: 'Notification', fr: 'Notification' });
-
-                                        const body = isNewJob
-                                            ? `${noti.city || ''} · ${t({ en: 'MAD', fr: 'MAD' })} ${noti.price || '?'}`
-                                            : isAccepted
-                                                ? t({ en: `Your offer for ${noti.serviceName || 'a job'} was accepted!`, fr: `Votre offre pour ${noti.serviceName || 'une mission'} a été acceptée !` })
-                                                : isDeclined
-                                                    ? t({ en: `Offer declined for ${noti.serviceName || 'a job'}.`, fr: `Offre refusée pour ${noti.serviceName || 'une mission'}.` })
-                                                    : isCounter
-                                                        ? t({ en: `Client proposed MAD ${noti.price} for ${noti.serviceName || 'a job'}.`, fr: `Le client propose ${noti.price} MAD pour ${noti.serviceName || 'une mission'}.` })
-                                                        : isMessage
-                                                            ? (noti.message || t({ en: 'Tap to view conversation.', fr: 'Touchez pour voir la conversation.' }))
-                                                            : t({ en: 'You have a new update.', fr: 'Vous avez une nouvelle mise à jour.' });
-
-                                        const timeAgo = (() => {
-                                            const secs = noti.timestamp?.seconds || 0;
-                                            if (!secs) return '';
-                                            const diff = Math.floor(Date.now() / 1000 - secs);
-                                            if (diff < 60) return `${diff}s ago`;
-                                            if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
-                                            if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
-                                            return new Date(secs * 1000).toLocaleDateString();
-                                        })();
-
-                                        return (
-                                            <div
-                                                key={noti.id || `noti-${index}`}
-                                                onClick={() => {
-                                                    if (isNewJob) { setMobileJobsStatus('new'); setShowNotificationsPage(false); }
-                                                    else if (isAccepted || isDeclined || isCounter) { setMobileJobsStatus('waiting'); setShowNotificationsPage(false); }
-                                                    else if (isMessage) { setActiveNav('messages'); setShowNotificationsPage(false); }
-                                                }}
-                                                className={cn(
-                                                    'bg-white rounded-2xl p-4 flex gap-3 cursor-pointer active:bg-neutral-50 transition-colors border',
-                                                    !noti.read ? 'border-blue-100 shadow-[0_2px_12px_rgba(59,130,246,0.08)]' : 'border-neutral-100'
-                                                )}
-                                            >
-                                                <div className={cn('w-11 h-11 rounded-2xl flex items-center justify-center flex-shrink-0', iconBg)}>
-                                                    {isNewJob ? <Briefcase size={18} className={iconColor} /> :
-                                                        isAccepted ? <CheckCircle2 size={18} className={iconColor} /> :
-                                                            isDeclined ? <X size={18} className={iconColor} /> :
-                                                                isMessage ? <MessageCircle size={18} className={iconColor} /> :
-                                                                    <Bell size={18} className={iconColor} />}
-                                                </div>
-                                                <div className="flex-1 min-w-0">
-                                                    <div className="flex items-start justify-between gap-2">
-                                                        <p className={cn('text-[14px] font-black leading-snug', !noti.read ? 'text-black' : 'text-neutral-800')}>{title}</p>
-                                                        <span className="text-[10px] font-bold text-neutral-400 whitespace-nowrap pt-0.5">{timeAgo}</span>
+                                            return (
+                                                <div
+                                                    key={noti.id || `noti-${index}`}
+                                                    onClick={() => {
+                                                        if (isNewJob) { setMobileJobsStatus('new'); setShowNotificationsPage(false); }
+                                                        else if (isAccepted || isDeclined || isCounter) { setMobileJobsStatus('waiting'); setShowNotificationsPage(false); }
+                                                        else if (isMessage) { setActiveNav('messages'); setShowNotificationsPage(false); }
+                                                    }}
+                                                    className={cn(
+                                                        'bg-white rounded-2xl p-4 flex gap-3 cursor-pointer active:bg-neutral-50 transition-colors border',
+                                                        !noti.read ? 'border-blue-100 shadow-[0_2px_12px_rgba(59,130,246,0.08)]' : 'border-neutral-100'
+                                                    )}
+                                                >
+                                                    <div className={cn('w-11 h-11 rounded-2xl flex items-center justify-center flex-shrink-0', iconBg)}>
+                                                        {isNewJob ? <Briefcase size={18} className={iconColor} /> :
+                                                            isAccepted ? <CheckCircle2 size={18} className={iconColor} /> :
+                                                                isDeclined ? <X size={18} className={iconColor} /> :
+                                                                    isMessage ? <MessageCircle size={18} className={iconColor} /> :
+                                                                        <Bell size={18} className={iconColor} />}
                                                     </div>
-                                                    <p className="text-[12px] font-medium text-neutral-500 mt-0.5 line-clamp-2">{body}</p>
-                                                    {isNewJob && (
-                                                        <span className="inline-flex mt-2 px-2 py-0.5 bg-blue-50 text-blue-600 text-[10px] font-black rounded-full uppercase tracking-wide">
-                                                            Tap to view
-                                                        </span>
+                                                    <div className="flex-1 min-w-0">
+                                                        <div className="flex items-start justify-between gap-2">
+                                                            <p className={cn('text-[14px] font-black leading-snug', !noti.read ? 'text-black' : 'text-neutral-800')}>{title}</p>
+                                                            <span className="text-[10px] font-bold text-neutral-400 whitespace-nowrap pt-0.5">{timeAgo}</span>
+                                                        </div>
+                                                        <p className="text-[12px] font-medium text-neutral-500 mt-0.5 line-clamp-2">{body}</p>
+                                                        {isNewJob && (
+                                                            <span className="inline-flex mt-2 px-2 py-0.5 bg-blue-50 text-blue-600 text-[10px] font-black rounded-full uppercase tracking-wide">
+                                                                Tap to view
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                    {!noti.read && (
+                                                        <div className="w-2 h-2 rounded-full bg-blue-500 mt-1 flex-shrink-0" />
                                                     )}
                                                 </div>
-                                                {!noti.read && (
-                                                    <div className="w-2 h-2 rounded-full bg-blue-500 mt-1 flex-shrink-0" />
-                                                )}
-                                            </div>
-                                        );
-                                    })
-                                )}
-                            </div>
-                        </motion.div>
-                    )}
-                </AnimatePresence>
+                                            );
+                                        })
+                                    )}
+                                </div>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+                </main>
             </AnimatePresence>
         </div>
     );

@@ -40,28 +40,55 @@ export const MOROCCAN_CITIES_AREAS: Record<string, string[]> = {
 
 export const MOROCCAN_CITIES = Object.keys(MOROCCAN_CITIES_AREAS);
 
+export interface PricingBenchmark {
+    tier: 'low' | 'medium' | 'high';
+    suggestedMin: number;
+    suggestedMax: number;
+    unitLabel?: { en: string; fr: string; ar: string };
+}
+
 // Pricing guidance per skill tier
-export const SERVICE_TIER_RATES: Record<string, { tier: 'low' | 'medium' | 'high'; suggestedMin: number; suggestedMax: number }> = {
-    cleaning: { tier: 'low', suggestedMin: 40, suggestedMax: 80 },
-    errands: { tier: 'low', suggestedMin: 15, suggestedMax: 40 },
+export const SERVICE_TIER_RATES: Record<string, PricingBenchmark> = {
+    cleaning: { 
+        tier: 'low', 
+        suggestedMin: 50, 
+        suggestedMax: 100,
+        unitLabel: { en: 'per room', fr: 'par pièce', ar: 'لكل غرفة' }
+    },
+    errands: { 
+        tier: 'low', 
+        suggestedMin: 15, 
+        suggestedMax: 50,
+        unitLabel: { en: 'per trip', fr: 'par trajet', ar: 'لكل جولة' }
+    },
     babysitting: { tier: 'low', suggestedMin: 40, suggestedMax: 80 },
-    gardening: { tier: 'low', suggestedMin: 45, suggestedMax: 85 },
+    gardening: { tier: 'low', suggestedMin: 45, suggestedMax: 100 },
     furniture_assembly: { tier: 'medium', suggestedMin: 80, suggestedMax: 140 },
-    handyman: { tier: 'medium', suggestedMin: 80, suggestedMax: 140 },
-    moving: { tier: 'medium', suggestedMin: 80, suggestedMax: 160 },
-    mounting: { tier: 'medium', suggestedMin: 80, suggestedMax: 140 },
-    painting: { tier: 'medium', suggestedMin: 80, suggestedMax: 180 },
-    elderly_care: { tier: 'medium', suggestedMin: 70, suggestedMax: 120 },
-    appliance_installation: { tier: 'high', suggestedMin: 140, suggestedMax: 240 },
-    plumbing: { tier: 'high', suggestedMin: 140, suggestedMax: 260 },
-    electricity: { tier: 'high', suggestedMin: 140, suggestedMax: 300 },
-    driver: { tier: 'medium', suggestedMin: 70, suggestedMax: 140 },
-    car_rental: { tier: 'medium', suggestedMin: 120, suggestedMax: 280 },
-    courier: { tier: 'low', suggestedMin: 40, suggestedMax: 80 },
-    airport: { tier: 'medium', suggestedMin: 80, suggestedMax: 180 },
-    transport_intercity: { tier: 'medium', suggestedMin: 120, suggestedMax: 300 },
-    cooking: { tier: 'high', suggestedMin: 120, suggestedMax: 240 },
-    private_driver: { tier: 'medium', suggestedMin: 80, suggestedMax: 200 },
-    learn_arabic: { tier: 'high', suggestedMin: 80, suggestedMax: 180 },
-    tour_guide: { tier: 'medium', suggestedMin: 80, suggestedMax: 180 },
+    handyman: { tier: 'medium', suggestedMin: 100, suggestedMax: 200 },
+    moving: { tier: 'medium', suggestedMin: 100, suggestedMax: 250 },
+    mounting: { 
+        tier: 'medium', 
+        suggestedMin: 100, 
+        suggestedMax: 250,
+        unitLabel: { en: 'per item', fr: 'par objet', ar: 'لكل قطعة' }
+    },
+    painting: { 
+        tier: 'medium', 
+        suggestedMin: 80, 
+        suggestedMax: 200,
+        unitLabel: { en: 'per room', fr: 'par pièce', ar: 'لكل غرفة' }
+    },
+    elderly_care: { tier: 'medium', suggestedMin: 80, suggestedMax: 150 },
+    appliance_installation: { tier: 'high', suggestedMin: 150, suggestedMax: 350 },
+    plumbing: { tier: 'high', suggestedMin: 150, suggestedMax: 400 },
+    electricity: { tier: 'high', suggestedMin: 150, suggestedMax: 450 },
+    driver: { tier: 'medium', suggestedMin: 100, suggestedMax: 250 },
+    car_rental: { tier: 'medium', suggestedMin: 150, suggestedMax: 450 },
+    courier: { tier: 'low', suggestedMin: 40, suggestedMax: 100 },
+    airport: { tier: 'medium', suggestedMin: 150, suggestedMax: 350 },
+    transport_intercity: { tier: 'medium', suggestedMin: 200, suggestedMax: 800 },
+    cooking: { tier: 'high', suggestedMin: 150, suggestedMax: 400 },
+    private_driver: { tier: 'medium', suggestedMin: 100, suggestedMax: 300 },
+    learn_arabic: { tier: 'high', suggestedMin: 100, suggestedMax: 250 },
+    tour_guide: { tier: 'medium', suggestedMin: 100, suggestedMax: 300 },
 };

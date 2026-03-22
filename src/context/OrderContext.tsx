@@ -1,10 +1,12 @@
 'use client';
-import { createContext, useContext, useState, ReactNode } from 'react';
+import { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 
 interface LocationPoint {
   lat: number;
   lng: number;
   address: string;
+  city?: string;
+  area?: string;
 }
 
 interface OrderState {
@@ -16,14 +18,26 @@ interface OrderState {
   providerId: string | null;
   providerName: string | null;
   providerRate: number | null;
+  providerAvatar?: string | null;
+  providerRating?: number | null;
+  providerJobsCount?: number | null;
+  providerRank?: string | null;
+  providerBio?: string | null;
+  providerExperience?: string | null;
   scheduledDate: string | null;
   scheduledTime: string | null;
   serviceIcon: string | null;
   selectedCar?: any;
   carRentalNote?: string;
   carRentalDates?: any;
+  providerAddress?: string;
   date?: string;
   time?: string;
+  serviceDetails?: Record<string, any>;
+  setupProfileId?: string;
+  isPublic?: boolean;
+  description?: string;
+  recipientDetails?: { name: string; phone: string; address?: string } | null;
 }
 
 interface OrderContextType {
@@ -41,16 +55,44 @@ const defaultOrder: OrderState = {
   location: null,
   providerId: null,
   providerName: null,
+  providerAvatar: null,
   providerRate: null,
+  providerRating: null,
+  providerJobsCount: null,
+  providerRank: null,
+  providerBio: null,
+  providerExperience: null,
   scheduledDate: null,
   scheduledTime: null,
   serviceIcon: null,
+  serviceDetails: {},
+  setupProfileId: '',
+  isPublic: false,
 };
 
 const OrderContext = createContext<OrderContextType | null>(null);
 
 export function OrderProvider({ children }: { children: ReactNode }) {
   const [order, setOrder] = useState<OrderState>(defaultOrder);
+
+  // Load from localStorage on mount
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('lbricol_pending_order');
+      if (saved) {
+        setOrder(JSON.parse(saved));
+      }
+    } catch (e) {
+      console.error("Failed to load saved order:", e);
+    }
+  }, []);
+
+  // Save to localStorage whenever order changes
+  useEffect(() => {
+    if (order && order.serviceType) {
+      localStorage.setItem('lbricol_pending_order', JSON.stringify(order));
+    }
+  }, [order]);
 
   const setOrderField = (key: keyof OrderState, value: any) => {
     setOrder(prev => ({ ...prev, [key]: value }));
@@ -60,7 +102,10 @@ export function OrderProvider({ children }: { children: ReactNode }) {
     setOrder(state);
   };
 
-  const resetOrder = () => setOrder(defaultOrder);
+  const resetOrder = () => {
+    setOrder(defaultOrder);
+    localStorage.removeItem('lbricol_pending_order');
+  };
 
   return (
     <OrderContext.Provider value={{ order, setOrderField, setOrderState, resetOrder }}>

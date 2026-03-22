@@ -5,7 +5,7 @@ export async function reverseGeocode(lat: number, lng: number): Promise<string> 
       { headers: { 'User-Agent': 'Lbricol/1.0' } }
     );
     const data = await res.json();
-    if (!data || data.error) return `${lat.toFixed(3)}, ${lng.toFixed(3)}, Morocco`;
+    if (!data || data.error) return `Unknown Location, Morocco`;
     
     const a = data.address;
     const street = a.road || a.pedestrian || a.street || '';
@@ -17,7 +17,7 @@ export async function reverseGeocode(lat: number, lng: number): Promise<string> 
     if (neighborhood) return `${neighborhood}, ${city}, Morocco`;
     return `${city}, Morocco`;
   } catch {
-    return `${lat.toFixed(3)}, ${lng.toFixed(3)}, Morocco`;
+    return `Unknown Location, Morocco`;
   }
 }
 export async function searchAddress(query: string): Promise<any[]> {

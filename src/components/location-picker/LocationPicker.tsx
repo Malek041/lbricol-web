@@ -155,7 +155,7 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
 
     // 2. Auto-confirm/select this address to finalize the flow
     onConfirm({
-      pickup: { lat: data.lat, lng: data.lng, address: data.address },
+      pickup: { ...data },
       savedAddress: data
     });
 
@@ -213,6 +213,7 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
             flyToPoint={flyToPoint || undefined}
             onInteractionStart={() => setIsInteracting(true)}
             onInteractionEnd={() => setIsInteracting(false)}
+            pinY={50}
           />
         </div>
 
@@ -265,24 +266,22 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
               )}
             </button>
           </div>
-          {/* GPS Locate Button */}
-          <div className="absolute bottom-12 right-4 pointer-events-auto">
-            <button
-              onClick={handleLocate}
-              className="w-11 h-11 bg-white rounded-full shadow-[0_2px_8px_rgba(0,0,0,0.15)] flex items-center justify-center text-[#374151] active:scale-95 transition-transform"
-            >
-              {isLocating ? (
-                <Loader2 size={20} className="animate-spin text-[#00A082]" />
-              ) : (
-                <Navigation size={22} strokeWidth={2.5} className="text-neutral-900" />
-              )}
-            </button>
-          </div>
         </div>
       </div>
 
       {/* 2. Bottom Sheet Area (Resizable) */}
-      <div className="flex-1 bg-white rounded-t-[32px] shadow-[0_-8px_30px_rgba(0,0,0,0.08)] px-5 py-8 flex flex-col overflow-hidden relative z-10 -mt-8">
+      <div className="flex-1 bg-white rounded-t-[32px] shadow-[0_-8px_30px_rgba(0,0,0,0.08)] px-5 py-8 flex flex-col relative z-10 -mt-8">
+        {/* New Locator Button relative to sheet */}
+        <button
+          onClick={handleLocate}
+          className="absolute -top-14 right-6 w-12 h-12 bg-white rounded-full shadow-xl border border-neutral-100 flex items-center justify-center text-[#00A082] active:scale-90 transition-all z-[100]"
+        >
+          {isLocating ? (
+            <Loader2 size={22} className="animate-spin" />
+          ) : (
+            <Navigation size={22} fill="currentColor" strokeWidth={0} />
+          )}
+        </button>
         {isBricolerBase ? (
           <div className="flex flex-col h-full">
             <AnimatePresence mode="wait">

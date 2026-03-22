@@ -2,12 +2,11 @@
 
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import {
-    X, Check, CheckCircle2, Search, ChevronLeft, ChevronRight, FileText, Info, Plus, Minus, MapPin, ArrowRight, TrendingUp, User, Wrench, Save, Star, Key, Sparkles, Image, Globe
-} from 'lucide-react';
+import { X, Check, CheckCircle2, Search, ChevronLeft, ChevronRight, FileText, Info, Plus, Minus, MapPin, ArrowRight, TrendingUp, User, Wrench, Save, Star, Key, Sparkles, Image, Globe, Camera, Fingerprint, ScanEye, AlertTriangle, ShieldCheck } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { auth, db, storage } from '@/lib/firebase';
 import { signInWithPopup, GoogleAuthProvider, updateProfile } from 'firebase/auth';
+import { CldUploadWidget, CldImage } from 'next-cloudinary';
 import {
     collection,
     query,
@@ -254,6 +253,10 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
     );
     const [isProcessingProfilePhoto, setIsProcessingProfilePhoto] = useState(false);
     const [isProcessingPortfolioImages, setIsProcessingPortfolioImages] = useState(false);
+    const [idFrontDataUrl, setIdFrontDataUrl] = useState<string | null>(null);
+    const [idBackDataUrl, setIdBackDataUrl] = useState<string | null>(null);
+    const [isUploadingId, setIsUploadingId] = useState(false);
+    const [isUploadingProfile, setIsUploadingProfile] = useState(false);
 
     // Optional bank details
     const [bankName, setBankName] = useState(userData?.bankName || '');
@@ -264,8 +267,8 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
     const [submittingStatus, setSubmittingStatus] = useState<string | null>(null);
     const [errandsTransport, setErrandsTransport] = useState<string>(userData?.errandsTransport || '');
     const [movingTransports, setMovingTransports] = useState<string[]>(
-        Array.isArray(userData?.movingTransports) 
-            ? userData.movingTransports 
+        Array.isArray(userData?.movingTransports)
+            ? userData.movingTransports
             : (userData?.movingTransport ? [userData.movingTransport] : [])
     );
     const [tourGuideAuthorizationFile, setTourGuideAuthorizationFile] = useState<File | Blob | null>(null);
@@ -302,9 +305,9 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
     const STEPS = useMemo(() => {
         const isClientEdit = mode === 'edit' || mode === 'add';
         const isAdminEdit = mode === 'admin_add' || mode === 'admin_edit';
-        
+
         const steps = [];
-        
+
         if (mode === 'onboarding') {
             steps.push({ id: 'language', label: t({ en: 'Language', fr: 'Langue', ar: 'اللغة' }) });
             steps.push({ id: 'activation', label: t({ en: 'Activation', fr: 'Activation', ar: 'تفعيل' }) });
@@ -347,8 +350,8 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
             setProfilePhotoUrl(userData.profilePhotoURL || userData.avatar || userData.photoURL || '');
             setErrandsTransport(userData.errandsTransport || '');
             setMovingTransports(
-                Array.isArray(userData.movingTransports) 
-                    ? userData.movingTransports 
+                Array.isArray(userData.movingTransports)
+                    ? userData.movingTransports
                     : (userData.movingTransport ? [userData.movingTransport] : [])
             );
 
@@ -362,7 +365,7 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
 
                 userData.services.forEach((s: any) => {
                     const thisCatId = s.categoryId || (typeof s === 'string' ? s : null);
-                    
+
                     if (mode === 'edit' && initialCategory && thisCatId && thisCatId !== initialCategory.categoryId) {
                         return; // ONLY load the specific category we are editing
                     }
@@ -693,7 +696,11 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                 errandsTransport,
                 movingTransports,
                 movingTransport: movingTransports[0] || '', // legacy compatibility
-                tourGuideAuthorizationUrl: finalTourGuideUrl || null
+                tourGuideAuthorizationUrl: finalTourGuideUrl || null,
+                verification: (idFrontDataUrl || idBackDataUrl) ? {
+                    status: 'pending_review',
+                    submittedAt: serverTimestamp()
+                } : (existingBricoler?.verification || null)
             });
 
             if (isClaimingShadow) {
@@ -784,12 +791,14 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
             let uploadedProfilePhotoUrl = finalProfilePhotoUrl;
             let finalizedCategoryEntries = finalCategoryEntries;
 
-            if (hasPendingProfileUpload || hasPendingServiceUploads || hasPendingTourGuideUpload) {
+            if (hasPendingProfileUpload || hasPendingServiceUploads || hasPendingTourGuideUpload || idFrontDataUrl || idBackDataUrl) {
                 setSubmittingStatus("Uploading media...");
                 try {
                     const uploadProfileTask = resolveProfilePhoto(user.uid, profilePhotoUrl);
                     const uploadEntriesTask = attachUploadedImagesToEntries(user.uid, initialEntries);
-                    
+                    const uploadIdFrontTask = idFrontDataUrl ? uploadVerificationId(user.uid, 'front', idFrontDataUrl) : Promise.resolve(null);
+                    const uploadIdBackTask = idBackDataUrl ? uploadVerificationId(user.uid, 'back', idBackDataUrl) : Promise.resolve(null);
+
                     let uploadTourGuideTask = Promise.resolve(finalTourGuideUrl);
                     if (hasPendingTourGuideUpload && tourGuideAuthorizationFile) {
                         uploadTourGuideTask = (async () => {
@@ -798,10 +807,12 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                         })();
                     }
 
-                    const [newProfileUrl, newEntries, newTourGuideUrl] = await Promise.all([
+                    const [newProfileUrl, newEntries, newTourGuideUrl, frontUrl, backUrl] = await Promise.all([
                         uploadProfileTask,
                         uploadEntriesTask,
-                        uploadTourGuideTask
+                        uploadTourGuideTask,
+                        uploadIdFrontTask,
+                        uploadIdBackTask
                     ]);
 
                     uploadedProfilePhotoUrl = newProfileUrl || finalProfilePhotoUrl;
@@ -811,8 +822,8 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                     // Update Firestore with final URLs
                     setSubmittingStatus("Finalizing...");
                     const finalPortfolio = Array.from(new Set(finalizedCategoryEntries.flatMap(e => normalizeImageList(e.portfolioImages))));
-                    
-                    await updateDoc(bricolerRef, {
+
+                    const updateData: any = {
                         avatar: uploadedProfilePhotoUrl,
                         profilePhotoURL: uploadedProfilePhotoUrl,
                         photoURL: uploadedProfilePhotoUrl || bricolerData.photoURL,
@@ -820,7 +831,18 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                         portfolio: finalPortfolio,
                         images: finalPortfolio,
                         tourGuideAuthorizationUrl: updatedTourGuideUrl
-                    });
+                    };
+
+                    if (frontUrl || backUrl) {
+                        updateData.verification = {
+                            frontUrl: frontUrl || (existingBricoler?.verification?.frontUrl || null),
+                            backUrl: backUrl || (existingBricoler?.verification?.backUrl || null),
+                            status: 'pending_review',
+                            submittedAt: serverTimestamp()
+                        };
+                    }
+
+                    await updateDoc(bricolerRef, updateData);
 
                     // Update client doc too
                     await updateDoc(doc(db, 'clients', user.uid), {
@@ -1228,82 +1250,6 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
         );
     };
 
-    const uploadDataUrlToStorage = async (path: string, dataUrl: string): Promise<string> => {
-        const maxAttempts = 3;
-
-        for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
-            try {
-                // Convert base64 data URL → Blob before uploading.
-                // uploadBytes (binary) is ~33% faster than uploadString (base64-over-wire)
-                // and avoids IMAGE_UPLOAD_TIMEOUT on slow connections.
-                const blob = await dataUrlToBlob(dataUrl);
-                const storageRef = ref(storage, path);
-                const uploadRes = await withTimeout(
-                    uploadBytes(storageRef, blob, { contentType: blob.type || 'image/jpeg' }),
-                    90000, // 90s timeout gives more headroom on slow connections
-                    'IMAGE_UPLOAD'
-                );
-                return await withTimeout(getDownloadURL(uploadRes.ref), 20000, 'DOWNLOAD_URL');
-            } catch (error) {
-                if (attempt < maxAttempts && isRetryableStorageError(error)) {
-                    try {
-                        await auth.currentUser?.getIdToken(true);
-                    } catch (tokenError) {
-                        console.warn('Token refresh failed before upload retry:', tokenError);
-                    }
-                    await wait(2000 * attempt);
-                    continue;
-                }
-                throw error;
-            }
-        }
-        throw new Error('IMAGE_UPLOAD_FAILED');
-    };
-
-    const resolveServiceImagesForCategory = async (ownerId: string, categoryId: string, images: string[]): Promise<string[]> => {
-        const normalized = normalizeImageList(images).slice(0, 6);
-        const safeCategoryId = (categoryId || '').trim() || 'general';
-        let attemptedUploads = 0;
-        let successfulUploads = 0;
-        const resolved = await Promise.all(
-            normalized.map(async (image, i) => {
-                if (!isImageDataUrl(image)) {
-                    return image;
-                }
-                attemptedUploads += 1;
-                try {
-                    const path = `portfolio/${ownerId}/${safeCategoryId}/${Date.now()}_${i}.jpg`;
-                    const url = await uploadDataUrlToStorage(path, image);
-                    successfulUploads += 1;
-                    return url;
-                } catch (error) {
-                    console.warn(`Skipping failed service image upload (${safeCategoryId} #${i + 1}):`, error);
-                    return null;
-                }
-            })
-        );
-
-        // If they all fail, we just keep the base64 versions so they don't break the app
-        // We remove the throw new Error('SERVICE_IMAGES_UPLOAD_FAILED_'...) so the background process finishes.
-        if (attemptedUploads > 0 && successfulUploads === 0) {
-            console.warn(`All service image uploads failed for category ${safeCategoryId}. Keeping local data URLs.`);
-        }
-
-        return Array.from(new Set(resolved.filter((item): item is string => typeof item === 'string' && item.trim().length > 0)));
-    };
-
-    const resolveProfilePhoto = async (ownerId: string, value: string): Promise<string> => {
-        if (!value) return '';
-        if (!isImageDataUrl(value)) return value;
-        const path = `avatars/${ownerId}/${Date.now()}_profile.jpg`;
-        try {
-            return await uploadDataUrlToStorage(path, value);
-        } catch (e) {
-            console.warn("Profile photo upload failed, retaining base64 data URL:", e);
-            return value; // Fallback to base64 so we don't crash
-        }
-    };
-
     const normalizeCategoryKey = (value?: string): string => {
         return (value || '').trim() || 'general';
     };
@@ -1359,12 +1305,12 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
             setIsProcessingPortfolioImages(true);
             const current = categoryEntries[categoryId];
             const existing = normalizeImageList(current?.portfolioImages || []);
-            const remainingSlots = Math.max(0, 6 - existing.length);
+            const remainingSlots = Math.max(0, 10 - existing.length);
             if (remainingSlots === 0) {
                 showToast({
                     variant: 'error',
                     title: t({ en: 'Maximum reached', fr: 'Maximum atteint', ar: 'تم بلوغ الحد الأقصى' }),
-                    description: t({ en: 'You can upload up to 6 photos per service.', fr: 'Vous pouvez téléverser jusqu’à 6 photos par service.', ar: 'يمكنك رفع 6 صور كحد أقصى لكل خدمة.' })
+                    description: t({ en: 'You can upload up to 10 photos per service.', fr: 'Vous pouvez téléverser jusqu’à 10 photos par service.', ar: 'يمكنك رفع 10 صور كحد أقصى لكل خدمة.' })
                 });
                 return;
             }
@@ -1404,21 +1350,127 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
         try {
             setIsProcessingProfilePhoto(true);
             const compressed = await compressImageFileToDataUrl(file, {
-                maxWidth: 600,
-                maxHeight: 600,
-                quality: 0.6,
+                maxWidth: 800,
+                maxHeight: 800,
+                quality: 0.7,
                 mimeType: 'image/jpeg',
             });
             setProfilePhotoUrl(compressed);
         } catch (error) {
             console.error("Failed to process profile photo:", error);
-            showToast({
-                variant: 'error',
-                title: t({ en: 'Upload failed', fr: 'Échec du téléversement', ar: 'فشل الرفع' }),
-                description: t({ en: 'Could not process selected profile photo.', fr: 'Impossible de traiter la photo de profil sélectionnée.', ar: 'تعذر معالجة صورة الملف الشخصي المحددة.' })
-            });
         } finally {
             setIsProcessingProfilePhoto(false);
+        }
+    };
+
+    const handleIdSelect = async (side: 'front' | 'back', files: FileList | null) => {
+        if (!files || files.length === 0) return;
+        try {
+            setIsUploadingId(true);
+            const dataUrl = await compressImageFileToDataUrl(files[0], {
+                maxWidth: 1600,
+                maxHeight: 1600,
+                quality: 0.8,
+                mimeType: 'image/jpeg'
+            });
+            if (side === 'front') setIdFrontDataUrl(dataUrl);
+            else setIdBackDataUrl(dataUrl);
+        } catch (error) {
+            console.error("ID processing failed:", error);
+        } finally {
+            setIsUploadingId(false);
+        }
+    };
+
+    const uploadToCloudinary = async (dataUrl: string, folder: string, preset: string) => {
+        const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
+        if (!cloudName) {
+            console.error("Cloudinary Error: NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME is missing in env");
+            throw new Error('Cloud Name is not configured');
+        }
+
+        const formData = new FormData();
+        formData.append('file', dataUrl);
+        formData.append('upload_preset', preset);
+        formData.append('folder', folder);
+
+        const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
+            method: 'POST',
+            body: formData
+        });
+
+        if (!res.ok) {
+            let errorDetails: any = {};
+            try {
+                errorDetails = await res.json();
+            } catch (e) {
+                const text = await res.text().catch(() => "No response body");
+                errorDetails = { message: text };
+            }
+            
+            console.error("Cloudinary upload failed:", {
+                status: res.status,
+                statusText: res.statusText,
+                details: errorDetails,
+                preset,
+                folder,
+                cloudName
+            });
+            throw new Error(errorDetails?.error?.message || errorDetails?.message || 'Cloudinary upload failed');
+        }
+        const data = await res.json();
+        return data.secure_url;
+    };
+
+    const uploadToFirebase = async (dataUrl: string, path: string) => {
+        const blob = await dataUrlToBlob(dataUrl);
+        const storageRef = ref(storage, path);
+        const res = await uploadBytes(storageRef, blob, { contentType: 'image/jpeg' });
+        return await getDownloadURL(res.ref);
+    };
+
+    const uploadVerificationId = async (uid: string, side: 'front' | 'back', dataUrl: string) => {
+        try {
+            return await uploadToCloudinary(dataUrl, `lbricol/verification/${uid}`, 'lbricol_verification');
+        } catch (e) {
+            console.warn("Cloudinary Verification upload failed, falling back to Firebase:", e);
+            return await uploadToFirebase(dataUrl, `verification/${uid}/id-${side}.jpg`);
+        }
+    };
+
+    const resolveServiceImagesForCategory = async (ownerId: string, categoryId: string, images: string[]): Promise<string[]> => {
+        const normalized = normalizeImageList(images).slice(0, 10);
+        const folder = `lbricol/bricolers/${ownerId}/portfolio`;
+        return (await Promise.all(
+            normalized.map(async (image, idx) => {
+                if (!isImageDataUrl(image)) return image;
+                try {
+                    return await uploadToCloudinary(image, folder, 'lbricol_portfolio');
+                } catch (e) {
+                    console.warn("Cloudinary Portfolio upload failed, falling back to Firebase:", e);
+                    try {
+                        return await uploadToFirebase(image, `bricolers/${ownerId}/portfolio/${categoryId}_${idx}_${Date.now()}.jpg`);
+                    } catch (fe) {
+                        console.error("Firebase upload fallback also failed:", fe);
+                        return image;
+                    }
+                }
+            })
+        )).filter(Boolean) as string[];
+    };
+
+    const resolveProfilePhoto = async (ownerId: string, value: string): Promise<string> => {
+        if (!value || !isImageDataUrl(value)) return value;
+        try {
+            return await uploadToCloudinary(value, `lbricol/bricolers/${ownerId}/avatar`, 'lbricol_avatars');
+        } catch (e) {
+            console.warn("Cloudinary Avatar upload failed, falling back to Firebase:", e);
+            try {
+                return await uploadToFirebase(value, `bricolers/${ownerId}/avatar/profile_${Date.now()}.jpg`);
+            } catch (fe) {
+                console.error("Firebase upload fallback also failed:", fe);
+                return value;
+            }
         }
     };
 
@@ -1426,7 +1478,7 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
 
     const isLastCat = currentCatIdx === selectedCategoryIds.length - 1;
     const pitchLen = currentCatEntry?.pitch?.trim().length || 0;
-    const currentProfileAvatar = profilePhotoUrl || userData?.profilePhotoURL || userData?.avatar || userData?.photoURL || auth.currentUser?.photoURL || "/Images/Vectors Illu/LbricolFaceOY.webp";
+    const currentProfileAvatar = profilePhotoUrl || ((mode === 'onboarding') ? "" : (userData?.profilePhotoURL || userData?.avatar || userData?.photoURL || auth.currentUser?.photoURL || ""));
 
     return (
         <>
@@ -1516,9 +1568,7 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                                 {step === 'language' && (
                                     <motion.div key="language" custom={direction} variants={slideVariants} initial="enter" animate="center" exit="exit" className="p-6 md:p-10 space-y-8">
                                         <motion.div variants={itemVariants} initial="hidden" animate="show" className="space-y-4">
-                                            <div className="w-16 h-16 bg-[#00A082]/10 rounded-3xl flex items-center justify-center text-[#00A082]">
-                                                <Globe size={32} />
-                                            </div>
+
                                             <div className="space-y-2">
                                                 <h2 className="text-2xl md:text-3xl font-bold text-neutral-900 tracking-tight">
                                                     {t({ en: 'Choose your language', fr: 'Choisissez votre langue', ar: 'اختر لغتك' })}
@@ -1812,8 +1862,8 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                                                         onClick={() => setActiveBrandId(brand.id)}
                                                         className="flex flex-col items-center gap-2 flex-shrink-0"
                                                     >
-                                                        <motion.div 
-                                                            animate={{ 
+                                                        <motion.div
+                                                            animate={{
                                                                 scale: isActive ? 1.05 : 1,
                                                                 borderColor: isActive ? '#00A082' : '#F0F0F0'
                                                             }}
@@ -1824,7 +1874,7 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                                                         >
                                                             <img src={brand.logo} alt={brand.name} className="w-full h-full object-contain" />
                                                             {hasSelected && (
-                                                                <motion.div 
+                                                                <motion.div
                                                                     initial={{ scale: 0 }}
                                                                     animate={{ scale: 1 }}
                                                                     className="absolute -top-1 -right-1 w-5 h-5 bg-[#00A082] rounded-full flex items-center justify-center border-2 border-white"
@@ -1852,7 +1902,7 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                                                             initial={{ opacity: 0, scale: 0.9, y: 15, rotateX: 15 }}
                                                             animate={{ opacity: 1, scale: 1, y: 0, rotateX: 0 }}
                                                             exit={{ opacity: 0, scale: 0.9, y: 10, rotateX: -10 }}
-                                                            transition={{ 
+                                                            transition={{
                                                                 duration: 0.4,
                                                                 delay: idx * 0.04,
                                                                 ease: [0.165, 0.84, 0.44, 1] // easeOutQuart for smooth emergence
@@ -1880,13 +1930,13 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                                                             )}
                                                         >
                                                             <div className="aspect-[4/3] w-full overflow-hidden rounded-xl bg-neutral-50 p-2">
-                                                                <motion.img 
+                                                                <motion.img
                                                                     initial={{ scale: 1.2, opacity: 0 }}
                                                                     animate={{ scale: 1, opacity: 1 }}
                                                                     transition={{ delay: idx * 0.03 + 0.1, duration: 0.5 }}
-                                                                    src={model.image} 
-                                                                    alt={model.name} 
-                                                                    className="w-full h-full object-contain group-hover:scale-110 transition-transform duration-500" 
+                                                                    src={model.image}
+                                                                    alt={model.name}
+                                                                    className="w-full h-full object-contain group-hover:scale-110 transition-transform duration-500"
                                                                 />
                                                             </div>
                                                             <div className="flex items-center justify-between">
@@ -2288,23 +2338,18 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                                                     <div className="flex flex-col gap-1">
                                                         <label className="text-[17px] font-black text-neutral-900 flex items-center gap-2">
                                                             <div className="w-6 h-6 rounded-full bg-[#00A082] text-white flex items-center justify-center text-[10px] font-black">3</div>
-                                                            {currentCatId === 'private_driver'
-                                                                ? t({
-                                                                    en: "What's the daily rate you'd like to charge for a full day of service?",
-                                                                    fr: "Quel tarif journalier souhaitez-vous facturer pour une journée complète ?",
-                                                                    ar: "ما هو السعر اليومي الذي ترغب في تقاضيه مقابل يوم كامل من الخدمة؟"
-                                                                })
-                                                                : currentCatId === 'errands'
-                                                                    ? t({
-                                                                        en: "What's the minimum price you accept for a simple delivery task?",
-                                                                        fr: "Quel est le prix minimum que vous acceptez pour une simple mission de livraison ?",
-                                                                        ar: "ما هو أقل ثمن تقبله مقابل مهمة توصيل بسيطة؟"
-                                                                    })
-                                                                    : t({
-                                                                        en: "What's the minimum price you accept for this service?",
-                                                                        fr: "Quel est le prix minimum que vous acceptez pour ce service ?",
-                                                                        ar: "ما هو أقل ثمن تقبله مقابل هذه الخدمة؟"
-                                                                    })}
+                                                            {(() => {
+                                                                const service = ALL_SERVICES.find(s => s.id === currentCatId);
+                                                                const archetype = service?.subServices?.find(ss => selectedSubServices.includes(ss.id))?.pricingArchetype || 'hourly';
+                                                                if (currentCatId === 'private_driver' || archetype === 'rental') return t({ en: "What's the daily rate you'd like to charge?", fr: "Quel tarif journalier souhaitez-vous ?", ar: "ما هو السعر اليومي؟" });
+                                                                if (archetype === 'unit') return t({
+                                                                    en: `Set your price ${tierInfo?.unitLabel ? t(tierInfo.unitLabel) : "per unit"}:`,
+                                                                    fr: `Fixez votre prix ${tierInfo?.unitLabel ? t(tierInfo.unitLabel) : "par unité"} :`,
+                                                                    ar: `حدد السعر ${tierInfo?.unitLabel ? t(tierInfo.unitLabel) : "للوحدة"}:`
+                                                                });
+                                                                if (currentCatId === 'errands') return t({ en: "What's the minimum price you accept for a simple delivery task?", fr: "Quel est le prix minimum que vous acceptez pour une simple mission de livraison ?", ar: "ما هو أقل ثمن تقبله مقابل مهمة توصيل بسيطة؟" });
+                                                                return t({ en: "What's the minimum price you accept for this service?", fr: "Quel est le prix minimum que vous acceptez pour ce service ?", ar: "ما هو أقل ثمن تقبله مقابل هذه الخدمة؟" });
+                                                            })()}
                                                         </label>
                                                     </div>
                                                     {/* Centered rate picker */}
@@ -2326,9 +2371,13 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                                                                 <div className="flex items-baseline gap-1 whitespace-nowrap">
                                                                     <span className="text-5xl font-black text-neutral-900 tracking-tighter leading-none">{currentCatEntry?.hourlyRate || 75}</span>
                                                                     <span className="text-[14px] font-bold text-neutral-400 uppercase tracking-widest">
-                                                                        {currentCatId === 'private_driver'
-                                                                            ? t({ en: 'DAILY RATE (MAD)', fr: 'TARIF JOUR (MAD)', ar: 'السعر اليومي (درهم)' })
-                                                                            : t({ en: 'MIN PRICE (MAD)', fr: 'PRIX MIN (MAD)', ar: 'أقل ثمن (درهم)' })}
+                                                                        {(() => {
+                                                                            const service = ALL_SERVICES.find(s => s.id === currentCatId);
+                                                                            const archetype = service?.subServices?.find(ss => selectedSubServices.includes(ss.id))?.pricingArchetype || 'hourly';
+                                                                            if (currentCatId === 'private_driver' || archetype === 'rental') return t({ en: 'DAILY RATE (MAD)', fr: 'TARIF JOUR (MAD)', ar: 'السعر اليومي (درهم)' });
+                                                                            if (archetype === 'unit') return t({ en: tierInfo?.unitLabel ? t(tierInfo.unitLabel).toUpperCase() + ' (MAD)' : 'PER UNIT (MAD)', fr: tierInfo?.unitLabel ? t(tierInfo.unitLabel).toUpperCase() + ' (MAD)' : 'PAR UNITÉ (MAD)' });
+                                                                            return t({ en: 'MIN PRICE (MAD)', fr: 'PRIX MIN (MAD)', ar: 'أقل ثمن (درهم)' });
+                                                                        })()}
                                                                     </span>
                                                                 </div>
                                                             </div>
@@ -2345,6 +2394,59 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                                                                 <Plus size={24} strokeWidth={3} />
                                                             </button>
                                                         </div>
+
+                                                        {/* Pricing Guardrail */}
+                                                        {tierInfo && (
+                                                            <div className="flex flex-col items-center gap-2 -mt-2">
+                                                                {(() => {
+                                                                    const rate = currentCatEntry?.hourlyRate || 75;
+                                                                    const min = tierInfo.suggestedMin;
+                                                                    const max = tierInfo.suggestedMax;
+
+                                                                    let statusText = '';
+                                                                    let color = '';
+                                                                    let activeSteps = 1;
+
+                                                                    if (rate < min) {
+                                                                        statusText = t({ en: 'Economy Rate: Highly Competitive', fr: 'Tarif Économique : Très Compétitif' });
+                                                                        color = 'bg-blue-500';
+                                                                        activeSteps = 2;
+                                                                    } else if (rate <= max) {
+                                                                        statusText = t({ en: 'Recommended Range: Standard Market Price', fr: 'Gamme Recommandée : Prix Marché Standard' });
+                                                                        color = 'bg-[#00A082]';
+                                                                        activeSteps = 4;
+                                                                    } else {
+                                                                        statusText = t({ en: 'Premium Rate: Best for Expert Work', fr: 'Tarif Premium : Idéal pour Travail d\'Expert' });
+                                                                        color = 'bg-amber-500';
+                                                                        activeSteps = 5;
+                                                                    }
+
+                                                                    const cn = (...args: any[]) => args.filter(Boolean).join(' ');
+
+                                                                    return (
+                                                                        <div className="flex flex-col items-center gap-2">
+                                                                            <div className="flex gap-1">
+                                                                                {[1, 2, 3, 4, 5].map((step) => (
+                                                                                    <div
+                                                                                        key={step}
+                                                                                        className={cn(
+                                                                                            "w-8 h-1.5 rounded-full transition-all duration-500",
+                                                                                            step <= activeSteps ? color : "bg-neutral-200"
+                                                                                        )}
+                                                                                    />
+                                                                                ))}
+                                                                            </div>
+                                                                            <span className={cn(
+                                                                                "text-[10px] font-black uppercase tracking-widest transition-colors duration-500",
+                                                                                color === 'bg-[#00A082]' ? 'text-[#00A082]' : color.replace('bg-', 'text-')
+                                                                            )}>
+                                                                                {statusText}
+                                                                            </span>
+                                                                        </div>
+                                                                    );
+                                                                })()}
+                                                            </div>
+                                                        )}
 
                                                         {tierInfo && (tierInfo.suggestedMin > 0) && (
                                                             <div className="mt-8 pt-8 border-t border-neutral-100 w-full">
@@ -2418,7 +2520,46 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                                             )}
                                         </AnimatePresence>
 
-                                        {/* 4. Experience Description — only shows after equipment is done */}
+                                        {/* 4. Portfolio — Past Work */}
+                                        <AnimatePresence>
+                                            {(currentCatEntry.noEquipment || currentCatEntry.equipments.length > 0 || NO_EQUIPMENT_SERVICES.includes(currentCatEntry.categoryId)) && (
+                                                <motion.div variants={itemVariants} initial="hidden" animate="show" className="space-y-4 pt-4 border-t border-neutral-50 mt-4">
+                                                    <div className="flex items-center justify-between">
+                                                        <label className="text-[17px] font-black text-neutral-900 flex items-center gap-2">
+                                                            <div className="w-6 h-6 rounded-full bg-[#00A082] text-white flex items-center justify-center text-[10px] font-black">{currentCatId === 'car_rental' ? '3' : '4'}</div>
+                                                            {t({ en: 'Portfolio: Images of your past work', fr: 'Portfolio : Images de vos travaux passés', ar: 'معرض الأعمال: صور لأعمالك السابقة' })}
+                                                        </label>
+                                                    </div>
+
+                                                    <div className="grid grid-cols-3 md:grid-cols-4 gap-3">
+                                                        {currentCatEntry.portfolioImages.map((img, idx) => (
+                                                            <div key={idx} className="aspect-square rounded-2xl overflow-hidden bg-neutral-100 relative group cursor-pointer border-2 border-transparent hover:border-[#008C74]/20 transition-all">
+                                                                <img src={img} className="w-full h-full object-cover" />
+                                                                <button
+                                                                    onClick={() => removePortfolioImage(currentCatId, idx)}
+                                                                    className="absolute top-2 right-2 w-7 h-7 bg-black/60 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all hover:bg-black hover:scale-110"
+                                                                >
+                                                                    <X size={14} strokeWidth={3} />
+                                                                </button>
+                                                            </div>
+                                                        ))}
+
+                                                        {currentCatEntry.portfolioImages.length < 10 && (
+                                                            <label className="aspect-square rounded-2xl border-2 border-dashed border-neutral-100 flex flex-col items-center justify-center gap-2 hover:border-[#00A082] hover:bg-[#E6F6F2]/30 transition-all cursor-pointer group">
+                                                                <input type="file" multiple accept="image/*" className="hidden" onChange={(e) => handlePortfolioSelection(currentCatId, e.target.files)} />
+                                                                <div className="w-10 h-10 rounded-full bg-neutral-50 group-hover:bg-[#00A082] group-hover:text-white flex items-center justify-center text-neutral-400 transition-all">
+                                                                    <Plus size={22} strokeWidth={3} />
+                                                                </div>
+                                                                <span className="text-[10px] font-black text-neutral-400 group-hover:text-[#00A082] uppercase tracking-[0.15em]">{t({ en: 'Add', fr: 'Ajouter', ar: 'إضافة' })}</span>
+                                                            </label>
+                                                        )}
+                                                    </div>
+                                                    <p className="text-[11px] text-neutral-400 font-bold ml-1 italic">{t({ en: 'Show your best work to win clients (Max 10 photos)', fr: 'Montrez votre meilleur travail pour convaincre (Max 10)', ar: 'أظهر أفضل أعمالك لكسب العملاء (حد أقصى 10 صور)' })}</p>
+                                                </motion.div>
+                                            )}
+                                        </AnimatePresence>
+
+                                        {/* 5. Experience Description — only shows after equipment is done */}
                                         <AnimatePresence>
                                             {(currentCatEntry.noEquipment || currentCatEntry.equipments.length > 0 || NO_EQUIPMENT_SERVICES.includes(currentCatEntry.categoryId)) && (
                                                 <motion.div variants={itemVariants} initial="hidden" animate="show" className="space-y-4 pt-2">
@@ -2482,6 +2623,11 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                                                     setBaseLat(pickup.lat);
                                                     setBaseLng(pickup.lng);
                                                     setBaseAddress(pickup.address);
+
+                                                    // Sync geocoded city and area to profile
+                                                    if (pickup.city) setSelectedCity(pickup.city);
+                                                    if (pickup.area) setSelectedAreas([pickup.area]);
+
                                                     setDirection(1);
                                                     setStepIndex(s => s + 1);
                                                 }}
@@ -2497,26 +2643,93 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                                     <motion.div key="profile" custom={direction} variants={slideVariants} initial="enter" animate="center" exit="exit" className="p-6 md:p-10 space-y-10">
                                         <motion.div variants={itemVariants} initial="hidden" animate="show" className="space-y-1 text-center">
                                             <h2 className="text-2xl md:text-3xl font-bold text-neutral-900 tracking-tight">{t({ en: 'Your Profile', fr: 'Votre profil', ar: 'ملفك الشخصي' })}</h2>
-                                            <p className="text-neutral-500 text-[15px] font-medium leading-relaxed">{t({ en: 'This is how clients see you.', fr: 'Voici comment les clients vous voient.', ar: 'هكذا يراك العملاء.' })}</p>
                                         </motion.div>
-                                        <motion.div variants={itemVariants} initial="hidden" animate="show" className="flex flex-col items-center gap-4">
-                                            <div className="w-32 h-32 rounded-full bg-neutral-100 border-4 border-white shadow-lg overflow-hidden flex items-center justify-center">
-                                                <img src={currentProfileAvatar} alt="Profile" className="w-full h-full object-cover" />
-                                            </div>
-                                            <div className="px-6 py-3 rounded-2xl bg-[#00A082]/5 border border-[#00A082]/10 flex flex-col items-center gap-2">
-                                                <div className="flex items-center gap-2 text-[#00A082] font-black text-[14px]">
-                                                    <CheckCircle2 size={16} />
-                                                    {t({ en: 'Photo Synced via Google', fr: 'Photo synchronisée via Google', ar: 'تمت مزامنة الصورة عبر Google' })}
+                                        <div className="space-y-6">
+                                            {/* Professional Photo */}
+                                            <motion.div variants={itemVariants} className="flex flex-col items-center gap-6">
+                                                <div className="relative group">
+                                                    <div className="w-32 h-32 rounded-[32px] bg-neutral-100 border-1 border-white  overflow-hidden flex items-center justify-center relative ring-4 ring-neutral-50">
+                                                        {currentProfileAvatar ? (
+                                                            <img src={currentProfileAvatar} alt="Profile" className="w-full h-full object-cover" />
+                                                        ) : (
+                                                            <div className="w-full h-full bg-neutral-50 flex items-center justify-center">
+                                                                <User size={64} className="text-neutral-200" strokeWidth={1.5} />
+                                                            </div>
+                                                        )}
+                                                        {isUploadingProfile && (
+                                                            <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                                                                <div className="w-8 h-8 border-3 border-white/30 border-t-white rounded-full animate-spin" />
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                    <label className="absolute -bottom-2 -right-2 w-10 h-10 bg-[#00A082] text-white rounded-2xl flex items-center justify-center shadow-lg cursor-pointer hover:bg-[#008C74] hover:scale-110 active:scale-95 transition-all">
+                                                        <input type="file" accept="image/*" className="hidden" onChange={(e) => handleProfilePhotoSelection(e.target.files)} />
+                                                        <Camera size={20} strokeWidth={2.5} />
+                                                    </label>
                                                 </div>
-                                            </div>
-                                            <p className="text-[12px] text-neutral-400 text-center max-w-[280px]">
-                                                {t({
-                                                    en: 'Your profile photo is automatically updated from your Google account. Direct uploads are currently disabled.',
-                                                    fr: 'Votre photo de profil est automatiquement mise à jour depuis votre compte Google. Les téléchargements directs sont actuellement désactivés.',
-                                                    ar: 'يتم تحديث صورة ملفك الشخصي تلقائيًا من حساب Google الخاص بك. الرفع المباشر غير مفعل حاليًا.'
-                                                })}
-                                            </p>
-                                        </motion.div>
+                                                <div className="text-center space-y-1">
+                                                    <h3 className="text-[16px] font-black text-neutral-900">{t({ en: 'Professional Photo', fr: 'Photo professionnelle', ar: 'صورة مهنية' })}</h3>
+                                                    <p className="text-[12px] text-neutral-500 font-medium max-w-[240px]">{t({ en: 'Bright, clear, and smiling photos get 3x more jobs.', fr: 'Une photo claire et souriante attire 3x plus de clients.', ar: 'الصور الواضحة والمبتسمة تجتذب 3 أضعاف الزبائن.' })}</p>
+                                                </div>
+                                            </motion.div>
+
+                                            {/* ID Verification */}
+                                            <motion.div variants={itemVariants} className=" rounded-[12px] p-6 border-2 border-dashed border-neutral-100 space-y-5">
+                                                <div className="flex items-center justify-between px-1">
+                                                    <div className="flex items-center gap-2">
+                                                        <div className="w-8 h-8 rounded-xl bg-[#00A082]/10 flex items-center justify-center text-[#00A082]">
+                                                            <ShieldCheck size={18} strokeWidth={2.5} />
+                                                        </div>
+                                                        <div className="flex flex-col">
+                                                            <span className="text-[14px] font-[1000] text-black uppercase tracking-tight">{t({ en: 'ID Verification', fr: 'Vérification d\'ID', ar: 'توثيق الهوية' })}</span>
+                                                            <span className="text-[10px] font-bold text-[#00A082] uppercase tracking-wider">{t({ en: 'Required for trust', fr: 'Requis pour la confiance', ar: 'مطلوب لكسب الثقة' })}</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <div className="grid grid-cols-2 gap-4">
+                                                    {[
+                                                        { id: 'front', label: t({ en: 'Front Side', fr: 'Recto', ar: 'الوجه الأمامي' }), data: idFrontDataUrl },
+                                                        { id: 'back', label: t({ en: 'Back Side', fr: 'Verso', ar: 'الوجه الخلفي' }), data: idBackDataUrl }
+                                                    ].map((side) => (
+                                                        <label key={side.id} className="relative group cursor-pointer">
+                                                            <input type="file" accept="image/*" className="hidden" onChange={(e) => handleIdSelect(side.id as any, e.target.files)} />
+                                                            <div className={cn(
+                                                                "aspect-[1.6/1] rounded-[10px] border-1 transition-all flex flex-col items-center justify-center gap-2 overflow-hidden",
+                                                                side.data ? "border-[#00A082] bg-white shadow-sm" : "border-neutral-200 bg-white hover:border-[#00A082]/30"
+                                                            )}>
+                                                                {side.data ? (
+                                                                    <img src={side.data} className="w-full h-full object-cover" />
+                                                                ) : (
+                                                                    <>
+                                                                        <div className="w-10 h-10 rounded-full  flex items-center justify-center text-neutral-400 group-hover:text-[#00A082] transition-colors">
+                                                                            {side.id === 'front' ? <ScanEye size={22} /> : <ScanEye size={22} className="rotate-180" />}
+                                                                        </div>
+                                                                        <span className="text-[11px] font-[1000] text-neutral-400 group-hover:text-black uppercase tracking-tight">{side.label}</span>
+                                                                    </>
+                                                                )}
+                                                            </div>
+                                                            {side.data && (
+                                                                <div className="absolute top-2 right-2 w-6 h-6 bg-[#00A082] text-white rounded-full flex items-center justify-center shadow-lg">
+                                                                    <Check size={12} strokeWidth={4} />
+                                                                </div>
+                                                            )}
+                                                        </label>
+                                                    ))}
+                                                </div>
+
+                                                <div className="flex items-start gap-3 bg-[#00A082]/5 rounded-[10px] p-4 border border-[#00A082]/10">
+                                                    <AlertTriangle size={16} className="text-[#00A082] mt-0.5 flex-shrink-0" />
+                                                    <p className="text-[11px] font-bold text-[#00A082] leading-normal uppercase tracking-tight">
+                                                        {t({
+                                                            en: 'Your ID is strictly private and used only for internal verification. Never shared with clients.',
+                                                            fr: 'Votre ID est strictement privé et utilisé uniquement pour la vérification interne.',
+                                                            ar: 'بطاقة هويتك سرية للغاية وتستخدم فقط للتحقق الداخلي. لا يتم مشاركتها أبداً مع الزبائن.'
+                                                        })}
+                                                    </p>
+                                                </div>
+                                            </motion.div>
+                                        </div>
                                         <motion.div variants={itemVariants} initial="hidden" animate="show" className="space-y-6">
                                             <div className="space-y-2">
                                                 <label className="text-[14px] font-bold text-neutral-900 ml-1">{t({ en: 'Full Name', fr: 'Nom complet', ar: 'الاسم الكامل' })}</label>
@@ -2524,8 +2737,8 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                                             </div>
                                             <div className="space-y-2">
                                                 <label className="text-[14px] font-bold text-neutral-900 ml-1">{t({ en: 'WhatsApp Number', fr: 'Numéro WhatsApp', ar: 'رقم الواتساب' })}</label>
-                                                <div className="flex items-center gap-3">
-                                                    <div className="px-5 py-4 bg-neutral-100 rounded-[12px] text-[16px] font-bold text-neutral-600">+212</div>
+                                                <div className="flex items-center gap-2 md:gap-3">
+                                                    <div className="px-3 md:px-5 py-4 bg-neutral-100 rounded-[12px] text-[15px] md:text-[16px] font-bold text-neutral-600 shrink-0">+212</div>
                                                     <input
                                                         type="tel"
                                                         value={whatsappNumber}
@@ -2538,7 +2751,7 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                                                             setWhatsappNumber(val.slice(0, 9));
                                                         }}
                                                         placeholder="6 00 00 00 00"
-                                                        className="flex-1 px-6 py-4 bg-white border-2 border-neutral-100 rounded-[12px] text-[17px] font-bold text-neutral-900 outline-none focus:border-[#00A082] transition-all placeholder:font-medium placeholder:text-neutral-400"
+                                                        className="flex-1 min-w-0 px-4 md:px-6 py-4 bg-white border-2 border-neutral-100 rounded-[12px] text-[16px] md:text-[17px] font-bold text-neutral-900 outline-none focus:border-[#00A082] transition-all placeholder:font-medium placeholder:text-neutral-400"
                                                     />
                                                 </div>
                                                 <p className="text-[11px] text-neutral-400 font-bold ml-1">{t({ en: '9 digits starting with 6 or 7', fr: '9 chiffres commençant par 6 ou 7', ar: '9 أرقام تبدأ بـ 6 أو 7' })}</p>
@@ -2550,7 +2763,7 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                                 {/* ── STEP: Sign Up ── */}
                                 {step === 'finish' && (
                                     <motion.div key="finish" custom={direction} variants={slideVariants} initial="enter" animate="center" exit="exit" className="p-6 md:p-10 space-y-10 max-w-md mx-auto py-12">
-                                        <motion.div variants={itemVariants} initial="hidden" animate="show" className="bg-[#E6F6F2] rounded-[16px] p-8 space-y-6 border-2 border-[#00A082]/10 relative overflow-hidden">
+                                        <motion.div variants={itemVariants} initial="hidden" animate="show" className="bg-[#E6F6F2] rounded-[5px] p-8 space-y-6 border-2 border-[#00A082]/10 relative overflow-hidden">
                                             <div className="absolute top-0 right-0 w-40 h-40 bg-[#00A082]/5 rounded-full -mr-20 -mt-20 blur-3xl" />
                                             <div className="flex items-center gap-4">
                                                 <div className="w-16 h-16 rounded-[12px] border-2 border-white overflow-hidden bg-white shadow-sm">
@@ -2566,7 +2779,7 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                                             </div>
 
                                             <div className="space-y-4">
-                                                <div className="flex items-center gap-2 text-neutral-600 font-bold text-[15px] bg-white/50 backdrop-blur-sm px-4 py-2 rounded-[8px] w-fit italic opacity-50">
+                                                <div className="flex items-center gap-2 text-neutral-600 font-light text-[15px] backdrop-blur-sm px-4 py-2 rounded-[8px] w-fit italic opacity-50">
                                                     <MapPin size={18} className="text-neutral-400" />
                                                     {baseAddress || "Location set"}
                                                 </div>

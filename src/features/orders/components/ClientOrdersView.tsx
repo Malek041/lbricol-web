@@ -23,6 +23,7 @@ interface ClientOrdersViewProps {
 }
 
 // ── Shared Hook for Progress ────────────────────────────────────────────────
+// Updated OrderDetails with car rental specific fields
 export const useOrderProgress = () => {
     const { t } = useLanguage();
     const [currentTime, setCurrentTime] = React.useState(new Date());
@@ -289,7 +290,7 @@ function CalendarTab({
                                             </div>
                                         </div>
                                         <p className="text-[13px] font-medium text-neutral-400 truncate">
-                                            {order.bricolerName || t({ en: 'Matching...', fr: 'Recherche...', ar: 'جاري البحث...' })} • {order.city || order.location}
+                                            {order.bricolerName || t({ en: 'Matching...', fr: 'Recherche...', ar: 'جاري البحث...' })} • {order.city || (typeof order.location === 'object' ? (order.location as any).address : order.location)}
                                         </p>
                                         <p className="text-[12px] font-black text-[#00A082] mt-1">
                                             {order.time}
@@ -629,7 +630,7 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
                     {order.bricolerName ? `${order.bricolerName} • ` : ''}{t({ en: '1x task from', fr: '1x tâche de', ar: 'مهمة واحدة من' })} <span className="capitalize">{order.service}</span>
                 </p>
                 <p className="text-[14px] font-bold text-neutral-400 mt-1 capitalize">
-                    {order.status === 'done' ? t({ en: 'Completed', fr: 'Terminée', ar: 'مكتملة' }) : order.status} • {order.city || order.location}
+                    {order.status === 'done' ? t({ en: 'Completed', fr: 'Terminée', ar: 'مكتملة' }) : order.status} • {order.city || (typeof order.location === 'object' ? (order.location as any).address : order.location)}
                 </p>
             </div>
         </motion.div>
@@ -770,421 +771,349 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
                                     const progress = getProgress(selectedOrder);
                                     const isRentalInProgress = isCarRental && progress === 100 && !['done', 'delivered'].includes(selectedOrder.status || '');
                                     
+                                    const calculateDays = () => {
+                                        if (!selectedOrder.date || !selectedOrder.carReturnDate) return 1;
+                                        const start = new Date(selectedOrder.date);
+                                        const end = new Date(selectedOrder.carReturnDate);
+                                        const diff = Math.max(1, Math.round((end.getTime() - start.getTime()) / 86400000));
+                                        return diff;
+                                    };
+
+                                    const formatDateLabel = (date: string, time: string) => {
+                                        if (!date) return '';
+                                        const d = new Date(`${date.substring(0, 10)}T${time || '09:00'}`);
+                                        return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) + " " + (time || '09:00');
+                                    };
+
+                                    const formattedDateRange = () => {
+                                        if (isCarRental && selectedOrder.carReturnDate) {
+                                            const startStr = formatDateLabel(selectedOrder.date || '', selectedOrder.time || '09:00');
+                                            const endStr = formatDateLabel(selectedOrder.carReturnDate, selectedOrder.carReturnTime || '09:00');
+                                            return `${startStr} to ${endStr} (${calculateDays()} days)`;
+                                        }
+                                        return selectedOrder.date ? new Date(selectedOrder.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '';
+                                    };
+
+                                    const isDelivery = selectedOrder.service === 'errands' || selectedOrder.service?.includes('delivery');
+
+                                    if (isCarRental) {
+                                        return (
+                                            <div className="px-6 pb-24">
+                                                {/* Hero Section */}
+                                                <div className="text-center mt-6 mb-10">
+                                                    <motion.div
+                                                        initial={{ scale: 0.8, opacity: 0 }}
+                                                        animate={{ scale: 1, opacity: 1 }}
+                                                        className="flex justify-center"
+                                                    >
+                                                        <img
+                                                            src={(selectedOrder.selectedCar?.modelImage || selectedOrder.selectedCar?.image) || (selectedOrder.details?.car?.modelImage || selectedOrder.details?.car?.image) || "/Images/Vectors Illu/carKey.png"}
+                                                            className={cn("object-contain mb-4", ((selectedOrder.selectedCar?.modelImage || selectedOrder.selectedCar?.image) || (selectedOrder.details?.car?.modelImage || selectedOrder.details?.car?.image)) ? "w-[200px] h-[120px]" : "w-[140px] h-[140px]")}
+                                                            alt="Order"
+                                                        />
+                                                    </motion.div>
+                                                    <h2 className="text-[24px] font-black mb-2 tracking-tighter">Your Bricol.com Order</h2>
+                                                    <div className="text-[16px] font-medium text-[#424242] flex items-center justify-center gap-1.5 font-jakarta">
+                                                        <span>{formattedDateRange()}</span>
+                                                    </div>
+                                                    <div className="text-[11px] font-bold text-neutral-400 mt-2 uppercase tracking-widest font-jakarta">
+                                                        ORDER ID: #{selectedOrder.id?.slice(-8).toUpperCase()}
+                                                    </div>
+                                                </div>
+
+                                                {/* Decorative Wave Separator */}
+                                                <div className="mx-[-24px] mb-8 relative h-5 overflow-hidden">
+                                                    <svg width="100%" height="20" viewBox="0 0 400 20" preserveAspectRatio="none">
+                                                        <path d="M0 10 Q 5 0, 10 10 T 20 10 T 30 10 T 40 10 T 50 10 T 60 10 T 70 10 T 80 10 T 90 10 T 100 10 T 110 10 T 120 10 T 130 10 T 140 10 T 150 10 T 160 10 T 170 10 T 180 10 T 190 10 T 200 10 T 210 10 T 220 10 T 230 10 T 240 10 T 250 10 T 260 10 T 270 10 T 280 10 T 290 10 T 300 10 T 310 10 T 320 10 T 330 10 T 340 10 T 350 10 T 360 10 T 370 10 T 380 10 T 390 10 T 400 10 V 20 H 0 Z" fill="#F9FAFB" />
+                                                    </svg>
+                                                </div>
+
+                                                {/* Contact Bricoler CTA - shown when a bricoler is assigned */}
+                                                {selectedOrder.bricolerWhatsApp && ['confirmed', 'accepted', 'programmed', 'in_progress', 'done', 'delivered'].includes(selectedOrder.status || '') && (
+                                                    <div className="mb-8">
+                                                        <button
+                                                            onClick={() => selectedOrder.bricolerWhatsApp && openWhatsApp(selectedOrder.bricolerWhatsApp)}
+                                                            className="w-full flex items-center justify-center gap-4 py-4 rounded-[20px] bg-[#25D366] text-white font-[1000] text-[18px] hover:bg-[#128C7E] active:scale-95 transition-all group relative overflow-hidden"
+                                                        >
+                                                            <div className="absolute inset-0 bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                                                            <WhatsAppBrandIcon size={28} className="group-hover:scale-110 transition-transform drop-shadow-sm" />
+                                                            <span className="tracking-tight">{t({ en: 'Contact Agent', fr: 'Contacter l\'agent', ar: 'اتصل بالوكيل' })}</span>
+                                                        </button>
+                                                    </div>
+                                                )}
+
+                                                {/* Payment Methods */}
+                                                <section className="mb-8">
+                                                    <h3 className="text-[20px] font-black mb-4 flex items-center gap-2.5 font-jakarta">
+                                                        Payment <span className="text-[24px]">💸</span>
+                                                    </h3>
+                                                    <p className="text-[14px] font-bold text-neutral-400 mb-5 font-jakarta">Your selected payment method</p>
+
+                                                    <div className="grid grid-cols-2 gap-3">
+                                                        <div className={cn(
+                                                            "p-4 rounded-2xl border-2 transition-all",
+                                                            selectedOrder.paymentMethod === 'cash' ? "border-[#FBBF24] bg-[#FFFBEB]" : "border-neutral-100 bg-neutral-50 opacity-60"
+                                                        )}>
+                                                            <div className="text-[24px] mb-3">💵</div>
+                                                            <div className="font-black text-[15px] text-black">Cash</div>
+                                                            <div className="font-bold text-[11px] text-neutral-400">On delivery</div>
+                                                        </div>
+
+                                                        <div className={cn(
+                                                            "p-4 rounded-2xl border-2 transition-all",
+                                                            selectedOrder.paymentMethod === 'bank_transfer' ? "border-[#FBBF24] bg-[#FFFBEB]" : "border-neutral-100 bg-neutral-50 opacity-60"
+                                                        )}>
+                                                            <div className="text-[24px] mb-3">🏦</div>
+                                                            <div className="font-black text-[15px] text-black">Bank Transfer</div>
+                                                            <div className="font-bold text-[11px] text-neutral-400">WhatsApp verify</div>
+                                                        </div>
+                                                    </div>
+                                                </section>
+
+                                                {/* Description Section */}
+                                                {(selectedOrder.carRentalNote || (selectedOrder as any).note) && (
+                                                    <div className="mt-6">
+                                                        <h3 className="text-[18px] font-black mb-3 flex items-center gap-2 font-jakarta">
+                                                            Description <span className="text-[24px]">📝</span>
+                                                        </h3>
+                                                        <div className="p-4 bg-neutral-50 rounded-2xl border border-neutral-100">
+                                                            <p className="text-[14px] color-[#4B5563] font-bold leading-relaxed font-jakarta">
+                                                                {selectedOrder.carRentalNote || (selectedOrder as any).note}
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                )}
+
+                                                {/* Location Section */}
+                                                <h3 className="text-[18px] font-black mt-8 mb-4 flex items-center gap-2 font-jakarta">
+                                                    Location <span className="text-[24px]">📍</span>
+                                                </h3>
+                                                <div className="flex flex-col gap-3 mb-8">
+                                                    <div className="p-4 bg-neutral-50 rounded-[20px] flex items-center gap-4 border border-neutral-100/50">
+                                                        <div className="w-11 h-11 rounded-full bg-white flex items-center justify-center shadow-sm">
+                                                            <MapPin size={22} className="text-[#00A082]" />
+                                                        </div>
+                                                        <div className="flex-1">
+                                                            <div className="text-[11px] font-black text-neutral-400 uppercase tracking-widest font-jakarta">Your Location</div>
+                                                            <div className="text-[14px] font-black text-black leading-tight line-clamp-1 font-jakarta">
+                                                                {typeof selectedOrder.location === 'object' ? (selectedOrder.location as any).address : selectedOrder.location}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="p-4 bg-neutral-50 rounded-[20px] flex items-center gap-4 border border-neutral-100/50">
+                                                        <div className="w-11 h-11 rounded-full bg-white flex items-center justify-center shadow-sm">
+                                                            <Star size={22} className="text-[#FBBF24]" />
+                                                        </div>
+                                                        <div className="flex-1">
+                                                            <div className="text-[11px] font-black text-neutral-400 uppercase tracking-widest font-jakarta">Bricoler Location</div>
+                                                            <div className="text-[14px] font-black text-black leading-tight line-clamp-1 font-jakarta">
+                                                                {selectedOrder.providerAddress || 'Essaouira, Morocco'}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                {/* Pricing Summary */}
+                                                <div className="p-5 bg-neutral-50 rounded-[20px] border border-neutral-100/50">
+                                                    <div className="text-[11px] font-black text-neutral-400 uppercase tracking-widest mb-4 font-jakarta">Pricing Summary</div>
+                                                    <div className="space-y-3">
+                                                        <div className="flex justify-between items-center font-jakarta">
+                                                            <span className="text-[14px] font-bold text-neutral-500">Base Price ({calculateDays()} days)</span>
+                                                            <span className="text-[15px] font-black text-black">{(selectedOrder.basePrice || selectedOrder.price || 0)} MAD</span>
+                                                        </div>
+                                                        <div className="flex justify-between items-center font-jakarta">
+                                                            <span className="text-[14px] font-bold text-neutral-500">Lbricol Fee (10%)</span>
+                                                            <span className="text-[15px] font-black text-[#00A082]">+ {Math.round((parseFloat(String(selectedOrder.totalPrice || 0)) - parseFloat(String(selectedOrder.basePrice || selectedOrder.price || 0))))} MAD</span>
+                                                        </div>
+                                                        <div className="h-[1px] bg-neutral-100 my-1" />
+                                                        <div className="flex justify-between items-center font-jakarta">
+                                                            <span className="text-[16px] font-black text-black">Total</span>
+                                                            <span className="text-[18px] font-black text-black">{(selectedOrder.totalPrice || selectedOrder.price || 0)} MAD</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        );
+                                    }
+
                                     return (
                                         <>
                                             <div className="px-6 md:px-12 pt-10 pb-6 flex flex-col sm:flex-row items-center gap-6 text-center sm:text-left">
-                                    <div className="w-32 h-32 md:w-35 md:h-50 flex-shrink-0 overflow-hidden rounded-2xl bg-neutral-100 flex items-center justify-center border border-neutral-100">
-                                        {selectedOrder.images && selectedOrder.images.length > 0 ? (
-                                            <img
-                                                src={selectedOrder.images[0]}
-                                                className="w-full h-full object-cover"
-                                                alt="task preview"
-                                            />
-                                        ) : (
-                                            <img
-                                                src="/Images/Vectors Illu/NewOrder.webp"
-                                                className="w-full h-full object-contain p-2"
-                                                alt="illustration"
-                                            />
-                                        )}
-                                    </div>
-                                    <div className="flex flex-col">
-                                        <h2 className={cn(
-                                            "text-[32px] md:text-[42px] font-black leading-[1.1] tracking-tighter",
-                                            (isRentalInProgress) ? "text-rose-500" : "text-black"
-                                        )}>
-                                            {selectedOrder.status === 'done' ? t({ en: 'Completed', fr: 'Terminé', ar: 'مكتمل' }) :
-                                                selectedOrder.status === 'delivered' ? t({ en: 'Job Delivered', fr: 'Job Livré', ar: 'تم التسليم' }) :
-                                                    selectedOrder.status === 'cancelled' ? t({ en: 'Cancelled', fr: 'Annulé', ar: 'ملغى' }) :
-                                                        isRentalInProgress ? t({ en: 'In Progress', fr: 'En cours', ar: 'قيد التنفيذ' }) :
-                                                        selectedOrder.status === 'confirmed' || selectedOrder.status === 'programmed' ? t({ en: 'Programmed', fr: 'Programmé', ar: 'مجدول' }) :
-                                                            t({ en: 'Ongoing', fr: 'En cours', ar: 'جاري' })}
-                                        </h2>
-                                        <div className={cn(
-                                            "flex flex-wrap items-center gap-x-2 gap-y-1 text-[18px] font-semibold mt-1",
-                                            isRentalInProgress ? "text-rose-500" : "text-black"
-                                        )}>
-                                            {selectedOrder.service === 'car_rental' ? (
-                                                <div className="flex flex-col gap-1 mt-2">
-                                                    <div className="flex items-center gap-2 font-black">
-                                                        <span>{selectedOrder.date ? format(parseISO(selectedOrder.date), 'MMM d') : '---'}</span>
-                                                        <span className="opacity-30">|</span>
-                                                        <span>{selectedOrder.time || '---'}</span>
-                                                    </div>
-                                                    <div className="flex items-center gap-2 font-bold text-neutral-400">
-                                                        <span>{selectedOrder.carReturnDate ? format(parseISO(selectedOrder.carReturnDate), 'MMM d') : (selectedOrder as any).carReturnDate ? format(parseISO((selectedOrder as any).carReturnDate), 'MMM d') : '---'}</span>
-                                                        <span className="opacity-30">|</span>
-                                                        <span>{selectedOrder.carReturnTime || (selectedOrder as any).carReturnTime || '---'}</span>
-                                                    </div>
+                                                <div className="w-32 h-32 md:w-35 md:h-50 flex-shrink-0 overflow-hidden rounded-2xl bg-neutral-100 flex items-center justify-center border border-neutral-100">
+                                                    {selectedOrder.images && selectedOrder.images.length > 0 ? (
+                                                        <img
+                                                            src={selectedOrder.images[0]}
+                                                            className="w-full h-full object-cover"
+                                                            alt="task preview"
+                                                        />
+                                                    ) : (
+                                                        <img
+                                                            src="/Images/Vectors Illu/NewOrder.webp"
+                                                            className="w-full h-full object-contain p-2"
+                                                            alt="illustration"
+                                                        />
+                                                    )}
                                                 </div>
-                                            ) : (
-                                                <div className="flex items-center gap-2">
-                                                    <span>{selectedOrder.date ? format(parseISO(selectedOrder.date), 'MMM d, yyyy') : t({ en: 'Date TBD', fr: 'Date à définir', ar: 'التاريخ يحدد لاحقاً' })}</span>
-                                                    <span className="text-neutral-200">|</span>
-                                                    <span>{selectedOrder.time || t({ en: 'Flexible', fr: 'Flexible', ar: 'مرن' })}</span>
-                                                </div>
-                                            )}
-                                        </div>
-                                        <p className="text-[12px] font-light text-black uppercase tracking-[0.2em] mt-2">
-                                            {t({ en: 'ORDER ID', fr: 'ID DE COMMANDE', ar: 'رقم الطلب' })}: #{selectedOrder.id?.slice(-8).toUpperCase() || '---'}
-                                        </p>
-                                    </div>
-                                </div>
-
-                                {/* Key Details Grid */}
-                                <div className="px-6 md:px-12 mb-8">
-                                    <div className="grid grid-cols-1 gap-4">
-                                        {/* Contact Bricoler CTA - shown when a bricoler is assigned */}
-                                        {selectedOrder.bricolerWhatsApp && ['programmed', 'in_progress', 'done', 'delivered'].includes(selectedOrder.status || '') && (
-                                            <button
-                                                onClick={() => selectedOrder.bricolerWhatsApp && openWhatsApp(selectedOrder.bricolerWhatsApp)}
-                                                className="w-full flex items-center justify-center gap-4 py-4 rounded-[20px] bg-[#25D366] text-white font-[1000] text-[18px] hover:bg-[#128C7E] active:scale-95 transition-all group relative overflow-hidden"
-                                            >
-                                                <div className="absolute inset-0 bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity" />
-                                                <WhatsAppBrandIcon size={28} className="group-hover:scale-110 transition-transform drop-shadow-sm" />
-                                                <span className="tracking-tight">{t({ en: 'Contact Bricoler', fr: 'Contacter le Bricoler', ar: 'اتصل بالبريكولر' })}</span>
-                                            </button>
-                                        )}
-
-                                        {/* Selected Car Details section */}
-                                        {(selectedOrder.service === 'car_rental' && (selectedOrder.selectedCar || (selectedOrder as any).car || (selectedOrder as any).orderDetails?.car)) && (
-                                            <div className="bg-[#F0FBF8] rounded-2xl p-5 border border-[#00A082]/20 shadow-sm flex flex-col gap-4">
-                                                <div className="flex justify-between items-start">
-                                                    <div className="flex-1 min-w-0">
-                                                        <h4 className="text-[12px] font-black text-[#00A082] uppercase tracking-wider mb-1">{t({ en: 'Rented Vehicle', fr: 'Véhicule Loué' })}</h4>
-                                                        <p className="text-[20px] font-[1000] text-black leading-tight uppercase">
-                                                            {(selectedOrder.selectedCar?.brandName || (selectedOrder as any).car?.brandName || (selectedOrder as any).orderDetails?.car?.brandName) || ''} {(selectedOrder.selectedCar?.modelName || (selectedOrder as any).car?.modelName || (selectedOrder as any).orderDetails?.car?.modelName) || ''}
+                                                <div className="flex flex-col">
+                                                    <h2 className={cn(
+                                                        "text-[32px] md:text-[42px] font-black leading-[1.1] tracking-tighter",
+                                                        (isRentalInProgress) ? "text-rose-500" : "text-black"
+                                                    )}>
+                                                        {selectedOrder.status === 'done' ? t({ en: 'Completed', fr: 'Terminé', ar: 'مكتمل' }) :
+                                                            selectedOrder.status === 'delivered' ? t({ en: 'Job Delivered', fr: 'Job Livré', ar: 'تم التسليم' }) :
+                                                                selectedOrder.status === 'cancelled' ? t({ en: 'Cancelled', fr: 'Annulé', ar: 'ملغى' }) :
+                                                                    isRentalInProgress ? t({ en: 'In Progress', fr: 'En cours', ar: 'قيد التنفيذ' }) :
+                                                                    selectedOrder.status === 'confirmed' || selectedOrder.status === 'programmed' ? t({ en: 'Programmed', fr: 'Programmé', ar: 'مجدول' }) :
+                                                                        t({ en: 'Ongoing', fr: 'En cours', ar: 'جارية' })}
+                                                    </h2>
+                                                    <div className="flex flex-wrap items-center justify-center sm:justify-start gap-3 mt-2">
+                                                        <p className="text-[18px] font-bold text-neutral-400">
+                                                            {selectedOrder.date ? format(parseISO(selectedOrder.date), 'MMM d, yyyy') : ''}
+                                                            <span className="mx-2 opacity-30">|</span>
+                                                            {selectedOrder.time || ''}
                                                         </p>
                                                     </div>
-                                                    <div className="w-24 h-16 bg-white rounded-xl flex items-center justify-center p-2 border border-neutral-100 shadow-sm overflow-hidden flex-shrink-0">
-                                                        <img 
-                                                            src={selectedOrder.selectedCar?.modelImage || selectedOrder.selectedCar?.image || (selectedOrder as any).car?.modelImage || (selectedOrder as any).car?.image || (selectedOrder as any).orderDetails?.car?.modelImage} 
-                                                            alt="car" 
-                                                            className="w-full h-full object-contain" 
-                                                        />
-                                                    </div>
-                                                </div>
-                                                <div className="flex items-center justify-between pt-2 border-t border-[#00A082]/10">
-                                                    <div className="flex flex-col">
-                                                        <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-tighter">{t({ en: 'Rate', fr: 'Prix' })}</span>
-                                                        <span className="text-[15px] font-black text-black">{(selectedOrder.selectedCar?.pricePerDay || (selectedOrder as any).car?.pricePerDay || selectedOrder.selectedCar?.price || (selectedOrder as any).car?.price || (selectedOrder as any).orderDetails?.car?.pricePerDay)} MAD/j</span>
-                                                    </div>
-                                                    <div className="flex flex-col">
-                                                        <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-tighter">{t({ en: 'Duration', fr: 'Durée' })}</span>
-                                                        <span className="text-[15px] font-black text-black">
-                                                            {(() => {
-                                                                if (selectedOrder.date && selectedOrder.carReturnDate) {
-                                                                    const d = Math.max(1, Math.round((new Date(selectedOrder.carReturnDate).getTime() - new Date(selectedOrder.date).getTime()) / 86400000));
-                                                                    return `${d} ${t({ en: d > 1 ? 'days' : 'day', fr: d > 1 ? 'jours' : 'jour' })}`;
-                                                                }
-                                                                return selectedOrder.duration || 'N/A';
-                                                            })()}
-                                                        </span>
-                                                    </div>
-                                                    <div className="flex flex-col items-end">
-                                                        <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-tighter">{t({ en: 'Total Price', fr: 'Prix Total' })}</span>
-                                                        <span className="text-[15px] font-black text-[#00A082]">
-                                                            {selectedOrder.totalPrice || selectedOrder.price} MAD
-                                                        </span>
-                                                    </div>
+                                                    <p className="text-[11px] font-extrabold text-neutral-300 tracking-widest mt-2 uppercase">
+                                                        ORDER ID: #{selectedOrder.id?.slice(0, 8).toUpperCase() || 'N/A'}
+                                                    </p>
                                                 </div>
                                             </div>
-                                        )}
-                                        <div className="bg-neutral-50 rounded-2xl p-4 flex items-center gap-4 border border-neutral-100/50">
-                                            <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-sm">
-                                                <Clock size={20} className="text-[#00A082]" />
-                                            </div>
-                                            <div className="flex flex-col">
-                                                <span className="text-[12px] font-bold text-neutral-400 uppercase tracking-wider">{t({ en: 'Duration', fr: 'Durée', ar: 'المدة' })}</span>
-                                                <span className="text-[16px] font-black text-black">
-                                                    {(() => {
-                                                        const pDate = selectedOrder.date || (selectedOrder as any).date;
-                                                        const rDate = selectedOrder.carReturnDate || (selectedOrder as any).carReturnDate;
-                                                        if (pDate && rDate) {
-                                                            try {
-                                                                const d = Math.max(1, Math.round((new Date(rDate).getTime() - new Date(pDate).getTime()) / 86400000));
-                                                                return `${d} ${t({ en: d > 1 ? 'days' : 'day', fr: d > 1 ? 'jours' : 'jour' })}`;
-                                                            } catch (e) { }
-                                                        }
-                                                        if (selectedOrder.duration) return selectedOrder.duration;
-                                                        if (typeof selectedOrder.durationDays === 'number') {
-                                                             return `${selectedOrder.durationDays} ${t({ en: selectedOrder.durationDays > 1 ? 'days' : 'day', fr: selectedOrder.durationDays > 1 ? 'jours' : 'jour' })}`;
-                                                        }
-                                                        return 'N/A';
-                                                    })()}
-                                                </span>
-                                            </div>
-                                        </div>
-                                        <div className="bg-neutral-50 rounded-2xl p-4 flex items-center gap-4 border border-neutral-100/50">
-                                            <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-sm">
-                                                <Banknote size={20} className="text-[#00A082]" />
-                                            </div>
-                                            <div className="flex flex-col">
-                                                <span className="text-[12px] font-bold text-neutral-400 uppercase tracking-wider">{t({ en: 'Price', fr: 'Prix', ar: 'السعر' })}</span>
-                                                <span className="text-[16px] font-black text-black">{(selectedOrder.totalPrice || 0).toFixed(0)} MAD</span>
-                                            </div>
-                                        </div>
-                                        <div className="bg-neutral-50 rounded-2xl p-4 flex items-center gap-4 border border-neutral-100/50">
-                                            <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-sm">
-                                                <Wrench size={20} className="text-[#00A082]" />
-                                            </div>
-                                            <div className="flex flex-col overflow-hidden">
-                                                <span className="text-[12px] font-bold text-neutral-400 uppercase tracking-wider">{t({ en: 'Service', fr: 'Service', ar: 'الخدمة' })}</span>
-                                                <span className="text-[16px] font-black text-black truncate">{selectedOrder.subServiceName || selectedOrder.serviceName || selectedOrder.service}</span>
-                                            </div>
-                                        </div>
-                                        <div className="bg-neutral-50 rounded-2xl p-4 flex items-center gap-4 border border-neutral-100/50">
-                                            <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-sm">
-                                                <CreditCard size={20} className="text-[#00A082]" />
-                                            </div>
-                                            <div className="flex flex-col">
-                                                <span className="text-[12px] font-bold text-neutral-400 uppercase tracking-wider">{t({ en: 'Payment', fr: 'Paiement', ar: 'الدفع' })}</span>
-                                                <span className="text-[16px] font-black text-black">{t({ en: 'Cash', fr: 'Espèces', ar: 'نقداً' })}</span>
-                                            </div>
-                                        </div>
-                                        {/* Location */}
-                                        <div className="bg-neutral-50 rounded-2xl p-4 flex items-center gap-4 border border-neutral-100/50">
-                                            <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-sm">
-                                                <MapPin size={20} className="text-[#00A082]" />
-                                            </div>
-                                            <div className="flex flex-col overflow-hidden">
-                                                <span className="text-[12px] font-bold text-neutral-400 uppercase tracking-wider">{t({ en: 'Location', fr: 'Localisation', ar: 'الموقع' })}</span>
-                                                <span className="text-[16px] font-black text-black">
-                                                    {selectedOrder.city || t({ en: 'Unknown City', fr: 'Ville inconnue' })}{selectedOrder.location ? `, ${selectedOrder.location}` : ''}
-                                                </span>
-                                            </div>
-                                        </div>
-                                        {/* Description */}
-                                        <div className="bg-neutral-50 rounded-2xl p-4 flex items-start gap-4 border border-neutral-100/50">
-                                            <div className="w-10 h-10 rounded-full bg-white flex-shrink-0 flex items-center justify-center shadow-sm">
-                                                <Info size={20} className="text-[#00A082]" />
-                                            </div>
-                                            <div className="flex flex-col">
-                                                <span className="text-[12px] font-bold text-neutral-400 uppercase tracking-wider">{t({ en: 'Description', fr: 'Description', ar: 'الوصف' })}</span>
-                                                <p className="text-[14px] font-semibold text-black leading-tight">
-                                                    {selectedOrder.description || selectedOrder.comment || t({ en: 'No specific instructions.', fr: 'Aucune instruction spécifique.', ar: 'لا توجد تعليمات محددة.' })}
-                                                </p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
 
-                                {/* Bricoler Info Section moved higher for better visibility */}
-                                {(selectedOrder.bricolerId || selectedOrder.bricolerName) && (
-                                    <div className="px-6 md:px-12 mb-10">
-                                        <div className="bg-white rounded-[28px] p-5 flex items-center justify-between border-2 border-neutral-50 shadow-sm transition-all hover:border-[#00A082]/10">
-                                            <div className="flex items-center gap-4">
-                                                <div className="h-16 w-16 rounded-2xl overflow-hidden bg-neutral-100 shadow-sm border border-neutral-50">
-                                                    {selectedOrder.bricolerAvatar ? (
-                                                        <img src={selectedOrder.bricolerAvatar} alt={selectedOrder.bricolerName || ''} className="h-full w-full object-cover" />
-                                                    ) : (
-                                                        <div className="h-full w-full flex items-center justify-center text-[24px] font-black text-[#00A082] bg-[#00A082]/5">
-                                                            {(selectedOrder.bricolerName || 'B')[0]}
-                                                        </div>
-                                                    )}
+                                            <div className="px-6 md:px-12 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                                <div className="p-6 rounded-3xl bg-neutral-50/50 border border-neutral-100 flex items-center gap-5 hover:bg-neutral-50 transition-colors group">
+                                                    <div className="w-12 h-12 rounded-2xl bg-white flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform">
+                                                        <Clock className="text-[#00A082]" size={24} />
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-[11px] font-black text-neutral-300 uppercase tracking-widest mb-1">{t({ en: 'Duration', fr: 'Durée', ar: 'المدة' })}</p>
+                                                        <p className="text-[16px] font-black text-black leading-tight">{selectedOrder.duration || 'N/A'}</p>
+                                                    </div>
                                                 </div>
-                                                <div>
-                                                    <p className="text-[11px] font-black text-neutral-400 uppercase tracking-widest mb-0.5">{t({ en: 'Selected Professional', fr: 'Professionnel sélectionné', ar: 'المحترف المختار' })}</p>
-                                                    <p className="text-[20px] font-[1000] text-black leading-tight">{selectedOrder.bricolerName || 'Bricoler'}</p>
-                                                    <div className="flex items-center gap-2 mt-1.5">
-                                                        <div className="flex items-center gap-0.5">
-                                                            {[1, 2, 3, 4, 5].map((s) => {
-                                                                const r = (liveBricolerInfo?.rating ?? selectedOrder.bricolerRating ?? 0);
-                                                                return (
-                                                                    <Star
-                                                                        key={s}
-                                                                        size={14}
-                                                                        className={cn(
-                                                                            "transition-all",
-                                                                            s <= Math.round(r || 5)
-                                                                                ? "fill-[#FFC244] text-[#FFC244]"
-                                                                                : "fill-neutral-100 text-neutral-200"
-                                                                        )}
-                                                                    />
-                                                                );
-                                                            })}
-                                                        </div>
-                                                        {(() => {
-                                                            const r = (liveBricolerInfo?.rating ?? selectedOrder.bricolerRating ?? 0);
-                                                            return <span className="text-[15px] font-black text-[#D89B1A] ml-1">{r > 0 ? r.toFixed(1) : "5.0"}</span>;
-                                                        })()}
-                                                        <span className="text-[13px] text-neutral-400 font-bold ml-1">({liveBricolerInfo?.jobsCount ?? selectedOrder.bricolerJobsCount ?? 0} {t({ en: 'reviews', fr: 'avis', ar: 'تقييم' })})</span>
+
+                                                <div className="p-6 rounded-3xl bg-neutral-50/50 border border-neutral-100 flex items-center gap-5 hover:bg-neutral-50 transition-colors group">
+                                                    <div className="w-12 h-12 rounded-2xl bg-white flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform">
+                                                        <CreditCard className="text-[#00A082]" size={24} />
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-[11px] font-black text-neutral-300 uppercase tracking-widest mb-1">{t({ en: 'Price', fr: 'Prix', ar: 'الثمن' })}</p>
+                                                        <p className="text-[16px] font-black text-black leading-tight">{selectedOrder.totalPrice || selectedOrder.price} MAD</p>
+                                                    </div>
+                                                </div>
+
+                                                <div className="p-6 rounded-3xl bg-neutral-50/50 border border-neutral-100 flex items-center gap-5 hover:bg-neutral-50 transition-colors group">
+                                                    <div className="w-12 h-12 rounded-2xl bg-white flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform">
+                                                        <Wrench className="text-[#00A082]" size={24} />
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-[11px] font-black text-neutral-300 uppercase tracking-widest mb-1">{t({ en: 'Service', fr: 'Service', ar: 'الخدمة' })}</p>
+                                                        <p className="text-[16px] font-black text-black truncate max-w-[150px]">{selectedOrder.subServiceDisplayName || selectedOrder.service}</p>
+                                                    </div>
+                                                </div>
+
+                                                <div className="p-6 rounded-3xl bg-neutral-50/50 border border-neutral-100 flex items-center gap-5 hover:bg-neutral-50 transition-colors group">
+                                                    <div className="w-12 h-12 rounded-2xl bg-white flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform">
+                                                        <Banknote className="text-[#00A082]" size={24} />
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-[11px] font-black text-neutral-300 uppercase tracking-widest mb-1">{t({ en: 'Payment', fr: 'Paiement', ar: 'الدفع' })}</p>
+                                                        <p className="text-[16px] font-black text-black leading-tight capitalize">{selectedOrder.paymentMethod || 'Cash'}</p>
                                                     </div>
                                                 </div>
                                             </div>
-                                            <div className="flex items-center gap-3">
-                                                {selectedOrder.bricolerWhatsApp && ['programmed', 'in_progress', 'done', 'delivered'].includes(selectedOrder.status || '') && (
-                                                    <button
-                                                        onClick={() => selectedOrder.bricolerWhatsApp && openWhatsApp(selectedOrder.bricolerWhatsApp)}
-                                                        className="p-1 rounded-full flex items-center justify-center text-[#25D366] hover:scale-110 active:scale-90 transition-all group"
-                                                    >
-                                                        <WhatsAppBrandIcon size={48} className="md:w-[56px] md:h-[56px]" />
-                                                    </button>
+
+                                            {/* Summary Section for normal orders */}
+                                            <div className="mt-6 bg-[#FFFFFF] relative">
+                                                {/* Delivery Details Section */}
+                                                {isDelivery && (
+                                                    <div className="px-6 md:px-12 py-8 space-y-6">
+                                                        <h3 className="text-[28px] font-black text-black">Mission Details</h3>
+                                                        
+                                                        {/* Addresses */}
+                                                        <div className="flex flex-col gap-3">
+                                                            <div className="p-4 bg-neutral-50 rounded-[20px] flex items-center gap-4 border border-neutral-100/50">
+                                                                <div className="w-11 h-11 rounded-full bg-white flex items-center justify-center shadow-sm">
+                                                                    <MapPin size={22} className="text-[#00A082]" />
+                                                                </div>
+                                                                <div className="flex-1">
+                                                                    <div className="text-[11px] font-black text-neutral-400 uppercase tracking-widest font-jakarta">Pickup</div>
+                                                                    <div className="text-[14px] font-black text-black leading-tight line-clamp-1 font-jakarta">
+                                                                        {(selectedOrder as any).deliveryDetails?.pickupAddress || (selectedOrder as any).serviceDetails?.pickupAddress || 'Address not set'}
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+
+                                                            <div className="p-4 bg-neutral-50 rounded-[20px] flex items-center gap-4 border border-neutral-100/50">
+                                                                <div className="w-11 h-11 rounded-full bg-white flex items-center justify-center shadow-sm">
+                                                                    <MapPin size={22} className="text-[#EF4444]" />
+                                                                </div>
+                                                                <div className="flex-1">
+                                                                    <div className="text-[11px] font-black text-neutral-400 uppercase tracking-widest font-jakarta">Dropoff</div>
+                                                                    <div className="text-[14px] font-black text-black leading-tight line-clamp-1 font-jakarta">
+                                                                        {(selectedOrder as any).deliveryDetails?.dropoffAddress || (selectedOrder as any).serviceDetails?.dropoffAddress || 'Address not set'}
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+
+                                                        {/* Recipient & Schedule */}
+                                                        <div className="grid grid-cols-2 gap-4">
+                                                            <div className="p-4 bg-neutral-50 rounded-[20px] border border-neutral-100/50">
+                                                                <div className="text-[11px] font-black text-neutral-400 uppercase tracking-widest font-jakarta mb-1">Recipient</div>
+                                                                <div className="text-[14px] font-black text-black">
+                                                                    {(selectedOrder as any).deliveryDetails?.recipientName || (selectedOrder as any).serviceDetails?.recipientName || 'Not specified'}
+                                                                </div>
+                                                            </div>
+                                                            <div className="p-4 bg-neutral-50 rounded-[20px] border border-neutral-100/50">
+                                                                <div className="text-[11px] font-black text-neutral-400 uppercase tracking-widest font-jakarta mb-1">Schedule</div>
+                                                                <div className="text-[14px] font-black text-black">
+                                                                    {(selectedOrder as any).deliveryDetails?.deliveryType === 'standard' ? "ASAP" : `${(selectedOrder as any).deliveryDetails?.deliveryDate} ${(selectedOrder as any).deliveryDetails?.deliveryTime}`}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+
+                                                        {/* Item Description */}
+                                                        {((selectedOrder as any).note || (selectedOrder as any).serviceDetails?.itemDescription) && (
+                                                            <div className="p-5 bg-[#FFC244]/5 rounded-[24px] border-2 border-[#FFC244]/20">
+                                                                <div className="flex items-center gap-2 mb-2">
+                                                                    <span className="text-[18px]">📦</span>
+                                                                    <span className="text-[14px] font-black uppercase tracking-wider text-[#B45309]">Item Description</span>
+                                                                </div>
+                                                                <p className="text-[15px] font-bold text-black leading-relaxed">
+                                                                    {(selectedOrder as any).note || (selectedOrder as any).serviceDetails?.itemDescription}
+                                                                </p>
+                                                            </div>
+                                                        )}
+                                                    </div>
                                                 )}
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
 
-                                {/* Wide Light ZigZag */}
-                                <div className="w-full relative h-[40px] flex items-center overflow-hidden">
-                                    <div className="absolute w-full h-[2px] bg-neutral-100/50" />
-                                    <div className="w-full h-full flex justify-center opacity-[0.08]" style={{
-                                        backgroundImage: `url("data:image/svg+xml,%3Csvg width='40' height='10' viewBox='0 0 40 10' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 10L20 0L40 10' stroke='black' stroke-width='2'/%3E%3C/svg%3E")`,
-                                        backgroundRepeat: 'repeat-x',
-                                        backgroundPosition: 'center'
-                                    }} />
-                                </div>
+                                                <div className="absolute top-0 left-0 right-0 h-[10px] -translate-y-[10px]">
+                                                    <div className="w-full h-full" style={{
+                                                        backgroundImage: 'linear-gradient(135deg, transparent 45%, #F5F5F5 45%, #F5F5F5 55%, transparent 55%), linear-gradient(-135deg, transparent 45%, #F5F5F5 45%, #F5F5F5 55%, transparent 55%)',
+                                                        backgroundSize: '20px 20px',
+                                                        backgroundRepeat: 'repeat-x'
+                                                    }} />
+                                                </div>
 
-                                <div className="px-6 py-8 space-y-10">
-                                    {/* Your Order */}
-                                    <div className="space-y-4">
-                                        <div className="flex items-center  gap-2">
-                                            <div className="flex items-center gap-2 min-w-0">
-
-                                            </div>
-                                            <div className="flex-shrink-0 px-3 py-1 bg-[#FFC244]/20 text-black text-[13px] font-black rounded-md whitespace-nowrap">
-                                                {(() => {
-                                                    if (selectedOrder.date && selectedOrder.carReturnDate) {
-                                                        const d = Math.max(1, Math.round((new Date(selectedOrder.carReturnDate).getTime() - new Date(selectedOrder.date).getTime()) / 86400000));
-                                                        return `${d} ${t({ en: d > 1 ? 'days' : 'day', fr: d > 1 ? 'jours' : 'jour' })}`;
-                                                    }
-                                                    return selectedOrder.duration || 'N/A';
-                                                })()}
-                                            </div>
-                                        </div>
-                                        <div className="space-y-2">
-                                            <p className="text-[20px] font-semibold text-black">
-                                                {selectedOrder.subServiceName || selectedOrder.serviceName || selectedOrder.service}
-                                            </p>
-                                            <p className="text-[14px] font-light text-black leading-relaxed">
-                                                {t({ en: 'Our Bricoler, ', fr: 'Notre Bricoler, ', ar: 'مقدم الخدمة لدينا، ' })}<span className="text-black font-semibold">{selectedOrder.bricolerName || (selectedOrder.status === 'confirmed' || selectedOrder.status === 'programmed' ? 'Bricoler' : t({ en: 'Professional', fr: 'Professionnel', ar: 'محترف' }))}</span>{t({ en: ', will do the task for you. Feel free to chat for more details.', fr: ', fera la tâche pour vous. N\'hésitez pas à discuter pour plus de détails.', ar: '، سيقوم بالمهمة لك. يمكنك الدردشة لمزيد من التفاصيل.' })}
-                                            </p>
-                                        </div>
-                                    </div>
-
-                                    {/* Need Description */}
-                                    <div className="space-y-3">
-                                        <h3 className="text-[28px] font-black text-black">{t({ en: 'Need Description', fr: 'Description du besoin', ar: 'وصف الطلب' })}</h3>
-                                        <div className="p-5 bg-neutral-50 rounded-[16px] text-neutral-500 text-[15px] font-light leading-relaxed">
-                                            {selectedOrder.description || selectedOrder.comment || t({ en: 'No specific instructions provided for this task.', fr: 'Aucune instruction spécifique fournie pour cette tâche.', ar: 'لم يتم تقديم تعليمات محددة لهذه المهمة.' })}
-                                        </div>
-                                    </div>
-
-
-
-                                    {/* Rating Section for completed orders */}
-                                    {(selectedOrder.status === 'done' || selectedOrder.status === 'delivered') && !selectedOrder.rated && !isRatedLocally.includes(selectedOrder.id || '') && (
-                                        <section className="space-y-4 pt-4 border-t border-neutral-100">
-                                            <div className="flex items-center gap-3">
-                                                <h3 className="text-[28px] font-black text-black">{t({ en: 'Rate Mission', fr: 'Noter la mission', ar: 'تقييم المهمة' })}</h3>
-                                                <div className="px-3 py-1 bg-[#FFC244]/20 text-black text-[11px] font-black rounded-full uppercase tracking-wider">
-                                                    {t({ en: 'Satisfaction', fr: 'Satisfaction' })}
+                                                <div className="px-6 md:px-12 py-10 space-y-8">
+                                                    <h3 className="text-[28px] font-black text-black">{t({ en: 'Summary', fr: 'Résumé', ar: 'الملخص' })}</h3>
+                                                    <div className="space-y-6">
+                                                        <div className="flex justify-between items-center">
+                                                            <div className="flex items-center gap-4">
+                                                                <span className="text-[16px] font-semibold text-black">{t({ en: 'Task Fee', fr: 'Frais de tâche', ar: 'رسوم المهمة' })}</span>
+                                                            </div>
+                                                            <span className="text-[16px] font-bold text-black tracking-tight">{((selectedOrder.totalPrice || parseFloat(String(selectedOrder.price || '0'))) * 0.85).toFixed(0)} MAD</span>
+                                                        </div>
+                                                        <div className="flex justify-between items-center">
+                                                            <div className="flex items-center gap-4">
+                                                                <span className="text-[16px] font-semibold text-black">{t({ en: 'Lbricol Fee', fr: 'Frais Lbricol', ar: 'رسوم لبريكول' })}</span>
+                                                                <span className="text-[14px] font-light text-black">15%</span>
+                                                            </div>
+                                                            <span className="text-[16px] font-bold text-black tracking-tight">{((selectedOrder.totalPrice || parseFloat(String(selectedOrder.price || '0'))) * 0.15).toFixed(0)} MAD</span>
+                                                        </div>
+                                                    </div>
                                                 </div>
                                             </div>
-                                            <div className="bg-neutral-50 rounded-[32px] p-6 flex flex-col items-center gap-6">
-                                                <div className="flex gap-2">
-                                                    {[1, 2, 3, 4, 5].map((s) => (
-                                                        <motion.button
-                                                            key={s}
-                                                            whileHover={{ scale: 1.2 }}
-                                                            whileTap={{ scale: 0.9 }}
-                                                            onClick={() => setRating(s)}
-                                                            onMouseEnter={() => setHover(s)}
-                                                            onMouseLeave={() => setHover(0)}
-                                                        >
-                                                            <Star
-                                                                size={36}
-                                                                className={cn(
-                                                                    "transition-all cursor-pointer",
-                                                                    (hover || rating) >= s ? "fill-[#FFC244] text-[#FFC244]" : "fill-white text-neutral-200"
-                                                                )}
-                                                            />
-                                                        </motion.button>
-                                                    ))}
-                                                </div>
-                                                <textarea
-                                                    value={review}
-                                                    onChange={(e) => setReview(e.target.value)}
-                                                    placeholder={t({ en: 'Tell us about your experience...', fr: 'Partagez votre expérience...', ar: 'أخبرنا عن تجربتك...' })}
-                                                    className="w-full h-24 p-4 rounded-2xl bg-white border border-neutral-100 text-[14px] outline-none focus:ring-2 focus:ring-[#FFC244]/50 transition-all font-medium resize-none shadow-sm"
-                                                />
-                                                <button
-                                                    onClick={() => handleRateBricoler(selectedOrder)}
-                                                    disabled={rating === 0 || isSubmittingRating}
-                                                    className={cn(
-                                                        "w-full py-4 rounded-2xl text-white font-black text-[16px] transition-all active:scale-95 flex items-center justify-center gap-2",
-                                                        rating > 0 ? "bg-[#00A082]" : "bg-neutral-300 pointer-events-none opacity-50"
-                                                    )}
-                                                >
-                                                    {isSubmittingRating ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : t({ en: 'Submit Review', fr: 'Envoyer l\'avis', ar: 'إرسال التقييم' })}
-                                                </button>
-                                            </div>
-                                        </section>
-                                    )}
-
-                                    {/* Bank Receipt Display */}
-                                    {selectedOrder.bankReceipt && (
-                                        <div className="mt-4 space-y-3">
-                                            <p className="text-[14px] font-black text-[#00A082] flex items-center gap-2">
-                                                <Check size={16} strokeWidth={3} />
-                                                {t({ en: 'Bank receipt attached', fr: 'Reçu bancaire joint', ar: 'تم إرفاق وصل بنكي' })}
-                                            </p>
-                                            <div className="w-full max-w-[200px] aspect-[3/4] rounded-2xl overflow-hidden border border-neutral-100 bg-white">
-                                                <img
-                                                    src={selectedOrder.bankReceipt}
-                                                    alt="Bank Receipt"
-                                                    className="w-full h-full object-cover cursor-pointer hover:opacity-90 transition-opacity"
-                                                    onClick={() => window.open(selectedOrder.bankReceipt, '_blank')}
-                                                />
-                                            </div>
-                                            <p className="text-[12px] text-neutral-400 italic">
-                                                {t({ en: 'Tap image to view full size', fr: 'Appuyez sur l\'image pour l\'agrandir', ar: 'اضغط على الصورة لعرضها بالحجم الكامل' })}
-                                            </p>
-                                        </div>
-                                    )}
-                                </div>
-
-                                <div className="mt-6 bg-[#FFFFFF] relative">
-                                {/* Top ZigZag for Summary */}
-                                <div className="absolute top-0 left-0 right-0 h-[10px] -translate-y-[10px]">
-                                    <div className="w-full h-full" style={{
-                                        backgroundImage: 'linear-gradient(135deg, transparent 45%, #F5F5F5 45%, #F5F5F5 55%, transparent 55%), linear-gradient(-135deg, transparent 45%, #F5F5F5 45%, #F5F5F5 55%, transparent 55%)',
-                                        backgroundSize: '20px 20px',
-                                        backgroundRepeat: 'repeat-x'
-                                    }} />
-                                </div>
-
-                                <div className="px-6 py-10 space-y-8">
-                                    <h3 className="text-[28px] font-black text-black">{t({ en: 'Summary', fr: 'Résumé', ar: 'الملخص' })}</h3>
-                                    <div className="space-y-6">
-                                        <div className="flex justify-between items-center">
-                                            <div className="flex items-center gap-4">
-                                                <span className="text-[16px] font-semibold text-black">{t({ en: 'Task Fee', fr: 'Frais de tâche', ar: 'رسوم المهمة' })}</span>
-                                                <span className="text-[14px] font-light text-black">
-                                                    {(() => {
-                                                        const pDate = selectedOrder?.date || (selectedOrder as any)?.date;
-                                                        const rDate = selectedOrder?.carReturnDate || (selectedOrder as any)?.carReturnDate;
-                                                        if (pDate && rDate) {
-                                                            const d = Math.max(1, Math.round((new Date(rDate).getTime() - new Date(pDate).getTime()) / 86400000));
-                                                            return `${d} ${t({ en: d > 1 ? 'days' : 'day', fr: d > 1 ? 'jours' : 'jour' })}`;
-                                                        }
-                                                        return selectedOrder?.duration || 'N/A';
-                                                    })()}
-                                                </span>
-                                            </div>
-                                            <span className="text-[16px] font-bold text-black tracking-tight">{((selectedOrder.totalPrice || parseFloat(String(selectedOrder.price || '0'))) * 0.85).toFixed(0)} MAD</span>
-                                        </div>
-                                        <div className="flex justify-between items-center">
-                                            <div className="flex items-center gap-4">
-                                                <span className="text-[16px] font-semibold text-black">{t({ en: 'Lbricol Fee', fr: 'Frais Lbricol', ar: 'رسوم لبريكول' })}</span>
-                                                <span className="text-[14px] font-light text-black">15%</span>
-                                            </div>
-                                            <span className="text-[16px] font-bold text-black tracking-tight">{((selectedOrder.totalPrice || parseFloat(String(selectedOrder.price || '0'))) * 0.15).toFixed(0)} MAD</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
                                         </>
                                     );
                                 })()}
@@ -1362,9 +1291,17 @@ function ActivityTab({
     const { getProgress, getReturnProgress, getTimeRemaining } = useOrderProgress();
 
     const pendingOrders = useMemo(() => {
-        return orders.filter(o => o.status === 'pending' && !o.providerConfirmed)
+        return orders.filter(o => {
+            const isCarRental = o.service === 'car_rental';
+            if (isCarRental) {
+                const progress = getProgress(o);
+                // For car rentals, only truly 'pending' (waiting for BRICOLER) if status is pending AND progress is 100 (time arrived)
+                return o.status === 'pending' && !o.providerConfirmed && progress === 100;
+            }
+            return o.status === 'pending' && !o.providerConfirmed;
+        })
             .sort((a, b) => new Date(b.date || 0).getTime() - new Date(a.date || 0).getTime());
-    }, [orders]);
+    }, [orders, getProgress]);
 
     const redistributedOrders = useMemo(() => {
         return orders.filter(o => o.status === 'redistributed_by_provider')
@@ -1372,9 +1309,17 @@ function ActivityTab({
     }, [orders]);
 
     const activeOrders = useMemo(() => {
-        return orders.filter(o => ['confirmed', 'accepted', 'programmed'].includes(o.status || '') || (o.status === 'pending' && o.providerConfirmed))
+        return orders.filter(o => {
+            const isCarRental = o.service === 'car_rental';
+            if (isCarRental) {
+                const progress = getProgress(o);
+                // Active if status is confirmed/programmed OR if status is pending but time hasn't arrived
+                return ['confirmed', 'accepted', 'programmed'].includes(o.status || '') || (o.status === 'pending' && (o.providerConfirmed || progress < 100));
+            }
+            return ['confirmed', 'accepted', 'programmed'].includes(o.status || '') || (o.status === 'pending' && o.providerConfirmed);
+        })
             .sort((a, b) => new Date(b.date || 0).getTime() - new Date(a.date || 0).getTime());
-    }, [orders]);
+    }, [orders, getProgress]);
 
     const incompleteOrders = useMemo(() => {
         return orders.filter(o => ['new', 'negotiating'].includes(o.status || ''));
@@ -1504,6 +1449,11 @@ function ActivityTab({
                 <div className="w-28 h-28 bg-white rounded-[16px] border border-[#F0F0F0] flex items-center justify-center flex-shrink-0 p-0 overflow-hidden">
                     {order.images && order.images.length > 0 ? (
                         <img src={order.images[0]} className="w-full h-full object-cover" />
+                    ) : (order.selectedCar || order.details?.car) ? (
+                        <img 
+                            src={(order.selectedCar?.modelImage || order.selectedCar?.image) || (order.details?.car?.modelImage || order.details?.car?.image) || "/Images/Vectors Illu/carKey.png"} 
+                            className="w-full h-full object-contain p-2" 
+                        />
                     ) : (
                         <img src={getServiceVector(order.service)} className="w-full h-full object-contain p-1" />
                     )}
@@ -1512,11 +1462,11 @@ function ActivityTab({
                     <div className="flex items-center gap-2 mb-1">
                         <span className={cn(
                             "px-2 py-0.5 text-[11px] font-black rounded-md uppercase tracking-wider",
-                            (order.status === 'pending' && !order.providerConfirmed) ? "bg-orange-100 text-orange-600" : 
+                            (order.status === 'pending' && !order.providerConfirmed && progress === 100) ? "bg-orange-100 text-orange-600" : 
                             isRentalInProgress ? "bg-rose-50 text-rose-500" : "bg-[#E6F7F4] text-[#00A082]"
                         )}>
                             {(() => {
-                                const isDelayedStatus = order.status === 'pending' && !order.providerConfirmed;
+                                const isDelayedStatus = order.status === 'pending' && !order.providerConfirmed && progress === 100;
                                 if (isDelayedStatus) {
                                     return t({ en: 'Pending', fr: 'En attente', ar: 'قيد الانتظار' });
                                 }
@@ -1526,6 +1476,12 @@ function ActivityTab({
                                 if (progress === 100 && !['done', 'delivered'].includes(order.status || '')) {
                                     return t({ en: 'In Progress', fr: 'En cours', ar: 'قيد التنفيذ' });
                                 }
+                                
+                                // For car rentals that are active
+                                if (isCarRental && order.status === 'pending' && progress < 100) {
+                                    return t({ en: 'New', fr: 'Nouveau', ar: 'جديد' });
+                                }
+
                                 return t({ en: 'On time', fr: 'À l’heure', ar: 'في الوقت' });
                             })()}
                         </span>
@@ -1556,7 +1512,7 @@ function ActivityTab({
                     </div>
                     <div className="flex justify-between items-end mt-2">
                         <p className="text-[13px] font-medium text-neutral-400 truncate pr-2">
-                            {order.bricolerName || t({ en: 'Matching...', fr: 'Recherche...', ar: 'جاري البحث...' })} • {order.city || order.location}
+                            {order.bricolerName || t({ en: 'Matching...', fr: 'Recherche...', ar: 'جاري البحث...' })} • {order.city || (typeof order.location === 'object' ? (order.location as any).address : order.location)}
                         </p>
                         {timeLeft && (
                             <span className={cn(

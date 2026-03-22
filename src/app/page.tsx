@@ -276,8 +276,8 @@ const Home = () => {
   const [serviceSearchQuery, setServiceSearchQuery] = useState('');
   const [showAllServices, setShowAllServices] = useState(false);
 
-  const [availableServices, setAvailableServices] = useState<string[]>([]);
-  const [availableSubServices, setAvailableSubServices] = useState<string[]>([]);
+  const [availableServices, setAvailableServices] = useState<string[] | null>(null);
+  const [availableSubServices, setAvailableSubServices] = useState<string[] | null>(null);
   const [isBricoler, setIsBricoler] = useState(false);
   const [isAdminMode, setIsAdminMode] = useState(false);
   const [isProgramming, setIsProgramming] = useState(false);
@@ -329,6 +329,14 @@ const Home = () => {
       if (foundArea && foundArea !== selectedArea) {
         setSelectedArea(foundArea);
         localStorage.setItem('lbricol_preferred_area', foundArea);
+      }
+    } else {
+      // If no supported city is found in the current address, 
+      // we reset the selected city to trigger service hiding
+      if (selectedCity !== null) {
+        setSelectedCity(null);
+        // Optionally keep the last known area or clear it too
+        // setSelectedArea(null); 
       }
     }
   };
@@ -467,8 +475,6 @@ const Home = () => {
   const [authIntent, setAuthIntent] = useState<'bricoler' | 'program_order' | 'login_only' | null>(null);
   const [showClientWhatsAppPopup, setShowClientWhatsAppPopup] = useState(false);
 
-  const [cityServices, setCityServices] = useState<string[]>([]);
-  const [citySubServices, setCitySubServices] = useState<string[]>([]);
   const [popularServiceIds, setPopularServiceIds] = useState<string[]>([]);
   const searchAreaRef = useRef<HTMLDivElement>(null);
   const priceInputRef = useRef<HTMLInputElement>(null);
@@ -634,7 +640,13 @@ const Home = () => {
 
   // Supply-side Service Filtering
   useEffect(() => {
-    if (!selectedCity) return;
+    if (!selectedCity) {
+      setAvailableServices([]);
+      setAvailableSubServices([]);
+      setTrendingSubServices([]);
+      setPopularServiceIds([]);
+      return;
+    }
 
     const fetchActiveServices = async () => {
       try {
@@ -683,12 +695,10 @@ const Home = () => {
           .slice(0, 6) // Top 6 hottest sub-tasks
           .map(e => e[0]);
 
-        // Merge with city-wide cache from city_services collection
-        const finalServices = new Set([...Array.from(activeIds), ...cityServices]);
-        const finalSubServices = new Set([...Array.from(activeSubIds), ...citySubServices]);
-
-        setAvailableServices(Array.from(finalServices) as string[]);
-        setAvailableSubServices(Array.from(finalSubServices) as string[]);
+        // Use only supply-side results (activeIds and activeSubIds) 
+        // to strictly follow the requirement of showing what Bricolers offer locally.
+        setAvailableServices(Array.from(activeIds));
+        setAvailableSubServices(Array.from(activeSubIds));
         setTrendingSubServices(trendingIds);
       } catch (err) {
         console.error("Error fetching active services:", err);
@@ -698,7 +708,7 @@ const Home = () => {
     };
 
     fetchActiveServices();
-  }, [selectedCity, selectedArea, cityServices, citySubServices]);
+  }, [selectedCity, selectedArea]);
 
   // Monthly popularity stats per city & service category
   useEffect(() => {
@@ -1362,45 +1372,6 @@ const Home = () => {
 
   const [calendarMode, setCalendarMode] = useState<'multi' | 'range'>('multi');
   const [rangeSelection, setRangeSelection] = useState<{ start: Date | null, end: Date | null }>({ start: null, end: null });
-
-  // Supply-driven: Fetch active services for city
-  useEffect(() => {
-    if (selectedCity) {
-      const fetchCityServices = async () => {
-        setLoadingServices(true);
-        try {
-          const cityRef = doc(db, 'city_services', selectedCity);
-          const citySnap = await getDoc(cityRef);
-
-          if (citySnap.exists()) {
-            const data = citySnap.data();
-            setCityServices(data.active_services || []);
-            setCitySubServices(data.active_sub_services || []);
-          } else {
-            // FALLBACK: Try without the area suffix if suffixed Doc not found
-            const cleanName = selectedCity.split(' (')[0];
-            if (cleanName !== selectedCity) {
-              const fallbackRef = doc(db, 'city_services', cleanName);
-              const fallbackSnap = await getDoc(fallbackRef);
-              if (fallbackSnap.exists()) {
-                const data = fallbackSnap.data();
-                setCityServices(data.active_services || []);
-                setCitySubServices(data.active_sub_services || []);
-                return;
-              }
-            }
-            setCityServices([]);
-            setCitySubServices([]);
-          }
-        } catch (err) {
-          console.error("Error fetching city services:", err);
-        } finally {
-          setLoadingServices(false);
-        }
-      };
-      fetchCityServices();
-    }
-  }, [selectedCity]);
 
   // Extra Details State
   const [showExtraDetails, setShowExtraDetails] = useState(false);
@@ -2372,10 +2343,10 @@ const Home = () => {
 
   // --- PAUSE DEPLOYMENT ---
   // isMaintenanceMode is true in production, but false in local development to allow oversight.
-  const isMaintenanceMode = process.env.NODE_ENV === 'production';
-  if (isMaintenanceMode) {
-    return <ComingSoon />;
-  }
+  // const isMaintenanceMode = process.env.NODE_ENV === 'production';
+  // if (isMaintenanceMode) {
+  //   return <ComingSoon />;
+  // }
 
   return (
     <div style={{ backgroundColor: c.bg, color: c.text, minHeight: '100vh', scrollBehavior: 'smooth' }} className="font-sans">
@@ -2742,8 +2713,8 @@ const Home = () => {
                   
                   router.push('/order/step1');
                 }}
-                availableServiceIds={availableServices.length > 0 ? availableServices : cityServices}
-                availableSubServiceIds={availableSubServices.length > 0 ? availableSubServices : citySubServices}
+                availableServiceIds={availableServices}
+                availableSubServiceIds={availableSubServices}
                 trendingSubServiceIds={trendingSubServices}
                 popularServiceIds={popularServiceIds}
 

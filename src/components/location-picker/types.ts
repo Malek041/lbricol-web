@@ -2,6 +2,8 @@ export interface LocationPoint {
   lat: number;
   lng: number;
   address: string;
+  city?: string;
+  area?: string;
 }
 
 export type AddressLabel = 'Home' | 'Flat' | 'Garden' | 'Custom';

@@ -114,6 +114,7 @@ const CompactHomeMap: React.FC<CompactHomeMapProps> = ({
                 initialLocation={initialLocation || undefined}
                 flyToPoint={manualFlyTo || initialLocation || undefined}
                 pinY={activePinY}
+                zoom={17}
                 language={language}
                 onInteractionStart={() => setIsInteracting(true)}
                 onInteractionEnd={() => setIsInteracting(false)}

@@ -1,18 +1,30 @@
 import type { Metadata } from "next";
-import { Noto_Sans_Arabic, Outfit } from "next/font/google";
+import { Noto_Sans_Arabic, Fredoka, Plus_Jakarta_Sans } from "next/font/google";
 import "@fontsource/inclusive-sans";
 import "./globals.css";
 
-const outfit = Outfit({
+const fredoka = Fredoka({
   subsets: ["latin"],
-  variable: "--font-outfit",
-  weight: ["400", "500", "600", "700", "800", "900"],
+  variable: "--font-fredoka",
+  weight: ["300", "400", "500", "600", "700"],
+});
+
+const fredokaBold = Fredoka({
+  subsets: ["latin"],
+  variable: "--font-fredoka-bold",
+  weight: "700",
 });
 
 const notoSansArabic = Noto_Sans_Arabic({
   subsets: ["arabic"],
   variable: "--font-arabic",
   weight: ["400", "500", "600", "700", "800", "900"],
+});
+
+const plusJakartaSans = Plus_Jakarta_Sans({
+  subsets: ["latin"],
+  variable: "--font-plus-jakarta",
+  weight: ["300", "400", "500", "600", "700", "800"],
 });
 
 export const metadata: Metadata = {
@@ -34,7 +46,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body suppressHydrationWarning={true} className={`${outfit.variable} ${notoSansArabic.variable} font-sans antialiased bg-white text-gray-900`}>
+      <body suppressHydrationWarning={true} className={`${fredoka.variable} ${fredokaBold.variable} ${plusJakartaSans.variable} ${notoSansArabic.variable} font-sans antialiased bg-white text-gray-900`}>
         <Providers>
           {children}
         </Providers>

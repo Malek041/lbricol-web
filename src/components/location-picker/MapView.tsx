@@ -3,6 +3,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import { motion, AnimatePresence } from 'framer-motion';
 import { LocationPoint } from './types';
 
 interface MapViewProps {
@@ -28,12 +29,32 @@ interface MapViewProps {
     avatarUrl?: string | null;
     isSelected: boolean;
   }>;
+  broadcastPins?: Array<{
+    id: string;
+    lat: number;
+    lng: number;
+    price: number | string;
+    rating: number;
+    serviceIcon: string;
+    isSelected: boolean;
+  }>;
   focusedProviderId?: string | null;
+  focusedOrderId?: string | null;
   serviceIconUrl?: string; // e.g. from service category
   centerAddress?: string;
   showCenterPin?: boolean;
   onProviderClick?: (id: string) => void;
+  onOrderClick?: (id: string) => void;
   onLocationError?: (error: any) => void;
+  onLoadingChange?: (isLoading: boolean) => void; // New callback for fetching state
+  lockCenterOnFocus?: boolean;  // When true, do NOT auto-fly to focused provider pin
+  disableFitBounds?: boolean;   // When true, do NOT auto-fit map to all provider pins
+  clientPin?: { lat: number; lng: number }; // When set, place a fixed Leaflet marker (Step 2)
+  currentUserPin?: {
+    lat?: number;
+    lng?: number;
+    avatarUrl?: string | null;
+  };
 }
 
 const MapView: React.FC<MapViewProps> = ({
@@ -55,7 +76,15 @@ const MapView: React.FC<MapViewProps> = ({
   centerAddress,
   showCenterPin = false,
   onProviderClick,
+  broadcastPins,
+  focusedOrderId,
+  onOrderClick,
   onLocationError,
+  onLoadingChange,
+  lockCenterOnFocus = false,
+  disableFitBounds = false,
+  clientPin,
+  currentUserPin,
 }) => {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
@@ -66,9 +95,12 @@ const MapView: React.FC<MapViewProps> = ({
   const routeLayerRef = useRef<L.Polyline | null>(null);
   const routeLabelRef = useRef<L.Marker | null>(null);
   const providerMarkersRef = useRef<{ [id: string]: L.Marker }>({});
+  const clientPinMarkerRef = useRef<L.Marker | null>(null); // Fixed Leaflet marker for Step 2
   const [address, setAddress] = useState<string>('Loading address...');
   const [mapReady, setMapReady] = useState(false);
   const [internalUserPos, setInternalUserPos] = useState<{ lat: number, lng: number } | null>(null);
+
+  const targetZoom = requestedZoom || 15;
   const mapReadyTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const flyToTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -103,7 +135,11 @@ const MapView: React.FC<MapViewProps> = ({
   };
 
   const reverseGeocode = async (lat: number, lng: number) => {
+    onLoadingChange?.(true);
     let finalAddress = "";
+    let city = "";
+    let area = "";
+
     try {
       const res = await fetch(
         `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=fr,ar,en`,
@@ -111,22 +147,33 @@ const MapView: React.FC<MapViewProps> = ({
       );
       const data = await res.json();
       if (!data || data.error) {
-        finalAddress = `${lat.toFixed(3)}, ${lng.toFixed(3)}, Morocco`;
+        finalAddress = "Custom Location, Morocco";
       } else {
         const a = data.address;
         const street = a.road || a.pedestrian || a.street || '';
         const number = a.house_number || '';
         const neighborhood = a.neighbourhood || a.suburb || '';
-        const city = a.city || a.town || a.village || '';
-        if (street) finalAddress = number ? `${street}, ${number}, ${city}` : `${street}, ${city}`;
-        else if (neighborhood) finalAddress = `${neighborhood}, ${city}, Morocco`;
-        else finalAddress = `${city}, Morocco`;
+        const cityName = a.city || a.town || a.village || '';
+        
+        city = cityName;
+        area = neighborhood;
+
+        if (street) finalAddress = number ? `${street}, ${number}, ${cityName}` : `${street}, ${cityName}`;
+        else if (neighborhood) finalAddress = `${neighborhood}, ${cityName}, Morocco`;
+        else finalAddress = `${cityName}, Morocco`;
       }
     } catch {
-      finalAddress = `${lat.toFixed(3)}, ${lng.toFixed(3)}, Morocco`;
+      finalAddress = "Custom Location, Morocco";
     }
     setAddress(finalAddress);
-    onLocationChange({ lat, lng, address: finalAddress });
+    onLocationChange({ 
+      lat, 
+      lng, 
+      address: finalAddress,
+      city: city || undefined,
+      area: area || undefined
+    });
+    onLoadingChange?.(false);
     try {
       localStorage.setItem('lastKnownLat', lat.toString());
       localStorage.setItem('lastKnownLng', lng.toString());
@@ -152,7 +199,7 @@ const MapView: React.FC<MapViewProps> = ({
       } catch (e) { }
     }
 
-    const zoom = requestedZoom || 16;
+    const zoom = targetZoom;
 
     const map = L.map(mapContainerRef.current, {
       zoomControl: false,
@@ -247,63 +294,38 @@ const MapView: React.FC<MapViewProps> = ({
 
   // ── Render userPosition as green radar dot ───────────────────────────
   useEffect(() => {
-    const activePos = userPosition || internalUserPos;
+    const activePos = currentUserPin?.lat ? { lat: currentUserPin.lat, lng: currentUserPin.lng! } : (userPosition || internalUserPos);
     if (!activePos) return;
 
     const render = () => {
       const map = mapRef.current;
       if (!map) return;
 
-      if (gpsDotRef.current) { map.removeLayer(gpsDotRef.current); gpsDotRef.current = null; }
-      if (gpsPulseRef.current) { map.removeLayer(gpsPulseRef.current); gpsPulseRef.current = null; }
       if (gpsMarkerRef.current) { map.removeLayer(gpsMarkerRef.current); gpsMarkerRef.current = null; }
 
       const { lat, lng } = activePos;
+      const avatar = currentUserPin?.avatarUrl;
 
       const radarIcon = L.divIcon({
         className: 'gps-pulse-icon',
         html: `
-          <div style="
-            position: relative;
-            width: 20px;
-            height: 20px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-          ">
-            <div style="
-              position: absolute;
-              width: 20px; height: 20px;
-              background: #10B981;
-              border-radius: 50%;
-              opacity: 0.4;
-              animation: radarPulse 2s cubic-bezier(0,0,0.2,1) infinite;
-            "></div>
-            <div style="
-              position: absolute;
-              width: 20px; height: 20px;
-              background: #10B981;
-              border-radius: 50%;
-              opacity: 0.2;
-              animation: radarPulse 2s cubic-bezier(0,0,0.2,1) infinite;
-              animation-delay: 1s;
-            "></div>
-            <div style="
-              position: absolute;
-              width: 12px; height: 12px;
-              background: #10B981;
-              border-radius: 50%;
-              border: 2px solid white;
-              box-shadow: 0 1px 4px rgba(0,0,0,0.2);
-              z-index: 10;
-            "></div>
+          <div style="position: relative; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;">
+            <div style="position: absolute; width: 40px; height: 40px; background: #10B981; border-radius: 50%; opacity: 0.3; animation: radarPulse 2s cubic-bezier(0,0,0.2,1) infinite;"></div>
+            ${avatar ? `
+              <div style="position: relative; width: 34px; height: 34px; background: white; border: 2px solid white; border-radius: 50%; box-shadow: 0 4px 10px rgba(0,0,0,0.25); z-index: 10; overflow: hidden; display: flex; items-center; justify-center;">
+                <img src="${avatar}" style="width: 100%; height: 100%; object-fit: cover;" />
+              </div>
+            ` : `
+              <div style="position: absolute; width: 20px; height: 20px; background: #10B981; border-radius: 50%; opacity: 0.2; animation: radarPulse 2s cubic-bezier(0,0,0.2,1) infinite; animation-delay: 1s;"></div>
+              <div style="position: absolute; width: 12px; height: 12px; background: #10B981; border-radius: 50%; border: 2px solid white; box-shadow: 0 1px 4px rgba(0,0,0,0.2); z-index: 10;"></div>
+            `}
           </div>
         `,
-        iconSize: [20, 20],
-        iconAnchor: [10, 10],
+        iconSize: [40, 40],
+        iconAnchor: [20, 20],
       });
 
-      gpsMarkerRef.current = L.marker([lat, lng], { icon: radarIcon }).addTo(map);
+      gpsMarkerRef.current = L.marker([lat, lng], { icon: radarIcon, zIndexOffset: 4500 }).addTo(map);
     };
 
     if (mapRef.current) {
@@ -312,14 +334,14 @@ const MapView: React.FC<MapViewProps> = ({
       const timer = setTimeout(render, 500);
       return () => clearTimeout(timer);
     }
-  }, [userPosition, internalUserPos]);
+  }, [userPosition, internalUserPos, currentUserPin, mapReady]);
 
   useEffect(() => {
     if (triggerGps && navigator.geolocation && mapRef.current && mapReady) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
           const { latitude, longitude } = position.coords;
-          flyToWithOffset(latitude, longitude, 17, true);
+          flyToWithOffset(latitude, longitude, targetZoom, pinY === 50);
           
           if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
           debounceTimerRef.current = setTimeout(() => {
@@ -361,50 +383,17 @@ const MapView: React.FC<MapViewProps> = ({
 
   useEffect(() => {
     if (flyToPoint && mapRef.current && mapReady) {
-      flyToWithOffset(flyToPoint.lat, flyToPoint.lng, 17, flyToPoint.skipOffset ?? false);
+      flyToWithOffset(flyToPoint.lat, flyToPoint.lng, targetZoom, flyToPoint.skipOffset ?? false);
     }
   }, [flyToPoint, mapReady]);
 
-  // ── Render Center Confirmed Pin with Address Bubble ──────────────────
+  // ── Render Center Confirmed Pin with Address Bubble (DEPRECATED: Using CSS Overlay) ──
+  /*
   useEffect(() => {
     if (!showCenterPin) return;
-    if (!mapRef.current || !mapReady || !initialLocation) return;
-    const map = mapRef.current;
-
-    if (centerMarkerRef.current) map.removeLayer(centerMarkerRef.current);
-
-    const centerIcon = L.divIcon({
-      className: '',
-      html: `
-        <div style="position:relative;display:flex;flex-direction:column;align-items:center;height:100%;justify-content:flex-end;">
-          ${centerAddress ? `
-            <div style="background:#fff;border-radius:14px;padding:10px 14px;margin-bottom:8px;
-              box-shadow:0 4px 15px rgba(0,0,0,0.15);display:flex;align-items:center;gap:8px;
-              white-space:nowrap;max-width:240px;position:relative;z-index:2000;">
-              <span style="font-size:16px">🚲</span>
-              <div style="min-width:0;overflow:hidden;">
-                <div style="font-size:13px;font-weight:700;color:#111827;overflow:hidden;text-overflow:ellipsis;">${centerAddress}</div>
-                <div style="font-size:11px;font-weight:700;color:#01A083;margin-top:1px;">Confirm localisation</div>
-              </div>
-              <div style="position:absolute;bottom:-6px;left:50%;transform:translateX(-50%);
-                width:0;height:0;border-left:8px solid transparent;border-right:8px solid transparent;border-top:8px solid #fff;"></div>
-            </div>
-          ` : ''}
-          <div style="position:relative;width:38px;height:50px;">
-            <img src="/Images/map Assets/LocationPin.png" style="width:100%;height:100%" />
-          </div>
-        </div>
-      `,
-      iconSize: [260, 140],
-      iconAnchor: [130, 140], 
-    });
-
-    centerMarkerRef.current = L.marker([initialLocation.lat, initialLocation.lng], { icon: centerIcon, zIndexOffset: 2500 }).addTo(map);
-
-    return () => {
-      if (centerMarkerRef.current) map.removeLayer(centerMarkerRef.current);
-    };
+    ...
   }, [initialLocation, mapReady, centerAddress, showCenterPin, userPosition, internalUserPos]);
+  */
 
   // ── Render provider pins in Step 2 ──────────────────────────────────
   useEffect(() => {
@@ -439,9 +428,9 @@ const MapView: React.FC<MapViewProps> = ({
             </div>
             <div style="position:relative;width:${size}px;height:${size}px;transition: width 0.3s, height 0.3s; margin-bottom: 0px;">
               ${serviceIconUrl
-            ? `<img src="${serviceIconUrl}" style="width:100%;height:100%;object-fit:contain"/>`
-            : `<div style="width:100%;height:100%;background:#F3F4F6;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:24px">👤</div>`
-          }
+                ? `<img src="${serviceIconUrl}" style="width:100%;height:100%;object-fit:contain"/>`
+                : `<div style="width:100%;height:100%;background:#F3F4F6;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:24px">👤</div>`
+              }
             </div>
           </div>
         `,
@@ -461,6 +450,106 @@ const MapView: React.FC<MapViewProps> = ({
 
     // Removed fitBounds from here to prevent zoom resets on focus changes
   }, [providerPins, mapReady, focusedProviderId, serviceIconUrl, onProviderClick]);
+
+  // ── Fixed client pin marker for Step 2 (moves with map, always over GPS dot) ──
+  useEffect(() => {
+    if (!clientPin || !mapRef.current || !mapReady) return;
+    const map = mapRef.current;
+
+    // Remove any previous marker
+    if (clientPinMarkerRef.current) {
+      map.removeLayer(clientPinMarkerRef.current);
+      clientPinMarkerRef.current = null;
+    }
+
+    const html = `
+      <div style="display:flex; flex-direction:column; align-items:center; justify-content:flex-end; height:140px; pointer-events:none;">
+        ${centerAddress ? `
+          <div style="background:white; border:1px solid #f3f4f6; border-radius:18px; padding:10px 16px; margin-bottom:8px; box-shadow:0 10px 25px rgba(0,0,0,0.1); display:flex; items-center; gap:12px; white-space:nowrap; position:relative;">
+            <div style="width:32px; height:32px; border-radius:50%; background:#ecfdf5; display:flex; align-items:center; justify-content:center; font-size:18px;">🚲</div>
+            <div style="display:flex; flex-direction:column; justify-content:center;">
+              <div style="font-size:13px; font-weight:900; color:#111827; line-height:1; margin-bottom:4px; max-width:180px; overflow:hidden; text-overflow:ellipsis;">${centerAddress}</div>
+              <div style="font-size:11px; font-weight:700; color:#059669; text-transform:uppercase; letter-spacing:0.05em;">Secteur de recherche</div>
+            </div>
+            <div style="position:absolute; bottom:-6px; left:50%; margin-left:-6px; width:12px; height:12px; background:white; border-right:1px solid #f3f4f6; border-bottom:1px solid #f3f4f6; transform:rotate(45deg);"></div>
+          </div>
+        ` : ''}
+        <img src="/Images/map Assets/LocationPin.png" style="width:38px; height:50px; object-fit:contain; display:block;" alt="Your location" />
+      </div>
+    `;
+
+    const icon = L.divIcon({
+      className: '',
+      html,
+      iconSize: [240, 140],
+      iconAnchor: [120, 140], // bottom center of the container (tip of the pin)
+    });
+
+    clientPinMarkerRef.current = L.marker([clientPin.lat, clientPin.lng], {
+      icon,
+      zIndexOffset: 5000,
+      interactive: false,
+    }).addTo(map);
+  }, [clientPin?.lat, clientPin?.lng, mapReady, centerAddress]);
+
+  // ── Render broadcast pins (Orders) ──────────────────────────────────
+  useEffect(() => {
+    if (!mapRef.current || !mapReady) return;
+    const map = mapRef.current;
+
+    // Use a separate collection for broadcast markers if needed, or clear appropriately
+    // For simplicity, we can use providerMarkersRef or a new one
+    // Let's use a new one: broadcastMarkersRef
+    
+    if (!broadcastPins || broadcastPins.length === 0) return;
+
+    broadcastPins.forEach(pin => {
+      const isFocused = pin.id === focusedOrderId;
+      const opacity = focusedOrderId && !isFocused ? 0.6 : 1;
+      const scale = focusedOrderId && !isFocused ? 0.8 : (isFocused ? 1.15 : 1);
+      const size = isFocused ? 72 : 56;
+
+      const bounceStyle = isFocused ? "animation: pinBounce 2s ease-in-out infinite;" : "";
+
+      const icon = L.divIcon({
+        className: '',
+        html: `
+          <div style="display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:160px;cursor:pointer;opacity:${opacity};transform:scale(${scale});transition:all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);${bounceStyle}">
+            <div style="background:#fff;border-radius:12px;padding:6px 12px;margin-bottom:6px;
+              box-shadow:0 4px 15px rgba(0,0,0,0.18);font-family:sans-serif;text-align:center;white-space:nowrap;
+              display: flex; flex-direction: column; align-items: center; border: 1px solid #f3f4f6;">
+              <div style="font-size:14px;font-weight:900;color:#01A083">${pin.price} MAD</div>
+              <div style="font-size:13px;color:#FBBF24;font-weight:900;display:flex;align-items:center;gap:3px;">
+                ★ <span style="color:#111827">${pin.rating.toFixed(1)}</span>
+              </div>
+            </div>
+            <div style="position:relative;width:${size}px;height:${size}px;transition: width 0.3s, height 0.3s; margin-bottom: 0px; background: #fff; border-radius: 50%; box-shadow: 0 2px 10px rgba(0,0,0,0.1); padding: 8px;">
+              <img src="${pin.serviceIcon}" style="width:100%;height:100%;object-fit:contain"/>
+            </div>
+          </div>
+        `,
+        iconSize: [120, 160],
+        iconAnchor: [60, 160],
+      });
+
+      L.marker([pin.lat, pin.lng], { icon, zIndexOffset: isFocused ? 2000 : 0 })
+        .addTo(map)
+        .on('click', (e) => {
+          L.DomEvent.stopPropagation(e);
+          onOrderClick?.(pin.id);
+        });
+    });
+  }, [broadcastPins, mapReady, focusedOrderId, onOrderClick]);
+
+  // ── Auto-zoom to focused provider (disabled when lockCenterOnFocus=true) ────
+  useEffect(() => {
+    if (lockCenterOnFocus) return; // Step 2: keep map centred on client address
+    if (!mapRef.current || !mapReady || !focusedProviderId || !providerPins) return;
+    const focusPin = providerPins.find(p => p.id === focusedProviderId);
+    if (focusPin) {
+      flyToWithOffset(focusPin.lat, focusPin.lng, targetZoom, false);
+    }
+  }, [focusedProviderId, mapReady, lockCenterOnFocus]);
 
   // ── Render route between client and focused provider ──────────────────
   useEffect(() => {
@@ -508,6 +597,7 @@ const MapView: React.FC<MapViewProps> = ({
               <div style="
                 background: white; 
                 padding: 6px 12px; 
+                margin-bottom: 2px;
                 border-radius: 50px; 
                 box-shadow: 0 4px 15px rgba(0,0,0,0.2); 
                 display: flex; 
@@ -523,8 +613,9 @@ const MapView: React.FC<MapViewProps> = ({
               </div>
             `,
             iconSize: [100, 40],
-            iconAnchor: [50, 20],
+            iconAnchor: [50, 60],
           });
+
 
           routeLabelRef.current = L.marker(midPoint, { icon: labelIcon, zIndexOffset: 3000 }).addTo(map);
 
@@ -549,6 +640,7 @@ const MapView: React.FC<MapViewProps> = ({
 
   // ── Auto-fit bounds ONLY when the LIST of providers changes ────────────────
   useEffect(() => {
+    if (disableFitBounds) return; // Step 2: keep map locked on client address
     if (!mapRef.current || !mapReady || !providerPins || providerPins.length === 0) return;
     const map = mapRef.current;
 
@@ -558,11 +650,48 @@ const MapView: React.FC<MapViewProps> = ({
     ];
     const bounds = L.latLngBounds(allPoints);
     map.fitBounds(bounds, { padding: [100, 100], animate: true });
-  }, [providerPins?.length, mapReady]); // Dependency on length/exists, not focus
+  }, [providerPins?.length, mapReady, disableFitBounds]); // Dependency on length/exists, not focus
 
   return (
     <div className="relative w-full h-full overflow-hidden">
       <div ref={mapContainerRef} className="w-full h-full z-0" />
+      
+      {/* CSS-based Branded Center Pin */}
+      {showCenterPin && (
+        <div 
+          className="absolute left-1/2 z-[1000] pointer-events-none transform -translate-x-1/2 flex flex-col items-center justify-end"
+          style={{ 
+            top: `${pinY}%`,
+            height: '140px',
+            marginTop: '-140px' // Offset to align bottom of pin with the center point
+          }}
+        >
+          {centerAddress && (
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.8, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              className="bg-white border border-neutral-100 rounded-[18px] px-4 py-2.5 mb-2 shadow-xl flex items-center gap-3 whitespace-nowrap"
+            >
+              <div className="w-8 h-8 rounded-full bg-emerald-50 flex items-center justify-center text-[18px]">
+                🚲
+              </div>
+              <div className="flex flex-col">
+                <span className="text-[13px] font-black text-neutral-900 leading-none truncate max-w-[180px]">
+                  {centerAddress}
+                </span>
+                <span className="text-[11px] font-bold text-emerald-600 mt-1 uppercase tracking-wider">
+                  Secteur de recherche
+                </span>
+              </div>
+              <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-white border-r border-b border-neutral-100 rotate-45" />
+            </motion.div>
+          )}
+          <div className="relative w-[38px] h-[50px]">
+             <img src="/Images/map Assets/LocationPin.png" className="w-full h-full object-contain" alt="Branded Pin" />
+          </div>
+        </div>
+      )}
+
       <style jsx global>{`
         @keyframes radarPulse {
           0% { transform: scale(1); opacity: 0.6; }

@@ -48,7 +48,7 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ subStatus }) => {
                         fontSize: 'clamp(38px, 10vw, 76px)',
                         fontWeight: 650,
                         color: '#017C3E',
-                        fontFamily: 'sans-serif, var(--font-jakarta)',
+                        fontFamily: 'var(--font-fredoka-one), sans-serif',
                         marginTop: '-40px', // Pull it up to overlap slightly with the animation base
                         letterSpacing: '-0.04em'
                     }}

@@ -3,46 +3,29 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { OrderDetails } from '@/features/orders/components/OrderCard';
+import OrderCard from '@/features/orders/components/OrderCard';
 import {
     ChevronLeft,
-    MessageCircle,
-    X,
-    Sun,
-    CloudSun,
-    Moon,
-    Calendar as CalendarIcon,
-    Check,
-    Star,
-    Clock,
-    MapPin,
-    Briefcase,
-    Plus,
-    RefreshCw,
-    CheckCircle2
+    Navigation,
 } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
-import { db, auth } from '@/lib/firebase';
-import { doc, updateDoc, getDoc } from 'firebase/firestore';
 import { cn } from '@/lib/utils';
+import LiveOrdersMap from './LiveOrdersMap';
 import { getServiceById, getSubServiceName, getServiceVector } from '@/config/services_config';
-import { format, isToday, isThisWeek, parseISO, startOfDay, addDays } from 'date-fns';
-import ProviderRoutineModal from './ProviderRoutineModal';
+import { Job } from '@/app/provider/page';
+import ProviderJobCard from './ProviderJobCard';
 
 interface ProviderOrdersViewProps {
-    orders: OrderDetails[];
+    confirmedOrders: OrderDetails[];
+    availableJobs: Job[];
     onViewMessages: (jobId: string) => void;
     onSelectOrder: (order: OrderDetails) => void;
     userData: any;
     setUserData: React.Dispatch<React.SetStateAction<any>>;
-    horizontalSelectedDate: Date;
-    setHorizontalSelectedDate: (d: Date) => void;
-    handleSaveSlotsManual: (dateKey: string, slots: any[]) => void;
-    AVAILABILITY_SLOTS: any;
-    TIME_SLOTS: string[];
-    activeTab: 'activity' | 'availability';
-    setActiveTab: (tab: 'activity' | 'availability') => void;
     onConfirmJob?: (jobId: string) => void;
     onRedistributeJob?: (order: OrderDetails) => void;
+    notificationsCount?: number;
+    onShowNotifications?: () => void;
 }
 
 const formatServiceName = (name: string) => {
@@ -54,40 +37,28 @@ const formatServiceName = (name: string) => {
         .join(' ');
 };
 
-const getCategoryIcon = (category: string) => {
-    switch (category) {
-        case 'Morning': return <Sun size={14} className="text-amber-500" />;
-        case 'Afternoon': return <CloudSun size={14} className="text-orange-400" />;
-        case 'Evening': return <Moon size={14} className="text-indigo-400" />;
-        default: return null;
-    }
-};
-
 export default function ProviderOrdersView({
-    orders,
+    confirmedOrders,
+    availableJobs,
     onViewMessages,
     onSelectOrder,
     userData,
     setUserData,
-    horizontalSelectedDate,
-    setHorizontalSelectedDate,
-    handleSaveSlotsManual,
-    AVAILABILITY_SLOTS,
-    TIME_SLOTS,
-    activeTab,
-    setActiveTab,
     onConfirmJob,
-    onRedistributeJob
+    onRedistributeJob,
+    notificationsCount,
+    onShowNotifications
 }: ProviderOrdersViewProps) {
     const { t, language } = useLanguage();
     const [showHistory, setShowHistory] = useState(false);
-    const [showRoutineModal, setShowRoutineModal] = useState(false);
+    const [isMapDragging, setIsMapDragging] = useState(false);
+    const [triggerGps, setTriggerGps] = useState(0);
 
     // Filter orders for history (done and cancelled)
     const historyOrders = useMemo(() => {
-        return orders.filter(o => ['done', 'cancelled', 'delivered'].includes(o.status || ''))
+        return confirmedOrders.filter(o => ['done', 'cancelled', 'delivered'].includes(o.status || ''))
             .sort((a, b) => new Date(b.date || 0).getTime() - new Date(a.date || 0).getTime());
-    }, [orders]);
+    }, [confirmedOrders]);
 
     const getHeroImage = (service: string) => {
         const serviceMap: Record<string, string> = {
@@ -159,33 +130,82 @@ export default function ProviderOrdersView({
     );
 
     return (
-        <div className="flex flex-col h-full bg-[#FFFFFF] relative">
-            <div className="flex-1 min-h-0 overflow-y-auto relative w-full">
-                {activeTab === 'activity' ? (
-                    <ActivityTab
-                        orders={orders}
-                        onSelect={onSelectOrder}
-                        onShowHistory={() => setShowHistory(true)}
-                        onConfirmJob={onConfirmJob}
-                        onRedistributeJob={onRedistributeJob}
-                        setActiveTab={setActiveTab}
-                        userData={userData}
-                        setShowRoutineModal={setShowRoutineModal}
-                    />
-                ) : (
-                    <AvailabilityTab
-                        userData={userData}
-                        setUserData={setUserData}
-                        horizontalSelectedDate={horizontalSelectedDate}
-                        setHorizontalSelectedDate={setHorizontalSelectedDate}
-                        handleSaveSlotsManual={handleSaveSlotsManual}
-                        AVAILABILITY_SLOTS={AVAILABILITY_SLOTS}
-                        TIME_SLOTS={TIME_SLOTS}
-                        orders={orders}
-                        showRoutineModal={showRoutineModal}
-                        setShowRoutineModal={setShowRoutineModal}
-                    />
-                )}
+        <div className="flex flex-col h-full bg-[#FFFFFF] relative overflow-hidden">
+            {/* TOP HEADER (Activity View Title) */}
+            <div className="px-6 pt-8 pb-3 bg-white border-b border-[#E6E6E6] sticky top-0 z-[110]">
+                <div className="flex items-center gap-6">
+                    <div className="pb-3 text-[16px] transition-all relative font-black text-[#1D1D1D]">
+                        {t({ en: 'Activity', fr: 'Activité', ar: 'النشاط' })}
+                        <motion.div layoutId="bricoler-activity-tab" className="absolute bottom-0 left-0 right-0 h-[3px] bg-[#00A082] rounded-t-full" />
+                    </div>
+                </div>
+            </div>
+
+            {/* TOP MAP CONTAINER (Full viewport minus header if needed, but here absolute) */}
+            <div className="absolute inset-x-0 bottom-0 top-[68px] z-0">
+                <LiveOrdersMap
+                    city={userData?.city || ''}
+                    onSelectOrder={onSelectOrder}
+                    language={language}
+                    notificationsCount={notificationsCount}
+                    onShowNotifications={onShowNotifications}
+                    onInteractionStart={() => setIsMapDragging(true)}
+                    onInteractionEnd={() => setIsMapDragging(false)}
+                    triggerGps={triggerGps}
+                    currentUserPin={{
+                        avatarUrl: userData?.avatar || userData?.photoURL
+                    }}
+                    broadcastPins={availableJobs.map(job => ({
+                        id: job.id,
+                        lat: (job as any).locationDetails?.lat || 31.5085,
+                        lng: (job as any).locationDetails?.lng || -9.7595,
+                        price: job.price || 0,
+                        rating: 5.0, 
+                        serviceIcon: getServiceVector(job.serviceId || job.craft || ''),
+                        isSelected: false
+                    }))}
+                />
+            </div>
+
+            {/* FLOATING GPS BUTTON */}
+            <motion.button
+                onClick={() => setTriggerGps(Date.now())}
+                initial={{ bottom: '24px' }}
+                animate={{
+                    bottom: (availableJobs.length > 0 && !isMapDragging) ? '250px' : '102px'
+                }}
+                className="absolute right-6 w-12 h-12 bg-white rounded-full shadow-[0_2px_8px_rgba(0,0,0,0.15)] flex items-center justify-center text-[#374151] active:scale-95 transition-all z-[100]"
+            >
+                <Navigation size={22} strokeWidth={2.5} />
+            </motion.button>
+
+            {/* HORIZONTAL ORDERS LIST (At the bottom of the map) */}
+            <div className="absolute bottom-10 left-0 right-0 z-10">
+                <AnimatePresence>
+                    {!isMapDragging && availableJobs.length > 0 && (
+                        <motion.div
+                            initial={{ y: 100, opacity: 0 }}
+                            animate={{ y: 0, opacity: 1 }}
+                            exit={{ y: 100, opacity: 0 }}
+                            className="flex gap-4 overflow-x-auto px-6 pb-6 no-scrollbar snap-x snap-mandatory"
+                        >
+                            {availableJobs.map((job) => (
+                                <div key={job.id} className="flex-none w-[320px] snap-center">
+                                    <ProviderJobCard
+                                        order={{
+                                            ...job,
+                                            service: job.serviceId || job.craft || '',
+                                            totalPrice: Number(job.price)
+                                        } as any}
+                                        onSelect={() => onSelectOrder(job as any)}
+                                        onConfirm={onConfirmJob}
+                                        onRedistribute={onRedistributeJob}
+                                    />
+                                </div>
+                            ))}
+                        </motion.div>
+                    )}
+                </AnimatePresence>
             </div>
 
             {/* Orders History View Modal */}
@@ -228,786 +248,6 @@ export default function ProviderOrdersView({
                             )}
                         </div>
                     </motion.div>
-                )}
-            </AnimatePresence>
-
-            <ProviderRoutineModal
-                isOpen={showRoutineModal}
-                onClose={() => setShowRoutineModal(false)}
-                userData={userData}
-                setUserData={setUserData}
-                TIME_SLOTS={TIME_SLOTS}
-            />
-        </div>
-    );
-}
-
-// ── Activity Tab Component ──────────────────────────────────────────────
-function ActivityTab({
-    orders,
-    onSelect,
-    onShowHistory,
-    onConfirmJob,
-    onRedistributeJob,
-    setActiveTab,
-    userData,
-    setShowRoutineModal
-}: {
-    orders: OrderDetails[],
-    onSelect: (o: OrderDetails) => void,
-    onShowHistory: () => void,
-    onConfirmJob?: (jobId: string) => void,
-    onRedistributeJob?: (order: OrderDetails) => void,
-    setActiveTab?: (tab: 'activity' | 'availability') => void,
-    userData: any,
-    setShowRoutineModal: (v: boolean) => void
-}) {
-    const { t, language } = useLanguage();
-    const [currentTime, setCurrentTime] = React.useState(new Date());
-
-    React.useEffect(() => {
-        const timer = setInterval(() => setCurrentTime(new Date()), 60000);
-        return () => clearInterval(timer);
-    }, []);
-
-    const hasJobStarted = (date: string, time: string) => {
-        if (!date || !time) return false;
-        try {
-            const timeStr = time.split('-')[0].trim();
-            const targetDate = parseISO(`${date}T${timeStr}:00`);
-            return currentTime >= targetDate;
-        } catch (e) {
-            return false;
-        }
-    };
-
-    const scheduledJobs = useMemo(() => {
-        return orders.filter(order => {
-            const isAssigned = ['confirmed', 'accepted', 'programmed', 'pending'].includes(order.status || '');
-            if (!isAssigned || !order.date) return false;
-
-            try {
-                const orderDate = parseISO(order.date);
-                const isTodayJob = isToday(orderDate);
-
-                if (isTodayJob) {
-                    if (hasJobStarted(order.date as string, order.time as string)) return false;
-                }
-                return true;
-            } catch (e) {
-                return false;
-            }
-        });
-    }, [orders, currentTime]);
-
-    const pendingJobs = useMemo(() => {
-        return orders.filter(order => {
-            const isAssigned = ['confirmed', 'accepted', 'programmed', 'pending'].includes(order.status || '');
-            if (!isAssigned || !order.date || !order.time) return false;
-            try {
-                const orderDate = parseISO(order.date);
-                if (!isToday(orderDate)) return false;
-                return hasJobStarted(order.date as string, order.time as string);
-            } catch (e) {
-                return false;
-            }
-        });
-    }, [orders, currentTime]);
-
-    const deliveredJobs = useMemo(() => {
-        return orders.filter(order => {
-            if (!['done', 'delivered'].includes(order.status || '') || !order.date) return false;
-            return true;
-        });
-    }, [orders]);
-
-    const getTimeRemaining = (order: OrderDetails) => {
-        if (!order.date || !order.time) return null;
-        try {
-            const timeStr = order.time.split('-')[0].trim();
-            const targetDate = parseISO(`${order.date}T${timeStr}:00`);
-            const diffMs = targetDate.getTime() - currentTime.getTime();
-            if (diffMs < 0) return null;
-
-            const diffMins = Math.floor(diffMs / 60000);
-            const hours = Math.floor(diffMins / 60);
-            const mins = diffMins % 60;
-
-            if (hours > 24) return `${Math.floor(hours / 24)}d left`;
-            if (hours > 0) return `${hours}h ${mins}m left`;
-            return `${mins}m left`;
-        } catch (e) {
-            return null;
-        }
-    };
-
-    const getProgress = (order: OrderDetails) => {
-        if (!order.date || !order.time) return 10;
-        try {
-            const timeStr = order.time.split('-')[0].trim();
-            const targetDate = parseISO(`${order.date}T${timeStr}:00`);
-            const diffMs = targetDate.getTime() - currentTime.getTime();
-
-            const windowMs = 24 * 60 * 60 * 1000;
-            if (diffMs <= 0) return 100;
-            if (diffMs > windowMs) return 5;
-
-            return Math.floor(((windowMs - diffMs) / windowMs) * 100);
-        } catch (e) {
-            return 10;
-        }
-    };
-
-    const renderEmptyState = (title: string, subtitle: string, icon: React.ReactNode) => (
-        <div className="bg-white rounded-[10px] border border-[#939393] p-5 flex flex-col items-center text-center">
-            <div className="flex items-center justify-center mb-6">
-                {icon}
-            </div>
-            <h3 className="text-[20px] font-black text-black mb-1">{title}</h3>
-            <p className="text-[15px] font-medium text-neutral-500 max-w-[240px] leading-tight">
-                {subtitle}
-            </p>
-        </div>
-    );
-
-    const renderOrderCard = (order: OrderDetails, index: number) => {
-        const timeLeft = getTimeRemaining(order);
-        const progress = getProgress(order);
-
-        const isOffer = order.status === 'waiting' || order.status === 'pending';
-        const isDone = order.status === 'done' || order.status === 'delivered';
-
-        return (
-            <motion.div
-                key={order.id || `order-${index}`}
-                whileTap={{ scale: 0.98 }}
-                onClick={() => onSelect(order)}
-                className="bg-white rounded-[16px] p-4 flex items-start gap-4 cursor-pointer transition-all mb-4 border border-transparent hover:border-neutral-100 shadow-sm"
-            >
-                <div className="w-24 h-24 bg-[#F7F7F7] rounded-[16px] flex items-center justify-center flex-shrink-0 p-0 overflow-hidden">
-                    {order.images && order.images.length > 0 ? (
-                        <img src={order.images[0]} className="w-full h-full object-cover" />
-                    ) : (
-                        <img src={getServiceVector(order.service)} className="w-full h-full object-contain p-1" />
-                    )}
-                </div>
-                <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                        <span className={cn(
-                            "px-2 py-0.5 text-[10px] font-black rounded-md uppercase tracking-wider",
-                            isOffer ? "bg-amber-50 text-amber-600" : (isToday(parseISO(order.date)) && !isDone ? "bg-[#E6F7F4] text-[#00A082]" : (isDone ? "bg-emerald-50 text-emerald-600" : "bg-blue-50 text-blue-600"))
-                        )}>
-                            {isOffer ? t({ en: 'Active Offer', fr: 'Offre active', ar: 'عرض نشط' }) : (isDone ? t({ en: 'Delivered', fr: 'Livrée', ar: 'مكتمل' }) : (isToday(parseISO(order.date)) ? t({ en: 'In Progress', fr: 'En cours', ar: 'قيد التنفيذ' }) : t({ en: 'Scheduled', fr: 'Programmée', ar: 'مبرمج' })))}
-                        </span>
-                        {order.providerConfirmed && (
-                            <span className="px-2 py-0.5 text-[10px] font-black rounded-md uppercase tracking-wider bg-amber-50 text-amber-600">
-                                {t({ en: 'Confirmed', fr: 'Confirmée', ar: 'مؤكد' })}
-                            </span>
-                        )}
-                    </div>
-                    <h3 className="text-[17px] font-black text-black leading-tight">
-                        {(() => {
-                            const config = getServiceById(order.serviceId || order.service);
-                            const stableBase = config ? config.name : formatServiceName(order.service);
-                            const translatedBase = t({ en: stableBase, fr: stableBase });
-
-                            const subDisplay = getSubServiceName(order.serviceId || order.service, order.subService || '') || order.subServiceDisplayName;
-                            const translatedSub = subDisplay ? t({ en: subDisplay, fr: subDisplay }) : '';
-
-                            return translatedSub ? `${translatedBase} › ${translatedSub}` : translatedBase;
-                        })()}
-                    </h3>
-                    <div className="flex flex-col mt-1">
-                        {order.service === 'car_rental' && order.date && order.carReturnDate ? (
-                            <div className="flex flex-col gap-0.5 font-bold">
-                                <div className="flex items-center gap-1.5 text-neutral-900">
-                                    <Clock size={12} strokeWidth={2.5} />
-                                    <span>{format(parseISO(order.date), 'MMM d')}</span>
-                                    <span className="opacity-30">|</span>
-                                    <span>{order.time?.split('-')[0] || '09:00'}</span>
-                                </div>
-                                <div className="flex items-center gap-1.5 text-neutral-400 pl-4">
-                                    <span>{format(parseISO(order.carReturnDate), 'MMM d')}</span>
-                                    <span className="opacity-30">|</span>
-                                    <span>{order.carReturnTime?.split('-')[0] || '09:00'}</span>
-                                </div>
-                            </div>
-                        ) : (
-                            <div className="flex items-center gap-1.5 text-neutral-500">
-                                <Clock size={12} strokeWidth={2.5} />
-                                <p className="text-[14px] font-bold">
-                                    {order.time || '12:00-13:00'}
-                                </p>
-                                {timeLeft && !isDone && (
-                                    <span className="text-[12px] font-bold text-[#00A082]">
-                                        ({timeLeft})
-                                    </span>
-                                )}
-                                {isDone && <Check size={14} className="text-emerald-500 ml-1" />}
-                            </div>
-                        )}
-                    </div>
-
-                    <div className="flex items-center gap-1.5 mt-1">
-                        <p className="text-[13px] font-medium text-neutral-400 truncate">
-                            {order.clientName || t({ en: 'Client', fr: 'Client' })} • {order.city ? t({ en: order.city, fr: order.city }) : (order.location ? t({ en: order.location, fr: order.location }) : '')}
-                        </p>
-                    </div>
-                    {!isOffer && !isDone && (
-                        <div className="w-full h-1.5 bg-neutral-100 rounded-full mt-3 overflow-hidden">
-                            <motion.div
-                                initial={{ width: 0 }}
-                                animate={{
-                                    width: `${progress}%`,
-                                }}
-                                transition={{
-                                    width: { duration: 1, ease: "easeOut" }
-                                }}
-                                className="h-full bg-[#00A082] rounded-full relative overflow-hidden"
-                            >
-                                <motion.div
-                                    animate={{ x: ['-200%', '200%'] }}
-                                    transition={{ repeat: Infinity, duration: 1.5, ease: 'linear' }}
-                                    className="absolute inset-0 w-full h-full"
-                                    style={{
-                                        background: 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.4) 50%, transparent 100%)'
-                                    }}
-                                />
-                            </motion.div>
-                        </div>
-                    )}
-
-                    {/* CONFIRM & REDISTRIBUTE BUTTONS */}
-                    {(order.status === 'programmed' || order.status === 'accepted') && !order.providerConfirmed && (
-                        <div className="mt-4 flex justify-end gap-3">
-                            <button
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    onRedistributeJob?.(order);
-                                }}
-                                className="w-10 h-10 rounded-full bg-neutral-100 flex items-center justify-center text-neutral-500 hover:bg-neutral-200 transition-all active:scale-90"
-                            >
-                                <RefreshCw size={18} strokeWidth={2.5} />
-                            </button>
-                            <button
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    if (order.id) onConfirmJob?.(order.id);
-                                }}
-                                className="w-10 h-10 rounded-full bg-[#00A082] text-white flex items-center justify-center shadow-md hover:bg-[#008f75] active:scale-95 transition-all"
-                            >
-                                <Check size={18} strokeWidth={3} />
-                            </button>
-                        </div>
-                    )}
-                </div>
-            </motion.div>
-        );
-    };
-
-    return (
-        <div className="flex flex-col gap-10 p-6 pb-32 bg-[#FFFFFF]">
-            {/* New Green Availability Requirement Card */}
-            {(() => {
-                const hasAvailability = userData?.routineSet ||
-                    (userData?.routine && Object.values(userData.routine).some((r: any) => r.active)) ||
-                    (userData?.calendarSlots && Object.keys(userData.calendarSlots).length > 0);
-                if (hasAvailability) return null;
-
-                return (
-                    <motion.div
-                        initial={{ opacity: 0, scale: 0.95 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        onClick={() => {
-                            setActiveTab?.('availability');
-                            setShowRoutineModal(true);
-                        }}
-                        className="bg-[#00A082] rounded-[24px] p-6 relative overflow-hidden group shadow-xl shadow-[#00A082]/20 cursor-pointer mb-8"
-                    >
-                        <div className="flex items-center gap-6 relative z-10">
-                            <div className="w-20 h-20 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-md">
-                                <img src="/Images/Vectors Illu/OrdersHistory.png" className="w-14 h-14 object-contain" />
-                            </div>
-                            <div className="flex-1">
-                                <h3 className="text-[22px] font-[1000] text-white leading-tight mb-1">
-                                    {t({ en: 'Set Your Availability', fr: 'Définissez vos dispos', ar: 'حدد توفرك' })}
-                                </h3>
-                                <p className="text-[14px] font-bold text-white/80 leading-snug">
-                                    {t({
-                                        en: 'Set your regular routine to appear in client searches and start receiving jobs.',
-                                        fr: 'Réglez votre routine pour apparaître dans les recherches et recevoir des missions.',
-                                        ar: 'اضبط روتينك المعتاد للظهور في نتائج بحث العملاء والبدء في تلقي المهام.'
-                                    })}
-                                </p>
-                            </div>
-                        </div>
-                        <div className="flex items-center gap-2 mt-4 text-white font-black text-[14px] bg-white/10 w-fit px-4 py-2 rounded-full backdrop-blur-sm group-hover:bg-white/20 transition-all">
-                            <span>{t({ en: 'Configure Now', fr: 'Configurer maintenant', ar: 'تكوين الآن' })}</span>
-                            <ChevronLeft size={16} className={cn("rotate-180", language === 'ar' && "rotate-0")} strokeWidth={4} />
-                        </div>
-
-                        {/* Decorative elements */}
-                        <div className="absolute -right-12 -top-12 w-48 h-48 bg-white/5 rounded-full blur-3xl group-hover:scale-150 transition-transform duration-1000" />
-                    </motion.div>
-                );
-            })()}
-
-            <div className="space-y-4">
-                <h2 className="text-[26px] font-black text-black">
-                    {t({ en: 'New Jobs', fr: 'Nouvelles missions' })}
-                </h2>
-                {scheduledJobs.length > 0 ? (
-                    <div className="pt-2">{scheduledJobs.map(renderOrderCard)}</div>
-                ) : (
-                    <div className="pt-2">
-                        {renderEmptyState(
-                            t({ en: 'No missions scheduled', fr: 'Aucune mission programmée' }),
-                            t({ en: 'Your upcoming missions will be listed here', fr: 'Vos prochaines missions seront affichées ici' }),
-                            <img src="/Images/Vectors Illu/NewOrder.webp" className="w-28 h-28 object-contain grayscale opacity-40" />
-                        )}
-                    </div>
-                )}
-            </div>
-
-            <div className="space-y-4">
-                <h2 className="text-[26px] font-black text-black">{t({ en: 'Pending Jobs', fr: 'Missions en cours' })}</h2>
-                {pendingJobs.length > 0 ? (
-                    <div className="pt-2">{pendingJobs.map(renderOrderCard)}</div>
-                ) : (
-                    <div className="pt-2">
-                        {renderEmptyState(
-                            t({ en: 'No jobs in progress', fr: 'Aucune mission en cours' }),
-                            t({ en: 'Missions you are currently executing will appear here', fr: 'Les missions que vous exécutez actuellement apparaîtront ici' }),
-                            <img src="/Images/Vectors Illu/DraftOrders2.webp" className="w-28 h-28 object-contain grayscale opacity-40" />
-                        )}
-                    </div>
-                )}
-            </div>
-
-            <div className="space-y-4">
-                <h2 className="text-[26px] font-black text-black">{t({ en: 'Jobs Delivered', fr: 'Missions livrées' })}</h2>
-                {deliveredJobs.length > 0 ? (
-                    <div className="pt-2">{deliveredJobs.map(renderOrderCard)}</div>
-                ) : (
-                    <div className="pt-2">
-                        {renderEmptyState(
-                            t({ en: 'No jobs delivered yet', fr: 'Aucune mission livrée pour le moment' }),
-                            t({ en: 'Missions you successfully complete will appear here', fr: 'Les missions que vous terminez avec succès apparaîtront ici' }),
-                            <div className="w-28 h-28  rounded-full flex items-center justify-center">
-                                <img src="/Images/Vectors Illu/LocationFlag_VI.webp" className="w-20 h-20 object-contain" />
-                            </div>
-                        )}
-                    </div>
-                )}
-            </div>
-
-            <div className="bg-[#F2F2F2] rounded-[16px] p-6 flex items-center gap-5 mt-4">
-                <div className="flex items-center justify-center flex-shrink-0">
-                    <img src="/Images/Vectors Illu/OrdersHistory.webp" className="w-20 h-20 object-contain" />
-                </div>
-                <div className="flex flex-col">
-                    <p className="text-[16px] font-light text-black leading-tight">{t({ en: 'Need to review past missions?', fr: 'Besoin de revoir vos missions passées ?' })}</p>
-                    <button
-                        onClick={onShowHistory}
-                        className="text-[17px] font-black text-[#00A082] mt-1 text-left decoration-[#00A082] decoration-2 underline-offset-4 hover:underline"
-                    >
-                        {t({ en: 'Check my mission history', fr: 'Voir l’historique de mes missions' })}
-                    </button>
-                </div>
-            </div>
-        </div>
-    );
-}
-
-// ── Availability Tab Component ──────────────────────────────────────────────
-function AvailabilityTab({
-    userData,
-    setUserData,
-    horizontalSelectedDate,
-    setHorizontalSelectedDate,
-    handleSaveSlotsManual,
-    AVAILABILITY_SLOTS,
-    TIME_SLOTS,
-    orders,
-    showRoutineModal,
-    setShowRoutineModal
-}: {
-    userData: any,
-    setUserData: React.Dispatch<React.SetStateAction<any>>,
-    horizontalSelectedDate: Date,
-    setHorizontalSelectedDate: (d: Date) => void,
-    handleSaveSlotsManual: (dateKey: string, slots: any[]) => void,
-    AVAILABILITY_SLOTS: any,
-    TIME_SLOTS: string[],
-    orders: OrderDetails[],
-    showRoutineModal: boolean,
-    setShowRoutineModal: (v: boolean) => void
-}) {
-    const { t, language } = useLanguage();
-    const todayStr = format(new Date(), 'yyyy-MM-dd');
-    const selectedDateStr = format(horizontalSelectedDate, 'yyyy-MM-dd');
-    const [isAdding, setIsAdding] = useState(false);
-    const [currentTime, setCurrentTime] = useState(new Date());
-    const [localSlots, setLocalSlots] = useState<any[]>([]);
-
-    useEffect(() => {
-        const timer = setInterval(() => setCurrentTime(new Date()), 60000);
-        return () => clearInterval(timer);
-    }, []);
-
-    const savedSlots = useMemo(() => {
-        const slots = userData?.calendarSlots?.[selectedDateStr] || [];
-        const dayMissions = orders.filter(o => o.date === selectedDateStr && o.status !== 'cancelled');
-        return slots.filter((slot: any) => {
-            const slotStart = slot.from;
-            return !dayMissions.some(order => {
-                const missionFrom = order.time?.split('-')[0].trim() || "09:00";
-                return missionFrom === slotStart;
-            });
-        });
-    }, [userData?.calendarSlots, selectedDateStr, orders]);
-
-    const getMonday = (date: Date) => {
-        const d = new Date(date);
-        const day = d.getDay();
-        const diff = day === 0 ? -6 : 1 - day;
-        d.setDate(d.getDate() + diff);
-        return startOfDay(d);
-    };
-
-    const [weekStart, setWeekStart] = useState<Date>(() => getMonday(new Date()));
-
-    const weekDays = Array.from({ length: 7 }, (_, i) => {
-        const d = addDays(weekStart, i);
-        return {
-            date: d,
-            dateStr: format(d, 'yyyy-MM-dd'),
-            dayNum: format(d, 'd'),
-            dayLabel: format(d, 'EEE')
-        };
-    });
-
-    const bookedDates = useMemo(() => {
-        const set = new Set<string>();
-        orders.forEach(o => {
-            if (o.date) set.add(o.date);
-        });
-        return set;
-    }, [orders]);
-
-    const weekLabel = `${format(weekStart, 'MMM d')} – ${format(addDays(weekStart, 6), 'MMM d, yyyy')}`;
-
-    const handleAllDay = () => {
-        const allDaySlotsList = ["09:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00", "17:00", "18:00"];
-        const nowMins = currentTime.getHours() * 60 + currentTime.getMinutes();
-        const filteredAllDay = allDaySlotsList.filter(time => {
-            if (selectedDateStr !== todayStr) return true;
-            const [h, m] = time.split(':').map(Number);
-            return (h * 60 + m) > (nowMins + 15);
-        });
-        const newSlots = filteredAllDay.map(time => ({
-            from: time,
-            to: TIME_SLOTS[TIME_SLOTS.indexOf(time) + 2] || time
-        }));
-        setLocalSlots(newSlots);
-    };
-
-    const handleProgram = () => {
-        setUserData((p: any) => p ? { ...p, calendarSlots: { ...(p.calendarSlots || {}), [selectedDateStr]: localSlots } } : null);
-        handleSaveSlotsManual(selectedDateStr, localSlots);
-        setIsAdding(false);
-    };
-
-    const isTodaySelected = selectedDateStr === todayStr;
-    const nowMins = currentTime.getHours() * 60 + currentTime.getMinutes();
-
-    const hours = Array.from({ length: 15 }, (_, i) => 7 + i); // 7 AM to 9 PM
-
-    const getTimePosition = (timeStr: string) => {
-        const [h, m] = timeStr.split(':').map(Number);
-        const offsetHours = h - 7;
-        const totalMins = offsetHours * 60 + m;
-        return (totalMins / 60) * 100;
-    };
-
-    const getTimeHeight = (from: string, to: string) => {
-        const start = getTimePosition(from);
-        const end = getTimePosition(to);
-        return Math.max(end - start, 50);
-    };
-
-    const handleDeleteSlot = async (slotToDelete: any) => {
-        const newSlots = savedSlots.filter((s: any) => s.from !== slotToDelete.from);
-        const updatedCalendarSlots = {
-            ...(userData?.calendarSlots || {}),
-            [selectedDateStr]: newSlots
-        };
-
-        setUserData((p: any) => p ? { ...p, calendarSlots: updatedCalendarSlots } : null);
-
-        try {
-            const providerId = userData?.id || auth.currentUser?.uid;
-            if (!providerId) return;
-            const providerRef = doc(db, 'bricolers', providerId);
-            await updateDoc(providerRef, { calendarSlots: updatedCalendarSlots });
-        } catch (error) {
-            console.error("Error deleting slot:", error);
-        }
-    };
-
-    return (
-        <div className="flex flex-col bg-white h-full relative">
-            <div className="px-4 pt-4 shrink-0 bg-white">
-                <button
-                    onClick={() => setShowRoutineModal(true)}
-                    className="w-full bg-[#E6F7F4] border-2 border-[#00A082] rounded-[16px] p-4 flex items-center justify-between active:scale-[0.98] transition-transform"
-                >
-                    <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-[#00A082]/10 flex items-center justify-center">
-                            <Clock size={20} className="text-[#00A082]" />
-                        </div>
-                        <div className="text-left">
-                            <h3 className="text-[16px] font-black text-[#00A082] leading-tight">
-                                {t({ en: 'Define your Routine', fr: 'Définissez votre routine', ar: 'تحديد روتينك الأسبوعي' })}
-                            </h3>
-                            <p className="text-[12px] font-bold text-[#00A082]/70 leading-tight">
-                                {t({ en: 'Set your regular weekly working hours', fr: 'Définissez vos heures de travail hebdomadaires régulières', ar: 'حدد ساعات عملك الأسبوعية المعتادة' })}
-                            </p>
-                        </div>
-                    </div>
-                    <ChevronLeft size={20} className={cn("text-[#00A082]", language === 'ar' ? "" : "rotate-180")} />
-                </button>
-            </div>
-
-            <div className="bg-white border-b border-[#F5F5F5] px-4 pt-4 pb-4 flex-shrink-0 sticky top-0 z-30">
-                <div className="flex items-center justify-between mb-4">
-                    <button
-                        onClick={() => setWeekStart(prev => addDays(prev, -7))}
-                        className="w-10 h-10 rounded-xl bg-neutral-50 flex items-center justify-center active:bg-neutral-100 transition-colors"
-                    >
-                        <ChevronLeft size={20} className="text-black" />
-                    </button>
-                    <div className="flex flex-col items-center">
-                        <span className="text-[15px] font-black text-black tracking-tight">{weekLabel}</span>
-                    </div>
-                    <button
-                        onClick={() => setWeekStart(prev => addDays(prev, 7))}
-                        className="w-10 h-10 rounded-xl bg-neutral-50 flex items-center justify-center active:bg-neutral-100 transition-colors"
-                    >
-                        <ChevronLeft size={20} className="text-black rotate-180" />
-                    </button>
-                </div>
-
-                <div className="grid grid-cols-7 gap-2">
-                    {weekDays.map(day => {
-                        const isTodayDay = day.dateStr === todayStr;
-                        const isSelected = day.dateStr === selectedDateStr;
-                        const hasJobs = bookedDates.has(day.dateStr);
-
-                        return (
-                            <button
-                                key={day.dateStr}
-                                onClick={() => {
-                                    setHorizontalSelectedDate(day.date);
-                                    setIsAdding(false);
-                                }}
-                                className={cn(
-                                    "flex flex-col items-center py-3 rounded-2xl relative transition-all border",
-                                    isSelected
-                                        ? "bg-[#00A082] border-[#00A082]"
-                                        : isTodayDay
-                                            ? "bg-[#E6F7F4] border-[#E6F7F4]"
-                                            : "bg-white border-transparent hover:border-neutral-100"
-                                )}
-                            >
-                                <span className={cn("text-[10px] font-black uppercase tracking-wider mb-1", isSelected ? "text-white/70" : "text-neutral-400")}>
-                                    {day.dayLabel}
-                                </span>
-                                <span className={cn("text-[18px] font-black", isSelected ? "text-white" : isTodayDay ? "text-[#00A082]" : "text-black")}>
-                                    {day.dayNum}
-                                </span>
-                                {hasJobs && !isSelected && (
-                                    <div className="absolute top-1.5 right-1.5">
-                                        <div className="w-1.5 h-1.5 bg-[#FFC244] rounded-full" />
-                                    </div>
-                                )}
-                            </button>
-                        );
-                    })}
-                </div>
-            </div>
-
-            <div className="flex-1 overflow-y-auto no-scrollbar relative bg-[#FAFAFA]">
-                <div className="relative min-h-[1550px] w-full">
-                    <div className="absolute inset-0 pt-6 px-0">
-                        {hours.map((h) => (
-                            <div key={h} className="flex h-[100px] border-b border-[#F0F0F0] group">
-                                <div className="w-16 flex-none flex flex-col items-end justify-start pr-3 -mt-2.5">
-                                    <span className="text-[11px] font-black text-neutral-400 uppercase tracking-tighter">
-                                        {h === 12 ? '12 pm' : h > 12 ? `${h - 12} pm` : `${h} am`}
-                                    </span>
-                                </div>
-                                <div className="flex-1 border-l border-[#F0F0F0] relative">
-                                    <div className="absolute top-[50px] left-0 right-0 border-t border-[#FAFAFA] border-dashed" />
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-
-                    <div className="absolute inset-0 pt-6 left-16">
-                        <AnimatePresence>
-                            {savedSlots.map((slot: any, idx: number) => (
-                                <motion.div
-                                    key={`${slot.from}-${idx}`}
-                                    initial={{ opacity: 0, scale: 0.9 }}
-                                    animate={{ opacity: 1, scale: 1 }}
-                                    className="absolute left-2 right-4 rounded-xl bg-[#E6F7F4] border-l-4 border-[#00A082] p-3 shadow-sm z-10 group"
-                                    style={{
-                                        top: getTimePosition(slot.from) + 2,
-                                        height: getTimeHeight(slot.from, slot.to) - 4
-                                    }}
-                                >
-                                    <div className="flex flex-col h-full relative">
-                                        <div className="flex items-center justify-between">
-                                            <span className="text-[14px] font-black text-[#00A082]">{t({ en: 'Available', fr: 'Disponible', ar: 'متاح' })}</span>
-                                            <button
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    handleDeleteSlot(slot);
-                                                }}
-                                                className="w-6 h-6 rounded-full bg-white/50 flex items-center justify-center text-[#00A082] hover:bg-[#00A082] hover:text-white transition-all active:scale-90"
-                                            >
-                                                <X size={14} strokeWidth={3} />
-                                            </button>
-                                        </div>
-                                        <span className="text-[12px] font-bold text-[#00A082]/80 mt-1">
-                                            {slot.from} - {slot.to}
-                                        </span>
-                                    </div>
-                                </motion.div>
-                            ))}
-                        </AnimatePresence>
-                    </div>
-                </div>
-            </div>
-
-            <button
-                onClick={() => {
-                    setLocalSlots(savedSlots);
-                    setIsAdding(true);
-                }}
-                className="fixed bottom-24 right-6 w-14 h-14 bg-[#0CB380] rounded-full shadow-2xl flex items-center justify-center text-white active:scale-95 transition-transform z-50"
-            >
-                <Plus size={32} strokeWidth={3} />
-            </button>
-
-            <AnimatePresence>
-                {isAdding && (
-                    <>
-                        <motion.div
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            onClick={() => setIsAdding(false)}
-                            className="fixed inset-0 bg-black/40 z-[1100] backdrop-blur-sm"
-                        />
-                        <motion.div
-                            initial={{ y: '100%' }}
-                            animate={{ y: 0 }}
-                            exit={{ y: '100%' }}
-                            transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-                            className="fixed bottom-0 left-0 right-0 bg-white rounded-t-[32px] p-6 pb-12 z-[1101] max-h-[85vh] overflow-y-auto no-scrollbar"
-                        >
-                            <div className="w-12 h-1.5 bg-neutral-200 rounded-full mx-auto mb-6" />
-
-                            <div className="flex items-center justify-between mb-8">
-                                <h3 className="text-[22px] font-black text-black">{t({ en: 'New Availability', fr: 'Nouvelle disponibilité', ar: 'جاهزية جديدة' })}</h3>
-                                <div className="flex items-center gap-2">
-                                    <button
-                                        onClick={async () => {
-                                            const updatedCalendarSlots = {
-                                                ...(userData?.calendarSlots || {}),
-                                                [selectedDateStr]: []
-                                            };
-                                            setUserData((p: any) => p ? { ...p, calendarSlots: updatedCalendarSlots } : null);
-                                            try {
-                                                const providerId = userData?.id || auth.currentUser?.uid;
-                                                if (providerId) {
-                                                    const providerRef = doc(db, 'bricolers', providerId);
-                                                    await updateDoc(providerRef, { calendarSlots: updatedCalendarSlots });
-                                                }
-                                            } catch (e) {
-                                                console.error("Error clearing slots:", e);
-                                            }
-                                            setLocalSlots([]);
-                                        }}
-                                        className="px-4 py-2 bg-red-50 text-red-500 text-[14px] font-black rounded-xl border border-red-100"
-                                    >
-                                        {t({ en: 'Clear Day', fr: 'Vider le jour', ar: 'مسح اليوم' })}
-                                    </button>
-                                    <button
-                                        onClick={handleAllDay}
-                                        className="px-4 py-2 bg-[#E6F7F4] text-[#00A082] text-[14px] font-black rounded-xl"
-                                    >
-                                        {t({ en: 'All day', fr: 'Toute la journée', ar: 'طوال اليوم' })}
-                                    </button>
-                                </div>
-                            </div>
-
-                            <div className="space-y-6">
-                                {(Object.entries(AVAILABILITY_SLOTS) as [string, string[]][]).map(([category, slots]) => (
-                                    <div key={category} className="space-y-4">
-                                        <h4 className="text-[12px] font-black text-neutral-400 uppercase tracking-widest text-left rtl:text-right">
-                                            {t({
-                                                en: category,
-                                                fr: category === 'MORNING' ? 'MATIN' : category === 'AFTERNOON' ? 'APRÈS-MIDI' : 'SOIR',
-                                                ar: category === 'MORNING' ? 'الصباح' : category === 'AFTERNOON' ? 'الزوال' : 'المساء'
-                                            })}
-                                        </h4>
-                                        <div className="grid grid-cols-3 gap-2">
-                                            {slots.map((time) => {
-                                                const isSelected = localSlots.some((s: any) => s.from === time);
-                                                const [h, m] = time.split(':').map(Number);
-                                                const isPast = isTodaySelected && (h * 60 + m) <= (nowMins + 15);
-
-                                                return (
-                                                    <button
-                                                        key={time}
-                                                        disabled={isPast}
-                                                        onClick={() => {
-                                                            const newSlots = isSelected
-                                                                ? localSlots.filter((s: any) => s.from !== time)
-                                                                : [...localSlots, { from: time, to: TIME_SLOTS[TIME_SLOTS.indexOf(time) + 2] || time }].sort((a, b) => a.from.localeCompare(b.from));
-                                                            setLocalSlots(newSlots);
-                                                        }}
-                                                        className={cn(
-                                                            "h-12 rounded-xl border flex items-center justify-center text-[14px] font-black transition-all",
-                                                            isSelected
-                                                                ? "bg-[#00A082] border-[#00A082] text-white"
-                                                                : isPast
-                                                                    ? "bg-neutral-50 border-neutral-100 text-neutral-300 opacity-50"
-                                                                    : "bg-white border-[#F0F0F0] text-black"
-                                                        )}
-                                                    >
-                                                        {time}
-                                                    </button>
-                                                );
-                                            })}
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-
-                            <div className="pt-8 pb-10">
-                                <button
-                                    onClick={handleProgram}
-                                    className="w-full py-4 bg-[#00A082] text-white rounded-2xl text-[18px] font-black shadow-lg shadow-[#00A082]/20 active:scale-95 transition-transform"
-                                >
-                                    {t({ en: 'Save Availability', fr: 'Enregistrer la disponibilité', ar: 'حفظ الجاهزية' })}
-                                </button>
-                            </div>
-                        </motion.div>
-                    </>
                 )}
             </AnimatePresence>
         </div>

@@ -74,9 +74,12 @@ export interface OrderDetails {
     selectedCar?: any;
     carReturnDate?: string | null;
     carReturnTime?: string | null;
+    carRentalNote?: string | null;
+    providerAddress?: string | null;
     durationDays?: number;
     basePrice?: number;
     movingVehicle?: string | null;
+    details?: any;
 }
 
 interface OrderCardProps {

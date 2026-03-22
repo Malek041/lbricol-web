@@ -43,7 +43,7 @@ service cloud.firestore {
     }
     
     match /city_monthly_stats/{statsId} {
-      allow read: if isAdmin();
+      allow read: if true;
       allow write: if isAdmin();
     }
     
@@ -107,6 +107,10 @@ service cloud.firestore {
       allow create: if isSignedIn();
       allow update: if isAdmin() || isOwner(userId) || (resource != null && resource.data.get('uid', '') == request.auth.uid);
       allow delete: if isAdmin();
+
+      match /service_profiles/{profileId} {
+        allow read, write: if isOwner(userId) || isAdmin();
+      }
     }
 
     match /users/{userId} {
@@ -139,14 +143,14 @@ service cloud.firestore {
 
     match /bricoler_notifications/{notificationId} {
       allow read: if isAdmin() || (isSignedIn() && (
-        request.auth.uid == resource.data.get('bricolerId', '') || 
-        request.auth.uid == resource.data.get('uid', '')
+        request.auth.uid == resource.data.bricolerId || 
+        request.auth.uid == resource.data.uid
       ));
       allow write: if isSignedIn();
     }
 
     match /client_notifications/{notificationId} {
-      allow read: if isAdmin() || (isSignedIn() && request.auth.uid == resource.data.get('clientId', ''));
+      allow read: if isAdmin() || (isSignedIn() && request.auth.uid == resource.data.clientId);
       allow write: if isSignedIn();
     }
 

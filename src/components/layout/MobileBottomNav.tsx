@@ -34,7 +34,7 @@ const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
 
     const providerTabs = [
         { id: 'calendar' as TabType, icon: ShoppingBag, label: t({ en: 'Orders', fr: 'Commandes', ar: 'الطلبات' }) },
-        { id: 'performance' as TabType, icon: TrendingUp, label: t({ en: 'Performance', fr: 'Performance', ar: 'الأداء' }) },
+        { id: 'performance' as TabType, icon: TrendingUp, label: t({ en: 'Activity', fr: 'Activité', ar: 'النشاط' }) },
         { id: 'services' as TabType, icon: Star, label: t({ en: 'Services', fr: 'Services', ar: 'الخدمات' }) },
         { id: 'profile' as TabType, icon: User, label: t({ en: 'Profile', fr: 'Profil', ar: 'الملف الشخصي' }) },
     ];
