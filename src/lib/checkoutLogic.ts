@@ -100,27 +100,45 @@ export function validatePhoneNumber(phone: string): boolean {
 
 // ────────── Promo Code Validation ──────────────────────────────
 
+// ────────── Promo Code Validation ──────────────────────────────
+import { query, where, getDocs, collection, limit } from 'firebase/firestore';
+import { db } from './firebase';
+
 export async function validatePromoCode(code: string): Promise<{
   valid: boolean;
   discount: number;
   message: string;
 }> {
+  if (!code.trim()) return { valid: false, discount: 0, message: '' };
+  
   try {
-    const response = await fetch(`/api/promo-codes/${code.toUpperCase().trim()}`, {
-      method: 'GET',
-    });
+    const q = query(
+      collection(db, 'promo_codes'),
+      where('code', '==', code.toUpperCase().trim()),
+      where('isActive', '==', true),
+      limit(1)
+    );
+
+    const snap = await getDocs(q);
     
-    if (!response.ok) {
-      return { valid: false, discount: 0, message: 'Code not found or expired' };
+    if (snap.empty) {
+      return { valid: false, discount: 0, message: 'Invalid or expired code' };
     }
+
+    const data = snap.docs[0].data();
     
-    const data = await response.json();
+    // Check expiration if present
+    if (data.expiresAt && new Date(data.expiresAt) < new Date()) {
+      return { valid: false, discount: 0, message: 'Code expired' };
+    }
+
     return {
       valid: true,
       discount: data.discountAmount || 0,
       message: `Discount: ${data.discountAmount} MAD`,
     };
-  } catch {
+  } catch (error) {
+    console.error('Promo validation error:', error);
     return { valid: false, discount: 0, message: 'Error validating code' };
   }
 }
@@ -157,6 +175,9 @@ export async function searchLocations(query: string): Promise<Array<{
 
 // ────────── Order Submission ──────────────────────────────────
 
+// ────────── Order Submission ──────────────────────────────────
+import { addDoc, serverTimestamp } from 'firebase/firestore';
+
 export async function submitOrder(state: CheckoutState): Promise<{
   orderId: string;
   orderNumber: string;
@@ -166,6 +187,8 @@ export async function submitOrder(state: CheckoutState): Promise<{
   if (!validation.valid) {
     throw new Error('Validation failed: ' + Object.values(validation.errors).join(', '));
   }
+  
+  const orderNumber = `LB-${Math.floor(100000 + Math.random() * 900000)}`;
   
   const orderPayload = {
     pickup: {
@@ -187,19 +210,22 @@ export async function submitOrder(state: CheckoutState): Promise<{
     pricing: state.pricing,
     roadDistance: state.roadDistance,
     roadDurationMinutes: state.roadDurationMinutes,
-    createdAt: new Date().toISOString(),
+    status: 'pending',
+    orderNumber,
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
   };
   
-  const response = await fetch('/api/orders', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(orderPayload),
-  });
-  
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.message || 'Failed to create order');
+  try {
+    const docRef = await addDoc(collection(db, 'jobs'), orderPayload);
+    
+    return {
+      orderId: docRef.id,
+      orderNumber,
+      estimatedDeliveryTime: '30-45 minutes'
+    };
+  } catch (error: any) {
+    console.error('Firestore Error submitOrder:', error);
+    throw new Error('Failed to create order: ' + error.message);
   }
-  
-  return response.json();
 }
