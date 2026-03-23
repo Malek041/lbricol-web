@@ -334,6 +334,28 @@ function Step2Content() {
           scroll-snap-align: center;
           height: 100%;
         }
+        .provider-info-row {
+          display: flex;
+          gap: 12px;
+          margin-bottom: 4px;
+          flex-shrink: 0;
+        }
+        @media (max-width: 480px) {
+          .provider-info-row {
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+          }
+          .provider-info-row .info-content {
+            align-items: center !important;
+          }
+          .provider-info-row .info-header {
+            justify-content: center !important;
+          }
+           .provider-info-row .bio-text {
+            text-align: center !important;
+          }
+        }
       `}</style>
 
       <div className="step2-container">
@@ -507,7 +529,7 @@ function ProviderCard({
       }}>
 
       {/* Main Info Row */}
-      <div style={{ display: 'flex', gap: 12, marginBottom: 4, flexShrink: 0 }}>
+      <div className="provider-info-row">
 
         {/* Left: Avatar */}
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
@@ -528,10 +550,10 @@ function ProviderCard({
         </div>
 
         {/* Center/Right Info */}
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+        <div className="info-content" style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
+          <div className="info-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
             <div style={{ minWidth: 0 }}>
-              <div style={{ fontSize: 16, fontWeight: 900, color: '#111827', marginBottom: 4, truncate: true } as any}>
+              <div style={{ fontSize: 16, fontWeight: 900, color: '#111827', marginBottom: 4, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' } as any}>
                 {provider.name}
               </div>
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', marginBottom: 4 }}>

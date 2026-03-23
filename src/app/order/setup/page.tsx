@@ -3,9 +3,9 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-    ChevronLeft, X, Plus, Check, Home, 
-    Briefcase, Image as ImageIcon, Trash2, 
+import {
+    ChevronLeft, X, Plus, Check, Home,
+    Briefcase, Image as ImageIcon, Trash2,
     Save, Loader2, Sparkles, AlertCircle,
     MapPin, Calendar
 } from 'lucide-react';
@@ -13,9 +13,9 @@ import { format } from 'date-fns';
 
 import { useOrder } from '@/context/OrderContext';
 import { auth, db } from '@/lib/firebase';
-import { 
-    collection, query, where, getDocs, 
-    addDoc, serverTimestamp, setDoc, doc 
+import {
+    collection, query, where, getDocs,
+    addDoc, serverTimestamp, setDoc, doc
 } from 'firebase/firestore';
 import { onAuthStateChanged } from 'firebase/auth';
 import { uploadToCloudinary } from '@/lib/upload';
@@ -48,10 +48,10 @@ export default function ServiceSetupPage() {
     const [loading, setLoading] = useState(true);
     const [profiles, setProfiles] = useState<ServiceProfile[]>([]);
     const [selectedProfileId, setSelectedProfileId] = useState<string>('new');
-    
+
     // Form State
     const [activeTab, setActiveTab] = useState<'setup' | 'details'>('setup');
-    
+
     // Form State
     const [rooms, setRooms] = useState<number>(order.serviceDetails?.rooms || 2);
     const [propertyType, setPropertyType] = useState<string>(order.serviceDetails?.propertyType || 'Apartment');
@@ -59,7 +59,7 @@ export default function ServiceSetupPage() {
     const [note, setNote] = useState<string>(order.serviceDetails?.note || '');
     const [saveAsFavorite, setSaveAsFavorite] = useState(false);
     const [favoriteLabel, setFavoriteLabel] = useState('');
-    
+
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isUploading, setIsUploading] = useState(false);
     const [isSplashing, setIsSplashing] = useState(false);
@@ -128,7 +128,7 @@ export default function ServiceSetupPage() {
     // Update Estimate
     useEffect(() => {
         if (!order.serviceType) return;
-        
+
         if (order.serviceType === 'errands' || order.serviceType?.includes('delivery')) {
             if (pickupLocation.lat && dropoffLocation.lat) {
                 const fetchDist = async () => {
@@ -189,10 +189,10 @@ export default function ServiceSetupPage() {
                     reader.onload = (e) => resolve(e.target?.result as string);
                     reader.readAsDataURL(file);
                 });
-                
+
                 const uploadedUrl = await uploadToCloudinary(
-                    dataUrl, 
-                    `lbricol/clients/${user?.uid || 'guest'}/setups`, 
+                    dataUrl,
+                    `lbricol/clients/${user?.uid || 'guest'}/setups`,
                     'lbricol_portfolio'
                 );
 
@@ -238,7 +238,7 @@ export default function ServiceSetupPage() {
             // Update Context
             setOrderField('scheduledDate', selectedDate.toISOString());
             setOrderField('scheduledTime', selectedTime);
-            
+
             const serviceDetails = {
 
                 rooms,
@@ -292,7 +292,7 @@ export default function ServiceSetupPage() {
     return (
         <div className="min-h-screen bg-white text-[#111827] flex flex-col font-sans">
             {isSplashing && <SplashScreen subStatus={null} />}
-            
+
             {/* Header */}
             <header className="flex flex-col sticky top-0 bg-white z-10 border-b border-neutral-100">
                 <div className="flex items-center justify-between px-5 py-4">
@@ -306,26 +306,28 @@ export default function ServiceSetupPage() {
                 </div>
 
                 {/* Tabs Bar */}
-                <div className="flex px-4">
-                    <button
-                        onClick={() => setActiveTab('setup')}
-                        className={`flex-1 py-3 text-[14px] font-black transition-all relative ${activeTab === 'setup' ? 'text-[#00A082]' : 'text-[#9CA3AF]'}`}
-                    >
-                        Order Setup
-                        {activeTab === 'setup' && (
-                            <motion.div layoutId="tab-underline" className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#00A082]" />
-                        )}
-                    </button>
-                    <button
-                        onClick={() => setActiveTab('details')}
-                        className={`flex-1 py-3 text-[14px] font-black transition-all relative ${activeTab === 'details' ? 'text-[#00A082]' : 'text-[#9CA3AF]'}`}
-                    >
-                        Bricoler Details
-                        {activeTab === 'details' && (
-                            <motion.div layoutId="tab-underline" className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#00A082]" />
-                        )}
-                    </button>
-                </div>
+                {!(order.serviceType === 'errands' || order.serviceType?.includes('delivery')) && (
+                    <div className="flex px-4">
+                        <button
+                            onClick={() => setActiveTab('setup')}
+                            className={`flex-1 py-3 text-[14px] font-black transition-all relative ${activeTab === 'setup' ? 'text-[#00A082]' : 'text-[#9CA3AF]'}`}
+                        >
+                            Order Setup
+                            {activeTab === 'setup' && (
+                                <motion.div layoutId="tab-underline" className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#00A082]" />
+                            )}
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('details')}
+                            className={`flex-1 py-3 text-[14px] font-black transition-all relative ${activeTab === 'details' ? 'text-[#00A082]' : 'text-[#9CA3AF]'}`}
+                        >
+                            Bricoler Details
+                            {activeTab === 'details' && (
+                                <motion.div layoutId="tab-underline" className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#00A082]" />
+                            )}
+                        </button>
+                    </div>
+                )}
             </header>
 
             <main className="flex-1 overflow-y-auto pb-48">
@@ -339,24 +341,26 @@ export default function ServiceSetupPage() {
                             className="px-6"
                         >
                             {/* Bricoler Summary */}
-                            <div 
-                                onClick={() => setActiveTab('details')}
-                                className="mt-8 flex items-center gap-4 p-4 bg-[#F9FAFB] rounded-2xl border border-neutral-100 cursor-pointer active:scale-[0.98] transition-all"
-                            >
-                                <img src={provider.avatar} className="w-12 h-12 rounded-full object-cover" />
-                                <div className="flex-1">
-                                    <p className="text-[11px] font-black text-[#9CA3AF] uppercase tracking-wider">Service Provider</p>
-                                    <p className="text-[15px] font-black">{provider.name}</p>
+                            {!(order.serviceType === 'errands' || order.serviceType?.includes('delivery')) && (
+                                <div
+                                    onClick={() => setActiveTab('details')}
+                                    className="mt-8 flex items-center gap-4 p-4 bg-[#F9FAFB] rounded-2xl border border-neutral-100 cursor-pointer active:scale-[0.98] transition-all"
+                                >
+                                    <img src={provider.avatar} className="w-12 h-12 rounded-full object-cover" />
+                                    <div className="flex-1">
+                                        <p className="text-[11px] font-black text-[#9CA3AF] uppercase tracking-wider">Service Provider</p>
+                                        <p className="text-[15px] font-black">{provider.name}</p>
+                                    </div>
+                                    <div className="text-[#00A082] font-black text-[12px]">View Profile</div>
                                 </div>
-                                <div className="text-[#00A082] font-black text-[12px]">View Profile</div>
-                            </div>
+                            )}
 
                             {/* Saved Profiles */}
                             {profiles.length > 0 && (
                                 <section className="mt-8">
                                     <h3 className="text-[17px] font-black mb-4">Saved Setups</h3>
                                     <div className="flex gap-3 overflow-x-auto pb-2 no-scrollbar">
-                                        <button 
+                                        <button
                                             onClick={() => setSelectedProfileId('new')}
                                             className={`flex-shrink-0 px-5 py-3 rounded-2xl border-2 transition-all flex items-center gap-2 ${selectedProfileId === 'new' ? 'border-[#00A082] bg-[#F0FDF4] text-[#00A082]' : 'border-neutral-100 bg-white text-[#6B7280]'}`}
                                         >
@@ -364,7 +368,7 @@ export default function ServiceSetupPage() {
                                             <span className="font-bold text-[14px]">New Setup</span>
                                         </button>
                                         {profiles.map(p => (
-                                            <button 
+                                            <button
                                                 key={p.id}
                                                 onClick={() => handleSelectProfile(p)}
                                                 className={`flex-shrink-0 px-5 py-3 rounded-2xl border-2 transition-all flex items-center gap-2 ${selectedProfileId === p.id ? 'border-[#00A082] bg-[#F0FDF4] text-[#00A082]' : 'border-neutral-100 bg-white text-[#6B7280]'}`}
@@ -394,7 +398,7 @@ export default function ServiceSetupPage() {
                                         {/* Item Description Section */}
                                         <div className="space-y-4">
                                             <h3 className="text-[18px] font-black text-[#111827]">Your order</h3>
-                                            <button 
+                                            <button
                                                 onClick={() => setActiveDrawer('description')}
                                                 className="w-full p-5 bg-white rounded-2xl border-2 border-neutral-100 flex items-center justify-between group"
                                             >
@@ -416,13 +420,13 @@ export default function ServiceSetupPage() {
                                         {/* Delivery Details Section */}
                                         <div className="space-y-4">
                                             <h3 className="text-[18px] font-black text-[#111827]">Delivery details</h3>
-                                            
+
                                             <div className="h-48 bg-[#F3F4F6] rounded-2xl border-2 border-neutral-100 relative overflow-hidden">
                                                 {pickupLocation.address && dropoffLocation.address ? (
-                                                    <MapView 
-                                                        initialLocation={order.location || { lat: 31.5085, lng: -9.7595 }} 
+                                                    <MapView
+                                                        initialLocation={order.location || { lat: 31.5085, lng: -9.7595 }}
                                                         interactive={false}
-                                                        onLocationChange={() => {}}
+                                                        onLocationChange={() => { }}
                                                         lockCenterOnFocus={true}
                                                         showCenterPin={false}
                                                         zoom={14}
@@ -438,7 +442,7 @@ export default function ServiceSetupPage() {
                                             </div>
 
                                             <div className="grid gap-2">
-                                                <button 
+                                                <button
                                                     onClick={() => setActiveDrawer('pickup')}
                                                     className="w-full p-4 flex items-center justify-between border-b border-neutral-50"
                                                 >
@@ -451,7 +455,7 @@ export default function ServiceSetupPage() {
                                                     <ChevronLeft className="rotate-180 text-neutral-300" size={18} />
                                                 </button>
 
-                                                <button 
+                                                <button
                                                     onClick={() => setActiveDrawer('dropoff')}
                                                     className="w-full p-4 flex items-center justify-between border-b border-neutral-50"
                                                 >
@@ -464,7 +468,7 @@ export default function ServiceSetupPage() {
                                                     <ChevronLeft className="rotate-180 text-neutral-300" size={18} />
                                                 </button>
 
-                                                <button 
+                                                <button
                                                     onClick={() => setActiveDrawer('recipient')}
                                                     className="w-full p-4 flex items-center justify-between"
                                                 >
@@ -503,7 +507,7 @@ export default function ServiceSetupPage() {
                                                         <ChevronLeft className="-rotate-90 text-neutral-300" size={20} />
                                                     </button>
                                                 </div>
-                                                
+
                                                 {deliveryType === 'standard' && (
                                                     <div className="space-y-2 pt-4 border-t border-neutral-50">
                                                         <div className="p-4 bg-[#F0FDF4] rounded-2xl border border-[#D1FAE5] flex items-center justify-between">
@@ -521,23 +525,16 @@ export default function ServiceSetupPage() {
                                     </div>
                                 ) : (
                                     <div className="space-y-8">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-10 h-10 rounded-xl bg-[#FFFBEB] flex items-center justify-center">
-                                                <Sparkles size={20} className="text-[#FBBF24]" />
-                                            </div>
-                                            <h3 className="text-[19px] font-black">Configure your {order.serviceName}</h3>
-                                        </div>
+
 
                                         {/* Availability Picker */}
                                         <div className="space-y-4">
                                             <div className="flex items-center gap-3">
-                                                <div className="w-10 h-10 rounded-xl bg-[#F0FDF4] flex items-center justify-center">
-                                                    <Calendar size={20} className="text-[#00A082]" />
-                                                </div>
+
                                                 <h3 className="text-[19px] font-black">When do you need the Bricoler?</h3>
                                             </div>
-                                            <OrderAvailabilityPicker 
-                                                bricolerId={order.providerId!} 
+                                            <OrderAvailabilityPicker
+                                                bricolerId={order.providerId!}
                                                 onSelect={(date, time) => {
                                                     setSelectedDate(date);
                                                     setSelectedTime(time);
@@ -569,12 +566,12 @@ export default function ServiceSetupPage() {
                                             <div className="space-y-4">
                                                 <label className="text-[15px] font-black text-[#4B5563]">Number of Rooms</label>
                                                 <div className="flex items-center justify-between bg-[#F9FAFB] p-4 rounded-2xl border border-neutral-100">
-                                                    <button 
+                                                    <button
                                                         onClick={() => setRooms(Math.max(1, rooms - 1))}
                                                         className="w-12 h-12 rounded-xl bg-white border border-neutral-200 flex items-center justify-center font-black text-xl active:scale-95"
                                                     >-</button>
                                                     <span className="text-2xl font-black">{rooms}</span>
-                                                    <button 
+                                                    <button
                                                         onClick={() => setRooms(Math.min(12, rooms + 1))}
                                                         className="w-12 h-12 rounded-xl bg-white border border-neutral-200 flex items-center justify-center font-black text-xl active:scale-95"
                                                     >+</button>
@@ -592,7 +589,7 @@ export default function ServiceSetupPage() {
                                                 {photos.map((url, i) => (
                                                     <div key={i} className="aspect-square rounded-xl relative overflow-hidden group">
                                                         <img src={url} className="w-full h-full object-cover" />
-                                                        <button 
+                                                        <button
                                                             onClick={() => setPhotos(prev => prev.filter((_, idx) => idx !== i))}
                                                             className="absolute top-1 right-1 w-6 h-6 bg-red-500 rounded-full flex items-center justify-center text-white p-1 shadow-lg"
                                                         >
@@ -623,7 +620,7 @@ export default function ServiceSetupPage() {
                                         {/* Optional Note */}
                                         <div className="space-y-4">
                                             <label className="text-[15px] font-black text-[#4B5563]">Instructions or Notes</label>
-                                            <textarea 
+                                            <textarea
                                                 value={note}
                                                 onChange={(e) => setNote(e.target.value)}
                                                 placeholder="Tell us more about what needs to be done..."
@@ -646,14 +643,14 @@ export default function ServiceSetupPage() {
                                                 </label>
                                                 <AnimatePresence>
                                                     {saveAsFavorite && (
-                                                        <motion.div 
+                                                        <motion.div
                                                             initial={{ height: 0, opacity: 0 }}
                                                             animate={{ height: 'auto', opacity: 1 }}
                                                             exit={{ height: 0, opacity: 0 }}
                                                             className="mt-4 pt-4 border-t border-[#D1FAE5]"
                                                         >
-                                                            <input 
-                                                                type="text" 
+                                                            <input
+                                                                type="text"
                                                                 placeholder="Label (e.g. My Apartment, Beach Villa)"
                                                                 value={favoriteLabel}
                                                                 onChange={(e) => setFavoriteLabel(e.target.value)}
@@ -752,7 +749,7 @@ export default function ServiceSetupPage() {
                         </div>
                     </div>
                 )}
-                <motion.button 
+                <motion.button
                     whileTap={{ scale: 0.97 }}
                     onClick={handleContinue}
                     disabled={isSubmitting || isUploading}
@@ -780,7 +777,7 @@ export default function ServiceSetupPage() {
             {/* Sub-screen Overlays */}
             <AnimatePresence>
                 {activeDrawer !== 'none' && (
-                    <motion.div 
+                    <motion.div
                         initial={{ y: '100%' }}
                         animate={{ y: 0 }}
                         exit={{ y: '100%' }}
@@ -811,14 +808,14 @@ export default function ServiceSetupPage() {
                                             Couriers cannot make purchases. Orders involving purchases will be cancelled.
                                         </p>
                                     </div>
-                                    <textarea 
+                                    <textarea
                                         autoFocus
                                         value={itemDescription}
                                         onChange={(e) => setItemDescription(e.target.value)}
                                         placeholder="Enter details of what needs to be transported..."
                                         className="w-full h-48 p-5 bg-white rounded-2xl border-2 border-neutral-100 focus:border-[#00A082] focus:ring-0 font-bold text-[17px] placeholder:text-neutral-300 resize-none"
                                     />
-                                    <button 
+                                    <button
                                         onClick={() => setActiveDrawer('none')}
                                         className="w-full py-4 bg-[#00A082] text-white rounded-2xl font-black text-[17px] shadow-lg"
                                     >
@@ -831,7 +828,7 @@ export default function ServiceSetupPage() {
                                 <div className="space-y-6">
                                     <div className="space-y-4">
                                         <label className="text-[14px] font-black text-[#4B5563]">Recipient name</label>
-                                        <input 
+                                        <input
                                             type="text"
                                             value={recipientName}
                                             onChange={(e) => setRecipientName(e.target.value)}
@@ -843,7 +840,7 @@ export default function ServiceSetupPage() {
                                         <label className="text-[14px] font-black text-[#4B5563]">Phone number</label>
                                         <div className="flex gap-2">
                                             <div className="px-4 py-4 bg-neutral-50 rounded-xl font-bold border-2 border-neutral-50">+212</div>
-                                            <input 
+                                            <input
                                                 type="tel"
                                                 value={recipientPhone}
                                                 onChange={(e) => setRecipientPhone(e.target.value)}
@@ -855,7 +852,7 @@ export default function ServiceSetupPage() {
                                     <p className="text-[12px] font-bold text-neutral-400 leading-relaxed">
                                         By sharing the recipient's details, you are solely responsible for obtaining their consent and informing them on how their data is processed.
                                     </p>
-                                    <button 
+                                    <button
                                         onClick={() => setActiveDrawer('none')}
                                         className="w-full py-4 bg-[#00A082] text-white rounded-2xl font-black text-[17px] shadow-lg"
                                     >
@@ -869,7 +866,7 @@ export default function ServiceSetupPage() {
                                     <h3 className="text-[16px] font-black text-[#111827]">Select date</h3>
                                     <div className="flex gap-3 overflow-x-auto pb-2 no-scrollbar">
                                         {['Today', 'Tomorrow', 'Monday'].map(day => (
-                                            <button 
+                                            <button
                                                 key={day}
                                                 onClick={() => setDeliveryDate(day)}
                                                 className={`px-6 py-3 rounded-xl border-2 font-bold transition-all ${deliveryDate === day ? 'border-[#00816A] bg-[#00816A] text-white' : 'border-neutral-100 text-neutral-400'}`}
@@ -878,10 +875,10 @@ export default function ServiceSetupPage() {
                                             </button>
                                         ))}
                                     </div>
-                                    
+
                                     <div className="grid gap-2">
-                                        <OrderAvailabilityPicker 
-                                            bricolerId={order.providerId!} 
+                                        <OrderAvailabilityPicker
+                                            bricolerId={order.providerId!}
                                             onSelect={(date, time) => {
                                                 setSelectedDate(date);
                                                 setSelectedTime(time);
@@ -896,7 +893,7 @@ export default function ServiceSetupPage() {
 
 
                                     <div className="flex gap-3 pt-6">
-                                        <button 
+                                        <button
                                             onClick={() => {
                                                 setDeliveryType('standard');
                                                 setActiveDrawer('none');
@@ -905,7 +902,7 @@ export default function ServiceSetupPage() {
                                         >
                                             Cancel
                                         </button>
-                                        <button 
+                                        <button
                                             onClick={() => setActiveDrawer('none')}
                                             className="flex-1 py-4 bg-[#00A082] text-white rounded-2xl font-black text-[17px] shadow-lg"
                                         >
@@ -954,7 +951,7 @@ export default function ServiceSetupPage() {
                                         </div>
                                         <div className="space-y-2 mt-4">
                                             {searchResults.length > 0 ? searchResults.map((r, i) => (
-                                                <button 
+                                                <button
                                                     key={i}
                                                     onClick={() => {
                                                         if (activeDrawer === 'pickup') setPickupLocation(r);

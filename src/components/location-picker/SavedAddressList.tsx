@@ -27,7 +27,7 @@ const SavedAddressList: React.FC<SavedAddressListProps> = ({
         {title}
       </h3>
 
-      <div className="flex-1 overflow-y-auto -mx-1 px-1">
+      <div className="flex-1 -mx-1 px-1">
         {addresses.map((addr) => (
           <AddressRow
             key={addr.id}

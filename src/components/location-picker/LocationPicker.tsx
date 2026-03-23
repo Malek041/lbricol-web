@@ -270,16 +270,16 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
       </div>
 
       {/* 2. Bottom Sheet Area (Resizable) */}
-      <div className="flex-1 bg-white rounded-t-[32px] shadow-[0_-8px_30px_rgba(0,0,0,0.08)] px-5 py-8 flex flex-col relative z-10 -mt-8">
+      <div className="flex-1 bg-white rounded-t-[32px] shadow-[0_-8px_30px_rgba(0,0,0,0.08)] px-5 py-8 flex flex-col relative z-10 -mt-8 overflow-y-auto">
         {/* New Locator Button relative to sheet */}
         <button
           onClick={handleLocate}
           className="absolute -top-14 right-6 w-12 h-12 bg-white rounded-full shadow-xl border border-neutral-100 flex items-center justify-center text-[#00A082] active:scale-90 transition-all z-[100]"
         >
           {isLocating ? (
-            <Loader2 size={22} className="animate-spin" />
+            <Loader2 size={22} className="animate-spin text-black" />
           ) : (
-            <Navigation size={22} fill="currentColor" strokeWidth={0} />
+            <Navigation size={22} className="text-black" />
           )}
         </button>
         {isBricolerBase ? (
