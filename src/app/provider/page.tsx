@@ -3681,7 +3681,7 @@ export default function ProviderPage() {
                                             />
                                         </motion.div>
                                     )}
-                                    {performanceTab === 'insights' ? (
+                                    {performanceTab === 'insights' && (
                                         <motion.div
                                             key="performance-insights"
                                             initial={{ opacity: 0, y: 10 }}
@@ -4397,7 +4397,9 @@ export default function ProviderPage() {
                                                 );
                                             })()}
                                         </motion.div>
-                                    ) : (
+                                    )}
+
+                                    {performanceTab === 'availability' && (
                                         <motion.div
                                             key="performance-availability"
                                             initial={{ opacity: 0, x: 20 }}
