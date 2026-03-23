@@ -214,7 +214,7 @@ interface MobileJobsViewItem {
 // --- Constants & Mock Data ---
 
 const SERVICE_CATEGORIES: ServiceCategory[] = [
-    { id: 'handyman', name: { en: 'Handyman', fr: 'Bricoleur', ar: 'إصلاحات منزلية' }, icon: Hammer },
+    { id: 'home_repairs', name: { en: 'Home repairs', fr: 'Bricolage', ar: 'إصلاحات منزلية' }, icon: Hammer },
     { id: 'furniture_assembly', name: { en: 'Furniture assembly', fr: 'Montage meubles', ar: 'تركيب الأثاث' }, icon: Package },
     { id: 'cleaning', name: { en: 'Cleaning', fr: 'Nettoyage', ar: 'تنظيف' }, icon: Trash2 },
     { id: 'plumbing', name: { en: 'Plumbing', fr: 'Plomberie', ar: 'سباكة' }, icon: Droplets },

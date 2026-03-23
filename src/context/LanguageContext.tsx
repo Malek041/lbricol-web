@@ -88,6 +88,8 @@ const ARABIC_OVERRIDES: Record<string, string> = {
 
     // Services (Main Categories)
     'Handyman': 'إصلاحات منزلية',
+    'Home repairs': 'إصلاحات منزلية',
+    'Home Repairs': 'إصلاحات منزلية',
     'Bricoleur': 'مقدم خدمة',
     'Cleaning': 'تنظيف',
     'Plumbing': 'سباكة',
@@ -107,7 +109,6 @@ const ARABIC_OVERRIDES: Record<string, string> = {
     'Appliances': 'الأجهزة المنزلية',
     'Cooking': 'طبخ',
     'Meal prep': 'تحضير الطعام',
-    'Home Repairs': 'إصلاحات منزلية',
     'Errands & small deliveries': 'قضاء حاجيات وتوصيل',
     'Glass cleaning': 'تنظيف الزجاج',
     'Elderly care': 'رعاية المسنين',

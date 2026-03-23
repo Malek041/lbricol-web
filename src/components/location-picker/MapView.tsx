@@ -55,6 +55,7 @@ interface MapViewProps {
     lng?: number;
     avatarUrl?: string | null;
   };
+  destinationPin?: { lat: number; lng: number };
 }
 
 const MapView: React.FC<MapViewProps> = ({
@@ -85,6 +86,7 @@ const MapView: React.FC<MapViewProps> = ({
   disableFitBounds = false,
   clientPin,
   currentUserPin,
+  destinationPin,
 }) => {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
@@ -154,7 +156,7 @@ const MapView: React.FC<MapViewProps> = ({
         const number = a.house_number || '';
         const neighborhood = a.neighbourhood || a.suburb || '';
         const cityName = a.city || a.town || a.village || '';
-        
+
         city = cityName;
         area = neighborhood;
 
@@ -166,9 +168,9 @@ const MapView: React.FC<MapViewProps> = ({
       finalAddress = "Custom Location, Morocco";
     }
     setAddress(finalAddress);
-    onLocationChange({ 
-      lat, 
-      lng, 
+    onLocationChange({
+      lat,
+      lng,
       address: finalAddress,
       city: city || undefined,
       area: area || undefined
@@ -342,7 +344,7 @@ const MapView: React.FC<MapViewProps> = ({
         (position) => {
           const { latitude, longitude } = position.coords;
           flyToWithOffset(latitude, longitude, targetZoom, pinY === 50);
-          
+
           if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
           debounceTimerRef.current = setTimeout(() => {
             reverseGeocode(latitude, longitude);
@@ -428,9 +430,9 @@ const MapView: React.FC<MapViewProps> = ({
             </div>
             <div style="position:relative;width:${size}px;height:${size}px;transition: width 0.3s, height 0.3s; margin-bottom: 0px;">
               ${serviceIconUrl
-                ? `<img src="${serviceIconUrl}" style="width:100%;height:100%;object-fit:contain"/>`
-                : `<div style="width:100%;height:100%;background:#F3F4F6;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:24px">👤</div>`
-              }
+            ? `<img src="${serviceIconUrl}" style="width:100%;height:100%;object-fit:contain"/>`
+            : `<div style="width:100%;height:100%;background:#F3F4F6;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:24px">👤</div>`
+          }
             </div>
           </div>
         `,
@@ -500,7 +502,7 @@ const MapView: React.FC<MapViewProps> = ({
     // Use a separate collection for broadcast markers if needed, or clear appropriately
     // For simplicity, we can use providerMarkersRef or a new one
     // Let's use a new one: broadcastMarkersRef
-    
+
     if (!broadcastPins || broadcastPins.length === 0) return;
 
     broadcastPins.forEach(pin => {
@@ -559,7 +561,7 @@ const MapView: React.FC<MapViewProps> = ({
       return;
     }
     const map = mapRef.current;
-    
+
     const focusPin = providerPins?.find(p => p.id === focusedProviderId);
     if (!focusPin) return;
 
@@ -570,7 +572,7 @@ const MapView: React.FC<MapViewProps> = ({
       try {
         const res = await fetch(`https://router.project-osrm.org/route/v1/driving/${start[0]},${start[1]};${end[0]},${end[1]}?overview=full&geometries=geojson`);
         const data = await res.json();
-        
+
         if (routeLayerRef.current) map.removeLayer(routeLayerRef.current);
         if (routeLabelRef.current) map.removeLayer(routeLabelRef.current);
 
@@ -578,7 +580,7 @@ const MapView: React.FC<MapViewProps> = ({
           const route = data.routes[0];
           const coords = route.geometry.coordinates.map((c: any) => [c[1], c[0]]);
           const durationMin = Math.round(route.duration / 60);
-          
+
           routeLayerRef.current = L.polyline(coords, {
             color: '#3B82F6',
             weight: 6,
@@ -638,6 +640,98 @@ const MapView: React.FC<MapViewProps> = ({
     };
   }, [focusedProviderId, initialLocation, mapReady, providerPins]);
 
+  // ── Render route between clientPin and destinationPin (Moving / Errands) ──
+  useEffect(() => {
+    if (!mapRef.current || !mapReady || !clientPin || !destinationPin) {
+      // Don't clear if focusedProviderId and clientPin are still active (handled by previous effect)
+      // but if we are specifically using clientPin/destinationPin, we might want to clear old ones.
+      if (!focusedProviderId) {
+        if (routeLayerRef.current) { mapRef.current?.removeLayer(routeLayerRef.current); routeLayerRef.current = null; }
+        if (routeLabelRef.current) { mapRef.current?.removeLayer(routeLabelRef.current); routeLabelRef.current = null; }
+      }
+      return;
+    }
+    const map = mapRef.current;
+
+    const start = [clientPin.lng, clientPin.lat];
+    const end = [destinationPin.lng, destinationPin.lat];
+
+    const loadDirectRoute = async () => {
+      try {
+        const res = await fetch(`https://router.project-osrm.org/route/v1/driving/${start[0]},${start[1]};${end[0]},${end[1]}?overview=full&geometries=geojson`);
+        const data = await res.json();
+
+        if (routeLayerRef.current) map.removeLayer(routeLayerRef.current);
+        if (routeLabelRef.current) map.removeLayer(routeLabelRef.current);
+
+        if (data.code === 'Ok' && data.routes?.[0]) {
+          const route = data.routes[0];
+          const coords = route.geometry.coordinates.map((c: any) => [c[1], c[0]]);
+          const durationMin = Math.round(route.duration / 60);
+
+          routeLayerRef.current = L.polyline(coords, {
+            color: '#00A082', // Branded color for the order route
+            weight: 7,
+            opacity: 1,
+            lineCap: 'round',
+            lineJoin: 'round',
+          }).addTo(map);
+
+          // Find midpoint index for the time bubble
+          const midIdx = Math.floor(coords.length / 2);
+          const midPoint = coords[midIdx];
+
+          const labelIcon = L.divIcon({
+            className: '',
+            html: `
+              <div style="
+                background: white; 
+                padding: 6px 12px; 
+                margin-bottom: 2px;
+                border-radius: 50px; 
+                box-shadow: 0 4px 15px rgba(0,0,0,0.2); 
+                display: flex; 
+                align-items: center; 
+                gap: 6px;
+                white-space: nowrap;
+                border: 2px solid #00A082;
+                animation: fadeIn 0.3s ease-out;
+                pointer-events: none;
+              ">
+                <span style="font-size: 14px">⚡</span>
+                <span style="font-size: 13px; font-weight: 800; color: #111827">${durationMin} min</span>
+              </div>
+            `,
+            iconSize: [100, 40],
+            iconAnchor: [50, 60],
+          });
+
+          routeLabelRef.current = L.marker(midPoint, { icon: labelIcon, zIndexOffset: 3000 }).addTo(map);
+
+          // Auto-fit if requested, or at least fit the route
+          const bounds = L.latLngBounds(coords);
+          map.fitBounds(bounds, { padding: [40, 40] });
+
+        } else {
+          routeLayerRef.current = L.polyline([[clientPin.lat, clientPin.lng], [destinationPin.lat, destinationPin.lng]], {
+            color: '#00A082', weight: 4, opacity: 0.6, dashArray: '8, 8'
+          }).addTo(map);
+        }
+      } catch (e) {
+        console.warn("Direct routing failed", e);
+      }
+    };
+
+    loadDirectRoute();
+
+    return () => {
+      if (!focusedProviderId) {
+        if (routeLayerRef.current) map.removeLayer(routeLayerRef.current);
+        if (routeLabelRef.current) map.removeLayer(routeLabelRef.current);
+      }
+    };
+  }, [clientPin, destinationPin, mapReady, focusedProviderId]);
+
   // ── Auto-fit bounds ONLY when the LIST of providers changes ────────────────
   useEffect(() => {
     if (disableFitBounds) return; // Step 2: keep map locked on client address
@@ -655,19 +749,19 @@ const MapView: React.FC<MapViewProps> = ({
   return (
     <div className="relative w-full h-full overflow-hidden">
       <div ref={mapContainerRef} className="w-full h-full z-0" />
-      
+
       {/* CSS-based Branded Center Pin */}
       {showCenterPin && (
-        <div 
+        <div
           className="absolute left-1/2 z-[1000] pointer-events-none transform -translate-x-1/2 flex flex-col items-center justify-end"
-          style={{ 
+          style={{
             top: `${pinY}%`,
             height: '140px',
             marginTop: '-140px' // Offset to align bottom of pin with the center point
           }}
         >
           {centerAddress && (
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, scale: 0.8, y: 10 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               className="bg-white border border-neutral-100 rounded-[18px] px-4 py-2.5 mb-2 shadow-xl flex items-center gap-3 whitespace-nowrap"
@@ -687,7 +781,7 @@ const MapView: React.FC<MapViewProps> = ({
             </motion.div>
           )}
           <div className="relative w-[38px] h-[50px]">
-             <img src="/Images/map Assets/LocationPin.png" className="w-full h-full object-contain" alt="Branded Pin" />
+            <img src="/Images/map Assets/LocationPin.png" className="w-full h-full object-contain" alt="Branded Pin" />
           </div>
         </div>
       )}

@@ -3,15 +3,15 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Calendar, Clock, ChevronLeft, ChevronRight, AlertCircle, Check } from 'lucide-react';
-import { 
-    format, 
-    addDays, 
-    startOfToday, 
-    isSameDay, 
-    getDay, 
-    parse, 
-    isAfter, 
-    isBefore, 
+import {
+    format,
+    addDays,
+    startOfToday,
+    isSameDay,
+    getDay,
+    parse,
+    isAfter,
+    isBefore,
     addHours,
     startOfDay,
     setHours,
@@ -35,8 +35,8 @@ interface OrderAvailabilityPickerProps {
 const DAYS_NAMES = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
 
 const TIME_SLOTS = [
-    "07:00", "08:00", "09:00", "10:00", "11:00", "12:00", 
-    "13:00", "14:00", "15:00", "16:00", "17:00", "18:00", 
+    "07:00", "08:00", "09:00", "10:00", "11:00", "12:00",
+    "13:00", "14:00", "15:00", "16:00", "17:00", "18:00",
     "19:00", "20:00", "21:00", "22:00"
 ];
 
@@ -69,13 +69,13 @@ export default function OrderAvailabilityPicker({
                 // Fetch Booked Jobs for this Bricoler (next 30 days)
                 const today = startOfToday();
                 const thirtyDaysLater = addDays(today, 30);
-                
+
                 const jobsQuery = query(
                     collection(db, 'jobs'),
                     where('bricolerId', '==', bricolerId),
                     where('status', 'in', ['programmed', 'confirmed', 'in_progress', 'arriving'])
                 );
-                
+
                 const jobsSnap = await getDocs(jobsQuery);
                 const jobs = jobsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
                 setBookedJobs(jobs);
@@ -99,11 +99,11 @@ export default function OrderAvailabilityPicker({
 
         const dateKey = format(selectedDate, 'yyyy-MM-dd');
         const dayOfWeek = DAYS_NAMES[getDay(selectedDate)];
-        
+
         // A. Check Calendar Overrides (calendarSlots) first
         let baseSlots: { from: string, to: string }[] = [];
         const hasOverrides = availabilityData.calendarSlots && availabilityData.calendarSlots[dateKey];
-        
+
         if (hasOverrides && Array.isArray(availabilityData.calendarSlots[dateKey]) && availabilityData.calendarSlots[dateKey].length > 0) {
             baseSlots = availabilityData.calendarSlots[dateKey];
         } else {
@@ -139,7 +139,7 @@ export default function OrderAvailabilityPicker({
                 }
                 return false;
             });
-            
+
             // Also filter out past slots for today
             if (isToday(selectedDate)) {
                 const now = new Date();
@@ -164,45 +164,47 @@ export default function OrderAvailabilityPicker({
     }
 
     return (
-        <div className="flex flex-col space-y-6 w-full">
+        <div className="flex flex-col space-y-8 w-full mt-2">
             {/* Horizontal Date Picker */}
-            <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                    <h3 className="text-[17px] font-black text-black">
-                        {t({ en: 'Select Date', fr: 'Choisir une date', ar: 'اختر التاريخ' })}
-                    </h3>
-                    <div className="flex items-center gap-1 text-[#00A082]">
-                        <Calendar size={16} />
-                        <span className="text-[14px] font-bold">
-                            {format(selectedDate, 'MMMM yyyy', { locale })}
-                        </span>
-                    </div>
-                </div>
-
-                <div className="flex gap-2.5 overflow-x-auto no-scrollbar pb-2 -mx-6 px-6">
+            <div className="space-y-5">
+                <h3 className="text-[17px] font-black text-black">Select date</h3>
+                <div className="flex gap-3 overflow-x-auto no-scrollbar pb-2 -mx-6 px-6">
                     {nextDays.map((day, i) => {
                         const isSelected = isSameDay(day, selectedDate);
                         const isTodayDay = isToday(day);
+                        const isTomorrowDay = isSameDay(day, addDays(startOfToday(), 1));
+
+                        let label = format(day, 'EEEE', { locale });
+                        if (isTodayDay) label = t({ en: 'Today', fr: 'Aujourd\'hui', ar: 'اليوم' });
+                        else if (isTomorrowDay) label = t({ en: 'Tomorrow', fr: 'Demain', ar: 'غداً' });
+
                         return (
                             <button
                                 key={i}
                                 onClick={() => setSelectedDate(day)}
                                 className={cn(
-                                    "flex flex-col items-center justify-center min-w-[65px] h-[85px] rounded-[22px] border-2 transition-all",
-                                    isSelected 
-                                        ? "bg-[#00A082] border-[#00A082] text-white shadow-lg shadow-[#00A082]/20" 
+                                    "flex flex-col items-start justify-center min-w-[130px] p-4 rounded-[10px] border-2 transition-all relative group",
+                                    isSelected
+                                        ? "bg-white border-black"
                                         : "bg-white border-neutral-100 text-neutral-400 hover:border-neutral-200"
                                 )}
                             >
-                                <span className={cn("text-[11px] font-black uppercase tracking-tighter mb-1", isSelected ? "text-white/70" : "text-neutral-400")}>
-                                    {format(day, 'EEE', { locale })}
+                                {/* Radio Indicator in Top Right */}
+                                <div className="absolute top-3 right-3">
+                                    <div className={cn(
+                                        "w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all",
+                                        isSelected ? "border-[#00A082]" : "border-neutral-200"
+                                    )}>
+                                        {isSelected && <div className="w-2.5 h-2.5 rounded-full bg-[#00A082]" />}
+                                    </div>
+                                </div>
+
+                                <span className={cn("text-[14px] font-bold capitalize mb-1", isSelected ? "text-black" : "text-neutral-500")}>
+                                    {label}
                                 </span>
-                                <span className={cn("text-[20px] font-[1000] leading-none", isSelected ? "text-white" : "text-black")}>
-                                    {format(day, 'd')}
+                                <span className={cn("text-[13px] font-medium", isSelected ? "text-neutral-600" : "text-neutral-400")}>
+                                    {format(day, 'd MMM', { locale })}
                                 </span>
-                                {isTodayDay && !isSelected && (
-                                    <div className="w-1.5 h-1.5 bg-[#00A082] rounded-full mt-1.5" />
-                                )}
                             </button>
                         );
                     })}
@@ -210,21 +212,11 @@ export default function OrderAvailabilityPicker({
             </div>
 
             {/* Time Slots Picker */}
-            <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                    <h3 className="text-[17px] font-black text-black">
-                        {t({ en: 'Available Times', fr: 'Heures disponibles', ar: 'الأوقات المتاحة' })}
-                    </h3>
-                    <div className="flex items-center gap-1 text-neutral-400">
-                        <Clock size={16} />
-                        <span className="text-[14px] font-bold">
-                            {format(selectedDate, 'EEEE d MMM', { locale })}
-                        </span>
-                    </div>
-                </div>
+            <div className="space-y-5">
+                <h3 className="text-[17px] font-black text-black">Select time</h3>
 
                 {availableSlots.length > 0 ? (
-                    <div className="grid grid-cols-3 gap-3">
+                    <div className="flex flex-col border-t border-neutral-100">
                         {availableSlots.map((slot, i) => {
                             const isSelected = initialSelectedTime === slot.from && isSameDay(selectedDate, initialSelectedDate || new Date(0));
                             return (
@@ -232,37 +224,34 @@ export default function OrderAvailabilityPicker({
                                     key={i}
                                     onClick={() => onSelect(selectedDate, slot.from)}
                                     className={cn(
-                                        "flex flex-col items-center justify-center py-4 rounded-[20px] border-2 transition-all gap-1",
-                                        isSelected
-                                            ? "bg-[#00A082]/5 border-[#00A082] shadow-sm"
-                                            : "bg-white border-neutral-100 hover:border-neutral-200"
+                                        "flex items-center justify-between py-6 border-b border-neutral-100 transition-all group active:bg-neutral-50 px-2",
                                     )}
                                 >
-                                    <span className={cn("text-[17px] font-black", isSelected ? "text-[#00A082]" : "text-black")}>
-                                        {slot.from}
+                                    <span className={cn("text-[16px] font-bold", isSelected ? "text-black" : "text-neutral-900")}>
+                                        {slot.from} - {slot.to}
                                     </span>
-                                    {isSelected && (
-                                        <div className="flex items-center gap-1 text-[#00A082]">
-                                            <Check size={12} strokeWidth={4} />
-                                            <span className="text-[10px] font-black uppercase tracking-tighter">{t({ en: 'Selected', fr: 'Sélectionné' })}</span>
-                                        </div>
-                                    )}
+
+                                    {/* Radio Indicator */}
+                                    <div className={cn(
+                                        "w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all",
+                                        isSelected ? "border-[#00A082]" : "border-neutral-200 group-hover:border-neutral-300"
+                                    )}>
+                                        {isSelected && <div className="w-3 h-3 rounded-full bg-[#00A082]" />}
+                                    </div>
                                 </button>
                             );
                         })}
                     </div>
                 ) : (
-                    <div className="flex flex-col items-center justify-center py-10 px-6 bg-neutral-50 rounded-[30px] border border-dashed border-neutral-200 text-center space-y-3">
-                        <div className="w-12 h-12 rounded-full bg-neutral-100 flex items-center justify-center text-neutral-400">
-                            <AlertCircle size={24} />
-                        </div>
+                    <div className="flex flex-col items-center justify-center py-12 px-6 rounded-[10px] border border-dashed border-neutral-200 text-center space-y-4">
+
                         <div className="space-y-1">
-                            <p className="text-[16px] font-black text-black">
-                                {t({ en: 'No availability today', fr: 'Pas de dispo aujourd\'hui', ar: 'لا توجد مواعيد متاحة اليوم' })}
+                            <p className="text-[17px] font-black text-black">
+                                {t({ en: 'No availability', fr: 'Pas de dispo', ar: 'لا توجد مواعيد متاحة' })}
                             </p>
-                            <p className="text-[13px] font-bold text-neutral-400 leading-tight">
-                                {t({ 
-                                    en: 'Try selecting another date or check back later.', 
+                            <p className="text-[14px] font-bold text-neutral-400 leading-tight max-w-[200px] mx-auto">
+                                {t({
+                                    en: 'Try selecting another date or check back later.',
                                     fr: 'Essayez une autre date ou revenez plus tard.',
                                     ar: 'حاول اختيار تاريخ آخر أو عد لاحقاً'
                                 })}
@@ -270,16 +259,6 @@ export default function OrderAvailabilityPicker({
                         </div>
                     </div>
                 )}
-            </div>
-            
-            <div className="p-5 bg-[#FFC244]/10 rounded-[24px] border border-[#FFC244]/20 flex items-start gap-3">
-                <AlertCircle className="text-[#FFC244] shrink-0 mt-0.5" size={18} />
-                <p className="text-[13px] font-bold text-neutral-600 leading-tight">
-                    {t({
-                        en: "The provider's schedule is updated in real-time. Please pick a slot that suits your needs.",
-                        fr: "Le planning du prestataire est mis à jour en temps réel. Veuillez choisir un créneau qui vous convient."
-                    })}
-                </p>
             </div>
         </div>
     );

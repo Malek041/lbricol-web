@@ -22,12 +22,12 @@ const SavedAddressList: React.FC<SavedAddressListProps> = ({
   title = "What's your current location?"
 }) => {
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col flex-1 min-h-0">
       <h3 className="text-[22px] font-[800] text-[#111827] mb-5 tracking-[-0.3px]">
         {title}
       </h3>
 
-      <div className="flex-1 -mx-1 px-1">
+      <div className="flex-1 -mx-1 px-1 overflow-y-auto scrollbar-hide">
         {addresses.map((addr) => (
           <AddressRow
             key={addr.id}

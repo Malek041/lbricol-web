@@ -35,7 +35,7 @@ const Footer = () => {
                 { name: t({ en: 'Domestic Help', fr: 'Aide Ménagère', ar: 'مساعدة منزلية' }), href: '#' },
                 { name: t({ en: 'Go Delivery', fr: 'Livraison Go', ar: 'توصيل جو' }), href: '#' },
                 { name: t({ en: 'Cleaning', fr: 'Nettoyage', ar: 'تنظيف' }), href: '#' },
-                { name: t({ en: 'Handyman', fr: 'Bricolage', ar: 'بستنة' }), href: '#' }
+                { name: t({ en: 'Home repairs', fr: 'Bricolage', ar: 'إصلاحات منزلية' }), href: '#' }
             ]
         },
         {

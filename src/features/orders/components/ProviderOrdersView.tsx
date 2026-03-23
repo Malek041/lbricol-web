@@ -66,7 +66,7 @@ export default function ProviderOrdersView({
             'electricity': '/Images/Job Cards Images/Electricity_job_card.webp',
             'plumbing': '/Images/Job Cards Images/Plumbing_job_card.webp',
             'painting': '/Images/Job Cards Images/Painting_job_card.webp',
-            'handyman': '/Images/Job Cards Images/Handyman_job_card.webp',
+            'home_repairs': '/Images/Job Cards Images/Handyman_job_card.webp',
             'furniture_assembly': '/Images/Job Cards Images/Furniture_Assembly_job_card.webp',
             'moving': '/Images/Job Cards Images/Moving Help_job_card.webp',
             'private_driver': '/Images/Vectors Illu/BWCardirever.webp',
@@ -131,18 +131,8 @@ export default function ProviderOrdersView({
 
     return (
         <div className="flex flex-col h-full bg-[#FFFFFF] relative overflow-hidden">
-            {/* TOP HEADER (Activity View Title) */}
-            <div className="px-6 pt-8 pb-3 bg-white border-b border-[#E6E6E6] sticky top-0 z-[110]">
-                <div className="flex items-center gap-6">
-                    <div className="pb-3 text-[16px] transition-all relative font-black text-[#1D1D1D]">
-                        {t({ en: 'Activity', fr: 'Activité', ar: 'النشاط' })}
-                        <motion.div layoutId="bricoler-activity-tab" className="absolute bottom-0 left-0 right-0 h-[3px] bg-[#00A082] rounded-t-full" />
-                    </div>
-                </div>
-            </div>
-
-            {/* TOP MAP CONTAINER (Full viewport minus header if needed, but here absolute) */}
-            <div className="absolute inset-x-0 bottom-0 top-[68px] z-0">
+            {/* TOP MAP CONTAINER */}
+            <div className="absolute inset-x-0 bottom-0 top-0 z-0">
                 <LiveOrdersMap
                     city={userData?.city || ''}
                     onSelectOrder={onSelectOrder}

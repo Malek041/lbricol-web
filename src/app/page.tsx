@@ -129,7 +129,7 @@ import { distributeJob } from '@/lib/distribution';
 import { useIsMobileViewport } from '@/lib/mobileOnly';
 
 const SERVICE_CRAFTS: string[] = [
-  'Handyman / small repairs',
+  'Home repairs',
   'Furniture assembly',
   'Cleaning',
   'Glass Cleaning',
@@ -163,8 +163,10 @@ const HERO_IMAGES = [
 const getAgentType = (s: string, count: number, t: (vals: { en: string, fr: string }) => string) => {
   const isPlural = count > 1;
   switch (s) {
-    case 'Handyman / small repairs':
-      return t({ en: isPlural ? 'Handymen' : 'Handyman', fr: isPlural ? 'Bricoleurs' : 'Bricoleur' });
+    case 'Home repairs':
+    case 'handyman':
+    case 'home_repairs':
+      return t({ en: isPlural ? 'Bricolers' : 'Bricoler', fr: isPlural ? 'Bricoleurs' : 'Bricoleur' });
     case 'Furniture assembly':
       return t({ en: isPlural ? 'Assemblers' : 'Assembler', fr: isPlural ? 'Monteurs' : 'Monteur' });
     case 'Cleaning':
@@ -216,7 +218,11 @@ const getAgentType = (s: string, count: number, t: (vals: { en: string, fr: stri
 
 const getTranslatedName = (s: string, t: (vals: { en: string, fr: string }) => string) => {
   switch (s) {
-    case 'Handyman / small repairs': return t({ en: 'Handyman', fr: 'Bricoleur' });
+    case 'Handyman / small repairs':
+    case 'Home repairs':
+    case 'handyman':
+    case 'home_repairs':
+      return t({ en: 'Home repairs', fr: 'Bricolage' });
     case 'Furniture assembly': return t({ en: 'Furniture Helper', fr: 'Aide Montage' });
     case 'Cleaning': return t({ en: 'Cleaning Helper', fr: 'Aide Ménage' });
     case 'Glass Cleaning': return t({ en: 'Glass Cleaning', fr: 'Nettoyage Vitres' });
@@ -751,7 +757,7 @@ const Home = () => {
   const [profIndex, setProfIndex] = useState(0);
 
   const professionalTypesDomestic = [
-    { en: "Handyman", fr: "Bricoleur" },
+    { en: "Home repairs", fr: "Bricolage" },
     { en: "Cleaner", fr: "Femme de ménage" },
     { en: "Plumber", fr: "Plombier" },
     { en: "Electrician", fr: "Électricien" },

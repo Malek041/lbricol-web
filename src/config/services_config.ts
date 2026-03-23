@@ -40,7 +40,7 @@ export interface ServiceConfig {
 }
 
 export const SERVICES_HIERARCHY: Record<string, ServiceConfig> = {
-    // Phase 1: Core "Binary Success" Categories
+    // 1. Core Services (Immediate / Binary Success)
     furniture_assembly: {
         id: 'furniture_assembly',
         name: 'Furniture assembly',
@@ -57,18 +57,45 @@ export const SERVICES_HIERARCHY: Record<string, ServiceConfig> = {
                 }
             },
             {
-                id: 'ikea_flatpack',
+                id: 'ikea_assembly',
                 name: 'IKEA / Flat-Pack Assembly',
                 pricingArchetype: 'fixed',
                 desc: {
-                    en: 'Specialized assembly for flat-pack furniture like IKEA products.',
-                    fr: 'Assemblage spécialisé pour les meubles en kit comme les produits IKEA.',
-                    ar: 'تجميع متخصص للأثاث المعبأ بشكل مسطح مثل منتجات ايكيا.'
+                    en: 'Expert assembly of IKEA or any flat-pack furniture.',
+                    fr: 'Montage expert de meubles IKEA ou tout meuble en kit.',
+                    ar: 'تجميع خبير لأثاث IKEA أو أي أثاث في صناديق.'
                 }
             },
-            { id: 'crib_assembly', name: 'Crib Assembly', pricingArchetype: 'fixed' },
-            { id: 'bookshelf_assembly', name: 'Bookshelf Assembly', pricingArchetype: 'fixed' },
-            { id: 'desk_assembly', name: 'Desk Assembly', pricingArchetype: 'fixed' }
+            {
+                id: 'crib_assembly',
+                name: 'Crib Assembly',
+                pricingArchetype: 'fixed',
+                desc: {
+                    en: 'Safe and secure assembly of baby cribs and nursery furniture.',
+                    fr: 'Montage sûr et sécurisé de berceaux et de meubles de chambre de bébé.',
+                    ar: 'تجميع آمن ومضمون لمهود الأطفال وأثاث الحضانة.'
+                }
+            },
+            {
+                id: 'bookshelf_assembly',
+                name: 'Bookshelf Assembly',
+                pricingArchetype: 'fixed',
+                desc: {
+                    en: 'Assemble bookshelves, storage units, and library systems.',
+                    fr: 'Assemblez des bibliothèques, des vitrines et des systèmes de rangement.',
+                    ar: 'تجميع أرفف الكتب ووحدات التخزين وأنظمة المكتبات.'
+                }
+            },
+            {
+                id: 'desk_assembly',
+                name: 'Desk Assembly',
+                pricingArchetype: 'fixed',
+                desc: {
+                    en: 'Assembly of office desks, workstations, and computer tables.',
+                    fr: 'Montage de bureaux, de postes de travail et de tables informatiques.',
+                    ar: 'تجميع مكاتب العمل ومحطات العمل وطاولات الكمبيوتر.'
+                }
+            }
         ]
     },
     moving: {
@@ -90,9 +117,9 @@ export const SERVICES_HIERARCHY: Record<string, ServiceConfig> = {
             { id: 'furniture_move', name: 'Furniture Moving Only', pricingArchetype: 'hourly' }
         ]
     },
-    handyman: {
-        id: 'handyman',
-        name: 'Handyman',
+    home_repairs: {
+        id: 'home_repairs',
+        name: 'Home repairs',
         icon: Hammer,
         subServices: [
             {
@@ -105,10 +132,17 @@ export const SERVICES_HIERARCHY: Record<string, ServiceConfig> = {
                     ar: 'إصلاحات صغيرة في جميع أنحاء المنزل مثل إصلاح سقف يسرب أو باب يصدر صريراً.'
                 }
             },
-            { id: 'door_lock', name: 'Door & Lock Repair', pricingArchetype: 'fixed' },
-            { id: 'furniture_fix', name: 'Furniture Fixes', pricingArchetype: 'fixed' },
+            { id: 'door_lock_repair', name: 'Door & Lock Repair', pricingArchetype: 'fixed' },
+            { id: 'furniture_fixes', name: 'Furniture Fixes', pricingArchetype: 'fixed' },
             { id: 'shelf_mounting', name: 'Shelf Mounting', pricingArchetype: 'fixed' },
-            { id: 'caulking', name: 'Caulking & Grouting', pricingArchetype: 'hourly' }
+            { id: 'caulking_grouting', name: 'Caulking & Grouting', pricingArchetype: 'hourly' },
+            { id: 'wall_repair', name: 'Wall Repair', pricingArchetype: 'fixed' },
+            { id: 'appliance_install', name: 'Appliance Installation & Repairs', pricingArchetype: 'fixed' },
+            { id: 'window_blinds_repair', name: 'Window & Blinds Repair', pricingArchetype: 'fixed' },
+            { id: 'flooring_tiling', name: 'Flooring & Tiling Help', pricingArchetype: 'hourly' },
+            { id: 'electrical_help', name: 'Electrical Help', pricingArchetype: 'hourly' },
+            { id: 'plumbing_help', name: 'Plumbing Help', pricingArchetype: 'hourly' },
+            { id: 'light_carpentry', name: 'Light Carpentry', pricingArchetype: 'hourly' },
         ]
     },
     mounting: {
@@ -116,43 +150,32 @@ export const SERVICES_HIERARCHY: Record<string, ServiceConfig> = {
         name: 'Mounting',
         icon: Monitor,
         subServices: [
-            {
-                id: 'tv_mount',
-                name: 'TV Mounting',
-                pricingArchetype: 'fixed',
-                desc: {
-                    en: 'Securely mount TVs of all sizes onto any type of wall.',
-                    fr: 'Fixez solidement des téléviseurs de toutes tailles sur tout type de mur.',
-                    ar: 'تثبيت أجهزة التلفزيون من جميع الأحجام بأمان على أي نوع من الجدران.'
-                }
-            },
-            { id: 'shelf_mount', name: 'Shelf Installation', pricingArchetype: 'fixed' },
-            { id: 'curtain_mount', name: 'Curtain Rod Installation', pricingArchetype: 'fixed' },
-            { id: 'mirror_hanging', name: 'Mirror Hanging', pricingArchetype: 'fixed' },
-            { id: 'picture_hanging', name: 'Picture Hanging', pricingArchetype: 'fixed' }
+            { id: 'hang_art', name: 'Hang Art, Mirror & Decor', pricingArchetype: 'fixed' },
+            { id: 'install_blinds', name: 'Install Blinds & Window Treatments', pricingArchetype: 'fixed' },
+            { id: 'mount_furniture', name: 'Mount & Anchor Furniture', pricingArchetype: 'fixed' },
+            { id: 'install_shelves', name: 'Install Shelves, Rods & Hooks', pricingArchetype: 'fixed' },
+            { id: 'other_mounting', name: 'Other Mounting', pricingArchetype: 'hourly' },
+            { id: 'tv_mounting', name: 'TV Mounting', pricingArchetype: 'fixed' }
         ]
     },
 
-    // Phase 2: Home Infrastructure & Restoration
+    // 2. Home Infrastructure & Restoration
     plumbing: {
         id: 'plumbing',
         name: 'Plumbing',
         icon: Droplets,
         subServices: [
             {
-                id: 'leak_repair',
-                name: 'Leak Repair',
+                id: 'general_plumbing',
+                name: 'General Plumbing',
                 pricingArchetype: 'hourly',
                 desc: {
-                    en: 'Identify and fix leaks in pipes, faucets, and toilets to prevent water damage.',
-                    fr: 'Identifiez et réparez les fuites dans les tuyaux, les robinets et les toilettes pour éviter les dégâts des eaux.',
-                    ar: 'تحديد وإصلاح التسريبات في الأنابيب والحنفيات والمراحيض لمنع أضرار المياه.'
+                    en: 'Standard plumbing fixes such as leaky faucets, or drain issues.',
+                    fr: 'Réparations de plomberie standard comme des robinets qui fuient ou des problèmes de vidange.',
+                    ar: 'إصلاحات سباكة قياسية مثل تسريب الحنفيات أو مشكلات الصرف.'
                 }
             },
-            { id: 'pipe_install', name: 'Pipe Installation', pricingArchetype: 'fixed' },
-            { id: 'drain_clean', name: 'Drain Cleaning', pricingArchetype: 'fixed' },
-            { id: 'faucet_repair', name: 'Faucet Repair', pricingArchetype: 'fixed' },
-            { id: 'toilet_repair', name: 'Toilet Repair', pricingArchetype: 'fixed' }
+            { id: 'heavy_plumbing', name: 'Heavy Plumbing tasks', pricingArchetype: 'hourly' }
         ]
     },
     electricity: {
@@ -183,61 +206,34 @@ export const SERVICES_HIERARCHY: Record<string, ServiceConfig> = {
         name: 'Painting',
         icon: PenTool,
         subServices: [
-            {
-                id: 'indoor_painting',
-                name: 'Indoor Painting',
-                pricingArchetype: 'unit',
-                desc: {
-                    en: 'Professional interior painting for walls, ceilings, and trim.',
-                    fr: 'Peinture intérieure professionnelle pour les murs, les plafonds et les boiseries.',
-                    ar: 'دهان داخلي احترافي للجدران والأسقف والزخارف.'
-                }
-            },
-            { id: 'wallpapering', name: 'Wallpapering', pricingArchetype: 'unit' },
+            { id: 'indoor_painting', name: 'Indoor Painting', pricingArchetype: 'unit' },
             { id: 'outdoor_painting', name: 'Outdoor Painting', pricingArchetype: 'unit' },
             { id: 'concrete_brick_painting', name: 'Concrete & Brick Painting', pricingArchetype: 'unit' },
-            { id: 'accent_wall_painting', name: 'Accent Wall Painting', pricingArchetype: 'unit' },
-            { id: 'wallpaper_removal', name: 'Wallpaper Removal', pricingArchetype: 'unit' }
-        ]
-    },
-    appliance_installation: {
-        id: 'appliance_installation',
-        name: 'Home Repairs',
-        icon: Wrench,
-        subServices: [
-            { id: 'door_cabinet_furniture_repair', name: 'Door, Cabinet, & Furniture Repair', pricingArchetype: 'fixed' },
-            { id: 'wall_repair', name: 'Wall Repair', pricingArchetype: 'fixed' },
-            { id: 'sealing_caulking', name: 'Sealing & Caulking', pricingArchetype: 'fixed' },
-            { id: 'appliance_install_repair', name: 'Appliance Installation & Repairs', pricingArchetype: 'fixed' },
-            { id: 'window_blinds_repair', name: 'Window & Blinds Repair', pricingArchetype: 'fixed' },
-            { id: 'flooring_tiling', name: 'Flooring & Tiling Help', pricingArchetype: 'hourly' },
-            { id: 'electrical_help', name: 'Electrical Help', pricingArchetype: 'hourly' },
-            { id: 'plumbing_help', name: 'Plumbing Help', pricingArchetype: 'hourly' },
-            { id: 'light_carpentry', name: 'Light Carpentry', pricingArchetype: 'hourly' },
-            { id: 'window_winterization', name: 'Window Winterization', pricingArchetype: 'fixed' }
+            { id: 'wallpapering', name: 'Wallpapering', pricingArchetype: 'unit' }
         ]
     },
 
-    // Phase 3: Recurring Maintenance & Errands
+    // 3. Recurring Maintenance & Errands
     cleaning: {
         id: 'cleaning',
         name: 'Cleaning',
         icon: Trash2,
         subServices: [
-            {
-                id: 'family_home',
-                name: 'Family Home Cleaning',
-                pricingArchetype: 'unit',
-                desc: {
-                    en: 'Standard cleaning services for houses and apartments including dusting, vacuuming, and mopping.',
-                    fr: 'Services de nettoyage standard pour maisons et appartements, y compris l\'époussetage, l\'aspirateur et la serpillère.',
-                    ar: 'خدمات التنظيف القياسية للمنازل والشقق بما في ذلك نفض الغبار والكنس بالمكنسة الكهربائية والمسح.'
-                }
-            },
-            { id: 'hospitality', name: 'Airbnb Cleaning', pricingArchetype: 'unit' },
-            { id: 'car_wash', name: 'Car Washing', pricingArchetype: 'fixed' },
+            { id: 'family_home', name: 'Family home cleaning', pricingArchetype: 'unit' },
+            { id: 'hospitality', name: 'Hospitality-level cleaning', pricingArchetype: 'unit' }
+        ]
+    },
+    automotive: {
+        id: 'automotive',
+        name: 'My Car & Transport',
+        icon: Car,
+        subServices: [
+            { id: 'car_wash', name: 'Car Wash', pricingArchetype: 'fixed' },
             { id: 'car_detail', name: 'Car Detailing', pricingArchetype: 'fixed' },
-            { id: 'deep_clean', name: 'Deep Home Cleaning', pricingArchetype: 'unit' }
+            { id: 'automotive_glass', name: 'Automotive Glass', pricingArchetype: 'fixed' },
+            { id: 'car_rental', name: 'Car Rental', pricingArchetype: 'rental' },
+            { id: 'private_driver', name: 'Private Driver', pricingArchetype: 'rental' },
+            { id: 'vip_airport', name: 'VIP Airport Transfer', pricingArchetype: 'fixed' }
         ]
     },
     errands: {
@@ -259,7 +255,6 @@ export const SERVICES_HIERARCHY: Record<string, ServiceConfig> = {
         subServices: [
             { id: 'residential_glass', name: 'Residential Glass', pricingArchetype: 'unit' },
             { id: 'commercial_glass', name: 'Commercial/Office Glass', pricingArchetype: 'unit' },
-            { id: 'automotive_glass', name: 'Automotive Glass', pricingArchetype: 'fixed' },
             { id: 'specialty_glass', name: 'Specialty/Hard-to-Clean Glass', pricingArchetype: 'hourly' },
             { id: 'alternative_surfaces', name: 'Alternative Surfaces (Mirrors, Stainless Steel)', pricingArchetype: 'hourly' }
         ]
@@ -270,12 +265,12 @@ export const SERVICES_HIERARCHY: Record<string, ServiceConfig> = {
         icon: Leaf,
         subServices: [
             { id: 'lawn_mowing', name: 'Lawn Mowing', pricingArchetype: 'hourly' },
-            { id: 'tree_trimming', name: 'Tree Trimming', pricingArchetype: 'hourly' },
-            { id: 'planting', name: 'Planting & Landscaping', pricingArchetype: 'hourly' }
+            { id: 'yard_work', name: 'Yard Work', pricingArchetype: 'hourly' },
+            { id: 'branch_hedge_trimming', name: 'Branch & Hedge Trimming', pricingArchetype: 'hourly' }
         ]
     },
 
-    // Phase 4: High-Trust & Niche Services
+    // 4. High-Trust & Niche Services
     babysitting: {
         id: 'babysitting',
         name: 'Babysitting',
@@ -290,10 +285,7 @@ export const SERVICES_HIERARCHY: Record<string, ServiceConfig> = {
                     fr: 'Services de garde d\'enfants au quotidien, y compris les jeux, les repas et les soins de base.',
                     ar: 'خدمات رعاية الأطفال اليومية بما في ذلك اللعب والتغذية والرعاية الأساسية.'
                 }
-            },
-            { id: 'after_school_care', name: 'After-School Care', pricingArchetype: 'hourly' },
-            { id: 'night_sitting', name: 'Night Sitting', pricingArchetype: 'hourly' },
-            { id: 'day_out_supervision', name: 'Day Out Supervision', pricingArchetype: 'hourly' }
+            }
         ]
     },
     pool_cleaning: {
@@ -320,7 +312,6 @@ export const SERVICES_HIERARCHY: Record<string, ServiceConfig> = {
             { id: 'pet_transport', name: 'Pet Transportation', pricingArchetype: 'fixed' }
         ]
     },
-
     elderly_care: {
         id: 'elderly_care',
         name: 'Elderly care',
@@ -335,43 +326,7 @@ export const SERVICES_HIERARCHY: Record<string, ServiceConfig> = {
         ]
     },
 
-    // Go Services
-    driver: {
-        id: 'driver',
-        name: 'Car with driver',
-        icon: Car,
-        subServices: [
-            { id: 'hourly', name: 'Hourly Service', pricingArchetype: 'hourly' },
-            { id: 'daily', name: 'Daily Service', pricingArchetype: 'rental' },
-            { id: 'event', name: 'Event Transportation', pricingArchetype: 'fixed' }
-        ]
-    },
-    car_rental: {
-        id: 'car_rental',
-        name: 'Car rental',
-        icon: Key,
-        subServices: [
-            { id: 'rent_a_car', name: 'Rent a car', pricingArchetype: 'rental' }
-        ]
-    },
-    courier: {
-        id: 'courier',
-        name: 'Courier / delivery',
-        icon: PackageCheck,
-        subServices: []
-    },
-    airport: {
-        id: 'airport',
-        name: 'Airport pickup',
-        icon: Plane,
-        subServices: []
-    },
-    transport_intercity: {
-        id: 'transport_intercity',
-        name: 'Intercity transport',
-        icon: MapIcon,
-        subServices: []
-    },
+    // 5. Lifestyle & Experience
     cooking: {
         id: 'cooking',
         name: 'Cooking',
@@ -384,17 +339,6 @@ export const SERVICES_HIERARCHY: Record<string, ServiceConfig> = {
             { id: 'private_chef', name: 'Private Chef at Home', pricingArchetype: 'hourly' },
             { id: 'pastry_class', name: 'Moroccan Pastry Workshop', pricingArchetype: 'fixed' },
             { id: 'market_tour_cooking', name: 'Market Tour & Cooking', pricingArchetype: 'fixed' }
-        ]
-    },
-    private_driver: {
-        id: 'private_driver',
-        name: 'Private Driver',
-        icon: Car,
-        subServices: [
-            { id: 'city_half_day', name: 'Half-Day City Driver', pricingArchetype: 'rental' },
-            { id: 'city_full_day', name: 'Full-Day City Driver', pricingArchetype: 'rental' },
-            { id: 'airport_vip', name: 'VIP Airport Transfer', pricingArchetype: 'fixed' },
-            { id: 'intercity_driver', name: 'Intercity Trip Driver', pricingArchetype: 'rental' }
         ]
     },
     learn_arabic: {

@@ -526,7 +526,7 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
             'electricity': '/Images/Job Cards Images/Electricity_job_card.webp',
             'plumbing': '/Images/Job Cards Images/Plumbing_job_card.webp',
             'painting': '/Images/Job Cards Images/Painting_job_card.webp',
-            'handyman': '/Images/Job Cards Images/Handyman_job_card.webp',
+            'home_repairs': '/Images/Job Cards Images/Handyman_job_card.webp',
             'furniture_assembly': '/Images/Job Cards Images/Furniture_Assembly_job_card.webp',
             'moving': '/Images/Job Cards Images/Moving Help_job_card.webp',
             'gardening': '/Images/Job Cards Images/Gardening_job_card.webp',

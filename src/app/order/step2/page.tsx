@@ -21,7 +21,7 @@ const DEFAULT_AVAILABILITY = {
 };
 
 const SERVICES_REQUIRING_SETUP = [
-  'cleaning', 'handyman', 'furniture_assembly', 'moving', 'mounting', 
+  'cleaning', 'home_repairs', 'furniture_assembly', 'moving', 'mounting', 
   'plumbing', 'electricity', 'painting', 'appliance_installation', 
   'glass_cleaning', 'gardening', 'babysitting', 'pool_cleaning', 
   'pets_care', 'elderly_care', 'cooking'
@@ -38,8 +38,6 @@ const MOCK_PROVIDERS = [
     bio: 'أتعامل مع الأطفال بلطف وصبر، وأهتم بسلامتهم ونظافتهم وأوفر لهم جواً مريحاً وآمناً.',
     isNew: true,
     availableToday: true,
-    base_lat: 31.514,
-    base_lng: -9.758,
     service_radius_km: 15,
     availability: DEFAULT_AVAILABILITY
   },
@@ -112,11 +110,23 @@ function Step2Content() {
           };
         }) as any[];
 
-        // Filter: must offer the selected service category
-        const filtered = all.filter(b =>
-          Array.isArray(b.services) &&
-          b.services.some((s: any) => s.categoryId === serviceType)
-        );
+        // Filter: must offer the selected service category and potentially sub-service
+        const filtered = all.filter(b => {
+          if (!Array.isArray(b.services)) return false;
+          
+          return b.services.some((s: any) => {
+            const catMatch = s.categoryId === serviceType || s.serviceId === serviceType;
+            if (!catMatch) return false;
+            
+            // If a specific sub-service is selected, ensure the Bricoler offers it
+            if (order.subServiceId) {
+              return s.subServiceId === order.subServiceId || 
+                     s.subServiceName === order.subServiceName ||
+                     s.id === order.subServiceId;
+            }
+            return true;
+          });
+        });
 
         // Filter: must have GPS and client must be within their radius
         const inRange = filtered.filter(b => {

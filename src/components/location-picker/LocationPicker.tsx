@@ -214,6 +214,7 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
             onInteractionStart={() => setIsInteracting(true)}
             onInteractionEnd={() => setIsInteracting(false)}
             pinY={50}
+            zoom={17}
           />
         </div>
 
@@ -270,7 +271,7 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
       </div>
 
       {/* 2. Bottom Sheet Area (Resizable) */}
-      <div className="flex-1 bg-white rounded-t-[32px] shadow-[0_-8px_30px_rgba(0,0,0,0.08)] px-5 py-8 flex flex-col relative z-10 -mt-8 overflow-y-auto">
+      <div className="flex-1 bg-white rounded-t-[32px] shadow-[0_-8px_30px_rgba(0,0,0,0.08)] px-5 py-8 flex flex-col relative z-10 -mt-8 overflow-visible min-h-0">
         {/* New Locator Button relative to sheet */}
         <button
           onClick={handleLocate}
@@ -283,7 +284,7 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
           )}
         </button>
         {isBricolerBase ? (
-          <div className="flex flex-col h-full">
+          <div className="flex flex-col h-full overflow-y-auto scrollbar-hide">
             <AnimatePresence mode="wait">
               {radiusView ? (
                 <motion.div
@@ -378,7 +379,7 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
             </AnimatePresence>
           </div>
         ) : (
-          <>
+          <div className="flex-1 flex flex-col min-h-0">
             <SavedAddressList
               addresses={savedAddresses}
               onSelect={handleSavedSelect}
@@ -387,10 +388,10 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
               title={mode === 'double' && step === 2 ? "Where are you moving to?" : "Where do you need help?"}
             />
 
-            <p className="text-center text-[12px] text-[#9CA3AF] mt-4 font-medium">
+            <p className="text-center text-[12px] text-[#9CA3AF] mt-4 font-medium shrink-0">
               Trouble locating your address? Try using search instead
             </p>
-          </>
+          </div>
         )}
       </div>
 

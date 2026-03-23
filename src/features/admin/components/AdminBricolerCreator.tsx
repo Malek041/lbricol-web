@@ -33,7 +33,7 @@ const AdminBricolerCreator: React.FC<AdminBricolerCreatorProps> = ({ t, onBack }
 
     const cities = ['Marrakech', 'Casablanca', 'Essaouira', 'Agadir', 'Rabat', 'Tangier'];
     const serviceCategories = [
-        'Handyman / small repairs', 'Furniture assembly', 'Cleaning',
+        'Home repairs', 'Furniture assembly', 'Cleaning',
         'Glass Cleaning', 'Plumbing', 'Electricity', 'Painting'
     ];
 

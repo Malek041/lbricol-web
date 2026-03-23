@@ -123,7 +123,7 @@ const SERVICE_EQUIPMENT_SUGGESTIONS: Record<string, string[]> = {
         "Paint rollers & trays", "Spray gun", "Brush set",
         "Masking tape", "Sandpaper set", "Drop cloths", "Ladder"
     ],
-    handyman: [
+    home_repairs: [
         "Power drill", "Screwdriver set", "Level",
         "Hammer & nails", "Measuring tape", "Jigsaw / circular saw"
     ],

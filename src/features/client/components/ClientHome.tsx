@@ -24,7 +24,7 @@ interface ServiceEntry {
     labelFr: string;
     labelAr?: string;
     iconPath: string;
-    subServices: { en: string; fr: string; ar?: string }[];
+    subServices: { id?: string; en: string; fr: string; ar?: string }[];
     bullets: { en: string; fr: string; ar?: string }[];
     heroImage: string; // local /Images/Job Cards Images/ path
 }
@@ -32,21 +32,28 @@ interface ServiceEntry {
 // Map each service to its local job-card image
 const SERVICES: ServiceEntry[] = [
     {
-        id: 'handyman',
-        label: 'Handyman',
-        labelFr: 'Bricoleur',
-        labelAr: 'بري كول',
+        id: 'home_repairs',
+        label: 'Home repairs',
+        labelFr: 'Bricolage',
+        labelAr: 'إصلاحات منزلية',
         iconPath: '/Images/Service Category vectors/HandymanVector.webp',
         subServices: [
-            { en: 'General Repairs', fr: 'Réparations Générales', ar: 'إصلاحات عامة' },
-            { en: 'Door & Lock Repair', fr: 'Réparation de Portes et Serrures', ar: 'إصلاح الأبواب والأقفال' },
-            { en: 'Furniture Fixes', fr: 'Réparation de Meubles', ar: 'إصلاح الأثاث' },
-            { en: 'Shelf Mounting', fr: 'Montage d\'Étagères', ar: 'تركيب الرفوف' },
-            { en: 'Caulking & Grouting', fr: 'Calfeutrage et Jointoiement', ar: 'سد الفجوات والجص' }
+            { id: 'general_repairs', en: 'General Repairs', fr: 'Réparations Générales', ar: 'إصلاحات عامة' },
+            { id: 'door_lock_repair', en: 'Door & Lock Repair', fr: 'Réparation de Portes et Serrures', ar: 'إصلاح الأبواب والأقفال' },
+            { id: 'furniture_fixes', en: 'Furniture Fixes', fr: 'Réparation de Meubles', ar: 'إصلاح الأثاث' },
+            { id: 'shelf_mounting', en: 'Shelf Mounting', fr: 'Montage d\'Étagères', ar: 'تركيب الرفوف' },
+            { id: 'caulking_grouting', en: 'Caulking & Grouting', fr: 'Calfeutrage et Jointoiement', ar: 'سد الفجوات والجص' },
+            { id: 'wall_repair', en: 'Wall Repair', fr: 'Réparation de Murs', ar: 'إصلاح الجدران' },
+            { id: 'appliance_install', en: 'Appliance Installation & Repairs', fr: 'Installation et Réparation d\'Appareils', ar: 'تركيب وإصلاح الأجهزة' },
+            { id: 'window_blinds_repair', en: 'Window & Blinds Repair', fr: 'Réparation de Fenêtres et Stores', ar: 'إصلاح النوافذ والستائر' },
+            { id: 'flooring_tiling', en: 'Flooring & Tiling Help', fr: 'Aide pour le Sol et le Carrelage', ar: 'المساعدة في الأرضيات والبلاط' },
+            { id: 'electrical_help', en: 'Electrical Help', fr: 'Aide Électrique', ar: 'مساعدة كهربائية' },
+            { id: 'plumbing_help', en: 'Plumbing Help', fr: 'Aide en Plomberie', ar: 'مساعدة في السباكة' },
+            { id: 'light_carpentry', en: 'Light Carpentry', fr: 'Menuiserie Légère', ar: 'نجارة خفيفة' }
         ],
         bullets: [
             { en: 'From leaky taps to broken hinges, we fix it all.', fr: 'Des robinets qui fuient aux charnières cassées, nous réparons tout.', ar: 'من الصنابير التي تسرب إلى المفصلات المكسورة، نصلح كل شيء.' },
-            { en: 'Now Trending: Smart-home gadget installations.', fr: 'Tendance actuelle : Installations de gadgets pour maison intelligente.', ar: 'رائج الآن: تركيب أجهزة المنزل الذكي.' },
+            { en: 'New Trending: Smart-home gadget installations.', fr: 'Tendance actuelle : Installations de gadgets pour maison intelligente.', ar: 'رائج الآن: تركيب أجهزة المنزل الذكي.' },
         ],
         heroImage: '/Images/Job Cards Images/Handyman_job_card.webp',
     },
@@ -57,11 +64,11 @@ const SERVICES: ServiceEntry[] = [
         labelAr: 'تركيب الأثاث',
         iconPath: '/Images/Service Category vectors/AsssemblyVector.webp',
         subServices: [
-            { en: 'General Furniture Assembly', fr: 'Montage de Meubles Général', ar: 'تركيب أثاث عام' },
-            { en: 'IKEA / Flat-Pack Assembly', fr: 'Montage IKEA / Kit', ar: 'تركيب أثاث ايكيا / أثاث جاهز' },
-            { en: 'Crib Assembly', fr: 'Montage de Berceau', ar: 'تركيب سرير أطفال' },
-            { en: 'Bookshelf Assembly', fr: 'Montage de Bibliothèque', ar: 'تركيب مكتبة كتب' },
-            { en: 'Desk Assembly', fr: 'Montage de Bureau', ar: 'تركيب مكتب' }
+            { id: 'general_assembly', en: 'General Furniture Assembly', fr: 'Montage de Meubles Général', ar: 'تركيب أثاث عام' },
+            { id: 'ikea_assembly', en: 'IKEA / Flat-Pack Assembly', fr: 'Montage IKEA / Kit', ar: 'تركيب أثاث ايكيا / أثاث جاهز' },
+            { id: 'crib_assembly', en: 'Crib Assembly', fr: 'Montage de Berceau', ar: 'تركيب سرير أطفال' },
+            { id: 'bookshelf_assembly', en: 'Bookshelf Assembly', fr: 'Montage de Bibliothèque', ar: 'تركيب مكتبة كتب' },
+            { id: 'desk_assembly', en: 'Desk Assembly', fr: 'Montage de Bureau', ar: 'تركيب مكتب' }
         ],
         bullets: [
             { en: 'Assemble or disassemble furniture items by unboxing, building, and any cleanup.', fr: 'Montez ou démontez des meubles en déballant, assemblant et nettoyant.', ar: 'تركيب أو فك الأثاث مع التفريغ والبناء والتنظيف.' },
@@ -992,8 +999,8 @@ const ClientHome: React.FC<ClientHomeProps> = ({
                                                     {t({ en: 'Not available here yet', fr: 'Pas encore disponible ici', ar: 'غير متوفر هنا بعد' })}
                                                 </p>
                                                 <p className="text-[13px] font-bold text-neutral-500 max-w-[280px] mx-auto leading-relaxed">
-                                                    {t({ 
-                                                        en: 'We are expanding fast! Try selecting a major city nearby.', 
+                                                    {t({
+                                                        en: 'We are expanding fast! Try selecting a major city nearby.',
                                                         fr: 'Nous nous développons rapidement ! Essayez de sélectionner une grande ville à proximité.',
                                                         ar: 'نحن نتوسع بسرعة! حاول اختيار مدينة كبرى قريبة.'
                                                     })}
