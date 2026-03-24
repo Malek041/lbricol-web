@@ -174,7 +174,7 @@ export default function ServiceSetupPage() {
 
             if (pickupLocation.lat && dropoffLocation.lat) {
                 const fetchDist = async () => {
-                    const { distanceKm } = await getRoadDistance(
+                    const { distanceKm, durationMinutes } = await getRoadDistance(
                         pickupLocation.lat!, pickupLocation.lng!,
                         dropoffLocation.lat!, dropoffLocation.lng!
                     );
