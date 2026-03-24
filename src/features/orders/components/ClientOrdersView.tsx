@@ -901,17 +901,19 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
                                                         </div>
                                                     </div>
 
-                                                    <div className="p-4 bg-neutral-50 rounded-[20px] flex items-center gap-4 border border-neutral-100/50">
-                                                        <div className="w-11 h-11 rounded-full bg-white flex items-center justify-center shadow-sm">
-                                                            <Star size={22} className="text-[#FBBF24]" />
-                                                        </div>
-                                                        <div className="flex-1">
-                                                            <div className="text-[11px] font-black text-neutral-400 uppercase tracking-widest font-jakarta">Bricoler Location</div>
-                                                            <div className="text-[14px] font-black text-black leading-tight line-clamp-1 font-jakarta">
-                                                                {selectedOrder.providerAddress || 'Essaouira, Morocco'}
+                                                    {!(selectedOrder.service === 'errands' || selectedOrder.service?.includes('delivery')) && (
+                                                        <div className="p-4 bg-neutral-50 rounded-[20px] flex items-center gap-4 border border-neutral-100/50">
+                                                            <div className="w-11 h-11 rounded-full bg-white flex items-center justify-center shadow-sm">
+                                                                <Star size={22} className="text-[#FBBF24]" />
+                                                            </div>
+                                                            <div className="flex-1">
+                                                                <div className="text-[11px] font-black text-neutral-400 uppercase tracking-widest font-jakarta">Bricoler Location</div>
+                                                                <div className="text-[14px] font-black text-black leading-tight line-clamp-1 font-jakarta">
+                                                                    {selectedOrder.providerAddress || 'Essaouira, Morocco'}
+                                                                </div>
                                                             </div>
                                                         </div>
-                                                    </div>
+                                                    )}
                                                 </div>
 
                                                 {/* Pricing Summary */}
@@ -1512,7 +1514,10 @@ function ActivityTab({
                     </div>
                     <div className="flex justify-between items-end mt-2">
                         <p className="text-[13px] font-medium text-neutral-400 truncate pr-2">
-                            {order.bricolerName || t({ en: 'Matching...', fr: 'Recherche...', ar: 'جاري البحث...' })} • {order.city || (typeof order.location === 'object' ? (order.location as any).address : order.location)}
+                            {(order.service === 'errands' || order.service?.includes('delivery')) && !order.bricolerName ? 
+                                (order.city || (typeof order.location === 'object' ? (order.location as any).address : order.location)) : 
+                                `${order.bricolerName || t({ en: 'Matching...', fr: 'Recherche...', ar: 'جاري البحث...' })} • ${order.city || (typeof order.location === 'object' ? (order.location as any).address : order.location)}`
+                            }
                         </p>
                         {timeLeft && (
                             <span className={cn(

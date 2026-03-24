@@ -192,57 +192,61 @@ function CheckoutContent() {
         </div>
 
         {/* ── STICKY TABS ── */}
-        <div style={{ display: 'flex', background: '#fff', borderBottom: '1px solid #F3F4F6' }}>
-          {(['setup', 'details'] as const).map(tab => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              style={{
-                flex: 1,
-                padding: '16px 0',
-                fontSize: 14,
-                fontWeight: 900,
-                color: activeTab === tab ? '#01A083' : '#9CA3AF',
-                borderBottom: `2px solid ${activeTab === tab ? '#01A083' : 'transparent'}`,
-                background: 'none',
-                transition: 'all 0.2s ease',
-                cursor: 'pointer'
-              }}
-            >
-              {tab === 'setup' ? 'Order Setup' : 'Bricoler Details'}
-            </button>
-          ))}
-        </div>
+        {!(order.serviceType === 'errands' || order.serviceType?.includes('delivery')) && (
+          <div style={{ display: 'flex', background: '#fff', borderBottom: '1px solid #F3F4F6' }}>
+            {(['setup', 'details'] as const).map(tab => (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                style={{
+                  flex: 1,
+                  padding: '16px 0',
+                  fontSize: 14,
+                  fontWeight: 900,
+                  color: activeTab === tab ? '#01A083' : '#9CA3AF',
+                  borderBottom: `2px solid ${activeTab === tab ? '#01A083' : 'transparent'}`,
+                  background: 'none',
+                  transition: 'all 0.2s ease',
+                  cursor: 'pointer'
+                }}
+              >
+                {tab === 'setup' ? 'Order Setup' : 'Bricoler Details'}
+              </button>
+            ))}
+          </div>
+        )}
 
         {/* ── STICKY PROVIDER SECTION ── */}
-        <div style={{
-          padding: '16px 20px',
-          background: '#fff',
-          borderBottom: '1px solid #F3F4F6',
-          display: 'flex',
-          alignItems: 'center',
-          gap: 16
-        }}>
-          <div style={{ width: 54, height: 54, borderRadius: '50%', overflow: 'hidden', background: '#F3F4F6', border: '2px solid #fff', boxShadow: '0 2px 10px rgba(0,0,0,0.06)' }}>
-            {order.providerAvatar ? (
-              <img src={order.providerAvatar} alt={order.providerName || ''} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-            ) : (
-              <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <User size={24} color="#9CA3AF" />
-              </div>
-            )}
+        {!(order.serviceType === 'errands' || order.serviceType?.includes('delivery')) && (
+          <div style={{
+            padding: '16px 20px',
+            background: '#fff',
+            borderBottom: '1px solid #F3F4F6',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 16
+          }}>
+            <div style={{ width: 54, height: 54, borderRadius: '50%', overflow: 'hidden', background: '#F3F4F6', border: '2px solid #fff', boxShadow: '0 2px 10px rgba(0,0,0,0.06)' }}>
+              {order.providerAvatar ? (
+                <img src={order.providerAvatar} alt={order.providerName || ''} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              ) : (
+                <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <User size={24} color="#9CA3AF" />
+                </div>
+              )}
+            </div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 11, fontWeight: 900, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 2 }}>Service Provider</div>
+              <div style={{ fontSize: 16, fontWeight: 900, color: '#111827' }}>{order.providerName || 'Bricoler'}</div>
+            </div>
+            <button 
+              onClick={() => setActiveTab('details')}
+              style={{ fontSize: 13, fontWeight: 800, color: '#01A083', background: 'none', border: 'none', display: 'flex', alignItems: 'center', gap: 4, cursor: 'pointer' }}
+            >
+              View Profile <ExternalLink size={14} />
+            </button>
           </div>
-          <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 11, fontWeight: 900, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 2 }}>Service Provider</div>
-            <div style={{ fontSize: 16, fontWeight: 900, color: '#111827' }}>{order.providerName || 'Bricoler'}</div>
-          </div>
-          <button 
-            onClick={() => setActiveTab('details')}
-            style={{ fontSize: 13, fontWeight: 800, color: '#01A083', background: 'none', border: 'none', display: 'flex', alignItems: 'center', gap: 4, cursor: 'pointer' }}
-          >
-            View Profile <ExternalLink size={14} />
-          </button>
-        </div>
+        )}
       </div>
 
       {/* ── SCROLLABLE CONTENT ── */}

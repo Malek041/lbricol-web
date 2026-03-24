@@ -2711,7 +2711,7 @@ export default function ProviderPage() {
                         {(activeNav as string) === 'performance' && (
                             <div className="flex items-center gap-6 overflow-x-auto no-scrollbar">
                                 {[
-                                    { id: 'activity' as const, label: t({ en: 'Activity', fr: 'Activité' }) },
+                                    { id: 'activity' as const, label: t({ en: 'Orders', fr: 'Commandes' }) },
                                     { id: 'insights' as const, label: t({ en: 'Insights', fr: 'Analyses' }) },
                                     { id: 'availability' as const, label: t({ en: 'Availability', fr: 'Dispo' }) }
                                 ].map((tab) => (
