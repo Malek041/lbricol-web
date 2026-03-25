@@ -194,10 +194,10 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
 
   return (
     <motion.div
-      initial={{ opacity: 0, scale: 0.9 }}
-      animate={{ opacity: 1, scale: 1 }}
-      exit={{ opacity: 0, scale: 0.9 }}
-      transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+      initial={{ y: '100%', opacity: 0 }}
+      animate={{ y: 0, opacity: 1 }}
+      exit={{ y: '100%', opacity: 0 }}
+      transition={{ type: 'spring', damping: 28, stiffness: 220, mass: 0.8 }}
       className={cn(
         "bg-white flex flex-col font-jakarta transition-all overflow-hidden",
         isInline ? "relative w-full h-full" : "fixed inset-0 z-[6000]"
