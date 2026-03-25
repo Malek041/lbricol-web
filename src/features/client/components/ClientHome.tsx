@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MapPin, ChevronDown, Search, X, Bell } from 'lucide-react';
+import { MapPin, ChevronDown, Search, X, Bell, Home, Building } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useOrder } from '@/context/OrderContext';
 import { cn } from '@/lib/utils';
@@ -420,7 +420,7 @@ const ClientHome: React.FC<ClientHomeProps> = ({
             "z-0"
         )}>
             {/* 1. New Yellow Hero Section */}
-            <div className="w-full relative bg-[#FFC244] overflow-hidden flex-shrink-0 pt-[env(safe-area-inset-top)] pb-22">
+            <div className="w-full relative bg-[#FFB700] overflow-hidden flex-shrink-0 pt-[env(safe-area-inset-top)] pb-22">
                 {/* Location Pill */}
                 <div className="flex justify-center pt-8 mb-6">
                     <motion.button
@@ -428,15 +428,15 @@ const ClientHome: React.FC<ClientHomeProps> = ({
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 1.0, duration: 0.6, type: "spring", stiffness: 180 }}
                         onClick={onChangeLocation}
-                        className="flex items-center gap-2 bg-white/90  px-6 py-2.5 rounded-full border border-white/50 active:scale-95 transition-transform"
+                        className="flex items-center gap-1 bg-white/50  px-3 py-2.5 rounded-full  active:scale-95 transition-transform"
                     >
-                        <div className="w-3 h-3 rounded-full flex items-center justify-center">
-                            <img src="/Images/map Assets/LocationPin.png" className="w-3.5 h-5" alt="pin" />
+                        <div className="w-5 h-5 rounded-full flex items-center justify-center">
+                            <Building size={25} className="text-[#000000]" />
                         </div>
-                        <span className="text-[13px] font-black text-[#111827] truncate max-w-[180px]">
+                        <span className="text-[13px] font-bold text-[#111827] truncate max-w-[180px]">
                             {localizePlace(selectedCity || 'Set Location')}
                         </span>
-                        <ChevronDown size={14} className="text-[#9CA3AF]" />
+                        <ChevronDown size={25} className="text-[#000000]" />
                     </motion.button>
                 </div>
 
@@ -461,9 +461,9 @@ const ClientHome: React.FC<ClientHomeProps> = ({
                     <motion.div
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1, x: [0, -880] }}
-                        transition={{ 
+                        transition={{
                             opacity: { delay: 1.2, duration: 0.8 },
-                            x: { duration: 30, repeat: Infinity, ease: "linear" } 
+                            x: { duration: 30, repeat: Infinity, ease: "linear" }
                         }}
                         className="flex gap-[10px] whitespace-nowrap absolute left-0"
                     >
@@ -557,7 +557,7 @@ const ClientHome: React.FC<ClientHomeProps> = ({
                                                     type: "spring",
                                                     damping: 15,
                                                     stiffness: 200,
-                                                        delay: 1.4 + idx * 0.07
+                                                    delay: 1.4 + idx * 0.07
                                                 }}
                                                 onClick={() => {
                                                     setActiveId(svc.id);
@@ -636,13 +636,17 @@ const ClientHome: React.FC<ClientHomeProps> = ({
                                 ) : (
                                     availableServiceIds !== null && (
                                         <div className="w-full py-12 px-6 text-center">
-                                            <div className="w-16 h-16 bg-neutral-50 rounded-full flex items-center justify-center mx-auto mb-4 border border-dashed border-neutral-200">
-                                                <span className="text-2xl text-neutral-300">📍</span>
+                                            <div className="w-40 h-40 flex items-center justify-center mx-auto mb-2">
+                                                <img 
+                                                    src="/Images/Vectors Illu/Ordercancelled.webp" 
+                                                    className="w-full h-full object-contain" 
+                                                    alt="Not available" 
+                                                />
                                             </div>
                                             <p className="text-[16px] font-black text-neutral-800 mb-1">
                                                 {t({ en: 'Not available here yet', fr: 'Pas encore disponible ici', ar: 'غير متوفر هنا بعد' })}
                                             </p>
-                                            <p className="text-[13px] font-bold text-neutral-500 max-w-[280px] mx-auto leading-relaxed">
+                                            <p className="text-[13px] font-medium text-neutral-500 max-w-[380px] mx-auto leading-relaxed">
                                                 {t({
                                                     en: 'We are expanding fast! Try selecting a major city nearby.',
                                                     fr: 'Nous nous développons rapidement ! Essayez de sélectionner une grande ville à proximité.',
@@ -655,7 +659,8 @@ const ClientHome: React.FC<ClientHomeProps> = ({
                             </div>
 
                             {/* ── Active service content ──────────────────────────────── */}
-                            <AnimatePresence mode="wait">
+                            {visibleServices.length > 0 && (
+                                <AnimatePresence mode="wait">
                                 <motion.div
                                     key={activeId}
                                     initial={{ opacity: 0, y: 10 }}
@@ -777,7 +782,8 @@ const ClientHome: React.FC<ClientHomeProps> = ({
                                         ))}
                                     </div>
                                 </motion.div>
-                            </AnimatePresence>
+                             </AnimatePresence>
+                             )}
 
                             {/* Horizontal Auto-scrolling Client Reviews Section */}
                             <ReviewsScrollingSection />
