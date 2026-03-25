@@ -416,7 +416,7 @@ const ClientHome: React.FC<ClientHomeProps> = ({
 
     return (
         <div className={cn(
-            "relative bg-[#FFC244] min-h-screen w-screen font-jakarta pb-24",
+            "fixed inset-0 bg-[#FFC244] flex flex-col overflow-hidden h-[100dvh] w-screen font-jakarta",
             "z-0"
         )}>
             {/* 1. New Yellow Hero Section */}
@@ -481,12 +481,12 @@ const ClientHome: React.FC<ClientHomeProps> = ({
 
             {/* 2. White Bottom Sheet Container with Wave */}
             <motion.div
-                initial={{ y: 100, opacity: 0 }}
-                animate={isWhiteSectionVisible ? { y: 0, opacity: 1 } : { y: 100, opacity: 0 }}
+                initial={{ y: '100%' }}
+                animate={isWhiteSectionVisible ? { y: 0 } : { y: '100%' }}
                 transition={{ type: "spring", damping: 25, stiffness: 180, delay: 0.8 }}
                 className={cn(
                     "bg-white relative flex flex-col z-10 transition-all duration-500 ease-in-out shrink-0",
-                    "-mt-8 min-h-[70vh]"
+                    "flex-1 -mt-8 min-h-0"
                 )}
             >
                 {/* Wave Border Overlay */}
@@ -505,8 +505,8 @@ const ClientHome: React.FC<ClientHomeProps> = ({
                         transition={{ duration: 0.5, delay: 0.9 }}
                         className="flex-1 flex flex-col overflow-hidden"
                     >
-                        {/* Content Area */}
-                        <div className="flex-1 pb-16">
+                        {/* Scrollable Content Area */}
+                        <div className="flex-1 overflow-y-auto overscroll-contain pb-32 no-scrollbar">
 
 
                             {/* ── Category tabs ───────────────────────────────────────── */}
