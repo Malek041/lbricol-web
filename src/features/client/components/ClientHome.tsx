@@ -430,8 +430,8 @@ const ClientHome: React.FC<ClientHomeProps> = ({
                         onClick={onChangeLocation}
                         className="flex items-center gap-2 bg-white/90  px-6 py-2.5 rounded-full border border-white/50 active:scale-95 transition-transform"
                     >
-                        <div className="w-6 h-6 rounded-full bg-emerald-50 flex items-center justify-center">
-                            <MapPin size={14} className="text-[#219178]" />
+                        <div className="w-3 h-3 rounded-full flex items-center justify-center">
+                            <img src="/Images/map Assets/LocationPin.png" className="w-3.5 h-5" />
                         </div>
                         <span className="text-[13px] font-black text-[#111827] truncate max-w-[180px]">
                             {localizePlace(selectedCity || 'Set Location')}
@@ -466,7 +466,7 @@ const ClientHome: React.FC<ClientHomeProps> = ({
                             <img
                                 key={i}
                                 src={img}
-                                className="w-[70px] h-[70px] object-contain"
+                                className="w-[120px] h-[120px] object-contain"
                                 alt="hero icon"
                             />
                         ))}
@@ -475,19 +475,19 @@ const ClientHome: React.FC<ClientHomeProps> = ({
             </div>
 
             {/* 2. White Bottom Sheet Container with Wave */}
-            <motion.div
+            <motion.div 
                 initial={{ y: '100%' }}
                 animate={isWhiteSectionVisible ? { y: 0 } : { y: '100%' }}
                 transition={{ type: "spring", damping: 25, stiffness: 180, delay: 0.1 }}
                 className={cn(
-                    "bg-white relative flex flex-col overflow-hidden rounded-t-[32px] z-10 transition-all duration-500 ease-in-out shrink-0",
+                    "bg-white relative flex flex-col z-10 transition-all duration-500 ease-in-out shrink-0",
                     "flex-1 -mt-8"
                 )}
             >
                 {/* Wave Border Overlay */}
-                <div className="absolute top-[-40px] left-0 right-0 h-[40px] z-20 pointer-events-none">
-                    <svg viewBox="0 0 1440 120" preserveAspectRatio="none" className="w-full h-full fill-white">
-                        <path d="M0,32L80,37.3C160,43,320,53,480,58.7C640,64,800,64,960,53.3C1120,43,1280,21,1360,10.7L1440,0L1440,120L1360,120C1280,120,1120,120,960,120C800,120,640,120,480,120C320,120,160,120,80,120L0,120Z"></path>
+                <div className="absolute top-[-44px] left-0 right-0 h-[45px] z-20 pointer-events-none">
+                    <svg viewBox="0 0 1440 120" preserveAspectRatio="none" className="w-full h-full fill-white drop-shadow-[0_-5px_10px_rgba(0,0,0,0.03)] text-white">
+                        <path d="M0,64L48,64C96,64,192,64,288,64C384,64,480,64,576,53.3C672,43,768,21,864,16C960,10.7,1056,21.3,1152,42.7C1248,64,1344,96,1392,112L1440,128L1440,120L1392,120C1344,120,1248,120,1152,120C1056,120,960,120,864,120C768,120,672,120,576,120C480,120,384,120,288,120C192,120,96,120,48,120L0,120Z"></path>
                     </svg>
                 </div>
 
