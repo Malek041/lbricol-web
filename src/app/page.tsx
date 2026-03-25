@@ -22,6 +22,7 @@ import LanguagePreferencePopup from '@/features/onboarding/components/LanguagePr
 import MobileBottomNav from '@/components/layout/MobileBottomNav';
 import MessagesView from '@/features/messages/components/MessagesView';
 import ProfileView from '@/features/provider/components/ProfileView';
+import ComingSoon from '@/components/layout/ComingSoon';
 import ClientHome from '@/features/client/components/ClientHome';
 import OnboardingPopup from '@/features/onboarding/components/OnboardingPopup';
 import { useOrder } from '@/context/OrderContext';
@@ -2346,6 +2347,12 @@ const Home = () => {
   };
 
   const isFullscreenMobileTab = isMobile && ['home', 'profile', 'share', 'promocodes', 'calendar', 'messages', 'heroes'].includes(mobileNavTab);
+
+  // --- PAUSE DEPLOYMENT ---
+  const isMaintenanceMode = process.env.NODE_ENV === 'production';
+  if (isMaintenanceMode) {
+    return <ComingSoon />;
+  }
 
 
   return (
