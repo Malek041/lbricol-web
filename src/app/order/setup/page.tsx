@@ -860,7 +860,7 @@ export default function ServiceSetupPage() {
                                     <>
                                         {/* Availability Picker */}
                                         <div className="space-y-6">
-                                            <h3 className="text-[25px] text-[#000000] font-bold">When do you need the Bricoler?</h3>
+                                            <h3 className="text-[25px] text-[#111827] font-black">When do you need the Bricoler?</h3>
                                             <OrderAvailabilityPicker
                                                 bricolerId={order.providerId!}
                                                 onSelect={(slots) => {
@@ -875,7 +875,7 @@ export default function ServiceSetupPage() {
                                             <div className="space-y-10">
                                                 {/* Task Size */}
                                                 <div className="space-y-6">
-                                                    <h3 className="text-[25px] text-black font-bold">How big is the move?</h3>
+                                                    <h3 className="text-[25px] text-[#111827] font-black">How big is the move?</h3>
                                                     <div className="grid grid-cols-1 gap-3">
                                                         {[
                                                             { id: 'small', name: 'Small', desc: 'A few items or 1 room', duration: '1.5h' },
@@ -901,7 +901,7 @@ export default function ServiceSetupPage() {
 
                                                 {/* Route Section (Pic 4 Style) */}
                                                 <div className="space-y-6">
-                                                    <h3 className="text-[25px] text-black font-bold">Delivery details</h3>
+                                                    <h3 className="text-[25px] text-[#111827] font-black">Delivery details</h3>
 
                                                     {/* Compact Map Card */}
                                                     <div className="h-[180px] bg-[#F3F4F6] rounded-[5px] border border-neutral-100 overflow-hidden relative">
@@ -966,7 +966,7 @@ export default function ServiceSetupPage() {
 
                                         {/* Property Type */}
                                         <div className="space-y-6">
-                                            <h3 className="text-[25px] text-[#000000] font-bold">What's your property type?</h3>
+                                            <h3 className="text-[25px] text-[#111827] font-black">What's your property type?</h3>
                                             <div className="flex flex-wrap gap-2">
                                                 {['Studio', 'Apartment', 'Villa', 'Guesthouse', 'Riad', 'Hotel'].map(type => (
                                                     <button
@@ -1156,7 +1156,7 @@ export default function ServiceSetupPage() {
 
                                         {/* Optional Note */}
                                         <div className="space-y-6 pb-1">
-                                            <label className="text-[25px] font-black text-black">Instructions or Notes</label>
+                                            <label className="text-[25px] font-black text-[#111827]">Instructions or Notes</label>
                                             <textarea
                                                 value={note}
                                                 onChange={(e) => setNote(e.target.value)}
@@ -1217,7 +1217,7 @@ export default function ServiceSetupPage() {
                         </div>
 
                         <div className="bg-[#F2F2F2] w-full pt-4 pb-12 px-10 space-y-8">
-                            <h3 className="text-[28px] font-black text-black">Summary</h3>
+                            <h3 className="text-[28px] font-black text-[#111827]">Summary</h3>
 
                             <div className="space-y-6">
                                 <div className="flex items-center justify-between">
