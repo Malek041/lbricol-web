@@ -408,10 +408,7 @@ const ClientHome: React.FC<ClientHomeProps> = ({
         '/public/Images/clientHomeHeroSection/Cleaning.png',
         '/public/Images/clientHomeHeroSection/Homerepairs.png',
         '/public/Images/clientHomeHeroSection/groceries.png',
-        '/public/Images/clientHomeHeroSection/money.png',
-        '/public/Images/clientHomeHeroSection/movingHelp.png',
-        '/public/Images/clientHomeHeroSection/onlineStore.png',
-        '/public/Images/clientHomeHeroSection/petsCare.png',
+
     ].map(p => p.replace('/public', ''));
 
     return (
@@ -420,7 +417,7 @@ const ClientHome: React.FC<ClientHomeProps> = ({
             "z-0"
         )}>
             {/* 1. New Yellow Hero Section */}
-            <div className="w-full relative bg-[#FFB700] overflow-hidden flex-shrink-0 pt-[env(safe-area-inset-top)] pb-22">
+            <div className="w-full relative bg-[#FFC244] overflow-hidden flex-shrink-0 pt-[env(safe-area-inset-top)] pb-22">
                 {/* Location Pill */}
                 <div className="flex justify-center pt-8 mb-6">
                     <motion.button
@@ -637,10 +634,10 @@ const ClientHome: React.FC<ClientHomeProps> = ({
                                     availableServiceIds !== null && (
                                         <div className="w-full py-12 px-6 text-center">
                                             <div className="w-40 h-40 flex items-center justify-center mx-auto mb-2">
-                                                <img 
-                                                    src="/Images/Vectors Illu/Ordercancelled.webp" 
-                                                    className="w-full h-full object-contain" 
-                                                    alt="Not available" 
+                                                <img
+                                                    src="/Images/Vectors Illu/Ordercancelled.webp"
+                                                    className="w-full h-full object-contain"
+                                                    alt="Not available"
                                                 />
                                             </div>
                                             <p className="text-[16px] font-black text-neutral-800 mb-1">
@@ -661,129 +658,130 @@ const ClientHome: React.FC<ClientHomeProps> = ({
                             {/* ── Active service content ──────────────────────────────── */}
                             {visibleServices.length > 0 && (
                                 <AnimatePresence mode="wait">
-                                <motion.div
-                                    key={activeId}
-                                    initial={{ opacity: 0, y: 10 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    exit={{ opacity: 0, y: -10 }}
-                                    transition={{ duration: 0.2 }}
-                                    className="flex flex-col flex-1 pt-5"
-                                >
-                                    {/* Sub-service pill chips */}
-                                    <div className="px-4 pb-6 flex flex-wrap gap-2.5">
-                                        {active.subServices
-                                            .filter(subObj => {
-                                                // Always show these even if no pro is available yet (forced for growth)
-                                                const forceShow = [
-                                                    'Electricity (HVAC)',
-                                                    'Electricity (EV)',
-                                                    'Electricity (Cams)',
-                                                    'Cooling & heating systems',
-                                                    'EV charger installation',
-                                                    'Surveillance cameras'
-                                                ];
-                                                if (forceShow.includes(subObj.en)) return true;
+                                    <motion.div
+                                        key={activeId}
+                                        initial={{ opacity: 0, y: 10 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        exit={{ opacity: 0, y: -10 }}
+                                        transition={{ duration: 0.2 }}
+                                        className="flex flex-col flex-1 pt-5"
+                                    >
+                                        {/* Sub-service pill chips */}
+                                        <div className="px-4 pb-6 flex flex-wrap gap-2.5">
+                                            {active.subServices
+                                                .filter(subObj => {
+                                                    // Always show these even if no pro is available yet (forced for growth)
+                                                    const forceShow = [
+                                                        'Electricity (HVAC)',
+                                                        'Electricity (EV)',
+                                                        'Electricity (Cams)',
+                                                        'Cooling & heating systems',
+                                                        'EV charger installation',
+                                                        'Surveillance cameras'
+                                                    ];
+                                                    if (forceShow.includes(subObj.en)) return true;
 
-                                                if (!availableSubServiceIds || availableSubServiceIds.length === 0) return true;
-                                                const config = getServiceById(active.id);
-                                                if (!config) return true;
+                                                    if (!availableSubServiceIds || availableSubServiceIds.length === 0) return true;
+                                                    const config = getServiceById(active.id);
+                                                    if (!config) return true;
 
-                                                // Try to find the sub-service config by matching the English name from the local catalogue
-                                                const subConfig = config.subServices.find(ss =>
-                                                    ss.name === subObj.en ||
-                                                    ss.id === subObj.en
-                                                );
+                                                    // Try to find the sub-service config by matching the English name from the local catalogue
+                                                    const subConfig = config.subServices.find(ss =>
+                                                        ss.name === subObj.en ||
+                                                        ss.id === subObj.en
+                                                    );
 
-                                                if (!subConfig) return true; // Fallback: if we can't find a config mapping, show it anyway
+                                                    if (!subConfig) return true; // Fallback: if we can't find a config mapping, show it anyway
 
-                                                // Check if the ID, English name, French name, or Arabic name exists in the available list
-                                                // This makes the filter robust against data registered in different languages or formats.
-                                                return (
-                                                    availableSubServiceIds.includes(subConfig.id) ||
-                                                    availableSubServiceIds.includes(subConfig.name) ||
-                                                    availableSubServiceIds.includes(subObj.en) ||
-                                                    availableSubServiceIds.includes(subObj.fr) ||
-                                                    (subObj.ar && availableSubServiceIds.includes(subObj.ar)) ||
-                                                    // Also check for common variants (slugified, lowercase etc)
-                                                    availableSubServiceIds.includes(subConfig.id.replace(/_/g, ' ')) ||
-                                                    availableSubServiceIds.includes(subConfig.id.toLowerCase())
-                                                );
-                                            })
-                                            .map((sub, idx) => (
-                                                <motion.button
-                                                    key={sub.en}
-                                                    initial={{ opacity: 0, scale: 0.6 }}
-                                                    animate={{ opacity: 1, scale: 1 }}
+                                                    // Check if the ID, English name, French name, or Arabic name exists in the available list
+                                                    // This makes the filter robust against data registered in different languages or formats.
+                                                    return (
+                                                        availableSubServiceIds.includes(subConfig.id) ||
+                                                        availableSubServiceIds.includes(subConfig.name) ||
+                                                        availableSubServiceIds.includes(subObj.en) ||
+                                                        availableSubServiceIds.includes(subObj.fr) ||
+                                                        (subObj.ar && availableSubServiceIds.includes(subObj.ar)) ||
+                                                        // Also check for common variants (slugified, lowercase etc)
+                                                        availableSubServiceIds.includes(subConfig.id.replace(/_/g, ' ')) ||
+                                                        availableSubServiceIds.includes(subConfig.id.toLowerCase())
+                                                    );
+                                                })
+                                                .map((sub, idx) => (
+                                                    <motion.button
+                                                        key={sub.en}
+                                                        initial={{ opacity: 0, scale: 0.6 }}
+                                                        animate={{ opacity: 1, scale: 1 }}
+                                                        transition={{
+                                                            type: 'spring',
+                                                            stiffness: 380,
+                                                            damping: 20,
+                                                            delay: hasManuallySelected ? 0 : 1.6 + idx * 0.05
+                                                        }}
+                                                        whileTap={{ scale: 0.92 }}
+                                                        onClick={() => {
+                                                            resetOrder();
+                                                            const currentSub = sub as any;
+                                                            const config = getServiceById(active.id);
+                                                            const actualSubConfig = config?.subServices.find(ss =>
+                                                                ss.id === currentSub.id || ss.name === currentSub.en
+                                                            );
+
+                                                            localStorage.setItem('last_service_category', active.id);
+                                                            setOrderField('serviceType', active.id);
+                                                            setOrderField('serviceName', active.label);
+                                                            setOrderField('subServiceId', currentSub.id || currentSub.en);
+                                                            setOrderField('subServiceName', t(currentSub));
+
+                                                            // Category Vector Mapping (matches file names in 'Service Category vectors')
+                                                            const categoryVectors: Record<string, string> = {
+                                                                handyman: '/Images/Service Category vectors/HandymanVector.webp',
+                                                                babysitting: '/Images/Service Category vectors/babysettingnVector.webp',
+                                                                cleaning: '/Images/Service Category vectors/CleaningVector.webp',
+                                                                plumbing: '/Images/Service Category vectors/PlumbingVector.webp',
+                                                                electricity: '/Images/Service Category vectors/ElectricityVector.webp',
+                                                                painting: '/Images/Service Category vectors/Paintingvector.webp',
+                                                                moving: '/Images/Service Category vectors/MovingHelpVector.webp',
+                                                                gardening: '/Images/Service Category vectors/GardeningVector.webp',
+                                                                assembly: '/Images/Service Category vectors/AsssemblyVector.webp',
+                                                                mounting: '/Images/Service Category vectors/MountingVector.webp'
+                                                            };
+
+                                                            const icon = categoryVectors[active.id] || (actualSubConfig as any)?.image;
+                                                            if (icon) {
+                                                                setOrderField('serviceIcon', icon);
+                                                            }
+                                                            router.push('/order/step1');
+                                                        }}
+                                                        className="px-4 py-2.5 rounded-full border border-[#E6E6E6] text-[15px] font-bold text-[#1D1D1D] bg-white hover:border-[#1D1D1D] active:bg-neutral-50 transition-colors shadow-[0_2px_8_rgba(0,0,0,0.03)]"
+                                                    >
+                                                        {t(sub)}
+                                                    </motion.button>
+                                                ))}
+                                        </div>
+
+                                        {/* Feature bullets */}
+                                        <div className="px-5 pb-5 space-y-3.5">
+                                            {active.bullets.map((b, i) => (
+                                                <motion.div
+                                                    key={i}
+                                                    className="flex items-start gap-3"
+                                                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                                                    animate={{ opacity: 1, y: 0, scale: 1 }}
                                                     transition={{
                                                         type: 'spring',
-                                                        stiffness: 380,
-                                                        damping: 20
+                                                        stiffness: 260,
+                                                        damping: 22,
+                                                        delay: hasManuallySelected ? 0 : 1.7 + i * 0.05
                                                     }}
-                                                    whileTap={{ scale: 0.92 }}
-                                                    onClick={() => {
-                                                        resetOrder();
-                                                        const currentSub = sub as any;
-                                                        const config = getServiceById(active.id);
-                                                        const actualSubConfig = config?.subServices.find(ss =>
-                                                            ss.id === currentSub.id || ss.name === currentSub.en
-                                                        );
-
-                                                        localStorage.setItem('last_service_category', active.id);
-                                                        setOrderField('serviceType', active.id);
-                                                        setOrderField('serviceName', active.label);
-                                                        setOrderField('subServiceId', currentSub.id || currentSub.en);
-                                                        setOrderField('subServiceName', t(currentSub));
-
-                                                        // Category Vector Mapping (matches file names in 'Service Category vectors')
-                                                        const categoryVectors: Record<string, string> = {
-                                                            handyman: '/Images/Service Category vectors/HandymanVector.webp',
-                                                            babysitting: '/Images/Service Category vectors/babysettingnVector.webp',
-                                                            cleaning: '/Images/Service Category vectors/CleaningVector.webp',
-                                                            plumbing: '/Images/Service Category vectors/PlumbingVector.webp',
-                                                            electricity: '/Images/Service Category vectors/ElectricityVector.webp',
-                                                            painting: '/Images/Service Category vectors/Paintingvector.webp',
-                                                            moving: '/Images/Service Category vectors/MovingHelpVector.webp',
-                                                            gardening: '/Images/Service Category vectors/GardeningVector.webp',
-                                                            assembly: '/Images/Service Category vectors/AsssemblyVector.webp',
-                                                            mounting: '/Images/Service Category vectors/MountingVector.webp'
-                                                        };
-
-                                                        const icon = categoryVectors[active.id] || (actualSubConfig as any)?.image;
-                                                        if (icon) {
-                                                            setOrderField('serviceIcon', icon);
-                                                        }
-                                                        router.push('/order/step1');
-                                                    }}
-                                                    className="px-4 py-2.5 rounded-full border border-[#E6E6E6] text-[15px] font-bold text-[#1D1D1D] bg-white hover:border-[#1D1D1D] active:bg-neutral-50 transition-colors shadow-[0_2px_8_rgba(0,0,0,0.03)]"
                                                 >
-                                                    {t(sub)}
-                                                </motion.button>
+                                                    <span className="mt-0.5 text-[#B3B3B3] flex-shrink-0 text-[15px]">✓</span>
+                                                    <p className="text-[15px] text-[#4A4A4A] leading-snug font-medium">{t(b)}</p>
+                                                </motion.div>
                                             ))}
-                                    </div>
-
-                                    {/* Feature bullets */}
-                                    <div className="px-5 pb-5 space-y-3.5">
-                                        {active.bullets.map((b, i) => (
-                                            <motion.div
-                                                key={i}
-                                                className="flex items-start gap-3"
-                                                initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                                                animate={{ opacity: 1, y: 0, scale: 1 }}
-                                                transition={{
-                                                    type: 'spring',
-                                                    stiffness: 260,
-                                                    damping: 22,
-                                                    delay: 1.8 + i * 0.08
-                                                }}
-                                            >
-                                                <span className="mt-0.5 text-[#B3B3B3] flex-shrink-0 text-[15px]">✓</span>
-                                                <p className="text-[15px] text-[#4A4A4A] leading-snug font-medium">{t(b)}</p>
-                                            </motion.div>
-                                        ))}
-                                    </div>
-                                </motion.div>
-                             </AnimatePresence>
-                             )}
+                                        </div>
+                                    </motion.div>
+                                </AnimatePresence>
+                            )}
 
                             {/* Horizontal Auto-scrolling Client Reviews Section */}
                             <ReviewsScrollingSection />
