@@ -400,7 +400,7 @@ const ClientHome: React.FC<ClientHomeProps> = ({
     const [isWhiteSectionVisible, setIsWhiteSectionVisible] = useState(false);
 
     useEffect(() => {
-        const timer = setTimeout(() => setIsWhiteSectionVisible(true), 300);
+        const timer = setTimeout(() => setIsWhiteSectionVisible(true), 200);
         return () => clearTimeout(timer);
     }, []);
 
@@ -426,7 +426,7 @@ const ClientHome: React.FC<ClientHomeProps> = ({
                     <motion.button
                         initial={{ opacity: 0, y: -20 }}
                         animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.3, duration: 0.5, ease: "easeOut" }}
+                        transition={{ delay: 1.0, duration: 0.6, type: "spring", stiffness: 180 }}
                         onClick={onChangeLocation}
                         className="flex items-center gap-2 bg-white/90  px-6 py-2.5 rounded-full border border-white/50 active:scale-95 transition-transform"
                     >
@@ -445,7 +445,7 @@ const ClientHome: React.FC<ClientHomeProps> = ({
                     <motion.h1
                         initial={{ opacity: 0, scale: 0.9 }}
                         animate={{ opacity: 1, scale: 1 }}
-                        transition={{ delay: 0.5, duration: 0.6, type: "spring", stiffness: 200 }}
+                        transition={{ delay: 0.8, duration: 0.6, type: "spring", stiffness: 200 }}
                         className="text-[34px] font-black leading-[1.1] text-[#111827] max-w-[340px] mx-auto"
                     >
                         {t({
@@ -461,9 +461,9 @@ const ClientHome: React.FC<ClientHomeProps> = ({
                     <motion.div
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1, x: [0, -880] }}
-                        transition={{
-                            opacity: { delay: 0.7, duration: 0.8 },
-                            x: { duration: 30, repeat: Infinity, ease: "linear" }
+                        transition={{ 
+                            opacity: { delay: 1.2, duration: 0.8 },
+                            x: { duration: 30, repeat: Infinity, ease: "linear" } 
                         }}
                         className="flex gap-[10px] whitespace-nowrap absolute left-0"
                     >
@@ -483,7 +483,7 @@ const ClientHome: React.FC<ClientHomeProps> = ({
             <motion.div
                 initial={{ y: '100%' }}
                 animate={isWhiteSectionVisible ? { y: 0 } : { y: '100%' }}
-                transition={{ type: "spring", damping: 25, stiffness: 180, delay: 0.8 }}
+                transition={{ type: "spring", damping: 25, stiffness: 180, delay: 0.4 }}
                 className={cn(
                     "bg-white relative flex flex-col z-10 transition-all duration-500 ease-in-out shrink-0",
                     "flex-1 -mt-8 min-h-0"
@@ -502,7 +502,7 @@ const ClientHome: React.FC<ClientHomeProps> = ({
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        transition={{ duration: 0.5, delay: 0.9 }}
+                        transition={{ duration: 0.5, delay: 0.6 }}
                         className="flex-1 flex flex-col overflow-hidden"
                     >
                         {/* Scrollable Content Area */}
@@ -557,7 +557,7 @@ const ClientHome: React.FC<ClientHomeProps> = ({
                                                     type: "spring",
                                                     damping: 15,
                                                     stiffness: 200,
-                                                    delay: 1.0 + idx * 0.08
+                                                        delay: 1.4 + idx * 0.07
                                                 }}
                                                 onClick={() => {
                                                     setActiveId(svc.id);
@@ -768,7 +768,7 @@ const ClientHome: React.FC<ClientHomeProps> = ({
                                                     type: 'spring',
                                                     stiffness: 260,
                                                     damping: 22,
-                                                    delay: 1.6 + i * 0.08
+                                                    delay: 1.8 + i * 0.08
                                                 }}
                                             >
                                                 <span className="mt-0.5 text-[#B3B3B3] flex-shrink-0 text-[15px]">✓</span>
