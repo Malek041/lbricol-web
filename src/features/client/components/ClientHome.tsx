@@ -407,7 +407,6 @@ const ClientHome: React.FC<ClientHomeProps> = ({
     const heroImages = [
         '/public/Images/clientHomeHeroSection/Cleaning.png',
         '/public/Images/clientHomeHeroSection/Homerepairs.png',
-        '/public/Images/clientHomeHeroSection/Packaging.png',
         '/public/Images/clientHomeHeroSection/groceries.png',
         '/public/Images/clientHomeHeroSection/money.png',
         '/public/Images/clientHomeHeroSection/movingHelp.png',
@@ -422,18 +421,6 @@ const ClientHome: React.FC<ClientHomeProps> = ({
         )}>
             {/* 1. New Yellow Hero Section */}
             <div className="w-full relative bg-[#FFC244] overflow-hidden flex-shrink-0 pt-[env(safe-area-inset-top)] pb-12">
-                {/* Notification Bell (Floating Top Right) */}
-                <motion.div
-                    initial={{ opacity: 0, scale: 0.5 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: 0.2, type: 'spring', stiffness: 260, damping: 20 }}
-                    className="absolute top-12 right-6 z-[100]"
-                >
-                    <button className="w-12 h-12 bg-white rounded-2xl shadow-lg flex items-center justify-center border border-white/50 active:scale-90 transition-transform">
-                        <Bell size={24} className="text-[#111827]" />
-                    </button>
-                </motion.div>
-
                 {/* Location Pill */}
                 <div className="flex justify-center pt-8 mb-6">
                     <motion.button
@@ -725,8 +712,7 @@ const ClientHome: React.FC<ClientHomeProps> = ({
                                                     transition={{
                                                         type: 'spring',
                                                         stiffness: 380,
-                                                        damping: 20,
-                                                        delay: 1.3 + idx * 0.07
+                                                        damping: 20
                                                     }}
                                                     whileTap={{ scale: 0.92 }}
                                                     onClick={() => {

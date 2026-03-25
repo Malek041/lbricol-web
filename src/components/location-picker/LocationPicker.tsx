@@ -193,10 +193,16 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
   }
 
   return (
-    <div className={cn(
-      "bg-white flex flex-col font-jakarta transition-all overflow-hidden",
-      isInline ? "relative w-full h-full" : "fixed inset-0 z-[6000]"
-    )}>
+    <motion.div
+      initial={{ y: '100%', opacity: 0 }}
+      animate={{ y: 0, opacity: 1 }}
+      exit={{ y: '100%', opacity: 0 }}
+      transition={{ type: 'spring', damping: 25, stiffness: 180 }}
+      className={cn(
+        "bg-white flex flex-col font-jakarta transition-all overflow-hidden",
+        isInline ? "relative w-full h-full" : "fixed inset-0 z-[6000]"
+      )}
+    >
       {/* 1. Map Area (Fixed Height) */}
       <div
         className={cn(
@@ -388,9 +394,6 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
               title={mode === 'double' && step === 2 ? "Where are you moving to?" : "Where do you need help?"}
             />
 
-            <p className="text-center text-[12px] text-[#9CA3AF] mt-4 font-medium shrink-0">
-              Trouble locating your address? Try using search instead
-            </p>
           </div>
         )}
       </div>
@@ -408,7 +411,7 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
           scrollbar-width: none;
         }
       `}</style>
-    </div>
+    </motion.div>
   );
 };
 
