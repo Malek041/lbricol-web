@@ -1194,7 +1194,7 @@ export default function ProviderPage() {
         const checkInterval = setInterval(() => {
             const now = new Date();
             programmedAcceptedJobs.forEach(async (job) => {
-                const status = job.status || '';
+                const status = (job.status as any) || '';
                 // Only auto-mark as done if it was active/confirmed, not just programmed but not yet started.
                 // This prevents new missions from closing immediately.
                 if (status === 'done' || status === 'delivered' || status === 'programmed' || status === 'broadcast') return;
