@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MapPin, ChevronDown, Search, X } from 'lucide-react';
+import { MapPin, ChevronDown, Search, X, Bell } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useOrder } from '@/context/OrderContext';
 import { cn } from '@/lib/utils';
@@ -422,16 +422,29 @@ const ClientHome: React.FC<ClientHomeProps> = ({
         )}>
             {/* 1. New Yellow Hero Section */}
             <div className="w-full relative bg-[#FFC244] overflow-hidden flex-shrink-0 pt-[env(safe-area-inset-top)] pb-12">
+                {/* Notification Bell (Floating Top Right) */}
+                <motion.div
+                    initial={{ opacity: 0, scale: 0.5 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: 0.2, type: 'spring', stiffness: 260, damping: 20 }}
+                    className="absolute top-12 right-6 z-[100]"
+                >
+                    <button className="w-12 h-12 bg-white rounded-2xl shadow-lg flex items-center justify-center border border-white/50 active:scale-90 transition-transform">
+                        <Bell size={24} className="text-[#111827]" />
+                    </button>
+                </motion.div>
+
                 {/* Location Pill */}
                 <div className="flex justify-center pt-8 mb-6">
                     <motion.button
                         initial={{ opacity: 0, y: -20 }}
                         animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.3, duration: 0.5, ease: "easeOut" }}
                         onClick={onChangeLocation}
                         className="flex items-center gap-2 bg-white/90  px-6 py-2.5 rounded-full border border-white/50 active:scale-95 transition-transform"
                     >
                         <div className="w-3 h-3 rounded-full flex items-center justify-center">
-                            <img src="/Images/map Assets/LocationPin.png" className="w-3.5 h-5" />
+                            <img src="/Images/map Assets/LocationPin.png" className="w-3.5 h-5" alt="pin" />
                         </div>
                         <span className="text-[13px] font-black text-[#111827] truncate max-w-[180px]">
                             {localizePlace(selectedCity || 'Set Location')}
@@ -441,10 +454,11 @@ const ClientHome: React.FC<ClientHomeProps> = ({
                 </div>
 
                 {/* Heading */}
-                <div className="text-center px-6 mb-8">
+                <div className="text-center px-6 mb-2">
                     <motion.h1
-                        initial={{ opacity: 0, scale: 0.95 }}
+                        initial={{ opacity: 0, scale: 0.9 }}
                         animate={{ opacity: 1, scale: 1 }}
+                        transition={{ delay: 0.5, duration: 0.6, type: "spring", stiffness: 200 }}
                         className="text-[34px] font-black leading-[1.1] text-[#111827] max-w-[340px] mx-auto"
                     >
                         {t({
@@ -458,15 +472,19 @@ const ClientHome: React.FC<ClientHomeProps> = ({
                 {/* Looping Icons Animation */}
                 <div className="relative h-[80px] w-full overflow-hidden flex items-center">
                     <motion.div
-                        animate={{ x: [0, -880] }}
-                        transition={{ duration: 30, repeat: Infinity, ease: "linear" }}
-                        className="flex gap-[40px] whitespace-nowrap absolute left-0"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1, x: [0, -880] }}
+                        transition={{
+                            opacity: { delay: 0.7, duration: 0.8 },
+                            x: { duration: 30, repeat: Infinity, ease: "linear" }
+                        }}
+                        className="flex gap-[10px] whitespace-nowrap absolute left-0"
                     >
                         {[...heroImages, ...heroImages, ...heroImages].map((img, i) => (
                             <img
                                 key={i}
                                 src={img}
-                                className="w-[120px] h-[120px] object-contain"
+                                className="w-[80px] h-[80px] object-contain"
                                 alt="hero icon"
                             />
                         ))}
@@ -475,10 +493,10 @@ const ClientHome: React.FC<ClientHomeProps> = ({
             </div>
 
             {/* 2. White Bottom Sheet Container with Wave */}
-            <motion.div 
+            <motion.div
                 initial={{ y: '100%' }}
                 animate={isWhiteSectionVisible ? { y: 0 } : { y: '100%' }}
-                transition={{ type: "spring", damping: 25, stiffness: 180, delay: 0.1 }}
+                transition={{ type: "spring", damping: 25, stiffness: 180, delay: 0.8 }}
                 className={cn(
                     "bg-white relative flex flex-col z-10 transition-all duration-500 ease-in-out shrink-0",
                     "flex-1 -mt-8"
@@ -494,10 +512,10 @@ const ClientHome: React.FC<ClientHomeProps> = ({
                 <AnimatePresence mode="wait">
                     <motion.div
                         key="services-list"
-                        initial={{ x: -20, opacity: 0 }}
-                        animate={{ x: 0, opacity: 1 }}
-                        exit={{ x: 20, opacity: 0 }}
-                        transition={{ duration: 0.3 }}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.5, delay: 0.9 }}
                         className="flex-1 flex flex-col overflow-hidden"
                     >
                         {/* Scrollable Content Area */}
@@ -552,7 +570,7 @@ const ClientHome: React.FC<ClientHomeProps> = ({
                                                     type: "spring",
                                                     damping: 15,
                                                     stiffness: 200,
-                                                    delay: idx * 0.08
+                                                    delay: 1.0 + idx * 0.08
                                                 }}
                                                 onClick={() => {
                                                     setActiveId(svc.id);
@@ -708,7 +726,7 @@ const ClientHome: React.FC<ClientHomeProps> = ({
                                                         type: 'spring',
                                                         stiffness: 380,
                                                         damping: 20,
-                                                        delay: idx * 0.07
+                                                        delay: 1.3 + idx * 0.07
                                                     }}
                                                     whileTap={{ scale: 0.92 }}
                                                     onClick={() => {
@@ -764,7 +782,7 @@ const ClientHome: React.FC<ClientHomeProps> = ({
                                                     type: 'spring',
                                                     stiffness: 260,
                                                     damping: 22,
-                                                    delay: active.subServices.length * 0.07 + i * 0.08
+                                                    delay: 1.6 + i * 0.08
                                                 }}
                                             >
                                                 <span className="mt-0.5 text-[#B3B3B3] flex-shrink-0 text-[15px]">✓</span>
