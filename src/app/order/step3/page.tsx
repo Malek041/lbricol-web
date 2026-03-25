@@ -106,8 +106,8 @@ export default function CheckoutPage() {
             // 2. Create the Job/Mission(s)
             for (const slot of slotsToProcess) {
                 const pricing = calculateOrderPrice(
-                    order.serviceType || 'car_rental',
-                    order.selectedCar?.pricePerDay || order.providerRate || 0,
+                    order.subServiceId || order.serviceType,
+                    order.providerRate || 80,
                     {
                         rooms: order.serviceDetails?.rooms || 1,
                         hours: 1, // Default
@@ -287,7 +287,7 @@ export default function CheckoutPage() {
 
                 {/* Payment Methods */}
                 <section style={{ marginBottom: 32 }}>
-                    <h3 style={{ fontSize: 30, fontWeight: 300, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <h3 style={{ fontSize: 30, fontWeight: 700, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 10 }}>
                         Payment
                     </h3>
                     <p style={{ fontSize: 14, fontWeight: 400, color: '#9CA3AF', marginBottom: 20 }}>Choose your payment method</p>
@@ -397,7 +397,7 @@ export default function CheckoutPage() {
                 {/* Setup Summary (Rooms, Property Type, etc.) */}
                 {order.serviceDetails && (
                     <div style={{ marginTop: 24 }}>
-                        <h3 style={{ fontSize: 30, fontWeight: 300, marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <h3 style={{ fontSize: 30, fontWeight: 700, marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
                             Setup Summary
                         </h3>
                         <div style={{ padding: 16, borderRadius: 5, border: '1px solid #E5E7EB' }}>
@@ -458,7 +458,7 @@ export default function CheckoutPage() {
                 {/* Description Card */}
                 {(order.carRentalNote || (order.serviceDetails as any)?.note || (order.serviceDetails as any)?.itemDescription) && (
                     <div style={{ marginTop: 24 }}>
-                        <h3 style={{ fontSize: 30, fontWeight: 300, marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <h3 style={{ fontSize: 30, fontWeight: 700, marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
                             Description
                         </h3>
                         <div style={{ padding: 16, borderRadius: 5, border: '1px solid #E5E7EB' }}>
@@ -469,7 +469,7 @@ export default function CheckoutPage() {
                     </div>
                 )}
 
-                <h3 style={{ fontSize: 30, fontWeight: 300, marginTop: 32, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
+                <h3 style={{ fontSize: 30, fontWeight: 700, marginTop: 32, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
                     Location <span style={{ fontSize: 24 }}>📍</span>
                 </h3>
 
@@ -534,8 +534,8 @@ export default function CheckoutPage() {
                         {(() => {
                             const slotsCount = (order.multiSlots && order.multiSlots.length > 0) ? order.multiSlots.length : 1;
                             const individualPricing = calculateOrderPrice(
-                                order.serviceType || 'car_rental',
-                                order.selectedCar?.pricePerDay || order.providerRate || 0,
+                                order.subServiceId || order.serviceType,
+                                order.providerRate || 80,
                                 {
                                     rooms: order.serviceDetails?.rooms || 1,
                                     hours: 1, // Default
@@ -591,17 +591,17 @@ export default function CheckoutPage() {
             </main>
 
             {/* Bottom Footer */}
-            <div style={{ position: 'relative', background: '#fff', padding: '24px 24px calc(24px + env(safe-area-inset-bottom))', zIndex: 100, flexShrink: 0 }}>
+            <div style={{ position: 'relative', background: '#FFC244', padding: '24px 24px calc(24px + env(safe-area-inset-bottom))', zIndex: 100, flexShrink: 0 }}>
                 {/* Wave Top Effect Overlap */}
                 <div style={{ position: 'absolute', top: -30, left: 0, right: 0, height: 30, zIndex: 10, pointerEvents: 'none' }}>
-                    <svg viewBox="0 0 1440 320" preserveAspectRatio="none" style={{ width: '100%', height: '100%', fill: '#fff' }}>
+                    <svg viewBox="0 0 1440 320" preserveAspectRatio="none" style={{ width: '100%', height: '100%', fill: '#FFC244' }}>
                         <path d="M0,160L48,176C96,192,192,224,288,224C384,224,480,192,576,165.3C672,139,768,117,864,128C960,139,1056,181,1152,192C1248,203,1344,181,1392,170.7L1440,160L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path>
                     </svg>
                 </div>
                 {(() => {
                     const slotsCount = (order.multiSlots && order.multiSlots.length > 0) ? order.multiSlots.length : 1;
                     const individualPricing = calculateOrderPrice(
-                        order.serviceType || 'car_rental',
+                        order.subServiceId || order.serviceType || 'car_rental',
                         order.selectedCar?.pricePerDay || order.providerRate || 0,
                         {
                             rooms: order.serviceDetails?.rooms || 1,
@@ -624,7 +624,7 @@ export default function CheckoutPage() {
                 })()}
 
                 <div style={{ display: 'flex', gap: 12 }}>
-                    <button onClick={handleBack} style={{ width: 60, height: 60, borderRadius: 18, border: '1px solid #E5E7EB', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+                    <button onClick={handleBack} style={{ width: 60, height: 60, borderRadius: '50%', border: '1px solid rgba(0,0,0,0.05)', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
                         <ChevronLeft size={24} />
                     </button>
                     <motion.button
@@ -634,7 +634,7 @@ export default function CheckoutPage() {
                         style={{
                             flex: 1,
                             height: 60,
-                            borderRadius: 16,
+                            borderRadius: 50,
                             background: (paymentMethod === 'bank_transfer' && !receiptImage) ? '#9CA3AF' : '#219178',
                             color: '#FFFFFF',
                             border: 'none',

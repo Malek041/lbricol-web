@@ -172,9 +172,9 @@ export default function ServiceSetupPage() {
                 if (bSnap.exists()) {
                     const data = bSnap.data();
                     // Find relevant service by category OR subService ID
-                    const relevantService = data.services?.find((s: any) => 
-                        s.categoryId === order.serviceType || 
-                        s.id === order.serviceType || 
+                    const relevantService = data.services?.find((s: any) =>
+                        s.categoryId === order.serviceType ||
+                        s.id === order.serviceType ||
                         s.id === order.subServiceId
                     );
                     const servicePortfolio = relevantService?.portfolioImages || [];
@@ -305,7 +305,7 @@ export default function ServiceSetupPage() {
             } else {
                 const slotsCount = selectedSlots.length > 0 ? selectedSlots.length : 1;
                 const result = calculateOrderPrice(
-                    order.serviceType,
+                    order.subServiceId || order.serviceType,
                     order.providerRate || 80,
                     { rooms, propertyType, hours: 1, days: 1 }
                 );
@@ -630,11 +630,11 @@ export default function ServiceSetupPage() {
                             <div className="fixed bottom-0 left-0 right-0 z-[100] bg-transparent">
                                 {/* Wave Top Effect */}
                                 <div className="absolute top-[-30px] left-0 right-0 h-[30px] z-10 pointer-events-none">
-                                    <svg viewBox="0 0 1440 320" preserveAspectRatio="none" className="w-full h-full fill-[#E2E2E2]">
+                                    <svg viewBox="0 0 1440 320" preserveAspectRatio="none" className="w-full h-full fill-[#FFC244]">
                                         <path d="M0,160L48,176C96,192,192,224,288,224C384,224,480,192,576,165.3C672,139,768,117,864,128C960,139,1056,181,1152,192C1248,203,1344,181,1392,170.7L1440,160L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path>
                                     </svg>
                                 </div>
-                                <div className="bg-[#E2E2E2] p-6 pb-8">
+                                <div className="bg-[#FFC244] p-6 pb-8">
                                     <motion.button
                                         whileTap={{ scale: 0.98 }}
                                         onClick={() => {
@@ -984,8 +984,8 @@ export default function ServiceSetupPage() {
                                         {(order.serviceType === 'cleaning' || order.serviceType === 'airbnb_cleaning') && (
                                             <div className="space-y-6">
                                                 <div className="flex items-center justify-between px-1">
-                                                    <label className="text-[25px] font-black text-[#111827] setup-heading">Number of Rooms</label>
-                                                    <span className="text-[12px] font-bold text-[#219178] bg-[#F0FDF9] px-4 py-1.5 rounded-full tracking-widest uppercase">
+                                                    <label className="text-[25px] font-bold text-[#111827] setup-heading">Number of Rooms</label>
+                                                    <span className="text-[12px] font-bold text-[#111827] bg-[#FFC244] px-4 py-1.5 rounded-full tracking-widest">
                                                         {rooms} Selected
                                                     </span>
                                                 </div>
@@ -1003,7 +1003,7 @@ export default function ServiceSetupPage() {
                                                                 rotate: { repeat: Infinity, duration: 5, ease: "easeInOut" }
                                                             } : { duration: 0 }}
                                                             onClick={() => setRooms(num)}
-                                                            className={`flex-shrink-0 w-16 h-16 flex items-center justify-center font-black text-[22px] transition-all snap-center relative ${rooms === num ? 'bg-[#219178] text-white scale-125 z-10' : 'bg-[#F9FAFB] text-neutral-400 border border-neutral-100/50 rounded-full'}`}
+                                                            className={`flex-shrink-0 w-16 h-16 flex items-center justify-center font-bold text-[22px] transition-all snap-center relative ${rooms === num ? 'bg-[#FFC244] text-black scale-125 z-10' : 'bg-[#F9FAFB] text-neutral-400 border border-neutral-100/50 rounded-full'}`}
                                                         >
                                                             {num}
                                                         </motion.button>
@@ -1121,7 +1121,7 @@ export default function ServiceSetupPage() {
                                         {/* Photo Uploads */}
                                         <div className="space-y-6">
                                             <div className="flex items-center justify-between">
-                                                    <label className="text-[25px] font-black text-[#111827] setup-heading">Photos of the Property</label>
+                                                <label className="text-[25px] font-bold text-[#111827] setup-heading">Photos of the Property</label>
                                                 <span className="text-[12px] font-medium text-[#9CA3AF] tracking-wider">{photos.length}/6</span>
                                             </div>
                                             <div className="grid grid-cols-3 gap-4">
@@ -1146,7 +1146,7 @@ export default function ServiceSetupPage() {
                                                                 <div className="w-10 h-10 rounded-full bg-neutral-50 flex items-center justify-center">
                                                                     <ImageIcon size={20} className="text-[#9CA3AF]" />
                                                                 </div>
-                                                                <span className="text-[10px] font-black text-[#9CA3AF] tracking-[0.5px]">Add photo</span>
+                                                                <span className="text-[10px] font-bold text-[#9CA3AF] tracking-[0.5px]">Add photo</span>
                                                             </>
                                                         )}
                                                     </label>
@@ -1156,12 +1156,12 @@ export default function ServiceSetupPage() {
 
                                         {/* Optional Note */}
                                         <div className="space-y-6 pb-1">
-                                            <label className="text-[25px] font-black text-[#111827]">Instructions or Notes</label>
+                                            <label className="text-[25px] font-bold text-[#111827]">Instructions or Notes</label>
                                             <textarea
                                                 value={note}
                                                 onChange={(e) => setNote(e.target.value)}
                                                 placeholder="Tell us more about what needs to be done..."
-                                                className="w-full h-40 p-6 bg-[#F9FAFB] rounded-[5px] border border-neutral-100 outline-none focus:border-[#219178]/30 transition-all resize-none font-black text-[15px] leading-relaxed placeholder:text-[#9CA3AF] placeholder:italic"
+                                                className="w-full h-40 p-6 bg-[#F9FAFB] rounded-[5px] border border-neutral-100 outline-none focus:border-[#219178]/30 transition-all resize-none font-medium text-[15px] leading-relaxed placeholder:text-[#9CA3AF] placeholder:italic"
                                             />
                                         </div>
 
@@ -1174,7 +1174,7 @@ export default function ServiceSetupPage() {
                                                         {saveAsFavorite && <Check size={16} color="white" strokeWidth={4} />}
                                                     </div>
                                                     <div>
-                                                        <p className="text-[15px] font-black text-[#111827]">Save this setup for next time</p>
+                                                        <p className="text-[15px] font-bold text-[#111827]">Save this setup for next time</p>
                                                         <p className="text-[12px] font-bold text-[#9CA3AF]">You won't have to enter these details again.</p>
                                                     </div>
                                                 </label>
