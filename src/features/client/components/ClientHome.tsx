@@ -228,7 +228,7 @@ const ClientHome: React.FC<ClientHomeProps> = ({
                 const dateB = b.createdAt?.seconds || new Date(b.createdAt || 0).getTime();
                 return dateB - dateA;
             })[0];
-            
+
             if (lastOrder && lastOrder.serviceType) {
                 setLastCategoryId(lastOrder.serviceType);
             }
@@ -397,33 +397,99 @@ const ClientHome: React.FC<ClientHomeProps> = ({
         }
     }, [visibleServices, activeId, hasManuallySelected]);
     const active = filteredServices.find(s => s.id === activeId) || filteredServices[0] || visibleServices[0] || SERVICES_CATALOGUE[0];
+    const [isWhiteSectionVisible, setIsWhiteSectionVisible] = useState(false);
+
+    useEffect(() => {
+        const timer = setTimeout(() => setIsWhiteSectionVisible(true), 300);
+        return () => clearTimeout(timer);
+    }, []);
+
+    const heroImages = [
+        '/public/Images/clientHomeHeroSection/Cleaning.png',
+        '/public/Images/clientHomeHeroSection/Homerepairs.png',
+        '/public/Images/clientHomeHeroSection/Packaging.png',
+        '/public/Images/clientHomeHeroSection/groceries.png',
+        '/public/Images/clientHomeHeroSection/money.png',
+        '/public/Images/clientHomeHeroSection/movingHelp.png',
+        '/public/Images/clientHomeHeroSection/onlineStore.png',
+        '/public/Images/clientHomeHeroSection/petsCare.png',
+    ].map(p => p.replace('/public', ''));
 
     return (
         <div className={cn(
-            "fixed inset-0 bg-white flex flex-col overflow-hidden h-[100dvh] w-screen font-jakarta",
+            "fixed inset-0 bg-[#FFC244] flex flex-col overflow-hidden h-[100dvh] w-screen font-jakarta",
             "z-0"
         )}>
-            {/* 1. Map Background (Dynamic Height for Step 1) */}
-            <div className={cn(
-                "w-full relative bg-neutral-100 overflow-hidden transition-all duration-500 ease-in-out",
-                "h-[42vh] flex-shrink-0"
-            )}>
-                <CompactHomeMap
-                    city={selectedCity}
-                    area={selectedArea}
-                    onAddressUpdate={onAddressUpdate}
-                    onInteract={onChangeLocation}
-                    initialLocation={initialLocation || undefined}
-                    className="h-full rounded-none border-none shadow-none"
-                    isFlowActive={false}
-                />
+            {/* 1. New Yellow Hero Section */}
+            <div className="w-full relative bg-[#FFC244] overflow-hidden flex-shrink-0 pt-[env(safe-area-inset-top)] pb-12">
+                {/* Location Pill */}
+                <div className="flex justify-center pt-8 mb-6">
+                    <motion.button
+                        initial={{ opacity: 0, y: -20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        onClick={onChangeLocation}
+                        className="flex items-center gap-2 bg-white/90  px-6 py-2.5 rounded-full border border-white/50 active:scale-95 transition-transform"
+                    >
+                        <div className="w-6 h-6 rounded-full bg-emerald-50 flex items-center justify-center">
+                            <MapPin size={14} className="text-[#219178]" />
+                        </div>
+                        <span className="text-[13px] font-black text-[#111827] truncate max-w-[180px]">
+                            {localizePlace(selectedCity || 'Set Location')}
+                        </span>
+                        <ChevronDown size={14} className="text-[#9CA3AF]" />
+                    </motion.button>
+                </div>
+
+                {/* Heading */}
+                <div className="text-center px-6 mb-8">
+                    <motion.h1
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        className="text-[34px] font-black leading-[1.1] text-[#111827] max-w-[340px] mx-auto"
+                    >
+                        {t({
+                            en: 'Book trusted help for home tasks',
+                            fr: 'Réservez une aide de confiance pour vos tâches',
+                            ar: 'احجز مساعدة موثوقة لمهام منزلك'
+                        })}
+                    </motion.h1>
+                </div>
+
+                {/* Looping Icons Animation */}
+                <div className="relative h-[80px] w-full overflow-hidden flex items-center">
+                    <motion.div
+                        animate={{ x: [0, -880] }}
+                        transition={{ duration: 30, repeat: Infinity, ease: "linear" }}
+                        className="flex gap-[40px] whitespace-nowrap absolute left-0"
+                    >
+                        {[...heroImages, ...heroImages, ...heroImages].map((img, i) => (
+                            <img
+                                key={i}
+                                src={img}
+                                className="w-[70px] h-[70px] object-contain"
+                                alt="hero icon"
+                            />
+                        ))}
+                    </motion.div>
+                </div>
             </div>
 
-            {/* 2. Bottom Sheet Container */}
-            <div className={cn(
-                "bg-white relative flex flex-col overflow-hidden rounded-t-[32px] z-10 shadow-[0_-12px_40px_rgba(0,0,0,0.08)] transition-all duration-500 ease-in-out shrink-0",
-                "flex-1 -mt-16"
-            )}>
+            {/* 2. White Bottom Sheet Container with Wave */}
+            <motion.div
+                initial={{ y: '100%' }}
+                animate={isWhiteSectionVisible ? { y: 0 } : { y: '100%' }}
+                transition={{ type: "spring", damping: 25, stiffness: 180, delay: 0.1 }}
+                className={cn(
+                    "bg-white relative flex flex-col overflow-hidden rounded-t-[32px] z-10 transition-all duration-500 ease-in-out shrink-0",
+                    "flex-1 -mt-8"
+                )}
+            >
+                {/* Wave Border Overlay */}
+                <div className="absolute top-[-40px] left-0 right-0 h-[40px] z-20 pointer-events-none">
+                    <svg viewBox="0 0 1440 120" preserveAspectRatio="none" className="w-full h-full fill-white">
+                        <path d="M0,32L80,37.3C160,43,320,53,480,58.7C640,64,800,64,960,53.3C1120,43,1280,21,1360,10.7L1440,0L1440,120L1360,120C1280,120,1120,120,960,120C800,120,640,120,480,120C320,120,160,120,80,120L0,120Z"></path>
+                    </svg>
+                </div>
 
                 <AnimatePresence mode="wait">
                     <motion.div
@@ -437,42 +503,6 @@ const ClientHome: React.FC<ClientHomeProps> = ({
                         {/* Scrollable Content Area */}
                         <div className="flex-1 overflow-y-auto overscroll-contain pb-32 no-scrollbar">
 
-                            {/* ── Hero Heading ─────────────────────────────────────────── */}
-                            <div className="pt-8 pb-8 flex flex-col text-center w-full overflow-hidden px-6">
-                                <motion.h1
-                                    initial={{ opacity: 0, y: 15 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    transition={{ duration: 0.6, ease: "easeOut" }}
-                                    className="font-black leading-[1.05] tracking-tighter text-[#1D1D1D] mx-auto relative overflow-hidden"
-                                    style={{
-                                        fontSize: t({ en: 'clamp(22px, 10vw, 36px)', fr: 'clamp(34px, 5vw, 48px)', ar: 'clamp(34px, 10vw, 48px)' }),
-                                        maxWidth: t({ en: '380px', fr: '420px', ar: '430px' }),
-                                        fontWeight: 700,
-                                        fontFamily: 'var(--font-sans-one), sans-serif'
-                                    }}
-                                >
-                                    {t({
-                                        en: 'Book trusted help for home tasks',
-                                        fr: 'Réservez une aide de confiance pour vos tâches',
-                                        ar: 'احجز مساعدة موثوقة لمهام منزلك'
-                                    })}
-                                    {/* Shine effect overlay using span to avoid div-in-h1 lint */}
-                                    <motion.span
-                                        initial={{ left: '-100%' }}
-                                        animate={{ left: '200%' }}
-                                        transition={{ duration: 2.5, ease: "easeInOut", delay: 3 }}
-                                        style={{
-                                            position: 'absolute',
-                                            top: 0,
-                                            bottom: 0,
-                                            width: '50%',
-                                            background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.7), transparent)',
-                                            transform: 'skewX(-20deg)',
-                                            pointerEvents: 'none',
-                                        }}
-                                    />
-                                </motion.h1>
-                            </div>
 
                             {/* ── Category tabs ───────────────────────────────────────── */}
                             {/* Search bar */}
@@ -561,10 +591,13 @@ const ClientHome: React.FC<ClientHomeProps> = ({
                                                         border: isActive ? 'none' : '1.5px solid #F0F0F0',
                                                     }}
                                                 >
-                                                    {isTrending ? (
+                                                    {availableServiceIds === null ? (
+                                                        <div className="w-14 h-14 rounded-full bg-neutral-100 animate-pulse" />
+                                                    ) : isTrending ? (
                                                         <span style={{ fontSize: 36 }}>🔥</span>
                                                     ) : (
                                                         <img
+                                                            key={svc.iconPath}
                                                             src={svc.iconPath}
                                                             className="w-14 h-14 object-contain transition-all duration-300"
                                                             style={{ filter: 'none' }}
@@ -747,7 +780,7 @@ const ClientHome: React.FC<ClientHomeProps> = ({
                         </div>
                     </motion.div>
                 </AnimatePresence>
-            </div>
+            </motion.div>
 
             {/* Premium Onboarding Overlay (Absolute, top level) */}
             <AnimatePresence>
