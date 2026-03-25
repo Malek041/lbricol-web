@@ -420,19 +420,22 @@ const MapView: React.FC<MapViewProps> = ({
         className: '',
         html: `
           <div style="display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:160px;cursor:pointer;opacity:${opacity};transform:scale(${scale});transition:all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);${bounceStyle}">
-            <div style="background:#fff;border-radius:12px;padding:6px 12px;margin-bottom:6px;
-              box-shadow:0 4px 15px rgba(0,0,0,0.18);font-family:sans-serif;text-align:center;white-space:nowrap;
-              display: flex; flex-direction: column; align-items: center; border: 1px solid #f3f4f6;">
-              <div style="font-size:14px;font-weight:900;color:#111827">${pin.taskCount || 0} Jobs</div>
-              <div style="font-size:13px;color:#FBBF24;font-weight:900;display:flex;align-items:center;gap:3px;">
-                ★ <span style="color:#111827">${pin.rating.toFixed(1)}</span>
+            <div style="position: relative; display: flex; flex-direction: column; align-items: center; margin-bottom: 8px;">
+              <div style="background:#fff;border-radius:12px;padding:10px 16px; 
+                box-shadow:0 8px 18px rgba(0,0,0,0.15);font-family:sans-serif;text-align:center;white-space:nowrap;
+                display: flex; flex-direction: column; align-items: center; border: 1px solid #f3f4f6; position: relative; z-index: 10;">
+                <div style="font-size:16px;font-weight:950;color:#111827">${pin.taskCount || 0} Jobs</div>
+                <div style="font-size:20px;color:#111827;font-weight:950;display:flex;align-items:center;gap:6px;margin-top:2px;">
+                  <span style="color:#FBBF24;font-size:24px;">★</span> ${!pin.taskCount || pin.taskCount === 0 ? '0.0' : (pin.rating || 0).toFixed(1)}
+                </div>
               </div>
+              <div style="width: 0; height: 0; border-left: 8px solid transparent; border-right: 8px solid transparent; border-top: 8px solid white; margin-top: -1px; z-index: 5; filter: drop-shadow(0 4px 4px rgba(0,0,0,0.05));"></div>
             </div>
-            <div style="position:relative;width:${size}px;height:${size}px;transition: width 0.3s, height 0.3s; margin-bottom: 0px;">
-              ${serviceIconUrl
-            ? `<img src="${serviceIconUrl}" style="width:100%;height:100%;object-fit:contain"/>`
-            : `<div style="width:100%;height:100%;background:#F3F4F6;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:24px">👤</div>`
-          }
+            <div style="position:relative;width:${size}px;height:${size}px;min-width:${size}px;min-height:${size}px;flex-shrink:0;transition: width 0.3s, height 0.3s; margin-bottom: 0px; border-radius: 50%; border: 3px solid #fff; box-shadow: 0 4px 12px rgba(0,0,0,0.15); overflow: hidden; background: #fff;">
+              ${pin.avatarUrl
+                ? `<img src="${pin.avatarUrl}" style="width:100%;height:100%;object-fit:cover"/>`
+                : `<div style="width:100%;height:100%;background:#F3F4F6;display:flex;align-items:center;justify-content:center;font-size:24px">👤</div>`
+              }
             </div>
           </div>
         `,
@@ -520,7 +523,7 @@ const MapView: React.FC<MapViewProps> = ({
             <div style="background:#fff;border-radius:12px;padding:6px 12px;margin-bottom:6px;
               box-shadow:0 4px 15px rgba(0,0,0,0.18);font-family:sans-serif;text-align:center;white-space:nowrap;
               display: flex; flex-direction: column; align-items: center; border: 1px solid #f3f4f6;">
-              <div style="font-size:14px;font-weight:900;color:#01A083">${pin.price} MAD</div>
+              <div style="font-size:14px;font-weight:900;color:#219178">${pin.price} MAD</div>
               <div style="font-size:13px;color:#FBBF24;font-weight:900;display:flex;align-items:center;gap:3px;">
                 ★ <span style="color:#111827">${pin.rating.toFixed(1)}</span>
               </div>
@@ -582,7 +585,7 @@ const MapView: React.FC<MapViewProps> = ({
           const durationMin = Math.round(route.duration / 60);
 
           routeLayerRef.current = L.polyline(coords, {
-            color: '#3B82F6',
+            color: '#219178',
             weight: 6,
             opacity: 0.9,
             lineCap: 'round',
@@ -596,30 +599,33 @@ const MapView: React.FC<MapViewProps> = ({
           const labelIcon = L.divIcon({
             className: '',
             html: `
-              <div style="
-                background: white; 
-                padding: 6px 12px; 
-                margin-bottom: 2px;
-                border-radius: 50px; 
-                box-shadow: 0 4px 15px rgba(0,0,0,0.2); 
-                display: flex; 
-                align-items: center; 
-                gap: 6px;
-                white-space: nowrap;
-                border: 2px solid #3B82F6;
-                animation: fadeIn 0.3s ease-out;
-                pointer-events: none;
-              ">
-                <span style="font-size: 14px">🚗</span>
-                <span style="font-size: 13px; font-weight: 800; color: #111827">${durationMin} min</span>
+              <div style="position: relative; display: flex; flex-direction: column; align-items: center; pointer-events: none;">
+                <div style="
+                  background: #219178; 
+                  padding: 8px 14px; 
+                  border-radius: 8px; 
+                  box-shadow: 0 4px 15px rgba(0,160,130,0.3); 
+                  display: flex; 
+                  align-items: center; 
+                  gap: 6px;
+                  white-space: nowrap;
+                  color: white;
+                  animation: fadeIn 0.3s ease-out;
+                  z-index: 1000;
+                  position: relative;
+                ">
+                  <span style="font-size: 13px; font-weight: 950; letter-spacing: 0.3px">${durationMin} min</span>
+                </div>
+                <div style="width: 0; height: 0; border-left: 6px solid transparent; border-right: 6px solid transparent; border-top: 6px solid #219178; margin-top: -1px; z-index: 999;"></div>
               </div>
             `,
-            iconSize: [100, 40],
-            iconAnchor: [50, 60],
+            iconSize: [120, 50],
+            iconAnchor: [60, 50],
           });
-
-
-          routeLabelRef.current = L.marker(midPoint, { icon: labelIcon, zIndexOffset: 3000 }).addTo(map);
+          routeLabelRef.current = L.marker(midPoint, { 
+            icon: labelIcon, 
+            zIndexOffset: 3000 
+          }).addTo(map);
 
         } else {
           // Fallback to straight line if OSRM fails
@@ -670,7 +676,7 @@ const MapView: React.FC<MapViewProps> = ({
           const durationMin = Math.round(route.duration / 60);
 
           routeLayerRef.current = L.polyline(coords, {
-            color: '#00A082', // Branded color for the order route
+            color: '#219178', // Branded color for the order route
             weight: 7,
             opacity: 1,
             lineCap: 'round',
@@ -694,7 +700,7 @@ const MapView: React.FC<MapViewProps> = ({
                 align-items: center; 
                 gap: 6px;
                 white-space: nowrap;
-                border: 2px solid #00A082;
+                border: 2px solid #219178;
                 animation: fadeIn 0.3s ease-out;
                 pointer-events: none;
               ">
@@ -714,7 +720,7 @@ const MapView: React.FC<MapViewProps> = ({
 
         } else {
           routeLayerRef.current = L.polyline([[clientPin.lat, clientPin.lng], [destinationPin.lat, destinationPin.lng]], {
-            color: '#00A082', weight: 4, opacity: 0.6, dashArray: '8, 8'
+            color: '#219178', weight: 4, opacity: 0.6, dashArray: '8, 8'
           }).addTo(map);
         }
       } catch (e) {

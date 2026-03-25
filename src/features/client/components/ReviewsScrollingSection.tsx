@@ -102,14 +102,14 @@ export const ReviewsScrollingSection = () => {
                             </div>
 
                             <div className="relative">
-                                <Quote size={16} className="text-[#00A082] opacity-20 absolute -top-1 -left-1" />
+                                <Quote size={16} className="text-[#219178] opacity-20 absolute -top-1 -left-1" />
                                 <p className="text-[14px] text-neutral-600 font-medium leading-relaxed indent-4 line-clamp-3">
                                     {t({ en: review.commentEn, fr: review.comment })}
                                 </p>
                             </div>
 
                             <div className="mt-1 flex items-center gap-2">
-                                <span className="px-2.5 py-1 bg-neutral-50 text-[11px] font-bold text-[#00A082] rounded-lg uppercase tracking-wider border border-neutral-100">
+                                <span className="px-2.5 py-1 bg-neutral-50 text-[11px] font-bold text-[#219178] rounded-lg uppercase tracking-wider border border-neutral-100">
                                     {t({ en: review.service, fr: review.serviceFr })}
                                 </span>
                             </div>

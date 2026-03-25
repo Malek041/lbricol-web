@@ -36,6 +36,36 @@ const AuthPopup = ({ isOpen, onClose, onSuccess }: AuthPopupProps) => {
     const primaryButtonFont = `${Math.round(fluidMobilePx(viewportWidth, 16, 18))}px`;
     const primaryButtonPaddingY = `${Math.round(fluidMobilePx(viewportWidth, 14, 18))}px`;
     const footerPadding = `${Math.round(fluidMobilePx(viewportWidth, 20, 32))}px`;
+    const [authChecked, setAuthChecked] = React.useState(false);
+    
+    // Auto-transition to WhatsApp if user is already logged in but missing the number
+    React.useEffect(() => {
+        if (isOpen && !authChecked) {
+            const checkUser = async () => {
+                const currentUser = auth.currentUser;
+                if (currentUser) {
+                    const userRef = doc(db, 'users', currentUser.uid);
+                    const clientRef = doc(db, 'clients', currentUser.uid);
+                    const [userSnap, clientSnap] = await Promise.all([
+                        getDoc(userRef),
+                        getDoc(clientRef)
+                    ]);
+                    
+                    const hasWhatsApp = userSnap.data()?.whatsappNumber || clientSnap.data()?.whatsappNumber;
+                    
+                    if (!hasWhatsApp) {
+                        setTempUser(currentUser);
+                        setShowWhatsAppRequest(true);
+                    } else if (isOpen) {
+                        // User exists and has WhatsApp, call onSuccess to close popup and continue
+                        onSuccess(currentUser);
+                    }
+                }
+                setAuthChecked(true);
+            };
+            checkUser();
+        }
+    }, [isOpen, authChecked, onSuccess]);
 
     const handleAuth = async () => {
         if (isLoading) return;
@@ -46,9 +76,16 @@ const AuthPopup = ({ isOpen, onClose, onSuccess }: AuthPopupProps) => {
 
             if (result.user) {
                 const userRef = doc(db, 'users', result.user.uid);
-                const userSnap = await getDoc(userRef);
+                const clientRef = doc(db, 'clients', result.user.uid);
                 
-                if (!userSnap.exists() || !userSnap.data().whatsappNumber) {
+                const [userSnap, clientSnap] = await Promise.all([
+                   getDoc(userRef),
+                   getDoc(clientRef)
+                ]);
+                
+                const hasWhatsApp = userSnap.data()?.whatsappNumber || clientSnap.data()?.whatsappNumber;
+                
+                if (!hasWhatsApp) {
                     setTempUser(result.user);
                     setShowWhatsAppRequest(true);
                     return;
@@ -56,8 +93,12 @@ const AuthPopup = ({ isOpen, onClose, onSuccess }: AuthPopupProps) => {
                 
                 onSuccess(result.user);
             }
-        } catch (error) {
+        } catch (error: any) {
             console.error("Auth error:", error);
+            // If user closed the popup, don't show an alert, just stop loading
+            if (error.code !== 'auth/popup-closed-by-user') {
+                alert("Sign-in failed. Please try again.");
+            }
         } finally {
             setIsLoading(false);
         }
@@ -187,7 +228,7 @@ const AuthPopup = ({ isOpen, onClose, onSuccess }: AuthPopupProps) => {
                                         }}
                                     >
                                         {isLoading ? (
-                                            <div className="w-6 h-6 border-3 border-gray-200 border-t-[#00A082] rounded-full animate-spin" />
+                                            <div className="w-6 h-6 border-3 border-gray-200 border-t-[#219178] rounded-full animate-spin" />
                                         ) : (
                                             <>
                                                 <FcGoogle size={24} />
@@ -203,7 +244,7 @@ const AuthPopup = ({ isOpen, onClose, onSuccess }: AuthPopupProps) => {
                                     animate={{ opacity: 1, x: 0 }}
                                     style={{ width: '100%', maxWidth: '360px', textAlign: 'center' }}
                                 >
-                                    <div style={{ width: 64, height: 64, background: '#00A082', borderRadius: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px', color: '#fff' }}>
+                                    <div style={{ width: 64, height: 64, background: '#219178', borderRadius: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px', color: '#fff' }}>
                                         <svg viewBox="0 0 24 24" width="32" height="32" fill="currentColor">
                                             <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01s-.519.074-.791.371c-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
                                         </svg>
@@ -238,7 +279,7 @@ const AuthPopup = ({ isOpen, onClose, onSuccess }: AuthPopupProps) => {
                                             width: '100%',
                                             padding: '18px',
                                             borderRadius: '18px',
-                                            background: (isLoading || whatsapp.length < 9) ? '#E5E7EB' : '#00A082',
+                                            background: (isLoading || whatsapp.length < 9) ? '#E5E7EB' : '#219178',
                                             color: '#fff',
                                             fontSize: '18px',
                                             fontWeight: 900,
@@ -269,7 +310,7 @@ const AuthPopup = ({ isOpen, onClose, onSuccess }: AuthPopupProps) => {
                             <a
                                 href="/privacy"
                                 style={{
-                                    color: '#00A082',
+                                    color: '#219178',
                                     textDecoration: 'none',
                                     fontWeight: 700,
                                     marginLeft: '2px'

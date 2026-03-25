@@ -349,7 +349,7 @@ const MessagesView: React.FC<MessagesViewProps> = ({
                         {conversation?.jobDescription && (
                             <div style={{ marginTop: '12px', padding: '12px', backgroundColor: '#F9F9F9', borderRadius: '12px', border: '1px solid #F0F0F0' }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-                                    <FileText size={14} color="#00A082" />
+                                    <FileText size={14} color="#219178" />
                                     <span style={{ fontSize: '11px', fontWeight: 900, color: '#333' }}>{t({ en: 'TASK DESCRIPTION', fr: 'DESCRIPTION DE LA MISSION' })}</span>
                                 </div>
                                 <p style={{ fontSize: '13px', color: '#666', margin: 0 }}>{conversation.jobDescription}</p>
@@ -395,7 +395,7 @@ const MessagesView: React.FC<MessagesViewProps> = ({
                                                 initial={{ scale: 0.9, opacity: 0 }}
                                                 animate={{ scale: 1, opacity: 1 }}
                                                 style={{
-                                                    backgroundColor: message.isOwn ? '#00A082' : '#FFFFFF',
+                                                    backgroundColor: message.isOwn ? '#219178' : '#FFFFFF',
                                                     color: message.isOwn ? '#FFFFFF' : '#000000',
                                                     padding: '12px 18px',
                                                     borderRadius: message.isOwn ? '22px 22px 4px 22px' : '22px 22px 22px 4px',
@@ -432,7 +432,7 @@ const MessagesView: React.FC<MessagesViewProps> = ({
                     }}
                 >
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                        <button style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#00A082' }}>
+                        <button style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#219178' }}>
                             <Camera size={26} />
                         </button>
                         <div style={{
@@ -442,7 +442,7 @@ const MessagesView: React.FC<MessagesViewProps> = ({
                             backgroundColor: '#FFFFFF',
                             borderRadius: '12px',
                             padding: '10px 16px',
-                            border: '1.5px solid #00A082',
+                            border: '1.5px solid #219178',
                         }}>
                             <input
                                 type="text"
@@ -468,12 +468,12 @@ const MessagesView: React.FC<MessagesViewProps> = ({
                                 background: 'none',
                                 border: 'none',
                                 cursor: messageInput.trim() ? 'pointer' : 'not-allowed',
-                                color: messageInput.trim() ? '#00A082' : '#999',
+                                color: messageInput.trim() ? '#219178' : '#999',
                                 transition: 'all 0.2s',
                                 transform: messageInput.trim() ? 'scale(1.1)' : 'scale(1)',
                             }}
                         >
-                            <Send size={26} fill={messageInput.trim() ? '#00A08220' : 'none'} />
+                            <Send size={26} fill={messageInput.trim() ? '#21917820' : 'none'} />
                         </button>
                     </div>
                 </div>

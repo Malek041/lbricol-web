@@ -94,7 +94,7 @@ export const MoroccoServiceMap: React.FC<MoroccoServiceMapProps> = ({ className 
                 {/* Heading */}
                 <div style={{ marginBottom: '60px' }}>
                     <h2 style={{
-                        fontFamily: '"Fredoka", var(--font-sans)',
+                        fontFamily: 'var(--font-sans-one), var(--font-sans)',
                         fontWeight: 800,
                         fontSize: 'clamp(32px, 4vw, 56px)',
                         color: '#111111',
@@ -144,7 +144,7 @@ export const MoroccoServiceMap: React.FC<MoroccoServiceMapProps> = ({ className 
                                             <span style={{
                                                 fontSize: '32px',
                                                 fontWeight: 800,
-                                                fontFamily: '"Fredoka", var(--font-sans)',
+                                                fontFamily: 'var(--font-sans-one), var(--font-sans)',
                                                 color: '#111',
                                                 opacity: isActive ? 1 : 0.2,
                                                 letterSpacing: '-0.02em'
@@ -156,8 +156,8 @@ export const MoroccoServiceMap: React.FC<MoroccoServiceMapProps> = ({ className 
                                                     width: '8px',
                                                     height: '8px',
                                                     borderRadius: '50%',
-                                                    backgroundColor: '#00A082',
-                                                    boxShadow: '0 0 12px #00A082'
+                                                    backgroundColor: '#219178',
+                                                    boxShadow: '0 0 12px #219178'
                                                 }} />
                                             )}
                                         </div>

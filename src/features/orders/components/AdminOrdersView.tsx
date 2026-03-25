@@ -358,7 +358,7 @@ const AdminOrdersView: React.FC<AdminOrdersViewProps> = ({ t, onChat, onViewMess
                                     count === 0 ? 'bg-neutral-50 border-neutral-100 text-neutral-400' :
                                         count < 3 ? 'bg-[#E6F6F2] border-[#B3E1D6] text-[#006A52]' :
                                             count < 7 ? 'bg-[#C7EFE4] border-[#7FD7BE] text-[#00513E]' :
-                                                'bg-[#00A082] border-[#00846B] text-white';
+                                                'bg-[#219178] border-[#00846B] text-white';
 
                                 return (
                                     <div

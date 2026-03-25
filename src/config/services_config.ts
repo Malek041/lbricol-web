@@ -223,17 +223,47 @@ export const SERVICES_HIERARCHY: Record<string, ServiceConfig> = {
             { id: 'hospitality', name: 'Hospitality-level cleaning', pricingArchetype: 'unit' }
         ]
     },
-    automotive: {
-        id: 'automotive',
-        name: 'My Car & Transport',
+    car_rental: {
+        id: 'car_rental',
+        name: 'Transport & Car Rental',
         icon: Car,
         subServices: [
-            { id: 'car_wash', name: 'Car Wash', pricingArchetype: 'fixed' },
-            { id: 'car_detail', name: 'Car Detailing', pricingArchetype: 'fixed' },
-            { id: 'automotive_glass', name: 'Automotive Glass', pricingArchetype: 'fixed' },
-            { id: 'car_rental', name: 'Car Rental', pricingArchetype: 'rental' },
-            { id: 'private_driver', name: 'Private Driver', pricingArchetype: 'rental' },
-            { id: 'vip_airport', name: 'VIP Airport Transfer', pricingArchetype: 'fixed' }
+            { 
+                id: 'car_wash', 
+                name: 'Car Wash', 
+                pricingArchetype: 'fixed',
+                desc: { en: 'Professional car washing and cleaning.', fr: 'Lavage et nettoyage professionnel de voiture.', ar: 'غسيل وتنظيف السيارات بشكل احترافي.' }
+            },
+            { 
+                id: 'car_detail', 
+                name: 'Car Detailing', 
+                pricingArchetype: 'fixed',
+                desc: { en: 'Deep cleaning and restoration for your car.', fr: 'Nettoyage en profondeur et restauration de votre voiture.', ar: 'تنظيف عميق واستعادة لسيارتك.' }
+            },
+            { 
+                id: 'automotive_glass', 
+                name: 'Automotive Glass', 
+                pricingArchetype: 'fixed',
+                desc: { en: 'Windshield and glass repair.', fr: 'Réparation de pare-brise et de vitres.', ar: 'إصلاح الزجاج والزجاج الأمامي.' }
+            },
+            { 
+                id: 'rent_a_car', 
+                name: 'Car Rental', 
+                pricingArchetype: 'rental',
+                desc: { en: 'Rent a car for your trips.', fr: 'Louez une voiture pour vos trajets.', ar: 'استئجار سيارة لرحلاتك.' }
+            },
+            { 
+                id: 'private_driver', 
+                name: 'Private Driver', 
+                pricingArchetype: 'rental',
+                desc: { en: 'Book a professional driver.', fr: 'Réservez un chauffeur professionnel.', ar: 'احجز سائقًا محترفًا.' }
+            },
+            { 
+                id: 'vip_airport', 
+                name: 'VIP Airport Transfer', 
+                pricingArchetype: 'fixed',
+                desc: { en: 'Luxury transfer to/from airport.', fr: 'Transfert de luxe vers/depuis l’aéroport.', ar: 'نقل فاخر من وإلى المطار.' }
+            }
         ]
     },
     errands: {
@@ -427,7 +457,7 @@ export const getServiceVector = (serviceIdOrName: string | undefined): string =>
     if (id.includes('driver')) return '/Images/Vectors Illu/privateDriver.png';
     if (id.includes('arabic') || id.includes('learn')) return '/Images/Vectors Illu/Arabic Letter.webp';
     if (id.includes('tour') || id.includes('guide')) return '/Images/Vectors Illu/de099bb06d30cd9d1c5744cc227c189f-Photoroom.webp';
-    if (id.includes('car_rental') || id.includes('rent')) return '/Images/Vectors Illu/carKey.png';
+    if (id.includes('car_rental') || id.includes('rent') || id.includes('automotive')) return '/Images/Vectors Illu/carKey.png';
 
     return '/Images/Service Category vectors/HandymanVector.webp'; // Fallback
 };

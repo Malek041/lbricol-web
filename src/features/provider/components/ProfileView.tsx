@@ -122,7 +122,7 @@ const ProfileView: React.FC<ProfileViewProps> = ({
                     ? t({ en: 'Switch to Provider', fr: 'Passer en Mode Prestataire', ar: 'التحويل إلى وضع مقدم الخدمة' })
                     : t({ en: 'Become a Bricoler!', fr: 'Devenir un Bricoleur !', ar: 'كن مقدم خدمة!' }),
                 action: onBricolerAction,
-                badge: isBricoler ? undefined : { text: t({ en: 'Recommended', fr: 'Recommandé', ar: 'موصى به' }), color: '#00A082' } as const
+                badge: isBricoler ? undefined : { text: t({ en: 'Recommended', fr: 'Recommandé', ar: 'موصى به' }), color: '#219178' } as const
             }] : []),
             {
                 icon: ShoppingBag,
@@ -217,7 +217,7 @@ const ProfileView: React.FC<ProfileViewProps> = ({
                                     }}
                                 />
                             </motion.div>
-                            <div className="absolute -bottom-1 -right-1 w-10 h-10 bg-[#00A082] rounded-2xl border-4 border-white flex items-center justify-center">
+                            <div className="absolute -bottom-1 -right-1 w-10 h-10 bg-[#219178] rounded-2xl border-4 border-white flex items-center justify-center">
                                 <Shield size={16} className="text-white" fill="white" />
                             </div>
                         </div>
@@ -433,7 +433,7 @@ const ProfileView: React.FC<ProfileViewProps> = ({
                                         <div className="py-4 flex flex-col gap-3">
                                             <div className="flex items-center gap-5">
                                                 <div className="w-6 flex justify-center">
-                                                    <Icon size={24} className="text-[#00A082]" strokeWidth={1.5} />
+                                                    <Icon size={24} className="text-[#219178]" strokeWidth={1.5} />
                                                 </div>
                                                 <input
                                                     autoFocus
@@ -441,7 +441,7 @@ const ProfileView: React.FC<ProfileViewProps> = ({
                                                     value={editValue}
                                                     onChange={(e) => setEditValue(e.target.value)}
                                                     placeholder={item.label}
-                                                    className="flex-1 text-[17px] text-[#1D1D1D] font-medium leading-tight outline-none border-b-2 border-[#00A082] py-1"
+                                                    className="flex-1 text-[17px] text-[#1D1D1D] font-medium leading-tight outline-none border-b-2 border-[#219178] py-1"
                                                     onKeyDown={(e) => e.key === 'Enter' && handleSaveEdit()}
                                                 />
                                             </div>
@@ -455,7 +455,7 @@ const ProfileView: React.FC<ProfileViewProps> = ({
                                                 <button
                                                     onClick={handleSaveEdit}
                                                     disabled={isSaving}
-                                                    className="px-4 py-2 bg-[#00A082] text-white rounded-full text-[14px] font-bold disabled:opacity-50"
+                                                    className="px-4 py-2 bg-[#219178] text-white rounded-full text-[14px] font-bold disabled:opacity-50"
                                                 >
                                                     {isSaving ? '...' : t({ en: 'Save', fr: 'Enregistrer', ar: 'حفظ' })}
                                                 </button>
@@ -538,14 +538,14 @@ const ProfileView: React.FC<ProfileViewProps> = ({
                                     <div className="py-4 flex flex-col gap-3">
                                         <div className="flex items-center gap-5">
                                             <div className="w-6 flex justify-center">
-                                                <Icon size={24} className="text-[#00A082]" strokeWidth={1.5} />
+                                                <Icon size={24} className="text-[#219178]" strokeWidth={1.5} />
                                             </div>
                                             <input
                                                 autoFocus
                                                 type={isEmail ? "email" : "text"}
                                                 value={editValue}
                                                 onChange={(e) => setEditValue(e.target.value)}
-                                                className="flex-1 text-[17px] text-[#1D1D1D] font-medium leading-tight outline-none border-b-2 border-[#00A082] py-1"
+                                                className="flex-1 text-[17px] text-[#1D1D1D] font-medium leading-tight outline-none border-b-2 border-[#219178] py-1"
                                                 onKeyDown={(e) => e.key === 'Enter' && handleSaveEdit()}
                                             />
                                         </div>
@@ -559,7 +559,7 @@ const ProfileView: React.FC<ProfileViewProps> = ({
                                             <button
                                                 onClick={handleSaveEdit}
                                                 disabled={isSaving}
-                                                className="px-4 py-2 bg-[#00A082] text-white rounded-full text-[14px] font-bold disabled:opacity-50"
+                                                className="px-4 py-2 bg-[#219178] text-white rounded-full text-[14px] font-bold disabled:opacity-50"
                                             >
                                                 {isSaving ? '...' : t({ en: 'Save', fr: 'Enregistrer', ar: 'حفظ' })}
                                             </button>

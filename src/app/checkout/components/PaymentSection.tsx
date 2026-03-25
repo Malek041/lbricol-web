@@ -83,8 +83,8 @@ export default function PaymentSection({
           disabled={!promoCode || isValidating || promoCodeValid}
           style={{
             padding: '8px 16px',
-            background: promoCodeValid ? '#F0FDF4' : '#01A083',
-            color: promoCodeValid ? '#01A083' : '#fff',
+            background: promoCodeValid ? '#F0FDF4' : '#219178',
+            color: promoCodeValid ? '#219178' : '#fff',
             borderRadius: 10,
             fontSize: 12,
             fontWeight: 800,

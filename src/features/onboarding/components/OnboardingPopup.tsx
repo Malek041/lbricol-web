@@ -33,6 +33,7 @@ import SplashScreen from '@/components/layout/SplashScreen';
 import { useIsMobileViewport } from '@/lib/mobileOnly';
 import { isImageDataUrl, compressImageFileToDataUrl, dataUrlToBlob } from '@/lib/imageCompression';
 import { CAR_BRANDS } from '@/config/cars_config';
+import { SERVICES_CATALOGUE } from '@/config/services_catalogue';
 import LocationPicker from '@/components/location-picker/LocationPicker';
 
 interface OnboardingPopupProps {
@@ -56,7 +57,7 @@ interface CategoryDetail {
     spokenLanguages?: string[];
 }
 
-const ALL_SERVICES = getAllServices().filter(s => !['driver', 'courier', 'airport', 'transport_intercity'].includes(s.id));
+const ALL_SERVICES = getAllServices();
 const MIN_PITCH_CHARS = 50;
 
 // ── Animation Variants ──────────────────────────────────────────────────────
@@ -640,7 +641,41 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
             const immediateProfilePhotoUrl = !hasPendingProfileUpload ? profilePhotoUrl : '';
             const finalProfilePhotoUrl = immediateProfilePhotoUrl || existingBricoler?.profilePhotoURL || existingBricoler?.avatar || existingBricoler?.photoURL || googlePhotoURL || '';
             const finalCategoryEntries = stripPendingImagesFromEntries(initialEntries);
-            const allPortfolioUrls = Array.from(new Set(finalCategoryEntries.flatMap((entry) => normalizeImageList(entry.portfolioImages))));
+
+            // Helper to merge services when editing
+            const mergeServicesList = (existing: any[], edited: any[]) => {
+                if (!existing || existing.length === 0) return edited;
+                const editedMap = new Map();
+                edited.forEach(s => {
+                    const id = s.subServiceId || s.serviceId || s.categoryId || (typeof s === 'string' ? s : null);
+                    if (id) editedMap.set(String(id).toLowerCase(), s);
+                });
+
+                const merged = existing.map(s => {
+                    const id = s.subServiceId || s.serviceId || s.categoryId || (typeof s === 'string' ? s : null);
+                    const normalizedId = id ? String(id).toLowerCase() : null;
+                    if (normalizedId && editedMap.has(normalizedId)) return editedMap.get(normalizedId);
+                    return s;
+                });
+
+                const existingIds = new Set(existing.map(s => {
+                    const id = s.subServiceId || s.serviceId || s.categoryId || (typeof s === 'string' ? s : null);
+                    return id ? String(id).toLowerCase() : null;
+                }).filter(Boolean));
+
+                edited.forEach(s => {
+                    const id = s.subServiceId || s.serviceId || s.categoryId || (typeof s === 'string' ? s : null);
+                    const normalizedId = id ? String(id).toLowerCase() : null;
+                    if (normalizedId && !existingIds.has(normalizedId)) merged.push(s);
+                });
+                return merged;
+            };
+
+            const mergedServices = (mode === 'edit' || mode === 'add' || mode === 'admin_edit') && existingBricoler?.services
+                ? mergeServicesList(existingBricoler.services, finalCategoryEntries)
+                : finalCategoryEntries;
+
+            const allPortfolioUrls = Array.from(new Set(mergedServices.flatMap((entry: any) => normalizeImageList(entry.portfolioImages || entry.portfolio || entry.images))));
 
             const cleanObj = (obj: any) => {
                 const newObj: any = {};
@@ -662,19 +697,19 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                 bankName: (bankName || '').trim(),
                 bricolerBankCardName: (bricolerBankCardName || '').trim(),
                 ribIBAN: (ribIBAN || '').trim(),
-                services: finalCategoryEntries,
-                serviceIds: [...new Set(finalCategoryEntries.map((s: any) =>
+                services: mergedServices,
+                serviceIds: [...new Set(mergedServices.map((s: any) =>
                     (typeof s === 'string' ? s : (s.categoryId || s.serviceId || s.id || '')).toLowerCase()
                 ).filter(Boolean))],
-                subServiceIds: [...new Set(finalCategoryEntries.map((s: any) => {
+                subServiceIds: [...new Set(mergedServices.map((s: any) => {
                     const ssId = s.subServiceId || '';
                     const ssList = Array.isArray(s.subServices) ? s.subServices : [];
                     return [ssId, ...ssList];
                 }).flat().map(id => String(id).toLowerCase()).filter(Boolean))],
                 portfolio: allPortfolioUrls,
                 images: allPortfolioUrls,
-                bio: finalCategoryEntries[0]?.pitch || "",
-                experience: finalCategoryEntries[0]?.experience || "",
+                bio: mergedServices.find((s: any) => s.pitch)?.pitch || (mergedServices[0] as any)?.pitch || "",
+                experience: mergedServices.find((s: any) => s.experience)?.experience || (mergedServices[0] as any)?.experience || "",
                 city: selectedCity || "",
                 workAreas: selectedAreas || [],
                 base_lat: baseLat,
@@ -789,7 +824,8 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
             // We now upload BEFORE calling onComplete so images are guaranteed to save.
 
             let uploadedProfilePhotoUrl = finalProfilePhotoUrl;
-            let finalizedCategoryEntries = finalCategoryEntries;
+            let finalizedServices = mergedServices;
+            let finalPortfolioFull = allPortfolioUrls;
 
             if (hasPendingProfileUpload || hasPendingServiceUploads || hasPendingTourGuideUpload || idFrontDataUrl || idBackDataUrl) {
                 setSubmittingStatus("Uploading media...");
@@ -816,20 +852,25 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                     ]);
 
                     uploadedProfilePhotoUrl = newProfileUrl || finalProfilePhotoUrl;
-                    finalizedCategoryEntries = newEntries;
+
+                    // Re-merge with uploaded entries
+                    finalizedServices = (mode === 'edit' || mode === 'add' || mode === 'admin_edit') && existingBricoler?.services
+                        ? mergeServicesList(existingBricoler.services, newEntries)
+                        : newEntries;
+
                     const updatedTourGuideUrl = newTourGuideUrl || finalTourGuideUrl;
 
                     // Update Firestore with final URLs
                     setSubmittingStatus("Finalizing...");
-                    const finalPortfolio = Array.from(new Set(finalizedCategoryEntries.flatMap(e => normalizeImageList(e.portfolioImages))));
+                    finalPortfolioFull = Array.from(new Set(finalizedServices.flatMap((e: any) => normalizeImageList(e.portfolioImages || e.portfolio || e.images))));
 
                     const updateData: any = {
                         avatar: uploadedProfilePhotoUrl,
                         profilePhotoURL: uploadedProfilePhotoUrl,
                         photoURL: uploadedProfilePhotoUrl || bricolerData.photoURL,
-                        services: finalizedCategoryEntries,
-                        portfolio: finalPortfolio,
-                        images: finalPortfolio,
+                        services: finalizedServices,
+                        portfolio: finalPortfolioFull,
+                        images: finalPortfolioFull,
                         tourGuideAuthorizationUrl: updatedTourGuideUrl
                     };
 
@@ -849,6 +890,18 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                         photoURL: uploadedProfilePhotoUrl || bricolerData.photoURL
                     });
 
+                    // Update city_index again with final data (including new image URLs)
+                    if (selectedCity && user) {
+                        await writeCityIndex(user.uid, selectedCity, {
+                            ...bricolerData,
+                            avatar: uploadedProfilePhotoUrl,
+                            profilePhotoURL: uploadedProfilePhotoUrl,
+                            services: finalizedServices,
+                            portfolio: finalPortfolioFull,
+                            images: finalPortfolioFull,
+                        }).catch(console.warn);
+                    }
+
                 } catch (mediaError) {
                     console.error("Media upload failed:", mediaError);
                     // We don't block the whole process, but we inform the user
@@ -861,7 +914,7 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
             }
 
             setSubmittingStatus("Complete!");
-            onComplete({ services: finalizedCategoryEntries, city: selectedCity, availability });
+            onComplete({ services: finalizedServices, city: selectedCity, availability });
 
         } catch (error: any) {
             console.error('Signup error:', error);
@@ -1400,24 +1453,27 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
         });
 
         if (!res.ok) {
-            let errorDetails: any = {};
-            try {
-                errorDetails = await res.json();
-            } catch (e) {
-                const text = await res.text().catch(() => "No response body");
-                errorDetails = { message: text };
-            }
+            let errorDetails: any = null;
+            const rawBody = await res.text().catch(() => "No response body");
             
-            console.error("Cloudinary upload failed:", {
+            try {
+                errorDetails = JSON.parse(rawBody);
+            } catch (e) {
+                errorDetails = { message: rawBody };
+            }
+
+            // Log details in a way that provides info but doesn't necessarily crash the UI thread in some dev envs
+            console.warn("Cloudinary upload rejected:", {
                 status: res.status,
                 statusText: res.statusText,
                 details: errorDetails,
                 preset,
-                folder,
-                cloudName
+                folder
             });
-            throw new Error(errorDetails?.error?.message || errorDetails?.message || 'Cloudinary upload failed');
+            
+            throw new Error(errorDetails?.error?.message || errorDetails?.message || 'IMAGE_UPLOAD_REJECTED');
         }
+        
         const data = await res.json();
         return data.secure_url;
     };
@@ -1430,11 +1486,19 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
     };
 
     const uploadVerificationId = async (uid: string, side: 'front' | 'back', dataUrl: string) => {
+        if (!dataUrl || !isImageDataUrl(dataUrl)) return null;
         try {
+            console.log(`Uploading ID ${side} to Cloudinary...`);
             return await uploadToCloudinary(dataUrl, `lbricol/verification/${uid}`, 'lbricol_verification');
         } catch (e) {
-            console.warn("Cloudinary Verification upload failed, falling back to Firebase:", e);
-            return await uploadToFirebase(dataUrl, `verification/${uid}/id-${side}.jpg`);
+            console.warn(`Cloudinary ID ${side} upload failed, trying Firebase:`, e);
+            try {
+                return await uploadToFirebase(dataUrl, `verification/${uid}/id-${side}.jpg`);
+            } catch (fbErr) {
+                console.error(`Both Cloudinary and Firebase failed for ID ${side}:`, fbErr);
+                // Return original dataUrl as a last resort or null to avoid crashing the whole signup
+                return null;
+            }
         }
     };
 
@@ -1541,7 +1605,7 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
 
                                     <button
                                         onClick={onClose}
-                                        className="w-10 h-10 flex items-center justify-center rounded-full text-[#00A082] hover:bg-[#E6F6F2] transition-colors"
+                                        className="w-10 h-5 flex items-center justify-center rounded-full text-[#219178] hover:bg-[#E6F6F2] transition-colors"
                                     >
                                         <X size={26} strokeWidth={2.5} />
                                     </button>
@@ -1553,7 +1617,7 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                                         <motion.div
                                             initial={{ width: 0 }}
                                             animate={{ width: `${(stepIndex / (totalSteps - 1)) * 100}%` }}
-                                            className="h-full bg-[#00A082]"
+                                            className="h-full bg-[#219178]"
                                             transition={{ type: "spring", bounce: 0, duration: 0.5 }}
                                         />
                                     </div>
@@ -1603,7 +1667,7 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                                                     <div className="flex items-center gap-4">
                                                         <div className={cn(
                                                             "w-12 h-12 rounded-2xl flex items-center justify-center text-2xl shadow-sm transition-transform group-hover:scale-110",
-                                                            language === lang.id ? "bg-[#00A082] text-white" : "bg-neutral-50"
+                                                            language === lang.id ? "bg-[#219178] text-white" : "bg-neutral-50"
                                                         )}>
                                                             {lang.flag}
                                                         </div>
@@ -1617,7 +1681,7 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                                                         </div>
                                                     </div>
                                                     {language === lang.id && (
-                                                        <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className="w-8 h-8 rounded-full bg-[#00A082] flex items-center justify-center text-white">
+                                                        <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className="w-8 h-8 rounded-full bg-[#219178] flex items-center justify-center text-white">
                                                             <Check size={18} strokeWidth={3} />
                                                         </motion.div>
                                                     )}
@@ -1645,10 +1709,10 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                                                     onClick={() => setHasCode(true)}
                                                     className={cn(
                                                         "flex-1 p-6 rounded-[24px] border-2 transition-all flex flex-col items-center gap-3",
-                                                        hasCode === true ? "border-[#00A082] bg-[#E6F6F2]" : "border-neutral-100 hover:border-neutral-200"
+                                                        hasCode === true ? "border-[#219178] bg-[#E6F6F2]" : "border-neutral-100 hover:border-neutral-200"
                                                     )}
                                                 >
-                                                    <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center", hasCode === true ? "bg-[#00A082] text-white" : "bg-neutral-50 text-neutral-400")}>
+                                                    <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center", hasCode === true ? "bg-[#219178] text-white" : "bg-neutral-50 text-neutral-400")}>
                                                         <Key size={24} />
                                                     </div>
                                                     <span className="font-bold text-neutral-900">{t({ en: 'Yes, I have one', fr: 'Oui, j\'en ai un', ar: 'نعم، لدي واحد' })}</span>
@@ -1661,10 +1725,10 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                                                     }}
                                                     className={cn(
                                                         "flex-1 p-6 rounded-[24px] border-2 transition-all flex flex-col items-center gap-3",
-                                                        hasCode === false ? "border-[#00A082] bg-[#E6F6F2]" : "border-neutral-100 hover:border-neutral-200"
+                                                        hasCode === false ? "border-[#219178] bg-[#E6F6F2]" : "border-neutral-100 hover:border-neutral-200"
                                                     )}
                                                 >
-                                                    <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center", hasCode === false ? "bg-[#00A082] text-white" : "bg-neutral-50 text-neutral-400")}>
+                                                    <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center", hasCode === false ? "bg-[#219178] text-white" : "bg-neutral-50 text-neutral-400")}>
                                                         <ArrowRight size={24} />
                                                     </div>
                                                     <span className="font-bold text-neutral-900">{t({ en: 'No, skip this', fr: 'Non, passer', ar: 'لا، تجاوز' })}</span>
@@ -1686,14 +1750,14 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                                                             value={activationCode}
                                                             onChange={(e) => setActivationCode(e.target.value.toUpperCase())}
                                                             placeholder="EX: ABC-123"
-                                                            className="w-full bg-white border-2 border-neutral-100 rounded-[20px] pl-12 pr-4 py-4 font-mono font-bold text-lg text-neutral-900 focus:border-[#00A082] outline-none transition-all placeholder:text-neutral-300"
+                                                            className="w-full bg-white border-2 border-neutral-100 rounded-[20px] pl-12 pr-4 py-4 font-mono font-bold text-lg text-neutral-900 focus:border-[#219178] outline-none transition-all placeholder:text-neutral-300"
                                                             autoFocus
                                                         />
                                                     </div>
                                                     <button
                                                         onClick={handleVerifyCode}
                                                         disabled={!activationCode.trim() || isSubmitting}
-                                                        className="w-full h-14 bg-[#00A082] text-white rounded-full font-black text-[15px] uppercase tracking-wider shadow-lg shadow-[#00A082]/20 active:scale-95 transition-all disabled:opacity-50 disabled:scale-100"
+                                                        className="w-full h-14 bg-[#219178] text-white rounded-full font-black text-[15px] uppercase tracking-wider shadow-lg shadow-[#219178]/20 active:scale-95 transition-all disabled:opacity-50 disabled:scale-100"
                                                     >
                                                         {isSubmitting ? (
                                                             <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin mx-auto" />
@@ -1772,7 +1836,7 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                                                             className="relative"
                                                         >
                                                             {hasSelected && (
-                                                                <div className="absolute -top-1 -right-1 w-6 h-6 bg-[#00A082] rounded-full flex items-center justify-center shadow-md z-20 border-2 border-white">
+                                                                <div className="absolute -top-1 -right-1 w-6 h-6 bg-[#219178] rounded-full flex items-center justify-center shadow-md z-20 border-2 border-white">
                                                                     <Check size={12} strokeWidth={4} className="text-white" />
                                                                 </div>
                                                             )}
@@ -1786,7 +1850,7 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                                                         <span
                                                             className="text-[14px] font-black whitespace-nowrap mt-1"
                                                             style={{
-                                                                color: isActive || hasSelected ? '#00A082' : '#666',
+                                                                color: isActive || hasSelected ? '#219178' : '#666',
                                                             }}
                                                         >
                                                             {t({ en: cat.name, fr: cat.name })}
@@ -1795,7 +1859,7 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                                                         {isActive && (
                                                             <motion.div
                                                                 layoutId="category-indicator"
-                                                                className="absolute bottom-0 left-0 right-0 h-[3px] bg-[#00A082] rounded-full"
+                                                                className="absolute bottom-0 left-0 right-0 h-[3px] bg-[#219178] rounded-full"
                                                                 transition={{ type: 'spring', stiffness: 500, damping: 40 }}
                                                             />
                                                         )}
@@ -1827,11 +1891,18 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                                                                 className={cn(
                                                                     "px-5 py-2.5 rounded-full border-2 transition-all text-[14px] font-bold",
                                                                     isSelected
-                                                                        ? "border-[#00A082] bg-[#00A082] text-white shadow-md"
-                                                                        : "border-neutral-100 bg-white text-neutral-600 hover:border-neutral-300"
+                                                                        ? "border-[#219178] bg-[#219178] text-white shadow-md"
+                                                                        : "border-neutral-100 bg-white text-black hover:border-neutral-300"
                                                                 )}
                                                             >
-                                                                {t({ en: sub.name, fr: sub.name })}
+                                                                {(() => {
+                                                                    const cat = SERVICES_CATALOGUE.find(c => c.id === activeCategoryId);
+                                                                    const catalogueSub = cat?.subServices.find(s => s.id === sub.id);
+                                                                    if (catalogueSub) {
+                                                                        return t({ en: catalogueSub.en, fr: catalogueSub.fr, ar: catalogueSub.ar });
+                                                                    }
+                                                                    return t(sub.desc || { en: sub.name, fr: sub.name, ar: sub.name });
+                                                                })()}
                                                             </motion.button>
                                                         );
                                                     })}
@@ -1865,11 +1936,11 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                                                         <motion.div
                                                             animate={{
                                                                 scale: isActive ? 1.05 : 1,
-                                                                borderColor: isActive ? '#00A082' : '#F0F0F0'
+                                                                borderColor: isActive ? '#219178' : '#F0F0F0'
                                                             }}
                                                             className={cn(
                                                                 "w-16 h-16 rounded-2xl flex items-center justify-center p-2 transition-all relative",
-                                                                isActive ? "bg-[#00A082]/10 border-2" : "bg-white border-2 border-neutral-100"
+                                                                isActive ? "bg-[#219178]/10 border-2" : "bg-white border-2 border-neutral-100"
                                                             )}
                                                         >
                                                             <img src={brand.logo} alt={brand.name} className="w-full h-full object-contain" />
@@ -1877,13 +1948,13 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                                                                 <motion.div
                                                                     initial={{ scale: 0 }}
                                                                     animate={{ scale: 1 }}
-                                                                    className="absolute -top-1 -right-1 w-5 h-5 bg-[#00A082] rounded-full flex items-center justify-center border-2 border-white"
+                                                                    className="absolute -top-1 -right-1 w-5 h-5 bg-[#219178] rounded-full flex items-center justify-center border-2 border-white"
                                                                 >
                                                                     <Check size={10} className="text-white" strokeWidth={4} />
                                                                 </motion.div>
                                                             )}
                                                         </motion.div>
-                                                        <span className={cn("text-xs font-black transition-colors", isActive ? "text-[#00A082]" : "text-neutral-500")}>
+                                                        <span className={cn("text-xs font-black transition-colors", isActive ? "text-[#219178]" : "text-neutral-500")}>
                                                             {brand.name}
                                                         </span>
                                                     </motion.button>
@@ -1926,7 +1997,7 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                                                             }}
                                                             className={cn(
                                                                 "group p-4 rounded-3xl border-2 transition-all text-left space-y-3",
-                                                                isSelected ? "border-[#00A082] bg-[#E6F6F2]" : "border-neutral-100 bg-white"
+                                                                isSelected ? "border-[#219178] bg-[#E6F6F2]" : "border-neutral-100 bg-white"
                                                             )}
                                                         >
                                                             <div className="aspect-[4/3] w-full overflow-hidden rounded-xl bg-neutral-50 p-2">
@@ -1943,7 +2014,7 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                                                                 <span className="font-bold text-neutral-900">{model.name}</span>
                                                                 <div className={cn(
                                                                     "w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all",
-                                                                    isSelected ? "bg-[#00A082] border-[#00A082] text-white" : "border-neutral-200"
+                                                                    isSelected ? "bg-[#219178] border-[#219178] text-white" : "border-neutral-200"
                                                                 )}>
                                                                     {isSelected && <Check size={14} strokeWidth={4} />}
                                                                 </div>
@@ -1972,7 +2043,7 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                                                             <img src={car.modelImage || car.image} alt={car.modelName} className="w-full h-full object-contain" />
                                                         </div>
                                                         <div>
-                                                            <div className="text-xs font-black text-[#00A082] uppercase tracking-wider">{car.brandName}</div>
+                                                            <div className="text-xs font-black text-[#219178] uppercase tracking-wider">{car.brandName}</div>
                                                             <div className="text-lg font-bold text-neutral-900">{car.modelName}</div>
                                                         </div>
                                                     </div>
@@ -2020,7 +2091,7 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                                                                         next[idx].price = val;
                                                                         setSelectedCars(next);
                                                                     }}
-                                                                    className="w-full bg-neutral-50 border-none rounded-2xl px-4 py-3 font-bold text-lg outline-none focus:ring-2 focus:ring-[#00A082]/20"
+                                                                    className="w-full bg-neutral-50 border-none rounded-2xl px-4 py-3 font-bold text-lg outline-none focus:ring-2 focus:ring-[#219178]/20"
                                                                 />
                                                             </div>
                                                         </div>
@@ -2053,7 +2124,7 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                                                             onClick={() => { setDirection(idx > currentCatIdx ? 1 : -1); setCurrentCatIdx(idx); setEquipmentSearch(''); }}
                                                             className={cn(
                                                                 'flex items-center gap-2 px-6 py-3 rounded-[12px] text-[13px] font-bold whitespace-nowrap border-2 transition-all cursor-pointer relative group',
-                                                                idx === currentCatIdx ? 'bg-[#E6F6F2] text-[#00A082] border-[#00A082]' : done ? 'bg-[#00A082]/5 text-[#00A082]/60 border-neutral-100' : 'bg-white text-neutral-400 border-neutral-100'
+                                                                idx === currentCatIdx ? 'bg-[#E6F6F2] text-[#219178] border-[#219178]' : done ? 'bg-[#219178]/5 text-[#219178]/60 border-neutral-100' : 'bg-white text-neutral-400 border-neutral-100'
                                                             )}
                                                         >
                                                             {done && <Check size={12} strokeWidth={4} />}
@@ -2100,7 +2171,7 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                                                 </div>
                                                 <div>
                                                     <h2 className="text-3xl font-black text-neutral-900 leading-tight">{t({ en: currentCatEntry.categoryName, fr: currentCatEntry.categoryName })}</h2>
-                                                    <p className="text-[#00A082] text-xs font-black tracking-widest uppercase">{t({ en: 'Service Category', fr: 'Catégorie de service', ar: 'فئة الخدمة' })}</p>
+                                                    <p className="text-[#219178] text-xs font-black tracking-widest uppercase">{t({ en: 'Service Category', fr: 'Catégorie de service', ar: 'فئة الخدمة' })}</p>
                                                 </div>
                                             </div>
                                         </motion.div>
@@ -2130,7 +2201,7 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                                                         onClick={() => updateCatEntry(currentCatId, 'experience', val.en)}
                                                         className={cn(
                                                             "px-3 py-4 rounded-[12px] border-2 text-[14px] font-bold transition-all",
-                                                            currentCatEntry.experience === val.en ? "bg-[#E6F6F2] text-[#00A082] border-[#00A082]" : "bg-white text-neutral-800 border-neutral-100 hover:border-neutral-200"
+                                                            currentCatEntry.experience === val.en ? "bg-[#E6F6F2] text-[#219178] border-[#219178]" : "bg-white text-neutral-800 border-neutral-100 hover:border-neutral-200"
                                                         )}
                                                     >
                                                         {t(val)}
@@ -2160,7 +2231,7 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                                                             className={cn(
                                                                 'px-3 py-4 rounded-[12px] border-2 text-[14px] font-bold transition-all text-left',
                                                                 errandsTransport === opt.id
-                                                                    ? 'bg-[#E6F6F2] text-[#00A082] border-[#00A082]'
+                                                                    ? 'bg-[#E6F6F2] text-[#219178] border-[#219178]'
                                                                     : 'bg-white text-neutral-800 border-neutral-100 hover:border-neutral-200'
                                                             )}
                                                         >
@@ -2206,7 +2277,7 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                                                                 className={cn(
                                                                     'px-3 py-4 rounded-[12px] border-2 text-[14px] font-bold transition-all text-left flex items-center justify-between',
                                                                     isSelected
-                                                                        ? 'bg-[#E6F6F2] text-[#00A082] border-[#00A082]'
+                                                                        ? 'bg-[#E6F6F2] text-[#219178] border-[#219178]'
                                                                         : 'bg-white text-neutral-800 border-neutral-100 hover:border-neutral-200'
                                                                 )}
                                                             >
@@ -2244,7 +2315,7 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                                                                         className={cn(
                                                                             "px-5 py-4 rounded-[12px] border-2 text-[14px] font-bold transition-all flex items-center justify-center gap-2 min-w-[120px] lg:min-w-0",
                                                                             currentCatEntry.noEquipment
-                                                                                ? "bg-[#00A082] border-[#00A082] text-white"
+                                                                                ? "bg-[#219178] border-[#219178] text-white"
                                                                                 : "bg-white text-neutral-800 border-neutral-200 hover:border-[#008C74]/30"
                                                                         )}
                                                                     >
@@ -2268,7 +2339,7 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                                                                                 }}
                                                                                 className={cn(
                                                                                     "px-5 py-4 rounded-[12px] border-2 text-[14px] font-bold transition-all flex items-center justify-center gap-2 min-w-[120px] lg:min-w-0",
-                                                                                    isAdded ? "bg-[#E6F6F2] border-[#00A082] text-[#00A082]" : "bg-white text-neutral-800 border-neutral-100 hover:border-neutral-200"
+                                                                                    isAdded ? "bg-[#E6F6F2] border-[#219178] text-[#219178]" : "bg-white text-neutral-800 border-neutral-100 hover:border-neutral-200"
                                                                                 )}
                                                                             >
                                                                                 {isAdded && <Check size={16} strokeWidth={3} />}{t({ en: eq, fr: eq })}
@@ -2276,9 +2347,9 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                                                                         );
                                                                     })}
                                                                 </div>
-                                                                <div className="flex items-center gap-2 bg-white border-2 border-neutral-100 rounded-[22px] pl-5 pr-2 py-2 focus-within:border-[#00A082] transition-colors">
+                                                                <div className="flex items-center gap-2 bg-white border-2 border-neutral-100 rounded-[22px] pl-5 pr-2 py-2 focus-within:border-[#219178] transition-colors">
                                                                     <input type="text" placeholder={t({ en: 'Add other equipment...', fr: 'Ajouter un autre équipement...', ar: 'إضافة معدات أخرى...' })} value={equipmentSearch} onChange={e => setEquipmentSearch(e.target.value)} onKeyDown={e => { if (e.key === 'Enter' && equipmentSearch.trim()) { e.preventDefault(); addEquipment(currentCatId, equipmentSearch.trim()); setEquipmentSearch(''); } }} className="flex-1 bg-transparent outline-none text-[15px] font-medium text-neutral-900 placeholder:text-neutral-400" />
-                                                                    <button onClick={() => { if (equipmentSearch.trim()) { addEquipment(currentCatId, equipmentSearch.trim()); setEquipmentSearch(''); } }} className="px-5 py-3 bg-[#00A082] text-white rounded-[18px] text-[13px] font-black hover:bg-[#008C74] active:scale-95 transition-all">{t({ en: 'Add', fr: 'Ajouter', ar: 'إضافة' })}</button>
+                                                                    <button onClick={() => { if (equipmentSearch.trim()) { addEquipment(currentCatId, equipmentSearch.trim()); setEquipmentSearch(''); } }} className="px-5 py-3 bg-[#219178] text-white rounded-[18px] text-[13px] font-black hover:bg-[#008C74] active:scale-95 transition-all">{t({ en: 'Add', fr: 'Ajouter', ar: 'إضافة' })}</button>
                                                                 </div>
                                                             </>
                                                         )}
@@ -2318,7 +2389,7 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                                                                 className={cn(
                                                                     'px-3 py-4 rounded-[12px] border-2 text-[14px] font-bold transition-all text-left flex items-center justify-between',
                                                                     isSelected
-                                                                        ? 'bg-[#E6F6F2] text-[#00A082] border-[#00A082]'
+                                                                        ? 'bg-[#E6F6F2] text-[#219178] border-[#219178]'
                                                                         : 'bg-white text-neutral-800 border-neutral-100 hover:border-neutral-200'
                                                                 )}
                                                             >
@@ -2337,7 +2408,7 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                                                 <motion.div variants={itemVariants} initial="hidden" animate="show" className="space-y-4 pt-2">
                                                     <div className="flex flex-col gap-1">
                                                         <label className="text-[17px] font-black text-neutral-900 flex items-center gap-2">
-                                                            <div className="w-6 h-6 rounded-full bg-[#00A082] text-white flex items-center justify-center text-[10px] font-black">3</div>
+                                                            <div className="w-6 h-6 rounded-full bg-[#219178] text-white flex items-center justify-center text-[10px] font-black">3</div>
                                                             {(() => {
                                                                 const service = ALL_SERVICES.find(s => s.id === currentCatId);
                                                                 const archetype = service?.subServices?.find(ss => selectedSubServices.includes(ss.id))?.pricingArchetype || 'hourly';
@@ -2363,7 +2434,7 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                                                                         updateCatEntry(currentCatId, 'hourlyRate', current - 5);
                                                                     }
                                                                 }}
-                                                                className="w-14 h-14 rounded-full bg-white border-2 border-neutral-100 flex items-center justify-center hover:border-[#00A082] transition-all text-neutral-400 hover:text-[#00A082]"
+                                                                className="w-14 h-14 rounded-full bg-white border-2 border-neutral-100 flex items-center justify-center hover:border-[#219178] transition-all text-neutral-400 hover:text-[#219178]"
                                                             >
                                                                 <Minus size={24} strokeWidth={3} />
                                                             </button>
@@ -2389,7 +2460,7 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                                                                         updateCatEntry(currentCatId, 'hourlyRate', current + 5);
                                                                     }
                                                                 }}
-                                                                className="w-14 h-14 rounded-full bg-white border-2 border-neutral-100 flex items-center justify-center hover:border-[#00A082] transition-all text-neutral-400 hover:text-[#00A082]"
+                                                                className="w-14 h-14 rounded-full bg-white border-2 border-neutral-100 flex items-center justify-center hover:border-[#219178] transition-all text-neutral-400 hover:text-[#219178]"
                                                             >
                                                                 <Plus size={24} strokeWidth={3} />
                                                             </button>
@@ -2413,7 +2484,7 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                                                                         activeSteps = 2;
                                                                     } else if (rate <= max) {
                                                                         statusText = t({ en: 'Recommended Range: Standard Market Price', fr: 'Gamme Recommandée : Prix Marché Standard' });
-                                                                        color = 'bg-[#00A082]';
+                                                                        color = 'bg-[#219178]';
                                                                         activeSteps = 4;
                                                                     } else {
                                                                         statusText = t({ en: 'Premium Rate: Best for Expert Work', fr: 'Tarif Premium : Idéal pour Travail d\'Expert' });
@@ -2438,7 +2509,7 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                                                                             </div>
                                                                             <span className={cn(
                                                                                 "text-[10px] font-black uppercase tracking-widest transition-colors duration-500",
-                                                                                color === 'bg-[#00A082]' ? 'text-[#00A082]' : color.replace('bg-', 'text-')
+                                                                                color === 'bg-[#219178]' ? 'text-[#219178]' : color.replace('bg-', 'text-')
                                                                             )}>
                                                                                 {statusText}
                                                                             </span>
@@ -2464,7 +2535,7 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                                                                     <div className="flex w-full overflow-x-auto no-scrollbar py-2 -mx-1 px-1">
                                                                         <div className="flex gap-3 min-w-full">
                                                                             {[
-                                                                                { rate: tierInfo.suggestedMin, label: t({ en: 'Standard', fr: 'Standard', ar: 'أساسي' }), color: 'text-[#00A082]', bg: 'bg-[#E6F6F2]', icon: User },
+                                                                                { rate: tierInfo.suggestedMin, label: t({ en: 'Standard', fr: 'Standard', ar: 'أساسي' }), color: 'text-[#219178]', bg: 'bg-[#E6F6F2]', icon: User },
                                                                                 { rate: Math.round((tierInfo.suggestedMin + tierInfo.suggestedMax) / 2), label: t({ en: 'Average', fr: 'Moyen', ar: 'متوسط' }), color: 'text-[#007AFF]', bg: 'bg-[#E6F0FF]', icon: TrendingUp },
                                                                                 { rate: tierInfo.suggestedMax, label: t({ en: 'Premium', fr: 'Premium', ar: 'ممتاز' }), color: 'text-[#FF9500]', bg: 'bg-[#FFF5E6]', icon: Star }
                                                                             ].map((mock, idx) => {
@@ -2477,12 +2548,12 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                                                                                         className={cn(
                                                                                             "flex-1 min-w-[125px] bg-white border-2 rounded-[24px] p-5 flex flex-col items-center gap-4 transition-all cursor-pointer relative",
                                                                                             isSelected
-                                                                                                ? "border-[#00A082] shadow-lg shadow-[#00A082]/10 -translate-y-1"
+                                                                                                ? "border-[#219178] shadow-lg shadow-[#219178]/10 -translate-y-1"
                                                                                                 : "border-transparent hover:border-neutral-200 shadow-sm"
                                                                                         )}
                                                                                     >
                                                                                         {isSelected && (
-                                                                                            <div className="absolute -top-2.5 left-1/2 -track-x-1/2 bg-[#00A082] text-white text-[9px] font-[1000] px-2.5 py-1 rounded-full uppercase tracking-widest whitespace-nowrap shadow-md z-10" style={{ left: '50%', transform: 'translateX(-50%)' }}>
+                                                                                            <div className="absolute -top-2.5 left-1/2 -track-x-1/2 bg-[#219178] text-white text-[9px] font-[1000] px-2.5 py-1 rounded-full uppercase tracking-widest whitespace-nowrap shadow-md z-10" style={{ left: '50%', transform: 'translateX(-50%)' }}>
                                                                                                 {t({ en: 'Selected', fr: 'Choisi', ar: 'مختار' })}
                                                                                             </div>
                                                                                         )}
@@ -2526,7 +2597,7 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                                                 <motion.div variants={itemVariants} initial="hidden" animate="show" className="space-y-4 pt-4 border-t border-neutral-50 mt-4">
                                                     <div className="flex items-center justify-between">
                                                         <label className="text-[17px] font-black text-neutral-900 flex items-center gap-2">
-                                                            <div className="w-6 h-6 rounded-full bg-[#00A082] text-white flex items-center justify-center text-[10px] font-black">{currentCatId === 'car_rental' ? '3' : '4'}</div>
+                                                            <div className="w-6 h-6 rounded-full bg-[#219178] text-white flex items-center justify-center text-[10px] font-black">{currentCatId === 'car_rental' ? '3' : '4'}</div>
                                                             {t({ en: 'Portfolio: Images of your past work', fr: 'Portfolio : Images de vos travaux passés', ar: 'معرض الأعمال: صور لأعمالك السابقة' })}
                                                         </label>
                                                     </div>
@@ -2545,12 +2616,12 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                                                         ))}
 
                                                         {currentCatEntry.portfolioImages.length < 10 && (
-                                                            <label className="aspect-square rounded-2xl border-2 border-dashed border-neutral-100 flex flex-col items-center justify-center gap-2 hover:border-[#00A082] hover:bg-[#E6F6F2]/30 transition-all cursor-pointer group">
+                                                            <label className="aspect-square rounded-2xl border-2 border-dashed border-neutral-100 flex flex-col items-center justify-center gap-2 hover:border-[#219178] hover:bg-[#E6F6F2]/30 transition-all cursor-pointer group">
                                                                 <input type="file" multiple accept="image/*" className="hidden" onChange={(e) => handlePortfolioSelection(currentCatId, e.target.files)} />
-                                                                <div className="w-10 h-10 rounded-full bg-neutral-50 group-hover:bg-[#00A082] group-hover:text-white flex items-center justify-center text-neutral-400 transition-all">
+                                                                <div className="w-10 h-10 rounded-full bg-neutral-50 group-hover:bg-[#219178] group-hover:text-white flex items-center justify-center text-neutral-400 transition-all">
                                                                     <Plus size={22} strokeWidth={3} />
                                                                 </div>
-                                                                <span className="text-[10px] font-black text-neutral-400 group-hover:text-[#00A082] uppercase tracking-[0.15em]">{t({ en: 'Add', fr: 'Ajouter', ar: 'إضافة' })}</span>
+                                                                <span className="text-[10px] font-black text-neutral-400 group-hover:text-[#219178] uppercase tracking-[0.15em]">{t({ en: 'Add', fr: 'Ajouter', ar: 'إضافة' })}</span>
                                                             </label>
                                                         )}
                                                     </div>
@@ -2565,7 +2636,7 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                                                 <motion.div variants={itemVariants} initial="hidden" animate="show" className="space-y-4 pt-2">
                                                     <div className="flex items-center justify-between">
                                                         <label className="text-[16px] font-black text-neutral-900 flex items-center gap-2">
-                                                            <div className="w-6 h-6 rounded-full bg-[#00A082] text-white flex items-center justify-center text-[10px] font-black">{currentCatId === 'car_rental' ? '3' : '4'}</div>
+                                                            <div className="w-6 h-6 rounded-full bg-[#219178] text-white flex items-center justify-center text-[10px] font-black">{currentCatId === 'car_rental' ? '3' : '4'}</div>
                                                             {t({ en: 'Why the client would choose you and not others?', fr: 'Pourquoi le client vous choisirait-il vous et pas les autres ?', ar: 'لماذا قد يختارك العميل دون غيرك؟' })}
                                                         </label>
                                                     </div>
@@ -2581,17 +2652,17 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                                                             rows={5}
                                                             className={cn(
                                                                 "w-full px-7 py-6 bg-white border-2 rounded-[32px] text-[17px] font-medium text-neutral-900 outline-none transition-all",
-                                                                (currentCatEntry?.pitch?.length || 0) >= MIN_PITCH_CHARS ? "border-[#008C74] bg-[#E6F6F2]/30" : "border-neutral-100 focus:border-[#00A082]"
+                                                                (currentCatEntry?.pitch?.length || 0) >= MIN_PITCH_CHARS ? "border-[#008C74] bg-[#E6F6F2]/30" : "border-neutral-100 focus:border-[#219178]"
                                                             )}
                                                         />
                                                         <div className="flex items-center gap-4 px-2">
                                                             <div className="flex-1 h-2.5 bg-neutral-100 rounded-full overflow-hidden">
                                                                 <div
-                                                                    className={cn("h-full transition-all duration-300 rounded-full", (currentCatEntry?.pitch?.length || 0) >= MIN_PITCH_CHARS ? "bg-[#00A082]" : "bg-[#00A082]/50")}
+                                                                    className={cn("h-full transition-all duration-300 rounded-full", (currentCatEntry?.pitch?.length || 0) >= MIN_PITCH_CHARS ? "bg-[#219178]" : "bg-[#219178]/50")}
                                                                     style={{ width: `${Math.min(100, ((currentCatEntry?.pitch?.length || 0) / MIN_PITCH_CHARS) * 100)}%` }}
                                                                 />
                                                             </div>
-                                                            <span className={cn("text-[13px] font-black whitespace-nowrap", (currentCatEntry?.pitch?.length || 0) >= MIN_PITCH_CHARS ? "text-[#00A082]" : "text-neutral-400")}>
+                                                            <span className={cn("text-[13px] font-black whitespace-nowrap", (currentCatEntry?.pitch?.length || 0) >= MIN_PITCH_CHARS ? "text-[#219178]" : "text-neutral-400")}>
                                                                 {currentCatEntry?.pitch?.length || 0} / {MIN_PITCH_CHARS}
                                                             </span>
                                                         </div>
@@ -2662,7 +2733,7 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                                                             </div>
                                                         )}
                                                     </div>
-                                                    <label className="absolute -bottom-2 -right-2 w-10 h-10 bg-[#00A082] text-white rounded-2xl flex items-center justify-center shadow-lg cursor-pointer hover:bg-[#008C74] hover:scale-110 active:scale-95 transition-all">
+                                                    <label className="absolute -bottom-2 -right-2 w-10 h-10 bg-[#219178] text-white rounded-2xl flex items-center justify-center shadow-lg cursor-pointer hover:bg-[#008C74] hover:scale-110 active:scale-95 transition-all">
                                                         <input type="file" accept="image/*" className="hidden" onChange={(e) => handleProfilePhotoSelection(e.target.files)} />
                                                         <Camera size={20} strokeWidth={2.5} />
                                                     </label>
@@ -2677,12 +2748,12 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                                             <motion.div variants={itemVariants} className=" rounded-[12px] p-6 border-2 border-dashed border-neutral-100 space-y-5">
                                                 <div className="flex items-center justify-between px-1">
                                                     <div className="flex items-center gap-2">
-                                                        <div className="w-8 h-8 rounded-xl bg-[#00A082]/10 flex items-center justify-center text-[#00A082]">
+                                                        <div className="w-8 h-8 rounded-xl bg-[#219178]/10 flex items-center justify-center text-[#219178]">
                                                             <ShieldCheck size={18} strokeWidth={2.5} />
                                                         </div>
                                                         <div className="flex flex-col">
                                                             <span className="text-[14px] font-[1000] text-black uppercase tracking-tight">{t({ en: 'ID Verification', fr: 'Vérification d\'ID', ar: 'توثيق الهوية' })}</span>
-                                                            <span className="text-[10px] font-bold text-[#00A082] uppercase tracking-wider">{t({ en: 'Required for trust', fr: 'Requis pour la confiance', ar: 'مطلوب لكسب الثقة' })}</span>
+                                                            <span className="text-[10px] font-bold text-[#219178] uppercase tracking-wider">{t({ en: 'Required for trust', fr: 'Requis pour la confiance', ar: 'مطلوب لكسب الثقة' })}</span>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -2696,13 +2767,13 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                                                             <input type="file" accept="image/*" className="hidden" onChange={(e) => handleIdSelect(side.id as any, e.target.files)} />
                                                             <div className={cn(
                                                                 "aspect-[1.6/1] rounded-[10px] border-1 transition-all flex flex-col items-center justify-center gap-2 overflow-hidden",
-                                                                side.data ? "border-[#00A082] bg-white shadow-sm" : "border-neutral-200 bg-white hover:border-[#00A082]/30"
+                                                                side.data ? "border-[#219178] bg-white shadow-sm" : "border-neutral-200 bg-white hover:border-[#219178]/30"
                                                             )}>
                                                                 {side.data ? (
                                                                     <img src={side.data} className="w-full h-full object-cover" />
                                                                 ) : (
                                                                     <>
-                                                                        <div className="w-10 h-10 rounded-full  flex items-center justify-center text-neutral-400 group-hover:text-[#00A082] transition-colors">
+                                                                        <div className="w-10 h-10 rounded-full  flex items-center justify-center text-neutral-400 group-hover:text-[#219178] transition-colors">
                                                                             {side.id === 'front' ? <ScanEye size={22} /> : <ScanEye size={22} className="rotate-180" />}
                                                                         </div>
                                                                         <span className="text-[11px] font-[1000] text-neutral-400 group-hover:text-black uppercase tracking-tight">{side.label}</span>
@@ -2710,7 +2781,7 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                                                                 )}
                                                             </div>
                                                             {side.data && (
-                                                                <div className="absolute top-2 right-2 w-6 h-6 bg-[#00A082] text-white rounded-full flex items-center justify-center shadow-lg">
+                                                                <div className="absolute top-2 right-2 w-6 h-6 bg-[#219178] text-white rounded-full flex items-center justify-center shadow-lg">
                                                                     <Check size={12} strokeWidth={4} />
                                                                 </div>
                                                             )}
@@ -2718,9 +2789,9 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                                                     ))}
                                                 </div>
 
-                                                <div className="flex items-start gap-3 bg-[#00A082]/5 rounded-[10px] p-4 border border-[#00A082]/10">
-                                                    <AlertTriangle size={16} className="text-[#00A082] mt-0.5 flex-shrink-0" />
-                                                    <p className="text-[11px] font-bold text-[#00A082] leading-normal uppercase tracking-tight">
+                                                <div className="flex items-start gap-3 bg-[#219178]/5 rounded-[10px] p-4 border border-[#219178]/10">
+                                                    <AlertTriangle size={16} className="text-[#219178] mt-0.5 flex-shrink-0" />
+                                                    <p className="text-[11px] font-bold text-[#219178] leading-normal uppercase tracking-tight">
                                                         {t({
                                                             en: 'Your ID is strictly private and used only for internal verification. Never shared with clients.',
                                                             fr: 'Votre ID est strictement privé et utilisé uniquement pour la vérification interne.',
@@ -2733,7 +2804,7 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                                         <motion.div variants={itemVariants} initial="hidden" animate="show" className="space-y-6">
                                             <div className="space-y-2">
                                                 <label className="text-[14px] font-bold text-neutral-900 ml-1">{t({ en: 'Full Name', fr: 'Nom complet', ar: 'الاسم الكامل' })}</label>
-                                                <input type="text" value={fullName} onChange={e => setFullName(e.target.value)} placeholder={t({ en: 'Your full name', fr: 'Votre nom complet', ar: 'اسمك الكامل' })} className="w-full px-6 py-4 bg-white border-2 border-neutral-100 rounded-[12px] text-[17px] font-bold text-neutral-900 outline-none focus:border-[#00A082] transition-all placeholder:font-medium placeholder:text-neutral-400" />
+                                                <input type="text" value={fullName} onChange={e => setFullName(e.target.value)} placeholder={t({ en: 'Your full name', fr: 'Votre nom complet', ar: 'اسمك الكامل' })} className="w-full px-6 py-4 bg-white border-2 border-neutral-100 rounded-[12px] text-[17px] font-bold text-neutral-900 outline-none focus:border-[#219178] transition-all placeholder:font-medium placeholder:text-neutral-400" />
                                             </div>
                                             <div className="space-y-2">
                                                 <label className="text-[14px] font-bold text-neutral-900 ml-1">{t({ en: 'WhatsApp Number', fr: 'Numéro WhatsApp', ar: 'رقم الواتساب' })}</label>
@@ -2751,7 +2822,7 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                                                             setWhatsappNumber(val.slice(0, 9));
                                                         }}
                                                         placeholder="6 00 00 00 00"
-                                                        className="flex-1 min-w-0 px-4 md:px-6 py-4 bg-white border-2 border-neutral-100 rounded-[12px] text-[16px] md:text-[17px] font-bold text-neutral-900 outline-none focus:border-[#00A082] transition-all placeholder:font-medium placeholder:text-neutral-400"
+                                                        className="flex-1 min-w-0 px-4 md:px-6 py-4 bg-white border-2 border-neutral-100 rounded-[12px] text-[16px] md:text-[17px] font-bold text-neutral-900 outline-none focus:border-[#219178] transition-all placeholder:font-medium placeholder:text-neutral-400"
                                                     />
                                                 </div>
                                                 <p className="text-[11px] text-neutral-400 font-bold ml-1">{t({ en: '9 digits starting with 6 or 7', fr: '9 chiffres commençant par 6 ou 7', ar: '9 أرقام تبدأ بـ 6 أو 7' })}</p>
@@ -2763,15 +2834,15 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                                 {/* ── STEP: Sign Up ── */}
                                 {step === 'finish' && (
                                     <motion.div key="finish" custom={direction} variants={slideVariants} initial="enter" animate="center" exit="exit" className="p-6 md:p-10 space-y-10 max-w-md mx-auto py-12">
-                                        <motion.div variants={itemVariants} initial="hidden" animate="show" className="bg-[#E6F6F2] rounded-[5px] p-8 space-y-6 border-2 border-[#00A082]/10 relative overflow-hidden">
-                                            <div className="absolute top-0 right-0 w-40 h-40 bg-[#00A082]/5 rounded-full -mr-20 -mt-20 blur-3xl" />
+                                        <motion.div variants={itemVariants} initial="hidden" animate="show" className="bg-[#E6F6F2] rounded-[5px] p-8 space-y-6 border-2 border-[#219178]/10 relative overflow-hidden">
+                                            <div className="absolute top-0 right-0 w-40 h-40 bg-[#219178]/5 rounded-full -mr-20 -mt-20 blur-3xl" />
                                             <div className="flex items-center gap-4">
                                                 <div className="w-16 h-16 rounded-[12px] border-2 border-white overflow-hidden bg-white shadow-sm">
                                                     <img src={currentProfileAvatar} alt="Profile" className="w-full h-full object-cover" />
                                                 </div>
                                                 <div className="flex-1">
                                                     <div className="flex items-center gap-2">
-                                                        <h3 className="text-[12px] font-bold uppercase tracking-wider text-[#00A082]">{t({ en: 'Verified Pro', fr: 'Pro vérifié', ar: 'محترف موثق' })}</h3>
+                                                        <h3 className="text-[12px] font-bold uppercase tracking-wider text-[#219178]">{t({ en: 'Verified Pro', fr: 'Pro vérifié', ar: 'محترف موثق' })}</h3>
                                                         <div className="w-4 h-4 bg-[#FFC244] rounded-full flex items-center justify-center"><Check size={10} className="text-white" strokeWidth={5} /></div>
                                                     </div>
                                                     <p className="text-[24px] font-black text-neutral-900 tracking-tight leading-tight">{fullName}</p>
@@ -2892,7 +2963,7 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                                         whileTap={{ scale: 0.98 }}
                                         onClick={goNext}
                                         disabled={!canGoNext()}
-                                        className="w-full h-16 bg-[#00A082] text-white rounded-[16px] text-[18px] font-bold flex items-center justify-center gap-2 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                                        className="w-full h-16 bg-[#219178] text-white rounded-[16px] text-[18px] font-bold flex items-center justify-center gap-2 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
                                     >
                                         {step === 'service_details' && !isLastCat
                                             ? t({ en: 'Next Category', fr: 'Catégorie suivante', ar: 'الفئة التالية' })

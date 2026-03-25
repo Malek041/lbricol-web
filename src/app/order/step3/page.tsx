@@ -14,7 +14,8 @@ import {
     Calendar,
     CheckCircle2,
     ArrowRight,
-    Star
+    Star,
+    Info
 } from 'lucide-react';
 import { useOrder } from '@/context/OrderContext';
 import { auth, db } from '@/lib/firebase';
@@ -28,7 +29,7 @@ import { getServiceVector } from '@/config/services_config';
 
 export default function CheckoutPage() {
     const router = useRouter();
-    const { t } = useLanguage();
+    const { t, language } = useLanguage();
     const { order, resetOrder } = useOrder();
 
     const [user, setUser] = useState<any>(null);
@@ -73,7 +74,7 @@ export default function CheckoutPage() {
         if (obj === null || typeof obj !== 'object') return obj;
         if (Array.isArray(obj)) return obj.map(cleanObject);
         if (obj instanceof Date) return obj;
-        
+
         // Preserve Firestore FieldValues/Sentinels and other complex instances
         if (obj.constructor && obj.constructor.name !== 'Object') return obj;
 
@@ -86,7 +87,7 @@ export default function CheckoutPage() {
         return clean;
     };
 
-    const createOrder = async (finalUser: any, finalWhatsApp: string) => {
+    const createOrders = async (finalUser: any, finalWhatsApp: string) => {
         setIsSubmitting(true);
         try {
             // 1. Ensure user profile is updated with WhatsApp if new
@@ -97,75 +98,83 @@ export default function CheckoutPage() {
                 }, { merge: true });
             }
 
-            const pricing = calculateOrderPrice(
-                order.serviceType || 'car_rental',
-                order.selectedCar?.pricePerDay || order.providerRate || 0,
-                {
-                    rooms: order.serviceDetails?.rooms || 1,
-                    hours: 1, // Default
-                    days: calculateDays() || 1
-                }
-            );
+            // Determine slots to process
+            const slotsToProcess = (order.multiSlots && order.multiSlots.length > 0)
+                ? order.multiSlots
+                : [{ date: order.date || order.carRentalDates?.pickupDate || new Date().toISOString(), time: order.time || order.carRentalDates?.pickupTime || "10:00" }];
 
-            // 2. Create the Job/Mission
-            const jobData = {
-                clientId: finalUser.uid,
-                clientName: finalUser.displayName || 'Client',
-                bricolerId: order.isPublic ? null : order.providerId,
-                bricolerName: order.isPublic ? 'Broadcast' : order.providerName,
-                bricolerAddress: order.providerAddress || 'Essaouira, Morocco',
-                bricolerAvatar: order.providerAvatar,
-                service: order.serviceType || 'car_rental', // Top level service ID
-                serviceType: order.serviceType,
-                serviceName: order.serviceName,
-                location: order.location?.address || '',
-                locationDetails: order.location,
-                city: order.location?.city || '',
-                area: order.location?.area || '',
-                isPublic: order.isPublic || false,
-                date: order.date || order.carRentalDates?.pickupDate || new Date().toISOString().split('T')[0],
-                time: order.time || order.carRentalDates?.pickupTime || "10:00",
-                // Car rental specific top-level fields for easy listing
-                selectedCar: order.selectedCar,
-                carRentalDates: order.carRentalDates,
-                carReturnDate: order.carRentalDates?.returnDate,
-                carReturnTime: order.carRentalDates?.returnTime,
-                carRentalNote: order.carRentalNote,
-                status: order.isPublic ? 'broadcast' : 'programmed', // Broadcast status for public orders
-                paymentMethod,
-                totalPrice: pricing.total,
-                whatsappNumber: finalWhatsApp, // Explicitly attach to job
-                details: {
-                    car: order.selectedCar,
-                    carRentalDates: order.carRentalDates,
-                    note: order.carRentalNote || (order.serviceDetails as any)?.note || (order.serviceDetails as any)?.itemDescription,
-                    serviceDetails: order.serviceDetails || {},
-                    setupProfileId: order.setupProfileId || '',
-                    basePrice: pricing.subtotal,
-                    fee: pricing.serviceFee,
-                    // Delivery specific fields in details
-                    deliveryDetails: {
-                        pickupAddress: (order.serviceDetails as any)?.pickupAddress,
-                        dropoffAddress: (order.serviceDetails as any)?.dropoffAddress,
-                        recipientName: (order.serviceDetails as any)?.recipientName,
-                        recipientPhone: (order.serviceDetails as any)?.recipientPhone,
-                        deliveryType: (order.serviceDetails as any)?.deliveryType,
-                        deliveryDate: (order.serviceDetails as any)?.deliveryDate,
-                        deliveryTime: (order.serviceDetails as any)?.deliveryTime
+            // 2. Create the Job/Mission(s)
+            for (const slot of slotsToProcess) {
+                const pricing = calculateOrderPrice(
+                    order.serviceType || 'car_rental',
+                    order.selectedCar?.pricePerDay || order.providerRate || 0,
+                    {
+                        rooms: order.serviceDetails?.rooms || 1,
+                        hours: 1, // Default
+                        days: calculateDays() || 1,
+                        propertyType: (order.serviceDetails as any)?.propertyType
                     }
-                },
-                createdAt: serverTimestamp(),
-                updatedAt: serverTimestamp()
-            };
+                );
 
-            const cleanedJobData = cleanObject(jobData);
-            await addDoc(collection(db, 'jobs'), cleanedJobData);
+                const slotDate = slot.date.includes('T') ? slot.date.split('T')[0] : slot.date;
+
+                const jobData = {
+                    clientId: finalUser.uid,
+                    clientName: finalUser.displayName || 'Client',
+                    bricolerId: order.isPublic ? null : order.providerId,
+                    bricolerName: order.isPublic ? 'Broadcast' : order.providerName,
+                    bricolerAddress: order.providerAddress || 'Essaouira, Morocco',
+                    bricolerAvatar: order.providerAvatar,
+                    service: order.serviceType || 'car_rental',
+                    serviceType: order.serviceType,
+                    serviceName: order.serviceName,
+                    location: order.location?.address || '',
+                    locationDetails: order.location,
+                    city: order.location?.city || '',
+                    area: order.location?.area || '',
+                    isPublic: order.isPublic || false,
+                    date: slotDate,
+                    time: slot.time,
+                    selectedCar: order.selectedCar,
+                    carRentalDates: order.carRentalDates,
+                    carReturnDate: order.carRentalDates?.returnDate,
+                    carReturnTime: order.carRentalDates?.returnTime,
+                    carRentalNote: order.carRentalNote,
+                    status: order.isPublic ? 'broadcast' : 'programmed',
+                    paymentMethod,
+                    totalPrice: pricing.total,
+                    whatsappNumber: finalWhatsApp,
+                    details: {
+                        car: order.selectedCar,
+                        carRentalDates: order.carRentalDates,
+                        note: order.carRentalNote || (order.serviceDetails as any)?.note || (order.serviceDetails as any)?.itemDescription,
+                        serviceDetails: order.serviceDetails || {},
+                        setupProfileId: order.setupProfileId || '',
+                        basePrice: pricing.subtotal,
+                        fee: pricing.serviceFee,
+                        deliveryDetails: {
+                            pickupAddress: (order.serviceDetails as any)?.pickupAddress,
+                            dropoffAddress: (order.serviceDetails as any)?.dropoffAddress,
+                            recipientName: (order.serviceDetails as any)?.recipientName,
+                            recipientPhone: (order.serviceDetails as any)?.recipientPhone,
+                            deliveryType: (order.serviceDetails as any)?.deliveryType,
+                            deliveryDate: (order.serviceDetails as any)?.deliveryDate,
+                            deliveryTime: (order.serviceDetails as any)?.deliveryTime
+                        }
+                    },
+                    createdAt: serverTimestamp(),
+                    updatedAt: serverTimestamp()
+                };
+
+                const cleanedJobData = cleanObject(jobData);
+                await addDoc(collection(db, 'jobs'), cleanedJobData);
+            }
 
             // 3. Success!
             setShowSuccess(true);
             setTimeout(() => {
                 resetOrder();
-                router.replace('/?tab=calendar'); // Redirect to 'Orders' (Activity) view
+                router.replace('/?tab=calendar');
             }, 2000);
 
         } catch (err) {
@@ -187,7 +196,7 @@ export default function CheckoutPage() {
             return;
         }
 
-        createOrder(user, userData.whatsappNumber);
+        createOrders(user, userData.whatsappNumber);
     };
 
     const calculateDays = () => {
@@ -206,7 +215,16 @@ export default function CheckoutPage() {
             const endStr = formatDateLabel(order.carRentalDates.returnDate, order.carRentalDates.returnTime);
             return `${startStr} to ${endStr} (${calculateDays()} days)`;
         }
-        return order.date ? new Date(order.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '';
+
+        if (order.multiSlots && order.multiSlots.length > 0) {
+            if (order.multiSlots.length === 1) {
+                const s = order.multiSlots[0];
+                return `${new Date(s.date).toLocaleDateString(language === 'ar' ? 'ar-MA' : (language === 'fr' ? 'fr-FR' : 'en-US'), { month: 'short', day: 'numeric' })} at ${s.time}`;
+            }
+            return `${order.multiSlots.length} ${t({ en: 'Missions Scheduled', fr: 'Missions Programmées', ar: 'مهام مبرمجة' })}`;
+        }
+
+        return order.date ? new Date(order.date).toLocaleDateString(language === 'ar' ? 'ar-MA' : (language === 'fr' ? 'fr-FR' : 'en-US'), { month: 'short', day: 'numeric' }) : '';
     };
 
     const formatDateLabel = (date: string, time: string) => {
@@ -238,15 +256,15 @@ export default function CheckoutPage() {
                     >
                         <img
                             src={
-                                order.selectedCar?.modelImage || 
-                                order.selectedCar?.image || 
+                                order.selectedCar?.modelImage ||
+                                order.selectedCar?.image ||
                                 getServiceVector(order.serviceType)
                             }
-                            style={{ 
-                                width: (order.selectedCar?.modelImage || order.selectedCar?.image) ? 220 : 160, 
-                                height: (order.selectedCar?.modelImage || order.selectedCar?.image) ? 130 : 160, 
-                                objectFit: 'contain', 
-                                marginBottom: 20 
+                            style={{
+                                width: (order.selectedCar?.modelImage || order.selectedCar?.image) ? 220 : 160,
+                                height: (order.selectedCar?.modelImage || order.selectedCar?.image) ? 130 : 160,
+                                objectFit: 'contain',
+                                marginBottom: 20
                             }}
                             alt="Order"
                         />
@@ -363,11 +381,11 @@ export default function CheckoutPage() {
                                             style={{
                                                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
                                                 height: 48, borderRadius: 12, background: receiptImage ? '#F0FDF4' : '#fff',
-                                                border: '2px dashed', borderColor: receiptImage ? '#01A083' : '#E5E7EB',
+                                                border: '2px dashed', borderColor: receiptImage ? '#219178' : '#E5E7EB',
                                                 cursor: 'pointer', transition: 'all 0.2s'
                                             }}
                                         >
-                                            {isUploading ? 'Uploading...' : (receiptImage ? <><Check size={18} color="#01A083" /> Receipt Uploaded</> : 'Select Receipt Image')}
+                                            {isUploading ? 'Uploading...' : (receiptImage ? <><Check size={18} color="#219178" /> Receipt Uploaded</> : 'Select Receipt Image')}
                                         </label>
                                     </div>
                                 </div>
@@ -383,6 +401,14 @@ export default function CheckoutPage() {
                             Setup Summary <span style={{ fontSize: 24 }}>🏠</span>
                         </h3>
                         <div style={{ padding: 16, background: '#F9FAFB', borderRadius: 16, border: '1px solid #E5E7EB' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                                <span style={{ fontSize: 13, fontWeight: 700, color: '#6B7280' }}>Service</span>
+                                <span style={{ fontSize: 13, fontWeight: 900, color: '#111827' }}>{order.serviceName}</span>
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16, borderBottom: '1px solid #F3F4F6', paddingBottom: 12 }}>
+                                <span style={{ fontSize: 13, fontWeight: 700, color: '#6B7280' }}>Category</span>
+                                <span style={{ fontSize: 13, fontWeight: 900, color: '#111827' }}>{order.subServiceName}</span>
+                            </div>
                             {/* Standard Setup Fields */}
                             {(order.serviceType === 'cleaning' || order.serviceType === 'airbnb_cleaning') && (
                                 <>
@@ -450,15 +476,15 @@ export default function CheckoutPage() {
                 {/* Location Summaries */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 32 }}>
                     {/* Pickup Location (For Deliveries) or Current User Location (Standard) */}
-                    <div style={{ padding: '16px 20px', background: '#F9FAFB', borderRadius: 20, display: 'flex', alignItems: 'center', gap: 16 }}>
-                        <div style={{ width: 44, height: 44, borderRadius: '50%', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
-                            <MapPin size={22} color="#00A082" />
+                    <div style={{ padding: '16px 20px', background: '#F9FAFB', borderRadius: 5, display: 'flex', alignItems: 'center', gap: 16 }}>
+                        <div style={{ width: 44, height: 44, borderRadius: 5, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <img src="/Images/Icons/Lightpin.png" alt="location" style={{ width: 34, height: 34, objectFit: 'contain' }} />
                         </div>
                         <div style={{ flex: 1 }}>
-                            <div style={{ fontSize: 11, fontWeight: 900, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 2 }}>
+                            <div style={{ fontSize: 11, fontWeight: 500, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 2 }}>
                                 {(order.serviceType === 'errands' || order.serviceType?.includes('delivery')) ? 'Pickup Location' : 'Your Location'}
                             </div>
-                            <div style={{ fontSize: 14, fontWeight: 900, color: '#111827', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 1, WebkitBoxOrient: 'vertical' }}>
+                            <div style={{ fontSize: 14, fontWeight: 500, color: '#111827', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 1, WebkitBoxOrient: 'vertical' }}>
                                 {(order.serviceDetails as any)?.pickupAddress || order.location?.address}
                             </div>
                         </div>
@@ -466,9 +492,9 @@ export default function CheckoutPage() {
 
                     {/* Dropoff Location (For Deliveries) */}
                     {(order.serviceType === 'errands' || order.serviceType?.includes('delivery')) && (order.serviceDetails as any)?.dropoffAddress && (
-                        <div style={{ padding: '16px 20px', background: '#F9FAFB', borderRadius: 20, display: 'flex', alignItems: 'center', gap: 16 }}>
-                            <div style={{ width: 44, height: 44, borderRadius: '50%', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
-                                <MapPin size={22} color="#EF4444" />
+                        <div style={{ padding: '16px 20px', background: '#F9FAFB', borderRadius: 5, display: 'flex', alignItems: 'center', gap: 16 }}>
+                            <div style={{ width: 44, height: 44, borderRadius: 5, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                <img src="/Images/Icons/Lightpin.png" alt="location" style={{ width: 34, height: 34, objectFit: 'contain' }} />
                             </div>
                             <div style={{ flex: 1 }}>
                                 <div style={{ fontSize: 11, fontWeight: 900, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 2 }}>Dropoff Location</div>
@@ -480,73 +506,112 @@ export default function CheckoutPage() {
                     )}
 
                     {/* Bricoler Location */}
-                    <div style={{ padding: '16px 20px', background: '#F9FAFB', borderRadius: 20, display: 'flex', alignItems: 'center', gap: 16 }}>
-                        <div style={{ width: 44, height: 44, borderRadius: '50%', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
-                            <Star size={22} color="#FBBF24" />
+                    <div style={{ padding: '16px 20px', background: '#F9FAFB', borderRadius: 5, display: 'flex', alignItems: 'center', gap: 16 }}>
+                        <div style={{ width: 44, height: 44, borderRadius: 5, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <img src="/Images/Icons/Lightpin.png" alt="location" style={{ width: 34, height: 34, objectFit: 'contain' }} />
                         </div>
                         <div style={{ flex: 1 }}>
-                            <div style={{ fontSize: 11, fontWeight: 900, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 2 }}>Bricoler Location</div>
-                            <div style={{ fontSize: 14, fontWeight: 900, color: '#111827', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 1, WebkitBoxOrient: 'vertical' }}>
+                            <div style={{ fontSize: 11, fontWeight: 500, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 2 }}>Bricoler Location</div>
+                            <div style={{ fontSize: 14, fontWeight: 500, color: '#111827', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 1, WebkitBoxOrient: 'vertical' }}>
                                 {order.providerAddress || 'Essaouira, Morocco'}
                             </div>
                         </div>
                     </div>
                 </div>
 
-                {/* Pricing Summary */}
-                <div style={{ padding: 20, background: '#F9FAFB', borderRadius: 20 }}>
-                    <div style={{ fontSize: 11, fontWeight: 900, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 16 }}>Pricing Summary</div>
+                {/* Final Checkout Summary (100% Matched to Setup View Color/Design) */}
+                <div style={{ margin: '32px -24px 0', position: 'relative' }}>
+                    {/* Wave Transition matching setup/page.tsx */}
+                    <div style={{ position: 'absolute', top: -40, left: 0, right: 0, height: 40, zIndex: 10, pointerEvents: 'none' }}>
+                        <svg viewBox="0 0 1440 320" preserveAspectRatio="none" style={{ width: '100%', height: '100%', fill: '#F2F2F2' }}>
+                            <path d="M0,160L48,176C96,192,192,224,288,224C384,224,480,192,576,165.3C672,139,768,117,864,128C960,139,1056,181,1152,192C1248,203,1344,181,1392,170.7L1440,160L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path>
+                        </svg>
+                    </div>
 
-                    {(() => {
-                        const pricing = calculateOrderPrice(
-                            order.serviceType || 'car_rental',
-                            order.selectedCar?.pricePerDay || order.providerRate || 0,
-                            {
-                                rooms: order.serviceDetails?.rooms || 1,
-                                hours: 1, // Default
-                                days: calculateDays() || 1
-                            }
-                        );
+                    <div style={{ background: '#F2F2F2', padding: '16px 36px 40px', display: 'flex', flexDirection: 'column', gap: 32 }}>
+                        <h3 style={{ fontSize: 28, fontWeight: 1000, color: '#111827', margin: 0 }}>Summary</h3>
 
-                        return (
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                    <span style={{ fontSize: 14, fontWeight: 700, color: '#6B7280' }}>Base Price</span>
-                                    <span style={{ fontSize: 15, fontWeight: 900, color: '#111827' }}>{pricing.subtotal} MAD</span>
+                        {(() => {
+                            const slotsCount = (order.multiSlots && order.multiSlots.length > 0) ? order.multiSlots.length : 1;
+                            const individualPricing = calculateOrderPrice(
+                                order.serviceType || 'car_rental',
+                                order.selectedCar?.pricePerDay || order.providerRate || 0,
+                                {
+                                    rooms: order.serviceDetails?.rooms || 1,
+                                    hours: 1, // Default
+                                    days: calculateDays() || 1,
+                                    propertyType: (order.serviceDetails as any)?.propertyType
+                                }
+                            );
+
+                            const basePrice = individualPricing.basePrice;
+                            const servicesTotal = individualPricing.subtotal * slotsCount;
+                            const serviceFee = individualPricing.serviceFee * slotsCount;
+                            const total = individualPricing.total * slotsCount;
+
+                            return (
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                            <span style={{ fontSize: 18, fontWeight: 500, color: '#111827' }}>Base price</span>
+                                            <div style={{ width: 22, height: 22, borderRadius: '50%', border: '1px solid #D1D5DB', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, color: '#9CA3AF', fontWeight: 700 }}>i</div>
+                                        </div>
+                                        <span style={{ fontSize: 18, fontWeight: 800, color: '#111827' }}>
+                                            {Math.round(basePrice)} MAD/{individualPricing.unit === 'unit' ? 'unit' : individualPricing.unit === 'day' ? 'day' : 'hr'}
+                                        </span>
+                                    </div>
+
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                            <span style={{ fontSize: 18, fontWeight: 500, color: '#111827' }}>Services</span>
+                                            <div style={{ width: 22, height: 22, borderRadius: '50%', border: '1px solid #D1D5DB', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, color: '#9CA3AF', fontWeight: 700 }}>i</div>
+                                        </div>
+                                        <span style={{ fontSize: 18, fontWeight: 800, color: '#111827' }}>{servicesTotal.toFixed(2)} MAD</span>
+                                    </div>
+
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                            <span style={{ fontSize: 18, fontWeight: 500, color: '#111827' }}>Lbricol Fee</span>
+                                            <div style={{ width: 22, height: 22, borderRadius: '50%', border: '1px solid #D1D5DB', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, color: '#9CA3AF', fontWeight: 700 }}>i</div>
+                                        </div>
+                                        <span style={{ fontSize: 18, fontWeight: 800, color: '#111827' }}>{serviceFee.toFixed(2)} MAD</span>
+                                    </div>
+
+                                    <div style={{ height: 1, background: '#E5E7EB', width: '100%', margin: '8px 0' }} />
+
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                        <span style={{ fontSize: 22, fontWeight: 1000, color: '#111827' }}>Total to pay</span>
+                                        <span style={{ fontSize: 25, fontWeight: 1000, color: '#111827' }}>{total.toFixed(2)} MAD</span>
+                                    </div>
                                 </div>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                    <span style={{ fontSize: 14, fontWeight: 700, color: '#6B7280' }}>Lbricol Fee (10%)</span>
-                                    <span style={{ fontSize: 15, fontWeight: 900, color: '#00A082' }}>+ {pricing.serviceFee} MAD</span>
-                                </div>
-                                <div style={{ height: 1, background: '#E5E7EB', margin: '4px 0' }} />
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                    <span style={{ fontSize: 16, fontWeight: 950, color: '#111827' }}>Total</span>
-                                    <span style={{ fontSize: 18, fontWeight: 950, color: '#111827' }}>{pricing.total} MAD</span>
-                                </div>
-                            </div>
-                        );
-                    })()}
+                            );
+                        })()}
+                    </div>
                 </div>
             </main>
 
             {/* Bottom Footer */}
             <div style={{ background: '#fff', borderTop: '1px solid #F3F4F6', padding: '24px 24px calc(24px + env(safe-area-inset-bottom))', zIndex: 100, flexShrink: 0 }}>
                 {(() => {
-                    const pricing = calculateOrderPrice(
+                    const slotsCount = (order.multiSlots && order.multiSlots.length > 0) ? order.multiSlots.length : 1;
+                    const individualPricing = calculateOrderPrice(
                         order.serviceType || 'car_rental',
                         order.selectedCar?.pricePerDay || order.providerRate || 0,
                         {
                             rooms: order.serviceDetails?.rooms || 1,
                             hours: 1, // Default
-                            days: calculateDays() || 1
+                            days: calculateDays() || 1,
+                            propertyType: (order.serviceDetails as any)?.propertyType
                         }
                     );
+                    const total = individualPricing.total * slotsCount;
+
                     return (
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 20 }}>
-                            <span style={{ fontSize: 22, fontWeight: 900 }}>Total</span>
+                            <span style={{ fontSize: 22, fontWeight: 950 }}>Total</span>
                             <div style={{ display: 'flex', alignItems: 'baseline', gap: 4 }}>
-                                <span style={{ fontSize: 28, fontWeight: 950 }}>{pricing.total}</span>
-                                <span style={{ fontSize: 16, fontWeight: 900, color: '#6B7280' }}>MAD</span>
+                                <span style={{ fontSize: 32, fontWeight: 1000 }}>{total.toFixed(2)}</span>
+                                <span style={{ fontSize: 16, fontWeight: 900, color: '#111827' }}>MAD</span>
                             </div>
                         </div>
                     );
@@ -564,7 +629,7 @@ export default function CheckoutPage() {
                             flex: 1,
                             height: 60,
                             borderRadius: 16,
-                            background: (paymentMethod === 'bank_transfer' && !receiptImage) ? '#9CA3AF' : '#00A082',
+                            background: (paymentMethod === 'bank_transfer' && !receiptImage) ? '#9CA3AF' : '#219178',
                             color: '#FFFFFF',
                             border: 'none',
                             fontSize: 17,
@@ -591,16 +656,25 @@ export default function CheckoutPage() {
                     const currUser = auth.currentUser;
                     if (currUser) {
                         setUser(currUser);
-                        const docSnap = await getDoc(doc(db, 'users', currUser.uid));
-                        if (docSnap.exists()) {
-                            const data = docSnap.data();
+                        // Check users collection first
+                        let userSnap = await getDoc(doc(db, 'users', currUser.uid));
+                        let data = userSnap.exists() ? userSnap.data() : null;
+
+                        // If not in users, check clients collection
+                        if (!data) {
+                            const clientSnap = await getDoc(doc(db, 'clients', currUser.uid));
+                            if (clientSnap.exists()) data = clientSnap.data();
+                        }
+
+                        if (data) {
                             setUserData(data);
                             if (data.whatsappNumber) {
-                                createOrder(currUser, data.whatsappNumber);
+                                createOrders(currUser, data.whatsappNumber);
                             } else {
                                 setShowWhatsAppPopup(true);
                             }
                         } else {
+                            // No data in either collection
                             setShowWhatsAppPopup(true);
                         }
                     }
@@ -612,7 +686,7 @@ export default function CheckoutPage() {
                 onClose={() => setShowWhatsAppPopup(false)}
                 onSuccess={(number) => {
                     setShowWhatsAppPopup(false);
-                    createOrder(user, number);
+                    createOrders(user, number);
                 }}
             />
 
@@ -626,12 +700,12 @@ export default function CheckoutPage() {
                         <div style={{ textAlign: 'center' }}>
                             <motion.div initial={{ scale: 0.5 }} animate={{ scale: 1 }} transition={{ type: 'spring' }}>
                                 <div style={{ width: 100, height: 100, background: 'rgba(0, 160, 130, 0.1)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px' }}>
-                                    <Check size={50} color="#00A082" strokeWidth={4} />
+                                    <Check size={50} color="#219178" strokeWidth={4} />
                                 </div>
                             </motion.div>
                             <h2 style={{ fontSize: 24, fontWeight: 900, marginBottom: 12 }}>Mission Programmed!</h2>
                             <p style={{ color: '#6B7280', fontWeight: 600, lineHeight: 1.5 }}>
-                                {order.isPublic 
+                                {order.isPublic
                                     ? "Your request has been broadcasted to all Bricolers in your city."
                                     : `Your request has been sent to ${order.providerName}.`} <br />
                                 You can track it in your calendar.

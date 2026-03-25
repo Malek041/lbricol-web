@@ -22,7 +22,6 @@ import LanguagePreferencePopup from '@/features/onboarding/components/LanguagePr
 import MobileBottomNav from '@/components/layout/MobileBottomNav';
 import MessagesView from '@/features/messages/components/MessagesView';
 import ProfileView from '@/features/provider/components/ProfileView';
-import ComingSoon from '@/components/layout/ComingSoon';
 import ClientHome from '@/features/client/components/ClientHome';
 import OnboardingPopup from '@/features/onboarding/components/OnboardingPopup';
 import { useOrder } from '@/context/OrderContext';
@@ -1279,60 +1278,61 @@ const Home = () => {
         if (!auth.currentUser || !order.id || !order.date) continue;
 
         // Skip terminal statuses
-        if (['cancelled', 'done', 'delivered'].includes(order.status || '')) continue;
+          // Skip terminal statuses AND newly created/broadcast statuses that shouldn't auto-complete
+          if (['cancelled', 'done', 'delivered', 'programmed', 'broadcast', 'accepted'].includes(order.status || '')) continue;
 
-        try {
-          // Parse start time
-          const datePart = order.date.includes(' at ') ? order.date.split(' at ')[0] : order.date;
-          const timeStr = order.time?.split('-')[0].trim() || "09:00";
+          try {
+            // Parse start time (Local Time)
+            const datePart = order.date.includes(' at ') ? order.date.split(' at ')[0] : order.date;
+            const timeStr = order.time?.split('-')[0].trim() || "09:00";
 
-          // Try parsing "March 10, 2026" or "2026-03-10"
-          const scheduledStart = new Date(datePart);
-          const [hours, mins] = timeStr.split(':').map(Number);
-          if (!isNaN(hours)) scheduledStart.setHours(hours, mins || 0, 0, 0);
-
-          if (isNaN(scheduledStart.getTime())) continue;
-
-          // Calculate estimated duration
-          // Task size: small (1h), medium (2h), large (varies)
-          let durationHours = 2; // Default for medium/others
-          const size = (order.taskSize || 'medium').toLowerCase();
-          const service = (order.service || '').toLowerCase();
-
-          if (size === 'small') {
-            durationHours = 1;
-          } else if (size === 'medium') {
-            durationHours = 2;
-          } else if (size === 'large') {
-            // "Large" varies by service
-            if (service.includes('painting')) durationHours = 8;
-            else if (service.includes('moving')) durationHours = 6;
-            else if (service.includes('cleaning')) durationHours = 5;
-            else if (service.includes('gardening')) durationHours = 5;
-            else if (service.includes('electricity') || service.includes('plumbing')) durationHours = 5;
-            else durationHours = 4; // Default large
-          }
-
-          const scheduledEnd = new Date(scheduledStart.getTime() + durationHours * 60 * 60 * 1000);
-
-          let newStatus: string | null = null;
-
-          if (now >= scheduledEnd) {
-            newStatus = 'done';
-          } else if (now >= scheduledStart) {
-            // Only transition to pending if it's currently programmed/accepted/new/negotiating
-            if (['programmed', 'confirmed', 'accepted', 'new', 'negotiating'].includes(order.status || '')) {
-              newStatus = 'pending';
+            // Use a local date constructor to avoid UTC shift
+            // If datePart is '2025-03-25', parse it safely
+            let scheduledStart: Date;
+            if (/^\d{4}-\d{2}-\d{2}$/.test(datePart)) {
+              const [y, m, d] = datePart.split('-').map(Number);
+              scheduledStart = new Date(y, m - 1, d);
+            } else {
+              scheduledStart = new Date(datePart);
             }
-          }
 
-          if (newStatus && newStatus !== order.status) {
-            console.log(`[AutoUpdate] Transitioning order ${order.id} from ${order.status} to ${newStatus}`);
-            await updateDoc(doc(db, 'jobs', order.id), { status: newStatus as any });
+            const [hours, mins] = timeStr.split(':').map(Number);
+            if (!isNaN(hours)) scheduledStart.setHours(hours, mins || 0, 0, 0);
 
-            // If it became 'done', the rating popup will show up automatically 
-            // because of the listener in the main useEffect.
-          }
+            if (isNaN(scheduledStart.getTime())) continue;
+
+            // Calculate estimated duration
+            let durationHours = 2; // Default
+            const size = (order.taskSize || 'medium').toLowerCase();
+            const service = (order.service || '').toLowerCase();
+
+            if (size === 'small') durationHours = 1;
+            else if (size === 'medium') durationHours = 2;
+            else if (size === 'large') {
+              if (service.includes('painting')) durationHours = 8;
+              else if (service.includes('moving')) durationHours = 6;
+              else if (service.includes('cleaning')) durationHours = 5;
+              else if (service.includes('gardening')) durationHours = 5;
+              else if (service.includes('electricity') || service.includes('plumbing')) durationHours = 5;
+              else durationHours = 4;
+            }
+
+            const scheduledEnd = new Date(scheduledStart.getTime() + durationHours * 60 * 60 * 1000);
+
+            let newStatus: string | null = null;
+            if (now >= scheduledEnd) {
+              newStatus = 'done';
+            } else if (now >= scheduledStart) {
+              // Mark as pending/in_progress once time starts
+              if (['confirmed', 'accepted'].includes(order.status || '')) {
+                newStatus = 'pending';
+              }
+            }
+
+            if (newStatus && newStatus !== order.status) {
+              console.log(`[AutoUpdate] Transitioning order ${order.id} from ${order.status} to ${newStatus}`);
+              await updateDoc(doc(db, 'jobs', order.id), { status: newStatus as any });
+            }
         } catch (e) {
           console.error("Error in auto status update for order", order.id, e);
         }
@@ -2347,11 +2347,6 @@ const Home = () => {
 
   const isFullscreenMobileTab = isMobile && ['home', 'profile', 'share', 'promocodes', 'calendar', 'messages', 'heroes'].includes(mobileNavTab);
 
-  // --- PAUSE DEPLOYMENT ---
-  const isMaintenanceMode = process.env.NODE_ENV === 'production';
-  if (isMaintenanceMode) {
-    return <ComingSoon />;
-  }
 
   return (
     <div style={{ backgroundColor: c.bg, color: c.text, minHeight: '100vh', scrollBehavior: 'smooth' }} className="font-sans">

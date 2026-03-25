@@ -15,7 +15,7 @@ export default function CheckoutButton({ onClick, disabled, isLoading, label }: 
       style={{
         width: '100%',
         height: 54,
-        background: (disabled || isLoading) ? '#E5E7EB' : '#01A083',
+        background: (disabled || isLoading) ? '#E5E7EB' : '#219178',
         color: '#fff',
         borderRadius: '16px',
         fontSize: 16,

@@ -9,7 +9,7 @@ Inspired by the Glovo Yellow System.
 - **Neutral 900:** `#2B2B2B`
 - **Neutral 500:** `#9E9E9E`
 - **Background:** `#F7F7F7`
-- **Success:** `#2E7D32`
+- **Success:** `#027963`
 - **Error Soft:** `#FDECEA`
 - **Error Text:** `#C62828`
 
@@ -73,8 +73,23 @@ Use an **8pt system**:
 - **XL:** 32px
 
 **Card radius:**
-- 12px for containers
-- 24px for modals
+- **5px max** for all containers, cards, and input elements.
+- **Rounded-full** for all buttons (primary, secondary, and icon buttons).
+- **12px or 24px radius** are strictly deprecated.
+
+**Shadows:**
+- **NEVER** use shadow effects for buttons.
+- **NEVER** use shadow effects for fixed or floating sections at the bottom of views.
+- The UI should rely on clean borders and whitespace rather than depth effects.
+
+**Fixed Bottom Sections:**
+- For fixed/floating/summary sections at the bottom of views, always apply the **wave style** of upper borders (SVG wave effect) instead of straight lines or shadows.
+- These sections should appear light and integrated into the layout.
+
+**Aesthetics & Whitespace:**
+- Prioritize a light, minimalist aesthetic.
+- Leverage whitespace to convey simplicity and clarity.
+- Favor spacing over borders and shadows.
 
 ---
 
@@ -111,8 +126,8 @@ Never show an error without a next action.
 - Status tag small
 
 **Status tag style:**
-- Filled pill style
-- 12px radius
+- Filled pill style or light background
+- **5px radius** (unless it's an interactive button, then rounded-full)
 
 ---
 

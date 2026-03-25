@@ -24,6 +24,7 @@ export const calculateOrderPrice = (
         hours?: number;
         days?: number;
         quantity?: number;
+        propertyType?: string;
     } = {}
 ): PricingBreakdown => {
     // 1. Find the subservice to get its archetype
@@ -46,6 +47,29 @@ export const calculateOrderPrice = (
     }
 
     let basePrice = providerRate;
+
+    // Apply property coefficient for unit-based services (like cleaning)
+    if (options.propertyType) {
+        const coefMap: Record<string, number> = {
+            studio: 0.9,
+            apartment: 1.0,
+            villa: 1.2,
+            guesthouse: 1.3,
+            riad: 1.4,
+            hotel: 1.5
+        };
+        const key = options.propertyType.toLowerCase();
+        const coefficient = coefMap[key];
+        if (coefficient !== undefined) {
+            basePrice *= coefficient;
+        }
+    }
+
+    // Apply Family home cleaning coefficient (2.0x)
+    if (subServiceId === 'family_home') {
+        basePrice *= 2.0;
+    }
+
     let quantity = 1;
     let unit = 'job';
 

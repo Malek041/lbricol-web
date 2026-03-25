@@ -33,6 +33,7 @@ interface OrderState {
   providerAddress?: string;
   date?: string;
   time?: string;
+  multiSlots?: { date: string; time: string }[];
   serviceDetails?: Record<string, any>;
   setupProfileId?: string;
   isPublic?: boolean;
@@ -68,6 +69,7 @@ const defaultOrder: OrderState = {
   serviceDetails: {},
   setupProfileId: '',
   isPublic: false,
+  multiSlots: [],
 };
 
 const OrderContext = createContext<OrderContextType | null>(null);

@@ -34,7 +34,7 @@ export default function LocationInput({
         gap: 12,
         padding: '14px 16px',
         background: '#fff',
-        border: `1px solid ${error ? '#FECACA' : (isFocused ? '#01A083' : '#F3F4F6')}`,
+        border: `1px solid ${error ? '#FECACA' : (isFocused ? '#219178' : '#F3F4F6')}`,
         borderRadius: '16px',
         transition: 'all 0.2s ease',
         boxShadow: isFocused ? '0 0 0 4px rgba(1, 160, 131, 0.05)' : 'none'

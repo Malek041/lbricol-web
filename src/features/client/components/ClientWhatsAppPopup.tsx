@@ -150,9 +150,9 @@ const ClientWhatsAppPopup = ({ isOpen, onClose, onSuccess }: ClientWhatsAppPopup
                                     en: "By providing your phone number, you accept our ",
                                     fr: "En renseignant votre numéro de téléphone, vous acceptez nos "
                                 })}
-                                <span style={{ color: '#00A082', textDecoration: 'underline' }}>{t({ en: 'Terms of Use', fr: 'Conditions d\'utilisation' })}</span>
+                                <span style={{ color: '#219178', textDecoration: 'underline' }}>{t({ en: 'Terms of Use', fr: 'Conditions d\'utilisation' })}</span>
                                 {t({ en: ' and our ', fr: ' et notre ' })}
-                                <span style={{ color: '#00A082', textDecoration: 'underline' }}>{t({ en: 'Privacy Policy', fr: 'Politique de confidentialité' })}</span>. {t({ en: 'Thank you!', fr: 'Merci !' })}
+                                <span style={{ color: '#219178', textDecoration: 'underline' }}>{t({ en: 'Privacy Policy', fr: 'Politique de confidentialité' })}</span>. {t({ en: 'Thank you!', fr: 'Merci !' })}
                             </p>
                         </div>
 

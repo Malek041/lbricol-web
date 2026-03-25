@@ -300,7 +300,7 @@ const BricolerCard = ({ b, t, expandedId, setExpandedId, toggleStatus, handleDel
       {!isClaimed && b.claimCode && expandedId !== b.id && (
         <div className="pt-2">
           <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest mr-2">CODE:</span>
-          <span className="text-[14px] font-mono font-bold text-[#00A082]">{b.claimCode}</span>
+          <span className="text-[14px] font-mono font-bold text-[#219178]">{b.claimCode}</span>
         </div>
       )}
 
@@ -321,7 +321,7 @@ const BricolerCard = ({ b, t, expandedId, setExpandedId, toggleStatus, handleDel
                 <div className="p-3 bg-neutral-50 rounded-xl border border-neutral-100 flex items-center justify-between">
                   <div className="flex flex-col">
                     <span className="text-[10px] font-black text-neutral-400 uppercase tracking-widest">Activation Code</span>
-                    <span className="text-[15px] font-mono font-bold text-[#00A082]">{b.claimCode}</span>
+                    <span className="text-[15px] font-mono font-bold text-[#219178]">{b.claimCode}</span>
                   </div>
                   <button onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(b.claimCode); }} className="w-8 h-8 rounded-full bg-white border border-neutral-100 flex items-center justify-center text-neutral-400 hover:text-black transition-colors"><Save size={14} /></button>
                 </div>
@@ -544,7 +544,7 @@ const BricolerProfileBottomSheet = ({ bricoler, isOpen, onClose, t }: any) => {
                   {/* Month Filter */}
                   <div className="flex items-center justify-between bg-neutral-50 p-4 rounded-[24px]">
                     <div className="flex items-center gap-2">
-                      <Calendar size={18} className="text-[#00A082]" />
+                      <Calendar size={18} className="text-[#219178]" />
                       <select
                         value={selectedMonth}
                         onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
@@ -562,7 +562,7 @@ const BricolerProfileBottomSheet = ({ bricoler, isOpen, onClose, t }: any) => {
                     </div>
                     <div className="text-right">
                       <p className="text-[10px] font-black text-neutral-400 uppercase tracking-widest leading-none mb-1">{t({ en: 'Status', fr: 'Statut' })}</p>
-                      <span className="text-xs font-black text-[#00A082]">{t({ en: 'Active', fr: 'Actif' })}</span>
+                      <span className="text-xs font-black text-[#219178]">{t({ en: 'Active', fr: 'Actif' })}</span>
                     </div>
                   </div>
 
@@ -581,7 +581,7 @@ const BricolerProfileBottomSheet = ({ bricoler, isOpen, onClose, t }: any) => {
                     <KpiCard
                       label="Total Jobs"
                       value={bricoler.numReviews || bricoler.completedJobs || 0}
-                      icon={<Check size={16} className="text-[#00A082]" />}
+                      icon={<Check size={16} className="text-[#219178]" />}
                     />
                     <KpiCard
                       label="Pending"
@@ -598,11 +598,11 @@ const BricolerProfileBottomSheet = ({ bricoler, isOpen, onClose, t }: any) => {
                       </div>
                       <div className="text-right">
                         <p className="text-xs font-bold text-white/60 mb-1">{t({ en: 'Net Earnings', fr: 'Gains Nets' })}</p>
-                        <h4 className="text-xl font-black text-[#00A082]">{Math.round((bricoler.totalRevenue || 0) * 0.85)} MAD</h4>
+                        <h4 className="text-xl font-black text-[#219178]">{Math.round((bricoler.totalRevenue || 0) * 0.85)} MAD</h4>
                       </div>
                     </div>
                     <div className="w-full h-1.5 bg-white/10 rounded-full overflow-hidden">
-                      <div className="w-3/4 h-full bg-[#00A082] rounded-full" />
+                      <div className="w-3/4 h-full bg-[#219178] rounded-full" />
                     </div>
                   </div>
 

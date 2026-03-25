@@ -127,7 +127,7 @@ const PromoteYourselfView: React.FC<PromoteYourselfViewProps> = ({
                 {/* Clients Card */}
                 <div className="bg-white rounded-[24px] px-6 py-6 shadow-sm border border-neutral-100">
                     <div className="w-12 h-12 rounded-full bg-[#E6F7F4] flex items-center justify-center mb-4">
-                        <Users size={24} className="text-[#00A082]" />
+                        <Users size={24} className="text-[#219178]" />
                     </div>
 
                     <h2 className="text-[22px] font-black text-black mb-1">
@@ -159,7 +159,7 @@ const PromoteYourselfView: React.FC<PromoteYourselfViewProps> = ({
                             onClick={handleCopyClient}
                             className={cn(
                                 "px-5 py-3 font-bold text-[15px] flex items-center gap-2 transition-all active:scale-95",
-                                copiedClient ? 'bg-[#00A082] text-white' : 'bg-[#00A082]/10 text-[#00A082] hover:bg-[#00A082]/20'
+                                copiedClient ? 'bg-[#219178] text-white' : 'bg-[#219178]/10 text-[#219178] hover:bg-[#219178]/20'
                             )}
                         >
                             {copiedClient ? (

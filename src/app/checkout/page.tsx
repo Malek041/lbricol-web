@@ -203,8 +203,8 @@ function CheckoutContent() {
                   padding: '16px 0',
                   fontSize: 14,
                   fontWeight: 900,
-                  color: activeTab === tab ? '#01A083' : '#9CA3AF',
-                  borderBottom: `2px solid ${activeTab === tab ? '#01A083' : 'transparent'}`,
+                  color: activeTab === tab ? '#219178' : '#9CA3AF',
+                  borderBottom: `2px solid ${activeTab === tab ? '#219178' : 'transparent'}`,
                   background: 'none',
                   transition: 'all 0.2s ease',
                   cursor: 'pointer'
@@ -241,7 +241,7 @@ function CheckoutContent() {
             </div>
             <button 
               onClick={() => setActiveTab('details')}
-              style={{ fontSize: 13, fontWeight: 800, color: '#01A083', background: 'none', border: 'none', display: 'flex', alignItems: 'center', gap: 4, cursor: 'pointer' }}
+              style={{ fontSize: 13, fontWeight: 800, color: '#219178', background: 'none', border: 'none', display: 'flex', alignItems: 'center', gap: 4, cursor: 'pointer' }}
             >
               View Profile <ExternalLink size={14} />
             </button>
@@ -303,7 +303,7 @@ function CheckoutContent() {
                 }}
               >
                 <div style={{ fontSize: 14, fontWeight: 800, color: '#111827' }}>Sending to someone else?</div>
-                <div style={{ width: 44, height: 24, background: state.sendingToSomeoneElse ? '#01A083' : '#E5E7EB', borderRadius: 20, position: 'relative', transition: 'all 0.3s ease' }}>
+                <div style={{ width: 44, height: 24, background: state.sendingToSomeoneElse ? '#219178' : '#E5E7EB', borderRadius: 20, position: 'relative', transition: 'all 0.3s ease' }}>
                   <div style={{ width: 18, height: 18, background: '#fff', borderRadius: '50%', position: 'absolute', top: 3, left: state.sendingToSomeoneElse ? 23 : 3, transition: 'all 0.3s ease' }} />
                 </div>
               </button>

@@ -304,7 +304,7 @@ function Step1Content() {
             animation: 'cardBounce 1.2s ease-in-out infinite',
             pointerEvents: 'auto',
           }}>
-            <MapPin size={20} className="text-[#01A083]" />
+            <MapPin size={20} className="text-[#219178]" />
             <div style={{ minWidth: 0 }}>
               <div style={{
                 fontSize: 15, fontWeight: 700, color: '#111827',
@@ -337,7 +337,7 @@ function Step1Content() {
               <div
                 onClick={() => !isFetchingAddress && router.push('/order/step1/search')}
                 style={{
-                  fontSize: 13, fontWeight: 600, color: isFetchingAddress ? '#9CA3AF' : '#01A083',
+                  fontSize: 13, fontWeight: 600, color: isFetchingAddress ? '#9CA3AF' : '#219178',
                   cursor: isFetchingAddress ? 'default' : 'pointer', marginTop: 2,
                 }}
               >
@@ -464,7 +464,7 @@ function Step1Content() {
             disabled={isFetchingAddress}
             style={{
               width: '100%', height: 54, borderRadius: 50,
-              background: isFetchingAddress ? '#E5E7EB' : '#01A083', color: isFetchingAddress ? '#9CA3AF' : '#fff',
+              background: isFetchingAddress ? '#E5E7EB' : '#219178', color: isFetchingAddress ? '#9CA3AF' : '#fff',
               border: 'none', fontSize: 16, fontWeight: 800,
               cursor: isFetchingAddress ? 'wait' : 'pointer', letterSpacing: 0.2,
               flexShrink: 0,
@@ -481,7 +481,7 @@ function Step1Content() {
             onClick={() => router.push('/order/step1/search')}
             style={{
               textAlign: 'center', fontSize: 15,
-              fontWeight: 700, color: '#01A083',
+              fontWeight: 700, color: '#219178',
               cursor: 'pointer', paddingBottom: 8,
               flexShrink: 0,
             }}

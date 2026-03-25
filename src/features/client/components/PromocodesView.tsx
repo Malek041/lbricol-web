@@ -141,7 +141,7 @@ const PromocodesView: React.FC<PromocodesViewProps> = ({
             <div className="flex-1 overflow-y-auto w-full max-w-md mx-auto p-5 pb-32">
 
                 {/* Balance Card */}
-                <div className="bg-[#00A082] rounded-[20px] p-6 text-white mb-6 shadow-md relative overflow-hidden">
+                <div className="bg-[#219178] rounded-[20px] p-6 text-white mb-6 shadow-md relative overflow-hidden">
                     <div className="relative z-10">
                         <p className="text-white/80 font-medium text-[15px] mb-1">
                             {t({ en: 'Client Credit', fr: 'Crédit Client', ar: 'رصيد العميل' })}
@@ -192,7 +192,7 @@ const PromocodesView: React.FC<PromocodesViewProps> = ({
                             value={code}
                             onChange={(e) => setCode(e.target.value)}
                             placeholder={t({ en: 'Enter code here', fr: 'Entrez le code ici', ar: 'أدخل الرمز هنا' })}
-                            className="flex-1 min-w-0 bg-[#F5F5F5] rounded-xl px-4 py-3.5 text-[15px] font-medium text-[#1D1D1D] border border-transparent focus:border-[#00A082] focus:bg-white outline-none transition-all"
+                            className="flex-1 min-w-0 bg-[#F5F5F5] rounded-xl px-4 py-3.5 text-[15px] font-medium text-[#1D1D1D] border border-transparent focus:border-[#219178] focus:bg-white outline-none transition-all"
                             disabled={isLoading}
                         />
                         <button
@@ -205,7 +205,7 @@ const PromocodesView: React.FC<PromocodesViewProps> = ({
                     </div>
 
                     {message && (
-                        <div className={`mt-4 flex items-start gap-2 text-[14px] font-medium ${message.type === 'success' ? 'text-[#00A082]' : 'text-red-500'}`}>
+                        <div className={`mt-4 flex items-start gap-2 text-[14px] font-medium ${message.type === 'success' ? 'text-[#219178]' : 'text-red-500'}`}>
                             {message.type === 'success' ? <CheckCircle2 size={18} className="mt-0.5" /> : <Info size={18} className="mt-0.5" />}
                             <p>{message.text}</p>
                         </div>

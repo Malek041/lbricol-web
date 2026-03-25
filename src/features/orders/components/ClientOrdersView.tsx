@@ -215,7 +215,7 @@ function CalendarTab({
                                 className={cn(
                                     "flex flex-col items-center py-3 rounded-2xl relative transition-all border",
                                     isSelected
-                                        ? "bg-[#00A082] border-[#00A082]"
+                                        ? "bg-[#219178] border-[#219178]"
                                         : isTodayDay
                                             ? "bg-[#E6F7F4] border-[#E6F7F4]"
                                             : "bg-white border-transparent hover:border-neutral-100"
@@ -224,7 +224,7 @@ function CalendarTab({
                                 <span className={cn("text-[10px] font-black uppercase tracking-wider mb-1", isSelected ? "text-white/70" : "text-neutral-400")}>
                                     {day.dayLabel}
                                 </span>
-                                <span className={cn("text-[18px] font-black", isSelected ? "text-white" : isTodayDay ? "text-[#00A082]" : "text-black")}>
+                                <span className={cn("text-[18px] font-black", isSelected ? "text-white" : isTodayDay ? "text-[#219178]" : "text-black")}>
                                     {day.dayNum}
                                 </span>
                                 {hasJobs && !isSelected && (
@@ -292,7 +292,7 @@ function CalendarTab({
                                         <p className="text-[13px] font-medium text-neutral-400 truncate">
                                             {order.bricolerName || t({ en: 'Matching...', fr: 'Recherche...', ar: 'جاري البحث...' })} • {order.city || (typeof order.location === 'object' ? (order.location as any).address : order.location)}
                                         </p>
-                                        <p className="text-[12px] font-black text-[#00A082] mt-1">
+                                        <p className="text-[12px] font-black text-[#219178] mt-1">
                                             {order.time}
                                         </p>
                                     </div>
@@ -650,7 +650,7 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
                     >
                         {t({ en: 'Activity', fr: 'Activité', ar: 'النشاط' })}
                         {activeTab === 'activity' && (
-                            <motion.div layoutId="client-orders-tab" className="absolute bottom-0 left-0 right-0 h-[3px] bg-[#00A082] rounded-t-full" />
+                            <motion.div layoutId="client-orders-tab" className="absolute bottom-0 left-0 right-0 h-[3px] bg-[#219178] rounded-t-full" />
                         )}
                     </button>
                     <button
@@ -662,7 +662,7 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
                     >
                         {t({ en: 'Calendar', fr: 'Calendrier', ar: 'التقويم' })}
                         {activeTab === 'calendar' && (
-                            <motion.div layoutId="client-orders-tab" className="absolute bottom-0 left-0 right-0 h-[3px] bg-[#00A082] rounded-t-full" />
+                            <motion.div layoutId="client-orders-tab" className="absolute bottom-0 left-0 right-0 h-[3px] bg-[#219178] rounded-t-full" />
                         )}
                     </button>
                 </div>
@@ -891,7 +891,7 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
                                                 <div className="flex flex-col gap-3 mb-8">
                                                     <div className="p-4 bg-neutral-50 rounded-[20px] flex items-center gap-4 border border-neutral-100/50">
                                                         <div className="w-11 h-11 rounded-full bg-white flex items-center justify-center shadow-sm">
-                                                            <MapPin size={22} className="text-[#00A082]" />
+                                                            <MapPin size={22} className="text-[#219178]" />
                                                         </div>
                                                         <div className="flex-1">
                                                             <div className="text-[11px] font-black text-neutral-400 uppercase tracking-widest font-jakarta">Your Location</div>
@@ -926,7 +926,7 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
                                                         </div>
                                                         <div className="flex justify-between items-center font-jakarta">
                                                             <span className="text-[14px] font-bold text-neutral-500">Lbricol Fee (10%)</span>
-                                                            <span className="text-[15px] font-black text-[#00A082]">+ {Math.round((parseFloat(String(selectedOrder.totalPrice || 0)) - parseFloat(String(selectedOrder.basePrice || selectedOrder.price || 0))))} MAD</span>
+                                                            <span className="text-[15px] font-black text-[#219178]">+ {Math.round((parseFloat(String(selectedOrder.totalPrice || 0)) - parseFloat(String(selectedOrder.basePrice || selectedOrder.price || 0))))} MAD</span>
                                                         </div>
                                                         <div className="h-[1px] bg-neutral-100 my-1" />
                                                         <div className="flex justify-between items-center font-jakarta">
@@ -985,7 +985,7 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
                                             <div className="px-6 md:px-12 grid grid-cols-1 sm:grid-cols-2 gap-4">
                                                 <div className="p-6 rounded-3xl bg-neutral-50/50 border border-neutral-100 flex items-center gap-5 hover:bg-neutral-50 transition-colors group">
                                                     <div className="w-12 h-12 rounded-2xl bg-white flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform">
-                                                        <Clock className="text-[#00A082]" size={24} />
+                                                        <Clock className="text-[#219178]" size={24} />
                                                     </div>
                                                     <div>
                                                         <p className="text-[11px] font-black text-neutral-300 uppercase tracking-widest mb-1">{t({ en: 'Duration', fr: 'Durée', ar: 'المدة' })}</p>
@@ -995,7 +995,7 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
 
                                                 <div className="p-6 rounded-3xl bg-neutral-50/50 border border-neutral-100 flex items-center gap-5 hover:bg-neutral-50 transition-colors group">
                                                     <div className="w-12 h-12 rounded-2xl bg-white flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform">
-                                                        <CreditCard className="text-[#00A082]" size={24} />
+                                                        <CreditCard className="text-[#219178]" size={24} />
                                                     </div>
                                                     <div>
                                                         <p className="text-[11px] font-black text-neutral-300 uppercase tracking-widest mb-1">{t({ en: 'Price', fr: 'Prix', ar: 'الثمن' })}</p>
@@ -1005,7 +1005,7 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
 
                                                 <div className="p-6 rounded-3xl bg-neutral-50/50 border border-neutral-100 flex items-center gap-5 hover:bg-neutral-50 transition-colors group">
                                                     <div className="w-12 h-12 rounded-2xl bg-white flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform">
-                                                        <Wrench className="text-[#00A082]" size={24} />
+                                                        <Wrench className="text-[#219178]" size={24} />
                                                     </div>
                                                     <div>
                                                         <p className="text-[11px] font-black text-neutral-300 uppercase tracking-widest mb-1">{t({ en: 'Service', fr: 'Service', ar: 'الخدمة' })}</p>
@@ -1015,7 +1015,7 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
 
                                                 <div className="p-6 rounded-3xl bg-neutral-50/50 border border-neutral-100 flex items-center gap-5 hover:bg-neutral-50 transition-colors group">
                                                     <div className="w-12 h-12 rounded-2xl bg-white flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform">
-                                                        <Banknote className="text-[#00A082]" size={24} />
+                                                        <Banknote className="text-[#219178]" size={24} />
                                                     </div>
                                                     <div>
                                                         <p className="text-[11px] font-black text-neutral-300 uppercase tracking-widest mb-1">{t({ en: 'Payment', fr: 'Paiement', ar: 'الدفع' })}</p>
@@ -1035,7 +1035,7 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
                                                         <div className="flex flex-col gap-3">
                                                             <div className="p-4 bg-neutral-50 rounded-[20px] flex items-center gap-4 border border-neutral-100/50">
                                                                 <div className="w-11 h-11 rounded-full bg-white flex items-center justify-center shadow-sm">
-                                                                    <MapPin size={22} className="text-[#00A082]" />
+                                                                    <MapPin size={22} className="text-[#219178]" />
                                                                 </div>
                                                                 <div className="flex-1">
                                                                     <div className="text-[11px] font-black text-neutral-400 uppercase tracking-widest font-jakarta">Pickup</div>
@@ -1142,7 +1142,7 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
                             {/* Help link at the bottom */}
                             <button
                                 onClick={() => window.open('https://wa.me/212702814355', '_blank')}
-                                className="w-full text-center text-[13px] font-bold text-neutral-400 hover:text-[#00A082] transition-colors"
+                                className="w-full text-center text-[13px] font-bold text-neutral-400 hover:text-[#219178] transition-colors"
                             >
                                 {t({ en: '💬 Need help with this order?', fr: '💬 Besoin d\'aide pour cette commande ?', ar: '💬 تحتاج مساعدة في هذا الطلب؟' })}
                             </button>
@@ -1465,7 +1465,7 @@ function ActivityTab({
                         <span className={cn(
                             "px-2 py-0.5 text-[11px] font-black rounded-md uppercase tracking-wider",
                             (order.status === 'pending' && !order.providerConfirmed && progress === 100) ? "bg-orange-100 text-orange-600" : 
-                            isRentalInProgress ? "bg-rose-50 text-rose-500" : "bg-[#E6F7F4] text-[#00A082]"
+                            isRentalInProgress ? "bg-rose-50 text-rose-500" : "bg-[#E6F7F4] text-[#219178]"
                         )}>
                             {(() => {
                                 const isDelayedStatus = order.status === 'pending' && !order.providerConfirmed && progress === 100;
@@ -1522,7 +1522,7 @@ function ActivityTab({
                         {timeLeft && (
                             <span className={cn(
                                 "text-[12px] font-bold whitespace-nowrap mb-0.5",
-                                isRentalInProgress ? "text-rose-500" : "text-[#00A082]"
+                                isRentalInProgress ? "text-rose-500" : "text-[#219178]"
                             )}>
                                 ({timeLeft})
                             </span>
@@ -1541,7 +1541,7 @@ function ActivityTab({
                             }}
                             className={cn(
                                 "h-full rounded-full relative",
-                                isRentalInProgress ? "bg-rose-500" : "bg-[#00A082]"
+                                isRentalInProgress ? "bg-rose-500" : "bg-[#219178]"
                             )}
                         />
                     </div>
@@ -1598,7 +1598,7 @@ function ActivityTab({
                                             });
                                         }
                                     }}
-                                    className="w-full py-3 bg-[#00A082] text-white rounded-xl text-[14px] font-black flex items-center justify-center gap-2 transition-all active:scale-95"
+                                    className="w-full py-3 bg-[#219178] text-white rounded-xl text-[14px] font-black flex items-center justify-center gap-2 transition-all active:scale-95"
                                 >
                                     <RefreshCw size={16} />
                                     {t({ en: 'Select New Bricoler', fr: 'Choisir un nouveau Bricoleur', ar: 'اختر بريكولر جديد' })}
@@ -1671,7 +1671,7 @@ function ActivityTab({
                     <p className="text-[16px] font-light text-black leading-tight">{t({ en: 'Need to review past orders or reorder?', fr: 'Besoin de consulter vos commandes passées ?', ar: 'تريد مراجعة طلباتك السابقة أو إعادة الطلب؟' })}</p>
                     <button
                         onClick={onShowHistory}
-                        className="text-[17px] font-black text-[#00A082] mt-1 text-left decoration-[#00A082] decoration-2 underline-offset-4 hover:underline"
+                        className="text-[17px] font-black text-[#219178] mt-1 text-left decoration-[#219178] decoration-2 underline-offset-4 hover:underline"
                     >
                         {t({ en: 'Check your order history', fr: 'Voir l\'historique de commandes', ar: 'عرض سجل الطلبات' })}
                     </button>

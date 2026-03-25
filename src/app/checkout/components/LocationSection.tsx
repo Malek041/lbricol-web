@@ -28,7 +28,7 @@ export default function LocationSection({
       <div style={{ position: 'relative' }}>
         <LocationInput
           label="Where from?"
-          icon={<MapPin size={20} color="#01A083" />}
+          icon={<MapPin size={20} color="#219178" />}
           value={pickupLocation.address}
           results={searchResults.pickup}
           onSearch={(q) => onSearch(q, 'pickup')}

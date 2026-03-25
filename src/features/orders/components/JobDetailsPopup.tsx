@@ -219,24 +219,24 @@ const JobDetailsPopup: React.FC<JobDetailsPopupProps> = ({ job, onClose, onAccep
                         
                         {/* Selected Car Details section */}
                         {job.selectedCar && (
-                            <div className="bg-[#F0FBF8] rounded-2xl p-5 border border-[#00A082]/20 flex flex-col gap-4 mb-6">
+                            <div className="bg-[#F0FBF8] rounded-2xl p-5 border border-[#219178]/20 flex flex-col gap-4 mb-6">
                                 <div className="flex justify-between items-start">
                                     <div className="flex-1">
-                                        <h4 className="text-[12px] font-black text-[#00A082] uppercase tracking-wider mb-1">{t({ en: 'Rented Vehicle', fr: 'Véhicule Loué' })}</h4>
+                                        <h4 className="text-[12px] font-black text-[#219178] uppercase tracking-wider mb-1">{t({ en: 'Rented Vehicle', fr: 'Véhicule Loué' })}</h4>
                                         <p className="text-[20px] font-black text-black leading-tight">{job.selectedCar.brandName} {job.selectedCar.modelName}</p>
                                     </div>
                                     <div className="w-20 h-14 bg-white rounded-xl flex items-center justify-center p-2 border border-neutral-100 shadow-sm overflow-hidden flex-shrink-0 ml-4">
                                         <img src={job.selectedCar.modelImage || job.selectedCar.image} alt="car" className="w-full h-full object-contain" />
                                     </div>
                                 </div>
-                                <div className="flex items-center gap-6 pt-2 border-t border-[#00A082]/10">
+                                <div className="flex items-center gap-6 pt-2 border-t border-[#219178]/10">
                                     <div className="flex flex-col">
                                         <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-tighter">{t({ en: 'Daily Rate', fr: 'Prix/Jour' })}</span>
                                         <span className="text-[16px] font-black text-black">{job.selectedCar.pricePerDay || job.selectedCar.price} MAD</span>
                                     </div>
                                     <div className="flex flex-col items-end ml-auto">
                                         <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-tighter">{t({ en: 'Total Price', fr: 'Prix Total' })}</span>
-                                        <span className="text-[16px] font-black text-[#00A082]">
+                                        <span className="text-[16px] font-black text-[#219178]">
                                             {job.totalPrice || job.price} MAD
                                         </span>
                                     </div>
@@ -258,10 +258,10 @@ const JobDetailsPopup: React.FC<JobDetailsPopupProps> = ({ job, onClose, onAccep
 
                         {/* Moving Vehicle Details section */}
                         {job.movingVehicle && (
-                            <div className="bg-[#F0FBF8] rounded-2xl p-5 border border-[#00A082]/20 flex flex-col gap-4 mb-6">
+                            <div className="bg-[#F0FBF8] rounded-2xl p-5 border border-[#219178]/20 flex flex-col gap-4 mb-6">
                                 <div className="flex justify-between items-start">
                                     <div className="flex-1">
-                                        <h4 className="text-[12px] font-black text-[#00A082] uppercase tracking-wider mb-1">{t({ en: 'Requested Transport', fr: 'Transport Demandé' })}</h4>
+                                        <h4 className="text-[12px] font-black text-[#219178] uppercase tracking-wider mb-1">{t({ en: 'Requested Transport', fr: 'Transport Demandé' })}</h4>
                                         <p className="text-[20px] font-black text-black leading-tight">
                                            {(() => {
                                                const opts = {

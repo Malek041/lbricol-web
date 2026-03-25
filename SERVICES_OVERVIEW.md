@@ -12,7 +12,7 @@ The platform uses **Pricing Archetypes** to calculate costs automatically:
 4.  **Rental (`rental`)**: Price = `Rate × Days`.
 
 ### ⚡ Lbricol Service Fee
-A **10% service fee** is added to every order subtotal (rounded to the nearest whole number).
+A **15% service fee** is added to every order subtotal (rounded to the nearest whole number).
 
 ---
 
@@ -30,7 +30,7 @@ A **10% service fee** is added to every order subtotal (rounded to the nearest w
 - **Packing Services** (`hourly`)
 - **Furniture Moving Only** (`hourly`)
 
-### Handyman
+### Home repairs
 - **General Repairs** (`hourly`)
 - **Door & Lock Repair** (`fixed`)
 - **Furniture Fixes** (`fixed`)
@@ -101,6 +101,9 @@ A **10% service fee** is added to every order subtotal (rounded to the nearest w
 - **General Pickup & Drop-off** (`fixed`)
 - **Post Office / Mailing** (`fixed`)
 - **In-store Returns** (`fixed`)
+104: 
+105: > [!NOTE]
+106: > **Errands & Delivery Flow**: These services use a **Public Bidding Flow**. The "Service Provider" section and profiles are hidden during setup to focus on mission details. Matching happens after the order is submitted.
 
 ### Glass Cleaning
 - **Residential Glass** (`unit`)
@@ -166,6 +169,9 @@ A **10% service fee** is added to every order subtotal (rounded to the nearest w
 
 ### Intercity transport
 - **Public Bidding Flow**
+172: 
+173: > [!IMPORTANT]
+174: > **Go Services Matching**: Services like Courier, Airport Pickup, and Intercity Transport are submitted to the public pool. Bricolers bid on these missions, and clients are notified once a match is found.
 
 ---
 
@@ -199,4 +205,4 @@ A **10% service fee** is added to every order subtotal (rounded to the nearest w
 - **Medina Shopping Guide** (`hourly`)
 
 ---
-*Last Updated: March 2026*
+*Last Updated: March 24, 2026*

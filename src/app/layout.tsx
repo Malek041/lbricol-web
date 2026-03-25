@@ -1,18 +1,16 @@
 import type { Metadata } from "next";
-import { Noto_Sans_Arabic, Fredoka, Plus_Jakarta_Sans } from "next/font/google";
-import "@fontsource/inclusive-sans";
+import { Noto_Sans_Arabic, Inter, Plus_Jakarta_Sans, Inclusive_Sans } from "next/font/google";
 import "./globals.css";
 
-const fredoka = Fredoka({
+const inter = Inter({
   subsets: ["latin"],
-  variable: "--font-fredoka",
-  weight: ["300", "400", "500", "600", "700"],
+  variable: "--font-sans",
 });
 
-const fredokaBold = Fredoka({
+const plusJakartaSans = Plus_Jakarta_Sans({
   subsets: ["latin"],
-  variable: "--font-fredoka-bold",
-  weight: "700",
+  variable: "--font-plus-jakarta",
+  weight: ["300", "400", "500", "600", "700", "800"],
 });
 
 const notoSansArabic = Noto_Sans_Arabic({
@@ -21,10 +19,10 @@ const notoSansArabic = Noto_Sans_Arabic({
   weight: ["400", "500", "600", "700", "800", "900"],
 });
 
-const plusJakartaSans = Plus_Jakarta_Sans({
+const inclusiveSans = Inclusive_Sans({
   subsets: ["latin"],
-  variable: "--font-plus-jakarta",
-  weight: ["300", "400", "500", "600", "700", "800"],
+  variable: "--font-inclusive-sans",
+  weight: ["400"],
 });
 
 export const metadata: Metadata = {
@@ -46,7 +44,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body suppressHydrationWarning={true} className={`${fredoka.variable} ${fredokaBold.variable} ${plusJakartaSans.variable} ${notoSansArabic.variable} font-sans antialiased bg-white text-gray-900`}>
+      <body suppressHydrationWarning={true} className={`${inter.variable} ${plusJakartaSans.variable} ${inclusiveSans.variable} ${notoSansArabic.variable} font-sans antialiased bg-white text-gray-900`}>
         <Providers>
           {children}
         </Providers>

@@ -19,33 +19,31 @@ export async function getRoadDistance(
   toLat: number, toLng: number
 ): Promise<{ distanceKm: number; durationMinutes: number }> {
   try {
-    const apiKey = process.env.NEXT_PUBLIC_ORS_API_KEY;
-    if (!apiKey) throw new Error('ORS API key not set');
-
+    // Switch to OSRM (free, no key needed, consistent with MapView)
     const res = await fetch(
-      `https://api.openrouteservice.org/v2/directions/driving-car` +
-      `?api_key=${apiKey}` +
-      `&start=${fromLng},${fromLat}` +
-      `&end=${toLng},${toLat}`
+      `https://router.project-osrm.org/route/v1/driving/` +
+      `${fromLng},${fromLat};${toLng},${toLat}` +
+      `?overview=false`
     );
 
-    if (!res.ok) throw new Error(`ORS error: ${res.status}`);
+    if (!res.ok) throw new Error(`OSRM error: ${res.status}`);
 
     const data = await res.json();
-    const segment = data.features?.[0]?.properties?.segments?.[0];
-    if (!segment) throw new Error('No route found');
+    if (data.code !== 'Ok' || !data.routes?.[0]) throw new Error('No route found');
+
+    const route = data.routes[0];
+    const durationMin = Math.round(route.duration / 60);
 
     return {
-      distanceKm: Math.round(segment.distance / 100) / 10,
-      durationMinutes: Math.round(segment.duration / 60),
+      distanceKm: Number((route.distance / 1000).toFixed(1)),
+      durationMinutes: Math.max(1, durationMin), // Minimum 1 minute
     };
   } catch (error) {
     console.warn('Road distance calculation failed, using fallback:', error);
-    // Fallback to haversine estimate if API fails or key missing
     const straight = calculateDistance(fromLat, fromLng, toLat, toLng);
     return {
       distanceKm: straight,
-      durationMinutes: Math.round(straight * 3), // rough estimate: 3 min per km
+      durationMinutes: Math.max(1, Math.round(straight * 3)), // rough estimate: 3 min per km
     };
   }
 }

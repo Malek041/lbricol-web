@@ -49,7 +49,7 @@ const ServiceOptionCard: React.FC<ServiceOptionCardProps> = ({ option, isSelecte
             className={cn(
                 "w-full p-5 rounded-[24px] border-2 text-left transition-all cursor-pointer flex flex-col gap-2",
                 isSelected
-                    ? "border-[#00A082] bg-[#F0FBF8] shadow-md"
+                    ? "border-[#219178] bg-[#F0FBF8] shadow-md"
                     : "border-neutral-100 bg-white hover:border-neutral-200"
             )}
         >
@@ -70,7 +70,7 @@ const ServiceOptionCard: React.FC<ServiceOptionCardProps> = ({ option, isSelecte
                 </p>
             )}
             {isSelected && (
-                <div className="w-full h-0.5 bg-[#00A082]/20 rounded-full" />
+                <div className="w-full h-0.5 bg-[#219178]/20 rounded-full" />
             )}
         </motion.button>
     );

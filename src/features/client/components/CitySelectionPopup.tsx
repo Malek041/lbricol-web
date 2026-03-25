@@ -99,7 +99,7 @@ const CitySelectionPopup = ({ isOpen, onSelectCity, onClose }: CitySelectionPopu
                                     }
                                 </h2>
                                 {step === 'area' && selectedArea && (
-                                    <p className="text-[12px] text-[#00A082] font-bold">
+                                    <p className="text-[12px] text-[#219178] font-bold">
                                         {t({ en: `${selectedArea} selected`, fr: `${selectedArea} sélectionné`, ar: `تم اختيار ${selectedArea}` })}
                                     </p>
                                 )}
@@ -125,7 +125,7 @@ const CitySelectionPopup = ({ isOpen, onSelectCity, onClose }: CitySelectionPopu
                                                     key={city}
                                                     whileTap={{ scale: 0.98 }}
                                                     onClick={() => handleCityClick(city)}
-                                                    className="flex items-center gap-3 w-full px-4 py-3.5 rounded-2xl border-2 border-neutral-100 bg-neutral-50 hover:border-[#00A082] hover:bg-[#00A082]/5 transition-all text-left"
+                                                    className="flex items-center gap-3 w-full px-4 py-3.5 rounded-2xl border-2 border-neutral-100 bg-neutral-50 hover:border-[#219178] hover:bg-[#219178]/5 transition-all text-left"
                                                 >
                                                     <MapPin size={16} className="text-neutral-400 flex-shrink-0" />
                                                     <span className="text-[15px] font-bold text-neutral-900">{getCityLabel(city)}</span>
@@ -141,7 +141,7 @@ const CitySelectionPopup = ({ isOpen, onSelectCity, onClose }: CitySelectionPopu
                                             {t({ en: 'Select your neighbourhood for better matching', fr: 'Sélectionnez votre quartier pour un meilleur matching', ar: 'اختر حيّك للحصول على مطابقة أفضل' })}
                                         </p>
                                         {/* Search */}
-                                        <div className="flex items-center gap-3 bg-neutral-50 border-2 border-neutral-200 rounded-2xl px-4 py-3 focus-within:border-[#00A082] transition-colors">
+                                        <div className="flex items-center gap-3 bg-neutral-50 border-2 border-neutral-200 rounded-2xl px-4 py-3 focus-within:border-[#219178] transition-colors">
                                             <Search size={16} className="text-neutral-400 flex-shrink-0" />
                                             <input
                                                 type="text"
@@ -159,8 +159,8 @@ const CitySelectionPopup = ({ isOpen, onSelectCity, onClose }: CitySelectionPopu
                                                 <button
                                                     onClick={() => setSelectedArea(areaSearch.trim())}
                                                     className={cn(
-                                                        'col-span-2 flex items-center justify-center gap-2 px-3 py-3 rounded-xl border-2 border-dashed border-[#00A082] text-[13px] font-bold text-[#00A082] bg-[#00A082]/5 transition-all mb-1',
-                                                        selectedArea === areaSearch.trim() ? 'bg-[#00A082] text-white border-[#00A082]' : ''
+                                                        'col-span-2 flex items-center justify-center gap-2 px-3 py-3 rounded-xl border-2 border-dashed border-[#219178] text-[13px] font-bold text-[#219178] bg-[#219178]/5 transition-all mb-1',
+                                                        selectedArea === areaSearch.trim() ? 'bg-[#219178] text-white border-[#219178]' : ''
                                                     )}
                                                 >
                                                     {selectedArea === areaSearch.trim() ? <Check size={12} strokeWidth={3} /> : <Search size={12} />}
@@ -176,7 +176,7 @@ const CitySelectionPopup = ({ isOpen, onSelectCity, onClose }: CitySelectionPopu
                                                         onClick={() => setSelectedArea(area)}
                                                         className={cn(
                                                             'flex items-center gap-1.5 px-3 py-2.5 rounded-xl border-2 text-[13px] font-semibold text-left transition-all',
-                                                            sel ? 'bg-[#00A082] text-white border-[#00A082]' : 'bg-neutral-50 text-neutral-800 border-neutral-100 hover:border-neutral-300'
+                                                            sel ? 'bg-[#219178] text-white border-[#219178]' : 'bg-neutral-50 text-neutral-800 border-neutral-100 hover:border-neutral-300'
                                                         )}
                                                     >
                                                         {sel && <Check size={12} strokeWidth={3} className="flex-shrink-0" />}
@@ -200,7 +200,7 @@ const CitySelectionPopup = ({ isOpen, onSelectCity, onClose }: CitySelectionPopu
                                     whileTap={{ scale: 0.97 }}
                                     onClick={handleConfirmArea}
                                     disabled={!selectedArea}
-                                    className="w-full h-13 bg-[#00A082] disabled:bg-neutral-200 text-white disabled:text-neutral-400 rounded-2xl text-[16px] font-black py-4 transition-all"
+                                    className="w-full h-13 bg-[#219178] disabled:bg-neutral-200 text-white disabled:text-neutral-400 rounded-2xl text-[16px] font-black py-4 transition-all"
                                 >
                                     {t({ en: `Confirm Area`, fr: `Confirmer le quartier`, ar: 'تأكيد الحي' })}
                                 </motion.button>

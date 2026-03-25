@@ -95,7 +95,7 @@ export default function ProviderJobCard({
                 <div className="flex items-center gap-2 mb-1">
                     <span className={cn(
                         "px-2 py-0.5 text-[10px] font-black rounded-md uppercase tracking-wider",
-                        isOffer ? "bg-amber-50 text-amber-600" : (isToday(parseISO(order.date || '')) && !isDone ? "bg-[#E6F7F4] text-[#00A082]" : (isDone ? "bg-emerald-50 text-emerald-600" : "bg-blue-50 text-blue-600"))
+                        isOffer ? "bg-amber-50 text-amber-600" : (isToday(parseISO(order.date || '')) && !isDone ? "bg-[#E6F7F4] text-[#219178]" : (isDone ? "bg-emerald-50 text-emerald-600" : "bg-blue-50 text-blue-600"))
                     )}>
                         {isOffer ? t({ en: 'Active Offer', fr: 'Offre active' }) : (isDone ? t({ en: 'Delivered', fr: 'Livrée' }) : (isToday(parseISO(order.date || '')) ? t({ en: 'In Progress', fr: 'En cours' }) : t({ en: 'Scheduled', fr: 'Programmée' })))}
                     </span>
@@ -139,7 +139,7 @@ export default function ProviderJobCard({
                                 {order.time || '12:00-13:00'}
                             </p>
                             {timeLeft && !isDone && (
-                                <span className="text-[12px] font-bold text-[#00A082]">
+                                <span className="text-[12px] font-bold text-[#219178]">
                                     ({timeLeft})
                                 </span>
                             )}
@@ -163,7 +163,7 @@ export default function ProviderJobCard({
                             transition={{
                                 width: { duration: 1, ease: "easeOut" }
                             }}
-                            className="h-full bg-[#00A082] rounded-full relative overflow-hidden"
+                            className="h-full bg-[#219178] rounded-full relative overflow-hidden"
                         >
                             <motion.div
                                 animate={{ x: ['-200%', '200%'] }}
@@ -194,7 +194,7 @@ export default function ProviderJobCard({
                                 e.stopPropagation();
                                 if (order.id) onConfirm?.(order.id);
                             }}
-                            className="w-10 h-10 rounded-full bg-[#00A082] text-white flex items-center justify-center shadow-md hover:bg-[#008f75] active:scale-95 transition-all"
+                            className="w-10 h-10 rounded-full bg-[#219178] text-white flex items-center justify-center shadow-md hover:bg-[#008f75] active:scale-95 transition-all"
                         >
                             <Check size={18} strokeWidth={3} />
                         </button>
@@ -209,7 +209,7 @@ export default function ProviderJobCard({
                                 e.stopPropagation();
                                 if (order.id) onConfirm?.(order.id);
                             }}
-                            className="px-6 py-2 rounded-full bg-[#00A082] text-white text-[14px] font-black shadow-md hover:bg-[#008f75] active:scale-95 transition-all"
+                            className="px-6 py-2 rounded-full bg-[#219178] text-white text-[14px] font-black shadow-md hover:bg-[#008f75] active:scale-95 transition-all"
                         >
                             {t({ en: 'Confirm Mission', fr: 'Confirmer la mission' })}
                         </button>

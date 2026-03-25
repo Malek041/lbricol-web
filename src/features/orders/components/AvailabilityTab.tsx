@@ -210,7 +210,7 @@ export default function AvailabilityTab({
                                 className={cn(
                                     "flex flex-col items-center py-3 rounded-2xl relative transition-all border",
                                     isSelected
-                                        ? "bg-[#00A082] border-[#00A082]"
+                                        ? "bg-[#219178] border-[#219178]"
                                         : isTodayDay
                                             ? "bg-[#E6F7F4] border-[#E6F7F4]"
                                             : "bg-white border-transparent hover:border-neutral-100"
@@ -219,7 +219,7 @@ export default function AvailabilityTab({
                                 <span className={cn("text-[10px] font-black uppercase tracking-wider mb-1", isSelected ? "text-white/70" : "text-neutral-400")}>
                                     {day.dayLabel}
                                 </span>
-                                <span className={cn("text-[18px] font-black", isSelected ? "text-white" : isTodayDay ? "text-[#00A082]" : "text-black")}>
+                                <span className={cn("text-[18px] font-black", isSelected ? "text-white" : isTodayDay ? "text-[#219178]" : "text-black")}>
                                     {day.dayNum}
                                 </span>
                                 {hasJobs && !isSelected && (
@@ -257,7 +257,7 @@ export default function AvailabilityTab({
                                     key={`${slot.from}-${idx}`}
                                     initial={{ opacity: 0, scale: 0.9 }}
                                     animate={{ opacity: 1, scale: 1 }}
-                                    className="absolute left-2 right-4 rounded-xl bg-[#E6F7F4] border-l-4 border-[#00A082] p-3 shadow-sm z-10 group"
+                                    className="absolute left-2 right-4 rounded-xl bg-[#E6F7F4] border-l-4 border-[#219178] p-3 shadow-sm z-10 group"
                                     style={{
                                         top: getTimePosition(slot.from) + 2,
                                         height: getTimeHeight(slot.from, slot.to) - 4
@@ -265,18 +265,18 @@ export default function AvailabilityTab({
                                 >
                                     <div className="flex flex-col h-full relative">
                                         <div className="flex items-center justify-between">
-                                            <span className="text-[14px] font-black text-[#00A082]">{t({ en: 'Available', fr: 'Disponible', ar: 'متاح' })}</span>
+                                            <span className="text-[14px] font-black text-[#219178]">{t({ en: 'Available', fr: 'Disponible', ar: 'متاح' })}</span>
                                             <button
                                                 onClick={(e) => {
                                                     e.stopPropagation();
                                                     handleDeleteSlot(slot);
                                                 }}
-                                                className="w-6 h-6 rounded-full bg-white/50 flex items-center justify-center text-[#00A082] hover:bg-[#00A082] hover:text-white transition-all active:scale-90"
+                                                className="w-6 h-6 rounded-full bg-white/50 flex items-center justify-center text-[#219178] hover:bg-[#219178] hover:text-white transition-all active:scale-90"
                                             >
                                                 <X size={14} strokeWidth={3} />
                                             </button>
                                         </div>
-                                        <span className="text-[12px] font-bold text-[#00A082]/80 mt-1">
+                                        <span className="text-[12px] font-bold text-[#219178]/80 mt-1">
                                             {slot.from} - {slot.to}
                                         </span>
                                     </div>
@@ -343,7 +343,7 @@ export default function AvailabilityTab({
                                     </button>
                                     <button
                                         onClick={handleAllDay}
-                                        className="px-4 py-2 bg-[#E6F7F4] text-[#00A082] text-[14px] font-black rounded-xl"
+                                        className="px-4 py-2 bg-[#E6F7F4] text-[#219178] text-[14px] font-black rounded-xl"
                                     >
                                         {t({ en: 'All day', fr: 'Toute la journée', ar: 'طوال اليوم' })}
                                     </button>
@@ -379,7 +379,7 @@ export default function AvailabilityTab({
                                                         className={cn(
                                                             "h-12 rounded-xl border flex items-center justify-center text-[14px] font-black transition-all",
                                                             isSelected
-                                                                ? "bg-[#00A082] border-[#00A082] text-white"
+                                                                ? "bg-[#219178] border-[#219178] text-white"
                                                                 : isPast
                                                                     ? "bg-neutral-50 border-neutral-100 text-neutral-300 opacity-50"
                                                                     : "bg-white border-[#F0F0F0] text-black"
@@ -397,7 +397,7 @@ export default function AvailabilityTab({
                             <div className="pt-8 pb-10">
                                 <button
                                     onClick={handleProgram}
-                                    className="w-full py-4 bg-[#00A082] text-white rounded-2xl text-[18px] font-black shadow-lg shadow-[#00A082]/20 active:scale-95 transition-transform"
+                                    className="w-full py-4 bg-[#219178] text-white rounded-2xl text-[18px] font-black shadow-lg shadow-[#219178]/20 active:scale-95 transition-transform"
                                 >
                                     {t({ en: 'Save Availability', fr: 'Enregistrer la disponibilité', ar: 'حفظ الجاهزية' })}
                                 </button>

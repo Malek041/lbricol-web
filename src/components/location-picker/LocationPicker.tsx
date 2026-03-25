@@ -275,7 +275,7 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
         {/* New Locator Button relative to sheet */}
         <button
           onClick={handleLocate}
-          className="absolute -top-14 right-6 w-12 h-12 bg-white rounded-full shadow-xl border border-neutral-100 flex items-center justify-center text-[#00A082] active:scale-90 transition-all z-[100]"
+          className="absolute -top-14 right-6 w-12 h-12 bg-white rounded-full shadow-xl border border-neutral-100 flex items-center justify-center text-[#219178] active:scale-90 transition-all z-[100]"
         >
           {isLocating ? (
             <Loader2 size={22} className="animate-spin text-black" />
@@ -314,7 +314,7 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
                         }}
                         className={cn(
                           "py-3 rounded-[12px] border-2 text-center transition-all flex flex-col items-center justify-center",
-                          selectedRadius === radius ? 'bg-[#E6F6F2] text-[#00A082] border-[#00A082]' : 'bg-white text-neutral-900 border-neutral-100 hover:border-neutral-200'
+                          selectedRadius === radius ? 'bg-[#E6F6F2] text-[#219178] border-[#219178]' : 'bg-white text-neutral-900 border-neutral-100 hover:border-neutral-200'
                         )}
                       >
                         <span className="text-lg font-black leading-none">{radius}</span>
@@ -334,13 +334,13 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
                 >
                   <button
                     onClick={handleConfirmPoint}
-                    className="w-full h-15 bg-[#00A082] text-white rounded-full font-black text-[18px] active:scale-95 transition-all shadow-lg"
+                    className="w-full h-15 bg-[#219178] text-white rounded-full font-black text-[18px] active:scale-95 transition-all shadow-lg"
                   >
                     Confirm This Location
                   </button>
                   <button
                     onClick={() => setShowSearchInput(true)}
-                    className="w-full mt-4 text-[#00A082] font-bold text-[18px] transition-all"
+                    className="w-full mt-4 text-[#219178] font-bold text-[18px] transition-all"
                   >
                     Set Another address
                   </button>

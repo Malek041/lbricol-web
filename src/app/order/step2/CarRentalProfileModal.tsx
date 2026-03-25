@@ -241,26 +241,26 @@ export function CarRentalProfileModal({
                                 onClick={() => setActiveTab('setup')}
                                 style={{
                                     flex: 1, padding: '12px 0', border: 'none', background: 'transparent',
-                                    fontSize: 14, fontWeight: 900, color: activeTab === 'setup' ? '#01A083' : '#9CA3AF',
+                                    fontSize: 14, fontWeight: 900, color: activeTab === 'setup' ? '#219178' : '#9CA3AF',
                                     position: 'relative', cursor: 'pointer'
                                 }}
                             >
                                 Order Setup
                                 {activeTab === 'setup' && (
-                                    <motion.div layoutId="tab-underline" style={{ position: 'absolute', bottom: -12, left: 0, right: 0, height: 3, background: '#01A083' }} />
+                                    <motion.div layoutId="tab-underline" style={{ position: 'absolute', bottom: -12, left: 0, right: 0, height: 3, background: '#219178' }} />
                                 )}
                             </button>
                             <button
                                 onClick={() => setActiveTab('details')}
                                 style={{
                                     flex: 1, padding: '12px 0', border: 'none', background: 'transparent',
-                                    fontSize: 14, fontWeight: 900, color: activeTab === 'details' ? '#01A083' : '#9CA3AF',
+                                    fontSize: 14, fontWeight: 900, color: activeTab === 'details' ? '#219178' : '#9CA3AF',
                                     position: 'relative', cursor: 'pointer'
                                 }}
                             >
                                 Bricoler Details
                                 {activeTab === 'details' && (
-                                    <motion.div layoutId="tab-underline" style={{ position: 'absolute', bottom: -12, left: 0, right: 0, height: 3, background: '#01A083' }} />
+                                    <motion.div layoutId="tab-underline" style={{ position: 'absolute', bottom: -12, left: 0, right: 0, height: 3, background: '#219178' }} />
                                 )}
                             </button>
                         </div>
@@ -294,7 +294,7 @@ export function CarRentalProfileModal({
                                                         {effectiveJobs} Missions
                                                     </span>
                                                 </div>
-                                                <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, color: '#01A083' }}>
+                                                <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, color: '#219178' }}>
                                                     <span style={{ fontSize: 20, fontWeight: 900 }}>MAD {displayRate}</span>
                                                     <span style={{ fontSize: 14, fontWeight: 700, color: '#6B7280' }}>(min)</span>
                                                 </div>
@@ -325,7 +325,7 @@ export function CarRentalProfileModal({
                                         <div style={{ marginBottom: 32 }}>
                                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
                                                 <h4 style={{ fontSize: 18, fontWeight: 900, color: '#111827', margin: 0 }}>Reviews</h4>
-                                                <div style={{ fontSize: 14, fontWeight: 800, color: '#01A083' }}>★ {effectiveRating}</div>
+                                                <div style={{ fontSize: 14, fontWeight: 800, color: '#219178' }}>★ {effectiveRating}</div>
                                             </div>
 
                                             <div style={{ display: 'flex', overflowX: 'auto', gap: 16, margin: '0 -24px', padding: '0 24px 8px' }} className="no-scrollbar">
@@ -444,7 +444,7 @@ export function CarRentalProfileModal({
                                                                         onClick={() => available && setLocalSelectedCar(car)}
                                                                         style={{
                                                                             flex: '0 0 160px',
-                                                                            border: isSelectedCar ? '2px solid #01A083' : '1px solid #E5E7EB',
+                                                                            border: isSelectedCar ? '2px solid #219178' : '1px solid #E5E7EB',
                                                                             background: isSelectedCar ? '#F0FDF4' : (available ? '#fff' : '#F9FAFB'),
                                                                             borderRadius: 5, padding: 12, cursor: available ? 'pointer' : 'not-allowed', position: 'relative',
                                                                             opacity: available ? 1 : 0.5
@@ -455,7 +455,7 @@ export function CarRentalProfileModal({
                                                                         </div>
                                                                         <div style={{ fontSize: 12, fontWeight: 900, color: '#111827', textTransform: 'uppercase', marginBottom: 4, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{car.modelName}</div>
                                                                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                                            <div style={{ fontSize: 11, fontWeight: 900, color: '#01A083' }}>{car.pricePerDay || car.price} MAD/j</div>
+                                                                            <div style={{ fontSize: 11, fontWeight: 900, color: '#219178' }}>{car.pricePerDay || car.price} MAD/j</div>
                                                                             <div style={{ fontSize: 10, fontWeight: 800, color: '#9CA3AF' }}>x{car.quantity || 1}</div>
                                                                         </div>
                                                                         {(!pickupDate || !pickupTime || !returnDate || !returnTime) ? (
@@ -464,7 +464,7 @@ export function CarRentalProfileModal({
                                                                             <div style={{ marginTop: 4, fontSize: 9, fontWeight: 800, color: '#EF4444' }}>Not Available</div>
                                                                         )}
                                                                         {isSelectedCar && (
-                                                                            <div style={{ position: 'absolute', top: 8, right: 8, width: 20, height: 20, background: '#01A083', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                                                            <div style={{ position: 'absolute', top: 8, right: 8, width: 20, height: 20, background: '#219178', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                                                                 <Check size={12} color="#fff" strokeWidth={4} />
                                                                             </div>
                                                                         )}
@@ -502,7 +502,7 @@ export function CarRentalProfileModal({
                                 disabled={!localSelectedCar || isSplashing}
                                 style={{
                                     width: '100%', height: 56, borderRadius: 28, fontSize: 18, fontWeight: 900, cursor: localSelectedCar ? 'pointer' : 'not-allowed',
-                                    background: localSelectedCar ? '#01A083' : '#F3F4F6', color: localSelectedCar ? '#fff' : '#9CA3AF', border: 'none',
+                                    background: localSelectedCar ? '#219178' : '#F3F4F6', color: localSelectedCar ? '#fff' : '#9CA3AF', border: 'none',
                                     display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8
                                 }}
                             >
@@ -686,7 +686,7 @@ function WheelPicker({ type, initialDate, initialTime, isDayDisabled, isTimeEnab
                     }}
                     style={{
                         width: '100%', height: 60, borderRadius: 5,
-                        background: '#01A083', color: '#ffffffff',
+                        background: '#219178', color: '#ffffffff',
                         fontSize: 20, fontWeight: 900, border: 'none', cursor: 'pointer',
                     }}
                 >

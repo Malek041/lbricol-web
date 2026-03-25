@@ -70,7 +70,7 @@ const OrderSummary: React.FC<OrderSummaryProps> = ({
                     <span className="text-[18px] font-black text-neutral-950">
                         {t({ en: 'Total Price', fr: 'Prix Total', ar: 'السعر الإجمالي' })}
                     </span>
-                    <span className="text-[24px] font-black text-[#00A082]">MAD {totalPrice}</span>
+                    <span className="text-[24px] font-black text-[#219178]">MAD {totalPrice}</span>
                 </div>
             </div>
         </div>

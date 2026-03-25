@@ -141,7 +141,7 @@ const ShareAndEarnView: React.FC<ShareAndEarnViewProps> = ({
                         <strong className="font-black">{REFERRER_REWARD}</strong>
                         {t({ en: ' for each friend you refer', fr: ' pour chaque ami parrainé', ar: ' مقابل كل صديق تدعوه' })}
                         <br />
-                        <span className="text-[22px] font-light text-neutral-400">{t({ en: 'Your friend gets ', fr: 'Votre ami obtient ', ar: 'صديقك يحصل على ' })}<strong className="font-black text-[#00A082]">{NEW_USER_DISCOUNT} OFF</strong>{t({ en: ' their first order', fr: ' leur première commande', ar: ' خصماً على أول طلب' })}</span>
+                        <span className="text-[22px] font-light text-neutral-400">{t({ en: 'Your friend gets ', fr: 'Votre ami obtient ', ar: 'صديقك يحصل على ' })}<strong className="font-black text-[#219178]">{NEW_USER_DISCOUNT} OFF</strong>{t({ en: ' their first order', fr: ' leur première commande', ar: ' خصماً على أول طلب' })}</span>
                     </motion.h1>
 
                     <motion.p
@@ -179,8 +179,8 @@ const ShareAndEarnView: React.FC<ShareAndEarnViewProps> = ({
                         <button
                             onClick={handleCopy}
                             className={`px-6 py-4 font-bold text-[16px] flex items-center gap-2 transition-all active:scale-95 ${copied
-                                ? 'text-white bg-[#00A082]'
-                                : 'text-[#00A082] bg-[#00A082]/5 hover:bg-[#00A082]/10'
+                                ? 'text-white bg-[#219178]'
+                                : 'text-[#219178] bg-[#219178]/5 hover:bg-[#219178]/10'
                                 }`}
                         >
                             {copied ? (

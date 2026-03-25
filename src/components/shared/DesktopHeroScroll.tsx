@@ -166,7 +166,7 @@ export const DesktopHeroScroll = ({ onOrderClick, onBecomeBricolerClick }: Props
                             fontWeight: 800,
                             color: '#111111',
                             letterSpacing: '-0.03em',
-                            fontFamily: '"Fredoka", var(--font-sans)',
+                            fontFamily: 'var(--font-sans-one), var(--font-sans)',
                         }}>
                             Lbricol
                         </span>
@@ -307,7 +307,7 @@ export const DesktopHeroScroll = ({ onOrderClick, onBecomeBricolerClick }: Props
                                     {/* Title inside image — bottom left */}
                                     <div style={{ position: 'absolute', bottom: '20px', left: '24px' }}>
                                         <h2 style={{
-                                            fontFamily: '"Fredoka", var(--font-sans)',
+                                            fontFamily: 'var(--font-sans-one), var(--font-sans)',
                                             fontWeight: 700,
                                             fontSize: 'clamp(32px, 4.5vw, 64px)',
                                             lineHeight: 1,

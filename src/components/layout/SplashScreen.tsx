@@ -48,7 +48,7 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ subStatus }) => {
                         fontSize: 'clamp(38px, 10vw, 76px)',
                         fontWeight: 650,
                         color: '#017C3E',
-                        fontFamily: 'var(--font-fredoka-one), sans-serif',
+                        fontFamily: 'var(--font-sans-one), sans-serif',
                         marginTop: '-40px', // Pull it up to overlap slightly with the animation base
                         letterSpacing: '-0.04em'
                     }}
@@ -62,7 +62,7 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ subStatus }) => {
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.5, delay: 0.5 }}
                         style={{
-                            color: '#00A082', // Dark Green
+                            color: '#219178', // Dark Green
                             fontSize: 'clamp(14px, 3.5vw, 16px)',
                             fontWeight: 800,
                             textAlign: 'center',

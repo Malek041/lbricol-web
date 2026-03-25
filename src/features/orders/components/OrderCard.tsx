@@ -200,16 +200,16 @@ const OrderCard = ({ order, onCancel }: OrderCardProps) => {
                                         display: 'flex', 
                                         gap: '15px', 
                                         padding: '12px 16px', 
-                                        backgroundColor: theme === 'light' ? '#00A08208' : '#00A08215', 
+                                        backgroundColor: theme === 'light' ? '#21917808' : '#21917815', 
                                         borderRadius: '16px', 
-                                        border: `1px dashed ${theme === 'light' ? '#00A08233' : '#00A08255'}`,
+                                        border: `1px dashed ${theme === 'light' ? '#21917833' : '#21917855'}`,
                                         marginTop: '4px'
                                     }}>
                                         <div style={{ flex: 1 }}>
-                                            <span style={{ fontSize: '10px', fontWeight: 900, color: '#00A082', textTransform: 'uppercase', letterSpacing: '0.1em', display: 'block', marginBottom: '2px' }}>{t({ en: 'Pickup', fr: 'Départ', ar: 'الاستلام' })}</span>
+                                            <span style={{ fontSize: '10px', fontWeight: 900, color: '#219178', textTransform: 'uppercase', letterSpacing: '0.1em', display: 'block', marginBottom: '2px' }}>{t({ en: 'Pickup', fr: 'Départ', ar: 'الاستلام' })}</span>
                                             <div style={{ fontSize: '13px', fontWeight: 800, color: c.text }}>{order.date} <span style={{ opacity: 0.6 }}>{order.time}</span></div>
                                         </div>
-                                        <div style={{ width: '1px', backgroundColor: theme === 'light' ? '#00A08222' : '#00A08244' }} />
+                                        <div style={{ width: '1px', backgroundColor: theme === 'light' ? '#21917822' : '#21917844' }} />
                                         <div style={{ flex: 1 }}>
                                             <span style={{ fontSize: '10px', fontWeight: 900, color: '#008C74', textTransform: 'uppercase', letterSpacing: '0.1em', display: 'block', marginBottom: '2px' }}>{t({ en: 'Return', fr: 'Retour', ar: 'الاسترجاع' })}</span>
                                             <div style={{ fontSize: '13px', fontWeight: 800, color: c.text }}>{order.carReturnDate} <span style={{ opacity: 0.6 }}>{order.carReturnTime}</span></div>
@@ -263,7 +263,7 @@ const OrderCard = ({ order, onCancel }: OrderCardProps) => {
                         </span>
                     )}
                     {order.movingVehicle && (
-                        <span style={{ marginLeft: '12px', fontSize: '13px', backgroundColor: '#00A08215', padding: '2px 8px', borderRadius: '4px', color: '#00A082', fontWeight: 700 }}>
+                        <span style={{ marginLeft: '12px', fontSize: '13px', backgroundColor: '#21917815', padding: '2px 8px', borderRadius: '4px', color: '#219178', fontWeight: 700 }}>
                             {(() => {
                                 const opts = {
                                     triporteur: { en: '🛵 Triporteur', fr: '🛵 Triporteur', ar: '🛵 تربورتور' },

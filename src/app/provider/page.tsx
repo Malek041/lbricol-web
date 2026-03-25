@@ -407,22 +407,27 @@ export default function ProviderPage() {
     }, []);
 
     const parseDateTime = useCallback((rawDate?: string, rawTime?: string, createdAt?: any) => {
-        if (createdAt?.seconds) return createdAt.seconds * 1000;
-        if (!rawDate) return 0;
+        // Priority 1: Appointment Date & Time
+        if (rawDate && rawDate !== '') {
+            let datePart = rawDate;
+            let timePart = rawTime || '';
+            if (rawDate.includes(' at ')) {
+                const [d, t] = rawDate.split(' at ');
+                datePart = d;
+                timePart = timePart || t || '';
+            }
 
-        let datePart = rawDate;
-        let timePart = rawTime || '';
-        if (rawDate.includes(' at ')) {
-            const [d, t] = rawDate.split(' at ');
-            datePart = d;
-            timePart = timePart || t || '';
+            const isoCandidate = /^\d{4}-\d{2}-\d{2}$/.test(datePart)
+                ? `${datePart}T${timePart || '00:00'}`
+                : `${datePart}${timePart ? ` ${timePart}` : ''}`;
+            const parsed = Date.parse(isoCandidate);
+            if (!Number.isNaN(parsed)) return parsed;
         }
 
-        const isoCandidate = /^\d{4}-\d{2}-\d{2}$/.test(datePart)
-            ? `${datePart}T${timePart || '00:00'}`
-            : `${datePart}${timePart ? ` ${timePart}` : ''}`;
-        const parsed = Date.parse(isoCandidate);
-        return Number.isNaN(parsed) ? 0 : parsed;
+        // Priority 2: Creation Timestamp (fallback for sorting/legacy)
+        if (createdAt?.seconds) return createdAt.seconds * 1000;
+        
+        return 0;
     }, []);
 
     // --- Filtered & Sorted Lists ---
@@ -818,57 +823,6 @@ export default function ProviderPage() {
         return () => unsubscribe();
     }, [user]);
 
-    useEffect(() => {
-        if (!user || acceptedJobs.length === 0) return;
-
-        const checkAutoDeliver = async () => {
-            const now = new Date();
-            const programmedJobs = acceptedJobs.filter(j =>
-                ((j.status as any) === 'confirmed' || (j.status as any) === 'programmed' || (j.status as any) === 'accepted') &&
-                j.date
-            );
-
-            for (const job of programmedJobs) {
-                try {
-                    // estimatedDuration might be on the job or fallback to 2 hours
-                    const durationStr = job.duration || '2';
-                    const durationHours = parseFloat(durationStr.replace(/[^0-9.]/g, '')) || 2;
-
-                    const startTs = parseDateTime(job.date, job.time);
-                    if (!startTs) continue;
-
-                    let endTs = startTs + (durationHours * 60 * 60 * 1000);
-
-                    const isCarRental = job.service === 'car_rental' || job.craft === 'Car rental' || job.craft === 'car_rental';
-                    if (isCarRental && job.carReturnDate) {
-                        const rawReturnTime = (job.carReturnTime || '').split('-')[0].trim();
-                        const returnTimePart = rawReturnTime.includes(':')
-                            ? (rawReturnTime.split(':').length === 2 ? `${rawReturnTime}:00` : rawReturnTime)
-                            : '23:59:00';
-                        const returnDatePart = job.carReturnDate.split('T')[0];
-                        const parsedDate = new Date(`${returnDatePart}T${returnTimePart}`);
-                        if (!isNaN(parsedDate.getTime())) {
-                            endTs = parsedDate.getTime();
-                        }
-                    }
-
-                    if (now.getTime() > endTs) {
-                        console.log(`[Auto-Deliver] Job ${job.id} has passed duration (${durationHours}h). Marking as delivered.`);
-                        await updateDoc(doc(db, 'jobs', job.id!), { status: 'delivered' });
-                        // Also update accepted_jobs collection if it's separate
-                        await updateDoc(doc(db, 'accepted_jobs', job.id!), { status: 'delivered' });
-                    }
-                } catch (err) {
-                    console.error("Auto-deliver error for job:", job.id, err);
-                }
-            }
-        };
-
-        const interval = setInterval(checkAutoDeliver, 30000); // Check every 30s
-        checkAutoDeliver(); // Run once on mount/change
-
-        return () => clearInterval(interval);
-    }, [user, acceptedJobs, parseDateTime]);
 
     // City-wide done jobs for Demand Score calculation
     useEffect(() => {
@@ -1240,7 +1194,10 @@ export default function ProviderPage() {
         const checkInterval = setInterval(() => {
             const now = new Date();
             programmedAcceptedJobs.forEach(async (job) => {
-                if (job.status === 'done') return;
+                const status = job.status || '';
+                // Only auto-mark as done if it was active/confirmed, not just programmed but not yet started.
+                // This prevents new missions from closing immediately.
+                if (status === 'done' || status === 'delivered' || status === 'programmed' || status === 'broadcast') return;
 
                 const startTs = parseDateTime(job.date, job.time);
                 if (!startTs) return;
@@ -1865,7 +1822,7 @@ export default function ProviderPage() {
                 <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between mb-0.5">
                         <h4 className="text-[17px] font-black text-neutral-900 truncate tracking-tight">{job.service}</h4>
-                        <span className="text-[15px] font-black text-[#00A082] uppercase">{t({ en: 'MAD', fr: 'MAD' })} {job.priceLabel}</span>
+                        <span className="text-[15px] font-black text-[#219178] uppercase">{t({ en: 'MAD', fr: 'MAD' })} {job.priceLabel}</span>
                     </div>
                     <div className="flex items-center gap-2 text-neutral-400 text-[12px] font-bold">
                         <span className="truncate">{job.clientName}</span>
@@ -1887,7 +1844,7 @@ export default function ProviderPage() {
                                     const raw = job.rawAccepted || { id: job.id, clientName: job.clientName };
                                     setSelectedChat(raw as any);
                                 }}
-                                className="w-9 h-9 rounded-xl bg-neutral-50 flex items-center justify-center text-neutral-400 hover:text-[#00A082] transition-colors"
+                                className="w-9 h-9 rounded-xl bg-neutral-50 flex items-center justify-center text-neutral-400 hover:text-[#219178] transition-colors"
                             >
                                 <MessageCircle size={18} />
                             </button>
@@ -2293,17 +2250,17 @@ export default function ProviderPage() {
                             {/* Selected Car Details section */}
                             {job.selectedCar && (
                                 <div className="px-6 md:px-12 mb-8">
-                                    <div className="bg-[#F0FBF8] rounded-2xl p-5 border border-[#00A082]/20 flex flex-col gap-4">
+                                    <div className="bg-[#F0FBF8] rounded-2xl p-5 border border-[#219178]/20 flex flex-col gap-4">
                                         <div className="flex justify-between items-start">
                                             <div className="flex-1">
-                                                <h4 className="text-[12px] font-black text-[#00A082] uppercase tracking-wider mb-1">{t({ en: 'Rented Vehicle', fr: 'Véhicule Loué' })}</h4>
+                                                <h4 className="text-[12px] font-black text-[#219178] uppercase tracking-wider mb-1">{t({ en: 'Rented Vehicle', fr: 'Véhicule Loué' })}</h4>
                                                 <p className="text-[20px] font-black text-black leading-tight">{(job.selectedCar.brandName || '').toUpperCase()} {(job.selectedCar.modelName || '').toUpperCase()}</p>
                                             </div>
                                             <div className="w-20 h-14 bg-white rounded-xl flex items-center justify-center p-2 border border-neutral-100 shadow-sm overflow-hidden flex-shrink-0 ml-4">
                                                 <img src={job.selectedCar.modelImage || job.selectedCar.image} alt="car" className="w-full h-full object-contain" />
                                             </div>
                                         </div>
-                                        <div className="flex items-center justify-between pt-2 border-t border-[#00A082]/10">
+                                        <div className="flex items-center justify-between pt-2 border-t border-[#219178]/10">
                                             <div className="flex flex-col">
                                                 <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-tighter">{t({ en: 'Rate', fr: 'Prix' })}</span>
                                                 <span className="text-[16px] font-black text-black">{job.selectedCar.pricePerDay || job.selectedCar.price} MAD/j</span>
@@ -2323,7 +2280,7 @@ export default function ProviderPage() {
                                             </div>
                                             <div className="flex flex-col items-end">
                                                 <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-tighter">{t({ en: 'Total Price', fr: 'Prix Total', ar: 'السعر الإجمالي' })}</span>
-                                                <span className="text-[16px] font-black text-[#00A082] italic">
+                                                <span className="text-[16px] font-black text-[#219178] italic">
                                                     {job.priceLabel} {t({ en: 'MAD', fr: 'MAD', ar: 'درهم' })}
                                                 </span>
                                             </div>
@@ -2349,7 +2306,7 @@ export default function ProviderPage() {
                                     )}
                                     <div className="bg-neutral-50 rounded-2xl p-4 flex items-center gap-4 border border-neutral-100/50">
                                         <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-sm">
-                                            <Clock size={20} className="text-[#00A082]" />
+                                            <Clock size={20} className="text-[#219178]" />
                                         </div>
                                         <div className="flex flex-col">
                                             <span className="text-[12px] font-bold text-neutral-400 uppercase tracking-wider">{t({ en: 'Duration', fr: 'Durée' })}</span>
@@ -2367,7 +2324,7 @@ export default function ProviderPage() {
                                     </div>
                                     <div className="bg-neutral-50 rounded-2xl p-4 flex items-center gap-4 border border-neutral-100/50">
                                         <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-sm">
-                                            <Banknote size={20} className="text-[#00A082]" />
+                                            <Banknote size={20} className="text-[#219178]" />
                                         </div>
                                         <div className="flex flex-col">
                                             <span className="text-[12px] font-bold text-neutral-400 uppercase tracking-wider">{t({ en: 'Your Earnings', fr: 'Tes Gains (NET)' })}</span>
@@ -2376,7 +2333,7 @@ export default function ProviderPage() {
                                     </div>
                                     <div className="bg-neutral-50 rounded-2xl p-4 flex items-center gap-4 border border-neutral-100/50">
                                         <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-sm">
-                                            <Wrench size={20} className="text-[#00A082]" />
+                                            <Wrench size={20} className="text-[#219178]" />
                                         </div>
                                         <div className="flex flex-col overflow-hidden">
                                             <span className="text-[12px] font-bold text-neutral-400 uppercase tracking-wider">{t({ en: 'Service', fr: 'Service' })}</span>
@@ -2387,7 +2344,7 @@ export default function ProviderPage() {
                                     </div>
                                     <div className="bg-neutral-50 rounded-2xl p-4 flex items-center gap-4 border border-neutral-100/50">
                                         <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-sm">
-                                            <CreditCard size={20} className="text-[#00A082]" />
+                                            <CreditCard size={20} className="text-[#219178]" />
                                         </div>
                                         <div className="flex flex-col">
                                             <span className="text-[12px] font-bold text-neutral-400 uppercase tracking-wider">{t({ en: 'Payment', fr: 'Paiement' })}</span>
@@ -2397,7 +2354,7 @@ export default function ProviderPage() {
                                     {/* Location */}
                                     <div className="bg-neutral-50 rounded-2xl p-4 flex items-center gap-4 border border-neutral-100/50">
                                         <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-sm">
-                                            <MapPin size={20} className="text-[#00A082]" />
+                                            <MapPin size={20} className="text-[#219178]" />
                                         </div>
                                         <div className="flex flex-col overflow-hidden">
                                             <span className="text-[12px] font-bold text-neutral-400 uppercase tracking-wider">{t({ en: 'Location', fr: 'Localisation' })}</span>
@@ -2409,7 +2366,7 @@ export default function ProviderPage() {
                                     {/* Description */}
                                     <div className="bg-neutral-50 rounded-2xl p-4 col-span-1 sm:col-span-2 flex items-start gap-4 border border-neutral-100/50">
                                         <div className="w-10 h-10 rounded-full bg-white flex-shrink-0 flex items-center justify-center shadow-sm">
-                                            <Info size={20} className="text-[#00A082]" />
+                                            <Info size={20} className="text-[#219178]" />
                                         </div>
                                         <div className="flex flex-col">
                                             <span className="text-[12px] font-bold text-neutral-400 uppercase tracking-wider">{t({ en: 'Description', fr: 'Description' })}</span>
@@ -2538,7 +2495,7 @@ export default function ProviderPage() {
                                                 disabled={clientRating === 0 || isSubmittingRating}
                                                 className={cn(
                                                     "w-full py-3 rounded-xl text-white font-black text-[14px] transition-all flex items-center justify-center gap-2",
-                                                    clientRating > 0 ? "bg-[#00A082]" : "bg-neutral-300 opacity-50"
+                                                    clientRating > 0 ? "bg-[#219178]" : "bg-neutral-300 opacity-50"
                                                 )}
                                             >
                                                 {isSubmittingRating ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : t({ en: 'Submit Rating', fr: 'Envoyer la note' })}
@@ -2577,7 +2534,7 @@ export default function ProviderPage() {
                                 {/* Location Section */}
                                 <section className="space-y-4">
                                     <h3 className="text-[28px] font-black text-black flex items-center gap-2">
-                                        <MapPin size={24} className="text-[#00A082]" />
+                                        <MapPin size={24} className="text-[#219178]" />
                                         {t({ en: 'Location', fr: 'Lieu' })}
                                     </h3>
                                     <div className="p-5 bg-neutral-50 rounded-[10px] space-y-2">
@@ -2592,7 +2549,7 @@ export default function ProviderPage() {
                                         {job.rawAccepted?.address && (
                                             <button
                                                 onClick={() => window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(job.rawAccepted?.address + ', ' + (job.rawAccepted?.area || '') + ', ' + (job.rawAccepted?.city || job.city))}`, '_blank')}
-                                                className="text-[14px] font-bold text-[#00A082] mt-2 underline"
+                                                className="text-[14px] font-bold text-[#219178] mt-2 underline"
                                             >
                                                 {t({ en: 'Open in Maps', fr: 'Ouvrir dans Maps' })}
                                             </button>
@@ -2615,7 +2572,7 @@ export default function ProviderPage() {
                                     </div>
                                     {job.rawAccepted?.bankReceipt && (
                                         <div className="mt-4 p-4 bg-emerald-50 rounded-1xl border border-emerald-100">
-                                            <p className="text-[14px] font-black text-[#00A082] flex items-center gap-2 mb-3">
+                                            <p className="text-[14px] font-black text-[#219178] flex items-center gap-2 mb-3">
                                                 <Check size={16} strokeWidth={3} />
                                                 {t({ en: 'Bank receipt attached', fr: 'Reçu bancaire joint' })}
                                             </p>
@@ -2660,8 +2617,8 @@ export default function ProviderPage() {
                                                 <span className="text-[16px] font-bold text-black tracking-tight">- {(parseFloat(job.priceLabel) * 0.15).toFixed(0)} {t({ en: 'MAD', fr: 'MAD' })}</span>
                                             </div>
                                             <div className="pt-4 border-t border-neutral-100 flex justify-between items-center">
-                                                <span className="text-[18px] font-black text-[#00A082]">{t({ en: 'Final Earnings', fr: 'Gains Nets' })}</span>
-                                                <span className="text-[20px] font-black text-[#00A082] tracking-tight">{(parseFloat(job.priceLabel) * (1 - COMMISSION_RATE)).toFixed(0)} {t({ en: 'MAD', fr: 'MAD' })}</span>
+                                                <span className="text-[18px] font-black text-[#219178]">{t({ en: 'Final Earnings', fr: 'Gains Nets' })}</span>
+                                                <span className="text-[20px] font-black text-[#219178] tracking-tight">{(parseFloat(job.priceLabel) * (1 - COMMISSION_RATE)).toFixed(0)} {t({ en: 'MAD', fr: 'MAD' })}</span>
                                             </div>
                                         </div>
                                     </div>
@@ -2673,8 +2630,8 @@ export default function ProviderPage() {
                     {/* Fixed Total Footer */}
                     <div className="px-6 md:px-12 py-8 bg-white border-t border-neutral-100 shadow-[0_-10px_40px_rgba(0,0,0,0.05)] z-[4001]">
                         <div className="flex items-center justify-between gap-4">
-                            <span className="text-[28px] md:text-[32px] font-black text-[#00A082] leading-tight">{t({ en: 'Your Net Payout', fr: 'Tes Gains Nets' })}</span>
-                            <span className="text-[28px] md:text-[32px] font-black text-[#00A082] tracking-tighter truncate">{(parseFloat(job.priceLabel) * (1 - COMMISSION_RATE)).toFixed(0)} {t({ en: 'MAD', fr: 'MAD' })}</span>
+                            <span className="text-[28px] md:text-[32px] font-black text-[#219178] leading-tight">{t({ en: 'Your Net Payout', fr: 'Tes Gains Nets' })}</span>
+                            <span className="text-[28px] md:text-[32px] font-black text-[#219178] tracking-tighter truncate">{(parseFloat(job.priceLabel) * (1 - COMMISSION_RATE)).toFixed(0)} {t({ en: 'MAD', fr: 'MAD' })}</span>
                         </div>
                     </div>
                 </motion.div>
@@ -2728,7 +2685,7 @@ export default function ProviderPage() {
                                     >
                                         {tab.label}
                                         {performanceTab === tab.id && (
-                                            <motion.div layoutId="performance-header-tab" className="absolute bottom-0 left-0 right-0 h-[3px] bg-[#00A082] rounded-t-full" />
+                                            <motion.div layoutId="performance-header-tab" className="absolute bottom-0 left-0 right-0 h-[3px] bg-[#219178] rounded-t-full" />
                                         )}
                                     </button>
                                 ))}
@@ -3837,7 +3794,7 @@ export default function ProviderPage() {
                                                                     <div className="px-6 relative">
                                                                         <button
                                                                             onClick={() => setPerformanceDetail('financial')}
-                                                                            className="absolute top-0 right-6 w-12 h-12 bg-[#00A082] text-white rounded-full flex items-center justify-center shadow-lg active:scale-95 transition-all z-20"
+                                                                            className="absolute top-0 right-6 w-12 h-12 bg-[#219178] text-white rounded-full flex items-center justify-center shadow-lg active:scale-95 transition-all z-20"
                                                                         >
                                                                             <Banknote size={24} />
                                                                         </button>
@@ -3993,7 +3950,7 @@ export default function ProviderPage() {
                                                                                     </div>
                                                                                     <div className="p-6 rounded-[24px] border border-neutral-100 bg-neutral-50/50 flex flex-col justify-between h-[120px]">
                                                                                         <p className="text-[11px] font-black text-neutral-400 uppercase tracking-widest">{t({ en: 'Referral Bonus', fr: 'Bonus Parrainage' })}</p>
-                                                                                        <p className="text-[24px] font-black text-[#00A082] leading-none">+{referralBonus} <span className="text-[14px] text-[#00A082]/30 uppercase">{t({ en: 'MAD', fr: 'MAD' })}</span></p>
+                                                                                        <p className="text-[24px] font-black text-[#219178] leading-none">+{referralBonus} <span className="text-[14px] text-[#219178]/30 uppercase">{t({ en: 'MAD', fr: 'MAD' })}</span></p>
                                                                                     </div>
                                                                                 </div>
 
@@ -4112,7 +4069,7 @@ export default function ProviderPage() {
                                                                                                                 setIsSubmittingSettlement(false);
                                                                                                             }
                                                                                                         }}
-                                                                                                        className="flex-1 py-4 bg-[#00A082] hover:bg-[#008C74] text-white rounded-xl font-black text-[14px] flex items-center justify-center gap-2 transition-all shadow-lg active:scale-95 disabled:opacity-50"
+                                                                                                        className="flex-1 py-4 bg-[#219178] hover:bg-[#008C74] text-white rounded-xl font-black text-[14px] flex items-center justify-center gap-2 transition-all shadow-lg active:scale-95 disabled:opacity-50"
                                                                                                     >
                                                                                                         {isSubmittingSettlement ? <RefreshCw className="animate-spin" size={18} /> : <Send size={18} />}
                                                                                                         {t({ en: 'Envoyer', fr: 'Envoyer' })}
@@ -4145,7 +4102,7 @@ export default function ProviderPage() {
                                                                                     </div>
                                                                                     <div className="space-y-2">
                                                                                         <div className="w-full h-2 bg-neutral-200 rounded-full overflow-hidden">
-                                                                                            <motion.div initial={{ width: 0 }} animate={{ width: `${completionRate}%` }} className="h-full bg-[#00A082]" />
+                                                                                            <motion.div initial={{ width: 0 }} animate={{ width: `${completionRate}%` }} className="h-full bg-[#219178]" />
                                                                                         </div>
                                                                                     </div>
                                                                                 </div>
@@ -4221,14 +4178,14 @@ export default function ProviderPage() {
                                                                         {/* MARKETING DETAIL */}
                                                                         {performanceDetail === 'marketing' && (
                                                                             <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                                                                                <div className="bg-[#00A082] p-8 rounded-[32px] text-white relative overflow-hidden shadow-lg shadow-emerald-900/10">
+                                                                                <div className="bg-[#219178] p-8 rounded-[32px] text-white relative overflow-hidden shadow-lg shadow-emerald-900/10">
                                                                                     <h3 className="text-[18px] font-black mb-2">{t({ en: 'Visibility Metrics', fr: 'Indicateurs de visibilité' })}</h3>
                                                                                     <p className="text-white/80 text-[13px] font-medium leading-relaxed">
                                                                                         {t({ en: 'We are currently calibrating your search performance data. You will soon see exactly how many times your profile appears in search results.', fr: 'Nous calibrons actuellement vos données de performance dans la recherche. Vous verrez bientôt exactement combien de fois votre profil apparaît dans les résultats.' })}
                                                                                     </p>
                                                                                     <div className="mt-6 flex items-center gap-3 px-3 py-1.5 bg-white rounded-full w-fit">
-                                                                                        <div className="w-1.5 h-1.5 rounded-full bg-[#00A082]" />
-                                                                                        <span className="text-[10px] font-black uppercase tracking-widest text-[#00A082]">{t({ en: 'BETA Access', fr: 'Accès BÊTA' })}</span>
+                                                                                        <div className="w-1.5 h-1.5 rounded-full bg-[#219178]" />
+                                                                                        <span className="text-[10px] font-black uppercase tracking-widest text-[#219178]">{t({ en: 'BETA Access', fr: 'Accès BÊTA' })}</span>
                                                                                     </div>
                                                                                 </div>
 

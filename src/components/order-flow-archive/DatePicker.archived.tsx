@@ -33,7 +33,7 @@ const DatePicker: React.FC<DatePickerProps> = ({ selectedDate, onSelectDate, min
                     type="date"
                     value={selectedDate || ''}
                     onChange={(e) => onSelectDate(e.target.value)}
-                    className="w-full p-4 rounded-xl border border-neutral-200 focus:outline-none focus:ring-2 focus:ring-[#00A082] font-semibold"
+                    className="w-full p-4 rounded-xl border border-neutral-200 focus:outline-none focus:ring-2 focus:ring-[#219178] font-semibold"
                     min={minDate || format(new Date(), 'yyyy-MM-dd')}
                 />
             </div>

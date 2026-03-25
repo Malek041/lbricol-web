@@ -194,7 +194,7 @@ const CompactHomeMap: React.FC<CompactHomeMapProps> = ({
                     className="w-12 h-12 bg-white rounded-full shadow-[0_2px_8px_rgba(0,0,0,0.15)] flex items-center justify-center text-[#374151] pointer-events-auto active:scale-95 transition-transform cursor-pointer"
                 >
                     {isLocating ? (
-                        <div className="w-5 h-5 border-2 border-[#00A082] border-t-transparent rounded-full animate-spin" />
+                        <div className="w-5 h-5 border-2 border-[#219178] border-t-transparent rounded-full animate-spin" />
                     ) : (
                         <Navigation size={22} strokeWidth={2.5} />
                     )}

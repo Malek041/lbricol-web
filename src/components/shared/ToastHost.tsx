@@ -20,7 +20,7 @@ interface ToastHostProps {
 
 const VARIANT_STYLES: Record<ToastVariant, { bg: string; text: string; icon: React.ReactNode; border: string }> = {
     success: {
-        bg: 'bg-[#00A082]/90 backdrop-blur-md',
+        bg: 'bg-[#219178]/90 backdrop-blur-md',
         text: 'text-white',
         icon: <CheckCircle2 size={22} className="text-white" />,
         border: 'border-[#008C74]/20'
@@ -34,7 +34,7 @@ const VARIANT_STYLES: Record<ToastVariant, { bg: string; text: string; icon: Rea
     info: {
         bg: 'bg-white/80 backdrop-blur-md',
         text: 'text-[#1D1D1D]',
-        icon: <Info size={22} className="text-[#00A082]" />,
+        icon: <Info size={22} className="text-[#219178]" />,
         border: 'border-neutral-200/50'
     },
 };

@@ -2,10 +2,11 @@
 
 
 @theme {
-  --font-sans: var(--font-plus-jakarta), "Plus Jakarta Sans", "Inter", var(--font-arabic), "system-ui", "-apple-system", "BlinkMacSystemFont", "Segoe UI", "Roboto", "Helvetica Neue", "Arial", "sans-serif";
-  --font-fredoka-one: var(--font-fredoka-bold);
+  --font-sans: var(--font-inter), "Inter", var(--font-inclusive-sans), "Inclusive Sans", var(--font-plus-jakarta), "Plus Jakarta Sans", var(--font-arabic), "system-ui", "-apple-system", "BlinkMacSystemFont", "Segoe UI", "Roboto", "Helvetica Neue", "Arial", "sans-serif";
+  --font-sans-one: var(--font-plus-jakarta), "Glovo Sans", "Plus Jakarta Sans", "system-ui";
   --color-primary: #000000;
   --color-primary-hover: #333333;
+  --color-primary-brand: #219178;
   --color-surface: #FFFFFF;
   --color-background: #F6F6F6;
   --color-border: #E2E2E2;
@@ -16,6 +17,7 @@
 :root {
   --primary: #000000;
   --primary-hover: #333333;
+  --brand-green: #219178;
 }
 
 body {
@@ -144,7 +146,7 @@ h3,
 h4,
 h5,
 h6 {
-  font-family: var(--font-fredoka-one), var(--font-fredoka), "Uber Move Text", "Uber Move", "Inclusive Sans", var(--font-sans);
-  font-weight: 500;
-  letter-spacing: -0.01em;
+  font-family: var(--font-sans-one), var(--font-sans), "Glovo Sans One", "Glovo Sans", "Uber Move", "Inclusive Sans", var(--font-sans);
+  font-weight: 700;
+  letter-spacing: -0.02em;
 }

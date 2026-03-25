@@ -118,7 +118,7 @@ const AvailabilityCalendarView: React.FC<AvailabilityCalendarViewProps> = ({
                 <button
                     onClick={handleSave}
                     disabled={saving}
-                    className="px-6 py-3 bg-[#00A082] text-white rounded-2xl font-black text-sm uppercase tracking-wider disabled:opacity-50 shadow-lg shadow-[#00A082]/20 active:scale-95 transition-all"
+                    className="px-6 py-3 bg-[#219178] text-white rounded-2xl font-black text-sm uppercase tracking-wider disabled:opacity-50 shadow-lg shadow-[#219178]/20 active:scale-95 transition-all"
                 >
                     {saving ? t({ en: 'Saving...', fr: 'Enregistrement...' }) : t({ en: 'Save Changes', fr: 'Enregistrer' })}
                 </button>
@@ -164,7 +164,7 @@ const AvailabilityCalendarView: React.FC<AvailabilityCalendarViewProps> = ({
                                             {format(day, 'd')}
                                         </span>
                                         {hasSlots && (
-                                            <div className="absolute bottom-1 w-1 h-1 bg-[#00A082] rounded-full" />
+                                            <div className="absolute bottom-1 w-1 h-1 bg-[#219178] rounded-full" />
                                         )}
                                     </button>
                                 )
@@ -207,7 +207,7 @@ const AvailabilityCalendarView: React.FC<AvailabilityCalendarViewProps> = ({
                                     {t({ en: 'Clear Day', fr: 'Vider le jour', ar: 'مسح اليوم' })}
                                 </button>
                             </div>
-                            <span className="text-xs font-black text-[#00A082] uppercase tracking-widest bg-[#E6F6F2] px-3 py-1 rounded-full">
+                            <span className="text-xs font-black text-[#219178] uppercase tracking-widest bg-[#E6F6F2] px-3 py-1 rounded-full">
                                 {daySlots.length} {t({ en: 'Slots Active', fr: 'Créneaux actifs' })}
                             </span>
                         </div>
@@ -222,7 +222,7 @@ const AvailabilityCalendarView: React.FC<AvailabilityCalendarViewProps> = ({
                                         className={cn(
                                             "py-4 rounded-2xl border-2 flex flex-col items-center gap-1 transition-all",
                                             isActive
-                                                ? "border-[#00A082] bg-[#00A082] text-white shadow-lg shadow-[#00A082]/20"
+                                                ? "border-[#219178] bg-[#219178] text-white shadow-lg shadow-[#219178]/20"
                                                 : "border-neutral-100 bg-white text-neutral-400 hover:border-neutral-300"
                                         )}
                                     >

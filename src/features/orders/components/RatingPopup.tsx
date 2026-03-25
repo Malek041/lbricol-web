@@ -238,7 +238,7 @@ const RatingPopup: React.FC<RatingPopupProps> = ({
                                                     <img src={serviceVector} alt={serviceName} className="w-full h-full object-contain" />
                                                 </div>
                                                 <div className="min-w-0">
-                                                    <p className="text-[11px] font-black text-[#00A082] uppercase tracking-[0.15em] mb-1">
+                                                    <p className="text-[11px] font-black text-[#219178] uppercase tracking-[0.15em] mb-1">
                                                         {t({ en: 'Mission Completed', fr: 'Mission terminée' })}
                                                     </p>
                                                     <h3 className="text-[18px] font-black text-black leading-tight truncate capitalize">
@@ -255,7 +255,7 @@ const RatingPopup: React.FC<RatingPopupProps> = ({
                                                     {bricolerAvatar ? (
                                                         <img src={bricolerAvatar} className="w-full h-full object-cover" alt={bricolerName} />
                                                     ) : (
-                                                        <div className="w-full h-full flex items-center justify-center text-[#00A082] font-black text-xl">
+                                                        <div className="w-full h-full flex items-center justify-center text-[#219178] font-black text-xl">
                                                             {bricolerName[0]?.toUpperCase()}
                                                         </div>
                                                     )}
@@ -317,7 +317,7 @@ const RatingPopup: React.FC<RatingPopupProps> = ({
                                                 </motion.div>
                                             </button>
                                             <div className="flex-1">
-                                                <p className="text-[13px] font-black text-[#00A082] uppercase tracking-widest">{t({ en: 'Write a review', fr: 'Écrire un avis' })}</p>
+                                                <p className="text-[13px] font-black text-[#219178] uppercase tracking-widest">{t({ en: 'Write a review', fr: 'Écrire un avis' })}</p>
                                                 <h2 className="text-[20px] font-black text-black leading-tight">
                                                     {t({ en: `How was your experience with ${bricolerName}?`, fr: `Comment était votre expérience avec ${bricolerName} ?` })}
                                                 </h2>
