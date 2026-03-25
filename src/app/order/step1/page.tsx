@@ -206,12 +206,15 @@ function Step1Content() {
           overflow: hidden;
         }
         .step1-map {
-          flex: 1;
-          position: relative;
-          min-height: 0;
+          position: absolute;
+          inset: 0;
+          z-index: 10;
         }
         .step1-sheet {
-          flex-shrink: 0;
+          position: absolute;
+          bottom: 0;
+          left: 0;
+          right: 0;
           background: #fff;
           border-radius: 28px 28px 0 0;
           box-shadow: 0 -4px 30px rgba(0,0,0,0.1);
@@ -221,7 +224,6 @@ function Step1Content() {
           flex-direction: column;
           gap: 12px;
           z-index: 1002;
-          position: relative;
         }
         .step1-map-overlay {
           position: absolute;
@@ -259,6 +261,7 @@ function Step1Content() {
             initialLocation={{ lat: currentLat, lng: currentLng }}
             flyToPoint={flyToPoint}
             userPosition={userPosition}
+            zoom={17}
             pinY={50}
             onLocationChange={(point) => {
               setCurrentLat(point.lat);
@@ -368,7 +371,7 @@ function Step1Content() {
             onClick={handleLocateMe}
             style={{
               position: 'absolute',
-              bottom: 16,
+              bottom: 240,
               right: 16,
               zIndex: 1000,
               background: '#fff',
