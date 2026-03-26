@@ -202,7 +202,7 @@ export default function OrderAvailabilityPicker({
                         const isTomorrowDay = isSameDay(day, addDays(startOfToday(), 1));
 
                         let label = format(day, 'EEEE', { locale });
-                        if (isTodayDay) label = t({ en: 'Today', fr: 'Aujourd\'hui', ar: 'اليوم' });
+                        if (isTodayDay) label = t({ en: 'Today', fr: 'Aujord\'hui', ar: 'اليوم' });
                         else if (isTomorrowDay) label = t({ en: 'Tomorrow', fr: 'Demain', ar: 'غداً' });
 
                         return (
@@ -320,7 +320,7 @@ export default function OrderAvailabilityPicker({
             </div>
 
             {/* Selection Summary */}
-            {selectedSlots.length > 0 && (
+            {/*{selectedSlots.length > 0 && (
                 <div className="bg-[#FFFFFF] p-4 rounded-[12px] border border-[#000000]/10">
                     <div className="flex items-center gap-2 mb-3">
                         <CheckCircle2 className="text-[#219178]" size={16} />
@@ -344,7 +344,7 @@ export default function OrderAvailabilityPicker({
                         ))}
                     </div>
                 </div>
-            )}
+            )}*/}
         </div>
     );
 }

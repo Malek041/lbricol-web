@@ -31,6 +31,7 @@ interface OrderState {
   carRentalNote?: string;
   carRentalDates?: any;
   providerAddress?: string;
+  providerCoords?: { lat: number; lng: number } | null;
   date?: string;
   time?: string;
   multiSlots?: { date: string; time: string }[];
@@ -39,6 +40,12 @@ interface OrderState {
   isPublic?: boolean;
   description?: string;
   recipientDetails?: { name: string; phone: string; address?: string } | null;
+  // TV Mounting specific
+  tvCount?: number;
+  mountTypes?: string[];
+  wallMaterial?: string;
+  liftingHelp?: string;
+  mountingAddOns?: string[];
 }
 
 interface OrderContextType {
@@ -70,6 +77,12 @@ const defaultOrder: OrderState = {
   setupProfileId: '',
   isPublic: false,
   multiSlots: [],
+  // TV Mounting specific
+  tvCount: 1,
+  mountTypes: [],
+  wallMaterial: '',
+  liftingHelp: '',
+  mountingAddOns: [],
 };
 
 const OrderContext = createContext<OrderContextType | null>(null);

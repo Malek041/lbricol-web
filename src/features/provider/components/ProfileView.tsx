@@ -189,7 +189,7 @@ const ProfileView: React.FC<ProfileViewProps> = ({
                 className="flex flex-col h-full overflow-y-auto no-scrollbar bg-white relative w-full"
             >
                 {/* Yellow Header (Glovo Style) - Fixed/Sticky Behind */}
-                <div className="bg-[#FFC244] pt-14 pb-20 px-6 sticky top-0 z-0 flex flex-col items-center overflow-hidden shrink-0 transition-all duration-300">
+                <div className="bg-[#FFB700] pt-14 pb-20 px-6 sticky top-0 z-0 flex flex-col items-center overflow-hidden shrink-0 transition-all duration-300">
                     <div className="w-full flex justify-end mb-4 relative z-10">
                         {/* Help Button */}
                         <button
@@ -238,7 +238,13 @@ const ProfileView: React.FC<ProfileViewProps> = ({
                     </div>
                 </div>
 
-                <div className="bg-white rounded-t-[20px] -mt-12 relative z-10 px-6 pt-10 w-full min-h-screen pb-48">
+                <div className="bg-white relative z-10 px-6 pt-10 w-full min-h-screen pb-48">
+                    {/* Wave Border Overlay */}
+                    <div className="absolute top-[-44px] left-0 right-0 h-[45px] z-20 pointer-events-none">
+                        <svg viewBox="0 0 1440 120" preserveAspectRatio="none" className="w-full h-full fill-white drop-shadow-[0_-5px_10px_rgba(0,0,0,0.03)] text-white">
+                            <path d="M0,64L48,64C96,64,192,64,288,64C384,64,480,64,576,53.3C672,43,768,21,864,16C960,10.7,1056,21.3,1152,42.7C1248,64,1344,96,1392,112L1440,128L1440,120L1392,120C1344,120,1248,120,1152,120C1056,120,960,120,864,120C768,120,672,120,576,120C480,120,384,120,288,120C192,120,96,120,48,120L0,120Z"></path>
+                        </svg>
+                    </div>
 
 
                     <div className="space-y-1">

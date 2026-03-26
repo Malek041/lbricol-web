@@ -6,6 +6,7 @@ export interface PricingBreakdown {
     unit: string;
     subtotal: number;
     serviceFee: number;
+    travelFee: number; // New: traveling distance cost
     total: number;
 }
 
@@ -25,6 +26,13 @@ export const calculateOrderPrice = (
         days?: number;
         quantity?: number;
         propertyType?: string;
+        distanceKm?: number; // New: travel distance
+        // TV Mounting specific
+        tvCount?: number;
+        mountTypes?: string[];
+        wallMaterial?: string;
+        liftingHelp?: string;
+        mountingAddOns?: string[];
     } = {}
 ): PricingBreakdown => {
     // 1. Find the subservice to get its archetype
@@ -65,39 +73,74 @@ export const calculateOrderPrice = (
         }
     }
 
-    // Apply Family home cleaning coefficient (2.0x)
+    // Apply specialized cleaning coefficients
     if (subServiceId === 'family_home') {
         basePrice *= 2.0;
+    } else if (subServiceId === 'deep_cleaning') {
+        basePrice *= 3.0;
     }
 
     let quantity = 1;
     let unit = 'job';
+    let extraFees = 0;
 
-    // 2. Apply Archetype Logic
-    switch (archetype) {
-        case 'unit':
-            // For cleaning/painting, quantity is typically room count
-            quantity = options.rooms || options.quantity || 1;
-            unit = 'unit';
-            break;
-        case 'hourly':
-            quantity = options.hours || options.quantity || 1;
-            unit = 'hr';
-            break;
-        case 'rental':
-            quantity = options.days || options.quantity || 1;
-            unit = 'day';
-            break;
-        case 'fixed':
-        default:
-            quantity = 1;
-            unit = 'fixed';
-            break;
+    // Specialized TV Mounting Pricing
+    if (subServiceId === 'tv_mounting') {
+        // Base: 1.5 hours per TV at Bricoler rate
+        quantity = options.tvCount || 1;
+        unit = 'TV';
+        basePrice = providerRate * 1.5;
+
+        // Mount Multiplier
+        let mountMultiplier = 1.0;
+        if (options.mountTypes?.some(t => t.includes('Articulating'))) mountMultiplier = 1.3;
+        else if (options.mountTypes?.some(t => t.includes('Tilting'))) mountMultiplier = 1.1;
+        basePrice *= mountMultiplier;
+
+        // Wall Multiplier
+        let wallMultiplier = 1.0;
+        if (options.wallMaterial?.includes('Brick') || options.wallMaterial?.includes('concrete')) wallMultiplier = 1.2;
+        else if (options.wallMaterial?.includes('Metal')) wallMultiplier = 1.4;
+        basePrice *= wallMultiplier;
+
+        // Lifting Help Fee
+        if (options.liftingHelp === 'no_60') {
+            extraFees += 50; // Extra MAD for heavy handling alone or requiring complexity
+        }
+
+        // Add-ons
+        if (options.mountingAddOns?.includes('wires')) extraFees += 40;
+        if (options.mountingAddOns?.includes('audio')) extraFees += 30;
+        if (options.mountingAddOns?.includes('setup')) extraFees += 20;
+
+    } else {
+        // 2. Apply Standard Archetype Logic
+        switch (archetype) {
+            case 'unit':
+                // For cleaning/painting, quantity is typically room count
+                quantity = options.rooms || options.quantity || 1;
+                unit = subServiceId.includes('cleaning') || subServiceId.includes('hospitality') || subServiceId.includes('home') ? 'room' : 'unit';
+                break;
+            case 'hourly':
+                quantity = options.hours || options.quantity || 1;
+                unit = 'hr';
+                break;
+            case 'rental':
+                quantity = options.days || options.quantity || 1;
+                unit = 'day';
+                break;
+            case 'fixed':
+            default:
+                quantity = 1;
+                unit = 'fixed';
+                break;
+        }
     }
 
-    const subtotal = basePrice * quantity;
-    const serviceFee = Math.round(subtotal * 0.10); // 10% Lbricol Fee
-    const total = subtotal + serviceFee;
+    const subtotal = (basePrice * quantity) + extraFees;
+    const serviceFee = subtotal * 0.10; // 10% Platform fee
+    const travelFee = (options.distanceKm || 0) * 3; // 3 MAD per Km
+    const total = subtotal + serviceFee + travelFee;
 
     return {
         basePrice,
@@ -105,6 +148,7 @@ export const calculateOrderPrice = (
         unit,
         subtotal,
         serviceFee,
+        travelFee,
         total
     };
 };

@@ -19,7 +19,7 @@ export const SERVICES_CATALOGUE: ServiceEntry[] = [
         iconPath: '/Images/Service Category vectors/HandymanVector.webp',
         subServices: [
             { id: 'general_repairs', en: 'General Repairs', fr: 'Réparations Générales', ar: 'إصلاحات عامة' },
-            { id: 'door_lock_repair', en: 'Door & Lock Repair', fr: 'Réparation de Portes et Serrures', ar: 'إصلاح الأبواب والأقفال' },
+            { id: 'door_lock_repair', en: 'Door, Cabinet, & Furniture Repair', fr: 'Réparation de Portes et Serrures', ar: 'إصلاح الأبواب والأقفال' },
             { id: 'furniture_fixes', en: 'Furniture Fixes', fr: 'Réparation de Meubles', ar: 'إصلاح الأثاث' },
             { id: 'shelf_mounting', en: 'Shelf Mounting', fr: 'Montage d\'Étagères', ar: 'تركيب الرفوف' },
             { id: 'caulking_grouting', en: 'Caulking & Grouting', fr: 'Calfeutrage et Jointoiement', ar: 'سد الفجوات والجص' },

@@ -7,7 +7,9 @@ import {
     ChevronLeft, ChevronRight, X, Check, Home,
     Briefcase, Image as ImageIcon, Trash2,
     Save, Loader2, Sparkles, AlertCircle,
-    MapPin, Calendar, Clock, User, Navigation
+    MapPin, Calendar, Clock, User, Navigation,
+    Trophy, CheckCircle2, TrendingUp, ShieldCheck,
+    Star
 } from 'lucide-react';
 import { format } from 'date-fns';
 
@@ -92,6 +94,13 @@ export default function ServiceSetupPage() {
     const [taskSize, setTaskSize] = useState<'small' | 'medium' | 'large'>('small');
     const [taskDuration, setTaskDuration] = useState(1);
 
+    // TV Mounting State
+    const [tvCount, setTvCount] = useState(1);
+    const [liftingHelp, setLiftingHelp] = useState<string | null>(null);
+    const [mountTypes, setMountTypes] = useState<string[]>([]);
+    const [wallMaterial, setWallMaterial] = useState<string | null>(null);
+    const [mountingAddOns, setMountingAddOns] = useState<string[]>([]);
+
     // Furniture Assembly State
     const [assemblyItems, setAssemblyItems] = useState<Record<string, { id: string, name: string, icon: string, estHours: number, quantity: number }>>(
         order.serviceDetails?.assemblyItems || {}
@@ -140,7 +149,8 @@ export default function ServiceSetupPage() {
         yearsOfExperience: order.providerExperience || '1 Year',
         portfolio: [] as string[],
         equipments: [] as string[],
-        reviews: [] as any[]
+        reviews: [] as any[],
+        coords: null as { lat: number, lng: number } | null
     });
 
     useEffect(() => {
@@ -171,23 +181,24 @@ export default function ServiceSetupPage() {
                 const bSnap = await getDoc(doc(db, 'bricolers', order.providerId));
                 if (bSnap.exists()) {
                     const data = bSnap.data();
-                    // Find relevant service by category OR subService ID
-                    const relevantService = data.services?.find((s: any) =>
-                        s.categoryId === order.serviceType ||
-                        s.id === order.serviceType ||
-                        s.id === order.subServiceId
+                    // Find relevant service by category OR subService ID - robust check
+                    const services = Array.isArray(data.services) ? data.services : [];
+                    const relevantService = services.find((s: any) =>
+                        (order.subServiceId && (s.id === order.subServiceId || s.subServiceId === order.subServiceId)) ||
+                        (s.categoryId === order.serviceType || s.id === order.serviceType)
                     );
                     const servicePortfolio = relevantService?.portfolioImages || [];
 
                     setProvider(prev => ({
                         ...prev,
-                        bio: data.bio || prev.bio,
-                        yearsOfExperience: data.yearsOfExperience || prev.yearsOfExperience,
+                        bio: data.bio || data.aboutMe || prev.bio,
+                        yearsOfExperience: data.yearsOfExperience || data.experience || prev.yearsOfExperience,
                         portfolio: servicePortfolio.length > 0 ? servicePortfolio : (data.portfolio || []),
-                        equipments: relevantService?.equipments || [],
+                        equipments: Array.isArray(relevantService?.equipments) ? relevantService.equipments : (Array.isArray(data.equipments) ? data.equipments : []),
                         reviews: data.reviews || [],
                         rating: data.rating || prev.rating,
-                        taskCount: data.taskCount || prev.taskCount
+                        taskCount: data.completedJobs || data.taskCount || prev.taskCount,
+                        coords: data.location || data.coords || null
                     }));
                 }
             } catch (err) {
@@ -289,6 +300,36 @@ export default function ServiceSetupPage() {
                 { hours: taskDuration }
             );
             setEstimate(result);
+        } else if (order.subServiceId === 'tv_mounting') {
+            const calculateTVPrice = async () => {
+                let distance = 0;
+                if (provider.coords && order.location) {
+                    try {
+                        const res = await getRoadDistance(
+                            provider.coords.lat, provider.coords.lng,
+                            order.location.lat, order.location.lng
+                        );
+                        distance = res.distanceKm;
+                    } catch (e) {
+                        console.warn("Distance calculation failed for TV Mounting:", e);
+                    }
+                }
+
+                const result = calculateOrderPrice(
+                    'tv_mounting',
+                    order.providerRate || 100,
+                    {
+                        tvCount,
+                        liftingHelp: liftingHelp || undefined,
+                        mountTypes,
+                        wallMaterial: wallMaterial || undefined,
+                        mountingAddOns,
+                        distanceKm: distance
+                    }
+                );
+                setEstimate(result);
+            };
+            calculateTVPrice();
         } else {
             // General fallback: check if it's hourly
             const config = getAllServices().find(s => s.id === order.serviceType);
@@ -317,7 +358,28 @@ export default function ServiceSetupPage() {
                 });
             }
         }
-    }, [order.serviceType, order.subServiceId, order.providerRate, order.isPublic, rooms, propertyType, pickupLocation, dropoffLocation, deliveryType, assemblyItems, taskSize, taskDuration, selectedSlots]);
+    }, [
+        order.serviceType,
+        order.subServiceId,
+        order.providerRate,
+        order.location,
+        rooms,
+        propertyType,
+        pickupLocation,
+        dropoffLocation,
+        deliveryType,
+        assemblyItems,
+        taskSize,
+        taskDuration,
+        selectedSlots,
+        // TV Mounting deps
+        tvCount,
+        liftingHelp,
+        mountTypes,
+        wallMaterial,
+        mountingAddOns,
+        provider.coords
+    ]);
 
     const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = e.target.files;
@@ -394,6 +456,12 @@ export default function ServiceSetupPage() {
             setOrderField('scheduledTime', slotsToSave[0].time);
             setOrderField('multiSlots', slotsToSave);
 
+            // Determine final task duration for pricing
+            let finalTaskDuration = taskDuration;
+            if (order.serviceType === 'furniture_assembly') {
+                finalTaskDuration = Object.values(assemblyItems).reduce((sum, item) => sum + (item.quantity * item.estHours), 0);
+            }
+
             const serviceDetails = {
                 rooms,
                 propertyType,
@@ -411,7 +479,14 @@ export default function ServiceSetupPage() {
                 deliveryDate,
                 deliveryTime,
                 itemDescription,
-                taskSize
+                taskSize,
+                taskDuration: finalTaskDuration, // Use the calculated duration for pricing
+                // TV Mounting specific
+                tvCount,
+                liftingHelp,
+                mountTypes,
+                wallMaterial,
+                mountingAddOns
             };
 
             // 1. Save profile if requested
@@ -508,36 +583,63 @@ export default function ServiceSetupPage() {
                                 <img src={provider.avatar} className="w-24 h-24 rounded-[15px] object-cover border-4 border-[#F9FAFB]" />
                                 <div className="flex-1">
                                     <h2 className="text-[24px] font-black text-[#111827] mb-2">{provider.name}</h2>
-                                    <div className="flex flex-wrap gap-2 mb-3 items-center">
-                                        <span className="bg-[#EEF2FF] text-[#4F46E5] text-[10px] font-black px-3 py-1 rounded-[5px] flex items-center gap-1 tracking-wider">
-                                            ✦ {provider.rank}
-                                        </span>
-                                        <div className="flex items-center gap-1 bg-[#FFFBEB] px-2 py-1 rounded-[5px] border border-[#FEF3C7]">
-                                            <Sparkles size={10} className="text-[#FBBF24] fill-[#FBBF24]" />
-                                            <span className="text-[11px] font-black text-[#92400E]">
-                                                {provider.taskCount === 0 ? "0.0" : provider.rating.toFixed(1)}
-                                            </span>
-                                        </div>
-                                        <span className="text-[13px] text-[#6B7280] font-bold flex items-center gap-1">
-                                            {provider.taskCount} Missions
-                                        </span>
-                                    </div>
-                                    <div className="flex items-baseline gap-2 text-[#219178]">
+                                    <div className="flex items-baseline gap-2 text-[#219178] mb-4">
                                         <span className="text-[20px] font-black">MAD {provider.minRate}</span>
-                                        <span className="text-[14px] font-bold text-[#6B7280]">(min)</span>
+                                        <span className="text-[14px] font-bold text-[#6B7280]">minimum</span>
+                                    </div>
+                                    <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#F1FEF4] rounded-full border border-[#027963]">
+                                        <ShieldCheck size={14} className="text-[#027963]" />
+                                        <span className="text-[11px] font-black text-[#166534]  tracking-wider">Identity Verified</span>
                                     </div>
                                 </div>
                             </motion.div>
 
-                            {/* Stats Grid */}
-                            <motion.div variants={staggerItem} className="grid grid-cols-2 gap-3 mb-8">
-                                <div className="p-4 bg-[#F9FAFB] rounded-[5px] border border-neutral-100">
-                                    <div className="text-[11px] font-black text-[#9CA3AF] tracking-wider mb-1">Experience</div>
-                                    <div className="text-[17px] font-black text-[#111827]">{provider.yearsOfExperience}</div>
+                            {/* Trust & Stats Grid (High Visibility) */}
+                            <motion.div variants={staggerItem} className="grid grid-cols-3 gap-3 mb-8">
+                                <div className="flex flex-col items-center justify-center p-4   rounded-[5px]  text-center ">
+                                    <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center text-[#166534] mb-2 ">
+                                        <Trophy size={30} />
+                                    </div>
+                                    <span className="text-[23px] font-black text-[#166534] leading-tight capitalize">
+                                        {provider.rank || 'New'}
+                                    </span>
+                                    <span className="text-[10px] font-bold text-[#166534] uppercase tracking-tighter mt-1">Level</span>
                                 </div>
-                                <div className="p-4 bg-[#F9FAFB] rounded-[5px] border border-neutral-100">
-                                    <div className="text-[11px] font-black text-[#9CA3AF] tracking-wider mb-1">Success Rate</div>
-                                    <div className="text-[17px] font-black text-[#111827]">99%</div>
+                                <div className="flex flex-col items-center justify-center p-4   rounded-[5px]  text-center ">
+                                    <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center text-[#166534] mb-2">
+                                        <Star size={30} className="fill-[#166534]" />
+                                    </div>
+                                    <span className="text-[23px] font-black text-[#166534] leading-tight">
+                                        {provider.taskCount === 0 ? "0.0" : provider.rating.toFixed(1)}
+                                    </span>
+                                    <span className="text-[10px] font-bold text-[#166534] uppercase tracking-tighter mt-1">Rating</span>
+                                </div>
+                                <div className="flex flex-col items-center justify-center p-4   rounded-[5px] text-center ">
+                                    <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center text-[#166534] mb-2 ">
+                                        <CheckCircle2 size={30} />
+                                    </div>
+                                    <span className="text-[23px] font-black text-[#166534] leading-tight">
+                                        {provider.taskCount}
+                                    </span>
+                                    <span className="text-[10px] font-bold text-[#166534] uppercase tracking-tighter mt-1">Missions</span>
+                                </div>
+                            </motion.div>
+
+                            {/* Secondary Stats */}
+                            <motion.div variants={staggerItem} className="grid grid-cols-2 gap-3 mb-8">
+                                <div className="p-4 bg-[#F9FAFB] rounded-[5px] border border-neutral-100 flex items-center justify-between">
+                                    <div>
+                                        <div className="text-[10px] font-black text-[#9CA3AF] tracking-widest uppercase mb-1">Experience</div>
+                                        <div className="text-[17px] font-black text-[#111827]">{provider.yearsOfExperience}</div>
+                                    </div>
+                                    <Calendar className="text-neutral-200" size={24} />
+                                </div>
+                                <div className="p-4 bg-[#F9FAFB] rounded-[5px] border border-neutral-100 flex items-center justify-between">
+                                    <div>
+                                        <div className="text-[10px] font-black text-[#9CA3AF] tracking-widest uppercase mb-1">Success Rate</div>
+                                        <div className="text-[17px] font-black text-[#111827]">99%</div>
+                                    </div>
+                                    <TrendingUp className="text-neutral-200" size={24} />
                                 </div>
                             </motion.div>
 
@@ -558,6 +660,14 @@ export default function ServiceSetupPage() {
                                 </motion.div>
                             )}
 
+                            {/* About */}
+                            <motion.div variants={staggerItem} className="mb-10">
+                                <h4 className="text-[18px] font-black text-[#111827] mb-4">About Me</h4>
+                                <div className="text-[15px] text-[#000000] leading-relaxed font-medium p-6 bg-[#F9FAFB] rounded-[5px] border border-neutral-100">
+                                    "{provider.bio}"
+                                </div>
+                            </motion.div>
+
                             {/* Equipment Section */}
                             {!['car_rental', 'tour_guide', 'learn_arabic'].includes(order.serviceType || '') && provider.equipments && provider.equipments.length > 0 && (
                                 <motion.div variants={staggerItem} className="mb-10">
@@ -575,13 +685,7 @@ export default function ServiceSetupPage() {
                                 </motion.div>
                             )}
 
-                            {/* About */}
-                            <motion.div variants={staggerItem} className="mb-10">
-                                <h4 className="text-[18px] font-black text-[#111827] mb-4">About Me</h4>
-                                <div className="text-[15px] text-[#4B5563] leading-relaxed font-medium p-6 bg-[#F9FAFB] rounded-[5px] border border-neutral-100 italic">
-                                    "{provider.bio}"
-                                </div>
-                            </motion.div>
+
 
                             {/* Reviews Section */}
                             <motion.div variants={staggerItem} className="mb-10">
@@ -609,7 +713,7 @@ export default function ServiceSetupPage() {
                                         </div>
                                     )) : (
                                         <div className="py-12 text-center bg-white rounded-[5px] border border-dashed border-neutral-200">
-                                            <p className="text-[#9CA3AF] font-black text-[10px] tracking-[2px]">Awaiting first reviews on the app</p>
+                                            <p className="text-[#9CA3AF] font-medium text-[20px] ">Awaiting first reviews on the app</p>
                                         </div>
                                     )}
                                 </div>
@@ -624,24 +728,22 @@ export default function ServiceSetupPage() {
                                     <p className="text-[16px] font-black text-[#065F46]">Verified Bricoler</p>
                                     <p className="text-[13px] font-medium text-[#047857]">Identity and skills verified by Lbricol team.</p>
                                 </div>
-                            </motion.div>
-
-                            {/* Floating "Book Me" Button wrapper with Wave */}
+                            </motion.div>                             {/* Floating "Book Me" Button wrapper with Wave */}
                             <div className="fixed bottom-0 left-0 right-0 z-[100] bg-transparent">
                                 {/* Wave Top Effect */}
-                                <div className="absolute top-[-30px] left-0 right-0 h-[30px] z-10 pointer-events-none">
-                                    <svg viewBox="0 0 1440 320" preserveAspectRatio="none" className="w-full h-full fill-[#FFC244]">
-                                        <path d="M0,160L48,176C96,192,192,224,288,224C384,224,480,192,576,165.3C672,139,768,117,864,128C960,139,1056,181,1152,192C1248,203,1344,181,1392,170.7L1440,160L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path>
+                                <div className="absolute top-[-44px] left-0 right-0 h-[45px] z-20 pointer-events-none">
+                                    <svg viewBox="0 0 1440 120" preserveAspectRatio="none" className="w-full h-full fill-[#FFB700]">
+                                        <path d="M0,64L48,64C96,64,192,64,288,64C384,64,480,64,576,53.3C672,43,768,21,864,16C960,10.7,1056,21.3,1152,42.7C1248,64,1344,96,1392,112L1440,128L1440,120L1392,120C1344,120,1248,120,1152,120C1056,120,960,120,864,120C768,120,672,120,576,120C480,120,384,120,288,120C192,120,96,120,48,120L0,120Z"></path>
                                     </svg>
                                 </div>
-                                <div className="bg-[#FFC244] p-6 pb-8">
+                                <div className="bg-[#FFB700] p-6 pb-8">
                                     <motion.button
                                         whileTap={{ scale: 0.98 }}
                                         onClick={() => {
                                             setActiveTab('setup');
                                             window.scrollTo({ top: 0, behavior: 'smooth' });
                                         }}
-                                        className="w-full h-15 bg-[#219178] text-white rounded-full font-black text-[20px] flex items-center justify-center gap-3 transition-all py-5"
+                                        className="w-full h-15 bg-[#219178] text-white rounded-full font-black text-[20px] flex items-center justify-center gap-3 transition-all py-5 "
                                     >
                                         <span>Book me</span>
                                     </motion.button>
@@ -662,8 +764,7 @@ export default function ServiceSetupPage() {
                             {/* Saved Profiles */}
                             {profiles.length > 0 && (
                                 <motion.section variants={staggerItem}>
-                                    <h3 className="text-[18px] font-black text-[#111827] mb-5 px-1 flex items-center gap-2">
-                                        <Home size={20} className="text-[#219178]" />
+                                    <h3 className="text-[18px] font-Bold text-[#111827] mb-5 px-1 flex items-center gap-2">
                                         Saved Setups
                                     </h3>
                                     <div className="flex gap-4 overflow-x-auto pb-4 no-scrollbar -mx-1 px-1">
@@ -678,8 +779,8 @@ export default function ServiceSetupPage() {
                                             }}
                                             className={`flex-shrink-0 px-6 py-4 rounded-full border-1 transition-all flex items-center gap-3 ${selectedProfileId === 'new' ? 'border-[#219178] bg-[#F0FDF9] text-[#219178]' : 'border-neutral-100 bg-white text-[#9CA3AF]'}`}
                                         >
-                                            <div className={`w-8 h-8 rounded-full flex items-center justify-center ${selectedProfileId === 'new' ? 'bg-[#219178] text-white' : 'bg-neutral-100'}`}>
-                                                <span className="text-xl font-light mb-0.5">+</span>
+                                            <div className={`w-8 h-8 rounded-full flex items-center justify-center ${selectedProfileId === 'new' ? ' text-white' : 'bg-neutral-100'}`}>
+                                                <Home size={20} className="text-[#219178]" />
                                             </div>
                                             <span className="font-black text-[15px]">New setup</span>
                                         </button>
@@ -860,7 +961,7 @@ export default function ServiceSetupPage() {
                                     <>
                                         {/* Availability Picker */}
                                         <div className="space-y-6">
-                                            <h3 className="text-[25px] text-[#111827] font-black">When do you need the Bricoler?</h3>
+                                            <h3 className="text-[25px] text-[#111827] font-bold">When do you need the Bricoler?</h3>
                                             <OrderAvailabilityPicker
                                                 bricolerId={order.providerId!}
                                                 onSelect={(slots) => {
@@ -985,7 +1086,7 @@ export default function ServiceSetupPage() {
                                             <div className="space-y-6">
                                                 <div className="flex items-center justify-between px-1">
                                                     <label className="text-[25px] font-bold text-[#111827] setup-heading">Number of Rooms</label>
-                                                    <span className="text-[12px] font-bold text-[#111827] bg-[#FFC244] px-4 py-1.5 rounded-full tracking-widest">
+                                                    <span className="text-[12px] font-bold text-[#FFFFFF] bg-[#027963] px-4 py-1.5 rounded-full tracking-widest">
                                                         {rooms} Selected
                                                     </span>
                                                 </div>
@@ -1003,7 +1104,7 @@ export default function ServiceSetupPage() {
                                                                 rotate: { repeat: Infinity, duration: 5, ease: "easeInOut" }
                                                             } : { duration: 0 }}
                                                             onClick={() => setRooms(num)}
-                                                            className={`flex-shrink-0 w-16 h-16 flex items-center justify-center font-bold text-[22px] transition-all snap-center relative ${rooms === num ? 'bg-[#FFC244] text-black scale-125 z-10' : 'bg-[#F9FAFB] text-neutral-400 border border-neutral-100/50 rounded-full'}`}
+                                                            className={`flex-shrink-0 w-16 h-16 flex items-center justify-center font-bold text-[22px] transition-all snap-center relative ${rooms === num ? 'bg-[#E2E2E2] text-black scale-125 z-10' : 'bg-[#F9FAFB] text-neutral-400 border border-neutral-100/50 rounded-full'}`}
                                                         >
                                                             {num}
                                                         </motion.button>
@@ -1070,6 +1171,141 @@ export default function ServiceSetupPage() {
                                             </div>
                                         )}
 
+                                        {/* TV Mounting Specialized Sections */}
+                                        {order.subServiceId === 'tv_mounting' && (
+                                            <div className="space-y-12">
+                                                {/* 2. How many TVs? */}
+                                                <div className="space-y-6">
+                                                    <h3 className="text-[25px] font-bold text-[#111827] setup-heading">How many TVs do you need installed?*</h3>
+                                                    <div className="flex gap-3 overflow-x-auto pb-2 no-scrollbar">
+                                                        {[1, 2, 3, 4, 5].map((num) => (
+                                                            <button
+                                                                key={num}
+                                                                onClick={() => setTvCount(num)}
+                                                                className={`flex-shrink-0 w-16 h-16 flex items-center justify-center font-bold text-[22px] transition-all rounded-full ${tvCount === num ? 'bg-[#219178] text-white scale-110 shadow-lg' : 'bg-[#F9FAFB] text-neutral-400 border border-neutral-100'}`}
+                                                            >
+                                                                {num}
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                </div>
+
+                                                {/* 3. Lifting Help */}
+                                                <div className="space-y-6">
+                                                    <div>
+                                                        <h3 className="text-[25px] font-bold text-[#111827] setup-heading">Lifting assistance*</h3>
+                                                        <p className="text-[13px] font-bold text-black/40 mt-1 italic">Larger TVs (60" +) may require a second person for safe mounting.</p>
+                                                    </div>
+                                                    <div className="grid gap-3">
+                                                        {[
+                                                            { id: 'yes', label: 'Someone will be around' },
+                                                            { id: 'no_60', label: 'No one. 1 or more TVs above 60"' },
+                                                            { id: 'not_needed', label: 'Not needed. No TVs above 60"' },
+                                                            { id: 'unsure', label: 'Unsure if needed' }
+                                                        ].map((opt) => (
+                                                            <button
+                                                                key={opt.id}
+                                                                onClick={() => setLiftingHelp(opt.id)}
+                                                                className={`p-5 rounded-[5px] border-2 text-left transition-all flex items-center justify-between ${liftingHelp === opt.id ? 'border-[#219178] bg-[#F0FDF9]' : 'border-neutral-100 bg-[#F9FAFB]'}`}
+                                                            >
+                                                                <span className="text-[16px] font-bold text-[#111827]">{opt.label}</span>
+                                                                {liftingHelp === opt.id && <Check size={20} className="text-[#219178]" strokeWidth={3} />}
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                </div>
+
+                                                {/* 4. Mount Type */}
+                                                <div className="space-y-6">
+                                                    <h3 className="text-[25px] font-bold text-[#111827] setup-heading">What type of TV mount?*</h3>
+                                                    <div className="flex flex-wrap gap-2">
+                                                        {[
+                                                            'Fixed / low profile',
+                                                            'Tilting',
+                                                            'Articulating / full motion',
+                                                            'Other / Not sure'
+                                                        ].map((type) => (
+                                                            <button
+                                                                key={type}
+                                                                onClick={() => {
+                                                                    if (mountTypes.includes(type)) {
+                                                                        setMountTypes(prev => prev.filter(t => t !== type));
+                                                                    } else {
+                                                                        setMountTypes(prev => [...prev, type]);
+                                                                    }
+                                                                }}
+                                                                className={`px-6 py-3 rounded-full border-2 font-bold text-[13px] transition-all flex items-center gap-2 ${mountTypes.includes(type) ? 'border-[#219178] bg-[#F0FDF9] text-[#219178]' : 'border-neutral-100 text-black'}`}
+                                                            >
+                                                                {type}
+                                                                {mountTypes.includes(type) && <Check size={14} strokeWidth={4} />}
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                </div>
+
+                                                {/* 5. Wall Material */}
+                                                <div className="space-y-6">
+                                                    <div>
+                                                        <h3 className="text-[25px] font-bold text-[#111827] setup-heading">Wall material?*</h3>
+                                                        <p className="text-[13px] font-black text-black/50 mt-1 leading-relaxed">
+                                                            Test by knocking: Hollow sound = drywall/wood. No echo = brick/concrete.
+                                                        </p>
+                                                    </div>
+                                                    <div className="grid grid-cols-2 gap-3">
+                                                        {[
+                                                            'Drywall, plaster, or wood',
+                                                            'Brick or concrete',
+                                                            'Metal',
+                                                            'Other / not sure'
+                                                        ].map((mat) => (
+                                                            <button
+                                                                key={mat}
+                                                                onClick={() => setWallMaterial(mat)}
+                                                                className={`p-4 rounded-[5px] border-2 text-left transition-all ${wallMaterial === mat ? 'border-[#219178] bg-[#F0FDF9]' : 'border-neutral-100 bg-[#F9FAFB]'}`}
+                                                            >
+                                                                <span className="text-[14px] font-bold text-[#111827]">{mat}</span>
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                </div>
+
+                                                {/* Divider / Call to Action */}
+                                                <div className="py-4 border-y border-neutral-100 text-center space-y-2">
+                                                    <p className="text-[15px] font-black text-black">Help Taskers Say “Yes” Faster</p>
+                                                    <p className="text-[12px] font-bold text-black/40">A little extra detail now means quicker task acceptance.</p>
+                                                </div>
+
+                                                {/* 6. Add-ons */}
+                                                <div className="space-y-6">
+                                                    <h3 className="text-[25px] font-bold text-[#111827] setup-heading">Add-on services?</h3>
+                                                    <div className="grid gap-3">
+                                                        {[
+                                                            { id: 'wires', label: 'Hide wires behind the wall' },
+                                                            { id: 'audio', label: 'Install speakers or soundbars' },
+                                                            { id: 'setup', label: 'Device & accessory setup' }
+                                                        ].map((add) => (
+                                                            <button
+                                                                key={add.id}
+                                                                onClick={() => {
+                                                                    if (mountingAddOns.includes(add.id)) {
+                                                                        setMountingAddOns(prev => prev.filter(a => a !== add.id));
+                                                                    } else {
+                                                                        setMountingAddOns(prev => [...prev, add.id]);
+                                                                    }
+                                                                }}
+                                                                className={`p-5 rounded-[5px] border-2 text-left transition-all flex items-center justify-between ${mountingAddOns.includes(add.id) ? 'border-[#219178] bg-[#F0FDF9]' : 'border-neutral-100 bg-[#F9FAFB]'}`}
+                                                            >
+                                                                <span className="text-[16px] font-bold text-[#111827]">{add.label}</span>
+                                                                <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${mountingAddOns.includes(add.id) ? 'bg-[#219178] border-[#219178]' : 'border-neutral-300'}`}>
+                                                                    {mountingAddOns.includes(add.id) && <Check size={14} className="text-white" strokeWidth={4} />}
+                                                                </div>
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
+
                                         {/* Home Repairs & Plumbing Specialized Sections */}
                                         {(order.serviceType === 'home_repairs' || order.serviceType === 'plumbing') && (
                                             <div className="space-y-10">
@@ -1078,50 +1314,45 @@ export default function ServiceSetupPage() {
                                                     <h3 className="text-[25px] font-black text-[#111827]">
                                                         {SERVICES_HIERARCHY[order.serviceType as keyof typeof SERVICES_HIERARCHY]?.subServices.find(s => s.id === order.subServiceId)?.name || 'Task details'}
                                                     </h3>
-                                                    {SERVICES_HIERARCHY[order.serviceType as keyof typeof SERVICES_HIERARCHY]?.subServices.find(s => s.id === order.subServiceId)?.pricingArchetype === 'hourly' && (
-                                                        <div className="px-3 py-1 bg-[#F0FDF9] rounded-[5px]">
-                                                            <span className="text-[11px] font-black text-[#219178] tracking-wider">Hourly task</span>
-                                                        </div>
-                                                    )}
+
                                                 </div>
 
-                                                {/* Duration Selector for Hourly Tasks */}
-                                                {SERVICES_HIERARCHY[order.serviceType as keyof typeof SERVICES_HIERARCHY]?.subServices.find(s => s.id === order.subServiceId)?.pricingArchetype === 'hourly' && (
-                                                    <div className="space-y-6">
-                                                        <p className="text-[15px] font-bold text-[#9CA3AF] setup-heading uppercase tracking-widest">Estimated duration of help</p>
-                                                        <div className="grid grid-cols-4 gap-2">
-                                                            {[1, 2, 3, 4, 6, 8].map((h) => (
-                                                                <button
-                                                                    key={h}
-                                                                    onClick={() => setTaskDuration(h)}
-                                                                    className={`py-4 rounded-full border-2 font-black text-[15px] transition-all flex flex-col items-center justify-center gap-0.5 ${taskDuration === h ? 'border-[#219178] bg-[#F0FDF9] text-[#219178]' : 'border-neutral-100 bg-[#F9FAFB] text-black'}`}
-                                                                >
-                                                                    <span>{h}</span>
-                                                                    <span className="text-[9px] font-bold tracking-tighter">hours</span>
-                                                                </button>
-                                                            ))}
-                                                        </div>
-                                                        <p className="text-[12px] font-bold text-neutral-300 italic">
-                                                            *Final hours will be confirmed with your Bricoler based on the work complexity.
-                                                        </p>
+                                                {/* Task Size Selector */}
+                                                <div className="space-y-6">
+                                                    <p className="text-[18px] font-black text-[#111827]">How big is your task?</p>
+                                                    <div className="grid grid-cols-1 gap-3">
+                                                        {[
+                                                            { id: 'small', label: 'Small', desc: 'Est. 1 hr', hours: 1 },
+                                                            { id: 'medium', label: 'Medium', desc: 'Est. 2-3 hrs', hours: 2.5 },
+                                                            { id: 'large', label: 'Large', desc: 'Est. 4+ hrs', hours: 4 },
+                                                        ].map((size) => (
+                                                            <button
+                                                                key={size.id}
+                                                                onClick={() => setTaskDuration(size.hours)}
+                                                                className={`p-5 rounded-[5px] border-2 text-left transition-all flex items-center justify-between ${taskDuration === size.hours ? 'border-[#219178] bg-[#F1FEF4]' : 'border-neutral-100 bg-[#F9FAFB]'}`}
+                                                            >
+                                                                <div>
+                                                                    <p className="text-[17px] font-black text-[#111827]">{size.label}</p>
+                                                                    <p className="text-[13px] font-bold text-[#6B7280]">{size.desc}</p>
+                                                                </div>
+                                                                {taskDuration === size.hours && <Check size={20} className="text-[#219178]" strokeWidth={3} />}
+                                                            </button>
+                                                        ))}
                                                     </div>
-                                                )}
-
-                                                {/* Details Reminder for Fixed Tasks */}
-                                                {SERVICES_HIERARCHY[order.serviceType as keyof typeof SERVICES_HIERARCHY]?.subServices.find(s => s.id === order.subServiceId)?.pricingArchetype === 'fixed' && (
-                                                    <div className="p-5 bg-[#F9FAFB] rounded-[5px] border border-neutral-100">
-                                                        <p className="text-[14px] font-bold text-[#4B5563] leading-relaxed">
-                                                            This is a fixed-price task. Please provide clear photos and instructions below so the Bricoler can come prepared.
-                                                        </p>
-                                                    </div>
-                                                )}
+                                                </div>
                                             </div>
                                         )}
 
                                         {/* Photo Uploads */}
                                         <div className="space-y-6">
                                             <div className="flex items-center justify-between">
-                                                <label className="text-[25px] font-bold text-[#111827] setup-heading">Photos of the Property</label>
+                                                <label className="text-[25px] font-bold text-[#111827] setup-heading">
+                                                    {order.subServiceId?.toLowerCase().includes('tv') ? "Wall & Area Photos" :
+                                                     order.serviceType === 'mounting' ? "Task Area Photos" :
+                                                     order.serviceType === 'moving' ? "Inventory Photos" :
+                                                     order.serviceType === 'cleaning' ? "Room Photos" :
+                                                     "Photos of the Property"}
+                                                </label>
                                                 <span className="text-[12px] font-medium text-[#9CA3AF] tracking-wider">{photos.length}/6</span>
                                             </div>
                                             <div className="grid grid-cols-3 gap-4">
@@ -1137,7 +1368,7 @@ export default function ServiceSetupPage() {
                                                     </div>
                                                 ))}
                                                 {photos.length < 6 && (
-                                                    <label className="aspect-square rounded-[5px] border-2 border-dashed border-neutral-200 flex flex-col items-center justify-center gap-2 cursor-pointer transition-all hover:bg-neutral-50 hover:border-[#219178]/30 active:scale-95">
+                                                    <label className="aspect-square rounded-[10px] border-2 border-dashed border-neutral-200 flex flex-col items-center justify-center gap-2 cursor-pointer transition-all hover:bg-neutral-50 hover:border-[#219178]/30 active:scale-95">
                                                         <input type="file" multiple hidden accept="image/*" onChange={handlePhotoUpload} disabled={isUploading} />
                                                         {isUploading ? (
                                                             <Loader2 size={24} className="animate-spin text-[#219178]" />
@@ -1156,7 +1387,7 @@ export default function ServiceSetupPage() {
 
                                         {/* Optional Note */}
                                         <div className="space-y-6 pb-1">
-                                            <label className="text-[25px] font-bold text-[#111827]">Instructions or Notes</label>
+                                            <label className="text-[25px] font-bold text-[#111827] ">Instructions or Notes</label>
                                             <textarea
                                                 value={note}
                                                 onChange={(e) => setNote(e.target.value)}
@@ -1226,8 +1457,7 @@ export default function ServiceSetupPage() {
                                         <div className="w-5 h-5 rounded-full border border-neutral-300 flex items-center justify-center text-[10px] text-neutral-400 font-bold">i</div>
                                     </div>
                                     <span className="text-[18px] font-bold text-black">
-                                        {estimate.basePrice.toFixed(0)} MAD
-                                        {estimate.unit === 'hr' ? '/hr' : estimate.unit === 'day' ? '/day' : estimate.unit === 'unit' ? '/unit' : ''}
+                                        {estimate.basePrice.toFixed(0)} MAD{estimate.unit ? `/${estimate.unit}` : ''}
                                     </span>
                                 </div>
                                 <div className="flex items-center justify-between">

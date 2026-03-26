@@ -26,6 +26,7 @@ import ClientWhatsAppPopup from '@/features/client/components/ClientWhatsAppPopu
 import { useLanguage } from '@/context/LanguageContext';
 import { calculateOrderPrice } from '@/lib/pricing';
 import { getServiceVector } from '@/config/services_config';
+import { getRoadDistance } from '@/lib/calculateDistance';
 
 export default function CheckoutPage() {
     const router = useRouter();
@@ -43,6 +44,7 @@ export default function CheckoutPage() {
     const [showSuccess, setShowSuccess] = useState(false);
     const [receiptImage, setReceiptImage] = useState<string | null>(null);
     const [isUploading, setIsUploading] = useState(false);
+    const [travelInfo, setTravelInfo] = useState<{ distanceKm: number; durationMinutes: number } | null>(null);
 
     // ── Pre-flight Checks ────────────────────────────────────────────────
     useEffect(() => {
@@ -67,6 +69,13 @@ export default function CheckoutPage() {
         });
         return () => unsub();
     }, [order, router]);
+
+    useEffect(() => {
+        if (order.location?.lat && order.location?.lng && order.providerCoords?.lat && order.providerCoords?.lng) {
+            getRoadDistance(order.location.lat, order.location.lng, order.providerCoords.lat, order.providerCoords.lng)
+                .then(setTravelInfo);
+        }
+    }, [order.location, order.providerCoords]);
 
     const handleBack = () => router.back();
 
@@ -110,9 +119,16 @@ export default function CheckoutPage() {
                     order.providerRate || 80,
                     {
                         rooms: order.serviceDetails?.rooms || 1,
-                        hours: 1, // Default
+                        hours: (order.serviceDetails as any)?.taskDuration || 1,
                         days: calculateDays() || 1,
-                        propertyType: (order.serviceDetails as any)?.propertyType
+                        propertyType: (order.serviceDetails as any)?.propertyType,
+                        distanceKm: travelInfo?.distanceKm || 0,
+                        // TV Mounting specific
+                        tvCount: (order.serviceDetails as any)?.tvCount,
+                        mountTypes: (order.serviceDetails as any)?.mountTypes,
+                        wallMaterial: (order.serviceDetails as any)?.wallMaterial,
+                        liftingHelp: (order.serviceDetails as any)?.liftingHelp,
+                        mountingAddOns: (order.serviceDetails as any)?.mountingAddOns,
                     }
                 );
 
@@ -538,9 +554,16 @@ export default function CheckoutPage() {
                                 order.providerRate || 80,
                                 {
                                     rooms: order.serviceDetails?.rooms || 1,
-                                    hours: 1, // Default
+                                    hours: (order.serviceDetails as any)?.taskDuration || 1,
                                     days: calculateDays() || 1,
-                                    propertyType: (order.serviceDetails as any)?.propertyType
+                                    propertyType: (order.serviceDetails as any)?.propertyType,
+                                    distanceKm: travelInfo?.distanceKm || 0,
+                                    // TV Mounting specific
+                                    tvCount: (order.serviceDetails as any)?.tvCount,
+                                    mountTypes: (order.serviceDetails as any)?.mountTypes,
+                                    wallMaterial: (order.serviceDetails as any)?.wallMaterial,
+                                    liftingHelp: (order.serviceDetails as any)?.liftingHelp,
+                                    mountingAddOns: (order.serviceDetails as any)?.mountingAddOns,
                                 }
                             );
 
@@ -577,6 +600,21 @@ export default function CheckoutPage() {
                                         <span style={{ fontSize: 18, fontWeight: 800, color: '#111827' }}>{serviceFee.toFixed(2)} MAD</span>
                                     </div>
 
+                                    {individualPricing.travelFee > 0 && (
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                            <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                                    <span style={{ fontSize: 18, fontWeight: 500, color: '#111827' }}>Travel Fee</span>
+                                                    <div style={{ width: 22, height: 22, borderRadius: '50%', border: '1px solid #D1D5DB', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, color: '#9CA3AF', fontWeight: 700 }}>i</div>
+                                                </div>
+                                                {travelInfo && (
+                                                    <span style={{ fontSize: 11, fontWeight: 900, color: '#9CA3AF' }}>{travelInfo.distanceKm} km · ~{travelInfo.durationMinutes} min</span>
+                                                )}
+                                            </div>
+                                            <span style={{ fontSize: 18, fontWeight: 800, color: '#111827' }}>{individualPricing.travelFee.toFixed(2)} MAD</span>
+                                        </div>
+                                    )}
+
                                     <div style={{ height: 1, background: '#E5E7EB', width: '100%', margin: '8px 0' }} />
 
                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -605,9 +643,16 @@ export default function CheckoutPage() {
                         order.selectedCar?.pricePerDay || order.providerRate || 0,
                         {
                             rooms: order.serviceDetails?.rooms || 1,
-                            hours: 1, // Default
+                            hours: (order.serviceDetails as any)?.taskDuration || 1,
                             days: calculateDays() || 1,
-                            propertyType: (order.serviceDetails as any)?.propertyType
+                            propertyType: (order.serviceDetails as any)?.propertyType,
+                            distanceKm: travelInfo?.distanceKm || 0,
+                            // TV Mounting specific
+                            tvCount: (order.serviceDetails as any)?.tvCount,
+                            mountTypes: (order.serviceDetails as any)?.mountTypes,
+                            wallMaterial: (order.serviceDetails as any)?.wallMaterial,
+                            liftingHelp: (order.serviceDetails as any)?.liftingHelp,
+                            mountingAddOns: (order.serviceDetails as any)?.mountingAddOns,
                         }
                     );
                     const total = individualPricing.total * slotsCount;

@@ -240,8 +240,8 @@ const AdminBricolersView: React.FC<AdminBricolersViewProps> = ({ t }) => {
 
 const BricolerCard = ({ b, t, expandedId, setExpandedId, toggleStatus, handleDelete, onEdit, onSchedule, onViewProfile }: any) => {
   const isClaimed = !!b.uid;
-  const rating = typeof b.rating === 'number' ? b.rating : 5.0;
   const jobs = b.numReviews || b.completedJobs || 0;
+  const rating = jobs === 0 ? 0.0 : (typeof b.rating === 'number' ? b.rating : 0.0);
 
   return (
     <motion.div
@@ -575,7 +575,7 @@ const BricolerProfileBottomSheet = ({ bricoler, isOpen, onClose, t }: any) => {
                     />
                     <KpiCard
                       label="Stars"
-                      value={(bricoler.rating || 5.0).toFixed(1)}
+                      value={((bricoler.numReviews || bricoler.completedJobs || 0) === 0 ? 0.0 : (bricoler.rating || 0.0)).toFixed(1)}
                       icon={<Star size={16} className="text-[#FFC244] fill-[#FFC244]" />}
                     />
                     <KpiCard

@@ -13,6 +13,7 @@ import { ClientOnboarding } from './ClientOnboarding';
 import { SERVICES_CATALOGUE } from '@/config/services_catalogue';
 import SplashScreen from '@/components/layout/SplashScreen';
 import CompactHomeMap from '@/components/shared/CompactHomeMap';
+import WaveTop from '@/components/shared/WaveTop';
 
 
 // ── Palette ────────────────────────────────────────────────────────────────
@@ -55,6 +56,8 @@ interface ClientHomeProps {
 }
 
 // ── Component ──────────────────────────────────────────────────────────────
+
+// ── Components ─────────────────────────────────────────────────────────────
 
 const PromoBannersWidget: React.FC<{
     showReferral: boolean;
@@ -373,7 +376,6 @@ const ClientHome: React.FC<ClientHomeProps> = ({
             svc.labelFr.toLowerCase().includes(searchQuery.toLowerCase()) ||
             (svc.labelAr && svc.labelAr.includes(searchQuery)) ||
             svc.subServices.some(sub =>
-                sub.en.toLowerCase().includes(searchQuery.toLowerCase()) ||
                 sub.fr.toLowerCase().includes(searchQuery.toLowerCase()) ||
                 (sub.ar && sub.ar.includes(searchQuery))
             )
@@ -396,28 +398,41 @@ const ClientHome: React.FC<ClientHomeProps> = ({
             }
         }
     }, [visibleServices, activeId, hasManuallySelected]);
+
     const active = filteredServices.find(s => s.id === activeId) || filteredServices[0] || visibleServices[0] || SERVICES_CATALOGUE[0];
     const [isWhiteSectionVisible, setIsWhiteSectionVisible] = useState(false);
+    const [startTicker, setStartTicker] = useState(false);
+    const [isWaving, setIsWaving] = useState(true);
 
     useEffect(() => {
-        const timer = setTimeout(() => setIsWhiteSectionVisible(true), 200);
-        return () => clearTimeout(timer);
+        const timerVisible = setTimeout(() => setIsWhiteSectionVisible(true), 200);
+        const timerWave = setTimeout(() => setIsWaving(false), 1700); // 1.5s wave duration
+        const timerTicker = setTimeout(() => setStartTicker(true), 2200); 
+        return () => {
+            clearTimeout(timerVisible);
+            clearTimeout(timerWave);
+            clearTimeout(timerTicker);
+        };
     }, []);
 
     const heroImages = [
         '/public/Images/clientHomeHeroSection/Cleaning.png',
         '/public/Images/clientHomeHeroSection/Homerepairs.png',
         '/public/Images/clientHomeHeroSection/groceries.png',
-
+        '/public/Images/clientHomeHeroSection/money.png',
+        '/public/Images/clientHomeHeroSection/movingHelp.png',
+        '/public/Images/clientHomeHeroSection/onlineStore.png',
+        '/public/Images/clientHomeHeroSection/petsCare.png',
     ].map(p => p.replace('/public', ''));
 
     return (
         <div className={cn(
             "fixed inset-0 bg-[#FFC244] flex flex-col overflow-hidden h-[100dvh] w-screen font-jakarta",
             "z-0"
+
         )}>
             {/* 1. New Yellow Hero Section */}
-            <div className="w-full relative bg-[#FFC244] overflow-hidden flex-shrink-0 pt-[env(safe-area-inset-top)] pb-22">
+            <div className="w-full relative bg-[#027963] overflow-hidden flex-shrink-0 pt-[env(safe-area-inset-top)] pb-5">
                 {/* Location Pill */}
                 <div className="flex justify-center pt-8 mb-6">
                     <motion.button
@@ -425,7 +440,7 @@ const ClientHome: React.FC<ClientHomeProps> = ({
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 1.0, duration: 0.6, type: "spring", stiffness: 180 }}
                         onClick={onChangeLocation}
-                        className="flex items-center gap-1 bg-white/50  px-3 py-2.5 rounded-full  active:scale-95 transition-transform"
+                        className="flex items-center gap-1 bg-white  px-3 py-2.5 rounded-full  active:scale-95 transition-transform"
                     >
                         <div className="w-5 h-5 rounded-full flex items-center justify-center">
                             <Building size={25} className="text-[#000000]" />
@@ -443,7 +458,7 @@ const ClientHome: React.FC<ClientHomeProps> = ({
                         initial={{ opacity: 0, scale: 0.9 }}
                         animate={{ opacity: 1, scale: 1 }}
                         transition={{ delay: 0.8, duration: 0.6, type: "spring", stiffness: 200 }}
-                        className="text-[34px] font-black leading-[1.1] text-[#111827] max-w-[340px] mx-auto"
+                        className="text-[34px] font-black leading-[1.1] text-[#FFFFFF] max-w-[340px] mx-auto"
                     >
                         {t({
                             en: 'Book trusted help for home tasks',
@@ -453,23 +468,49 @@ const ClientHome: React.FC<ClientHomeProps> = ({
                     </motion.h1>
                 </div>
 
-                {/* Looping Icons Animation */}
-                <div className="relative h-[80px] w-full overflow-hidden flex items-center">
+                {/* 1.5 Animated Icons Row */}
+                <div className="flex gap-4 items-center overflow-x-hidden pt-1 pb-15 mt-4 pointer-events-none">
                     <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1, x: [0, -880] }}
+                        animate={startTicker ? { x: [0, -1000] } : { x: 0 }}
                         transition={{
-                            opacity: { delay: 1.2, duration: 0.8 },
-                            x: { duration: 30, repeat: Infinity, ease: "linear" }
+                            x: {
+                                repeat: startTicker ? Infinity : 0,
+                                repeatType: "loop",
+                                duration: 25, // Scrolling speed
+                                ease: "linear",
+                            },
                         }}
-                        className="flex gap-[10px] whitespace-nowrap absolute left-0"
+                        className="flex gap-2 items-center whitespace-nowrap"
                     >
                         {[...heroImages, ...heroImages, ...heroImages].map((img, i) => (
-                            <img
+                            <motion.img
                                 key={i}
                                 src={img}
-                                className="w-[80px] h-[80px] object-contain"
-                                alt="hero icon"
+                                initial={{ y: 35, opacity: 0 }}
+                                animate={{
+                                    y: isWaving ? [0, -30, 0] : 0,
+                                    opacity: 1
+                                }}
+                                transition={{
+                                    y: isWaving ? {
+                                        repeat: Infinity,
+                                        duration: 0.6,
+                                        delay: i * 0.1,
+                                        ease: "easeInOut"
+                                    } : {
+                                        duration: 1.1,
+                                        delay: 0,
+                                        type: "spring",
+                                        stiffness: 140,
+                                        damping: 10
+                                    },
+                                    opacity: {
+                                        duration: 0.6,
+                                        delay: 0.8 + (i % heroImages.length) * 0.12
+                                    }
+                                }}
+                                className="w-[110px] h-[110px] object-contain flex-shrink-0"
+                                alt="Service Icon"
                             />
                         ))}
                     </motion.div>
@@ -487,11 +528,7 @@ const ClientHome: React.FC<ClientHomeProps> = ({
                 )}
             >
                 {/* Wave Border Overlay */}
-                <div className="absolute top-[-44px] left-0 right-0 h-[45px] z-20 pointer-events-none">
-                    <svg viewBox="0 0 1440 120" preserveAspectRatio="none" className="w-full h-full fill-white drop-shadow-[0_-5px_10px_rgba(0,0,0,0.03)] text-white">
-                        <path d="M0,64L48,64C96,64,192,64,288,64C384,64,480,64,576,53.3C672,43,768,21,864,16C960,10.7,1056,21.3,1152,42.7C1248,64,1344,96,1392,112L1440,128L1440,120L1392,120C1344,120,1248,120,1152,120C1056,120,960,120,864,120C768,120,672,120,576,120C480,120,384,120,288,120C192,120,96,120,48,120L0,120Z"></path>
-                    </svg>
-                </div>
+                <WaveTop />
 
                 <AnimatePresence mode="wait">
                     <motion.div

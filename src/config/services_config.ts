@@ -59,7 +59,7 @@ export const SERVICES_HIERARCHY: Record<string, ServiceConfig> = {
             {
                 id: 'ikea_assembly',
                 name: 'IKEA / Flat-Pack Assembly',
-                pricingArchetype: 'fixed',
+                pricingArchetype: 'hourly',
                 desc: {
                     en: 'Expert assembly of IKEA or any flat-pack furniture.',
                     fr: 'Montage expert de meubles IKEA ou tout meuble en kit.',
@@ -69,7 +69,7 @@ export const SERVICES_HIERARCHY: Record<string, ServiceConfig> = {
             {
                 id: 'crib_assembly',
                 name: 'Crib Assembly',
-                pricingArchetype: 'fixed',
+                pricingArchetype: 'hourly',
                 desc: {
                     en: 'Safe and secure assembly of baby cribs and nursery furniture.',
                     fr: 'Montage sûr et sécurisé de berceaux et de meubles de chambre de bébé.',
@@ -79,7 +79,7 @@ export const SERVICES_HIERARCHY: Record<string, ServiceConfig> = {
             {
                 id: 'bookshelf_assembly',
                 name: 'Bookshelf Assembly',
-                pricingArchetype: 'fixed',
+                pricingArchetype: 'hourly',
                 desc: {
                     en: 'Assemble bookshelves, storage units, and library systems.',
                     fr: 'Assemblez des bibliothèques, des vitrines et des systèmes de rangement.',
@@ -89,7 +89,7 @@ export const SERVICES_HIERARCHY: Record<string, ServiceConfig> = {
             {
                 id: 'desk_assembly',
                 name: 'Desk Assembly',
-                pricingArchetype: 'fixed',
+                pricingArchetype: 'hourly',
                 desc: {
                     en: 'Assembly of office desks, workstations, and computer tables.',
                     fr: 'Montage de bureaux, de postes de travail et de tables informatiques.',
@@ -132,13 +132,13 @@ export const SERVICES_HIERARCHY: Record<string, ServiceConfig> = {
                     ar: 'إصلاحات صغيرة في جميع أنحاء المنزل مثل إصلاح سقف يسرب أو باب يصدر صريراً.'
                 }
             },
-            { id: 'door_lock_repair', name: 'Door & Lock Repair', pricingArchetype: 'fixed' },
-            { id: 'furniture_fixes', name: 'Furniture Fixes', pricingArchetype: 'fixed' },
-            { id: 'shelf_mounting', name: 'Shelf Mounting', pricingArchetype: 'fixed' },
+            { id: 'door_lock_repair', name: 'Door, Cabinet, & Furniture Repair', pricingArchetype: 'hourly' },
+            { id: 'furniture_fixes', name: 'Furniture Fixes', pricingArchetype: 'hourly' },
+            { id: 'shelf_mounting', name: 'Shelf Mounting', pricingArchetype: 'hourly' },
             { id: 'caulking_grouting', name: 'Caulking & Grouting', pricingArchetype: 'hourly' },
-            { id: 'wall_repair', name: 'Wall Repair', pricingArchetype: 'fixed' },
-            { id: 'appliance_install', name: 'Appliance Installation & Repairs', pricingArchetype: 'fixed' },
-            { id: 'window_blinds_repair', name: 'Window & Blinds Repair', pricingArchetype: 'fixed' },
+            { id: 'wall_repair', name: 'Wall Repair', pricingArchetype: 'hourly' },
+            { id: 'appliance_install', name: 'Appliance Installation & Repairs', pricingArchetype: 'hourly' },
+                                            { id: 'window_blinds_repair', name: 'Window & Blinds Repair', pricingArchetype: 'hourly' },
             { id: 'flooring_tiling', name: 'Flooring & Tiling Help', pricingArchetype: 'hourly' },
             { id: 'electrical_help', name: 'Electrical Help', pricingArchetype: 'hourly' },
             { id: 'plumbing_help', name: 'Plumbing Help', pricingArchetype: 'hourly' },
@@ -150,12 +150,15 @@ export const SERVICES_HIERARCHY: Record<string, ServiceConfig> = {
         name: 'Mounting',
         icon: Monitor,
         subServices: [
+            { id: 'tv_mounting', name: 'TV Mounting', pricingArchetype: 'fixed' },
+            { id: 'install_shelves', name: 'Install Shelves, Rods & Hooks', pricingArchetype: 'fixed' },
+            { id: 'curtain_rod', name: 'Curtain Rod Installation', pricingArchetype: 'fixed' },
+            { id: 'mirror_hanging', name: 'Mirror Hanging', pricingArchetype: 'fixed' },
+            { id: 'picture_hanging', name: 'Picture Hanging', pricingArchetype: 'fixed' },
             { id: 'hang_art', name: 'Hang Art, Mirror & Decor', pricingArchetype: 'fixed' },
             { id: 'install_blinds', name: 'Install Blinds & Window Treatments', pricingArchetype: 'fixed' },
             { id: 'mount_furniture', name: 'Mount & Anchor Furniture', pricingArchetype: 'fixed' },
-            { id: 'install_shelves', name: 'Install Shelves, Rods & Hooks', pricingArchetype: 'fixed' },
-            { id: 'other_mounting', name: 'Other Mounting', pricingArchetype: 'hourly' },
-            { id: 'tv_mounting', name: 'TV Mounting', pricingArchetype: 'fixed' }
+            { id: 'other_mounting', name: 'Other Mounting', pricingArchetype: 'hourly' }
         ]
     },
 
@@ -220,7 +223,11 @@ export const SERVICES_HIERARCHY: Record<string, ServiceConfig> = {
         icon: Trash2,
         subServices: [
             { id: 'family_home', name: 'Family home cleaning', pricingArchetype: 'unit' },
-            { id: 'hospitality', name: 'Hospitality-level cleaning', pricingArchetype: 'unit' }
+            { id: 'airbnb_cleaning', name: 'Airbnb cleaning', pricingArchetype: 'unit' },
+            { id: 'deep_cleaning', name: 'Deep home cleaning', pricingArchetype: 'unit' },
+            { id: 'car_washing', name: 'Car Washing', pricingArchetype: 'fixed' },
+            { id: 'car_detailing', name: 'Car Detailing', pricingArchetype: 'fixed' },
+            { id: 'hospitality', name: 'Airbnb cleaning', pricingArchetype: 'unit' }
         ]
     },
     car_rental: {
@@ -228,39 +235,40 @@ export const SERVICES_HIERARCHY: Record<string, ServiceConfig> = {
         name: 'Transport & Car Rental',
         icon: Car,
         subServices: [
-            { 
-                id: 'car_wash', 
-                name: 'Car Wash', 
+
+            {
+                id: 'car_wash',
+                name: 'Car Wash',
                 pricingArchetype: 'fixed',
                 desc: { en: 'Professional car washing and cleaning.', fr: 'Lavage et nettoyage professionnel de voiture.', ar: 'غسيل وتنظيف السيارات بشكل احترافي.' }
             },
-            { 
-                id: 'car_detail', 
-                name: 'Car Detailing', 
+            {
+                id: 'car_detail',
+                name: 'Car Detailing',
                 pricingArchetype: 'fixed',
                 desc: { en: 'Deep cleaning and restoration for your car.', fr: 'Nettoyage en profondeur et restauration de votre voiture.', ar: 'تنظيف عميق واستعادة لسيارتك.' }
             },
-            { 
-                id: 'automotive_glass', 
-                name: 'Automotive Glass', 
+            {
+                id: 'automotive_glass',
+                name: 'Automotive Glass',
                 pricingArchetype: 'fixed',
                 desc: { en: 'Windshield and glass repair.', fr: 'Réparation de pare-brise et de vitres.', ar: 'إصلاح الزجاج والزجاج الأمامي.' }
             },
-            { 
-                id: 'rent_a_car', 
-                name: 'Car Rental', 
+            {
+                id: 'rent_a_car',
+                name: 'Car Rental',
                 pricingArchetype: 'rental',
                 desc: { en: 'Rent a car for your trips.', fr: 'Louez une voiture pour vos trajets.', ar: 'استئجار سيارة لرحلاتك.' }
             },
-            { 
-                id: 'private_driver', 
-                name: 'Private Driver', 
+            {
+                id: 'private_driver',
+                name: 'Private Driver',
                 pricingArchetype: 'rental',
                 desc: { en: 'Book a professional driver.', fr: 'Réservez un chauffeur professionnel.', ar: 'احجز سائقًا محترفًا.' }
             },
-            { 
-                id: 'vip_airport', 
-                name: 'VIP Airport Transfer', 
+            {
+                id: 'vip_airport',
+                name: 'VIP Airport Transfer',
                 pricingArchetype: 'fixed',
                 desc: { en: 'Luxury transfer to/from airport.', fr: 'Transfert de luxe vers/depuis l’aéroport.', ar: 'نقل فاخر من وإلى المطار.' }
             }

@@ -7,6 +7,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { MOROCCAN_CITIES, MOROCCAN_CITIES_AREAS } from '@/config/moroccan_areas';
 import { cn } from '@/lib/utils';
 import { useIsMobileViewport } from '@/lib/mobileOnly';
+import WaveTop from '@/components/shared/WaveTop';
 
 interface CitySelectionPopupProps {
     isOpen: boolean;
@@ -74,9 +75,14 @@ const CitySelectionPopup = ({ isOpen, onSelectCity, onClose }: CitySelectionPopu
                         animate={isMobile ? { y: 0 } : { scale: 1, opacity: 1, y: 0 }}
                         exit={isMobile ? { y: '100%' } : { scale: 0.95, opacity: 0, y: 20 }}
                         transition={{ type: 'spring', damping: 28, stiffness: 320 }}
-                        className="bg-white w-full md:max-w-[480px] rounded-t-[32px] md:rounded-[32px] overflow-hidden shadow-2xl max-h-[90vh] flex flex-col"
+                        className={cn(
+                            "bg-white w-full md:max-w-[480px] rounded-t-[32px] md:rounded-[32px] shadow-2xl max-h-[90vh] flex flex-col relative",
+                            isMobile ? "min-h-0" : "overflow-hidden"
+                        )}
                         onClick={e => e.stopPropagation()}
                     >
+                        {isMobile && <WaveTop />}
+                        
                         {/* Handle */}
                         <div className="w-10 h-1 bg-neutral-200 rounded-full mx-auto mt-4 mb-1 flex-shrink-0" />
 

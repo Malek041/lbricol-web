@@ -5,6 +5,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, Check } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
 import { useIsMobileViewport } from '@/lib/mobileOnly';
+import WaveTop from '@/components/shared/WaveTop';
+import { cn } from '@/lib/utils';
 
 interface LanguagePreferencePopupProps {
     isOpen: boolean;
@@ -83,8 +85,13 @@ const LanguagePreferencePopup = ({ isOpen, onSelectLanguage, onClose }: Language
                         exit={{ opacity: 0, y: 60 }}
                         transition={{ type: 'spring', damping: 28, stiffness: 300 }}
                         onClick={e => e.stopPropagation()}
-                        className={`bg-white w-full ${isMobile ? 'rounded-t-[28px] max-h-[85vh]' : 'max-w-sm rounded-[28px]'} flex flex-col overflow-hidden shadow-2xl`}
+                        className={cn(
+                            "bg-white w-full shadow-2xl flex flex-col relative",
+                            isMobile ? "rounded-t-[28px] max-h-[85vh] min-h-0" : "max-w-sm rounded-[28px] overflow-hidden"
+                        )}
                     >
+                        {isMobile && <WaveTop />}
+
                         {/* Drag Handle (mobile) */}
                         {isMobile && <div className="mx-auto mt-3 w-10 h-1 bg-neutral-200 rounded-full flex-shrink-0" />}
 
