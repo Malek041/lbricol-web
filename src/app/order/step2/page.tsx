@@ -204,7 +204,7 @@ function Step2Content() {
   const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
     const container = e.currentTarget;
     const scrollLeft = container.scrollLeft;
-    const cardWidth = container.offsetWidth * 0.85; // matching .provider-card width
+    const cardWidth = container.offsetWidth * 0.75 + 12; // matching wrapper width + gap
     const index = Math.round(scrollLeft / cardWidth);
     if (providers[index] && focusedId !== providers[index].id) {
       setFocusedId(providers[index].id);
@@ -216,7 +216,7 @@ function Step2Content() {
     const index = providers.findIndex(p => p.id === id);
     if (index !== -1 && cardsRef.current) {
       const container = cardsRef.current;
-      const cardWidth = container.offsetWidth * 0.85; // match .provider-card width in CSS
+      const cardWidth = container.offsetWidth * 0.75 + 12; // match wrapper width + gap
       container.scrollTo({
         left: index * cardWidth,
         behavior: 'smooth'
@@ -351,7 +351,7 @@ function Step2Content() {
         }
         .step2-cards::-webkit-scrollbar { display: none; }
         .provider-card-wrapper {
-          flex: 0 0 82%;
+          flex: 0 0 75%;
           scroll-snap-align: center;
           height: auto;
           min-height: 120px;
@@ -552,7 +552,7 @@ function ProviderCard({
       style={{
         border: isSelected ? '0.5px solid #219178' : '1px solid #F3F4F6',
         borderRadius: 10,
-        padding: '16px',
+        padding: '12px 14px',
         background: '#fff',
         transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
         boxShadow: isSelected ? '0 10px 25px rgba(1, 160, 131, 0.12)' : '0 2px 12px rgba(0,0,0,0.03)',
@@ -561,13 +561,13 @@ function ProviderCard({
         cursor: 'pointer',
         position: 'relative',
         height: '100%',
-        minHeight: '145px'
+        minHeight: '135px'
       }}>
 
       <div style={{ display: 'flex', gap: 14, alignItems: 'flex-start' }}>
         {/* Left: Avatar */}
         <div style={{
-          width: 52, height: 52, borderRadius: '50%',
+          width: 44, height: 44, borderRadius: '50%',
           background: avatar ? 'transparent' : '#F3F4F6',
           overflow: 'hidden', flexShrink: 0,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -582,7 +582,7 @@ function ProviderCard({
 
         {/* Center/Main Info Stack */}
         <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 4 }}>
-          <div style={{ fontSize: 17, fontWeight: 950, color: '#111827', lineHeight: 1.2 }}>
+          <div style={{ fontSize: 15, fontWeight: 950, color: '#111827', lineHeight: 1.2 }}>
             {provider.name}
           </div>
 
@@ -607,8 +607,8 @@ function ProviderCard({
         {/* Right side Stack (Price & Availability) */}
         <div style={{ textAlign: 'right', flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', justifyContent: 'space-between', minHeight: 75 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-            <div style={{ fontSize: 13, fontWeight: 950, color: '#111827', display: 'flex', alignItems: 'center', gap: 4 }}>
-              MAD {displayRate} <span style={{ color: '#9CA3AF', fontWeight: 900, fontSize: 11 }}>(min)</span>
+            <div style={{ fontSize: 12, fontWeight: 950, color: '#111827', display: 'flex', alignItems: 'center', gap: 4 }}>
+              MAD {displayRate} <span style={{ color: '#9CA3AF', fontWeight: 900, fontSize: 10 }}>(min)</span>
               <div style={{ width: 14, height: 14, background: '#219178', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <CheckCircle2 size={8} color="#fff" strokeWidth={4} />
               </div>
