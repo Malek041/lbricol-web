@@ -136,6 +136,7 @@ export default function ServiceSetupPage() {
     const [itemDescription, setItemDescription] = useState(order.description || '');
     const [activeDrawer, setActiveDrawer] = useState<'none' | 'description' | 'recipient' | 'schedule' | 'pickup' | 'dropoff' | 'map_picker'>('none');
     const [searchResults, setSearchResults] = useState<any[]>([]);
+    const [gpsTrigger, setGpsTrigger] = useState(0);
 
     // Bricoler Stats
     const [provider, setProvider] = useState({
@@ -873,10 +874,10 @@ export default function ServiceSetupPage() {
                                             <div className="grid gap-2">
                                                 <button
                                                     onClick={() => setActiveDrawer('pickup')}
-                                                    className="w-full p-5 flex items-center justify-between bg-[#F9FAFB] rounded-full border border-neutral-100/80 transition-all active:scale-[0.99]"
+                                                    className="w-full p-10 flex items-center justify-between bg-[#F9FAFB] rounded-full border border-neutral-100/80 transition-all active:scale-[0.99]"
                                                 >
                                                     <div className="flex items-center gap-4">
-                                                        <img src="/Images/Icons/Lightpin.png" alt="pin" className="w-5 h-5 object-contain" />
+                                                        <img src="/Images/Icons/Lightpin.png" alt="pin" className="w-10 h-10 object-contain" />
                                                         <span className={`text-[15px] font-light ${pickupLocation.address ? 'text-[#111827]' : 'text-neutral-300'}`}>
                                                             {pickupLocation.address || "Where from?"}
                                                         </span>
@@ -986,7 +987,7 @@ export default function ServiceSetupPage() {
                                                             <button
                                                                 key={size.id}
                                                                 onClick={() => setTaskSize(size.id as any)}
-                                                                className={`p-5 rounded-full border-2 text-left transition-all flex items-center justify-between ${taskSize === size.id ? 'border-[#219178] bg-[#F0FDF9]' : 'border-neutral-100 bg-[#F9FAFB]'}`}
+                                                                className={`p-5 rounded-[5px] border-2 text-left transition-all flex items-center justify-between ${taskSize === size.id ? 'border-[#219178] bg-[#F0FDF9]' : 'border-neutral-100 bg-[#F9FAFB]'}`}
                                                             >
                                                                 <div className="pl-4">
                                                                     <p className="font-black text-[17px] text-black">{size.name}</p>
@@ -1023,11 +1024,11 @@ export default function ServiceSetupPage() {
                                                         {/* Where from? */}
                                                         <button
                                                             onClick={() => setActiveDrawer('pickup')}
-                                                            className="w-full p-5 flex items-center justify-between group bg-[#F9FAFB] rounded-full border border-neutral-100 transition-all active:scale-[0.99]"
+                                                            className="w-full p-5 flex items-center justify-between group bg-[#F9FAFB] rounded-[5px]  border border-neutral-100 transition-all active:scale-[0.99]"
                                                         >
                                                             <div className="flex items-center gap-4 text-left pl-2">
-                                                                <div className="w-6 h-6 flex items-center justify-center">
-                                                                    <img src="/Images/Icons/Lightpin.png" alt="from" className="w-5 h-5 object-contain" />
+                                                                <div className="w-10 h-10 flex items-center justify-center">
+                                                                    <img src="/Images/Icons/Lightpin.png" alt="from" className="w-10 h-10 object-contain" />
                                                                 </div>
                                                                 <span className={`text-[15px] font-black ${pickupLocation.address ? 'text-black' : 'text-neutral-400'}`}>
                                                                     {pickupLocation.address || "Where from?"}
@@ -1039,11 +1040,11 @@ export default function ServiceSetupPage() {
                                                         {/* Where to? */}
                                                         <button
                                                             onClick={() => setActiveDrawer('map_picker')}
-                                                            className="w-full p-5 flex items-center justify-between group bg-[#F9FAFB] rounded-full border border-neutral-100 transition-all active:scale-[0.99]"
+                                                            className="w-full p-5 flex items-center justify-between group bg-[#F9FAFB] rounded-[5px] border border-neutral-100 transition-all active:scale-[0.99]"
                                                         >
                                                             <div className="flex items-center gap-4 text-left pl-2">
-                                                                <div className="w-6 h-6 flex items-center justify-center">
-                                                                    <img src="/Images/Icons/Lightpin.png" alt="to" className="w-5 h-5 object-contain" />
+                                                                <div className="w-10 h-10 flex items-center justify-center">
+                                                                    <img src="/Images/Icons/Lightpin.png" alt="to" className="w-10 h-10 object-contain" />
                                                                 </div>
                                                                 <span className={`text-[15px] font-black ${dropoffLocation.address ? 'text-black' : 'text-neutral-400'}`}>
                                                                     {dropoffLocation.address || "Where to?"}
@@ -1348,10 +1349,10 @@ export default function ServiceSetupPage() {
                                             <div className="flex items-center justify-between">
                                                 <label className="text-[25px] font-bold text-[#111827] setup-heading">
                                                     {order.subServiceId?.toLowerCase().includes('tv') ? "Wall & Area Photos" :
-                                                     order.serviceType === 'mounting' ? "Task Area Photos" :
-                                                     order.serviceType === 'moving' ? "Inventory Photos" :
-                                                     order.serviceType === 'cleaning' ? "Room Photos" :
-                                                     "Photos of the Property"}
+                                                        order.serviceType === 'mounting' ? "Task Area Photos" :
+                                                            order.serviceType === 'moving' ? "Inventory Photos" :
+                                                                order.serviceType === 'cleaning' ? "Room Photos" :
+                                                                    "Photos of the Property"}
                                                 </label>
                                                 <span className="text-[12px] font-medium text-[#9CA3AF] tracking-wider">{photos.length}/6</span>
                                             </div>
@@ -1661,6 +1662,7 @@ export default function ServiceSetupPage() {
                                             showCenterPin={true}
                                             pinY={50}
                                             zoom={16}
+                                            triggerGps={gpsTrigger}
                                         />
 
                                         <div className="absolute top-6 left-6 z-[1001]">
@@ -1687,12 +1689,12 @@ export default function ServiceSetupPage() {
                                             </div>
                                         </div>
 
-                                        <div className="absolute bottom-[240px] right-6 z-[1001]">
+                                        <div className="absolute bottom-[40px] right-6 z-[1001]">
                                             <button
-                                                onClick={() => { }}
-                                                className="w-12 h-12 rounded-full bg-white flex items-center justify-center text-black active:scale-95 transition-all"
+                                                onClick={() => setGpsTrigger(prev => prev + 1)}
+                                                className="w-12 h-12 rounded-full bg-white flex items-center justify-center text-black active:scale-95 transition-all shadow-lg border border-neutral-50"
                                             >
-                                                <Navigation size={22} />
+                                                <Navigation size={22} className="fill-[#111827]" />
                                             </button>
                                         </div>
                                     </div>
