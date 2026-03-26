@@ -2348,8 +2348,11 @@ const Home = () => {
 
   const isFullscreenMobileTab = isMobile && ['home', 'profile', 'share', 'promocodes', 'calendar', 'messages', 'heroes'].includes(mobileNavTab);
 
-
-
+  // --- PAUSE DEPLOYMENT ---
+  const isMaintenanceMode = true; // process.env.NODE_ENV === 'production';
+  if (isMaintenanceMode) {
+    return <ComingSoon />;
+  }
 
   return (
     <div style={{ backgroundColor: c.bg, color: c.text, minHeight: '100vh', scrollBehavior: 'smooth' }} className="font-sans">
