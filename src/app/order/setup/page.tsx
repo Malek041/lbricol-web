@@ -235,7 +235,8 @@ export default function ServiceSetupPage() {
                             subtotal: sub,
                             serviceFee: Math.round(sub * 0.1),
                             total: total,
-                            duration: durationInMinutes
+                            duration: durationInMinutes,
+                            distanceKm: distanceKm
                         } as any);
                     } catch (e) {
                         console.warn("Pricing calculation failed", e);
@@ -269,7 +270,8 @@ export default function ServiceSetupPage() {
                         subtotal: finalSub,
                         serviceFee: Math.round(finalSub * 0.1),
                         total: total,
-                        duration: Math.round(durationMinutes)
+                        duration: Math.round(durationMinutes),
+                        distanceKm: distanceKm
                     } as any);
                 };
                 fetchDist();
@@ -304,6 +306,7 @@ export default function ServiceSetupPage() {
         } else if (order.subServiceId === 'tv_mounting') {
             const calculateTVPrice = async () => {
                 let distance = 0;
+                let durationMinutes = 0;
                 if (provider.coords && order.location) {
                     try {
                         const res = await getRoadDistance(
@@ -311,6 +314,7 @@ export default function ServiceSetupPage() {
                             order.location.lat, order.location.lng
                         );
                         distance = res.distanceKm;
+                        durationMinutes = res.durationMinutes;
                     } catch (e) {
                         console.warn("Distance calculation failed for TV Mounting:", e);
                     }
@@ -325,7 +329,8 @@ export default function ServiceSetupPage() {
                         mountTypes,
                         wallMaterial: wallMaterial || undefined,
                         mountingAddOns,
-                        distanceKm: distance
+                        distanceKm: distance,
+                        durationMinutes: durationMinutes
                     }
                 );
                 setEstimate(result);
@@ -1024,29 +1029,28 @@ export default function ServiceSetupPage() {
                                                         {/* Where from? */}
                                                         <button
                                                             onClick={() => setActiveDrawer('pickup')}
-                                                            className="w-full p-5 flex items-center justify-between group bg-[#F9FAFB] rounded-[5px]  border border-neutral-100 transition-all active:scale-[0.99]"
+                                                            className="w-full p-5 flex items-center justify-between group bg-[#FFFFFF] rounded-[5px]   transition-all active:scale-[0.99]"
                                                         >
                                                             <div className="flex items-center gap-4 text-left pl-2">
                                                                 <div className="w-10 h-10 flex items-center justify-center">
                                                                     <img src="/Images/Icons/Lightpin.png" alt="from" className="w-10 h-10 object-contain" />
                                                                 </div>
-                                                                <span className={`text-[15px] font-black ${pickupLocation.address ? 'text-black' : 'text-neutral-400'}`}>
+                                                                <span className={`text-[20px] font-medium ${pickupLocation.address ? 'text-light' : 'text-neutral-400'}`}>
                                                                     {pickupLocation.address || "Where from?"}
                                                                 </span>
                                                             </div>
                                                             <ChevronRight className="text-neutral-300 group-hover:text-black transition-colors" size={18} />
                                                         </button>
-
                                                         {/* Where to? */}
                                                         <button
                                                             onClick={() => setActiveDrawer('map_picker')}
-                                                            className="w-full p-5 flex items-center justify-between group bg-[#F9FAFB] rounded-[5px] border border-neutral-100 transition-all active:scale-[0.99]"
+                                                            className="w-full p-5 flex items-center justify-between group bg-[#FFFFFF] rounded-[5px]  transition-all active:scale-[0.99]"
                                                         >
                                                             <div className="flex items-center gap-4 text-left pl-2">
                                                                 <div className="w-10 h-10 flex items-center justify-center">
                                                                     <img src="/Images/Icons/Lightpin.png" alt="to" className="w-10 h-10 object-contain" />
                                                                 </div>
-                                                                <span className={`text-[15px] font-black ${dropoffLocation.address ? 'text-black' : 'text-neutral-400'}`}>
+                                                                <span className={`text-[20px] font-medium ${dropoffLocation.address ? 'text-light' : 'text-neutral-400'}`}>
                                                                     {dropoffLocation.address || "Where to?"}
                                                                 </span>
                                                             </div>
@@ -1057,9 +1061,15 @@ export default function ServiceSetupPage() {
                                                     {pickupLocation.address && dropoffLocation.address && (
                                                         <div className="p-4 bg-[#F9FAFB] rounded-[5px] flex items-center justify-between border border-neutral-100 italic">
                                                             <span className="text-[13px] font-light text-neutral-500">Delivery Estimate</span>
-                                                            <span className="text-[13px] font-medium text-black">
-                                                                {estimate && 'duration' in estimate ? `${estimate.duration} min delivery` : "Calculating route..."}
-                                                            </span>
+                                                            <div className="flex items-center gap-2">
+                                                                <span className="text-[13px] font-black text-[#219178]">
+                                                                    {estimate && 'distanceKm' in estimate && estimate.distanceKm ? `${estimate.distanceKm.toFixed(1)} km` : ""}
+                                                                </span>
+                                                                {estimate && 'distanceKm' in estimate && estimate.distanceKm && estimate.duration ? <span className="text-neutral-300">·</span> : null}
+                                                                <span className="text-[13px] font-medium text-black">
+                                                                    {estimate && 'duration' in estimate && typeof estimate.duration === 'number' && estimate.duration > 0 ? `${estimate.duration} min delivery` : (estimate ? "Calculating..." : "Loading route...")}
+                                                                </span>
+                                                            </div>
                                                         </div>
                                                     )}
                                                 </div>
@@ -1676,7 +1686,7 @@ export default function ServiceSetupPage() {
 
                                         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-[120%] z-[1001] pointer-events-none">
                                             <div className="bg-white px-4 py-2.5 rounded-[5px] border border-neutral-100 flex flex-col items-center gap-1 min-w-[140px]">
-                                                <span className="text-[14px] font-black text-black leading-none truncate max-w-[200px]">
+                                                <span className="text-[14px] font-medium text-black leading-none truncate max-w-[200px]">
                                                     {dropoffLocation.address?.split(',')[0] || "Select Point"}
                                                 </span>
                                                 <button
@@ -1694,7 +1704,7 @@ export default function ServiceSetupPage() {
                                                 onClick={() => setGpsTrigger(prev => prev + 1)}
                                                 className="w-12 h-12 rounded-full bg-white flex items-center justify-center text-black active:scale-95 transition-all shadow-lg border border-neutral-50"
                                             >
-                                                <Navigation size={22} className="fill-[#111827]" />
+                                                <Navigation size={22} />
                                             </button>
                                         </div>
                                     </div>

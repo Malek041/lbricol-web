@@ -417,12 +417,12 @@ const ClientHome: React.FC<ClientHomeProps> = ({
 
     const heroImages = [
         '/public/Images/clientHomeHeroSection/Cleaning.png',
-        '/public/Images/clientHomeHeroSection/Homerepairs.png',
         '/public/Images/clientHomeHeroSection/groceries.png',
         '/public/Images/clientHomeHeroSection/money.png',
         '/public/Images/clientHomeHeroSection/movingHelp.png',
         '/public/Images/clientHomeHeroSection/onlineStore.png',
         '/public/Images/clientHomeHeroSection/petsCare.png',
+        '/public/Images/clientHomeHeroSection/Homerepairs.png',
     ].map(p => p.replace('/public', ''));
 
     return (

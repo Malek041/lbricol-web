@@ -8,6 +8,8 @@ export interface PricingBreakdown {
     serviceFee: number;
     travelFee: number; // New: traveling distance cost
     total: number;
+    distanceKm?: number;
+    duration?: number;
 }
 
 /**
@@ -27,6 +29,7 @@ export const calculateOrderPrice = (
         quantity?: number;
         propertyType?: string;
         distanceKm?: number; // New: travel distance
+        durationMinutes?: number; // Actual trip duration from OSRM
         // TV Mounting specific
         tvCount?: number;
         mountTypes?: string[];
@@ -149,6 +152,8 @@ export const calculateOrderPrice = (
         subtotal,
         serviceFee,
         travelFee,
-        total
+        total,
+        distanceKm: options.distanceKm,
+        duration: options.durationMinutes || Math.ceil((options.distanceKm || 0) * 2) // Prefer OSRM duration
     };
 };
