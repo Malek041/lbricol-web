@@ -403,7 +403,6 @@ const ClientHome: React.FC<ClientHomeProps> = ({
     const [isWhiteSectionVisible, setIsWhiteSectionVisible] = useState(false);
     const [startTicker, setStartTicker] = useState(false);
     const [isWaving, setIsWaving] = useState(true);
-    const [isSheetExpanded, setIsSheetExpanded] = useState(false);
 
     useEffect(() => {
         const timerVisible = setTimeout(() => setIsWhiteSectionVisible(true), 200);
@@ -428,9 +427,8 @@ const ClientHome: React.FC<ClientHomeProps> = ({
 
     return (
         <div className={cn(
-            "fixed inset-0 bg-[#027963] flex flex-col overflow-hidden h-[100dvh] w-screen font-jakarta",
+            "fixed inset-0 bg-[#027963] overflow-y-auto no-scrollbar h-[100dvh] w-screen font-jakarta",
             "z-0"
-
         )}>
             {/* 1. New Yellow Hero Section */}
             <div className="w-full relative bg-[#027963] overflow-hidden flex-shrink-0 pt-[env(safe-area-inset-top)] pb-5">
@@ -520,29 +518,14 @@ const ClientHome: React.FC<ClientHomeProps> = ({
 
             {/* 2. White Bottom Sheet Container with Wave */}
             <motion.div
-                drag="y"
-                dragConstraints={{ top: -450, bottom: 0 }}
-                dragElastic={0.05}
-                dragTransition={{ bounceStiffness: 600, bounceDamping: 20 }}
                 initial={{ y: '100%' }}
-                animate={isWhiteSectionVisible ? { 
-                    y: isSheetExpanded ? -450 : 0 
-                } : { y: '100%' }}
-                onDragEnd={(_, info) => {
-                    if (info.offset.y < -100) setIsSheetExpanded(true);
-                    else if (info.offset.y > 100) setIsSheetExpanded(false);
-                }}
+                animate={isWhiteSectionVisible ? { y: 0 } : { y: '100%' }}
                 transition={{ type: "spring", damping: 25, stiffness: 180, delay: 0.4 }}
                 className={cn(
-                    "bg-white relative flex flex-col z-10 transition-all duration-500 ease-in-out shrink-0",
-                    "flex-1 -mt-8 min-h-[140vh] rounded-t-[32px]"
+                    "bg-white relative z-10 transition-all duration-500 ease-in-out shrink-0",
+                    "-mt-8 min-h-screen"
                 )}
             >
-                {/* Drag Handle Overlay */}
-                <div className="absolute top-0 left-0 right-0 h-12 flex items-center justify-center z-30">
-                    <div className="w-12 h-1.5 bg-neutral-200 rounded-full opacity-60" />
-                </div>
-
                 {/* Wave Border Overlay */}
                 <WaveTop />
 
@@ -553,10 +536,10 @@ const ClientHome: React.FC<ClientHomeProps> = ({
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
                         transition={{ duration: 0.5, delay: 0.6 }}
-                        className="flex-1 flex flex-col overflow-hidden"
+                        className="flex flex-col"
                     >
                         {/* Scrollable Content Area */}
-                        <div className="flex-1 overflow-y-auto overscroll-contain pb-32 no-scrollbar">
+                        <div className="w-full pb-32">
 
 
                             {/* ── Category tabs ───────────────────────────────────────── */}
