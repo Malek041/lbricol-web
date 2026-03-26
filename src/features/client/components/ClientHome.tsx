@@ -407,7 +407,7 @@ const ClientHome: React.FC<ClientHomeProps> = ({
     useEffect(() => {
         const timerVisible = setTimeout(() => setIsWhiteSectionVisible(true), 200);
         const timerWave = setTimeout(() => setIsWaving(false), 1700); // 1.5s wave duration
-        const timerTicker = setTimeout(() => setStartTicker(true), 2200); 
+        const timerTicker = setTimeout(() => setStartTicker(true), 2200);
         return () => {
             clearTimeout(timerVisible);
             clearTimeout(timerWave);
