@@ -430,8 +430,8 @@ const ClientHome: React.FC<ClientHomeProps> = ({
             "fixed inset-0 bg-[#027963] overflow-y-auto no-scrollbar h-[100dvh] w-screen font-jakarta",
             "z-0"
         )}>
-            {/* 1. New Yellow Hero Section */}
-            <div className="w-full relative bg-[#027963] overflow-hidden flex-shrink-0 pt-[env(safe-area-inset-top)] pb-5">
+            {/* 1. New Green Hero Section */}
+            <div className="w-full sticky top-0 z-0 bg-[#027963] overflow-hidden flex-shrink-0 pt-[env(safe-area-inset-top)] pb-5">
                 {/* Location Pill */}
                 <div className="flex justify-center pt-8 mb-6">
                     <motion.button
