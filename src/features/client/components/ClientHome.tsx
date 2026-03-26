@@ -403,6 +403,7 @@ const ClientHome: React.FC<ClientHomeProps> = ({
     const [isWhiteSectionVisible, setIsWhiteSectionVisible] = useState(false);
     const [startTicker, setStartTicker] = useState(false);
     const [isWaving, setIsWaving] = useState(true);
+    const [isSheetExpanded, setIsSheetExpanded] = useState(false);
 
     useEffect(() => {
         const timerVisible = setTimeout(() => setIsWhiteSectionVisible(true), 200);
@@ -427,7 +428,7 @@ const ClientHome: React.FC<ClientHomeProps> = ({
 
     return (
         <div className={cn(
-            "fixed inset-0 bg-[#FFC244] flex flex-col overflow-hidden h-[100dvh] w-screen font-jakarta",
+            "fixed inset-0 bg-[#027963] flex flex-col overflow-hidden h-[100dvh] w-screen font-jakarta",
             "z-0"
 
         )}>
@@ -519,14 +520,29 @@ const ClientHome: React.FC<ClientHomeProps> = ({
 
             {/* 2. White Bottom Sheet Container with Wave */}
             <motion.div
+                drag="y"
+                dragConstraints={{ top: -450, bottom: 0 }}
+                dragElastic={0.05}
+                dragTransition={{ bounceStiffness: 600, bounceDamping: 20 }}
                 initial={{ y: '100%' }}
-                animate={isWhiteSectionVisible ? { y: 0 } : { y: '100%' }}
+                animate={isWhiteSectionVisible ? { 
+                    y: isSheetExpanded ? -450 : 0 
+                } : { y: '100%' }}
+                onDragEnd={(_, info) => {
+                    if (info.offset.y < -100) setIsSheetExpanded(true);
+                    else if (info.offset.y > 100) setIsSheetExpanded(false);
+                }}
                 transition={{ type: "spring", damping: 25, stiffness: 180, delay: 0.4 }}
                 className={cn(
                     "bg-white relative flex flex-col z-10 transition-all duration-500 ease-in-out shrink-0",
-                    "flex-1 -mt-8 min-h-0"
+                    "flex-1 -mt-8 min-h-[140vh] rounded-t-[32px]"
                 )}
             >
+                {/* Drag Handle Overlay */}
+                <div className="absolute top-0 left-0 right-0 h-12 flex items-center justify-center z-30">
+                    <div className="w-12 h-1.5 bg-neutral-200 rounded-full opacity-60" />
+                </div>
+
                 {/* Wave Border Overlay */}
                 <WaveTop />
 
