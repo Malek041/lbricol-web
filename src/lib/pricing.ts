@@ -38,6 +38,7 @@ export const calculateOrderPrice = (
         wallMaterial?: string;
         liftingHelp?: string;
         mountingAddOns?: string[];
+        taskSize?: 'small' | 'medium' | 'large';
     } = {}
 ): PricingBreakdown => {
     // 1. Find the subservice to get its archetype
@@ -118,9 +119,9 @@ export const calculateOrderPrice = (
         if (options.mountingAddOns?.includes('audio')) extraFees += 30;
         if (options.mountingAddOns?.includes('setup')) extraFees += 20;
 
-    } else if (subServiceId === 'local_move' || subServiceId === 'moving' || subServiceId === 'packing' || subServiceId === 'furniture_move' || subServiceId.includes('moving') || subServiceId === 'errands' || subServiceId.includes('delivery')) {
+    } else if (subServiceId === 'local_move' || subServiceId === 'moving' || subServiceId === 'packing' || subServiceId === 'furniture_move' || subServiceId.includes('moving') || subServiceId === 'errands' || subServiceId.includes('delivery') || subServiceId.includes('shopping') || subServiceId.includes('pickup')) {
         // Specialized Moving & Delivery Pricing
-        const isErrands = subServiceId === 'errands' || subServiceId.includes('delivery');
+        const isErrands = subServiceId === 'errands' || subServiceId.includes('delivery') || subServiceId.includes('shopping') || subServiceId.includes('pickup') || subServiceId.includes('pharmacy');
         const hours = options.hours || 1;
         
         // Travel cost between points (10 MAD per minute)
@@ -133,11 +134,15 @@ export const calculateOrderPrice = (
         }
         
         if (isErrands) {
-            // For errands, the "base" is the time spent
-            basePrice = 10; // 10 MAD per minute
-            quantity = options.deliveryDurationMinutes || 0;
-            unit = 'min';
-            extraFees = 0;
+            // New Errands Pricing: 11 MAD Base + Size Fee + Distance
+            basePrice = 11;
+            const sizeFees = { small: 0, medium: 9, large: 19 };
+            const sizeFee = sizeFees[options.taskSize || 'small'];
+            const distanceFee = (options.deliveryDistanceKm || 0) * 2.5; // 2.5 MAD per Km
+            
+            quantity = 1;
+            unit = 'errand';
+            extraFees = sizeFee + distanceFee;
         } else {
             extraFees = deliveryTravelCost + distanceOverage;
             quantity = hours;

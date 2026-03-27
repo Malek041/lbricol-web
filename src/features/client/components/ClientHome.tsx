@@ -465,9 +465,36 @@ const ClientHome: React.FC<ClientHomeProps> = ({
                         })}
                     </motion.h1>
                 </div>
+                {/* Search bar */}
+                <div className="px-6 pb-1 pt-6 w-full max-w-[400px] mx-auto">
+                    <div className="flex items-center gap-2 bg-neutral-50 rounded-full px-5 py-3.5">
+                        <Search size={18} className=" text-[#000000] flex-shrink-0" strokeWidth={2.5} />
+                        <input
+                            type="text"
+                            value={searchQuery}
+                            onChange={e => setSearchQuery(e.target.value)}
+                            placeholder={t({ en: 'Search services...', fr: 'Rechercher un service...', ar: 'ابحث عن خدمة...' })}
+                            className="flex-1 bg-transparent text-[15.5px] font-medium text-neutral-800 placeholder:text-neutral-400 outline-none"
+                        />
+                        {searchQuery.length > 0 && (
+                            <button onClick={() => setSearchQuery('')} className="text-neutral-400 hover:text-neutral-600 transition-colors active:scale-90">
+                                <X size={18} />
+                            </button>
+                        )}
+                    </div>
+                </div>
+
+                {/* No results message */}
+                {searchQuery && filteredServices.length === 0 && (
+                    <div className="px-4 py-8 text-center">
+                        <p className="text-[15px] font-medium text-neutral-400">
+                            {t({ en: 'No services found for', fr: 'Aucun service trouvé pour', ar: 'لا توجد خدمات لـ' })} "<span className="text-neutral-600 font-bold">{searchQuery}</span>"
+                        </p>
+                    </div>
+                )}
 
                 {/* 1.5 Animated Icons Row */}
-                <div className="flex gap-4 items-center overflow-x-hidden pt-1 pb-15 mt-4 pointer-events-none">
+                <div className="flex gap-4 items-center overflow-x-hidden pt-1 mt-4 pointer-events-none">
                     <motion.div
                         animate={startTicker ? { x: [0, -1000] } : { x: 0 }}
                         transition={{
@@ -507,7 +534,7 @@ const ClientHome: React.FC<ClientHomeProps> = ({
                                         delay: 0.8 + (i % heroImages.length) * 0.12
                                     }
                                 }}
-                                className="w-[110px] h-[110px] object-contain flex-shrink-0"
+                                className="w-[100px] h-[100px] object-contain flex-shrink-0"
                                 alt="Service Icon"
                             />
                         ))}
@@ -542,33 +569,7 @@ const ClientHome: React.FC<ClientHomeProps> = ({
 
 
                             {/* ── Category tabs ───────────────────────────────────────── */}
-                            {/* Search bar */}
-                            <div className="px-6 pb-6 pt-6 w-full max-w-[400px] mx-auto">
-                                <div className="flex items-center gap-2 bg-neutral-50 border border-neutral-200 rounded-full px-5 py-3.5">
-                                    <Search size={18} className="text-[#000000] flex-shrink-0" strokeWidth={2.5} />
-                                    <input
-                                        type="text"
-                                        value={searchQuery}
-                                        onChange={e => setSearchQuery(e.target.value)}
-                                        placeholder={t({ en: 'Search services...', fr: 'Rechercher un service...', ar: 'ابحث عن خدمة...' })}
-                                        className="flex-1 bg-transparent text-[15.5px] font-bold text-neutral-800 placeholder:text-neutral-400 outline-none"
-                                    />
-                                    {searchQuery.length > 0 && (
-                                        <button onClick={() => setSearchQuery('')} className="text-neutral-400 hover:text-neutral-600 transition-colors active:scale-90">
-                                            <X size={18} />
-                                        </button>
-                                    )}
-                                </div>
-                            </div>
 
-                            {/* No results message */}
-                            {searchQuery && filteredServices.length === 0 && (
-                                <div className="px-4 py-8 text-center">
-                                    <p className="text-[15px] font-medium text-neutral-400">
-                                        {t({ en: 'No services found for', fr: 'Aucun service trouvé pour', ar: 'لا توجد خدمات لـ' })} "<span className="text-neutral-600 font-bold">{searchQuery}</span>"
-                                    </p>
-                                </div>
-                            )}
 
                             <div
                                 className="flex gap-4 overflow-x-auto border-b border-neutral-100 px-4 flex-shrink-0"
@@ -750,7 +751,7 @@ const ClientHome: React.FC<ClientHomeProps> = ({
                                                             type: 'spring',
                                                             stiffness: 380,
                                                             damping: 20,
-                                                            delay: hasManuallySelected ? 0 : 1.6 + idx * 0.05
+                                                            delay: (hasManuallySelected ? 0.1 : 1.6) + idx * 0.04
                                                         }}
                                                         whileTap={{ scale: 0.92 }}
                                                         onClick={() => {
@@ -785,7 +786,15 @@ const ClientHome: React.FC<ClientHomeProps> = ({
                                                             if (icon) {
                                                                 setOrderField('serviceIcon', icon);
                                                             }
-                                                            router.push('/order/step1');
+                                                            const isErrands = active.id === 'errands' || active.id?.includes('delivery');
+                                                            if (isErrands) {
+                                                                setOrderField('isPublic', true);
+                                                                setOrderField('providerId', null);
+                                                                setOrderField('providerName', null);
+                                                                router.push('/order/setup');
+                                                            } else {
+                                                                router.push('/order/step1');
+                                                            }
                                                         }}
                                                         className="px-4 py-2.5 rounded-full border border-[#E6E6E6] text-[15px] font-bold text-[#1D1D1D] bg-white hover:border-[#1D1D1D] active:bg-neutral-50 transition-colors shadow-[0_2px_8_rgba(0,0,0,0.03)]"
                                                     >
@@ -806,7 +815,7 @@ const ClientHome: React.FC<ClientHomeProps> = ({
                                                         type: 'spring',
                                                         stiffness: 260,
                                                         damping: 22,
-                                                        delay: hasManuallySelected ? 0 : 1.7 + i * 0.05
+                                                        delay: (hasManuallySelected ? 0.2 : 1.7) + i * 0.04
                                                     }}
                                                 >
                                                     <span className="mt-0.5 text-[#B3B3B3] flex-shrink-0 text-[15px]">✓</span>

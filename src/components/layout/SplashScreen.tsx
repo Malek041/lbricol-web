@@ -40,7 +40,7 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ subStatus }) => {
                 </div>
 
                 {/* Brand Name */}
-                <motion.h1
+                {/*  <motion.h1
                     initial={{ opacity: 0, scale: 0.8 }}
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ duration: 0.8, delay: 0.3, type: 'spring' }}
@@ -54,7 +54,7 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ subStatus }) => {
                     }}
                 >
                     Lbricol
-                </motion.h1>
+                </motion.h1>*/}
 
                 {subStatus ? (
                     <motion.p

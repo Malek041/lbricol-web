@@ -140,7 +140,8 @@ The design uses an **8px base unit** for consistent spacing:
 
 ### Specific Components
 - Input fields: `10px`
-- Primary buttons: `10px`
+- Primary buttons: 999px (rounded-full)
+- Secondary buttons: 999px (rounded-full)
 - Service cards: `12px`
 - Calendar container: `24px`
 - Notification cards: `40px`
@@ -190,12 +191,13 @@ box-shadow: 0 4px 12px rgba(0,0,0,0.05);
 background: #000000;
 color: #FFFFFF;
 padding: 16px 24px;
-border-radius: 10px;
+border-radius: 999px; /* rounded-full */
 font-size: 18px;
 font-weight: 700;
 border: none;
 cursor: pointer;
 transition: all 0.2s ease;
+box-shadow: none; /* Never use shadows on buttons */
 ```
 
 **Hover**: `background: #333333`
@@ -206,7 +208,7 @@ transition: all 0.2s ease;
 background: #F3F3F3;
 color: #000000;
 padding: 12px 20px;
-border-radius: 10px;
+border-radius: 999px; /* rounded-full */
 font-size: 14px;
 font-weight: 800;
 border: 1px solid #E2E2E2;
@@ -560,7 +562,8 @@ box-shadow: 0 4px 10px rgba(0,0,0,0.2);
 ### 2. **Uber-Inspired Aesthetics**
 - Bold, black primary actions
 - Light gray backgrounds for inputs
-- Rounded corners (not too round)
+- Rounded-full buttons (pill shape) always
+- No shadows on buttons
 - Dot indicators for steps
 - Uppercase labels for sections
 

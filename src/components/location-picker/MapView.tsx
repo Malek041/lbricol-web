@@ -56,6 +56,7 @@ interface MapViewProps {
     avatarUrl?: string | null;
   };
   destinationPin?: { lat: number; lng: number };
+  centerOnUser?: boolean;
 }
 
 const MapView: React.FC<MapViewProps> = ({
@@ -87,6 +88,7 @@ const MapView: React.FC<MapViewProps> = ({
   clientPin,
   currentUserPin,
   destinationPin,
+  centerOnUser = false,
 }) => {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
@@ -296,10 +298,25 @@ const MapView: React.FC<MapViewProps> = ({
   // ── Watch internal user position if permitted ───────────────────────
   useEffect(() => {
     if (typeof window !== 'undefined' && navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          const { latitude, longitude } = pos.coords;
+          setInternalUserPos({ lat: latitude, lng: longitude });
+          
+          // Initial center on user if map is ready and no specific initialLocation was forced 
+          // or if we're in a view where centering on user is explicitly requested
+          if (mapRef.current && (!initialLocation || centerOnUser)) {
+             flyToWithOffset(latitude, longitude, targetZoom, true);
+          }
+        },
+        (error) => console.warn("Initial GPS failed", error),
+        { enableHighAccuracy: true, timeout: 5000 }
+      );
+
       const watchId = navigator.geolocation.watchPosition(
         (pos) => setInternalUserPos({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
-        () => { },
-        { enableHighAccuracy: true }
+        (error) => console.warn(error),
+        { enableHighAccuracy: true, maximumAge: 10000 }
       );
       return () => navigator.geolocation.clearWatch(watchId);
     }
@@ -338,7 +355,7 @@ const MapView: React.FC<MapViewProps> = ({
         iconAnchor: [20, 20],
       });
 
-      gpsMarkerRef.current = L.marker([lat, lng], { icon: radarIcon, zIndexOffset: 4500 }).addTo(map);
+      gpsMarkerRef.current = L.marker([lat, lng], { icon: radarIcon, zIndexOffset: 7000 }).addTo(map);
     };
 
     if (mapRef.current) {
@@ -383,6 +400,10 @@ const MapView: React.FC<MapViewProps> = ({
               iconAnchor: [10, 10],
             });
             gpsMarkerRef.current = L.marker([latitude, longitude], { icon: gpsIcon }).addTo(mapRef.current);
+            // Center map on this NEWLY detected radar if no pins are present
+            if (!clientPin && !destinationPin && !focusedProviderId) {
+                flyToWithOffset(latitude, longitude, targetZoom, true);
+            }
           }
         },
         (error) => {
@@ -745,8 +766,8 @@ const MapView: React.FC<MapViewProps> = ({
           const durationMin = Math.round(route.duration / 60);
 
           routeLayerRef.current = L.polyline(coords, {
-            color: '#027963', // Branded dark green
-            weight: 8,
+            color: '#219178', // Branded green
+            weight: 7,
             opacity: 0.9,
             lineCap: 'round',
             lineJoin: 'round',
@@ -795,8 +816,9 @@ const MapView: React.FC<MapViewProps> = ({
 
         } else if (clientPin && destinationPin && clientPin.lat && destinationPin.lat) {
           routeLayerRef.current = L.polyline([[clientPin.lat, clientPin.lng], [destinationPin.lat, destinationPin.lng]], {
-            color: '#219178', weight: 4, opacity: 0.6, dashArray: '8, 8'
+            color: '#219178', weight: 6, opacity: 0.5
           }).addTo(map);
+          map.fitBounds(L.latLngBounds([[clientPin.lat, clientPin.lng], [destinationPin.lat, destinationPin.lng]]), { padding: [40, 40] });
         }
       } catch (e) {
         console.warn("Direct routing failed", e);
