@@ -22,7 +22,8 @@ import {
     Truck,
     Package
 } from 'lucide-react';
-import MapView from '@/components/location-picker/MapView';
+import dynamic from 'next/dynamic';
+const MapView = dynamic(() => import('@/components/location-picker/MapView'), { ssr: false });
 import { useOrder } from '@/context/OrderContext';
 import { auth, db } from '@/lib/firebase';
 import { doc, getDoc, setDoc, collection, addDoc, serverTimestamp } from 'firebase/firestore';
