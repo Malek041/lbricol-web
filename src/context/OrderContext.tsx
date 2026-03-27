@@ -46,6 +46,7 @@ interface OrderState {
   wallMaterial?: string;
   liftingHelp?: string;
   mountingAddOns?: string[];
+  vehicleType?: string | null;
 }
 
 interface OrderContextType {
@@ -83,6 +84,7 @@ const defaultOrder: OrderState = {
   wallMaterial: '',
   liftingHelp: '',
   mountingAddOns: [],
+  vehicleType: null,
 };
 
 const OrderContext = createContext<OrderContextType | null>(null);

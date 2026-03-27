@@ -59,6 +59,7 @@ export default function LocationInput({
             }}
             onBlur={() => setTimeout(() => setIsFocused(false), 200)}
             placeholder={placeholder || "Search address..."}
+            maxLength={60}
             style={{
               width: '100%',
               border: 'none',
@@ -67,7 +68,8 @@ export default function LocationInput({
               fontWeight: 600,
               color: '#111827',
               padding: 0,
-              background: 'transparent'
+              background: 'transparent',
+              textOverflow: 'ellipsis'
             }}
           />
         </div>

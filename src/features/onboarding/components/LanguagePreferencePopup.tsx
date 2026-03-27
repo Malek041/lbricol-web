@@ -87,7 +87,7 @@ const LanguagePreferencePopup = ({ isOpen, onSelectLanguage, onClose }: Language
                         onClick={e => e.stopPropagation()}
                         className={cn(
                             "bg-white w-full shadow-2xl flex flex-col relative",
-                            isMobile ? "rounded-t-[28px] max-h-[85vh] min-h-0" : "max-w-sm rounded-[28px] overflow-hidden"
+                            isMobile ? "rounded-none max-h-[85vh] min-h-0" : "max-w-sm rounded-[28px] overflow-hidden"
                         )}
                     >
                         {isMobile && <WaveTop />}

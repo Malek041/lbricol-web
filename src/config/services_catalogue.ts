@@ -85,7 +85,9 @@ export const SERVICES_CATALOGUE: ServiceEntry[] = [
             { id: 'local_move', en: 'Local Moving', fr: 'Déménagement Local', ar: 'نقل محلي' },
             { id: 'packing', en: 'Packing Services', fr: 'Services d\'Emballage', ar: 'خدمات التغليف' },
             { id: 'furniture_move', en: 'Furniture Moving Only', fr: 'Déménagement de Meubles Uniquement', ar: 'نقل الأثاث فقط' },
-            { id: 'heavy_hauling', en: 'Heavy Item Hauling', fr: 'Transport d\'Articles Lourds', ar: 'نقل الأشياء الثقيلة' }
+            { id: 'heavy_hauling', en: 'Heavy Item Hauling', fr: 'Transport d\'Articles Lourds', ar: 'نقل الأشياء الثقيلة' },
+            { id: 'trash_removal', en: 'Trash & Furniture Removal', fr: 'Enlèvement de Déchets et Meubles', ar: 'إزالة النفايات والأثاث' },
+            { id: 'rearrange_furniture', en: 'Rearrange Furniture', fr: 'Réorganiser les Meubles', ar: 'إعادة ترتيب الأثاث' }
         ],
         bullets: [
             { en: 'Professional movers handle packing, loading and transport.', fr: 'Des déménageurs professionnels gèrent l\'emballage, le chargement et le transport.', ar: 'عمال محترفون يتعاملون مع التغليف والتحميل والنقل.' },

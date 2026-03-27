@@ -1,12 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import SplashScreen from '@/components/layout/SplashScreen';
-import { ChevronLeft, ChevronRight, Star, Clock, MapPin, Calendar, CheckCircle2, Car, Check, ChevronDown } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Star, Clock, MapPin, Calendar, CheckCircle2, Car, Check, ChevronDown, RefreshCw, Trophy } from 'lucide-react';
 import { CAR_BRANDS } from '@/config/cars_config';
 import { DayPicker } from 'react-day-picker';
 import 'react-day-picker/style.css';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+
+const formatServiceName = (name: string) => {
+    if (!name) return '';
+    return name
+        .replace(/[_-]/g, ' ')
+        .split(' ')
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(' ');
+};
 
 export function CarRentalProfileModal({
     isOpen, onClose, provider, onSelect, order, displayRate: propDisplayRate
@@ -45,7 +54,7 @@ export function CarRentalProfileModal({
         if (isOpen && provider?.id) {
             setLocalSelectedCar(null);
             setLocalNote('');
-            setActiveTab('setup'); // Force setup tab on open
+            setActiveTab('details'); // Force details tab on open by default
 
             const now = new Date();
             let defaultDate = new Date(now);
@@ -84,7 +93,7 @@ export function CarRentalProfileModal({
     }, [isOpen, provider?.id]);
 
     const isCarAvailable = (car: any) => {
-        if (!pickupDate || !pickupTime || !returnDate || !returnTime) return false;
+        if (!pickupDate || !pickupTime || !returnDate || !returnTime) return true; // Show available by default so user can select
 
         const startRange = new Date(`${pickupDate}T${pickupTime}`);
         const endRange = new Date(`${returnDate}T${returnTime}`);
@@ -229,44 +238,46 @@ export function CarRentalProfileModal({
                             <button onClick={onClose} style={{ display: 'flex', height: 40, width: 40, alignItems: 'center', justifyContent: 'center', borderRadius: '50%', background: '#F9FAFB', border: 'none', cursor: 'pointer' }}>
                                 <ChevronLeft size={24} color="#111827" />
                             </button>
-                            <h3 style={{ minWidth: 0, textAlign: 'center', fontSize: 18, fontWeight: 900, color: '#111827', margin: 0, textTransform: 'capitalize' }}>
-                                {provider.name}'s Profile
+                            <h3 style={{ minWidth: 0, textAlign: 'center', fontSize: 16, fontWeight: 700, color: '#111827', margin: 0 }}>
+                                {provider.serviceId ? formatServiceName(provider.serviceId) : 'Transport & Car Rental'} <span style={{ color: '#9CA3AF', fontWeight: 500 }}>/ Rent a car</span>
                             </h3>
-                            <div style={{ width: 40 }}></div>
+                            <button onClick={onClose} style={{ display: 'flex', height: 40, width: 40, alignItems: 'center', justifyContent: 'center', borderRadius: '50%', background: '#F9FAFB', border: 'none', cursor: 'pointer' }}>
+                                <ChevronRight size={24} color="#111827" />
+                            </button>
                         </div>
 
                         {/* Tabs Bar */}
-                        <div style={{ display: 'flex', padding: 12, background: '#fff', borderBottom: '1px solid #F3F4F6' }}>
-                            <button
-                                onClick={() => setActiveTab('setup')}
-                                style={{
-                                    flex: 1, padding: '12px 0', border: 'none', background: 'transparent',
-                                    fontSize: 14, fontWeight: 900, color: activeTab === 'setup' ? '#219178' : '#9CA3AF',
-                                    position: 'relative', cursor: 'pointer'
-                                }}
-                            >
-                                Order Setup
-                                {activeTab === 'setup' && (
-                                    <motion.div layoutId="tab-underline" style={{ position: 'absolute', bottom: -12, left: 0, right: 0, height: 3, background: '#219178' }} />
-                                )}
-                            </button>
+                        <div style={{ display: 'flex', padding: '0 24px', background: '#fff', borderBottom: '1px solid #F3F4F6' }}>
                             <button
                                 onClick={() => setActiveTab('details')}
                                 style={{
-                                    flex: 1, padding: '12px 0', border: 'none', background: 'transparent',
-                                    fontSize: 14, fontWeight: 900, color: activeTab === 'details' ? '#219178' : '#9CA3AF',
+                                    flex: 1, padding: '16px 0', border: 'none', background: 'transparent',
+                                    fontSize: 15, fontWeight: activeTab === 'details' ? 700 : 700, color: activeTab === 'details' ? '#219178' : '#9CA3AF',
                                     position: 'relative', cursor: 'pointer'
                                 }}
                             >
                                 Bricoler Details
                                 {activeTab === 'details' && (
-                                    <motion.div layoutId="tab-underline" style={{ position: 'absolute', bottom: -12, left: 0, right: 0, height: 3, background: '#219178' }} />
+                                    <motion.div layoutId="tab-underline" style={{ position: 'absolute', bottom: -1, left: 0, right: 0, height: 2, background: '#219178' }} />
+                                )}
+                            </button>
+                            <button
+                                onClick={() => setActiveTab('setup')}
+                                style={{
+                                    flex: 1, padding: '16px 0', border: 'none', background: 'transparent',
+                                    fontSize: 15, fontWeight: activeTab === 'setup' ? 800 : 700, color: activeTab === 'setup' ? '#219178' : '#9CA3AF',
+                                    position: 'relative', cursor: 'pointer'
+                                }}
+                            >
+                                Order Setup
+                                {activeTab === 'setup' && (
+                                    <motion.div layoutId="tab-underline" style={{ position: 'absolute', bottom: -1, left: 0, right: 0, height: 2, background: '#219178' }} />
                                 )}
                             </button>
                         </div>
 
                         {/* Scrollable Content */}
-                        <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 100 }} className="no-scrollbar">
+                        <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 120 }} className="no-scrollbar">
                             <AnimatePresence mode="wait">
                                 {activeTab === 'details' ? (
                                     <motion.div
@@ -278,45 +289,60 @@ export function CarRentalProfileModal({
                                         style={{ padding: '24px' }}
                                     >
                                         {/* Profile Hero */}
-                                        <div style={{ display: 'flex', gap: 24, marginBottom: 32, alignItems: 'flex-start' }}>
-                                            <img src={provider.avatarUrl || "/Images/Logo/Black Lbricol Avatar Face.webp"} style={{ width: 96, height: 96, borderRadius: 28, objectFit: 'cover', border: '4px solid #F9FAFB' }} />
+                                        <div style={{ display: 'flex', gap: 24, marginBottom: 40, alignItems: 'center' }}>
+                                            <img src={provider.avatarUrl || "/Images/Logo/Black Lbricol Avatar Face.webp"} style={{ width: 84, height: 84, borderRadius: 12, objectFit: 'cover', background: '#F9FAFB' }} />
                                             <div style={{ flex: 1 }}>
-                                                <h2 style={{ fontSize: 24, fontWeight: 900, color: '#111827', marginBottom: 8, marginTop: 0 }}>{provider.name}</h2>
-                                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 12, alignItems: 'center' }}>
-                                                    <span style={{ background: 'rgba(124, 115, 232, 0.1)', color: '#7C73E8', fontSize: 10, fontWeight: 900, padding: '4px 10px', borderRadius: 6, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                                                        <span style={{ fontSize: 11 }}>✦</span> {(effectiveJobs < 10 || isNew) ? 'NEW' : (provider.badge ? provider.badge?.toUpperCase() : (effectiveJobs > 100 ? 'ELITE' : (effectiveJobs > 50 ? 'PRO' : 'CLASSIC')))}
-                                                    </span>
-                                                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: (provider.rating > 0) ? '#FFFBEB' : '#F9FAFB', padding: '2px 8px', borderRadius: 6, border: (provider.rating > 0) ? '1px solid #FEF3C7' : '1px solid #F3F4F6' }}>
-                                                        <Star size={10} fill={(provider.rating > 0) ? "#FBBF24" : "#D1D5DB"} color={(provider.rating > 0) ? "#FBBF24" : "#D1D5DB"} />
-                                                        <span style={{ fontSize: 10, fontWeight: 900, color: (provider.rating > 0) ? '#92400E' : '#6B7280' }}>{provider.rating ? Number(provider.rating).toFixed(1) : '0.0'}</span>
-                                                    </div>
-                                                    <span style={{ fontSize: 13, color: '#6B7280', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4 }}>
-                                                        {effectiveJobs} Missions
-                                                    </span>
+                                                <h2 style={{ fontSize: 28, fontWeight: 800, color: '#111827', marginBottom: 6, marginTop: 0 }}>The Bricoler</h2>
+                                                <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginBottom: 8 }}>
+                                                    <span style={{ fontSize: 24, fontWeight: 800, color: '#219178' }}>MAD {displayRate}</span>
+                                                    <span style={{ fontSize: 14, fontWeight: 600, color: '#6B7280' }}>minimum</span>
                                                 </div>
-                                                <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, color: '#219178' }}>
-                                                    <span style={{ fontSize: 20, fontWeight: 900 }}>MAD {displayRate}</span>
-                                                    <span style={{ fontSize: 14, fontWeight: 700, color: '#6B7280' }}>(min)</span>
+                                                <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '4px 12px', background: '#fff', border: '1px solid #219178', borderRadius: 20 }}>
+                                                    <CheckCircle2 size={14} color="#219178" />
+                                                    <span style={{ fontSize: 12, fontWeight: 700, color: '#219178' }}>Identity Verified</span>
                                                 </div>
                                             </div>
                                         </div>
 
-                                        {/* Stats Grid */}
-                                        <div style={{ display: 'grid', gridTemplateColumns: 'revert', gridAutoFlow: 'column', gap: 12, marginBottom: 32 }}>
-                                            <div style={{ padding: 16, background: '#F9FAFB', borderRadius: 0, border: '1px solid #F3F4F6' }}>
-                                                <div style={{ fontSize: 11, fontWeight: 900, color: '#9CA3AF', textTransform: 'uppercase', marginBottom: 4 }}>Experience</div>
-                                                <div style={{ fontSize: 18, fontWeight: 900, color: '#111827' }}>{provider.yearsOfExperience || "1 Year"}</div>
+                                        {/* Row Stats Icons */}
+                                        <div style={{ display: 'flex', justifyContent: 'space-around', marginBottom: 40, textAlign: 'center' }}>
+                                            <div>
+                                                <div style={{ marginBottom: 8 }}><div style={{ width: 44, height: 44, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto' }}><Trophy size={30} color="#219178" /></div></div>
+                                                <div style={{ fontSize: 20, fontWeight: 800, color: '#219178' }}>{(effectiveJobs < 10 || isNew) ? 'New' : (provider.badge || 'Elite')}</div>
+                                                <div style={{ fontSize: 11, fontWeight: 700, color: '#219178', textTransform: 'uppercase', marginTop: 2 }}>LEVEL</div>
                                             </div>
-                                            <div style={{ padding: 16, background: '#F9FAFB', borderRadius: 0, border: '1px solid #F3F4F6' }}>
-                                                <div style={{ fontSize: 11, fontWeight: 900, color: '#9CA3AF', textTransform: 'uppercase', marginBottom: 4 }}>Completed</div>
-                                                <div style={{ fontSize: 18, fontWeight: 900, color: '#111827' }}>{effectiveJobs} Jobs</div>
+                                            <div>
+                                                <div style={{ marginBottom: 8 }}><div style={{ width: 44, height: 44, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto' }}><Star size={30} color="#219178" fill="#219178" /></div></div>
+                                                <div style={{ fontSize: 20, fontWeight: 800, color: '#219178' }}>{provider.rating ? Number(provider.rating).toFixed(1) : '0.0'}</div>
+                                                <div style={{ fontSize: 11, fontWeight: 700, color: '#219178', textTransform: 'uppercase', marginTop: 2 }}>RATING</div>
+                                            </div>
+                                            <div>
+                                                <div style={{ marginBottom: 8 }}><div style={{ width: 44, height: 44, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto' }}><CheckCircle2 size={30} color="#219178" /></div></div>
+                                                <div style={{ fontSize: 20, fontWeight: 800, color: '#219178' }}>{effectiveJobs}</div>
+                                                <div style={{ fontSize: 11, fontWeight: 700, color: '#219178', textTransform: 'uppercase', marginTop: 2 }}>MISSIONS</div>
+                                            </div>
+                                        </div>
+
+                                        {/* Stats Grid */}
+                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 32 }}>
+                                            <div style={{ padding: '20px 16px', borderRadius: 5, border: 'none', position: 'relative' }}>
+                                                <div style={{ fontSize: 11, fontWeight: 700, color: '#9CA3AF', textTransform: 'uppercase', marginBottom: 4 }}>Experience</div>
+                                                <div style={{ fontSize: 20, fontWeight: 800, color: '#111827' }}>{provider.yearsOfExperience || "1 Year"}</div>
+                                                <Calendar size={24} color="#E5E7EB" style={{ position: 'absolute', right: 16, bottom: 20 }} />
+                                            </div>
+                                            <div style={{ padding: '20px 16px', borderRadius: 5, border: 'none', position: 'relative' }}>
+                                                <div style={{ fontSize: 11, fontWeight: 700, color: '#9CA3AF', textTransform: 'uppercase', marginBottom: 4 }}>Success Rate</div>
+                                                <div style={{ fontSize: 20, fontWeight: 800, color: '#111827' }}>99%</div>
+                                                <motion.div style={{ position: 'absolute', right: 16, bottom: 20 }}>
+                                                    <RefreshCw size={24} color="#E5E7EB" />
+                                                </motion.div>
                                             </div>
                                         </div>
 
                                         {/* About */}
                                         <div style={{ marginBottom: 32 }}>
-                                            <h4 style={{ fontSize: 18, fontWeight: 900, color: '#111827', marginBottom: 16, marginTop: 0 }}>About Me</h4>
-                                            <div style={{ fontSize: 15, color: '#4B5563', lineHeight: 1.6, fontWeight: 500, padding: 16, background: '#F9FAFB', borderRadius: 0, border: '1px solid #F3F4F6' }}>
+                                            <h4 style={{ fontSize: 18, fontWeight: 700, color: '#111827', marginBottom: 16, marginTop: 0 }}>About Me</h4>
+                                            <div style={{ fontSize: 15, color: '#4B5563', lineHeight: 1.6, fontWeight: 500, padding: 16, background: '#F9FAFB', borderRadius: 5, border: '1px solid #F3F4F6' }}>
                                                 {provider.bio || provider.aboutMe || 'No bio provided yet.'}
                                             </div>
                                         </div>
@@ -360,22 +386,22 @@ export function CarRentalProfileModal({
                                     >
                                         {/* Date Time Pickers */}
                                         <div style={{ marginBottom: 32 }}>
-                                            <h4 style={{ fontSize: 18, fontWeight: 900, color: '#111827', marginBottom: 16, marginTop: 0 }}>When do you want the car and when will you return it?</h4>
+                                            <h4 style={{ fontSize: 25, fontWeight: 500, color: '#111827', marginBottom: 24, marginTop: 0 }}>When to pickup & return the car?</h4>
 
                                             <div style={{ display: 'flex', gap: 16, marginBottom: 16 }}>
                                                 <div style={{ flex: 1 }}>
-                                                    <label style={{ fontSize: 11, fontWeight: 900, color: '#111827', textTransform: 'uppercase', marginBottom: 8, display: 'block' }}>Pick Up</label>
+                                                    <label style={{ fontSize: 13, fontWeight: 900, color: '#111827', textTransform: 'uppercase', marginBottom: 8, display: 'block' }}>Pick Up</label>
                                                     <div style={{ display: 'flex', gap: 8 }}>
                                                         <div onClick={() => setActivePicker('pickup_date')}
-                                                            style={{ flex: 1.5, height: 54, padding: '0 18px', background: '#F9FAFB', borderRadius: 5, display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer', border: '1px solid #F3F4F6' }}>
+                                                            style={{ flex: 1.5, height: 54, padding: '0 18px', background: '#F9FAFB', borderRadius: 12, display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer', border: '1px solid #F3F4F6' }}>
                                                             <Calendar size={20} color="#6B7280" />
-                                                            <span style={{ fontSize: 16, fontWeight: 800, color: pickupDate ? '#111827' : '#9CA3AF' }}>{formatDateLabel(pickupDate)}</span>
+                                                            <span style={{ fontSize: 16, fontWeight: 500, color: pickupDate ? '#111827' : '#9CA3AF' }}>{formatDateLabel(pickupDate)}</span>
                                                         </div>
                                                         <div onClick={() => setActivePicker('pickup_time')}
-                                                            style={{ flex: 1, height: 54, padding: '0 18px', background: '#F9FAFB', borderRadius: 5, display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', border: '1px solid #F3F4F6' }}>
+                                                            style={{ flex: 1, height: 54, padding: '0 18px', background: '#F9FAFB', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', border: '1px solid #F3F4F6' }}>
                                                             <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
                                                                 <Clock size={18} color="#6B7280" />
-                                                                <span style={{ fontSize: 16, fontWeight: 800, color: pickupTime ? '#111827' : '#9CA3AF' }}>{pickupTime || '--:--'}</span>
+                                                                <span style={{ fontSize: 16, fontWeight: 500, color: pickupTime ? '#111827' : '#9CA3AF' }}>{pickupTime || '--:--'}</span>
                                                             </div>
                                                             <ChevronDown size={18} color="#9CA3AF" />
                                                         </div>
@@ -384,18 +410,18 @@ export function CarRentalProfileModal({
                                             </div>
                                             <div style={{ display: 'flex', gap: 16 }}>
                                                 <div style={{ flex: 1 }}>
-                                                    <label style={{ fontSize: 12, fontWeight: 900, color: '#111827', textTransform: 'uppercase', marginBottom: 10, display: 'block' }}>Return</label>
+                                                    <label style={{ fontSize: 13, fontWeight: 900, color: '#111827', textTransform: 'uppercase', marginBottom: 10, display: 'block' }}>Return</label>
                                                     <div style={{ display: 'flex', gap: 8 }}>
                                                         <div onClick={() => setActivePicker('return_date')}
-                                                            style={{ flex: 1.5, height: 54, padding: '0 18px', background: '#F9FAFB', borderRadius: 5, display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer', border: '1px solid #F3F4F6' }}>
+                                                            style={{ flex: 1.5, height: 54, padding: '0 18px', background: '#F9FAFB', borderRadius: 12, display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer', border: '1px solid #F3F4F6' }}>
                                                             <Calendar size={20} color="#6B7280" />
-                                                            <span style={{ fontSize: 16, fontWeight: 800, color: returnDate ? '#111827' : '#9CA3AF' }}>{formatDateLabel(returnDate)}</span>
+                                                            <span style={{ fontSize: 16, fontWeight: 500, color: returnDate ? '#111827' : '#9CA3AF' }}>{formatDateLabel(returnDate)}</span>
                                                         </div>
                                                         <div onClick={() => setActivePicker('return_time')}
-                                                            style={{ flex: 1, height: 54, padding: '0 18px', background: '#F9FAFB', borderRadius: 5, display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', border: '1px solid #F3F4F6' }}>
+                                                            style={{ flex: 1, height: 54, padding: '0 18px', background: '#F9FAFB', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', border: '1px solid #F3F4F6' }}>
                                                             <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
                                                                 <Clock size={18} color="#6B7280" />
-                                                                <span style={{ fontSize: 16, fontWeight: 800, color: returnTime ? '#111827' : '#9CA3AF' }}>{returnTime || '--:--'}</span>
+                                                                <span style={{ fontSize: 16, fontWeight: 500, color: returnTime ? '#111827' : '#9CA3AF' }}>{returnTime || '--:--'}</span>
                                                             </div>
                                                             <ChevronDown size={18} color="#9CA3AF" />
                                                         </div>
@@ -424,7 +450,7 @@ export function CarRentalProfileModal({
                                                 return Object.values(grouped).map((group, gIdx) => (
                                                     <div key={gIdx} style={{ marginBottom: 24 }}>
                                                         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
-                                                            <div style={{ width: 32, height: 32, background: '#F9FAFB', borderRadius: 5, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 4, border: '1px solid #F3F4F6' }}>
+                                                            <div style={{ width: 32, height: 32, background: '#F9FAFB', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 4, border: '1px solid #F3F4F6' }}>
                                                                 {group.brand.logo ? (
                                                                     <img src={group.brand.logo} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
                                                                 ) : (
@@ -446,7 +472,7 @@ export function CarRentalProfileModal({
                                                                             flex: '0 0 160px',
                                                                             border: isSelectedCar ? '2px solid #219178' : '1px solid #E5E7EB',
                                                                             background: isSelectedCar ? '#F0FDF4' : (available ? '#fff' : '#F9FAFB'),
-                                                                            borderRadius: 5, padding: 12, cursor: available ? 'pointer' : 'not-allowed', position: 'relative',
+                                                                            borderRadius: 12, padding: 12, cursor: available ? 'pointer' : 'not-allowed', position: 'relative',
                                                                             opacity: available ? 1 : 0.5
                                                                         }}
                                                                     >
@@ -464,8 +490,8 @@ export function CarRentalProfileModal({
                                                                             <div style={{ marginTop: 4, fontSize: 9, fontWeight: 800, color: '#EF4444' }}>Not Available</div>
                                                                         )}
                                                                         {isSelectedCar && (
-                                                                            <div style={{ position: 'absolute', top: 8, right: 8, width: 20, height: 20, background: '#219178', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                                                                <Check size={12} color="#fff" strokeWidth={4} />
+                                                                            <div style={{ position: 'absolute', top: -10, right: -10, width: 24, height: 24, background: '#219178', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid #fff', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
+                                                                                <Check size={14} color="#fff" strokeWidth={4} />
                                                                             </div>
                                                                         )}
                                                                     </div>
@@ -475,6 +501,12 @@ export function CarRentalProfileModal({
                                                     </div>
                                                 ));
                                             })()}
+                                            {(!provider.carRentalDetails?.cars || provider.carRentalDetails.cars.length === 0) && (
+                                                <div style={{ padding: '40px 20px', textAlign: 'center', background: '#F9FAFB', border: '2px dashed #E5E7EB', borderRadius: 12 }}>
+                                                    <Car size={40} className="text-neutral-300 mx-auto mb-3" />
+                                                    <p style={{ color: '#9CA3AF', fontWeight: 600, fontSize: 14 }}>No cars specifically listed by this Bricoler yet.</p>
+                                                </div>
+                                            )}
                                         </div>
 
                                         {/* Additional Notes */}
@@ -484,30 +516,37 @@ export function CarRentalProfileModal({
                                                 value={localNote}
                                                 onChange={(e) => setLocalNote(e.target.value)}
                                                 placeholder="Any specific requests for the car?"
-                                                style={{ width: '100%', height: 96, padding: 12, borderRadius: 5, border: '1px solid #E5E7EB', background: '#F9FAFB', fontSize: 14, outline: 'none', resize: 'none', fontFamily: 'inherit' }}
+                                                style={{ width: '100%', height: 96, padding: 12, borderRadius: 12, border: '1px solid #E5E7EB', background: '#F9FAFB', fontSize: 14, outline: 'none', resize: 'none', fontFamily: 'inherit' }}
                                             />
                                         </div>
                                     </motion.div>
                                 )}
                             </AnimatePresence>
                         </div>
-                        <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: 24, borderTop: '1px solid #F3F4F6', background: '#fff', zIndex: 10 }}>
+                        <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '24px 24px 44px', borderTop: 'none', background: 'transparent', zIndex: 10, overflow: 'hidden' }}>
+                            {/* Brand Wave Accent */}
+                            <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 160, background: '#FFB700', borderRadius: '40% 40% 0 0', transform: 'scaleX(1.5) translateY(40px)', zIndex: -1 }}></div>
+
                             <button
                                 onClick={() => {
+                                    if (activeTab === 'details') {
+                                        setActiveTab('setup');
+                                        return;
+                                    }
+                                    if (!localSelectedCar) return;
                                     setIsSplashing(true);
                                     setTimeout(() => {
                                         onSelect(localSelectedCar, localNote, { pickupDate, pickupTime, returnDate, returnTime });
                                     }, 1500);
                                 }}
-                                disabled={!localSelectedCar || isSplashing}
+                                disabled={isSplashing || (activeTab === 'setup' && !localSelectedCar)}
                                 style={{
-                                    width: '100%', height: 56, borderRadius: 28, fontSize: 18, fontWeight: 900, cursor: localSelectedCar ? 'pointer' : 'not-allowed',
-                                    background: localSelectedCar ? '#219178' : '#F3F4F6', color: localSelectedCar ? '#fff' : '#9CA3AF', border: 'none',
-                                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8
+                                    width: '100%', height: 60, borderRadius: 32, fontSize: 20, fontWeight: 800, cursor: (activeTab === 'details' || localSelectedCar) ? 'pointer' : 'not-allowed',
+                                    background: (activeTab === 'details' || localSelectedCar) ? '#219178' : '#219178', color: '#fff', border: 'none',
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
                                 }}
                             >
-                                Select & Continue
-                                <ChevronRight size={20} />
+                                {activeTab === 'details' ? 'Book me' : 'Confirm Selection'}
                             </button>
                         </div>
                     </motion.div>

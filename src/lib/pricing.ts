@@ -28,8 +28,10 @@ export const calculateOrderPrice = (
         days?: number;
         quantity?: number;
         propertyType?: string;
-        distanceKm?: number; // New: travel distance
-        durationMinutes?: number; // Actual trip duration from OSRM
+        distanceKm?: number; // Distance from Bricoler to client
+        durationMinutes?: number; // Actual trip duration from Bricoler to client
+        deliveryDistanceKm?: number; // Distance between pickup and drop-off (Moving/Errands)
+        deliveryDurationMinutes?: number; // Duration between pickup and drop-off (Moving/Errands)
         // TV Mounting specific
         tvCount?: number;
         mountTypes?: string[];
@@ -116,6 +118,31 @@ export const calculateOrderPrice = (
         if (options.mountingAddOns?.includes('audio')) extraFees += 30;
         if (options.mountingAddOns?.includes('setup')) extraFees += 20;
 
+    } else if (subServiceId === 'local_move' || subServiceId === 'moving' || subServiceId === 'packing' || subServiceId === 'furniture_move' || subServiceId.includes('moving') || subServiceId === 'errands' || subServiceId.includes('delivery')) {
+        // Specialized Moving & Delivery Pricing
+        const isErrands = subServiceId === 'errands' || subServiceId.includes('delivery');
+        const hours = options.hours || 1;
+        
+        // Travel cost between points (10 MAD per minute)
+        const deliveryTravelCost = (options.deliveryDurationMinutes || 0) * 10;
+        
+        // Distance overage (5 MAD per km beyond 10km)
+        let distanceOverage = 0;
+        if (options.deliveryDistanceKm && options.deliveryDistanceKm > 10) {
+            distanceOverage = Math.round((options.deliveryDistanceKm - 10) * 5);
+        }
+        
+        if (isErrands) {
+            // For errands, the "base" is the time spent
+            basePrice = 10; // 10 MAD per minute
+            quantity = options.deliveryDurationMinutes || 0;
+            unit = 'min';
+            extraFees = 0;
+        } else {
+            extraFees = deliveryTravelCost + distanceOverage;
+            quantity = hours;
+            unit = 'hr';
+        }
     } else {
         // 2. Apply Standard Archetype Logic
         switch (archetype) {
@@ -142,7 +169,11 @@ export const calculateOrderPrice = (
 
     const subtotal = (basePrice * quantity) + extraFees;
     const serviceFee = subtotal * 0.10; // 10% Platform fee
-    const travelFee = (options.distanceKm || 0) * 3; // 3 MAD per Km
+    
+    // For Moving and Errands, the travel fee is often folded into the service travel or ignored to match Setup view
+    const isMovingOrErrands = subServiceId === 'local_move' || subServiceId === 'moving' || subServiceId.includes('moving') || subServiceId === 'errands' || subServiceId.includes('delivery');
+    const travelFee = isMovingOrErrands ? 0 : (options.distanceKm || 0) * 3; // 3 MAD per Km
+    
     const total = subtotal + serviceFee + travelFee;
 
     return {
@@ -153,7 +184,7 @@ export const calculateOrderPrice = (
         serviceFee,
         travelFee,
         total,
-        distanceKm: options.distanceKm,
-        duration: options.durationMinutes || Math.ceil((options.distanceKm || 0) * 2) // Prefer OSRM duration
+        distanceKm: options.deliveryDistanceKm || options.distanceKm,
+        duration: options.deliveryDurationMinutes || options.durationMinutes || Math.ceil((options.distanceKm || 0) * 2) // Prefer OSRM duration
     };
 };

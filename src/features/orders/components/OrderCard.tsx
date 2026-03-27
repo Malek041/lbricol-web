@@ -79,6 +79,7 @@ export interface OrderDetails {
     durationDays?: number;
     basePrice?: number;
     movingVehicle?: string | null;
+    coords?: { lat: number; lng: number } | null;
     details?: any;
 }
 

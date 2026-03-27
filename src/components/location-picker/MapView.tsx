@@ -97,7 +97,9 @@ const MapView: React.FC<MapViewProps> = ({
   const routeLayerRef = useRef<L.Polyline | null>(null);
   const routeLabelRef = useRef<L.Marker | null>(null);
   const providerMarkersRef = useRef<{ [id: string]: L.Marker }>({});
+  const broadcastMarkersRef = useRef<{ [id: string]: L.Marker }>({});
   const clientPinMarkerRef = useRef<L.Marker | null>(null); // Fixed Leaflet marker for Step 2
+  const destinationPinMarkerRef = useRef<L.Marker | null>(null);
   const [address, setAddress] = useState<string>('Loading address...');
   const [mapReady, setMapReady] = useState(false);
   const [internalUserPos, setInternalUserPos] = useState<{ lat: number, lng: number } | null>(null);
@@ -227,6 +229,13 @@ const MapView: React.FC<MapViewProps> = ({
       if (mapRef.current && mapRef.current.getContainer()) {
         const mapSize = mapRef.current.getSize();
         if (mapSize.x > 0) {
+          // If we have both pins for a move/delivery, skip the initial setView 
+          // because the routing effect will handle the fitBounds
+          if (clientPin?.lat && destinationPin?.lat) {
+            setMapReady(true);
+            return;
+          }
+
           const centerPoint = L.point(mapSize.x / 2, mapSize.y / 2);
           const targetPoint = L.point(mapSize.x / 2, mapSize.y * (pinY / 100));
           const targetLatLng = L.latLng(lat, lng);
@@ -236,12 +245,14 @@ const MapView: React.FC<MapViewProps> = ({
           );
           mapRef.current.setView(centerLatLng, zoom);
         } else {
-          mapRef.current.setView([lat, lng], zoom);
+          if (!(clientPin?.lat && destinationPin?.lat)) {
+            mapRef.current.setView([lat, lng], zoom);
+          }
         }
         setMapReady(true);
         reverseGeocode(lat, lng);
       }
-    }, 50);
+    }, 100);
 
     map.on('dragstart', () => { onInteractionStart?.(); });
     map.on('dragend', () => { onInteractionEnd?.(); });
@@ -461,12 +472,6 @@ const MapView: React.FC<MapViewProps> = ({
     if (!clientPin || !mapRef.current || !mapReady) return;
     const map = mapRef.current;
 
-    // Remove any previous marker
-    if (clientPinMarkerRef.current) {
-      map.removeLayer(clientPinMarkerRef.current);
-      clientPinMarkerRef.current = null;
-    }
-
     const html = `
       <div style="display:flex; flex-direction:column; align-items:center; justify-content:flex-end; height:140px; pointer-events:none;">
         ${centerAddress ? `
@@ -474,12 +479,17 @@ const MapView: React.FC<MapViewProps> = ({
             <div style="width:32px; height:32px; border-radius:50%; background:#ecfdf5; display:flex; align-items:center; justify-content:center; font-size:18px;">🚲</div>
             <div style="display:flex; flex-direction:column; justify-content:center;">
               <div style="font-size:13px; font-weight:900; color:#111827; line-height:1; margin-bottom:4px; max-width:180px; overflow:hidden; text-overflow:ellipsis;">${centerAddress}</div>
-              <div style="font-size:11px; font-weight:700; color:#059669; text-transform:uppercase; letter-spacing:0.05em;">Secteur de recherche</div>
+              <div style="font-size:11px; font-weight:700; color:#059669; text-transform:uppercase; letter-spacing:0.05em;">Lieu de départ</div>
             </div>
             <div style="position:absolute; bottom:-6px; left:50%; margin-left:-6px; width:12px; height:12px; background:white; border-right:1px solid #f3f4f6; border-bottom:1px solid #f3f4f6; transform:rotate(45deg);"></div>
           </div>
-        ` : ''}
-        <img src="/Images/map Assets/LocationPin.png" style="width:38px; height:50px; object-fit:contain; display:block;" alt="Your location" />
+        ` : `
+          <div style="background:#027963; color:white; border-radius:12px; padding:4px 10px; margin-bottom:4px; box-shadow:0 4px 12px rgba(0,0,0,0.15); font-size:11px; font-weight:900; text-transform:uppercase; letter-spacing:0.05em; white-space:nowrap; position:relative; z-index:10;">
+            DÉPART
+            <div style="position:absolute; bottom:-4px; left:50%; margin-left:-4px; width:8px; height:8px; background:#027963; transform:rotate(45deg);"></div>
+          </div>
+        `}
+        <img src="/Images/map Assets/LocationPin.png" style="width:38px; height:50px; object-fit:contain; display:block;" alt="Start location" />
       </div>
     `;
 
@@ -490,31 +500,85 @@ const MapView: React.FC<MapViewProps> = ({
       iconAnchor: [120, 140], // bottom center of the container (tip of the pin)
     });
 
-    clientPinMarkerRef.current = L.marker([clientPin.lat, clientPin.lng], {
+    const marker = L.marker([clientPin.lat, clientPin.lng], {
       icon,
       zIndexOffset: 5000,
       interactive: false,
     }).addTo(map);
+
+    clientPinMarkerRef.current = marker;
+
+    return () => {
+      if (clientPinMarkerRef.current) {
+        mapRef.current?.removeLayer(clientPinMarkerRef.current);
+        clientPinMarkerRef.current = null;
+      }
+    };
   }, [clientPin?.lat, clientPin?.lng, mapReady, centerAddress]);
+
+  // ── Render destination pin marker ───────────────────────────────────
+  useEffect(() => {
+    if (!destinationPin || !mapRef.current || !mapReady) return;
+    const map = mapRef.current;
+
+    const html = `
+      <div style="display:flex; flex-direction:column; align-items:center; justify-content:flex-end; height:140px; pointer-events:none;">
+        <div style="background:#FF9911; color:white; border-radius:12px; padding:4px 10px; margin-bottom:4px; box-shadow:0 4px 12px rgba(0,0,0,0.15); font-size:11px; font-weight:900; text-transform:uppercase; letter-spacing:0.05em; white-space:nowrap; position:relative; z-index:10;">
+          ARRIVÉE
+          <div style="position:absolute; bottom:-4px; left:50%; margin-left:-4px; width:8px; height:8px; background:#FF9911; transform:rotate(45deg);"></div>
+        </div>
+        <img src="/Images/map Assets/locationPinYellowOnly.png" style="width:38px; height:50px; object-fit:contain; display:block;" alt="Destination location" />
+      </div>
+    `;
+
+    const icon = L.divIcon({
+      className: '',
+      html,
+      iconSize: [240, 140],
+      iconAnchor: [120, 140],
+    });
+
+    const marker = L.marker([destinationPin.lat, destinationPin.lng], {
+      icon,
+      zIndexOffset: 5000,
+      interactive: false,
+    }).addTo(map);
+
+    destinationPinMarkerRef.current = marker;
+
+    return () => {
+      if (destinationPinMarkerRef.current) {
+        mapRef.current?.removeLayer(destinationPinMarkerRef.current);
+        destinationPinMarkerRef.current = null;
+      }
+    };
+  }, [destinationPin?.lat, destinationPin?.lng, mapReady]);
 
   // ── Render broadcast pins (Orders) ──────────────────────────────────
   useEffect(() => {
     if (!mapRef.current || !mapReady) return;
     const map = mapRef.current;
 
-    // Use a separate collection for broadcast markers if needed, or clear appropriately
-    // For simplicity, we can use providerMarkersRef or a new one
-    // Let's use a new one: broadcastMarkersRef
+    // Clear old broadcast markers
+    Object.values(broadcastMarkersRef.current || {}).forEach(m => {
+      try { map.removeLayer(m); } catch (e) { }
+    });
+    broadcastMarkersRef.current = {};
 
     if (!broadcastPins || broadcastPins.length === 0) return;
 
     broadcastPins.forEach(pin => {
+      if (!pin) return; // Safety guard
       const isFocused = pin.id === focusedOrderId;
       const opacity = focusedOrderId && !isFocused ? 0.6 : 1;
       const scale = focusedOrderId && !isFocused ? 0.8 : (isFocused ? 1.15 : 1);
       const size = isFocused ? 72 : 56;
-
       const bounceStyle = isFocused ? "animation: pinBounce 2s ease-in-out infinite;" : "";
+
+      const markerLat = Number(pin.lat || (pin as any).locationDetails?.lat || 31.5085);
+      const markerLng = Number(pin.lng || (pin as any).locationDetails?.lng || -9.7595);
+
+      if (isNaN(markerLat) || isNaN(markerLng)) return;
 
       const icon = L.divIcon({
         className: '',
@@ -529,7 +593,7 @@ const MapView: React.FC<MapViewProps> = ({
               </div>
             </div>
             <div style="position:relative;width:${size}px;height:${size}px;transition: width 0.3s, height 0.3s; margin-bottom: 0px; background: #fff; border-radius: 50%; box-shadow: 0 2px 10px rgba(0,0,0,0.1); padding: 8px;">
-              <img src="${pin.serviceIcon}" style="width:100%;height:100%;object-fit:contain"/>
+              <img src="${pin.serviceIcon || '/Images/Vectors Illu/NewOrder.webp'}" style="width:100%;height:100%;object-fit:contain"/>
             </div>
           </div>
         `,
@@ -537,12 +601,15 @@ const MapView: React.FC<MapViewProps> = ({
         iconAnchor: [60, 160],
       });
 
-      L.marker([pin.lat, pin.lng], { icon, zIndexOffset: isFocused ? 2000 : 0 })
-        .addTo(map)
-        .on('click', (e) => {
-          L.DomEvent.stopPropagation(e);
-          onOrderClick?.(pin.id);
-        });
+      const marker = L.marker([markerLat, markerLng], { icon, zIndexOffset: isFocused ? 2000 : 0 })
+        .addTo(map);
+
+      marker.on('click', (e) => {
+        L.DomEvent.stopPropagation(e as any);
+        onOrderClick?.(pin.id);
+      });
+
+      broadcastMarkersRef.current[pin.id!] = marker;
     });
   }, [broadcastPins, mapReady, focusedOrderId, onOrderClick]);
 
@@ -596,36 +663,38 @@ const MapView: React.FC<MapViewProps> = ({
           const midIdx = Math.floor(coords.length / 2);
           const midPoint = coords[midIdx];
 
-          const labelIcon = L.divIcon({
-            className: '',
-            html: `
-              <div style="position: relative; display: flex; flex-direction: column; align-items: center; pointer-events: none;">
-                <div style="
-                  background: #219178; 
-                  padding: 8px 14px; 
-                  border-radius: 8px; 
-                  box-shadow: 0 4px 15px rgba(0,160,130,0.3); 
-                  display: flex; 
-                  align-items: center; 
-                  gap: 6px;
-                  white-space: nowrap;
-                  color: white;
-                  animation: fadeIn 0.3s ease-out;
-                  z-index: 1000;
-                  position: relative;
-                ">
-                  <span style="font-size: 13px; font-weight: 950; letter-spacing: 0.3px">${durationMin} min</span>
+          if (midPoint && midPoint[0] !== undefined && midPoint[1] !== undefined) {
+            const labelIcon = L.divIcon({
+              className: '',
+              html: `
+                <div style="position: relative; display: flex; flex-direction: column; align-items: center; pointer-events: none;">
+                  <div style="
+                    background: #219178; 
+                    padding: 8px 14px; 
+                    border-radius: 8px; 
+                    box-shadow: 0 4px 15px rgba(0,160,130,0.3); 
+                    display: flex; 
+                    align-items: center; 
+                    gap: 6px;
+                    white-space: nowrap;
+                    color: white;
+                    animation: fadeIn 0.3s ease-out;
+                    z-index: 1000;
+                    position: relative;
+                  ">
+                    <span style="font-size: 13px; font-weight: 950; letter-spacing: 0.3px">${durationMin} min</span>
+                  </div>
+                  <div style="width: 0; height: 0; border-left: 6px solid transparent; border-right: 6px solid transparent; border-top: 6px solid #219178; margin-top: -1px; z-index: 999;"></div>
                 </div>
-                <div style="width: 0; height: 0; border-left: 6px solid transparent; border-right: 6px solid transparent; border-top: 6px solid #219178; margin-top: -1px; z-index: 999;"></div>
-              </div>
-            `,
-            iconSize: [120, 50],
-            iconAnchor: [60, 50],
-          });
-          routeLabelRef.current = L.marker(midPoint, { 
-            icon: labelIcon, 
-            zIndexOffset: 3000 
-          }).addTo(map);
+              `,
+              iconSize: [120, 50],
+              iconAnchor: [60, 50],
+            });
+            routeLabelRef.current = L.marker(midPoint, { 
+              icon: labelIcon, 
+              zIndexOffset: 3000 
+            }).addTo(map);
+          }
 
         } else {
           // Fallback to straight line if OSRM fails
@@ -676,9 +745,9 @@ const MapView: React.FC<MapViewProps> = ({
           const durationMin = Math.round(route.duration / 60);
 
           routeLayerRef.current = L.polyline(coords, {
-            color: '#219178', // Branded color for the order route
-            weight: 7,
-            opacity: 1,
+            color: '#027963', // Branded dark green
+            weight: 8,
+            opacity: 0.9,
             lineCap: 'round',
             lineJoin: 'round',
           }).addTo(map);
@@ -687,38 +756,44 @@ const MapView: React.FC<MapViewProps> = ({
           const midIdx = Math.floor(coords.length / 2);
           const midPoint = coords[midIdx];
 
-          const labelIcon = L.divIcon({
-            className: '',
-            html: `
-              <div style="
-                background: white; 
-                padding: 6px 12px; 
-                margin-bottom: 2px;
-                border-radius: 50px; 
-                box-shadow: 0 4px 15px rgba(0,0,0,0.2); 
-                display: flex; 
-                align-items: center; 
-                gap: 6px;
-                white-space: nowrap;
-                border: 2px solid #219178;
-                animation: fadeIn 0.3s ease-out;
-                pointer-events: none;
-              ">
-                <span style="font-size: 14px">⚡</span>
-                <span style="font-size: 13px; font-weight: 800; color: #111827">${durationMin} min</span>
-              </div>
-            `,
-            iconSize: [100, 40],
-            iconAnchor: [50, 60],
-          });
+          if (midPoint && midPoint[0] !== undefined && midPoint[1] !== undefined) {
+            const labelIcon = L.divIcon({
+              className: '',
+              html: `
+                <div style="
+                  background: white; 
+                  padding: 6px 12px; 
+                  margin-bottom: 2px;
+                  border-radius: 50px; 
+                  box-shadow: 0 4px 15px rgba(0,0,0,0.2); 
+                  display: flex; 
+                  align-items: center; 
+                  gap: 6px;
+                  white-space: nowrap;
+                  border: 2px solid #219178;
+                  animation: fadeIn 0.3s ease-out;
+                  pointer-events: none;
+                ">
+                  <span style="font-size: 14px">⚡</span>
+                  <span style="font-size: 13px; font-weight: 800; color: #111827">${durationMin} min</span>
+                </div>
+              `,
+              iconSize: [100, 40],
+              iconAnchor: [50, 60],
+            });
 
-          routeLabelRef.current = L.marker(midPoint, { icon: labelIcon, zIndexOffset: 3000 }).addTo(map);
+            routeLabelRef.current = L.marker(midPoint, { icon: labelIcon, zIndexOffset: 3000 }).addTo(map);
+          }
 
           // Auto-fit if requested, or at least fit the route
           const bounds = L.latLngBounds(coords);
-          map.fitBounds(bounds, { padding: [40, 40] });
+          if (mapReadyTimeoutRef.current) {
+            clearTimeout(mapReadyTimeoutRef.current);
+            mapReadyTimeoutRef.current = null;
+          }
+          map.fitBounds(bounds, { padding: [40, 40], animate: true });
 
-        } else {
+        } else if (clientPin && destinationPin && clientPin.lat && destinationPin.lat) {
           routeLayerRef.current = L.polyline([[clientPin.lat, clientPin.lng], [destinationPin.lat, destinationPin.lng]], {
             color: '#219178', weight: 4, opacity: 0.6, dashArray: '8, 8'
           }).addTo(map);
@@ -732,8 +807,8 @@ const MapView: React.FC<MapViewProps> = ({
 
     return () => {
       if (!focusedProviderId) {
-        if (routeLayerRef.current) map.removeLayer(routeLayerRef.current);
-        if (routeLabelRef.current) map.removeLayer(routeLabelRef.current);
+        if (routeLayerRef.current) mapRef.current?.removeLayer(routeLayerRef.current);
+        if (routeLabelRef.current) mapRef.current?.removeLayer(routeLabelRef.current);
       }
     };
   }, [clientPin, destinationPin, mapReady, focusedProviderId]);
@@ -741,7 +816,7 @@ const MapView: React.FC<MapViewProps> = ({
   // ── Auto-fit bounds ONLY when the LIST of providers changes ────────────────
   useEffect(() => {
     if (disableFitBounds) return; // Step 2: keep map locked on client address
-    if (!mapRef.current || !mapReady || !providerPins || providerPins.length === 0) return;
+    if (!mapRef.current || !mapReady || !providerPins || providerPins.length === 0 || !initialLocation) return;
     const map = mapRef.current;
 
     const allPoints: L.LatLngTuple[] = [

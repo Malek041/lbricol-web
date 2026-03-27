@@ -914,7 +914,10 @@ export default function ProviderPage() {
                         carReturnTime: data.carReturnTime,
                         totalPrice: data.totalPrice,
                         basePrice: data.basePrice,
-                        locationDetails: data.locationDetails
+                        locationDetails: data.locationDetails || null,
+                        address: data.address || '',
+                        city: data.city || '',
+                        coords: data.coords || null
                     } as any);
                 });
 
@@ -988,7 +991,10 @@ export default function ProviderPage() {
                         carReturnDate: data.carReturnDate,
                         carReturnTime: data.carReturnTime,
                         totalPrice: data.totalPrice,
-                        basePrice: data.basePrice
+                        basePrice: data.basePrice,
+                        locationDetails: data.locationDetails || null,
+                        address: data.address || '',
+                        coords: data.coords || null
                     });
                 });
                 setAcceptedJobs(myJobs);
@@ -2554,78 +2560,14 @@ export default function ProviderPage() {
                                                 {t({ en: 'Open in Maps', fr: 'Ouvrir dans Maps' })}
                                             </button>
                                         )}
-                                    </div>
-                                </section>
-
-                                {/* Payment Method Section */}
-                                <section className="space-y-4">
-                                    <h3 className="text-[28px] font-black text-black flex items-center gap-2">
-                                        <div className="w-10 h-10 flex-shrink-0">
-                                            <img src="/Images/Vectors Illu/Currency_VI.webp" className="w-full h-full object-contain" alt="payment" />
-                                        </div>
-                                        {t({ en: 'Payment Method', fr: 'Paiement' })}
-                                    </h3>
-                                    <div className="inline-flex px-4 py-2 bg-[#FFC244] text-black text-[15px] font-bold rounded-[12px]">
-                                        {job.rawAccepted?.paymentMethod === 'Cash on delivery' || job.rawAccepted?.paymentMethod === 'cash'
-                                            ? t({ en: 'Cash on delivery', fr: 'Paiement à la livraison' })
-                                            : (job.rawAccepted?.paymentMethod || t({ en: 'Cash on delivery', fr: 'Paiement à la livraison' }))}
-                                    </div>
-                                    {job.rawAccepted?.bankReceipt && (
-                                        <div className="mt-4 p-4 bg-emerald-50 rounded-1xl border border-emerald-100">
-                                            <p className="text-[14px] font-black text-[#219178] flex items-center gap-2 mb-3">
-                                                <Check size={16} strokeWidth={3} />
-                                                {t({ en: 'Bank receipt attached', fr: 'Reçu bancaire joint' })}
-                                            </p>
-                                            <div className="w-40 h-52 rounded-xl overflow-hidden border border-emerald-100 bg-white shadow-sm">
-                                                <img
-                                                    src={job.rawAccepted.bankReceipt}
-                                                    alt="Bank Receipt"
-                                                    className="w-full h-full object-cover cursor-pointer hover:opacity-90 transition-opacity"
-                                                    onClick={() => window.open(job.rawAccepted!.bankReceipt, '_blank')}
-                                                />
-                                            </div>
-                                        </div>
-                                    )}
-                                </section>
-
-                                {/* Earnings Summary */}
-                                <div className="mt-12 bg-[#FFFFFF] relative">
-                                    {/* Top ZigZag for Summary */}
-                                    <div className="absolute top-0 left-0 right-0 h-[10px] -translate-y-[10px]">
-                                        <div className="w-full h-full" style={{
-                                            backgroundImage: 'linear-gradient(135deg, transparent 45%, #F5F5F5 45%, #F5F5F5 55%, transparent 55%), linear-gradient(-135deg, transparent 45%, #F5F5F5 45%, #F5F5F5 55%, transparent 55%)',
-                                            backgroundSize: '20px 20px',
-                                            backgroundRepeat: 'repeat-x'
-                                        }} />
-                                    </div>
-
-                                    <div className="px-6 py-10 space-y-8">
-                                        <h3 className="text-[28px] font-black text-black">{t({ en: 'Earnings Summary', fr: 'Résumé des gains' })}</h3>
-                                        <div className="space-y-6">
-                                            <div className="flex justify-between items-center">
-                                                <div className="flex items-center gap-4">
-                                                    <span className="text-[16px] font-semibold text-black">{t({ en: 'Mission Fee', fr: 'Frais de mission' })}</span>
-                                                    <span className="text-[14px] font-light text-black">{job.rawAccepted?.duration || job.rawJob?.duration || t({ en: 'Flexible', fr: 'Flexible' })}</span>
-                                                </div>
-                                                <span className="text-[16px] font-bold text-black tracking-tight">{job.priceLabel} {t({ en: 'MAD', fr: 'MAD' })}</span>
-                                            </div>
-                                            <div className="flex justify-between items-center">
-                                                <div className="flex items-center gap-4">
-                                                    <span className="text-[16px] font-semibold text-black">{t({ en: 'Lbricol Fee', fr: 'Frais Lbricol' })}</span>
-                                                    <span className="text-[14px] font-light text-black">15%</span>
-                                                </div>
-                                                <span className="text-[16px] font-bold text-black tracking-tight">- {(parseFloat(job.priceLabel) * 0.15).toFixed(0)} {t({ en: 'MAD', fr: 'MAD' })}</span>
-                                            </div>
-                                            <div className="pt-4 border-t border-neutral-100 flex justify-between items-center">
-                                                <span className="text-[18px] font-black text-[#219178]">{t({ en: 'Final Earnings', fr: 'Gains Nets' })}</span>
-                                                <span className="text-[20px] font-black text-[#219178] tracking-tight">{(parseFloat(job.priceLabel) * (1 - COMMISSION_RATE)).toFixed(0)} {t({ en: 'MAD', fr: 'MAD' })}</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                                     </div>
+                                 </section>
+                                 <section className="space-y-6">
+                                     <p>NEW SECTIONS PLACEHOLDER</p>
+                                 </section>
+                             </div>
+                         </div>
+                     </div>
 
                     {/* Fixed Total Footer */}
                     <div className="px-6 md:px-12 py-8 bg-white border-t border-neutral-100 shadow-[0_-10px_40px_rgba(0,0,0,0.05)] z-[4001]">

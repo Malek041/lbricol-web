@@ -422,16 +422,15 @@ const ClientHome: React.FC<ClientHomeProps> = ({
         '/public/Images/clientHomeHeroSection/movingHelp.png',
         '/public/Images/clientHomeHeroSection/onlineStore.png',
         '/public/Images/clientHomeHeroSection/petsCare.png',
-        '/public/Images/clientHomeHeroSection/Homerepairs.png',
     ].map(p => p.replace('/public', ''));
 
     return (
         <div className={cn(
-            "fixed inset-0 bg-[#FFB700] overflow-y-auto no-scrollbar h-[100dvh] w-screen font-jakarta",
+            "fixed inset-0 bg-[#FFC244] overflow-y-auto no-scrollbar h-[100dvh] w-screen font-jakarta",
             "z-0"
         )}>
             {/* 1. New Green Hero Section */}
-            <div className="w-full sticky top-0 z-0 bg-[#FFB700] overflow-hidden flex-shrink-0 pt-[env(safe-area-inset-top)] pb-5">
+            <div className="w-full sticky top-0 z-0 bg-[#FFC244] overflow-hidden flex-shrink-0 pt-[env(safe-area-inset-top)] pb-5">
                 {/* Location Pill */}
                 <div className="flex justify-center pt-8 mb-6">
                     <motion.button
@@ -457,7 +456,7 @@ const ClientHome: React.FC<ClientHomeProps> = ({
                         initial={{ opacity: 0, scale: 0.9 }}
                         animate={{ opacity: 1, scale: 1 }}
                         transition={{ delay: 0.8, duration: 0.6, type: "spring", stiffness: 200 }}
-                        className="text-[34px] font-black leading-[1.1] text-[#000000] max-w-[340px] mx-auto"
+                        className="text-[34px] font-black leading-[1.1] text-Black max-w-[340px] mx-auto"
                     >
                         {t({
                             en: 'Book trusted help for home tasks',
@@ -544,32 +543,32 @@ const ClientHome: React.FC<ClientHomeProps> = ({
 
                             {/* ── Category tabs ───────────────────────────────────────── */}
                             {/* Search bar */}
-                            {/*<div className="px-6 pb-6 w-full max-w-[400px] mx-auto">
-                        <div className="flex items-center gap-2 bg-neutral-50 border border-neutral-200 rounded-full px-5 py-3.5">
-                            <Search size={18} className="text-[#219178] flex-shrink-0" strokeWidth={2.5} />
-                            <input
-                                type="text"
-                                value={searchQuery}
-                                onChange={e => setSearchQuery(e.target.value)}
-                                placeholder={t({ en: 'Search services...', fr: 'Rechercher un service...', ar: 'ابحث عن خدمة...' })}
-                                className="flex-1 bg-transparent text-[15.5px] font-bold text-neutral-800 placeholder:text-neutral-400 outline-none"
-                            />
-                            {searchQuery.length > 0 && (
-                                <button onClick={() => setSearchQuery('')} className="text-neutral-400 hover:text-neutral-600 transition-colors active:scale-90">
-                                    <X size={18} />
-                                </button>
-                            )}
-                        </div>
-                    </div>*/}
+                            <div className="px-6 pb-6 pt-6 w-full max-w-[400px] mx-auto">
+                                <div className="flex items-center gap-2 bg-neutral-50 border border-neutral-200 rounded-full px-5 py-3.5">
+                                    <Search size={18} className="text-[#000000] flex-shrink-0" strokeWidth={2.5} />
+                                    <input
+                                        type="text"
+                                        value={searchQuery}
+                                        onChange={e => setSearchQuery(e.target.value)}
+                                        placeholder={t({ en: 'Search services...', fr: 'Rechercher un service...', ar: 'ابحث عن خدمة...' })}
+                                        className="flex-1 bg-transparent text-[15.5px] font-bold text-neutral-800 placeholder:text-neutral-400 outline-none"
+                                    />
+                                    {searchQuery.length > 0 && (
+                                        <button onClick={() => setSearchQuery('')} className="text-neutral-400 hover:text-neutral-600 transition-colors active:scale-90">
+                                            <X size={18} />
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
 
                             {/* No results message */}
-                            {/*{searchQuery && filteredServices.length === 0 && (
-                        <div className="px-4 py-8 text-center">
-                            <p className="text-[15px] font-medium text-neutral-400">
-                                {t({ en: 'No services found for', fr: 'Aucun service trouvé pour', ar: 'لا توجد خدمات لـ' })} "<span className="text-neutral-600 font-bold">{searchQuery}</span>"
-                            </p>
-                        </div>
-                    )}*/}
+                            {searchQuery && filteredServices.length === 0 && (
+                                <div className="px-4 py-8 text-center">
+                                    <p className="text-[15px] font-medium text-neutral-400">
+                                        {t({ en: 'No services found for', fr: 'Aucun service trouvé pour', ar: 'لا توجد خدمات لـ' })} "<span className="text-neutral-600 font-bold">{searchQuery}</span>"
+                                    </p>
+                                </div>
+                            )}
 
                             <div
                                 className="flex gap-4 overflow-x-auto border-b border-neutral-100 px-4 flex-shrink-0"

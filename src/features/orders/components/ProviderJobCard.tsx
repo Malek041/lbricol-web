@@ -35,11 +35,27 @@ export default function ProviderJobCard({
 }: ProviderJobCardProps) {
     const { t } = useLanguage();
 
+    const normalizeToDate = (d: any): Date | null => {
+        if (!d) return null;
+        if (d instanceof Date) return d;
+        if (typeof d?.toDate === 'function') return d.toDate(); // Handle Firestore Timestamp
+        if (typeof d === 'string') {
+            const parsed = parseISO(d);
+            return isNaN(parsed.getTime()) ? new Date(d) : parsed; // Fallback to native Date
+        }
+        return null;
+    };
+
     const getTimeRemaining = (order: OrderDetails) => {
         if (!order.date || !order.time) return null;
         try {
+            const normDate = normalizeToDate(order.date);
+            if (!normDate) return null;
+
             const timeStr = order.time.split('-')[0].trim();
-            const targetDate = parseISO(`${order.date}T${timeStr}:00`);
+            const dateStr = format(normDate, 'yyyy-MM-dd');
+            const targetDate = parseISO(`${dateStr}T${timeStr}:00`);
+
             const diffMs = targetDate.getTime() - currentTime.getTime();
             if (diffMs < 0) return null;
 
@@ -48,27 +64,35 @@ export default function ProviderJobCard({
             const mins = diffMins % 60;
 
             if (hours > 24) return `${Math.floor(hours / 24)}d left`;
-            if (hours > 0) return `${hours}h ${mins}m left`;
-            return `${mins}m left`;
+            if (hours > 0) return `${hours}h${mins}min left`;
+            return `${mins}min left`;
         } catch (e) {
             return null;
         }
     };
 
     const getProgress = (order: OrderDetails) => {
-        if (!order.date || !order.time) return 10;
+        if (!order.date || !order.time) return 0;
         try {
+            const normDate = normalizeToDate(order.date);
+            if (!normDate) return 0;
+
             const timeStr = order.time.split('-')[0].trim();
-            const targetDate = parseISO(`${order.date}T${timeStr}:00`);
+            const dateStr = format(normDate, 'yyyy-MM-dd');
+            const targetDate = parseISO(`${dateStr}T${timeStr}:00`);
+
             const diffMs = targetDate.getTime() - currentTime.getTime();
 
-            const windowMs = 24 * 60 * 60 * 1000;
-            if (diffMs <= 0) return 100;
-            if (diffMs > windowMs) return 5;
+            // Progress represents the 24-hour lead-up to the start time.
+            const totalWindowMs = 24 * 60 * 60 * 1000;
 
-            return Math.floor(((windowMs - diffMs) / windowMs) * 100);
+            if (diffMs <= 0) return 100; // Event starts or is in progress
+            if (diffMs > totalWindowMs) return 0; // Way in the future, bar empty
+
+            // As we get closer to 0 diffMs, progress goes from 0 to 100
+            return Math.floor(((totalWindowMs - diffMs) / totalWindowMs) * 100);
         } catch (e) {
-            return 10;
+            return 0;
         }
     };
 
@@ -82,140 +106,110 @@ export default function ProviderJobCard({
         <motion.div
             whileTap={{ scale: 0.98 }}
             onClick={() => onSelect(order)}
-            className="bg-white rounded-[16px] p-4 flex items-start gap-4 cursor-pointer transition-all border border-transparent hover:border-neutral-100 shadow-sm w-full"
+            className="bg-white rounded-[5px] p-3 flex items-center gap-5 cursor-pointer transition-all border border-neutral-100 shadow-[0_2px_15px_rgba(0,0,0,0.03)] w-full"
         >
-            <div className="w-24 h-24 bg-[#F7F7F7] rounded-[16px] flex items-center justify-center flex-shrink-0 p-0 overflow-hidden">
+            {/* Circular Service / Task Image */}
+            <div className="w-[100px] h-[100px] bg-[#F7F7F7] rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden border border-neutral-50">
                 {order.images && order.images.length > 0 ? (
                     <img src={order.images[0]} className="w-full h-full object-cover" />
                 ) : (
-                    <img src={getServiceVector(order.service)} className="w-full h-full object-contain p-1" />
+                    <img src={getServiceVector(order.service)} className="w-[85%] h-[85%] object-contain" />
                 )}
             </div>
+
             <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-1">
+                {/* Status Badge */}
+                <div className="mb-1">
                     <span className={cn(
-                        "px-2 py-0.5 text-[10px] font-black rounded-md uppercase tracking-wider",
-                        isOffer ? "bg-amber-50 text-amber-600" : (isToday(parseISO(order.date || '')) && !isDone ? "bg-[#E6F7F4] text-[#219178]" : (isDone ? "bg-emerald-50 text-emerald-600" : "bg-blue-50 text-blue-600"))
+                        "px-2.5 py-0.5 text-[10px] font-black rounded-lg uppercase tracking-wider",
+                        isOffer ? "bg-amber-50 text-amber-600" : (isToday(normalizeToDate(order.date) || new Date()) && !isDone ? "bg-[#E6F7F4] text-[#219178]" : (isDone ? "bg-emerald-50 text-emerald-600" : "bg-blue-50 text-blue-600"))
                     )}>
-                        {isOffer ? t({ en: 'Active Offer', fr: 'Offre active' }) : (isDone ? t({ en: 'Delivered', fr: 'Livrée' }) : (isToday(parseISO(order.date || '')) ? t({ en: 'In Progress', fr: 'En cours' }) : t({ en: 'Scheduled', fr: 'Programmée' })))}
+                        {isOffer ? t({ en: 'Active Offer', fr: 'Offre active' }) : (isDone ? t({ en: 'Delivered', fr: 'Livrée' }) : (isToday(normalizeToDate(order.date) || new Date()) ? t({ en: 'In Progress', fr: 'En cours' }) : t({ en: 'Scheduled', fr: 'Programmée' })))}
                     </span>
-                    {order.providerConfirmed && (
-                        <span className="px-2 py-0.5 text-[10px] font-black rounded-md uppercase tracking-wider bg-amber-50 text-amber-600">
-                            {t({ en: 'Confirmed', fr: 'Confirmée' })}
-                        </span>
-                    )}
                 </div>
-                <h3 className="text-[17px] font-black text-black leading-tight">
+
+                {/* Main Title (Subservice) */}
+                <h3 className="text-[13px] font-black text-black leading-tight mb-1 tracking-tight">
                     {(() => {
                         const config = getServiceById(order.serviceId || order.service);
-                        const stableBase = config ? config.name : formatServiceName(order.service);
-                        const translatedBase = t({ en: stableBase, fr: stableBase });
-
                         const subDisplay = getSubServiceName(order.serviceId || order.service, order.subService || '') || order.subServiceDisplayName;
                         const translatedSub = subDisplay ? t({ en: subDisplay, fr: subDisplay }) : '';
 
-                        return translatedSub ? `${translatedBase} › ${translatedSub}` : translatedBase;
+                        if (translatedSub) return translatedSub;
+                        return config ? config.name : formatServiceName(order.service);
                     })()}
                 </h3>
-                <div className="flex flex-col mt-1">
-                    {order.service === 'car_rental' && order.date && order.carReturnDate ? (
-                        <div className="flex flex-col gap-0.5 font-bold">
-                            <div className="flex items-center gap-1.5 text-neutral-900">
-                                <Clock size={12} strokeWidth={2.5} />
-                                <span>{format(parseISO(order.date), 'MMM d')}</span>
-                                <span className="opacity-30">|</span>
-                                <span>{order.time?.split('-')[0] || '09:00'}</span>
-                            </div>
-                            <div className="flex items-center gap-1.5 text-neutral-400 pl-4">
-                                <span>{format(parseISO(order.carReturnDate), 'MMM d')}</span>
-                                <span className="opacity-30">|</span>
-                                <span>{order.carReturnTime?.split('-')[0] || '09:00'}</span>
-                            </div>
-                        </div>
-                    ) : (
-                        <div className="flex items-center gap-1.5 text-neutral-500">
-                            <Clock size={12} strokeWidth={2.5} />
-                            <p className="text-[14px] font-bold">
-                                {order.time || '12:00-13:00'}
-                            </p>
-                            {timeLeft && !isDone && (
-                                <span className="text-[12px] font-bold text-[#219178]">
-                                    ({timeLeft})
-                                </span>
-                            )}
-                            {isDone && <Check size={14} className="text-emerald-500 ml-1" />}
-                        </div>
-                    )}
-                </div>
 
-                <div className="flex items-center gap-1.5 mt-1">
-                    <p className="text-[13px] font-medium text-neutral-400 truncate">
-                        {order.clientName || t({ en: 'Client', fr: 'Client' })} • {order.city ? t({ en: order.city, fr: order.city }) : (order.location ? t({ en: order.location, fr: order.location }) : '')}
-                    </p>
-                </div>
-                {!isOffer && !isDone && (
-                    <div className="w-full h-1.5 bg-neutral-100 rounded-full mt-3 overflow-hidden">
-                        <motion.div
-                            initial={{ width: 0 }}
-                            animate={{
-                                width: `${progress}%`,
-                            }}
-                            transition={{
-                                width: { duration: 1, ease: "easeOut" }
-                            }}
-                            className="h-full bg-[#219178] rounded-full relative overflow-hidden"
-                        >
-                            <motion.div
-                                animate={{ x: ['-200%', '200%'] }}
-                                transition={{ repeat: Infinity, duration: 1.5, ease: 'linear' }}
-                                className="absolute inset-0 w-full h-full"
-                                style={{
-                                    background: 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.4) 50%, transparent 100%)'
-                                }}
-                            />
-                        </motion.div>
-                    </div>
-                )}
-
-                {/* CONFIRM & REDISTRIBUTE BUTTONS */}
-                {((order.status === 'programmed' || order.status === 'accepted') && !order.providerConfirmed) && (
-                    <div className="mt-4 flex justify-end gap-3">
-                        <button
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                onRedistribute?.(order);
-                            }}
-                            className="w-10 h-10 rounded-full bg-neutral-100 flex items-center justify-center text-neutral-500 hover:bg-neutral-200 transition-all active:scale-90"
-                        >
-                            <RefreshCw size={18} strokeWidth={2.5} />
-                        </button>
-                        <button
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                if (order.id) onConfirm?.(order.id);
-                            }}
-                            className="w-10 h-10 rounded-full bg-[#219178] text-white flex items-center justify-center shadow-md hover:bg-[#008f75] active:scale-95 transition-all"
-                        >
-                            <Check size={18} strokeWidth={3} />
-                        </button>
-                    </div>
-                )}
-                
-                {/* MARKET JOBS ACTIONS (Confirm Button) */}
-                {(order.status === 'new' || order.status === 'waiting') && !order.providerConfirmed && onConfirm && (
-                     <div className="mt-4 flex justify-end">
-                        <button
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                if (order.id) onConfirm?.(order.id);
-                            }}
-                            className="px-6 py-2 rounded-full bg-[#219178] text-white text-[14px] font-black shadow-md hover:bg-[#008f75] active:scale-95 transition-all"
-                        >
-                            {t({ en: 'Confirm Mission', fr: 'Confirmer la mission' })}
-                        </button>
-                    </div>
-                )}
-            </div>
-        </motion.div>
+                 {/* Time Row */}
+                 <div className="flex items-baseline gap-2 mb-1">
+                     <Clock size={15} strokeWidth={2.5} className="text-neutral-400 translate-y-0.5" />
+                     <span className="text-[18px] font-black text-neutral-600 tracking-tight">
+                         {order.time?.split('-')[0] || '09:00'}
+                     </span>
+                     {isDone && <Check size={16} className="text-emerald-500 ml-1" strokeWidth={3} />}
+                 </div>
+ 
+                 {/* Progress Bar & Actions Row */}
+                 <div className="mt-4">
+                     <div className="flex justify-between items-end mb-1">
+                         <div className="text-[14px] font-bold text-neutral-300">
+                              {order.clientName || t({ en: 'Client', fr: 'Client' })}
+                         </div>
+                         {timeLeft && !isDone && (
+                             <span className="text-[12px] font-black text-[#219178] tracking-tight">
+                                 ({timeLeft.replace(' left', t({ en: ' left', fr: ' restant' }))})
+                             </span>
+                         )}
+                     </div>
+                     <div className="flex items-center justify-between gap-4">
+                         <div className="flex-1 h-[4px] bg-neutral-50 rounded-full overflow-hidden">
+                             <motion.div
+                                 initial={{ width: 0 }}
+                                 animate={{ width: `${progress}%` }}
+                                 transition={{ duration: 1.5, ease: "easeOut" }}
+                                 className="h-full bg-[#219178] rounded-full relative overflow-hidden"
+                             />
+                         </div>
+ 
+                         {/* Action Buttons */}
+                         <div className="flex items-center gap-2 flex-shrink-0">
+                         {((order.status === 'programmed' || order.status === 'accepted') && !order.providerConfirmed) && (
+                             <>
+                                 <button
+                                     onClick={(e) => {
+                                         e.stopPropagation();
+                                         onRedistribute?.(order);
+                                     }}
+                                     className="w-10 h-10 rounded-full bg-neutral-50 flex items-center justify-center text-neutral-400 hover:bg-neutral-100 transition-all active:scale-90"
+                                 >
+                                     <RefreshCw size={18} strokeWidth={2.5} />
+                                 </button>
+                                 <button
+                                     onClick={(e) => {
+                                         e.stopPropagation();
+                                         if (order.id) onConfirm?.(order.id);
+                                     }}
+                                     className="w-10 h-10 rounded-full bg-[#219178] text-white flex items-center justify-center shadow-sm hover:bg-[#008f75] active:scale-95 transition-all"
+                                 >
+                                     <Check size={18} strokeWidth={3} />
+                                 </button>
+                             </>
+                         )}
+                         {(order.status === 'new' || order.status === 'waiting') && !order.providerConfirmed && onConfirm && (
+                             <button
+                                 onClick={(e) => {
+                                     e.stopPropagation();
+                                     if (order.id) onConfirm?.(order.id);
+                                 }}
+                                 className="px-6 py-2.5 rounded-full bg-[#219178] text-white text-[13px] font-black shadow-[0_2px_10px_rgba(33,145,120,0.2)] hover:bg-[#008f75] active:scale-95 transition-all"
+                             >
+                                 {t({ en: 'Confirm Mission', fr: 'Confirmer la mission' })}
+                             </button>
+                         )}
+                         </div>
+                     </div>
+                 </div>
+             </div>
+         </motion.div>
     );
 }

@@ -114,7 +114,10 @@ export const SERVICES_HIERARCHY: Record<string, ServiceConfig> = {
                 }
             },
             { id: 'packing', name: 'Packing Services', pricingArchetype: 'hourly' },
-            { id: 'furniture_move', name: 'Furniture Moving Only', pricingArchetype: 'hourly' }
+            { id: 'furniture_move', name: 'Furniture Moving Only', pricingArchetype: 'hourly' },
+            { id: 'heavy_hauling', name: 'Heavy Item Hauling', pricingArchetype: 'hourly' },
+            { id: 'trash_removal', name: 'Trash & Furniture Removal', pricingArchetype: 'hourly' },
+            { id: 'rearrange_furniture', name: 'Rearrange Furniture', pricingArchetype: 'hourly' }
         ]
     },
     home_repairs: {

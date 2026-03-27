@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { OrderDetails } from '@/features/orders/components/OrderCard';
 import OrderCard from '@/features/orders/components/OrderCard';
@@ -53,6 +53,37 @@ export default function ProviderOrdersView({
     const [showHistory, setShowHistory] = useState(false);
     const [isMapDragging, setIsMapDragging] = useState(false);
     const [triggerGps, setTriggerGps] = useState(0);
+    const [currentTime, setCurrentTime] = useState(new Date());
+    const prevJobsCountRef = useRef(availableJobs.length);
+    const audioRef = useRef<HTMLAudioElement | null>(null);
+    const isFirstLoadRef = useRef(true);
+
+    useEffect(() => {
+        const timer = setInterval(() => setCurrentTime(new Date()), 60000);
+        return () => clearInterval(timer);
+    }, []);
+
+    useEffect(() => {
+        if (typeof window !== 'undefined' && !audioRef.current) {
+            audioRef.current = new Audio('https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3');
+            audioRef.current.preload = 'auto';
+        }
+    }, []);
+
+    useEffect(() => {
+        // Skip sound on initial empty->populated transition
+        if (isFirstLoadRef.current) {
+            if (availableJobs.length > 0) isFirstLoadRef.current = false;
+            prevJobsCountRef.current = availableJobs.length;
+            return;
+        }
+
+        if (availableJobs.length > prevJobsCountRef.current && audioRef.current) {
+            // Only play if the increase is meaningful (new items added)
+            audioRef.current.play().catch(() => {}); 
+        }
+        prevJobsCountRef.current = availableJobs.length;
+    }, [availableJobs.length]);
 
     // Filter orders for history (done and cancelled)
     const historyOrders = useMemo(() => {
@@ -129,13 +160,29 @@ export default function ProviderOrdersView({
         </motion.div>
     );
 
+    const scrollRef = useRef<HTMLDivElement>(null);
+    const [selectedId, setSelectedId] = useState<string | null>(null);
+
+    // Scroll sync: When an order is selected (e.g. from map pin), scroll the list to it
+    const handleSelectFromMap = (order: OrderDetails) => {
+        setSelectedId(order.id || null);
+        onSelectOrder(order);
+        
+        if (order.id && scrollRef.current) {
+            const cardElement = document.getElementById(`job-card-${order.id}`);
+            if (cardElement) {
+                cardElement.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+            }
+        }
+    };
+
     return (
         <div className="flex flex-col h-full bg-[#FFFFFF] relative overflow-hidden">
             {/* TOP MAP CONTAINER */}
             <div className="absolute inset-x-0 bottom-0 top-0 z-0">
                 <LiveOrdersMap
                     city={userData?.city || ''}
-                    onSelectOrder={onSelectOrder}
+                    onSelectOrder={handleSelectFromMap}
                     language={language}
                     notificationsCount={notificationsCount}
                     onShowNotifications={onShowNotifications}
@@ -145,15 +192,30 @@ export default function ProviderOrdersView({
                     currentUserPin={{
                         avatarUrl: userData?.avatar || userData?.photoURL
                     }}
-                    broadcastPins={availableJobs.map(job => ({
-                        id: job.id,
-                        lat: (job as any).locationDetails?.lat || 31.5085,
-                        lng: (job as any).locationDetails?.lng || -9.7595,
-                        price: job.price || 0,
-                        rating: 5.0, 
-                        serviceIcon: getServiceVector(job.serviceId || job.craft || ''),
-                        isSelected: false
-                    }))}
+                    broadcastPins={[
+                        ...availableJobs.map(job => ({
+                            id: job.id,
+                            lat: (job as any).locationDetails?.lat || 31.5085,
+                            lng: (job as any).locationDetails?.lng || -9.7595,
+                            price: job.price || 0,
+                            rating: 5.0, 
+                            serviceIcon: getServiceVector(job.serviceId || job.craft || ''),
+                            isSelected: selectedId === job.id,
+                            isMarketplace: true
+                        })),
+                        ...confirmedOrders
+                            .filter(o => ['programmed', 'accepted', 'in_progress', 'waiting'].includes(o.status || ''))
+                            .map(order => ({
+                                id: order.id,
+                                lat: (order as any).locationDetails?.lat || (order.coords?.lat) || 31.5085,
+                                lng: (order as any).locationDetails?.lng || (order.coords?.lng) || -9.7595,
+                                price: order.totalPrice || Number(order.price) || 0,
+                                rating: order.rating || 5.0,
+                                serviceIcon: getServiceVector(order.serviceId || order.service || ''),
+                                isSelected: selectedId === order.id,
+                                isConfirmed: true
+                            }))
+                    ]}
                 />
             </div>
 
@@ -162,7 +224,7 @@ export default function ProviderOrdersView({
                 onClick={() => setTriggerGps(Date.now())}
                 initial={{ bottom: '24px' }}
                 animate={{
-                    bottom: (availableJobs.length > 0 && !isMapDragging) ? '250px' : '102px'
+                    bottom: (!isMapDragging && (availableJobs.length > 0 || confirmedOrders.some(o => ['programmed', 'accepted', 'in_progress', 'waiting'].includes(o.status || '')))) ? '320px' : '102px'
                 }}
                 className="absolute right-6 w-12 h-12 bg-white rounded-full shadow-[0_2px_8px_rgba(0,0,0,0.15)] flex items-center justify-center text-[#374151] active:scale-95 transition-all z-[100]"
             >
@@ -170,26 +232,51 @@ export default function ProviderOrdersView({
             </motion.button>
 
             {/* HORIZONTAL ORDERS LIST (At the bottom of the map) */}
-            <div className="absolute bottom-10 left-0 right-0 z-10">
+            <div className="absolute bottom-[92px] left-0 right-0 z-10">
                 <AnimatePresence>
-                    {!isMapDragging && availableJobs.length > 0 && (
+                    {(!isMapDragging && (availableJobs.length > 0 || confirmedOrders.some(o => ['programmed', 'accepted', 'in_progress', 'waiting'].includes(o.status || '')))) && (
                         <motion.div
+                            ref={scrollRef}
                             initial={{ y: 100, opacity: 0 }}
                             animate={{ y: 0, opacity: 1 }}
                             exit={{ y: 100, opacity: 0 }}
                             className="flex gap-4 overflow-x-auto px-6 pb-6 no-scrollbar snap-x snap-mandatory"
                         >
+                            {/* Confirmed Active Orders First */}
+                            {confirmedOrders
+                                .filter(o => ['programmed', 'accepted', 'in_progress', 'waiting'].includes(o.status || ''))
+                                .map((order: any) => (
+                                     <div key={order.id} id={`job-card-${order.id}`} className="flex-none w-[350px] snap-center">
+                                          <ProviderJobCard
+                                              order={{
+                                                  ...order,
+                                                  id: order.id,
+                                                  service: order.serviceId || order.service || '',
+                                                  subService: order.subService || order.subServiceId,
+                                                  totalPrice: order.totalPrice || Number(order.price) || 0
+                                              } as any}
+                                             onSelect={() => onSelectOrder(order)}
+                                             onConfirm={onConfirmJob}
+                                             onRedistribute={onRedistributeJob}
+                                             currentTime={currentTime}
+                                         />
+                                     </div>
+                                ))}
+
+                            {/* Available Marketplace Jobs */}
                             {availableJobs.map((job) => (
-                                <div key={job.id} className="flex-none w-[320px] snap-center">
+                                <div key={job.id} id={`job-card-${job.id}`} className="flex-none w-[350px] snap-center">
                                     <ProviderJobCard
                                         order={{
                                             ...job,
+                                            id: job.id,
                                             service: job.serviceId || job.craft || '',
                                             totalPrice: Number(job.price)
                                         } as any}
                                         onSelect={() => onSelectOrder(job as any)}
                                         onConfirm={onConfirmJob}
                                         onRedistribute={onRedistributeJob}
+                                        currentTime={currentTime}
                                     />
                                 </div>
                             ))}

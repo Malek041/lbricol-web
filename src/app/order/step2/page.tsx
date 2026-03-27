@@ -2,6 +2,7 @@
 import { useEffect, useState, Suspense, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useOrder } from '@/context/OrderContext';
+import { useLanguage } from '@/context/LanguageContext';
 import { collection, getDocs, query, where, limit, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db, auth } from '@/lib/firebase';
 import { calculateDistance, getRoadDistance } from '@/lib/calculateDistance';
@@ -73,7 +74,102 @@ const MOCK_PROVIDERS = [
   },
 ];
 
+// ── Moving Vehicle Requirement Popup ────────────────────────────────
+function MovingVehiclePopup({
+  isOpen,
+  onSelect
+}: {
+  isOpen: boolean;
+  onSelect: (vehicleType: string | null) => void
+}) {
+  const [step, setStep] = useState(1);
+  const { t } = useLanguage();
+
+  if (!isOpen) return null;
+
+  const vehicleOptions = [
+    { id: 'triporteur', label: { en: 'Triporteur', fr: 'Triporteur', ar: 'تربورتور' }, icon: '🛵' },
+    { id: 'small_van', label: { en: 'Small Van', fr: 'Petit Van', ar: 'سيارة "برلانكو"' }, icon: '🚐' },
+    { id: 'large_van', label: { en: 'Large Van', fr: 'Grand Van', ar: 'شاحنة فورد ترانزيت' }, icon: '🚚' },
+    { id: 'small_truck', label: { en: 'Small Truck', fr: 'Petit Camion', ar: 'شاحنة صغيرة' }, icon: '🚛' },
+    { id: 'large_truck', label: { en: 'Large Truck', fr: 'Grand Camion', ar: 'شاحنة كبيرة' }, icon: '🚛' },
+  ];
+
+  return (
+    <div className="fixed inset-0 z-[5000] bg-white flex flex-col p-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
+      <div className="flex-1 flex flex-col justify-center items-center max-w-md mx-auto w-full space-y-8">
+        {step === 1 ? (
+          <>
+            <div className="text-center space-y-4">
+              <div className="w-20 h-20 bg-[#027963]/10 rounded-[5px] flex items-center justify-center text-4xl mx-auto">🚚</div>
+              <div className="space-y-2">
+                <h2 className="text-2xl font-medium text-neutral-900 leading-tight">
+                  {t({ en: 'Do you need your Bricoler to provide a vehicle?', fr: 'Avez-vous besoin que votre Bricoleur fournisse un véhicule ?', ar: 'هل تحتاج من "البريكولير" توفير وسيلة نقل؟' })}
+                </h2>
+                <p className="text-neutral-500 font-medium text-[15px] px-2">
+                  {t({
+                    en: "This helps us match you to the right Bricolers based on your task. If you're providing your own vehicle, select \"No\".",
+                    fr: "Cela nous aide à vous mettre en relation avec les bons Bricoleurs. Si vous fournissez votre propre véhicule, sélectionnez \"Non\"",
+                    ar: "هذا يساعدنا في العثور على الشخص المناسب لمهمتك. إذا كنت ستوفر وسيلة النقل بنفسك، فاختر \"لا\"."
+                  })}
+                </p>
+              </div>
+            </div>
+            <div className="w-full space-y-3">
+              <motion.button
+                whileTap={{ scale: 0.98 }}
+                onClick={() => setStep(2)}
+                className="w-full py-4.5 bg-[#027963] text-white rounded-full font-medium text-lg transition-all"
+              >
+                {t({ en: 'Yes, I need a vehicle', fr: 'Oui, j\'ai besoin d\'un véhicule', ar: 'نعم، أحتاج وسيلة نقل' })}
+              </motion.button>
+              <motion.button
+                whileTap={{ scale: 0.98 }}
+                onClick={() => onSelect(null)}
+                className="w-full py-4.5 bg-neutral-100 text-neutral-900 rounded-full font-medium text-lg transition-all"
+              >
+                {t({ en: 'No, I don\'t need a vehicle', fr: 'Non, je n\'en ai pas besoin', ar: 'لا، لا أحتاج وسيلة نقل' })}
+              </motion.button>
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="text-center space-y-2">
+              <h2 className="text-2xl font-medium text-neutral-900 leading-tight">
+                {t({ en: 'Which transportation mean you need?', fr: 'De quel moyen de transport avez-vous besoin ?', ar: 'ما هي وسيلة النقل التي تحتاجها؟' })}
+              </h2>
+            </div>
+            <div className="w-full grid grid-cols-1 gap-3 overflow-y-auto max-h-[60vh] px-1 pb-4 no-scrollbar">
+              {vehicleOptions.map((opt, idx) => (
+                <motion.button
+                  key={opt.id}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: idx * 0.05 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => onSelect(opt.id)}
+                  className="flex items-center gap-5 p-5 bg-white border border-neutral-100 rounded-[5px] text-left hover:border-[#027963] hover:bg-neutral-50 transition-all group"
+                >
+                  <div className="w-12 h-12 rounded-[5px] bg-neutral-50 flex items-center justify-center text-3xl group-hover:scale-110 transition-transform">{opt.icon}</div>
+                  <div className="font-medium text-neutral-900 text-lg">{t(opt.label)}</div>
+                </motion.button>
+              ))}
+              <button
+                onClick={() => setStep(1)}
+                className="w-full py-4 text-neutral-400 font-bold uppercase tracking-widest text-[11px] hover:text-neutral-600 transition-colors mt-4"
+              >
+                {t({ en: 'Go back', fr: 'Retour', ar: 'رجوع' })}
+              </button>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function Step2Content() {
+  const { t } = useLanguage();
   const router = useRouter();
   const { order, setOrderField } = useOrder();
   const [providers, setProviders] = useState<any[]>([]);
@@ -81,15 +177,26 @@ function Step2Content() {
   const [focusedId, setFocusedId] = useState<string | null>(null);
   const [isInteracting, setIsInteracting] = useState(false);
   const [isSplashing, setIsSplashing] = useState(false);
+  const [showVehiclePopup, setShowVehiclePopup] = useState(false);
+  const [selectedVehicle, setSelectedVehicle] = useState<string | null>(null);
+  const [hasAnsweredVehicle, setHasAnsweredVehicle] = useState(false);
   const cardsRef = useRef<HTMLDivElement>(null);
 
   const clientLat = order.location?.lat || 31.5085;
   const clientLng = order.location?.lng || -9.7595;
   const serviceType = order.serviceType || '';
 
+  // ── Show vehicle popup for moving ──────────────────────────────────
+  useEffect(() => {
+    if (serviceType === 'moving' && !hasAnsweredVehicle) {
+      setShowVehiclePopup(true);
+    }
+  }, [serviceType, hasAnsweredVehicle]);
+
   // ── Fetch providers ──────────────────────────────────────────────────
   useEffect(() => {
     async function load() {
+      // If moving and haven't answered vehicle, we can still load background but UI will be overlayed
       setLoading(true);
       try {
         const snap = await getDocs(query(
@@ -103,7 +210,6 @@ function Step2Content() {
           return {
             id: d.id,
             ...data,
-            // Normalize job count and rating fields for UI
             taskCount: data.completedJobs || data.taskCount || 0,
             rating: data.rating || 0,
             numReviews: data.numReviews || 0
@@ -118,7 +224,6 @@ function Step2Content() {
             const catMatch = s.categoryId === serviceType || s.serviceId === serviceType;
             if (!catMatch) return false;
 
-            // If a specific sub-service is selected, ensure the Bricoler offers it
             if (order.subServiceId) {
               return s.subServiceId === order.subServiceId ||
                 s.subServiceName === order.subServiceName ||
@@ -128,9 +233,18 @@ function Step2Content() {
           });
         });
 
+        // Filter: vehicle requirement for moving
+        const withVehicle = filtered.filter(b => {
+          if (serviceType === 'moving' && selectedVehicle) {
+            const transports = b.movingTransports || (b.movingTransport ? [b.movingTransport] : []);
+            return transports.includes(selectedVehicle);
+          }
+          return true;
+        });
+
         // Filter: must have GPS and client must be within their radius
-        const inRange = filtered.filter(b => {
-          if (!b.base_lat || !b.base_lng) return true; // include if no GPS yet for MVP
+        const inRange = withVehicle.filter(b => {
+          if (!b.base_lat || !b.base_lng) return true;
           const dist = calculateDistance(clientLat, clientLng, b.base_lat, b.base_lng);
           return dist <= (b.service_radius_km || 15);
         });
@@ -153,7 +267,7 @@ function Step2Content() {
       }
     }
     load();
-  }, [clientLat, clientLng, serviceType]);
+  }, [clientLat, clientLng, serviceType, selectedVehicle]);
 
   const saveDraftAndExit = async () => {
     const user = auth.currentUser;
@@ -246,7 +360,7 @@ function Step2Content() {
     }
 
     const services = Array.isArray(provider.services) ? provider.services : [];
-    
+
     // 1. Try to find specific subservice rate
     if (order.subServiceId) {
       const subSvcInfo = services.find((s: any) => s.subServiceId === order.subServiceId || s.id === order.subServiceId);
@@ -309,6 +423,16 @@ function Step2Content() {
 
   return (
     <>
+      <MovingVehiclePopup
+        isOpen={showVehiclePopup}
+        onSelect={(val) => {
+          setSelectedVehicle(val);
+          setHasAnsweredVehicle(true);
+          setShowVehiclePopup(false);
+          setOrderField('vehicleType', val);
+        }}
+      />
+
       <style>{`
         .step2-root {
           position: fixed;
@@ -351,7 +475,7 @@ function Step2Content() {
         }
         .step2-cards::-webkit-scrollbar { display: none; }
         .provider-card-wrapper {
-          flex: 0 0 75%;
+          flex: 0 0 68%;
           scroll-snap-align: center;
           height: auto;
           min-height: 120px;
@@ -550,12 +674,11 @@ function ProviderCard({
     <div
       onClick={onSelect}
       style={{
-        border: isSelected ? '0.5px solid #219178' : '1px solid #F3F4F6',
-        borderRadius: 10,
+        border: isSelected ? '1px solid #027963' : '1px solid #F3F4F6',
+        borderRadius: 5,
         padding: '12px 14px',
         background: '#fff',
         transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-        boxShadow: isSelected ? '0 10px 25px rgba(1, 160, 131, 0.12)' : '0 2px 12px rgba(0,0,0,0.03)',
         display: 'flex',
         flexDirection: 'column',
         cursor: 'pointer',
@@ -582,7 +705,7 @@ function ProviderCard({
 
         {/* Center/Main Info Stack */}
         <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 4 }}>
-          <div style={{ fontSize: 15, fontWeight: 950, color: '#111827', lineHeight: 1.2 }}>
+          <div style={{ fontSize: 15, fontWeight: 500, color: '#111827', lineHeight: 1.2 }}>
             {provider.name}
           </div>
 
@@ -598,7 +721,7 @@ function ProviderCard({
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
             <Star size={12} fill="#FBBF24" color="#FBBF24" />
-            <span style={{ fontSize: 14, fontWeight: 950, color: '#111827' }}>
+            <span style={{ fontSize: 14, fontWeight: 500, color: '#111827' }}>
               {provider.rating && Number(provider.rating) > 0 ? Number(provider.rating).toFixed(1) : '0.0'}
             </span>
           </div>
@@ -607,9 +730,9 @@ function ProviderCard({
         {/* Right side Stack (Price & Availability) */}
         <div style={{ textAlign: 'right', flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', justifyContent: 'space-between', minHeight: 75 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-            <div style={{ fontSize: 12, fontWeight: 950, color: '#111827', display: 'flex', alignItems: 'center', gap: 4 }}>
-              MAD {displayRate} <span style={{ color: '#9CA3AF', fontWeight: 900, fontSize: 10 }}>(min)</span>
-              <div style={{ width: 14, height: 14, background: '#219178', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div style={{ fontSize: 12, fontWeight: 500, color: '#111827', display: 'flex', alignItems: 'center', gap: 4 }}>
+              MAD {displayRate} <span style={{ color: '#9CA3AF', fontWeight: 500, fontSize: 10 }}>(min)</span>
+              <div style={{ width: 14, height: 14, background: '#027963', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <CheckCircle2 size={8} color="#fff" strokeWidth={4} />
               </div>
             </div>
@@ -648,10 +771,21 @@ function ProviderCard({
         )}
       </div>
 
-      {/* Brand Logo Strip for Car Rentals remains if needed, but simplified */}
+      {/* Brand Logo Strip for Car Rentals */}
       {isCarRental && provider.carRentalDetails?.cars && provider.carRentalDetails.cars.length > 0 && (
-        <div style={{ marginTop: 12, display: 'flex', gap: 8, overflowX: 'auto' }} className="no-scrollbar">
-          {/* ... brands logic simplified ... */}
+        <div style={{ marginTop: 14, display: 'flex', gap: 10, overflowX: 'auto', paddingBottom: 2 }} className="no-scrollbar">
+          {(() => {
+            const brands = Array.from(new Set(provider.carRentalDetails.cars.map((c: any) => c.brandId)));
+            return brands.map((bId: any) => {
+              const brand = CAR_BRANDS.find(b => b.id === bId);
+              if (!brand) return <div key={bId} style={{ fontSize: 10, fontWeight: 900, color: '#9CA3AF', background: '#F9FAFB', padding: '4px 8px', borderRadius: 4 }}>{bId}</div>;
+              return (
+                <div key={bId} style={{ width: 28, height: 28, background: '#F9FAFB', borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 4, border: '1px solid #F3F4F6', flexShrink: 0 }} title={brand.name}>
+                  {brand.logo ? <img src={brand.logo} style={{ width: '100%', height: '100%', objectFit: 'contain' }} alt={brand.name} /> : <span style={{ fontSize: 8 }}>{brand.name}</span>}
+                </div>
+              );
+            });
+          })()}
         </div>
       )}
     </div>

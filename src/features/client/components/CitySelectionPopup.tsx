@@ -76,8 +76,8 @@ const CitySelectionPopup = ({ isOpen, onSelectCity, onClose }: CitySelectionPopu
                         exit={isMobile ? { y: '100%' } : { scale: 0.95, opacity: 0, y: 20 }}
                         transition={{ type: 'spring', damping: 28, stiffness: 320 }}
                         className={cn(
-                            "bg-white w-full md:max-w-[480px] rounded-t-[32px] md:rounded-[32px] shadow-2xl max-h-[90vh] flex flex-col relative",
-                            isMobile ? "min-h-0" : "overflow-hidden"
+                            "bg-white w-full md:max-w-[480px] shadow-2xl max-h-[90vh] flex flex-col relative",
+                            isMobile ? "rounded-none min-h-0" : "rounded-[32px] overflow-hidden"
                         )}
                         onClick={e => e.stopPropagation()}
                     >

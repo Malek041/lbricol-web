@@ -15,8 +15,14 @@ import {
     CheckCircle2,
     ArrowRight,
     Star,
-    Info
+    Info,
+    ChevronRight,
+    Search,
+    Navigation,
+    Truck,
+    Package
 } from 'lucide-react';
+import MapView from '@/components/location-picker/MapView';
 import { useOrder } from '@/context/OrderContext';
 import { auth, db } from '@/lib/firebase';
 import { doc, getDoc, setDoc, collection, addDoc, serverTimestamp } from 'firebase/firestore';
@@ -71,11 +77,24 @@ export default function CheckoutPage() {
     }, [order, router]);
 
     useEffect(() => {
-        if (order.location?.lat && order.location?.lng && order.providerCoords?.lat && order.providerCoords?.lng) {
+        const isSpecialized = order.serviceType === 'moving' || order.serviceType?.includes('moving') || order.serviceType === 'errands' || (order.serviceType === 'delivery') || order.subServiceId === 'packing';
+
+        if (isSpecialized) {
+            const pickup = (order.serviceDetails as any)?.pickupCoords || order.location;
+            const dropoff = (order.serviceDetails as any)?.dropoffCoords;
+
+            if (pickup?.lat && pickup?.lng && dropoff?.lat && dropoff?.lng) {
+                getRoadDistance(pickup.lat, pickup.lng, dropoff.lat, dropoff.lng)
+                    .then(setTravelInfo);
+            } else if (order.location?.lat && order.location?.lng && order.providerCoords?.lat && order.providerCoords?.lng) {
+                getRoadDistance(order.location.lat, order.location.lng, order.providerCoords.lat, order.providerCoords.lng)
+                    .then(setTravelInfo);
+            }
+        } else if (order.location?.lat && order.location?.lng && order.providerCoords?.lat && order.providerCoords?.lng) {
             getRoadDistance(order.location.lat, order.location.lng, order.providerCoords.lat, order.providerCoords.lng)
                 .then(setTravelInfo);
         }
-    }, [order.location, order.providerCoords]);
+    }, [order.location, order.providerCoords, order.serviceDetails, order.serviceType, order.subServiceId]);
 
     const handleBack = () => router.back();
 
@@ -129,6 +148,8 @@ export default function CheckoutPage() {
                         wallMaterial: (order.serviceDetails as any)?.wallMaterial,
                         liftingHelp: (order.serviceDetails as any)?.liftingHelp,
                         mountingAddOns: (order.serviceDetails as any)?.mountingAddOns,
+                        deliveryDistanceKm: (order.serviceDetails as any)?.deliveryDistanceKm,
+                        deliveryDurationMinutes: (order.serviceDetails as any)?.deliveryDurationMinutes,
                     }
                 );
 
@@ -285,7 +306,7 @@ export default function CheckoutPage() {
                             alt="Order"
                         />
                     </motion.div>
-                    <h2 style={{ fontSize: 24, fontWeight: 900, marginBottom: 8, letterSpacing: '-0.5px' }}>Your Bricol.com Order</h2>
+                    <h2 style={{ fontSize: 24, fontWeight: 900, marginBottom: 8, letterSpacing: '-0.5px' }}>Your Lbricol.com Order</h2>
                     <div style={{ fontSize: 16, fontWeight: 500, color: '#424242ff', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
                         <span>{formattedDateRange()}</span>
                     </div>
@@ -308,22 +329,23 @@ export default function CheckoutPage() {
                     </h3>
                     <p style={{ fontSize: 14, fontWeight: 400, color: '#9CA3AF', marginBottom: 20 }}>Choose your payment method</p>
 
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
                         <div
                             onClick={() => setPaymentMethod('cash')}
                             style={{
-                                padding: 16, borderRadius: 16, border: '2px solid',
-                                borderColor: paymentMethod === 'cash' ? '#FBBF24' : '#F3F4F6',
-                                background: paymentMethod === 'cash' ? '#FFFBEB' : '#F9FAFB',
-                                cursor: 'pointer', position: 'relative'
+                                padding: '24px 20px', borderRadius: 5, border: '2px solid',
+                                borderColor: paymentMethod === 'cash' ? '#219178' : '#F3F4F6',
+                                background: paymentMethod === 'cash' ? '#F0FDF9' : '#F9FAFB',
+                                cursor: 'pointer', position: 'relative', transition: 'all 0.2s',
+                                display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center'
                             }}
                         >
-                            <div style={{ fontSize: 24, marginBottom: 12 }}>💵</div>
-                            <div style={{ fontWeight: 900, fontSize: 15, color: '#111827' }}>Cash</div>
-                            <div style={{ fontWeight: 700, fontSize: 11, color: '#9CA3AF' }}>On delivery</div>
+                            <div style={{ fontSize: 32, marginBottom: 12 }}>💵</div>
+                            <div style={{ fontWeight: 1000, fontSize: 16, color: '#111827', marginBottom: 4 }}>Cash</div>
+                            <div style={{ fontWeight: 700, fontSize: 12, color: paymentMethod === 'cash' ? '#219178' : '#9CA3AF' }}>On delivery</div>
                             {paymentMethod === 'cash' && (
-                                <div style={{ position: 'absolute', top: 12, right: 12, width: 20, height: 20, background: '#FBBF24', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                    <Check size={12} color="#fff" strokeWidth={4} />
+                                <div style={{ position: 'absolute', top: 12, right: 12, width: 24, height: 24, background: '#219178', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                    <Check size={14} color="#fff" strokeWidth={5} />
                                 </div>
                             )}
                         </div>
@@ -331,18 +353,19 @@ export default function CheckoutPage() {
                         <div
                             onClick={() => setPaymentMethod('bank_transfer')}
                             style={{
-                                padding: 16, borderRadius: 16, border: '2px solid',
-                                borderColor: paymentMethod === 'bank_transfer' ? '#FBBF24' : '#F3F4F6',
-                                background: paymentMethod === 'bank_transfer' ? '#FFFBEB' : '#F9FAFB',
-                                cursor: 'pointer', position: 'relative'
+                                padding: '24px 20px', borderRadius: 5, border: '2px solid',
+                                borderColor: paymentMethod === 'bank_transfer' ? '#219178' : '#F3F4F6',
+                                background: paymentMethod === 'bank_transfer' ? '#F0FDF9' : '#F9FAFB',
+                                cursor: 'pointer', position: 'relative', transition: 'all 0.2s',
+                                display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center'
                             }}
                         >
-                            <div style={{ fontSize: 24, marginBottom: 12 }}>🏦</div>
-                            <div style={{ fontWeight: 900, fontSize: 15, color: '#111827' }}>Bank Transfer</div>
-                            <div style={{ fontWeight: 700, fontSize: 11, color: '#9CA3AF' }}>WhatsApp verify</div>
+                            <div style={{ fontSize: 32, marginBottom: 12 }}>🏦</div>
+                            <div style={{ fontWeight: 1000, fontSize: 16, color: '#111827', marginBottom: 4 }}>Bank Transfer</div>
+                            <div style={{ fontWeight: 700, fontSize: 12, color: paymentMethod === 'bank_transfer' ? '#219178' : '#9CA3AF' }}>WhatsApp verify</div>
                             {paymentMethod === 'bank_transfer' && (
-                                <div style={{ position: 'absolute', top: 12, right: 12, width: 20, height: 20, background: '#FBBF24', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                    <Check size={12} color="#fff" strokeWidth={4} />
+                                <div style={{ position: 'absolute', top: 12, right: 12, width: 24, height: 24, background: '#219178', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                    <Check size={14} color="#fff" strokeWidth={5} />
                                 </div>
                             )}
                         </div>
@@ -355,26 +378,28 @@ export default function CheckoutPage() {
                                 initial={{ height: 0, opacity: 0 }}
                                 animate={{ height: 'auto', opacity: 1 }}
                                 exit={{ height: 0, opacity: 0 }}
-                                style={{ overflow: 'hidden', marginTop: 12 }}
+                                style={{ overflow: 'hidden', marginTop: 16 }}
                             >
-                                <div style={{ padding: 20, background: '#F9FAFB', borderRadius: 16, border: '1px solid #E5E7EB' }}>
-                                    <div style={{ marginBottom: 16 }}>
-                                        <div style={{ fontSize: 11, fontWeight: 900, color: '#9CA3AF', textTransform: 'uppercase', marginBottom: 4 }}>RIB</div>
-                                        <div style={{ fontSize: 15, fontWeight: 900, color: '#111827' }}>350810000000000880844466</div>
+                                <div style={{ padding: 24, background: '#F9FAFB', borderRadius: 5, border: '1px solid #E5E7EB' }}>
+                                    <div style={{ marginBottom: 20 }}>
+                                        <div style={{ fontSize: 11, fontWeight: 900, color: '#9CA3AF', textTransform: 'uppercase', marginBottom: 6, letterSpacing: '0.1em' }}>RIB</div>
+                                        <div style={{ fontSize: 17, fontWeight: 1000, color: '#111827', letterSpacing: '0.02em', background: '#fff', padding: '12px 16px', borderRadius: 5, border: '1px solid #F3F4F6' }}>
+                                            350810000000000880844466
+                                        </div>
                                     </div>
-                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 20 }}>
+                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 24 }}>
                                         <div>
                                             <div style={{ fontSize: 11, fontWeight: 900, color: '#9CA3AF', textTransform: 'uppercase', marginBottom: 4 }}>Name</div>
-                                            <div style={{ fontSize: 13, fontWeight: 900, color: '#111827' }}>Abdelmalek Tahri</div>
+                                            <div style={{ fontSize: 14, fontWeight: 900, color: '#111827' }}>Abdelmalek Tahri</div>
                                         </div>
                                         <div>
                                             <div style={{ fontSize: 11, fontWeight: 900, color: '#9CA3AF', textTransform: 'uppercase', marginBottom: 4 }}>Bank</div>
-                                            <div style={{ fontSize: 13, fontWeight: 900, color: '#111827' }}>Al Barid Bank</div>
+                                            <div style={{ fontSize: 14, fontWeight: 900, color: '#111827' }}>Al Barid Bank</div>
                                         </div>
                                     </div>
 
-                                    <div style={{ borderTop: '1px solid #E5E7EB', paddingTop: 16 }}>
-                                        <p style={{ fontSize: 12, fontWeight: 800, color: '#4B5563', marginBottom: 12 }}>Please upload the transfer receipt to program your order:</p>
+                                    <div style={{ borderTop: '1px dotted #E5E7EB', paddingTop: 20 }}>
+                                        <p style={{ fontSize: 13, fontWeight: 700, color: '#4B5563', marginBottom: 16 }}>Upload transfer receipt to program your order:</p>
                                         <input
                                             type="file"
                                             id="receipt"
@@ -384,7 +409,6 @@ export default function CheckoutPage() {
                                                 const file = e.target.files?.[0];
                                                 if (file) {
                                                     setIsUploading(true);
-                                                    // Simulate upload
                                                     setTimeout(() => {
                                                         setReceiptImage(URL.createObjectURL(file));
                                                         setIsUploading(false);
@@ -395,13 +419,13 @@ export default function CheckoutPage() {
                                         <label
                                             htmlFor="receipt"
                                             style={{
-                                                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-                                                height: 48, borderRadius: 12, background: receiptImage ? '#F0FDF4' : '#fff',
-                                                border: '2px dashed', borderColor: receiptImage ? '#219178' : '#E5E7EB',
-                                                cursor: 'pointer', transition: 'all 0.2s'
+                                                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12,
+                                                height: 56, borderRadius: 5, background: receiptImage ? '#F0FDF4' : '#fff',
+                                                border: '2px dashed', borderColor: receiptImage ? '#219178' : '#D1D5DB',
+                                                cursor: 'pointer', transition: 'all 0.2s', fontWeight: 900, color: receiptImage ? '#219178' : '#6B7280', fontSize: 15
                                             }}
                                         >
-                                            {isUploading ? 'Uploading...' : (receiptImage ? <><Check size={18} color="#219178" /> Receipt Uploaded</> : 'Select Receipt Image')}
+                                            {isUploading ? 'Uploading...' : (receiptImage ? <><CheckCircle2 size={20} color="#219178" /> Receipt Saved</> : <><CreditCard size={20} /> Select Image</>)}
                                         </label>
                                     </div>
                                 </div>
@@ -418,12 +442,12 @@ export default function CheckoutPage() {
                         </h3>
                         <div style={{ padding: 16, borderRadius: 5, border: '1px solid #E5E7EB' }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                                <span style={{ fontSize: 13, fontWeight: 700, color: '#6B7280' }}>Service</span>
-                                <span style={{ fontSize: 13, fontWeight: 900, color: '#111827' }}>{order.serviceName}</span>
+                                <span style={{ fontSize: 17, fontWeight: 400, color: '#6B7280' }}>Service</span>
+                                <span style={{ fontSize: 17, fontWeight: 700, color: '#111827' }}>{order.serviceName}</span>
                             </div>
                             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16, borderBottom: '1px solid #F3F4F6', paddingBottom: 12 }}>
-                                <span style={{ fontSize: 13, fontWeight: 700, color: '#6B7280' }}>Category</span>
-                                <span style={{ fontSize: 13, fontWeight: 900, color: '#111827' }}>{order.subServiceName}</span>
+                                <span style={{ fontSize: 17, fontWeight: 400, color: '#6B7280' }}>Category</span>
+                                <span style={{ fontSize: 17, fontWeight: 700, color: '#111827' }}>{order.subServiceName}</span>
                             </div>
                             {/* Standard Setup Fields */}
                             {(order.serviceType === 'cleaning' || order.serviceType === 'airbnb_cleaning') && (
@@ -485,22 +509,55 @@ export default function CheckoutPage() {
                     </div>
                 )}
 
-                <h3 style={{ fontSize: 30, fontWeight: 700, marginTop: 32, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
-                    Location <span style={{ fontSize: 24 }}>📍</span>
+                <h3 style={{ fontSize: 30, fontWeight: 700, marginTop: 32, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 10 }}>
+                    Route Details <span style={{ fontSize: 24 }}>🗺️</span>
                 </h3>
 
+                {/* Route Section (Pic 4 Style) */}
+                {((order.serviceType === 'moving' || order.serviceType?.includes('moving') || order.serviceType === 'errands' || order.subServiceId === 'packing') && (order.serviceDetails as any)?.needsTransport !== false) && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 24 }}>
+                        <div style={{ height: 180, background: '#F3F4F6', borderRadius: 5, border: '1px solid #E5E7EB', overflow: 'hidden', position: 'relative' }}>
+                            <MapView
+                                initialLocation={order.location || { lat: 31.5085, lng: -9.7595 }}
+                                interactive={false}
+                                onLocationChange={() => { }}
+                                lockCenterOnFocus={true}
+                                zoom={14}
+                                clientPin={order.location ? { lat: order.location.lat, lng: order.location.lng } : undefined}
+                                destinationPin={(order.serviceDetails as any)?.dropoffCoords ? {
+                                    lat: (order.serviceDetails as any).dropoffCoords.lat,
+                                    lng: (order.serviceDetails as any).dropoffCoords.lng
+                                } : undefined}
+                            />
+                            <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', background: 'linear-gradient(to bottom, rgba(255,255,255,0.1), transparent)' }} />
+                        </div>
+
+                        {/* Delivery Estimate Bar */}
+                        {travelInfo && (
+                            <div style={{ padding: 16, background: '#F9FAFB', borderRadius: 5, display: 'flex', alignItems: 'center', justifyContent: 'space-between', border: '1px solid #F3F4F6', fontStyle: 'italic' }}>
+                                <span style={{ fontSize: 13, fontWeight: 700, color: '#6B7280' }}>Delivery Estimate</span>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                    <span style={{ fontSize: 13, fontWeight: 950, color: '#219178' }}>{travelInfo.distanceKm.toFixed(1)} km</span>
+                                    <span style={{ color: '#D1D5DB' }}>·</span>
+                                    <span style={{ fontSize: 13, fontWeight: 900, color: '#111827' }}>{travelInfo.durationMinutes} min delivery</span>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                )}
+
                 {/* Location Summaries */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 32 }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 100 }}>
                     {/* Pickup Location (For Deliveries) or Current User Location (Standard) */}
                     <div style={{ padding: '16px 20px', background: '#F9FAFB', borderRadius: 5, display: 'flex', alignItems: 'center', gap: 16 }}>
                         <div style={{ width: 44, height: 44, borderRadius: 5, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                             <img src="/Images/Icons/Lightpin.png" alt="location" style={{ width: 34, height: 34, objectFit: 'contain' }} />
                         </div>
-                        <div style={{ flex: 1 }}>
-                            <div style={{ fontSize: 11, fontWeight: 500, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 2 }}>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ fontSize: 11, fontWeight: 700, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 2 }}>
                                 {(order.serviceType === 'errands' || order.serviceType?.includes('delivery')) ? 'Pickup Location' : 'Your Location'}
                             </div>
-                            <div style={{ fontSize: 14, fontWeight: 500, color: '#111827', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 1, WebkitBoxOrient: 'vertical' }}>
+                            <div style={{ fontSize: 15, fontWeight: 700, color: '#111827', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                                 {(order.serviceDetails as any)?.pickupAddress || order.location?.address}
                             </div>
                         </div>
@@ -512,9 +569,9 @@ export default function CheckoutPage() {
                             <div style={{ width: 44, height: 44, borderRadius: 5, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                 <img src="/Images/Icons/Lightpin.png" alt="location" style={{ width: 34, height: 34, objectFit: 'contain' }} />
                             </div>
-                            <div style={{ flex: 1 }}>
-                                <div style={{ fontSize: 11, fontWeight: 900, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 2 }}>Dropoff Location</div>
-                                <div style={{ fontSize: 14, fontWeight: 900, color: '#111827', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 1, WebkitBoxOrient: 'vertical' }}>
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                                <div style={{ fontSize: 11, fontWeight: 900, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 2 }}>Dropoff Location</div>
+                                <div style={{ fontSize: 15, fontWeight: 900, color: '#111827', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                                     {(order.serviceDetails as any).dropoffAddress}
                                 </div>
                             </div>
@@ -527,8 +584,8 @@ export default function CheckoutPage() {
                             <img src="/Images/Icons/Lightpin.png" alt="location" style={{ width: 34, height: 34, objectFit: 'contain' }} />
                         </div>
                         <div style={{ flex: 1 }}>
-                            <div style={{ fontSize: 11, fontWeight: 500, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 2 }}>Bricoler Location</div>
-                            <div style={{ fontSize: 14, fontWeight: 500, color: '#111827', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 1, WebkitBoxOrient: 'vertical' }}>
+                            <div style={{ fontSize: 11, fontWeight: 700, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 2 }}>Bricoler Location</div>
+                            <div style={{ fontSize: 15, fontWeight: 700, color: '#111827', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 1, WebkitBoxOrient: 'vertical' }}>
                                 {order.providerAddress || 'Essaouira, Morocco'}
                             </div>
                         </div>
@@ -564,6 +621,8 @@ export default function CheckoutPage() {
                                     wallMaterial: (order.serviceDetails as any)?.wallMaterial,
                                     liftingHelp: (order.serviceDetails as any)?.liftingHelp,
                                     mountingAddOns: (order.serviceDetails as any)?.mountingAddOns,
+                                    deliveryDistanceKm: (order.serviceDetails as any)?.deliveryDistanceKm,
+                                    deliveryDurationMinutes: (order.serviceDetails as any)?.deliveryDurationMinutes,
                                 }
                             );
 
@@ -653,6 +712,8 @@ export default function CheckoutPage() {
                             wallMaterial: (order.serviceDetails as any)?.wallMaterial,
                             liftingHelp: (order.serviceDetails as any)?.liftingHelp,
                             mountingAddOns: (order.serviceDetails as any)?.mountingAddOns,
+                            deliveryDistanceKm: (order.serviceDetails as any)?.deliveryDistanceKm,
+                            deliveryDurationMinutes: (order.serviceDetails as any)?.deliveryDurationMinutes,
                         }
                     );
                     const total = individualPricing.total * slotsCount;

@@ -339,41 +339,112 @@ const JobDetailsPopup: React.FC<JobDetailsPopupProps> = ({ job, onClose, onAccep
                             </div>
                         )}
 
+                        {/* Payment Method Section (Refined like Step 3) */}
+                        <section className="mb-8 space-y-4">
+                            <h3 className="text-[20px] font-black text-black flex items-center gap-3">
+                                <span className="p-2 bg-neutral-50 rounded-lg border border-neutral-100 flex items-center justify-center">
+                                     <DollarSign size={18} className="text-neutral-900" />
+                                </span>
+                                {t({ en: 'Payment Method', fr: 'Paiement' })}
+                            </h3>
+                            
+                            <div style={{
+                                padding: '20px', borderRadius: 12, border: '2px solid #219178',
+                                background: '#F0FDF9', position: 'relative',
+                                display: 'flex', gap: 14, alignItems: 'center'
+                            }}>
+                                <div style={{ fontSize: 28, flexShrink: 0 }}>
+                                    {job.clientWhatsApp ? '🏦' : '💵'}
+                                </div>
+                                <div style={{ flex: 1 }}>
+                                    <div style={{ fontWeight: 900, fontSize: 16, color: '#111827', marginBottom: 2 }}>
+                                        {job.clientWhatsApp ? t({ en: 'Bank Transfer', fr: 'Virement Bancaire' }) : t({ en: 'Cash on Delivery', fr: 'Paiement à la livraison' })}
+                                    </div>
+                                    <div style={{ fontWeight: 700, fontSize: 12, color: '#219178' }}>
+                                        {job.clientWhatsApp ? t({ en: 'Verified by Receipt', fr: 'Vérifié par Reçu' }) : t({ en: 'Standard payment', fr: 'Paiement standard' })}
+                                    </div>
+                                </div>
+                                <div style={{ width: 22, height: 22, background: '#219178', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                    <CheckCircle2 size={14} color="#fff" />
+                                </div>
+                            </div>
+                        </section>
+
+                        {/* Summary Section (Wave Style) */}
+                        <div className="mt-12 bg-[#F9FAFB] relative -mx-8 px-8 py-10 pb-12">
+                            {/* Wave Divider like Step 3 */}
+                            <div style={{ position: 'absolute', top: -38, left: 0, right: 0, height: 40, pointerEvents: 'none', zIndex: 1 }}>
+                                <div style={{ width: '100%', height: '100%', fill: '#F9FAFB', color: '#F9FAFB' }}>
+                                    <svg viewBox="0 0 1440 100" style={{ width: '100%', height: '100%', display: 'block' }}>
+                                        <path fill="currentColor" d="M0,64L80,69.3C160,75,320,85,480,80C640,75,800,53,960,48C1120,43,1280,53,1360,58.7L1440,64L1440,100L1360,100C1280,100,1120,100,960,100C800,100,640,100,480,100C320,100,160,100,80,100L0,100Z" transform="scaleY(-1) translate(0, -100)"></path>
+                                    </svg>
+                                </div>
+                            </div>
+
+                            <div className="space-y-6">
+                                <h3 className="text-[24px] font-black text-black">{t({ en: 'Total Summary', fr: 'Résumé Total' })}</h3>
+                                <div className="space-y-4">
+                                    <div className="flex justify-between items-center">
+                                        <div className="flex flex-col">
+                                            <span className="text-[11px] font-bold text-neutral-400 uppercase tracking-wider mb-0.5">{t({ en: 'Base Fee', fr: 'Frais Base' })}</span>
+                                            <span className="text-[15px] font-black text-black">{job.duration || t({ en: 'Flexible', fr: 'Flexible' })}</span>
+                                        </div>
+                                        <span className="text-[17px] font-black text-black">{job.price} MAD</span>
+                                    </div>
+                                    
+                                    {job.totalPrice && job.totalPrice > job.price && (
+                                        <div className="flex justify-between items-center">
+                                            <div className="flex flex-col">
+                                                <span className="text-[11px] font-bold text-neutral-400 uppercase tracking-wider mb-0.5">{t({ en: 'Additional Fees', fr: 'Frais Supp.' })}</span>
+                                                <span className="text-[15px] font-black text-neutral-500">{t({ en: 'Travel/Vehicle', fr: 'Déplacement/Véhicule' })}</span>
+                                            </div>
+                                            <span className="text-[17px] font-black text-black">+{job.totalPrice - job.price} MAD</span>
+                                        </div>
+                                    )}
+
+                                    <div className="pt-6 border-t border-neutral-200 flex justify-between items-center">
+                                        <span className="text-[20px] font-black text-[#219178]">{t({ en: 'Total Amount', fr: 'Montant Total' })}</span>
+                                        <span className="text-[26px] font-black text-[#219178] tracking-tighter">{job.totalPrice || job.price} MAD</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                         {/* WhatsApp Button for Programmed/Completed Jobs */}
-                        {(job.status === 'programmed' || job.status === 'completed') && (
-                            <div className="mb-6">
+                        {(job.status === 'programmed' || job.status === 'completed' || job.status === 'accepted') && (
+                            <div className="mt-8">
                                 <button
                                     onClick={() => openWhatsApp(job.bricolerWhatsApp || job.clientWhatsApp || '')}
-                                    className="w-full py-4 bg-[#25D366] text-white rounded-xl font-bold text-base hover:bg-[#128C7E] transition-all active:scale-[0.98] flex items-center justify-center gap-2 shadow-sm"
+                                    className="w-full py-5 bg-[#25D366] text-white rounded-2xl font-black text-[17px] hover:bg-[#128C7E] transition-all active:scale-[0.98] flex items-center justify-center gap-3 shadow-lg shadow-[#25D366]/20"
                                 >
-                                    <WhatsAppBrandIcon size={20} fill="currentColor" />
-                                    {t({ en: 'Contact Bricoler', fr: 'Contacter le Bricoler', ar: 'اتصل بالبريكولر' })}
+                                    <WhatsAppBrandIcon size={24} fill="currentColor" />
+                                    {t({ en: 'Chat on WhatsApp', fr: 'Parler sur WhatsApp', ar: 'تحدث على واتساب' })}
                                 </button>
                             </div>
                         )}
 
                         {/* Action Buttons */}
                         {job.status === 'new' && (
-                            <div className="space-y-3">
+                            <div className="space-y-3 mt-8">
                                 <button
                                     onClick={() => onAccept?.(job.id)}
-                                    className="w-full py-4 bg-neutral-900 text-white rounded-xl font-bold text-base hover:bg-neutral-800 transition-all active:scale-[0.98]"
+                                    className="w-full py-5 bg-neutral-900 text-white rounded-2xl font-bold text-base hover:bg-neutral-800 transition-all active:scale-[0.98]"
                                 >
                                     {t({ en: 'Accept Job', fr: 'Accepter la mission', ar: 'قبول المهمة' })}
                                 </button>
                                 <button
                                     onClick={() => onDecline?.(job.id)}
-                                    className="w-full py-4 bg-red-50 text-red-600 rounded-xl font-bold text-base hover:bg-red-100 transition-all active:scale-[0.98]"
+                                    className="w-full py-5 bg-red-50 text-red-600 rounded-2xl font-bold text-base hover:bg-red-100 transition-all active:scale-[0.98]"
                                 >
                                     {t({ en: 'Decline', fr: 'Refuser', ar: 'رفض' })}
                                 </button>
                             </div>
                         )}
 
-                        {(job.status === 'accepted' || job.status === 'programmed') && (
-                            <div className="space-y-3">
-                                <button className="w-full py-4 bg-neutral-100 text-neutral-900 rounded-xl font-bold text-base hover:bg-neutral-200 transition-all active:scale-[0.98]">
-                                    {t({ en: 'View on Calendar', fr: 'Voir dans le calendrier', ar: 'عرض في التقويم' })}
+                        {job.status === 'accepted' && (
+                            <div className="space-y-3 mt-4">
+                                <button className="w-full py-5 bg-neutral-100 text-neutral-900 rounded-2xl font-bold text-base hover:bg-neutral-200 transition-all active:scale-[0.98]">
+                                    {t({ en: 'View in Calendar', fr: 'Voir dans le calendrier', ar: 'عرض في التقويم' })}
                                 </button>
                             </div>
                         )}

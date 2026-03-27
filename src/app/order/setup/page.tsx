@@ -30,6 +30,7 @@ import { getRoadDistance } from '@/lib/calculateDistance';
 
 const MapView = dynamic(() => import('@/components/location-picker/MapView'), { ssr: false });
 import OrderAvailabilityPicker from '@/features/orders/components/OrderAvailabilityPicker';
+import { useLanguage } from '@/context/LanguageContext';
 
 
 // Types for Saved Profiles
@@ -72,6 +73,7 @@ const staggerItem: Variants = {
 export default function ServiceSetupPage() {
     const router = useRouter();
     const { order, setOrderField } = useOrder();
+    const { t, language } = useLanguage();
     const [user, setUser] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [profiles, setProfiles] = useState<ServiceProfile[]>([]);
@@ -138,6 +140,18 @@ export default function ServiceSetupPage() {
     const [searchResults, setSearchResults] = useState<any[]>([]);
     const [gpsTrigger, setGpsTrigger] = useState(0);
 
+    // Dynamic field logic for Packing + Move
+    const [needsTransport, setNeedsTransport] = useState(order.subServiceId === 'local_move' || order.serviceType === 'errands');
+
+    // Memoized coordinates for Map stability
+    const memoizedClientPin = React.useMemo(() =>
+        pickupLocation.lat ? { lat: pickupLocation.lat, lng: pickupLocation.lng! } : undefined
+        , [pickupLocation.lat, pickupLocation.lng]);
+
+    const memoizedDestinationPin = React.useMemo(() =>
+        dropoffLocation.lat ? { lat: dropoffLocation.lat, lng: dropoffLocation.lng! } : undefined
+        , [dropoffLocation.lat, dropoffLocation.lng]);
+
     // Bricoler Stats
     const [provider, setProvider] = useState({
         name: order.providerName || 'Bricoler',
@@ -150,6 +164,7 @@ export default function ServiceSetupPage() {
         yearsOfExperience: order.providerExperience || '1 Year',
         portfolio: [] as string[],
         equipments: [] as string[],
+        movingTransports: [] as string[],
         reviews: [] as any[],
         coords: null as { lat: number, lng: number } | null
     });
@@ -196,6 +211,7 @@ export default function ServiceSetupPage() {
                         yearsOfExperience: data.yearsOfExperience || data.experience || prev.yearsOfExperience,
                         portfolio: servicePortfolio.length > 0 ? servicePortfolio : (data.portfolio || []),
                         equipments: Array.isArray(relevantService?.equipments) ? relevantService.equipments : (Array.isArray(data.equipments) ? data.equipments : []),
+                        movingTransports: data.movingTransports || [],
                         reviews: data.reviews || [],
                         rating: data.rating || prev.rating,
                         taskCount: data.completedJobs || data.taskCount || prev.taskCount,
@@ -224,68 +240,55 @@ export default function ServiceSetupPage() {
                             dropoffLocation.lat!, dropoffLocation.lng!
                         );
 
-                        const durationInMinutes = Math.ceil(durationMinutes);
-                        const sub = durationInMinutes * 10;
-                        const total = Math.round(sub * 1.1);
+                        const result = calculateOrderPrice(
+                            order.subServiceId || order.serviceType || 'errands',
+                            10, // Base price 10 MAD/min
+                            {
+                                deliveryDistanceKm: distanceKm,
+                                deliveryDurationMinutes: durationMinutes
+                            }
+                        );
 
-                        setEstimate({
-                            basePrice: 10,
-                            quantity: durationInMinutes,
-                            unit: 'min',
-                            subtotal: sub,
-                            serviceFee: Math.round(sub * 0.1),
-                            total: total,
-                            duration: durationInMinutes,
-                            distanceKm: distanceKm
-                        } as any);
+                        setEstimate(result);
                     } catch (e) {
                         console.warn("Pricing calculation failed", e);
                     }
                 };
                 fetchDist();
             } else {
-                setEstimate(null);
+                setEstimate(calculateOrderPrice(order.subServiceId || order.serviceType || 'errands', 10, {}));
             }
         } else if (order.serviceType === 'moving' || order.serviceType?.includes('moving')) {
             const duration = taskSize === 'small' ? 1.5 : taskSize === 'medium' ? 3 : 5;
             const rate = provider.minRate || 100;
-            const subtotal = duration * rate;
 
-            if (pickupLocation.lat && dropoffLocation.lat) {
+            if (needsTransport && pickupLocation.lat && dropoffLocation.lat) {
                 const fetchDist = async () => {
                     const { distanceKm, durationMinutes } = await getRoadDistance(
                         pickupLocation.lat!, pickupLocation.lng!,
                         dropoffLocation.lat!, dropoffLocation.lng!
                     );
-                    const travelCost = durationMinutes * 10;
-                    let finalSub = subtotal + travelCost;
-                    if (distanceKm > 10) {
-                        finalSub += Math.round((distanceKm - 10) * 5);
-                    }
-                    const total = Math.round(finalSub * 1.1);
-                    setEstimate({
-                        basePrice: rate,
-                        quantity: duration,
-                        unit: 'hour',
-                        subtotal: finalSub,
-                        serviceFee: Math.round(finalSub * 0.1),
-                        total: total,
-                        duration: Math.round(durationMinutes),
-                        distanceKm: distanceKm
-                    } as any);
+
+                    const result = calculateOrderPrice(
+                        order.subServiceId || order.serviceType || 'moving',
+                        rate,
+                        {
+                            hours: duration,
+                            deliveryDistanceKm: distanceKm,
+                            deliveryDurationMinutes: durationMinutes
+                        }
+                    );
+
+                    setEstimate(result);
                 };
                 fetchDist();
             } else {
-                const total = Math.round(subtotal * 1.1);
-                setEstimate({
-                    basePrice: rate,
-                    quantity: duration,
-                    unit: 'hour',
-                    subtotal: subtotal,
-                    serviceFee: Math.round(subtotal * 0.1),
-                    total: total,
-                    duration: 0 // No distance yet
-                } as any);
+                const result = calculateOrderPrice(
+                    order.subServiceId || order.serviceType || 'moving',
+                    rate,
+                    { hours: duration }
+                );
+                setEstimate(result);
             }
         } else if (order.serviceType === 'furniture_assembly') {
             const totalHours = Object.values(assemblyItems).reduce((sum, item) => sum + (item.quantity * item.estHours), 0);
@@ -464,7 +467,10 @@ export default function ServiceSetupPage() {
 
             // Determine final task duration for pricing
             let finalTaskDuration = taskDuration;
-            if (order.serviceType === 'furniture_assembly') {
+            if (order.serviceType === 'moving' || order.serviceType?.includes('moving')) {
+                // Determine duration based on taskSize (Small=1.5h, Medium=3h, Large=5h)
+                finalTaskDuration = taskSize === 'small' ? 1.5 : taskSize === 'medium' ? 3 : 5;
+            } else if (order.serviceType === 'furniture_assembly') {
                 finalTaskDuration = Object.values(assemblyItems).reduce((sum, item) => sum + (item.quantity * item.estHours), 0);
             }
 
@@ -492,7 +498,10 @@ export default function ServiceSetupPage() {
                 liftingHelp,
                 mountTypes,
                 wallMaterial,
-                mountingAddOns
+                mountingAddOns,
+                // Moving specific pre-calculated metrics
+                deliveryDistanceKm: estimate?.distanceKm,
+                deliveryDurationMinutes: estimate?.duration
             };
 
             // 1. Save profile if requested
@@ -553,7 +562,7 @@ export default function ServiceSetupPage() {
                     <div className="flex px-2">
                         <button
                             onClick={() => setActiveTab('details')}
-                            className={`flex-1 py-4 text-[14px] font-black transition-all relative ${activeTab === 'details' ? 'text-[#219178]' : 'text-[#9CA3AF]'}`}
+                            className={`flex-1 py-4 text-[14px] font-bold transition-all relative ${activeTab === 'details' ? 'text-[#219178]' : 'text-[#9CA3AF]'}`}
                         >
                             Bricoler Details
                             {activeTab === 'details' && (
@@ -562,7 +571,7 @@ export default function ServiceSetupPage() {
                         </button>
                         <button
                             onClick={() => setActiveTab('setup')}
-                            className={`flex-1 py-4 text-[14px] font-black transition-all relative ${activeTab === 'setup' ? 'text-[#219178]' : 'text-[#9CA3AF]'}`}
+                            className={`flex-1 py-4 text-[14px] font-bold transition-all relative ${activeTab === 'setup' ? 'text-[#219178]' : 'text-[#9CA3AF]'}`}
                         >
                             Order Setup
                             {activeTab === 'setup' && (
@@ -603,31 +612,31 @@ export default function ServiceSetupPage() {
                             {/* Trust & Stats Grid (High Visibility) */}
                             <motion.div variants={staggerItem} className="grid grid-cols-3 gap-3 mb-8">
                                 <div className="flex flex-col items-center justify-center p-4   rounded-[5px]  text-center ">
-                                    <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center text-[#166534] mb-2 ">
+                                    <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center text-[#219178] mb-2 ">
                                         <Trophy size={30} />
                                     </div>
-                                    <span className="text-[23px] font-black text-[#166534] leading-tight capitalize">
+                                    <span className="text-[23px] font-bold text-[#219178] leading-tight capitalize">
                                         {provider.rank || 'New'}
                                     </span>
-                                    <span className="text-[10px] font-bold text-[#166534] uppercase tracking-tighter mt-1">Level</span>
+                                    <span className="text-[10px] font-bold text-[#219178] uppercase tracking-tighter mt-1">Level</span>
                                 </div>
                                 <div className="flex flex-col items-center justify-center p-4   rounded-[5px]  text-center ">
-                                    <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center text-[#166534] mb-2">
-                                        <Star size={30} className="fill-[#166534]" />
+                                    <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center text-[#219178] mb-2">
+                                        <Star size={30} />
                                     </div>
-                                    <span className="text-[23px] font-black text-[#166534] leading-tight">
+                                    <span className="text-[23px] font-bold text-[#219178] leading-tight">
                                         {provider.taskCount === 0 ? "0.0" : provider.rating.toFixed(1)}
                                     </span>
-                                    <span className="text-[10px] font-bold text-[#166534] uppercase tracking-tighter mt-1">Rating</span>
+                                    <span className="text-[10px] font-bold text-[#219178] uppercase tracking-tighter mt-1">Rating</span>
                                 </div>
                                 <div className="flex flex-col items-center justify-center p-4   rounded-[5px] text-center ">
-                                    <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center text-[#166534] mb-2 ">
+                                    <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center text-[#219178] mb-2 ">
                                         <CheckCircle2 size={30} />
                                     </div>
-                                    <span className="text-[23px] font-black text-[#166534] leading-tight">
+                                    <span className="text-[23px] font-bold text-[#219178] leading-tight">
                                         {provider.taskCount}
                                     </span>
-                                    <span className="text-[10px] font-bold text-[#166534] uppercase tracking-tighter mt-1">Missions</span>
+                                    <span className="text-[10px] font-bold text-[#219178] uppercase tracking-tighter mt-1">Missions</span>
                                 </div>
                             </motion.div>
 
@@ -636,14 +645,14 @@ export default function ServiceSetupPage() {
                                 <div className="p-4 bg-[#F9FAFB] rounded-[5px] border border-neutral-100 flex items-center justify-between">
                                     <div>
                                         <div className="text-[10px] font-black text-[#9CA3AF] tracking-widest uppercase mb-1">Experience</div>
-                                        <div className="text-[17px] font-black text-[#111827]">{provider.yearsOfExperience}</div>
+                                        <div className="text-[17px] font-medium text-[#111827]">{provider.yearsOfExperience}</div>
                                     </div>
                                     <Calendar className="text-neutral-200" size={24} />
                                 </div>
                                 <div className="p-4 bg-[#F9FAFB] rounded-[5px] border border-neutral-100 flex items-center justify-between">
                                     <div>
                                         <div className="text-[10px] font-black text-[#9CA3AF] tracking-widest uppercase mb-1">Success Rate</div>
-                                        <div className="text-[17px] font-black text-[#111827]">99%</div>
+                                        <div className="text-[17px] font-medium text-[#111827]">99%</div>
                                     </div>
                                     <TrendingUp className="text-neutral-200" size={24} />
                                 </div>
@@ -673,6 +682,33 @@ export default function ServiceSetupPage() {
                                     "{provider.bio}"
                                 </div>
                             </motion.div>
+
+                            {/* Transportation Section (Pic 1 requirement) */}
+                            {order.serviceType === 'moving' && provider.movingTransports && provider.movingTransports.length > 0 && (
+                                <motion.div variants={staggerItem} className="mb-10">
+                                    <h4 className="text-[18px] font-black text-[#111827] mb-4">
+                                        {t({ en: 'Transportation', fr: 'Moyen de transport', ar: 'وسيلة النقل' })}
+                                    </h4>
+                                    <div className="flex flex-wrap gap-2">
+                                        {provider.movingTransports.map((item, i) => {
+                                            const transportLabels: Record<string, any> = {
+                                                'triporteur': { en: 'Triporteur', fr: 'Triporteur', ar: 'تريبورتور', icon: '🏍️' },
+                                                'small_van': { en: 'Small Van', fr: 'Petite Camionnette', ar: 'شاحنة صغيرة', icon: '🚐' },
+                                                'large_van': { en: 'Large Van', fr: 'Grande Camionnette', ar: 'شاحنة كبيرة', icon: '🚚' },
+                                                'small_truck': { en: 'Small Truck', fr: 'Petit Camion', ar: 'شاحنة صغيرة', icon: '🚛' },
+                                                'large_truck': { en: 'Large Truck', fr: 'Gros Camion', ar: 'شاحنة نقل كبيرة', icon: '🚛' }
+                                            };
+                                            const label = transportLabels[item] || { en: item, fr: item, ar: item, icon: '🚚' };
+                                            return (
+                                                <div key={i} className="flex items-center gap-2 px-4 py-2 bg-[#F9FAFB] rounded-[10px] border border-neutral-100 text-[14px] font-bold text-[#4B5563]">
+                                                    <span className="text-lg">{label.icon}</span>
+                                                    {t(label)}
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </motion.div>
+                            )}
 
                             {/* Equipment Section */}
                             {!['car_rental', 'tour_guide', 'learn_arabic'].includes(order.serviceType || '') && provider.equipments && provider.equipments.length > 0 && (
@@ -783,9 +819,9 @@ export default function ServiceSetupPage() {
                                                 setNote('');
                                                 // If applicable, reset other fields
                                             }}
-                                            className={`flex-shrink-0 px-6 py-4 rounded-full border-1 transition-all flex items-center gap-3 ${selectedProfileId === 'new' ? 'border-[#219178] bg-[#F0FDF9] text-[#219178]' : 'border-neutral-100 bg-white text-[#9CA3AF]'}`}
+                                            className={`flex-shrink-0 px-6 py-4 rounded-[10px] border-2 transition-all flex items-center gap-3 ${selectedProfileId === 'new' ? 'border-[#219178] bg-[#F0FDF9] text-[#219178]' : 'border-neutral-100 bg-white text-[#9CA3AF]'}`}
                                         >
-                                            <div className={`w-8 h-8 rounded-full flex items-center justify-center ${selectedProfileId === 'new' ? ' text-white' : 'bg-neutral-100'}`}>
+                                            <div className={`w-8 h-8 rounded-[10px] flex items-center justify-center ${selectedProfileId === 'new' ? ' text-white' : 'bg-neutral-100'}`}>
                                                 <Home size={20} className="text-[#219178]" />
                                             </div>
                                             <span className="font-black text-[15px]">New setup</span>
@@ -801,8 +837,12 @@ export default function ServiceSetupPage() {
                                                     setPhotos(p.details.photoUrls || []);
                                                     setNote(p.details.note || '');
                                                 }}
-                                                className={`flex-shrink-0 px-6 py-4 rounded-full border-2 transition-all flex items-center gap-3 min-w-[200px] ${selectedProfileId === p.id ? 'border-[#219178] bg-[#F0FDF9] text-[#219178]' : 'border-neutral-100 bg-white text-[#111827]'}`}
+
+                                                className={`flex-shrink-0 px-6 py-4 rounded-[10px] border-2 transition-all flex items-center gap-3 min-w-[200px] ${selectedProfileId === p.id ? 'border-[#219178] bg-[#F0FDF9] text-[#219178]' : 'border-neutral-100 bg-white text-[#111827]'}`}
                                             >
+                                                <div className={`w-8 h-8 rounded-[10px] flex items-center justify-center ${selectedProfileId === 'new' ? ' text-white' : 'bg-neutral-100'}`}>
+                                                    <Home size={20} className="text-[#219178]" />
+                                                </div>
 
                                                 <div className="text-left">
                                                     <p className="font-black text-[15px] leading-tight">{p.label}</p>
@@ -982,109 +1022,137 @@ export default function ServiceSetupPage() {
                                             <div className="space-y-10">
                                                 {/* Task Size */}
                                                 <div className="space-y-6">
-                                                    <h3 className="text-[25px] text-[#111827] font-black">How big is the move?</h3>
+                                                    <h3 className="text-[25px] text-[#111827] font-bold">How big is the move?</h3>
                                                     <div className="grid grid-cols-1 gap-3">
                                                         {[
-                                                            { id: 'small', name: 'Small', desc: 'A few items or 1 room', duration: '1.5h' },
-                                                            { id: 'medium', name: 'Medium', desc: '2-3 rooms / Small apartment', duration: '3h' },
-                                                            { id: 'large', name: 'Large', desc: '4+ rooms / Big house', duration: '5h+' },
+                                                            { id: 'small', name: 'Small', desc: 'A few items or 1 room', duration: '1.5h', hours: 1.5 },
+                                                            { id: 'medium', name: 'Medium', desc: '2-3 rooms / Small apartment', duration: '3h', hours: 3 },
+                                                            { id: 'large', name: 'Large', desc: '4+ rooms / Big house', duration: '5h+', hours: 5 },
                                                         ].map((size) => (
                                                             <button
                                                                 key={size.id}
-                                                                onClick={() => setTaskSize(size.id as any)}
+                                                                onClick={() => {
+                                                                    setTaskSize(size.id as any);
+                                                                    setTaskDuration(size.hours);
+                                                                }}
                                                                 className={`p-5 rounded-[5px] border-2 text-left transition-all flex items-center justify-between ${taskSize === size.id ? 'border-[#219178] bg-[#F0FDF9]' : 'border-neutral-100 bg-[#F9FAFB]'}`}
                                                             >
                                                                 <div className="pl-4">
-                                                                    <p className="font-black text-[17px] text-black">{size.name}</p>
-                                                                    <p className="font-bold text-[13px] text-black/60">{size.desc}</p>
+                                                                    <p className="font-bold text-[17px] text-black">{size.name}</p>
+                                                                    <p className="font-medium text-[13px] text-black/60">{size.desc}</p>
                                                                 </div>
                                                                 <div className="text-right pr-4">
-                                                                    <p className="font-black text-[15px] text-[#219178]">Est. {size.duration}</p>
+                                                                    <p className="font-bold text-[15px] text-[#219178]">Est. {size.duration}</p>
                                                                 </div>
                                                             </button>
                                                         ))}
                                                     </div>
                                                 </div>
 
-                                                {/* Route Section (Pic 4 Style) */}
-                                                <div className="space-y-6">
-                                                    <h3 className="text-[25px] text-[#111827] font-black">Delivery details</h3>
-
-                                                    {/* Compact Map Card */}
-                                                    <div className="h-[180px] bg-[#F3F4F6] rounded-[5px] border border-neutral-100 overflow-hidden relative">
-                                                        <MapView
-                                                            initialLocation={order.location || { lat: 31.5085, lng: -9.7595 }}
-                                                            interactive={false}
-                                                            onLocationChange={() => { }}
-                                                            lockCenterOnFocus={true}
-                                                            showCenterPin={false}
-                                                            zoom={14}
-                                                            clientPin={pickupLocation.lat ? { lat: pickupLocation.lat, lng: pickupLocation.lng! } : undefined}
-                                                            destinationPin={dropoffLocation.lat ? { lat: dropoffLocation.lat, lng: dropoffLocation.lng! } : undefined}
-                                                        />
-                                                        <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-white/10 to-transparent" />
-                                                    </div>
-
-                                                    <div className="space-y-2">
-                                                        {/* Where from? */}
-                                                        <button
-                                                            onClick={() => setActiveDrawer('pickup')}
-                                                            className="w-full p-5 flex items-center justify-between group bg-[#FFFFFF] rounded-[5px]   transition-all active:scale-[0.99]"
-                                                        >
-                                                            <div className="flex items-center gap-4 text-left pl-2">
-                                                                <div className="w-10 h-10 flex items-center justify-center">
-                                                                    <img src="/Images/Icons/Lightpin.png" alt="from" className="w-10 h-10 object-contain" />
-                                                                </div>
-                                                                <span className={`text-[20px] font-medium ${pickupLocation.address ? 'text-light' : 'text-neutral-400'}`}>
-                                                                    {pickupLocation.address || "Where from?"}
-                                                                </span>
-                                                            </div>
-                                                            <ChevronRight className="text-neutral-300 group-hover:text-black transition-colors" size={18} />
-                                                        </button>
-                                                        {/* Where to? */}
-                                                        <button
-                                                            onClick={() => setActiveDrawer('map_picker')}
-                                                            className="w-full p-5 flex items-center justify-between group bg-[#FFFFFF] rounded-[5px]  transition-all active:scale-[0.99]"
-                                                        >
-                                                            <div className="flex items-center gap-4 text-left pl-2">
-                                                                <div className="w-10 h-10 flex items-center justify-center">
-                                                                    <img src="/Images/Icons/Lightpin.png" alt="to" className="w-10 h-10 object-contain" />
-                                                                </div>
-                                                                <span className={`text-[20px] font-medium ${dropoffLocation.address ? 'text-light' : 'text-neutral-400'}`}>
-                                                                    {dropoffLocation.address || "Where to?"}
-                                                                </span>
-                                                            </div>
-                                                            <ChevronRight className="text-neutral-300 group-hover:text-black transition-colors" size={18} />
-                                                        </button>
-                                                    </div>
-
-                                                    {pickupLocation.address && dropoffLocation.address && (
-                                                        <div className="p-4 bg-[#F9FAFB] rounded-[5px] flex items-center justify-between border border-neutral-100 italic">
-                                                            <span className="text-[13px] font-light text-neutral-500">Delivery Estimate</span>
-                                                            <div className="flex items-center gap-2">
-                                                                <span className="text-[13px] font-black text-[#219178]">
-                                                                    {estimate && 'distanceKm' in estimate && estimate.distanceKm ? `${estimate.distanceKm.toFixed(1)} km` : ""}
-                                                                </span>
-                                                                {estimate && 'distanceKm' in estimate && estimate.distanceKm && estimate.duration ? <span className="text-neutral-300">·</span> : null}
-                                                                <span className="text-[13px] font-medium text-black">
-                                                                    {estimate && 'duration' in estimate && typeof estimate.duration === 'number' && estimate.duration > 0 ? `${estimate.duration} min delivery` : (estimate ? "Calculating..." : "Loading route...")}
-                                                                </span>
-                                                            </div>
+                                                {/* Packing Service: Move items too? */}
+                                                {order.subServiceId === 'packing' && (
+                                                    <div className="space-y-4">
+                                                        <h3 className="text-[25px] text-[#111827] font-black">Move these items too?</h3>
+                                                        <p className="text-neutral-500 text-[15px] font-medium leading-relaxed max-w-[90%]">
+                                                            Do you need the items to be transported to a second location after they are packed?
+                                                        </p>
+                                                        <div className="grid grid-cols-2 gap-3 mt-2">
+                                                            <button
+                                                                onClick={() => setNeedsTransport(false)}
+                                                                className={`p-5 rounded-[5px] border-2 font-black transition-all ${!needsTransport ? 'border-[#219178] bg-[#F0FDF9] text-[#219178]' : 'border-neutral-100 bg-[#F9FAFB] text-neutral-400'}`}
+                                                            >
+                                                                No, just packing
+                                                            </button>
+                                                            <button
+                                                                onClick={() => setNeedsTransport(true)}
+                                                                className={`p-5 rounded-[5px] border-2 font-black transition-all ${needsTransport ? 'border-[#219178] bg-[#F0FDF9] text-[#219178]' : 'border-neutral-100 bg-[#F9FAFB] text-neutral-400'}`}
+                                                            >
+                                                                Yes, pack & move
+                                                            </button>
                                                         </div>
-                                                    )}
-                                                </div>
+                                                    </div>
+                                                )}
+
+                                                {/* Route Section (Pic 4 Style) */}
+                                                {needsTransport && (
+                                                    <div className="space-y-6">
+                                                        <h3 className="text-[25px] text-[#111827] font-black">Delivery details</h3>
+
+                                                        {/* Compact Map Card */}
+                                                        <div className="h-[180px] bg-[#F3F4F6] rounded-[5px] border border-neutral-100 overflow-hidden relative">
+                                                            <MapView
+                                                                initialLocation={order.location || { lat: 31.5085, lng: -9.7595 }}
+                                                                interactive={false}
+                                                                onLocationChange={() => { }}
+                                                                lockCenterOnFocus={true}
+                                                                zoom={14}
+                                                                clientPin={memoizedClientPin}
+                                                                destinationPin={memoizedDestinationPin}
+                                                            />
+                                                            <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-white/10 to-transparent" />
+                                                        </div>
+
+                                                        <div className="space-y-2">
+                                                            {/* Where from? */}
+                                                            <button
+                                                                onClick={() => setActiveDrawer('pickup')}
+                                                                className="w-full p-5 flex items-center justify-between group bg-[#FFFFFF] rounded-[5px]   transition-all active:scale-[0.99]"
+                                                            >
+                                                                <div className="flex items-center gap-4 text-left pl-2">
+                                                                    <div className="w-10 h-10 flex items-center justify-center">
+                                                                        <img src="/Images/Icons/Lightpin.png" alt="from" className="w-10 h-10 object-contain" />
+                                                                    </div>
+                                                                    <span className={`text-[17px] font-medium flex-1 truncate ${pickupLocation.address ? 'text-light' : 'text-neutral-400'}`}>
+                                                                        {pickupLocation.address || "Where from?"}
+                                                                    </span>
+                                                                </div>
+                                                                <ChevronRight className="text-neutral-300 group-hover:text-black transition-colors" size={18} />
+                                                            </button>
+                                                            {/* Where to? */}
+                                                            <button
+                                                                onClick={() => setActiveDrawer('map_picker')}
+                                                                className="w-full p-5 flex items-center justify-between group bg-[#FFFFFF] rounded-[5px]  transition-all active:scale-[0.99]"
+                                                            >
+                                                                <div className="flex items-center gap-4 text-left pl-2">
+                                                                    <div className="w-10 h-10 flex items-center justify-center">
+                                                                        <img src="/Images/Icons/Lightpin.png" alt="to" className="w-10 h-10 object-contain" />
+                                                                    </div>
+                                                                    <span className={`text-[17px] font-medium flex-1 truncate ${dropoffLocation.address ? 'text-light' : 'text-neutral-400'}`}>
+                                                                        {dropoffLocation.address || "Where to?"}
+                                                                    </span>
+                                                                </div>
+                                                                <ChevronRight className="text-neutral-300 group-hover:text-black transition-colors" size={18} />
+                                                            </button>
+                                                        </div>
+
+                                                        {pickupLocation.address && dropoffLocation.address && (
+                                                            <div className="p-4 bg-[#F9FAFB] rounded-[5px] flex items-center justify-between border border-neutral-100 italic">
+                                                                <span className="text-[13px] font-light text-neutral-500">Delivery Estimate</span>
+                                                                <div className="flex items-center gap-2">
+                                                                    <span className="text-[13px] font-black text-[#219178]">
+                                                                        {estimate?.distanceKm ? `${estimate.distanceKm.toFixed(1)} km` : ""}
+                                                                    </span>
+                                                                    {estimate?.distanceKm && (estimate.duration || estimate.duration === 0) ? <span className="text-neutral-300">·</span> : null}
+                                                                    <span className="text-[13px] font-medium text-black">
+                                                                        {(estimate?.duration || estimate?.duration === 0) ? `${estimate.duration} min travel` : "Calculating route..."}
+                                                                    </span>
+                                                                </div>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                )}
                                             </div>
                                         )}
 
                                         {/* Property Type */}
                                         <div className="space-y-6">
-                                            <h3 className="text-[25px] text-[#111827] font-black">What's your property type?</h3>
+                                            <h3 className="text-[25px] text-[#111827] font-bold">What's your property type?</h3>
                                             <div className="flex flex-wrap gap-2">
                                                 {['Studio', 'Apartment', 'Villa', 'Guesthouse', 'Riad', 'Hotel'].map(type => (
                                                     <button
                                                         key={type}
                                                         onClick={() => setPropertyType(type)}
-                                                        className={`px-8 py-3.5 rounded-full border-2 font-black text-[13px] transition-all ${propertyType === type ? 'border-[#219178] bg-white text-[#219178]' : 'border-neutral-100 text-black'}`}
+                                                        className={`px-8 py-3.5 rounded-full border-2 font-medium text-[13px] transition-all ${propertyType === type ? 'border-[#219178] bg-white text-[#219178]' : 'border-neutral-100 text-black'}`}
                                                     >
                                                         {type}
                                                     </button>
@@ -1343,8 +1411,8 @@ export default function ServiceSetupPage() {
                                                                 className={`p-5 rounded-[5px] border-2 text-left transition-all flex items-center justify-between ${taskDuration === size.hours ? 'border-[#219178] bg-[#F1FEF4]' : 'border-neutral-100 bg-[#F9FAFB]'}`}
                                                             >
                                                                 <div>
-                                                                    <p className="text-[17px] font-black text-[#111827]">{size.label}</p>
-                                                                    <p className="text-[13px] font-bold text-[#6B7280]">{size.desc}</p>
+                                                                    <p className="text-[17px] font-bold text-[#111827]">{size.label}</p>
+                                                                    <p className="text-[13px] font-medium text-[#6B7280]">{size.desc}</p>
                                                                 </div>
                                                                 {taskDuration === size.hours && <Check size={20} className="text-[#219178]" strokeWidth={3} />}
                                                             </button>
@@ -1356,13 +1424,13 @@ export default function ServiceSetupPage() {
 
                                         {/* Photo Uploads */}
                                         <div className="space-y-6">
-                                            <div className="flex items-center justify-between">
-                                                <label className="text-[25px] font-bold text-[#111827] setup-heading">
+                                            <div className="flex items-center justify-between ">
+                                                <label className="text-[25px]  font-bold text-[#111827] setup-heading">
                                                     {order.subServiceId?.toLowerCase().includes('tv') ? "Wall & Area Photos" :
                                                         order.serviceType === 'mounting' ? "Task Area Photos" :
                                                             order.serviceType === 'moving' ? "Inventory Photos" :
                                                                 order.serviceType === 'cleaning' ? "Room Photos" :
-                                                                    "Photos of the Property"}
+                                                                    "Include Photos"}
                                                 </label>
                                                 <span className="text-[12px] font-medium text-[#9CA3AF] tracking-wider">{photos.length}/6</span>
                                             </div>
@@ -1741,10 +1809,11 @@ export default function ServiceSetupPage() {
                                     <div className="space-y-4">
                                         <div style={{
                                             display: 'flex', alignItems: 'center', gap: 10,
-                                            background: '#F3F4F6', borderRadius: 5, padding: '12px 16px',
+                                            background: '#F3F4F6', borderRadius: 50, padding: '12px 16px',
                                         }}>
                                             <input
                                                 autoFocus
+                                                maxLength={60}
                                                 placeholder={`Search for ${activeDrawer === 'pickup' ? 'pickup' : 'delivery'} address...`}
                                                 onChange={async (e) => {
                                                     const val = e.target.value;
@@ -1758,7 +1827,7 @@ export default function ServiceSetupPage() {
                                                         })));
                                                     }
                                                 }}
-                                                style={{ flex: 1, border: 'none', background: 'transparent', fontSize: 15, outline: 'none', fontWeight: 600 }}
+                                                style={{ flex: 1, border: 'none', background: 'transparent', fontSize: 15, outline: 'none', fontWeight: 600, textOverflow: 'ellipsis' }}
                                             />
                                             <button
                                                 onClick={() => {
