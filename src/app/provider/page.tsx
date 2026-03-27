@@ -901,7 +901,6 @@ export default function ProviderPage() {
                         time: data.time || '',
                         subService: data.subService || '',
                         subServiceDisplayName: data.subServiceDisplayName || '',
-                        city: data.city,
                         area: data.area || '',
                         offers: data.offers || [],
                         status: data.status,
