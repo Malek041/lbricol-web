@@ -137,7 +137,7 @@ export const ClientOnboarding = ({ onComplete }: ClientOnboardingProps) => {
                             <h2 className="text-[34px] font-black text-neutral-900 leading-[1.1] mb-2 tracking-tighter">
                                 {t(STEPS[currentStep].title as any)}
                             </h2>
-                            <p className="text-[17px] font-medium text-neutral-500 leading-relaxed max-w-[320px] mx-auto">
+                            <p className="text-[17px] font-light text-neutral-500 leading-relaxed max-w-[320px] mx-auto">
                                 {t(STEPS[currentStep].subtitle as any)}
                             </p>
                         </motion.div>
@@ -163,7 +163,7 @@ export const ClientOnboarding = ({ onComplete }: ClientOnboardingProps) => {
                     <motion.button
                         whileTap={{ scale: 0.98 }}
                         onClick={handleNext}
-                        className="w-full py-5 rounded-[22px] text-[18px] font-black text-white flex items-center justify-center gap-2 transition-all active:brightness-95"
+                        className="w-full py-5 rounded-full text-[18px] font-black text-white flex items-center justify-center gap-2 transition-all active:brightness-95"
                         style={{ backgroundColor: BRAND_GREEN }}
                     >
                         {currentStep === STEPS.length - 1 ? t({ en: "Get Started", fr: "Commencer" }) : t({ en: "Next", fr: "Suivant" })}
