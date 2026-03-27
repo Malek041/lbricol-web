@@ -994,7 +994,7 @@ export default function ProviderPage() {
                         locationDetails: data.locationDetails || null,
                         address: data.address || '',
                         coords: data.coords || null
-                    });
+                    } as any);
                 });
                 setAcceptedJobs(myJobs);
             }, (error) => {
