@@ -58,6 +58,7 @@ export interface OrderDetails {
         timestamp?: any;
     }[];
     bricolerId?: string | null;
+    locationDetails?: any;
     bricolerName?: string | null;
     bricolerAvatar?: string | null;
     bricolerRating?: number | null;
