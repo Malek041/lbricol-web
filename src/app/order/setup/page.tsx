@@ -163,10 +163,10 @@ export default function ServiceSetupPage() {
     ] : [];
 
     const isErrand = order.serviceType === 'errands' || order.serviceType?.includes('delivery');
-    const isErrandReady = isErrand && 
-        pickupLocation.lat !== null && 
-        dropoffLocation.lat !== null && 
-        itemDescription.trim() !== '' && 
+    const isErrandReady = isErrand &&
+        pickupLocation.lat !== null &&
+        dropoffLocation.lat !== null &&
+        itemDescription.trim() !== '' &&
         (deliveryType === 'standard' || (deliveryDate !== '' && deliveryTime !== ''));
 
     // Dynamic field logic for Packing + Move
@@ -629,7 +629,7 @@ export default function ServiceSetupPage() {
             </header>
 
             {/* Main Content */}
-            <main className={`flex-1 overflow-y-auto no-scrollbar px-6 pt-10 ${(order.serviceType === 'errands' || order.serviceType?.includes('delivery')) ? 'pb-64' : 'pb-20'}`}>
+            <main className={`flex-1 overflow-y-auto no-scrollbar pt-10 ${(order.serviceType === 'errands' || order.serviceType?.includes('delivery')) ? 'pb-64' : 'pb-20'}`}>
                 <AnimatePresence mode="wait">
                     {activeTab === 'details' ? (
                         <motion.div
@@ -638,321 +638,323 @@ export default function ServiceSetupPage() {
                             initial="hidden"
                             animate="visible"
                             exit={{ opacity: 0, x: 10 }}
-                            className="px-6 py-8"
+                            className="py-8"
                         >
-                            {(order.serviceType === 'errands' || order.serviceType?.includes('delivery')) ? (
-                                <div className="space-y-4">
-                                    {/* 1. Package Details Section */}
-                                    <div className="bg-[#F3F4F6] rounded-[20px] p-1.5 pb-2">
-                                        <div className="px-4 py-3 flex items-center gap-2 text-[#6B7280]">
-                                            <FileText size={18} />
-                                            <span className="text-[15px] font-bold">Package details</span>
+                            <div className="px-6"> {/* Content Wrapper */}
+                                {(order.serviceType === 'errands' || order.serviceType?.includes('delivery')) ? (
+                                    <div className="space-y-4">
+                                        {/* 1. Package Details Section */}
+                                        <div className="bg-[#F3F4F6] rounded-[20px] p-1.5 pb-2">
+                                            <div className="px-4 py-3 flex items-center gap-2 text-[#6B7280]">
+                                                <FileText size={18} />
+                                                <span className="text-[15px] font-bold">Package details</span>
+                                            </div>
+                                            <div className="bg-white rounded-[16px] px-5 py-6 space-y-5">
+                                                <div className="flex items-center justify-between">
+                                                    <span className="text-[16px] font-medium text-[#6B7280]">Ordered from</span>
+                                                    <span className="text-[17px] font-black text-[#111827]">Nike</span>
+                                                </div>
+                                                <div className="flex items-center justify-between">
+                                                    <span className="text-[16px] font-medium text-[#6B7280]">Payment mode</span>
+                                                    <span className="text-[17px] font-black text-[#111827]">On Delivery</span>
+                                                </div>
+                                                <div className="flex items-center justify-between">
+                                                    <span className="text-[16px] font-medium text-[#6B7280]">Delivery mode</span>
+                                                    <span className="text-[17px] font-black text-[#111827]">Door Delivery</span>
+                                                </div>
+                                            </div>
                                         </div>
-                                        <div className="bg-white rounded-[16px] px-5 py-6 space-y-5">
-                                            <div className="flex items-center justify-between">
-                                                <span className="text-[16px] font-medium text-[#6B7280]">Ordered from</span>
-                                                <span className="text-[17px] font-black text-[#111827]">Nike</span>
+
+                                        {/* 2. Trip Info Section */}
+                                        <div className="bg-[#F3F4F6] rounded-[20px] p-1.5 pb-2">
+                                            <div className="px-4 py-3 flex items-center justify-between">
+                                                <div className="flex items-center gap-2 text-[#6B7280]">
+                                                    <Navigation size={18} />
+                                                    <span className="text-[15px] font-bold">Trip Info</span>
+                                                </div>
+                                                <button className="text-[13px] font-bold text-[#6B7280]">See more</button>
                                             </div>
-                                            <div className="flex items-center justify-between">
-                                                <span className="text-[16px] font-medium text-[#6B7280]">Payment mode</span>
-                                                <span className="text-[17px] font-black text-[#111827]">On Delivery</span>
+                                            <div className="bg-white rounded-[16px] px-5 py-6">
+                                                <div className="space-y-8">
+                                                    <div className="flex gap-4 relative">
+                                                        <div className="absolute left-1.5 top-2.5 bottom-[-32px] w-[2px] bg-[#fcdbd2]" />
+                                                        <div className="w-3 h-3 rounded-full border-2 border-[#ff7043] bg-white z-10 mt-1.5" />
+                                                        <div className="flex-1">
+                                                            <div className="flex items-center justify-between mb-1">
+                                                                <div className="flex items-center gap-1.5">
+                                                                    <span className="text-[13px]">🇲🇦</span>
+                                                                    <span className="text-[14px] font-medium text-[#6B7280]">Casablanca</span>
+                                                                </div>
+                                                                <span className="text-[14px] font-black text-[#111827]">05:15 AM</span>
+                                                            </div>
+                                                            <p className="text-[16px] font-black text-[#111827] leading-tight">Arrived at post office 29133</p>
+                                                            <p className="text-[12px] font-medium text-[#9CA3AF] mt-1">05.12.2025</p>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="flex gap-4 relative">
+                                                        <div className="absolute left-1.5 top-0 bottom-[-32px] w-[2px] bg-[#f3f4f6]" />
+                                                        <div className="w-3 h-3 rounded-full border-2 border-[#ff7043] bg-white z-10 mt-1.5" />
+                                                        <div className="flex-1">
+                                                            <div className="flex items-center justify-between mb-1">
+                                                                <div className="flex items-center gap-1.5">
+                                                                    <span className="text-[13px]">🇲🇦</span>
+                                                                    <span className="text-[14px] font-medium text-[#6B7280]">Casablanca</span>
+                                                                </div>
+                                                                <span className="text-[14px] font-black text-[#111827]">01:15 PM</span>
+                                                            </div>
+                                                            <p className="text-[16px] font-black text-[#111827] leading-tight">Departed from local hub</p>
+                                                            <p className="text-[12px] font-medium text-[#9CA3AF] mt-1">03.12.2025</p>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="flex gap-4 relative">
+                                                        <div className="w-3 h-3 rounded-full border-2 border-neutral-100 bg-white z-10 mt-1.5" />
+                                                        <div className="flex-1">
+                                                            <div className="flex items-center justify-between mb-1">
+                                                                <div className="flex items-center gap-1.5">
+                                                                    <span className="text-[13px]">🇲🇦</span>
+                                                                    <span className="text-[14px] font-medium text-[#6B7280]">Casablanca</span>
+                                                                </div>
+                                                                <span className="text-[14px] font-black text-[#111827]">11:48 AM</span>
+                                                            </div>
+                                                            <p className="text-[16px] font-black text-neutral-300 leading-tight">Pending delivery</p>
+                                                            <p className="text-[12px] font-medium text-neutral-300 mt-1">01.12.2025</p>
+                                                        </div>
+                                                    </div>
+                                                </div>
                                             </div>
-                                            <div className="flex items-center justify-between">
-                                                <span className="text-[16px] font-medium text-[#6B7280]">Delivery mode</span>
-                                                <span className="text-[17px] font-black text-[#111827]">Door Delivery</span>
+                                        </div>
+
+                                        {/* 3. Sender Details Section */}
+                                        <div className="bg-[#F3F4F6] rounded-[20px] p-1.5 pb-2">
+                                            <div className="px-4 py-3 flex items-center gap-2 text-[#6B7280]">
+                                                <User size={18} />
+                                                <span className="text-[15px] font-bold">Sender details</span>
+                                            </div>
+                                            <div className="bg-white rounded-[16px] px-4 py-4 flex items-center justify-between">
+                                                <div className="flex items-center gap-4">
+                                                    <div className="w-14 h-14 bg-black rounded-[14px] flex items-center justify-center p-2.5">
+                                                        <img src="https://upload.wikimedia.org/wikipedia/commons/a/a6/Logo_NIKE.svg" className="w-full h-full object-contain brightness-0 invert" alt="Nike Logo" />
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-[17px] font-black text-[#111827]">Nike</p>
+                                                        <p className="text-[14px] font-medium text-[#9CA3AF]">Official Store</p>
+                                                    </div>
+                                                </div>
+                                                <div className="px-3 py-1.5 bg-[#F1FEF4] rounded-full border border-[#D1FAE5] flex items-center gap-1.5">
+                                                    <div className="w-4 h-4 rounded-full bg-[#10B981] flex items-center justify-center">
+                                                        <Check size={10} className="text-white" strokeWidth={5} />
+                                                    </div>
+                                                    <span className="text-[12px] font-bold text-[#10B981]">Safe Sender</span>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
-
-                                    {/* 2. Trip Info Section */}
-                                    <div className="bg-[#F3F4F6] rounded-[20px] p-1.5 pb-2">
-                                        <div className="px-4 py-3 flex items-center justify-between">
-                                            <div className="flex items-center gap-2 text-[#6B7280]">
-                                                <Navigation size={18} />
-                                                <span className="text-[15px] font-bold">Trip Info</span>
-                                            </div>
-                                            <button className="text-[13px] font-bold text-[#6B7280]">See more</button>
-                                        </div>
-                                        <div className="bg-white rounded-[16px] px-5 py-6">
-                                            <div className="space-y-8">
-                                                <div className="flex gap-4 relative">
-                                                    <div className="absolute left-1.5 top-2.5 bottom-[-32px] w-[2px] bg-[#fcdbd2]" />
-                                                    <div className="w-3 h-3 rounded-full border-2 border-[#ff7043] bg-white z-10 mt-1.5" />
-                                                    <div className="flex-1">
-                                                        <div className="flex items-center justify-between mb-1">
-                                                            <div className="flex items-center gap-1.5">
-                                                                <span className="text-[13px]">🇲🇦</span>
-                                                                <span className="text-[14px] font-medium text-[#6B7280]">Casablanca</span>
-                                                            </div>
-                                                            <span className="text-[14px] font-black text-[#111827]">05:15 AM</span>
-                                                        </div>
-                                                        <p className="text-[16px] font-black text-[#111827] leading-tight">Arrived at post office 29133</p>
-                                                        <p className="text-[12px] font-medium text-[#9CA3AF] mt-1">05.12.2025</p>
-                                                    </div>
+                                ) : (
+                                    <>
+                                        {/* Profile Hero */}
+                                        <motion.div variants={staggerItem} className="flex gap-6 mb-8 items-start">
+                                            <img src={provider.avatar} className="w-24 h-24 rounded-[15px] object-cover border-4 border-[#F9FAFB]" />
+                                            <div className="flex-1">
+                                                <h2 className="text-[24px] font-black text-[#111827] mb-2">{provider.name}</h2>
+                                                <div className="flex items-baseline gap-2 text-[#219178] mb-4">
+                                                    <span className="text-[20px] font-black">MAD {provider.minRate}</span>
+                                                    <span className="text-[14px] font-bold text-[#6B7280]">minimum</span>
                                                 </div>
-
-                                                <div className="flex gap-4 relative">
-                                                    <div className="absolute left-1.5 top-0 bottom-[-32px] w-[2px] bg-[#f3f4f6]" />
-                                                    <div className="w-3 h-3 rounded-full border-2 border-[#ff7043] bg-white z-10 mt-1.5" />
-                                                    <div className="flex-1">
-                                                        <div className="flex items-center justify-between mb-1">
-                                                            <div className="flex items-center gap-1.5">
-                                                                <span className="text-[13px]">🇲🇦</span>
-                                                                <span className="text-[14px] font-medium text-[#6B7280]">Casablanca</span>
-                                                            </div>
-                                                            <span className="text-[14px] font-black text-[#111827]">01:15 PM</span>
-                                                        </div>
-                                                        <p className="text-[16px] font-black text-[#111827] leading-tight">Departed from local hub</p>
-                                                        <p className="text-[12px] font-medium text-[#9CA3AF] mt-1">03.12.2025</p>
-                                                    </div>
-                                                </div>
-
-                                                <div className="flex gap-4 relative">
-                                                    <div className="w-3 h-3 rounded-full border-2 border-neutral-100 bg-white z-10 mt-1.5" />
-                                                    <div className="flex-1">
-                                                        <div className="flex items-center justify-between mb-1">
-                                                            <div className="flex items-center gap-1.5">
-                                                                <span className="text-[13px]">🇲🇦</span>
-                                                                <span className="text-[14px] font-medium text-[#6B7280]">Casablanca</span>
-                                                            </div>
-                                                            <span className="text-[14px] font-black text-[#111827]">11:48 AM</span>
-                                                        </div>
-                                                        <p className="text-[16px] font-black text-neutral-300 leading-tight">Pending delivery</p>
-                                                        <p className="text-[12px] font-medium text-neutral-300 mt-1">01.12.2025</p>
-                                                    </div>
+                                                <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#F1FEF4] rounded-full border border-[#027963]">
+                                                    <ShieldCheck size={14} className="text-[#027963]" />
+                                                    <span className="text-[11px] font-black text-[#166534]  tracking-wider">Identity Verified</span>
                                                 </div>
                                             </div>
-                                        </div>
-                                    </div>
+                                        </motion.div>
 
-                                    {/* 3. Sender Details Section */}
-                                    <div className="bg-[#F3F4F6] rounded-[20px] p-1.5 pb-2">
-                                        <div className="px-4 py-3 flex items-center gap-2 text-[#6B7280]">
-                                            <User size={18} />
-                                            <span className="text-[15px] font-bold">Sender details</span>
-                                        </div>
-                                        <div className="bg-white rounded-[16px] px-4 py-4 flex items-center justify-between">
-                                            <div className="flex items-center gap-4">
-                                                <div className="w-14 h-14 bg-black rounded-[14px] flex items-center justify-center p-2.5">
-                                                    <img src="https://upload.wikimedia.org/wikipedia/commons/a/a6/Logo_NIKE.svg" className="w-full h-full object-contain brightness-0 invert" alt="Nike Logo" />
+                                        {/* Trust & Stats Grid (High Visibility) */}
+                                        <motion.div variants={staggerItem} className="grid grid-cols-3 gap-3 mb-8">
+                                            <div className="flex flex-col items-center justify-center p-4 rounded-full bg-[#F3F4F6] text-center ">
+                                                <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center text-[#219178] mb-2 ">
+                                                    <Trophy size={30} />
                                                 </div>
+                                                <span className="text-[23px] font-bold text-[#219178] leading-tight capitalize">
+                                                    {provider.rank || 'New'}
+                                                </span>
+                                                <span className="text-[10px] font-bold text-[#219178] uppercase tracking-tighter mt-1">Level</span>
+                                            </div>
+                                            <div className="flex flex-col items-center justify-center p-4 rounded-full bg-[#F3F4F6] text-center ">
+                                                <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center text-[#219178] mb-2">
+                                                    <Star size={30} />
+                                                </div>
+                                                <span className="text-[23px] font-bold text-[#219178] leading-tight">
+                                                    {provider.taskCount === 0 ? "0.0" : provider.rating.toFixed(1)}
+                                                </span>
+                                                <span className="text-[10px] font-bold text-[#219178] uppercase tracking-tighter mt-1">Rating</span>
+                                            </div>
+                                            <div className="flex flex-col items-center justify-center p-4 rounded-full bg-[#F3F4F6] text-center ">
+                                                <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center text-[#219178] mb-2 ">
+                                                    <CheckCircle2 size={30} />
+                                                </div>
+                                                <span className="text-[23px] font-bold text-[#219178] leading-tight">
+                                                    {provider.taskCount}
+                                                </span>
+                                                <span className="text-[10px] font-bold text-[#219178] uppercase tracking-tighter mt-1">Orders</span>
+                                            </div>
+                                        </motion.div>
+
+                                        {/* Secondary Stats */}
+                                        <motion.div variants={staggerItem} className="grid grid-cols-2 gap-3 mb-8">
+                                            <div className="p-4 bg-[#F9FAFB] rounded-[5px] border border-neutral-100 flex items-center justify-between">
                                                 <div>
-                                                    <p className="text-[17px] font-black text-[#111827]">Nike</p>
-                                                    <p className="text-[14px] font-medium text-[#9CA3AF]">Official Store</p>
+                                                    <div className="text-[10px] font-black text-[#9CA3AF] tracking-widest uppercase mb-1">Experience</div>
+                                                    <div className="text-[17px] font-medium text-[#111827]">{provider.yearsOfExperience}</div>
                                                 </div>
+                                                <Calendar className="text-neutral-200" size={24} />
                                             </div>
-                                            <div className="px-3 py-1.5 bg-[#F1FEF4] rounded-full border border-[#D1FAE5] flex items-center gap-1.5">
-                                                <div className="w-4 h-4 rounded-full bg-[#10B981] flex items-center justify-center">
-                                                    <Check size={10} className="text-white" strokeWidth={5} />
+                                            <div className="p-4 bg-[#F9FAFB] rounded-[5px] border border-neutral-100 flex items-center justify-between">
+                                                <div>
+                                                    <div className="text-[10px] font-black text-[#9CA3AF] tracking-widest uppercase mb-1">Success Rate</div>
+                                                    <div className="text-[17px] font-medium text-[#111827]">99%</div>
                                                 </div>
-                                                <span className="text-[12px] font-bold text-[#10B981]">Safe Sender</span>
+                                                <TrendingUp className="text-neutral-200" size={24} />
                                             </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            ) : (
-                                <>
-                                    {/* Profile Hero */}
-                                    <motion.div variants={staggerItem} className="flex gap-6 mb-8 items-start">
-                                        <img src={provider.avatar} className="w-24 h-24 rounded-[15px] object-cover border-4 border-[#F9FAFB]" />
-                                        <div className="flex-1">
-                                            <h2 className="text-[24px] font-black text-[#111827] mb-2">{provider.name}</h2>
-                                            <div className="flex items-baseline gap-2 text-[#219178] mb-4">
-                                                <span className="text-[20px] font-black">MAD {provider.minRate}</span>
-                                                <span className="text-[14px] font-bold text-[#6B7280]">minimum</span>
-                                            </div>
-                                            <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#F1FEF4] rounded-full border border-[#027963]">
-                                                <ShieldCheck size={14} className="text-[#027963]" />
-                                                <span className="text-[11px] font-black text-[#166534]  tracking-wider">Identity Verified</span>
-                                            </div>
-                                        </div>
-                                    </motion.div>
+                                        </motion.div>
 
-                                    {/* Trust & Stats Grid (High Visibility) */}
-                                    <motion.div variants={staggerItem} className="grid grid-cols-3 gap-3 mb-8">
-                                        <div className="flex flex-col items-center justify-center p-4 rounded-full bg-[#F3F4F6] text-center ">
-                                            <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center text-[#219178] mb-2 ">
-                                                <Trophy size={30} />
-                                            </div>
-                                            <span className="text-[23px] font-bold text-[#219178] leading-tight capitalize">
-                                                {provider.rank || 'New'}
-                                            </span>
-                                            <span className="text-[10px] font-bold text-[#219178] uppercase tracking-tighter mt-1">Level</span>
-                                        </div>
-                                        <div className="flex flex-col items-center justify-center p-4 rounded-full bg-[#F3F4F6] text-center ">
-                                            <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center text-[#219178] mb-2">
-                                                <Star size={30} />
-                                            </div>
-                                            <span className="text-[23px] font-bold text-[#219178] leading-tight">
-                                                {provider.taskCount === 0 ? "0.0" : provider.rating.toFixed(1)}
-                                            </span>
-                                            <span className="text-[10px] font-bold text-[#219178] uppercase tracking-tighter mt-1">Rating</span>
-                                        </div>
-                                        <div className="flex flex-col items-center justify-center p-4 rounded-full bg-[#F3F4F6] text-center ">
-                                            <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center text-[#219178] mb-2 ">
-                                                <CheckCircle2 size={30} />
-                                            </div>
-                                            <span className="text-[23px] font-bold text-[#219178] leading-tight">
-                                                {provider.taskCount}
-                                            </span>
-                                            <span className="text-[10px] font-bold text-[#219178] uppercase tracking-tighter mt-1">Orders</span>
-                                        </div>
-                                    </motion.div>
+                                        {/* Portfolio Section */}
+                                        {provider.portfolio && provider.portfolio.length > 0 && (
+                                            <motion.div variants={staggerItem} className="mb-10">
+                                                <div className="flex items-center justify-between mb-4">
+                                                    <h4 className="text-[18px] font-black text-[#111827]">Bricoler Portfolio</h4>
+                                                    <span className="text-[11px] font-black text-[#219178] tracking-[2px]">{order.serviceName}</span>
+                                                </div>
+                                                <div className="flex gap-4 overflow-x-auto no-scrollbar -mx-6 px-6 pb-2">
+                                                    {provider.portfolio.map((img, i) => (
+                                                        <div key={i} className="flex-shrink-0">
+                                                            <img src={img} className="w-44 h-56 rounded-[5px] object-cover border border-neutral-100" alt="Work sample" />
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </motion.div>
+                                        )}
 
-                                    {/* Secondary Stats */}
-                                    <motion.div variants={staggerItem} className="grid grid-cols-2 gap-3 mb-8">
-                                        <div className="p-4 bg-[#F9FAFB] rounded-[5px] border border-neutral-100 flex items-center justify-between">
-                                            <div>
-                                                <div className="text-[10px] font-black text-[#9CA3AF] tracking-widest uppercase mb-1">Experience</div>
-                                                <div className="text-[17px] font-medium text-[#111827]">{provider.yearsOfExperience}</div>
+                                        {/* About */}
+                                        <motion.div variants={staggerItem} className="mb-10">
+                                            <h4 className="text-[18px] font-black text-[#111827] mb-4">About Me</h4>
+                                            <div className="text-[15px] text-[#000000] leading-relaxed font-medium p-6 bg-[#F9FAFB] rounded-[5px] border border-neutral-100">
+                                                "{provider.bio}"
                                             </div>
-                                            <Calendar className="text-neutral-200" size={24} />
-                                        </div>
-                                        <div className="p-4 bg-[#F9FAFB] rounded-[5px] border border-neutral-100 flex items-center justify-between">
-                                            <div>
-                                                <div className="text-[10px] font-black text-[#9CA3AF] tracking-widest uppercase mb-1">Success Rate</div>
-                                                <div className="text-[17px] font-medium text-[#111827]">99%</div>
-                                            </div>
-                                            <TrendingUp className="text-neutral-200" size={24} />
-                                        </div>
-                                    </motion.div>
+                                        </motion.div>
 
-                                    {/* Portfolio Section */}
-                                    {provider.portfolio && provider.portfolio.length > 0 && (
+                                        {/* Transportation Section */}
+                                        {order.serviceType === 'moving' && provider.movingTransports && provider.movingTransports.length > 0 && (
+                                            <motion.div variants={staggerItem} className="mb-10">
+                                                <h4 className="text-[18px] font-black text-[#111827] mb-4">
+                                                    {t({ en: 'Transportation', fr: 'Moyen de transport', ar: 'وسيلة النقل' })}
+                                                </h4>
+                                                <div className="flex flex-wrap gap-2">
+                                                    {provider.movingTransports.map((item, i) => {
+                                                        const transportLabels: Record<string, any> = {
+                                                            'triporteur': { en: 'Triporteur', fr: 'Triporteur', ar: 'تريبورتور', icon: '🏍️' },
+                                                            'small_van': { en: 'Small Van', fr: 'Petite Camionnette', ar: 'شاحنة صغيرة', icon: '🚐' },
+                                                            'large_van': { en: 'Large Van', fr: 'Grande Camionnette', ar: 'شاحنة كبيرة', icon: '🚚' },
+                                                            'small_truck': { en: 'Small Truck', fr: 'Petit Camion', ar: 'شاحنة صغيرة', icon: '🚛' },
+                                                            'large_truck': { en: 'Large Truck', fr: 'Gros Camion', ar: 'شاحنة نقل كبيرة', icon: '🚛' }
+                                                        };
+                                                        const label = transportLabels[item] || { en: item, fr: item, ar: item, icon: '🚚' };
+                                                        return (
+                                                            <div key={i} className="flex items-center gap-2 px-4 py-2 bg-[#F9FAFB] rounded-[10px] border border-neutral-100 text-[14px] font-bold text-[#4B5563]">
+                                                                <span className="text-lg">{label.icon}</span>
+                                                                {t(label)}
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </motion.div>
+                                        )}
+
+                                        {/* Equipment Section */}
+                                        {!['car_rental', 'tour_guide', 'learn_arabic'].includes(order.serviceType || '') && provider.equipments && provider.equipments.length > 0 && (
+                                            <motion.div variants={staggerItem} className="mb-10">
+                                                <h4 className="text-[18px] font-black text-[#111827] mb-4">Service Equipment</h4>
+                                                <div className="flex flex-wrap gap-2">
+                                                    {provider.equipments.map((item, i) => (
+                                                        <div key={i} className="flex items-center gap-2 px-4 py-2 bg-[#F9FAFB] rounded-[10px] border border-neutral-100 text-[14px] font-bold text-[#4B5563]">
+                                                            <div className="w-5 h-5 rounded-full bg-[#219178]/10 flex items-center justify-center">
+                                                                <Check size={12} className="text-[#219178]" strokeWidth={3} />
+                                                            </div>
+                                                            {item}
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </motion.div>
+                                        )}
+
+                                        {/* Reviews Section */}
                                         <motion.div variants={staggerItem} className="mb-10">
                                             <div className="flex items-center justify-between mb-4">
-                                                <h4 className="text-[18px] font-black text-[#111827]">Bricoler Portfolio</h4>
-                                                <span className="text-[11px] font-black text-[#219178] tracking-[2px]">{order.serviceName}</span>
+                                                <h4 className="text-[18px] font-black text-[#111827]">Client Reviews</h4>
+                                                <span className="text-[11px] font-black text-[#9CA3AF] tracking-widest">{provider.reviews?.length || 0} reviews</span>
                                             </div>
-                                            <div className="flex gap-4 overflow-x-auto no-scrollbar -mx-6 px-6 pb-2">
-                                                {provider.portfolio.map((img, i) => (
-                                                    <div key={i} className="flex-shrink-0">
-                                                        <img src={img} className="w-44 h-56 rounded-[5px] object-cover border border-neutral-100" alt="Work sample" />
+                                            <div className="grid grid-cols-1 gap-4">
+                                                {provider.reviews && provider.reviews.length > 0 ? provider.reviews.map((rev, i) => (
+                                                    <div key={i} className="p-5 bg-white rounded-[5px] border border-neutral-100">
+                                                        <div className="flex items-center gap-3 mb-3">
+                                                            <div className="w-10 h-10 rounded-full bg-[#219178]/10 flex items-center justify-center font-black text-[#219178] text-sm border border-[#219178]/10">
+                                                                {rev.userName?.charAt(0) || 'C'}
+                                                            </div>
+                                                            <div className="flex-1">
+                                                                <p className="text-[14px] font-black text-[#111827]">{rev.userName || 'Verified Client'}</p>
+                                                                <p className="text-[11px] font-bold text-[#9CA3AF]">{rev.date || 'Recemment'}</p>
+                                                            </div>
+                                                            <div className="flex items-center gap-1 bg-[#FFFBEB] px-2.5 py-1 rounded-[5px] border border-[#FEF3C7]">
+                                                                <Sparkles size={10} className="text-[#FBBF24] fill-[#FBBF24]" />
+                                                                <span className="text-[11px] font-black text-[#92400E]">{rev.rating || 5}</span>
+                                                            </div>
+                                                        </div>
+                                                        <p className="text-[14px] text-[#4B5563] font-medium leading-[1.6]">{rev.comment}</p>
                                                     </div>
-                                                ))}
+                                                )) : (
+                                                    <div className="py-12 text-center bg-white rounded-[5px] border border-dashed border-neutral-200">
+                                                        <p className="text-[#9CA3AF] font-medium text-[20px] ">Awaiting first reviews on the app</p>
+                                                    </div>
+                                                )}
                                             </div>
                                         </motion.div>
-                                    )}
 
-                                    {/* About */}
-                                    <motion.div variants={staggerItem} className="mb-10">
-                                        <h4 className="text-[18px] font-black text-[#111827] mb-4">About Me</h4>
-                                        <div className="text-[15px] text-[#000000] leading-relaxed font-medium p-6 bg-[#F9FAFB] rounded-[5px] border border-neutral-100">
-                                            "{provider.bio}"
-                                        </div>
-                                    </motion.div>
-
-                                    {/* Transportation Section */}
-                                    {order.serviceType === 'moving' && provider.movingTransports && provider.movingTransports.length > 0 && (
-                                        <motion.div variants={staggerItem} className="mb-10">
-                                            <h4 className="text-[18px] font-black text-[#111827] mb-4">
-                                                {t({ en: 'Transportation', fr: 'Moyen de transport', ar: 'وسيلة النقل' })}
-                                            </h4>
-                                            <div className="flex flex-wrap gap-2">
-                                                {provider.movingTransports.map((item, i) => {
-                                                    const transportLabels: Record<string, any> = {
-                                                        'triporteur': { en: 'Triporteur', fr: 'Triporteur', ar: 'تريبورتور', icon: '🏍️' },
-                                                        'small_van': { en: 'Small Van', fr: 'Petite Camionnette', ar: 'شاحنة صغيرة', icon: '🚐' },
-                                                        'large_van': { en: 'Large Van', fr: 'Grande Camionnette', ar: 'شاحنة كبيرة', icon: '🚚' },
-                                                        'small_truck': { en: 'Small Truck', fr: 'Petit Camion', ar: 'شاحنة صغيرة', icon: '🚛' },
-                                                        'large_truck': { en: 'Large Truck', fr: 'Gros Camion', ar: 'شاحنة نقل كبيرة', icon: '🚛' }
-                                                    };
-                                                    const label = transportLabels[item] || { en: item, fr: item, ar: item, icon: '🚚' };
-                                                    return (
-                                                        <div key={i} className="flex items-center gap-2 px-4 py-2 bg-[#F9FAFB] rounded-[10px] border border-neutral-100 text-[14px] font-bold text-[#4B5563]">
-                                                            <span className="text-lg">{label.icon}</span>
-                                                            {t(label)}
-                                                        </div>
-                                                    );
-                                                })}
+                                        {/* Trusted Provider */}
+                                        <motion.div variants={staggerItem} className="p-5 bg-[#F0FDF4] rounded-[5px] border border-[#D1FAE5] flex items-center gap-4 mb-32">
+                                            <div className="w-11 h-11 rounded-full bg-[#D1FAE5] flex items-center justify-center text-[#219178]">
+                                                <Check size={22} className="stroke-[3]" />
+                                            </div>
+                                            <div>
+                                                <p className="text-[16px] font-black text-[#065F46]">Verified Bricoler</p>
+                                                <p className="text-[13px] font-medium text-[#047857]">Identity and skills verified by Lbricol team.</p>
                                             </div>
                                         </motion.div>
-                                    )}
+                                    </>
+                                )}
 
-                                    {/* Equipment Section */}
-                                    {!['car_rental', 'tour_guide', 'learn_arabic'].includes(order.serviceType || '') && provider.equipments && provider.equipments.length > 0 && (
-                                        <motion.div variants={staggerItem} className="mb-10">
-                                            <h4 className="text-[18px] font-black text-[#111827] mb-4">Service Equipment</h4>
-                                            <div className="flex flex-wrap gap-2">
-                                                {provider.equipments.map((item, i) => (
-                                                    <div key={i} className="flex items-center gap-2 px-4 py-2 bg-[#F9FAFB] rounded-[10px] border border-neutral-100 text-[14px] font-bold text-[#4B5563]">
-                                                        <div className="w-5 h-5 rounded-full bg-[#219178]/10 flex items-center justify-center">
-                                                            <Check size={12} className="text-[#219178]" strokeWidth={3} />
-                                                        </div>
-                                                        {item}
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </motion.div>
-                                    )}
-
-                                    {/* Reviews Section */}
-                                    <motion.div variants={staggerItem} className="mb-10">
-                                        <div className="flex items-center justify-between mb-4">
-                                            <h4 className="text-[18px] font-black text-[#111827]">Client Reviews</h4>
-                                            <span className="text-[11px] font-black text-[#9CA3AF] tracking-widest">{provider.reviews?.length || 0} reviews</span>
+                                {/* Floating "Book Me" Button wrapper with Wave (Only for profiles, not errands summary) */}
+                                {!(order.serviceType === 'errands' || order.serviceType?.includes('delivery')) && (
+                                    <div className="fixed bottom-0 left-0 right-0 z-[100] bg-transparent">
+                                        <div className="absolute top-[-44px] left-0 right-0 h-[45px] z-20 pointer-events-none">
+                                            <svg viewBox="0 0 1440 120" preserveAspectRatio="none" className="w-full h-full fill-[#FFB700]">
+                                                <path d="M0,64L48,64C96,64,192,64,288,64C384,64,480,64,576,53.3C672,43,768,21,864,16C960,10.7,1056,21.3,1152,42.7C1248,64,1344,96,1392,112L1440,128L1440,120L1392,120C1344,120,1248,120,1152,120C1056,120,960,120,864,120C768,120,672,120,576,120C480,120,384,120,288,120C192,120,96,120,48,120L0,120Z"></path>
+                                            </svg>
                                         </div>
-                                        <div className="grid grid-cols-1 gap-4">
-                                            {provider.reviews && provider.reviews.length > 0 ? provider.reviews.map((rev, i) => (
-                                                <div key={i} className="p-5 bg-white rounded-[5px] border border-neutral-100">
-                                                    <div className="flex items-center gap-3 mb-3">
-                                                        <div className="w-10 h-10 rounded-full bg-[#219178]/10 flex items-center justify-center font-black text-[#219178] text-sm border border-[#219178]/10">
-                                                            {rev.userName?.charAt(0) || 'C'}
-                                                        </div>
-                                                        <div className="flex-1">
-                                                            <p className="text-[14px] font-black text-[#111827]">{rev.userName || 'Verified Client'}</p>
-                                                            <p className="text-[11px] font-bold text-[#9CA3AF]">{rev.date || 'Recemment'}</p>
-                                                        </div>
-                                                        <div className="flex items-center gap-1 bg-[#FFFBEB] px-2.5 py-1 rounded-[5px] border border-[#FEF3C7]">
-                                                            <Sparkles size={10} className="text-[#FBBF24] fill-[#FBBF24]" />
-                                                            <span className="text-[11px] font-black text-[#92400E]">{rev.rating || 5}</span>
-                                                        </div>
-                                                    </div>
-                                                    <p className="text-[14px] text-[#4B5563] font-medium leading-[1.6]">{rev.comment}</p>
-                                                </div>
-                                            )) : (
-                                                <div className="py-12 text-center bg-white rounded-[5px] border border-dashed border-neutral-200">
-                                                    <p className="text-[#9CA3AF] font-medium text-[20px] ">Awaiting first reviews on the app</p>
-                                                </div>
-                                            )}
+                                        <div className="bg-[#FFB700] p-6 pb-8">
+                                            <motion.button
+                                                whileTap={{ scale: 0.98 }}
+                                                onClick={() => {
+                                                    setActiveTab('setup');
+                                                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                                                }}
+                                                className="w-full h-15 bg-[#219178] text-white rounded-full font-black text-[20px] flex items-center justify-center gap-3 transition-all py-5 "
+                                            >
+                                                <span>Book me</span>
+                                            </motion.button>
                                         </div>
-                                    </motion.div>
-
-                                    {/* Trusted Provider */}
-                                    <motion.div variants={staggerItem} className="p-5 bg-[#F0FDF4] rounded-[5px] border border-[#D1FAE5] flex items-center gap-4 mb-32">
-                                        <div className="w-11 h-11 rounded-full bg-[#D1FAE5] flex items-center justify-center text-[#219178]">
-                                            <Check size={22} className="stroke-[3]" />
-                                        </div>
-                                        <div>
-                                            <p className="text-[16px] font-black text-[#065F46]">Verified Bricoler</p>
-                                            <p className="text-[13px] font-medium text-[#047857]">Identity and skills verified by Lbricol team.</p>
-                                        </div>
-                                    </motion.div>
-                                </>
-                            )}
-
-                            {/* Floating "Book Me" Button wrapper with Wave (Only for profiles, not errands summary) */}
-                            {!(order.serviceType === 'errands' || order.serviceType?.includes('delivery')) && (
-                                <div className="fixed bottom-0 left-0 right-0 z-[100] bg-transparent">
-                                    <div className="absolute top-[-44px] left-0 right-0 h-[45px] z-20 pointer-events-none">
-                                        <svg viewBox="0 0 1440 120" preserveAspectRatio="none" className="w-full h-full fill-[#FFB700]">
-                                            <path d="M0,64L48,64C96,64,192,64,288,64C384,64,480,64,576,53.3C672,43,768,21,864,16C960,10.7,1056,21.3,1152,42.7C1248,64,1344,96,1392,112L1440,128L1440,120L1392,120C1344,120,1248,120,1152,120C1056,120,960,120,864,120C768,120,672,120,576,120C480,120,384,120,288,120C192,120,96,120,48,120L0,120Z"></path>
-                                        </svg>
                                     </div>
-                                    <div className="bg-[#FFB700] p-6 pb-8">
-                                        <motion.button
-                                            whileTap={{ scale: 0.98 }}
-                                            onClick={() => {
-                                                setActiveTab('setup');
-                                                window.scrollTo({ top: 0, behavior: 'smooth' });
-                                            }}
-                                            className="w-full h-15 bg-[#219178] text-white rounded-full font-black text-[20px] flex items-center justify-center gap-3 transition-all py-5 "
-                                        >
-                                            <span>Book me</span>
-                                        </motion.button>
-                                    </div>
-                                </div>
-                            )}
+                                )}
+                            </div>
                         </motion.div>
                     ) : (
                         <motion.div
@@ -961,13 +963,13 @@ export default function ServiceSetupPage() {
                             initial="hidden"
                             animate="visible"
                             exit={{ opacity: 0, x: -10 }}
-                            className="px-6 space-y-10 mt-6"
+                            className="space-y-10 mt-6"
                         >
 
 
                             {/* Saved Profiles */}
                             {profiles.length > 0 && (
-                                <motion.section variants={staggerItem}>
+                                <motion.section variants={staggerItem} className="px-6">
                                     <h3 className="text-[18px] font-Bold text-[#111827] mb-5 px-1 flex items-center gap-2">
                                         Saved Setups
                                     </h3>
@@ -1019,7 +1021,7 @@ export default function ServiceSetupPage() {
                             )}
 
                             {/* Setup Content */}
-                            <motion.section variants={staggerItem} className="space-y-10">
+                            <motion.section variants={staggerItem} className="space-y-10 px-6">
                                 {(order.serviceType === 'errands' || order.serviceType?.includes('delivery')) ? (
                                     <div className="space-y-12">
                                         {/* 1. Category & Description */}
@@ -1844,10 +1846,10 @@ export default function ServiceSetupPage() {
                                             <span className="text-[18px] font-black text-black">4.0 MAD</span>
                                         </div>
                                         <div className="flex items-center justify-between">
-                                          <div className="flex items-center gap-2">
-                                            <span className="text-[18px] font-medium text-black/60">Service fee</span>
-                                            <button className="w-4 h-4 rounded-full border border-neutral-300 flex items-center justify-center text-[10px] text-neutral-400 font-bold">i</button>
-                                          </div>
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-[18px] font-medium text-black/60">Service fee</span>
+                                                <button className="w-4 h-4 rounded-full border border-neutral-300 flex items-center justify-center text-[10px] text-neutral-400 font-bold">i</button>
+                                            </div>
                                             <span className="text-[18px] font-black text-black">1.5 MAD</span>
                                         </div>
                                         <div className="h-px bg-neutral-200/50 w-full" />
@@ -1898,7 +1900,7 @@ export default function ServiceSetupPage() {
                                     whileTap={{ scale: 0.98 }}
                                     onClick={handleContinue}
                                     disabled={isSubmitting || isUploading}
-                                    className="w-full h-15 bg-[#219178] text-white rounded-full font-black text-[20px] flex items-center justify-center gap-3 transition-all py-5 shadow-lg"
+                                    className="w-full h-15 bg-[#219178] text-white rounded-full font-black text-[20px] flex items-center justify-center gap-3 transition-all py-5 "
                                 >
                                     {isSubmitting ? (
                                         <div className="flex items-center gap-2">
