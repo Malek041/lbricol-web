@@ -9,7 +9,8 @@ import {
     Save, Loader2, Sparkles, AlertCircle,
     MapPin, Calendar, Clock, User, Navigation,
     Trophy, CheckCircle2, TrendingUp, ShieldCheck,
-    Star
+    Star, Search, Map as MapIcon, ChevronDown, Info,
+    Gift, Plus, FileText
 } from 'lucide-react';
 import { format } from 'date-fns';
 
@@ -80,7 +81,9 @@ export default function ServiceSetupPage() {
     const [selectedProfileId, setSelectedProfileId] = useState<string>('new');
 
     // Form State
-    const [activeTab, setActiveTab] = useState<'setup' | 'details'>('details');
+    const [activeTab, setActiveTab] = useState<'setup' | 'details'>(
+        (order.serviceType === 'errands' || order.serviceType?.includes('delivery')) ? 'setup' : 'details'
+    );
 
     // Form State
     const [rooms, setRooms] = useState<number>(order.serviceDetails?.rooms || 2);
@@ -139,6 +142,32 @@ export default function ServiceSetupPage() {
     const [activeDrawer, setActiveDrawer] = useState<'none' | 'description' | 'recipient' | 'schedule' | 'pickup' | 'dropoff' | 'map_picker'>('none');
     const [searchResults, setSearchResults] = useState<any[]>([]);
     const [gpsTrigger, setGpsTrigger] = useState(0);
+    const [mapPickingFor, setMapPickingFor] = useState<'pickup' | 'dropoff'>('dropoff');
+
+    // Errands/Delivery Specialized States
+    const [errandCategory, setErrandCategory] = useState<string>('package');
+    const errandCategories = [
+        { id: 'keys', label: 'Keys', icon: '🔑' },
+        { id: 'documents', label: 'Docs', icon: '📄' },
+        { id: 'package', label: 'Parcel', icon: '📦' },
+        { id: 'grocery', label: 'Grocery', icon: '🛍️' },
+        { id: 'food', label: 'Food', icon: '🍛' },
+        { id: 'pharmacy', label: 'Pharmacy', icon: '💊' },
+        { id: 'mailing', label: 'Mailing', icon: '✉️' }
+    ];
+
+    const errandSizes = (order.serviceType === 'errands' || order.serviceType?.includes('delivery')) ? [
+        { id: 'small', name: 'Envelope/Bag', desc: 'Fits in a backpack (Moto)', icon: '🏍️' },
+        { id: 'medium', name: 'Standard Box', desc: 'Requires car trunk', icon: '🚗' },
+        { id: 'large', name: 'Large Package', desc: 'Fits in an SUV/Truck', icon: '🚚' }
+    ] : [];
+
+    const isErrand = order.serviceType === 'errands' || order.serviceType?.includes('delivery');
+    const isErrandReady = isErrand && 
+        pickupLocation.lat !== null && 
+        dropoffLocation.lat !== null && 
+        itemDescription.trim() !== '' && 
+        (deliveryType === 'standard' || (deliveryDate !== '' && deliveryTime !== ''));
 
     // Dynamic field logic for Packing + Move
     const [needsTransport, setNeedsTransport] = useState(order.subServiceId === 'local_move' || order.serviceType === 'errands');
@@ -242,10 +271,11 @@ export default function ServiceSetupPage() {
 
                         const result = calculateOrderPrice(
                             order.subServiceId || order.serviceType || 'errands',
-                            10, // Base price 10 MAD/min
+                            11, // Base price 11 MAD
                             {
                                 deliveryDistanceKm: distanceKm,
-                                deliveryDurationMinutes: durationMinutes
+                                deliveryDurationMinutes: durationMinutes,
+                                taskSize: taskSize
                             }
                         );
 
@@ -256,7 +286,7 @@ export default function ServiceSetupPage() {
                 };
                 fetchDist();
             } else {
-                setEstimate(calculateOrderPrice(order.subServiceId || order.serviceType || 'errands', 10, {}));
+                setEstimate(calculateOrderPrice(order.subServiceId || order.serviceType || 'errands', 11, { taskSize }));
             }
         } else if (order.serviceType === 'moving' || order.serviceType?.includes('moving')) {
             const duration = taskSize === 'small' ? 1.5 : taskSize === 'medium' ? 3 : 5;
@@ -447,7 +477,20 @@ export default function ServiceSetupPage() {
 
     const handleContinue = async () => {
         // Validation
-        if (selectedSlots.length === 0) {
+        let finalSlots = [...selectedSlots];
+
+        // For Errands/Delivery, we use the specialized deliveryDate/Time states
+        if (order.serviceType === 'errands' || order.serviceType?.includes('delivery')) {
+            if (deliveryType === 'standard') {
+                // If standard (Now), we'll use current date/time
+                finalSlots = [{ date: new Date(), time: format(new Date(), 'HH:mm') }];
+            } else if (deliveryDate && deliveryTime) {
+                // If scheduled, add the selected specific slot if finalSlots is empty
+                finalSlots = [{ date: new Date(deliveryDate), time: deliveryTime }];
+            }
+        }
+
+        if (finalSlots.length === 0) {
             alert("Please select at least one date and time for your order.");
             return;
         }
@@ -455,8 +498,8 @@ export default function ServiceSetupPage() {
         setIsSubmitting(true);
         try {
             // Update Context
-            const slotsToSave = selectedSlots.map(s => ({
-                date: s.date.toISOString(),
+            const slotsToSave = finalSlots.map(s => ({
+                date: (typeof s.date === 'string' ? new Date(s.date) : s.date).toISOString(),
                 time: s.time
             }));
 
@@ -491,6 +534,7 @@ export default function ServiceSetupPage() {
                 deliveryDate,
                 deliveryTime,
                 itemDescription,
+                errandCategory,
                 taskSize,
                 taskDuration: finalTaskDuration, // Use the calculated duration for pricing
                 // TV Mounting specific
@@ -501,7 +545,9 @@ export default function ServiceSetupPage() {
                 mountingAddOns,
                 // Moving specific pre-calculated metrics
                 deliveryDistanceKm: estimate?.distanceKm,
-                deliveryDurationMinutes: estimate?.duration
+                deliveryDurationMinutes: estimate?.duration,
+                // Signal to backend for broadcasting errands city-wide
+                isPublic: order.serviceType === 'errands' || order.serviceType?.includes('delivery')
             };
 
             // 1. Save profile if requested
@@ -582,7 +628,8 @@ export default function ServiceSetupPage() {
                 )}
             </header>
 
-            <main className="flex-1 overflow-y-auto pb-0 no-scrollbar bg-white">
+            {/* Main Content */}
+            <main className={`flex-1 overflow-y-auto no-scrollbar px-6 pt-10 ${(order.serviceType === 'errands' || order.serviceType?.includes('delivery')) ? 'pb-64' : 'pb-20'}`}>
                 <AnimatePresence mode="wait">
                     {activeTab === 'details' ? (
                         <motion.div
@@ -591,206 +638,321 @@ export default function ServiceSetupPage() {
                             initial="hidden"
                             animate="visible"
                             exit={{ opacity: 0, x: 10 }}
-                            className="px-6 py-8 relative"
+                            className="px-6 py-8"
                         >
-                            {/* Profile Hero */}
-                            <motion.div variants={staggerItem} className="flex gap-6 mb-8 items-start">
-                                <img src={provider.avatar} className="w-24 h-24 rounded-[15px] object-cover border-4 border-[#F9FAFB]" />
-                                <div className="flex-1">
-                                    <h2 className="text-[24px] font-black text-[#111827] mb-2">{provider.name}</h2>
-                                    <div className="flex items-baseline gap-2 text-[#219178] mb-4">
-                                        <span className="text-[20px] font-black">MAD {provider.minRate}</span>
-                                        <span className="text-[14px] font-bold text-[#6B7280]">minimum</span>
-                                    </div>
-                                    <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#F1FEF4] rounded-full border border-[#027963]">
-                                        <ShieldCheck size={14} className="text-[#027963]" />
-                                        <span className="text-[11px] font-black text-[#166534]  tracking-wider">Identity Verified</span>
-                                    </div>
-                                </div>
-                            </motion.div>
-
-                            {/* Trust & Stats Grid (High Visibility) */}
-                            <motion.div variants={staggerItem} className="grid grid-cols-3 gap-3 mb-8">
-                                <div className="flex flex-col items-center justify-center p-4   rounded-[5px]  text-center ">
-                                    <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center text-[#219178] mb-2 ">
-                                        <Trophy size={30} />
-                                    </div>
-                                    <span className="text-[23px] font-bold text-[#219178] leading-tight capitalize">
-                                        {provider.rank || 'New'}
-                                    </span>
-                                    <span className="text-[10px] font-bold text-[#219178] uppercase tracking-tighter mt-1">Level</span>
-                                </div>
-                                <div className="flex flex-col items-center justify-center p-4   rounded-[5px]  text-center ">
-                                    <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center text-[#219178] mb-2">
-                                        <Star size={30} />
-                                    </div>
-                                    <span className="text-[23px] font-bold text-[#219178] leading-tight">
-                                        {provider.taskCount === 0 ? "0.0" : provider.rating.toFixed(1)}
-                                    </span>
-                                    <span className="text-[10px] font-bold text-[#219178] uppercase tracking-tighter mt-1">Rating</span>
-                                </div>
-                                <div className="flex flex-col items-center justify-center p-4   rounded-[5px] text-center ">
-                                    <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center text-[#219178] mb-2 ">
-                                        <CheckCircle2 size={30} />
-                                    </div>
-                                    <span className="text-[23px] font-bold text-[#219178] leading-tight">
-                                        {provider.taskCount}
-                                    </span>
-                                    <span className="text-[10px] font-bold text-[#219178] uppercase tracking-tighter mt-1">Missions</span>
-                                </div>
-                            </motion.div>
-
-                            {/* Secondary Stats */}
-                            <motion.div variants={staggerItem} className="grid grid-cols-2 gap-3 mb-8">
-                                <div className="p-4 bg-[#F9FAFB] rounded-[5px] border border-neutral-100 flex items-center justify-between">
-                                    <div>
-                                        <div className="text-[10px] font-black text-[#9CA3AF] tracking-widest uppercase mb-1">Experience</div>
-                                        <div className="text-[17px] font-medium text-[#111827]">{provider.yearsOfExperience}</div>
-                                    </div>
-                                    <Calendar className="text-neutral-200" size={24} />
-                                </div>
-                                <div className="p-4 bg-[#F9FAFB] rounded-[5px] border border-neutral-100 flex items-center justify-between">
-                                    <div>
-                                        <div className="text-[10px] font-black text-[#9CA3AF] tracking-widest uppercase mb-1">Success Rate</div>
-                                        <div className="text-[17px] font-medium text-[#111827]">99%</div>
-                                    </div>
-                                    <TrendingUp className="text-neutral-200" size={24} />
-                                </div>
-                            </motion.div>
-
-                            {/* Portfolio Section */}
-                            {provider.portfolio && provider.portfolio.length > 0 && (
-                                <motion.div variants={staggerItem} className="mb-10">
-                                    <div className="flex items-center justify-between mb-4">
-                                        <h4 className="text-[18px] font-black text-[#111827]">Bricoler Portfolio</h4>
-                                        <span className="text-[11px] font-black text-[#219178] tracking-[2px]">{order.serviceName}</span>
-                                    </div>
-                                    <div className="flex gap-4 overflow-x-auto no-scrollbar -mx-6 px-6 pb-2">
-                                        {provider.portfolio.map((img, i) => (
-                                            <div key={i} className="flex-shrink-0">
-                                                <img src={img} className="w-44 h-56 rounded-[5px] object-cover border border-neutral-100" alt="Work sample" />
-                                            </div>
-                                        ))}
-                                    </div>
-                                </motion.div>
-                            )}
-
-                            {/* About */}
-                            <motion.div variants={staggerItem} className="mb-10">
-                                <h4 className="text-[18px] font-black text-[#111827] mb-4">About Me</h4>
-                                <div className="text-[15px] text-[#000000] leading-relaxed font-medium p-6 bg-[#F9FAFB] rounded-[5px] border border-neutral-100">
-                                    "{provider.bio}"
-                                </div>
-                            </motion.div>
-
-                            {/* Transportation Section (Pic 1 requirement) */}
-                            {order.serviceType === 'moving' && provider.movingTransports && provider.movingTransports.length > 0 && (
-                                <motion.div variants={staggerItem} className="mb-10">
-                                    <h4 className="text-[18px] font-black text-[#111827] mb-4">
-                                        {t({ en: 'Transportation', fr: 'Moyen de transport', ar: 'وسيلة النقل' })}
-                                    </h4>
-                                    <div className="flex flex-wrap gap-2">
-                                        {provider.movingTransports.map((item, i) => {
-                                            const transportLabels: Record<string, any> = {
-                                                'triporteur': { en: 'Triporteur', fr: 'Triporteur', ar: 'تريبورتور', icon: '🏍️' },
-                                                'small_van': { en: 'Small Van', fr: 'Petite Camionnette', ar: 'شاحنة صغيرة', icon: '🚐' },
-                                                'large_van': { en: 'Large Van', fr: 'Grande Camionnette', ar: 'شاحنة كبيرة', icon: '🚚' },
-                                                'small_truck': { en: 'Small Truck', fr: 'Petit Camion', ar: 'شاحنة صغيرة', icon: '🚛' },
-                                                'large_truck': { en: 'Large Truck', fr: 'Gros Camion', ar: 'شاحنة نقل كبيرة', icon: '🚛' }
-                                            };
-                                            const label = transportLabels[item] || { en: item, fr: item, ar: item, icon: '🚚' };
-                                            return (
-                                                <div key={i} className="flex items-center gap-2 px-4 py-2 bg-[#F9FAFB] rounded-[10px] border border-neutral-100 text-[14px] font-bold text-[#4B5563]">
-                                                    <span className="text-lg">{label.icon}</span>
-                                                    {t(label)}
-                                                </div>
-                                            );
-                                        })}
-                                    </div>
-                                </motion.div>
-                            )}
-
-                            {/* Equipment Section */}
-                            {!['car_rental', 'tour_guide', 'learn_arabic'].includes(order.serviceType || '') && provider.equipments && provider.equipments.length > 0 && (
-                                <motion.div variants={staggerItem} className="mb-10">
-                                    <h4 className="text-[18px] font-black text-[#111827] mb-4">Service Equipment</h4>
-                                    <div className="flex flex-wrap gap-2">
-                                        {provider.equipments.map((item, i) => (
-                                            <div key={i} className="flex items-center gap-2 px-4 py-2 bg-[#F9FAFB] rounded-[10px] border border-neutral-100 text-[14px] font-bold text-[#4B5563]">
-                                                <div className="w-5 h-5 rounded-full bg-[#219178]/10 flex items-center justify-center">
-                                                    <Check size={12} className="text-[#219178]" strokeWidth={3} />
-                                                </div>
-                                                {item}
-                                            </div>
-                                        ))}
-                                    </div>
-                                </motion.div>
-                            )}
-
-
-
-                            {/* Reviews Section */}
-                            <motion.div variants={staggerItem} className="mb-10">
-                                <div className="flex items-center justify-between mb-4">
-                                    <h4 className="text-[18px] font-black text-[#111827]">Client Reviews</h4>
-                                    <span className="text-[11px] font-black text-[#9CA3AF] tracking-widest">{provider.reviews?.length || 0} reviews</span>
-                                </div>
-                                <div className="grid grid-cols-1 gap-4">
-                                    {provider.reviews && provider.reviews.length > 0 ? provider.reviews.map((rev, i) => (
-                                        <div key={i} className="p-5 bg-white rounded-[5px] border border-neutral-100">
-                                            <div className="flex items-center gap-3 mb-3">
-                                                <div className="w-10 h-10 rounded-full bg-[#219178]/10 flex items-center justify-center font-black text-[#219178] text-sm border border-[#219178]/10">
-                                                    {rev.userName?.charAt(0) || 'C'}
-                                                </div>
-                                                <div className="flex-1">
-                                                    <p className="text-[14px] font-black text-[#111827]">{rev.userName || 'Verified Client'}</p>
-                                                    <p className="text-[11px] font-bold text-[#9CA3AF]">{rev.date || 'Recemment'}</p>
-                                                </div>
-                                                <div className="flex items-center gap-1 bg-[#FFFBEB] px-2.5 py-1 rounded-[5px] border border-[#FEF3C7]">
-                                                    <Sparkles size={10} className="text-[#FBBF24] fill-[#FBBF24]" />
-                                                    <span className="text-[11px] font-black text-[#92400E]">{rev.rating || 5}</span>
-                                                </div>
-                                            </div>
-                                            <p className="text-[14px] text-[#4B5563] font-medium leading-[1.6]">{rev.comment}</p>
+                            {(order.serviceType === 'errands' || order.serviceType?.includes('delivery')) ? (
+                                <div className="space-y-4">
+                                    {/* 1. Package Details Section */}
+                                    <div className="bg-[#F3F4F6] rounded-[20px] p-1.5 pb-2">
+                                        <div className="px-4 py-3 flex items-center gap-2 text-[#6B7280]">
+                                            <FileText size={18} />
+                                            <span className="text-[15px] font-bold">Package details</span>
                                         </div>
-                                    )) : (
-                                        <div className="py-12 text-center bg-white rounded-[5px] border border-dashed border-neutral-200">
-                                            <p className="text-[#9CA3AF] font-medium text-[20px] ">Awaiting first reviews on the app</p>
+                                        <div className="bg-white rounded-[16px] px-5 py-6 space-y-5">
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-[16px] font-medium text-[#6B7280]">Ordered from</span>
+                                                <span className="text-[17px] font-black text-[#111827]">Nike</span>
+                                            </div>
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-[16px] font-medium text-[#6B7280]">Payment mode</span>
+                                                <span className="text-[17px] font-black text-[#111827]">On Delivery</span>
+                                            </div>
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-[16px] font-medium text-[#6B7280]">Delivery mode</span>
+                                                <span className="text-[17px] font-black text-[#111827]">Door Delivery</span>
+                                            </div>
                                         </div>
+                                    </div>
+
+                                    {/* 2. Trip Info Section */}
+                                    <div className="bg-[#F3F4F6] rounded-[20px] p-1.5 pb-2">
+                                        <div className="px-4 py-3 flex items-center justify-between">
+                                            <div className="flex items-center gap-2 text-[#6B7280]">
+                                                <Navigation size={18} />
+                                                <span className="text-[15px] font-bold">Trip Info</span>
+                                            </div>
+                                            <button className="text-[13px] font-bold text-[#6B7280]">See more</button>
+                                        </div>
+                                        <div className="bg-white rounded-[16px] px-5 py-6">
+                                            <div className="space-y-8">
+                                                <div className="flex gap-4 relative">
+                                                    <div className="absolute left-1.5 top-2.5 bottom-[-32px] w-[2px] bg-[#fcdbd2]" />
+                                                    <div className="w-3 h-3 rounded-full border-2 border-[#ff7043] bg-white z-10 mt-1.5" />
+                                                    <div className="flex-1">
+                                                        <div className="flex items-center justify-between mb-1">
+                                                            <div className="flex items-center gap-1.5">
+                                                                <span className="text-[13px]">🇲🇦</span>
+                                                                <span className="text-[14px] font-medium text-[#6B7280]">Casablanca</span>
+                                                            </div>
+                                                            <span className="text-[14px] font-black text-[#111827]">05:15 AM</span>
+                                                        </div>
+                                                        <p className="text-[16px] font-black text-[#111827] leading-tight">Arrived at post office 29133</p>
+                                                        <p className="text-[12px] font-medium text-[#9CA3AF] mt-1">05.12.2025</p>
+                                                    </div>
+                                                </div>
+
+                                                <div className="flex gap-4 relative">
+                                                    <div className="absolute left-1.5 top-0 bottom-[-32px] w-[2px] bg-[#f3f4f6]" />
+                                                    <div className="w-3 h-3 rounded-full border-2 border-[#ff7043] bg-white z-10 mt-1.5" />
+                                                    <div className="flex-1">
+                                                        <div className="flex items-center justify-between mb-1">
+                                                            <div className="flex items-center gap-1.5">
+                                                                <span className="text-[13px]">🇲🇦</span>
+                                                                <span className="text-[14px] font-medium text-[#6B7280]">Casablanca</span>
+                                                            </div>
+                                                            <span className="text-[14px] font-black text-[#111827]">01:15 PM</span>
+                                                        </div>
+                                                        <p className="text-[16px] font-black text-[#111827] leading-tight">Departed from local hub</p>
+                                                        <p className="text-[12px] font-medium text-[#9CA3AF] mt-1">03.12.2025</p>
+                                                    </div>
+                                                </div>
+
+                                                <div className="flex gap-4 relative">
+                                                    <div className="w-3 h-3 rounded-full border-2 border-neutral-100 bg-white z-10 mt-1.5" />
+                                                    <div className="flex-1">
+                                                        <div className="flex items-center justify-between mb-1">
+                                                            <div className="flex items-center gap-1.5">
+                                                                <span className="text-[13px]">🇲🇦</span>
+                                                                <span className="text-[14px] font-medium text-[#6B7280]">Casablanca</span>
+                                                            </div>
+                                                            <span className="text-[14px] font-black text-[#111827]">11:48 AM</span>
+                                                        </div>
+                                                        <p className="text-[16px] font-black text-neutral-300 leading-tight">Pending delivery</p>
+                                                        <p className="text-[12px] font-medium text-neutral-300 mt-1">01.12.2025</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* 3. Sender Details Section */}
+                                    <div className="bg-[#F3F4F6] rounded-[20px] p-1.5 pb-2">
+                                        <div className="px-4 py-3 flex items-center gap-2 text-[#6B7280]">
+                                            <User size={18} />
+                                            <span className="text-[15px] font-bold">Sender details</span>
+                                        </div>
+                                        <div className="bg-white rounded-[16px] px-4 py-4 flex items-center justify-between">
+                                            <div className="flex items-center gap-4">
+                                                <div className="w-14 h-14 bg-black rounded-[14px] flex items-center justify-center p-2.5">
+                                                    <img src="https://upload.wikimedia.org/wikipedia/commons/a/a6/Logo_NIKE.svg" className="w-full h-full object-contain brightness-0 invert" alt="Nike Logo" />
+                                                </div>
+                                                <div>
+                                                    <p className="text-[17px] font-black text-[#111827]">Nike</p>
+                                                    <p className="text-[14px] font-medium text-[#9CA3AF]">Official Store</p>
+                                                </div>
+                                            </div>
+                                            <div className="px-3 py-1.5 bg-[#F1FEF4] rounded-full border border-[#D1FAE5] flex items-center gap-1.5">
+                                                <div className="w-4 h-4 rounded-full bg-[#10B981] flex items-center justify-center">
+                                                    <Check size={10} className="text-white" strokeWidth={5} />
+                                                </div>
+                                                <span className="text-[12px] font-bold text-[#10B981]">Safe Sender</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            ) : (
+                                <>
+                                    {/* Profile Hero */}
+                                    <motion.div variants={staggerItem} className="flex gap-6 mb-8 items-start">
+                                        <img src={provider.avatar} className="w-24 h-24 rounded-[15px] object-cover border-4 border-[#F9FAFB]" />
+                                        <div className="flex-1">
+                                            <h2 className="text-[24px] font-black text-[#111827] mb-2">{provider.name}</h2>
+                                            <div className="flex items-baseline gap-2 text-[#219178] mb-4">
+                                                <span className="text-[20px] font-black">MAD {provider.minRate}</span>
+                                                <span className="text-[14px] font-bold text-[#6B7280]">minimum</span>
+                                            </div>
+                                            <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#F1FEF4] rounded-full border border-[#027963]">
+                                                <ShieldCheck size={14} className="text-[#027963]" />
+                                                <span className="text-[11px] font-black text-[#166534]  tracking-wider">Identity Verified</span>
+                                            </div>
+                                        </div>
+                                    </motion.div>
+
+                                    {/* Trust & Stats Grid (High Visibility) */}
+                                    <motion.div variants={staggerItem} className="grid grid-cols-3 gap-3 mb-8">
+                                        <div className="flex flex-col items-center justify-center p-4 rounded-full bg-[#F3F4F6] text-center ">
+                                            <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center text-[#219178] mb-2 ">
+                                                <Trophy size={30} />
+                                            </div>
+                                            <span className="text-[23px] font-bold text-[#219178] leading-tight capitalize">
+                                                {provider.rank || 'New'}
+                                            </span>
+                                            <span className="text-[10px] font-bold text-[#219178] uppercase tracking-tighter mt-1">Level</span>
+                                        </div>
+                                        <div className="flex flex-col items-center justify-center p-4 rounded-full bg-[#F3F4F6] text-center ">
+                                            <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center text-[#219178] mb-2">
+                                                <Star size={30} />
+                                            </div>
+                                            <span className="text-[23px] font-bold text-[#219178] leading-tight">
+                                                {provider.taskCount === 0 ? "0.0" : provider.rating.toFixed(1)}
+                                            </span>
+                                            <span className="text-[10px] font-bold text-[#219178] uppercase tracking-tighter mt-1">Rating</span>
+                                        </div>
+                                        <div className="flex flex-col items-center justify-center p-4 rounded-full bg-[#F3F4F6] text-center ">
+                                            <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center text-[#219178] mb-2 ">
+                                                <CheckCircle2 size={30} />
+                                            </div>
+                                            <span className="text-[23px] font-bold text-[#219178] leading-tight">
+                                                {provider.taskCount}
+                                            </span>
+                                            <span className="text-[10px] font-bold text-[#219178] uppercase tracking-tighter mt-1">Orders</span>
+                                        </div>
+                                    </motion.div>
+
+                                    {/* Secondary Stats */}
+                                    <motion.div variants={staggerItem} className="grid grid-cols-2 gap-3 mb-8">
+                                        <div className="p-4 bg-[#F9FAFB] rounded-[5px] border border-neutral-100 flex items-center justify-between">
+                                            <div>
+                                                <div className="text-[10px] font-black text-[#9CA3AF] tracking-widest uppercase mb-1">Experience</div>
+                                                <div className="text-[17px] font-medium text-[#111827]">{provider.yearsOfExperience}</div>
+                                            </div>
+                                            <Calendar className="text-neutral-200" size={24} />
+                                        </div>
+                                        <div className="p-4 bg-[#F9FAFB] rounded-[5px] border border-neutral-100 flex items-center justify-between">
+                                            <div>
+                                                <div className="text-[10px] font-black text-[#9CA3AF] tracking-widest uppercase mb-1">Success Rate</div>
+                                                <div className="text-[17px] font-medium text-[#111827]">99%</div>
+                                            </div>
+                                            <TrendingUp className="text-neutral-200" size={24} />
+                                        </div>
+                                    </motion.div>
+
+                                    {/* Portfolio Section */}
+                                    {provider.portfolio && provider.portfolio.length > 0 && (
+                                        <motion.div variants={staggerItem} className="mb-10">
+                                            <div className="flex items-center justify-between mb-4">
+                                                <h4 className="text-[18px] font-black text-[#111827]">Bricoler Portfolio</h4>
+                                                <span className="text-[11px] font-black text-[#219178] tracking-[2px]">{order.serviceName}</span>
+                                            </div>
+                                            <div className="flex gap-4 overflow-x-auto no-scrollbar -mx-6 px-6 pb-2">
+                                                {provider.portfolio.map((img, i) => (
+                                                    <div key={i} className="flex-shrink-0">
+                                                        <img src={img} className="w-44 h-56 rounded-[5px] object-cover border border-neutral-100" alt="Work sample" />
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </motion.div>
                                     )}
-                                </div>
-                            </motion.div>
 
-                            {/* Trusted Provider */}
-                            <motion.div variants={staggerItem} className="p-5 bg-[#F0FDF4] rounded-[5px] border border-[#D1FAE5] flex items-center gap-4 mb-32">
-                                <div className="w-11 h-11 rounded-full bg-[#D1FAE5] flex items-center justify-center text-[#219178]">
-                                    <Check size={22} className="stroke-[3]" />
+                                    {/* About */}
+                                    <motion.div variants={staggerItem} className="mb-10">
+                                        <h4 className="text-[18px] font-black text-[#111827] mb-4">About Me</h4>
+                                        <div className="text-[15px] text-[#000000] leading-relaxed font-medium p-6 bg-[#F9FAFB] rounded-[5px] border border-neutral-100">
+                                            "{provider.bio}"
+                                        </div>
+                                    </motion.div>
+
+                                    {/* Transportation Section */}
+                                    {order.serviceType === 'moving' && provider.movingTransports && provider.movingTransports.length > 0 && (
+                                        <motion.div variants={staggerItem} className="mb-10">
+                                            <h4 className="text-[18px] font-black text-[#111827] mb-4">
+                                                {t({ en: 'Transportation', fr: 'Moyen de transport', ar: 'وسيلة النقل' })}
+                                            </h4>
+                                            <div className="flex flex-wrap gap-2">
+                                                {provider.movingTransports.map((item, i) => {
+                                                    const transportLabels: Record<string, any> = {
+                                                        'triporteur': { en: 'Triporteur', fr: 'Triporteur', ar: 'تريبورتور', icon: '🏍️' },
+                                                        'small_van': { en: 'Small Van', fr: 'Petite Camionnette', ar: 'شاحنة صغيرة', icon: '🚐' },
+                                                        'large_van': { en: 'Large Van', fr: 'Grande Camionnette', ar: 'شاحنة كبيرة', icon: '🚚' },
+                                                        'small_truck': { en: 'Small Truck', fr: 'Petit Camion', ar: 'شاحنة صغيرة', icon: '🚛' },
+                                                        'large_truck': { en: 'Large Truck', fr: 'Gros Camion', ar: 'شاحنة نقل كبيرة', icon: '🚛' }
+                                                    };
+                                                    const label = transportLabels[item] || { en: item, fr: item, ar: item, icon: '🚚' };
+                                                    return (
+                                                        <div key={i} className="flex items-center gap-2 px-4 py-2 bg-[#F9FAFB] rounded-[10px] border border-neutral-100 text-[14px] font-bold text-[#4B5563]">
+                                                            <span className="text-lg">{label.icon}</span>
+                                                            {t(label)}
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        </motion.div>
+                                    )}
+
+                                    {/* Equipment Section */}
+                                    {!['car_rental', 'tour_guide', 'learn_arabic'].includes(order.serviceType || '') && provider.equipments && provider.equipments.length > 0 && (
+                                        <motion.div variants={staggerItem} className="mb-10">
+                                            <h4 className="text-[18px] font-black text-[#111827] mb-4">Service Equipment</h4>
+                                            <div className="flex flex-wrap gap-2">
+                                                {provider.equipments.map((item, i) => (
+                                                    <div key={i} className="flex items-center gap-2 px-4 py-2 bg-[#F9FAFB] rounded-[10px] border border-neutral-100 text-[14px] font-bold text-[#4B5563]">
+                                                        <div className="w-5 h-5 rounded-full bg-[#219178]/10 flex items-center justify-center">
+                                                            <Check size={12} className="text-[#219178]" strokeWidth={3} />
+                                                        </div>
+                                                        {item}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </motion.div>
+                                    )}
+
+                                    {/* Reviews Section */}
+                                    <motion.div variants={staggerItem} className="mb-10">
+                                        <div className="flex items-center justify-between mb-4">
+                                            <h4 className="text-[18px] font-black text-[#111827]">Client Reviews</h4>
+                                            <span className="text-[11px] font-black text-[#9CA3AF] tracking-widest">{provider.reviews?.length || 0} reviews</span>
+                                        </div>
+                                        <div className="grid grid-cols-1 gap-4">
+                                            {provider.reviews && provider.reviews.length > 0 ? provider.reviews.map((rev, i) => (
+                                                <div key={i} className="p-5 bg-white rounded-[5px] border border-neutral-100">
+                                                    <div className="flex items-center gap-3 mb-3">
+                                                        <div className="w-10 h-10 rounded-full bg-[#219178]/10 flex items-center justify-center font-black text-[#219178] text-sm border border-[#219178]/10">
+                                                            {rev.userName?.charAt(0) || 'C'}
+                                                        </div>
+                                                        <div className="flex-1">
+                                                            <p className="text-[14px] font-black text-[#111827]">{rev.userName || 'Verified Client'}</p>
+                                                            <p className="text-[11px] font-bold text-[#9CA3AF]">{rev.date || 'Recemment'}</p>
+                                                        </div>
+                                                        <div className="flex items-center gap-1 bg-[#FFFBEB] px-2.5 py-1 rounded-[5px] border border-[#FEF3C7]">
+                                                            <Sparkles size={10} className="text-[#FBBF24] fill-[#FBBF24]" />
+                                                            <span className="text-[11px] font-black text-[#92400E]">{rev.rating || 5}</span>
+                                                        </div>
+                                                    </div>
+                                                    <p className="text-[14px] text-[#4B5563] font-medium leading-[1.6]">{rev.comment}</p>
+                                                </div>
+                                            )) : (
+                                                <div className="py-12 text-center bg-white rounded-[5px] border border-dashed border-neutral-200">
+                                                    <p className="text-[#9CA3AF] font-medium text-[20px] ">Awaiting first reviews on the app</p>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </motion.div>
+
+                                    {/* Trusted Provider */}
+                                    <motion.div variants={staggerItem} className="p-5 bg-[#F0FDF4] rounded-[5px] border border-[#D1FAE5] flex items-center gap-4 mb-32">
+                                        <div className="w-11 h-11 rounded-full bg-[#D1FAE5] flex items-center justify-center text-[#219178]">
+                                            <Check size={22} className="stroke-[3]" />
+                                        </div>
+                                        <div>
+                                            <p className="text-[16px] font-black text-[#065F46]">Verified Bricoler</p>
+                                            <p className="text-[13px] font-medium text-[#047857]">Identity and skills verified by Lbricol team.</p>
+                                        </div>
+                                    </motion.div>
+                                </>
+                            )}
+
+                            {/* Floating "Book Me" Button wrapper with Wave (Only for profiles, not errands summary) */}
+                            {!(order.serviceType === 'errands' || order.serviceType?.includes('delivery')) && (
+                                <div className="fixed bottom-0 left-0 right-0 z-[100] bg-transparent">
+                                    <div className="absolute top-[-44px] left-0 right-0 h-[45px] z-20 pointer-events-none">
+                                        <svg viewBox="0 0 1440 120" preserveAspectRatio="none" className="w-full h-full fill-[#FFB700]">
+                                            <path d="M0,64L48,64C96,64,192,64,288,64C384,64,480,64,576,53.3C672,43,768,21,864,16C960,10.7,1056,21.3,1152,42.7C1248,64,1344,96,1392,112L1440,128L1440,120L1392,120C1344,120,1248,120,1152,120C1056,120,960,120,864,120C768,120,672,120,576,120C480,120,384,120,288,120C192,120,96,120,48,120L0,120Z"></path>
+                                        </svg>
+                                    </div>
+                                    <div className="bg-[#FFB700] p-6 pb-8">
+                                        <motion.button
+                                            whileTap={{ scale: 0.98 }}
+                                            onClick={() => {
+                                                setActiveTab('setup');
+                                                window.scrollTo({ top: 0, behavior: 'smooth' });
+                                            }}
+                                            className="w-full h-15 bg-[#219178] text-white rounded-full font-black text-[20px] flex items-center justify-center gap-3 transition-all py-5 "
+                                        >
+                                            <span>Book me</span>
+                                        </motion.button>
+                                    </div>
                                 </div>
-                                <div>
-                                    <p className="text-[16px] font-black text-[#065F46]">Verified Bricoler</p>
-                                    <p className="text-[13px] font-medium text-[#047857]">Identity and skills verified by Lbricol team.</p>
-                                </div>
-                            </motion.div>                             {/* Floating "Book Me" Button wrapper with Wave */}
-                            <div className="fixed bottom-0 left-0 right-0 z-[100] bg-transparent">
-                                {/* Wave Top Effect */}
-                                <div className="absolute top-[-44px] left-0 right-0 h-[45px] z-20 pointer-events-none">
-                                    <svg viewBox="0 0 1440 120" preserveAspectRatio="none" className="w-full h-full fill-[#FFB700]">
-                                        <path d="M0,64L48,64C96,64,192,64,288,64C384,64,480,64,576,53.3C672,43,768,21,864,16C960,10.7,1056,21.3,1152,42.7C1248,64,1344,96,1392,112L1440,128L1440,120L1392,120C1344,120,1248,120,1152,120C1056,120,960,120,864,120C768,120,672,120,576,120C480,120,384,120,288,120C192,120,96,120,48,120L0,120Z"></path>
-                                    </svg>
-                                </div>
-                                <div className="bg-[#FFB700] p-6 pb-8">
-                                    <motion.button
-                                        whileTap={{ scale: 0.98 }}
-                                        onClick={() => {
-                                            setActiveTab('setup');
-                                            window.scrollTo({ top: 0, behavior: 'smooth' });
-                                        }}
-                                        className="w-full h-15 bg-[#219178] text-white rounded-full font-black text-[20px] flex items-center justify-center gap-3 transition-all py-5 "
-                                    >
-                                        <span>Book me</span>
-                                    </motion.button>
-                                </div>
-                            </div>
+                            )}
                         </motion.div>
                     ) : (
                         <motion.div
@@ -859,148 +1021,294 @@ export default function ServiceSetupPage() {
                             {/* Setup Content */}
                             <motion.section variants={staggerItem} className="space-y-10">
                                 {(order.serviceType === 'errands' || order.serviceType?.includes('delivery')) ? (
-                                    <div className="space-y-10">
-                                        {/* Purchase Disclaimer Banner */}
-                                        <div className="bg-[#FFFBEB] p-5 rounded-[5px] flex items-start gap-4 border border-[#FEF3C7]">
-                                            <div className="w-10 h-10 rounded-[5px] bg-white flex items-center justify-center flex-shrink-0">
-                                                <AlertCircle size={20} className="text-[#92400E]" />
+                                    <div className="space-y-12">
+                                        {/* 1. Category & Description */}
+                                        <div className="space-y-6">
+                                            <div className="flex items-center justify-between">
+                                                <h3 className="text-[25px] font-bold text-[#111827]">What do you need?</h3>
+                                                <div className="px-3 py-1 bg-[#219178]/10 rounded-full">
+                                                    <span className="text-[12px] font-black text-[#219178] uppercase tracking-wider">Errand</span>
+                                                </div>
                                             </div>
-                                            <p className="text-[13px] font-bold text-[#92400E] leading-relaxed">
-                                                The courier cannot purchase products for you. If you ask them to do so, the order will be cancelled.
-                                            </p>
-                                        </div>
 
-                                        {/* Item Description Section */}
-                                        <div className="space-y-4">
-                                            <h3 className="text-[18px] font-medium text-[#111827]">Your order</h3>
+                                            {/* Category Chips Scroll */}
+                                            <div className="flex gap-3 overflow-x-auto no-scrollbar py-1">
+                                                {errandCategories.map(cat => (
+                                                    <button
+                                                        key={cat.id}
+                                                        onClick={() => {
+                                                            setErrandCategory(cat.id);
+                                                            // Logic for handling title might be here
+                                                        }}
+                                                        className={`flex-shrink-0 px-5 py-3.5 rounded-[12px] border-2 transition-all flex flex-col items-center gap-2 min-w-[100px] ${errandCategory === cat.id ? 'border-[#219178] bg-[#F0FDF9]' : 'border-neutral-100 bg-[#F9FAFB]'}`}
+                                                    >
+                                                        <span className="text-2xl">{cat.icon}</span>
+                                                        <span className="text-[13px] font-bold">{cat.label}</span>
+                                                    </button>
+                                                ))}
+                                            </div>
+
                                             <button
                                                 onClick={() => setActiveDrawer('description')}
-                                                className="w-full p-5 bg-[#F9FAFB] rounded-[5px] border border-neutral-100/80 flex items-center justify-between group active:scale-[0.99] transition-all"
+                                                className="w-full p-6 bg-[#F9FAFB] border border-neutral-100 rounded-[15px] flex items-center justify-between group active:scale-[0.99] transition-all"
                                             >
                                                 <div className="flex items-center gap-4 text-left">
-                                                    <div className="w-10 h-10 rounded-[5px] bg-white flex items-center justify-center text-[#111827]">
-                                                        <Briefcase size={20} className="text-[#219178]" />
-                                                    </div>
+
                                                     <div>
-                                                        <p className="text-[15px] font-black text-[#111827]">
-                                                            {itemDescription || "What do you need transporting?"}
+                                                        <p className="text-[16px] font-bold text-[#111827]">
+                                                            {itemDescription || "Add details (e.g. key from A to B)"}
                                                         </p>
-                                                        <p className="text-[12px] font-bold text-[#9CA3AF]">Purchases aren't allowed</p>
+                                                        <p className="text-[13px] font-medium text-[#9CA3AF]">Courier will see this description</p>
                                                     </div>
                                                 </div>
-                                                <ChevronLeft className="rotate-180 text-neutral-300 group-hover:text-[#219178] transition-colors" size={20} />
+                                                <ChevronLeft className="rotate-180 text-neutral-300 group-hover:text-[#219178] transition-colors" size={22} />
                                             </button>
                                         </div>
 
-                                        {/* Delivery Details Section */}
-                                        <div className="space-y-4">
-                                            <h3 className="text-[18px] font-medium text-[#111827]">Delivery details</h3>
-
-                                            <div className="h-48 bg-[#F3F4F6] rounded-[5px] border border-neutral-100/80 relative overflow-hidden">
-                                                {pickupLocation.address && dropoffLocation.address ? (
-                                                    <MapView
-                                                        initialLocation={order.location || { lat: 31.5085, lng: -9.7595 }}
-                                                        interactive={false}
-                                                        onLocationChange={() => { }}
-                                                        lockCenterOnFocus={true}
-                                                        showCenterPin={false}
-                                                        zoom={14}
-                                                    />
-                                                ) : (
-                                                    <>
-                                                        <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(#219178 0.5px, transparent 0.5px)', backgroundSize: '10px 10px' }} />
-                                                        <div className="absolute inset-0 flex items-center justify-center">
-                                                            <MapPin className="text-[#219178] opacity-20" size={32} />
+                                        {/* 2. Load Size Picker */}
+                                        <div className="space-y-6">
+                                            <h3 className="text-[25px] text-[#111827] font-medium">Package Size</h3>
+                                            <div className="grid grid-cols-1 gap-3">
+                                                {errandSizes.map((size) => (
+                                                    <button
+                                                        key={size.id}
+                                                        onClick={() => setTaskSize(size.id as any)}
+                                                        className={`p-5 rounded-[10px] border-1 text-left transition-all flex items-center justify-between ${taskSize === size.id ? 'border-[#219178] ' : 'border-neutral-100'}`}
+                                                    >
+                                                        <div className="flex items-center gap-4">
+                                                            <div className="w-12 h-12 rounded-[10px] flex items-center justify-center text-2xl ">
+                                                                {size.icon}
+                                                            </div>
+                                                            <div>
+                                                                <p className="font-bold text-[17px] text-black">{size.name}</p>
+                                                                <p className="font-medium text-[13px] text-black/60">{size.desc}</p>
+                                                            </div>
                                                         </div>
-                                                    </>
-                                                )}
-                                            </div>
-
-                                            <div className="grid gap-2">
-                                                <button
-                                                    onClick={() => setActiveDrawer('pickup')}
-                                                    className="w-full p-10 flex items-center justify-between bg-[#F9FAFB] rounded-full border border-neutral-100/80 transition-all active:scale-[0.99]"
-                                                >
-                                                    <div className="flex items-center gap-4">
-                                                        <img src="/Images/Icons/Lightpin.png" alt="pin" className="w-10 h-10 object-contain" />
-                                                        <span className={`text-[15px] font-light ${pickupLocation.address ? 'text-[#111827]' : 'text-neutral-300'}`}>
-                                                            {pickupLocation.address || "Where from?"}
-                                                        </span>
-                                                    </div>
-                                                    <ChevronLeft className="rotate-180 text-neutral-300" size={18} />
-                                                </button>
-
-                                                <button
-                                                    onClick={() => setActiveDrawer('dropoff')}
-                                                    className="w-full p-5 flex items-center justify-between bg-[#F9FAFB] rounded-full border border-neutral-100/80 transition-all active:scale-[0.99]"
-                                                >
-                                                    <div className="flex items-center gap-4">
-                                                        <img src="/Images/Icons/Lightpin.png" alt="pin" className="w-5 h-5 object-contain" />
-                                                        <span className={`text-[15px] font-light ${dropoffLocation.address ? 'text-[#111827]' : 'text-neutral-300'}`}>
-                                                            {dropoffLocation.address || "Where to?"}
-                                                        </span>
-                                                    </div>
-                                                    <ChevronLeft className="rotate-180 text-neutral-300" size={18} />
-                                                </button>
-
-                                                <button
-                                                    onClick={() => setActiveDrawer('recipient')}
-                                                    className="w-full p-5 flex items-center justify-between bg-[#F9FAFB] rounded-full border border-neutral-100/80 transition-all active:scale-[0.99]"
-                                                >
-                                                    <div className="flex items-center gap-4 text-left">
-                                                        <div className="w-10 h-10 rounded-[5px] bg-white flex items-center justify-center">
-                                                            <User size={20} className="text-[#219178]" />
-                                                        </div>
-                                                        <div>
-                                                            <p className={`text-[15px] font-bold ${recipientName ? 'text-[#111827]' : 'text-neutral-300'}`}>
-                                                                {recipientName ? `Sending to ${recipientName}` : "Sending to someone else?"}
-                                                            </p>
-                                                            <p className="text-[12px] font-bold text-[#9CA3AF]">Add their details to help the courier</p>
-                                                        </div>
-                                                    </div>
-                                                    <ChevronLeft className="rotate-180 text-neutral-300" size={18} />
-                                                </button>
+                                                        {taskSize === size.id && (
+                                                            <div className="w-6 h-6 rounded-full bg-[#219178] flex items-center justify-center">
+                                                                <Check size={14} className="text-white" strokeWidth={3} />
+                                                            </div>
+                                                        )}
+                                                    </button>
+                                                ))}
                                             </div>
                                         </div>
 
-                                        {/* Delivery Options */}
-                                        <div className="space-y-4">
-                                            <div className="flex items-center gap-2">
-                                                <h3 className="text-[18px] font-black text-[#111827]">Delivery options</h3>
+                                        {/* 3. Photo Section (Trust) */}
+                                        <div className="space-y-6">
+                                            <div className="flex items-center justify-between">
+                                                <h3 className="text-[25px] text-[#111827] font-bold">Item Photo</h3>
                                             </div>
-                                            <div className="p-6 bg-[#F9FAFB] rounded-[5px] border border-neutral-100/80">
-                                                <div className="flex items-center justify-between mb-4">
-                                                    <div className="flex items-center gap-4">
-                                                        <div className="w-10 h-10 rounded-[5px] bg-white flex items-center justify-center">
-                                                            <Clock size={20} className="text-[#219178]" />
+                                            <div className="p-8 border-2 border-dashed border-neutral-100 rounded-[15px] bg-[#F9FAFB] flex flex-col items-center justify-center gap-6 text-center">
+                                                {!photos.length && (
+                                                    <div className="flex flex-col items-center gap-4">
+                                                        <div className="w-16 h-16 rounded-full bg-white flex items-center justify-center text-neutral-300">
+                                                            <ImageIcon size={32} />
                                                         </div>
-                                                        <div>
-                                                            <p className="text-[15px] font-black text-[#111827]">
-                                                                {deliveryType === 'standard' ? "Standard" : "Scheduled"}
-                                                            </p>
-                                                            <p className="text-[13px] font-bold text-[#6B7280]">
-                                                                {deliveryType === 'standard' ? "As soon as possible" : `${deliveryDate} at ${deliveryTime}`}
-                                                            </p>
+                                                        <div className="space-y-1">
+                                                            <p className="text-[15px] font-bold text-[#111827]">Show the Bricoler the item</p>
+                                                            <p className="text-[13px] font-medium text-neutral-500 max-w-[240px]">Helps them prepare and confirms it fits their vehicle</p>
                                                         </div>
                                                     </div>
-                                                    <button onClick={() => setActiveDrawer('schedule')} className="w-9 h-9 rounded-full bg-white border border-neutral-100 flex items-center justify-center active:scale-95 transition-all">
-                                                        <ChevronLeft className="-rotate-90 text-neutral-300" size={18} />
-                                                    </button>
+                                                )}
+
+                                                <div className="flex flex-wrap items-center justify-center gap-4 w-full">
+                                                    {photos.map((photo, idx) => (
+                                                        <div key={idx} className="w-24 h-24 rounded-[12px] overflow-hidden border-2 border-white shadow-sm relative group active:scale-95 transition-all">
+                                                            <img src={photo} className="w-full h-full object-cover" />
+                                                            <button
+                                                                onClick={() => setPhotos(prev => prev.filter((_, i) => i !== idx))}
+                                                                className="absolute top-1.5 right-1.5 w-6 h-6 bg-red-500/90 backdrop-blur-sm rounded-full flex items-center justify-center text-white shadow-md active:bg-red-600 transition-colors"
+                                                            >
+                                                                <X size={14} />
+                                                            </button>
+                                                        </div>
+                                                    ))}
+
+                                                    {photos.length < 6 && (
+                                                        <button
+                                                            onClick={() => document.getElementById('errand-photo-input')?.click()}
+                                                            className="w-24 h-24 rounded-[12px] border-2 border-dashed border-neutral-200 bg-white flex flex-col items-center justify-center gap-1 text-neutral-400 hover:border-[#219178] hover:text-[#219178] transition-all active:scale-95"
+                                                        >
+                                                            <Plus size={24} />
+                                                            <span className="text-[10px] font-black uppercase tracking-wider">Add</span>
+                                                        </button>
+                                                    )}
                                                 </div>
 
-                                                {deliveryType === 'standard' && (
-                                                    <div className="space-y-2 pt-4 border-t border-neutral-100/60">
-                                                        <div className="p-4 bg-white rounded-[5px] flex items-center justify-between ring-1 ring-[#219178]/5">
-                                                            <div className="flex items-center gap-3">
-                                                                <div className="w-6 h-6 rounded-full bg-[#219178] flex items-center justify-center">
-                                                                    <Check size={12} className="text-white" strokeWidth={4} />
-                                                                </div>
-                                                                <span className="text-[14px] font-black text-[#111827]">Asap <span className="font-bold opacity-60 ml-1">Standard</span></span>
+
+                                                <input
+                                                    id="errand-photo-input"
+                                                    type="file"
+                                                    multiple
+                                                    accept="image/*"
+                                                    className="hidden"
+                                                    onChange={handlePhotoUpload}
+                                                />
+                                            </div>
+                                        </div>
+
+                                        {/* 4. Routing Display */}
+                                        <div className="space-y-6">
+                                            <h3 className="text-[25px] font-bold text-[#111827]">Delivery Route</h3>
+
+                                            <div className="h-56 bg-[#F3F4F6] rounded-[10px] border border-neutral-100 relative overflow-hidden ">
+                                                <MapView
+                                                    initialLocation={order.location || { lat: 31.5085, lng: -9.7595 }}
+                                                    interactive={false}
+                                                    onLocationChange={() => { }}
+                                                    lockCenterOnFocus={false} // Allow fitBounds to work
+                                                    showCenterPin={false}
+                                                    zoom={14}
+                                                    clientPin={memoizedClientPin}
+                                                    destinationPin={memoizedDestinationPin}
+                                                />
+                                                <div className="absolute top-4 right-4 z-10">
+                                                    <div className="px-3 py-1.5 bg-white/90 backdrop-blur rounded-full border border-neutral-100 shadow-sm flex items-center gap-2">
+                                                        <Navigation size={14} className="text-[#219178]" />
+                                                        <span className="text-[12px] font-black text-[#111827]">Estimated Route</span>
+                                                    </div>
+                                                </div>
+
+                                                {estimate?.duration && (
+                                                    <div className="absolute bottom-4 left-4 z-10 transition-all animate-in fade-in slide-in-from-bottom-2 duration-700">
+                                                        <div className="px-4 py-2 bg-white/95 backdrop-blur rounded-[12px] border border-neutral-100 shadow-xl flex items-center gap-3">
+                                                            <div className="w-8 h-8 rounded-full bg-[#219178]/10 flex items-center justify-center">
+                                                                <Clock size={16} className="text-[#219178]" />
+                                                            </div>
+                                                            <div className="flex flex-col">
+                                                                <span className="text-[14px] font-black text-[#111827] leading-none mb-0.5">{Math.ceil(estimate.duration)} mins</span>
+                                                                <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Travel Time</span>
                                                             </div>
                                                         </div>
                                                     </div>
                                                 )}
                                             </div>
+
+                                            <div className="grid gap-3">
+                                                <button
+                                                    onClick={() => setActiveDrawer('pickup')}
+                                                    className="w-full p-6 flex items-center justify-between bg-white rounded-[15px] border border-neutral-100 transition-all active:scale-[0.99]"
+                                                >
+                                                    <div className="flex items-center gap-4">
+                                                        <div className="w-10 h-10 flex items-center justify-center">
+                                                            <img src="/Images/Icons/Lightpin.png" alt="from" className="w-10 h-10 object-contain" />
+                                                        </div>
+                                                        <div className="text-left">
+                                                            <p className="text-[13px] font-bold text-[#000000] uppercase tracking-wider mb-0.5">Pickup Point</p>
+                                                            <p className={`text-[15px] font-bold truncate max-w-[220px] ${pickupLocation.address ? 'text-[#111827]' : 'text-neutral-300'}`}>
+                                                                {pickupLocation.address || "Where do we start?"}
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                    <div className="w-8 h-8 rounded-full bg-neutral-50 flex items-center justify-center text-neutral-300">
+                                                        <ChevronLeft className="rotate-180" size={16} />
+                                                    </div>
+                                                </button>
+
+
+
+                                                <button
+                                                    onClick={() => setActiveDrawer('dropoff')}
+                                                    className="w-full p-6 flex items-center justify-between bg-white rounded-[15px] border border-neutral-100 transition-all active:scale-[0.99]"
+                                                >
+                                                    <div className="flex items-center gap-4">
+                                                        <div className="w-10 h-10 flex items-center justify-center">
+                                                            <img src="/Images/Icons/Lightpin.png" alt="from" className="w-10 h-10 object-contain" />
+                                                        </div>
+                                                        <div className="text-left">
+                                                            <p className="text-[11px] font-bold text-[#000000] uppercase tracking-wider mb-0.5">Drop-off Point</p>
+                                                            <p className={`text-[15px] font-bold truncate max-w-[220px] ${dropoffLocation.address ? 'text-[#111827]' : 'text-neutral-300'}`}>
+                                                                {dropoffLocation.address || "Where to deliver?"}
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                    <div className="w-8 h-8 rounded-full bg-neutral-50 flex items-center justify-center text-neutral-300">
+                                                        <ChevronLeft className="rotate-180" size={16} />
+                                                    </div>
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        {/* 5. Warning Banner */}
+                                        <div className="bg-[#F9FAFB] p-6 rounded-[10px] flex items-start gap-5 ">
+                                            <div className="w-12 h-12 rounded-[12px]  flex items-center justify-center flex-shrink-0 ">
+                                                <AlertCircle size={24} className="text-[#000000]" />
+                                            </div>
+                                            <div className="space-y-1">
+                                                <p className="text-[20px] font-medium text-[#000000]">Strict: No Purchases</p>
+                                                <p className="text-[14px] font-Light text-[#000000] leading-relaxed">
+                                                    Bricolers are couriers, not shoppers. They cannot buy products for you. Items must be prepaid or ready for pickup.
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        {/* 6. Recipient Details */}
+                                        <div className="space-y-6">
+                                            <h3 className="text-[25px] font-medium text-[#111827]">Handling Info</h3>
+                                            <button
+                                                onClick={() => setActiveDrawer('recipient')}
+                                                className="w-full p-6 flex items-center justify-between rounded-[15px] border border-neutral-100 transition-all active:scale-[0.99]"
+                                            >
+                                                <div className="flex items-center gap-4 text-left">
+                                                    <div className="w-11 h-11 rounded-[10px]  flex items-center justify-center ">
+                                                        <Gift size={32} className="text-[#000000]" />
+                                                    </div>
+                                                    <div>
+                                                        <p className={`text-[16px] font-bold ${recipientName ? 'text-[#111827]' : 'text-[#111827]'}`}>
+                                                            {recipientName ? `Recipient: ${recipientName}` : "Sending to someone else?"}
+                                                        </p>
+                                                        <p className="text-[13px] font-medium text-[#9CA3AF]">Who should the courier meet at drop-off?</p>
+                                                    </div>
+                                                </div>
+                                                <ChevronLeft className="rotate-180 text-neutral-400" size={20} />
+                                            </button>
+                                        </div>
+
+                                        {/* 7. Scheduling (Pic 3 Design) */}
+                                        <div className="space-y-6">
+                                            <div className="flex items-center gap-2">
+                                                <h3 className="text-[25px] font-bold text-[#111827]">Delivery options</h3>
+                                                <button className="w-5 h-5 rounded-full border border-neutral-300 flex items-center justify-center text-neutral-400 text-[10px] font-black">i</button>
+                                            </div>
+
+                                            {/* Standard Option */}
+                                            <button
+                                                onClick={() => setDeliveryType('standard')}
+                                                className={`w-full p-6 text-left flex items-center justify-between transition-all ${deliveryType === 'standard' ? 'bg-[#F0FDF9]' : 'hover:bg-neutral-50'}`}
+                                            >
+                                                <div className="flex items-center gap-4">
+                                                    <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${deliveryType === 'standard' ? 'bg-[#219178] border-[#219178]' : 'border-neutral-200'}`}>
+                                                        {deliveryType === 'standard' && <div className="w-2.5 h-2.5 rounded-full bg-white" />}
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-[20px] font-medium text-[#111827]">Standard</p>
+                                                        <p className="text-[14px] font-light text-[#111827]">As soon as possible</p>
+                                                    </div>
+                                                </div>
+                                            </button>
+
+                                            {/* Schedule Option */}
+                                            <button
+                                                onClick={() => {
+                                                    setDeliveryType('schedule');
+                                                    setActiveDrawer('schedule');
+                                                }}
+                                                className={`w-full p-6 text-left flex items-center justify-between transition-all ${deliveryType === 'schedule' ? 'bg-[#F0FDF9]' : 'hover:bg-neutral-50'}`}
+                                            >
+                                                <div className="flex items-center gap-4">
+                                                    <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${deliveryType === 'schedule' ? 'bg-[#219178] border-[#219178]' : 'border-neutral-200'}`}>
+                                                        {deliveryType === 'schedule' && <div className="w-2.5 h-2.5 rounded-full bg-white" />}
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-[20px] font-medium text-[#111827]">Schedule</p>
+                                                        <p className="text-[14px] font-light text-[#111827]">
+                                                            {deliveryDate ? `${deliveryDate} at ${deliveryTime}` : "Select time"}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                                <ChevronRight size={20} className="text-neutral-300" />
+                                            </button>
                                         </div>
                                     </div>
                                 ) : (
@@ -1498,8 +1806,7 @@ export default function ServiceSetupPage() {
                                                         >
                                                             <input
                                                                 type="text"
-                                                                placeholder="Label (e.g. My Apartment, Beach Villa)"
-                                                                value={favoriteLabel}
+                                                                placeholder="Home, Office, Mom's House..."
                                                                 onChange={(e) => setFavoriteLabel(e.target.value)}
                                                                 className="w-full p-4 bg-white rounded-[5px] border border-neutral-100 outline-none font-bold text-[14px] focus:border-[#219178]/30 transition-all"
                                                             />
@@ -1511,85 +1818,103 @@ export default function ServiceSetupPage() {
                                     </>
                                 )}
                             </motion.section>
+
+                            {/* Summary Tab Content - Restored & Polished */}
+                            <div className="bg-[#F2F2F2] w-full pt-12 pb-48 px-10 space-y-8 relative">
+                                {/* Wave Top Effect for Summary Transition */}
+                                <div className="absolute top-[-40px] left-0 right-0 h-[40px] z-10 pointer-events-none">
+                                    <svg viewBox="0 0 1440 320" preserveAspectRatio="none" className="w-full h-full fill-[#F2F2F2]">
+                                        <path d="M0,160L48,176C96,192,192,224,288,224C384,224,480,192,576,165.3C672,139,768,117,864,128C960,139,1056,181,1152,192C1248,203,1344,181,1392,170.7L1440,160L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path>
+                                    </svg>
+                                </div>
+
+                                <h3 className="text-[28px] font-black text-[#111827]">Summary</h3>
+
+                                {estimate && (
+                                    <div className="space-y-6">
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-[18px] font-medium text-black/60">Base price</span>
+                                                <button className="w-4 h-4 rounded-full border border-neutral-300 flex items-center justify-center text-[10px] text-neutral-400 font-bold">i</button>
+                                            </div>
+                                            <span className="text-[18px] font-black text-black">{estimate.basePrice.toFixed(1)} MAD</span>
+                                        </div>
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-[18px] font-medium text-black/60">Travel coverage <span className="text-[14px] text-black/30">(1.6 km)</span></span>
+                                            <span className="text-[18px] font-black text-black">4.0 MAD</span>
+                                        </div>
+                                        <div className="flex items-center justify-between">
+                                          <div className="flex items-center gap-2">
+                                            <span className="text-[18px] font-medium text-black/60">Service fee</span>
+                                            <button className="w-4 h-4 rounded-full border border-neutral-300 flex items-center justify-center text-[10px] text-neutral-400 font-bold">i</button>
+                                          </div>
+                                            <span className="text-[18px] font-black text-black">1.5 MAD</span>
+                                        </div>
+                                        <div className="h-px bg-neutral-200/50 w-full" />
+
+                                        {/* Total Section */}
+                                        <div className="flex items-center justify-between py-2">
+                                            <span className="text-[25px] font-black text-black">Total to pay</span>
+                                            <span className="text-[28px] font-black text-black">{estimate.total.toFixed(2)} MAD</span>
+                                        </div>
+
+                                        {!isErrand && (
+                                            <div className="pt-10">
+                                                <motion.button
+                                                    whileTap={{ scale: 0.97 }}
+                                                    onClick={handleContinue}
+                                                    disabled={isSubmitting}
+                                                    className="w-full py-5 bg-[#219178] text-white rounded-full font-black text-[20px] flex items-center justify-center gap-3 disabled:opacity-50"
+                                                >
+                                                    {isSubmitting ? <Loader2 className="animate-spin" /> : "Confirm Order"}
+                                                </motion.button>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
                         </motion.div>
                     )}
                 </AnimatePresence>
 
-
-                {/* Unfixed Summary Section (Pic 3 Refined) */}
-                {activeTab === 'setup' && estimate && (
-                    <div className="mt-12 w-full relative">
-                        {/* Wave Top Effect */}
-                        <div className="absolute top-[-40px] left-0 right-0 h-[40px] z-10 pointer-events-none">
-                            <svg viewBox="0 0 1440 320" preserveAspectRatio="none" className="w-full h-full fill-[#F2F2F2]">
-                                <path d="M0,160L48,176C96,192,192,224,288,224C384,224,480,192,576,165.3C672,139,768,117,864,128C960,139,1056,181,1152,192C1248,203,1344,181,1392,170.7L1440,160L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path>
-                            </svg>
-                        </div>
-
-                        <div className="bg-[#F2F2F2] w-full pt-4 pb-12 px-10 space-y-8">
-                            <h3 className="text-[28px] font-black text-[#111827]">Summary</h3>
-
-                            <div className="space-y-6">
-                                <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-2">
-                                        <span className="text-[18px] font-medium text-black">Base price</span>
-                                        <div className="w-5 h-5 rounded-full border border-neutral-300 flex items-center justify-center text-[10px] text-neutral-400 font-bold">i</div>
-                                    </div>
-                                    <span className="text-[18px] font-bold text-black">
-                                        {estimate.basePrice.toFixed(0)} MAD{estimate.unit ? `/${estimate.unit}` : ''}
-                                    </span>
-                                </div>
-                                <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-2">
-                                        <span className="text-[18px] font-medium text-black">Services</span>
-                                        <div className="w-5 h-5 rounded-full border border-neutral-300 flex items-center justify-center text-[10px] text-neutral-400 font-bold">i</div>
-                                    </div>
-                                    <span className="text-[18px] font-bold text-black">{estimate.subtotal.toFixed(2)} MAD</span>
-                                </div>
-                                <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-2">
-                                        <span className="text-[18px] font-medium text-black">Lbricol Fee</span>
-                                        <div className="w-5 h-5 rounded-full border border-neutral-300 flex items-center justify-center text-[10px] text-neutral-400 font-bold">i</div>
-                                    </div>
-                                    <span className="text-[18px] font-bold text-black">{estimate.serviceFee.toFixed(2)} MAD</span>
-                                </div>
+                {/* Fixed Bottom Button for Errands Summary - Animated Popup */}
+                <AnimatePresence>
+                    {isErrand && isErrandReady && (
+                        <motion.div
+                            key="errand-footer"
+                            initial={{ y: '100%', opacity: 0 }}
+                            animate={{ y: 0, opacity: 1 }}
+                            exit={{ y: '100%', opacity: 0 }}
+                            transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+                            className="fixed bottom-0 left-0 right-0 z-[100] bg-transparent pointer-events-none"
+                        >
+                            <div className="absolute top-[-44px] left-0 right-0 h-[45px] z-20 pointer-events-none">
+                                <svg viewBox="0 0 1440 120" preserveAspectRatio="none" className="w-full h-full fill-[#FFB700]">
+                                    <path d="M0,64L48,64C96,64,192,64,288,64C384,64,480,64,576,53.3C672,43,768,21,864,16C960,10.7,1056,21.3,1152,42.7C1248,64,1344,96,1392,112L1440,128L1440,120L1392,120C1344,120,1248,120,1152,120C1056,120,960,120,864,120C768,120,672,120,576,120C480,120,384,120,288,120C192,120,96,120,48,120L0,120Z"></path>
+                                </svg>
                             </div>
-
-                            <div className="h-px bg-neutral-200/50 w-full" />
-
-                            <div className="flex items-center justify-between">
-                                <span className="text-[22px] font-black text-black">Total to pay</span>
-                                <span className="text-[25px] font-black text-black">{estimate.total.toFixed(2)} MAD</span>
-                            </div>
-
-                            <div className="pt-10">
+                            <div className="bg-[#FFB700] p-6 pb-12 pointer-events-auto">
                                 <motion.button
-                                    whileTap={{ scale: 0.97 }}
+                                    whileTap={{ scale: 0.98 }}
                                     onClick={handleContinue}
                                     disabled={isSubmitting || isUploading}
-                                    className="w-full py-5 bg-[#219178] text-white rounded-full font-black text-[20px] flex items-center justify-center gap-3 disabled:opacity-50"
+                                    className="w-full h-15 bg-[#219178] text-white rounded-full font-black text-[20px] flex items-center justify-center gap-3 transition-all py-5 shadow-lg"
                                 >
                                     {isSubmitting ? (
-                                        <>
+                                        <div className="flex items-center gap-2">
                                             <Loader2 size={24} className="animate-spin" />
-                                            Processing...
-                                        </>
+                                            <span>Processing...</span>
+                                        </div>
                                     ) : (
-                                        "Pay to order"
+                                        <span>Broadcast Order</span>
                                     )}
                                 </motion.button>
                             </div>
-                        </div>
-                    </div>
-                )}
+                        </motion.div>
+                    )}
+                </AnimatePresence>
             </main>
 
-
-            <style jsx global>{`
-                .no-scrollbar::-webkit-scrollbar {
-                    display: none;
-                }
-            `}</style>
             {/* Sub-screen Overlays */}
             <AnimatePresence>
                 {activeDrawer !== 'none' && (
@@ -1601,26 +1926,64 @@ export default function ServiceSetupPage() {
                         className="fixed inset-0 bg-white z-[100] flex flex-col"
                     >
                         {/* Drawer Header */}
-                        <div className="p-6 flex items-center justify-between border-b border-neutral-100">
-                            <button onClick={() => setActiveDrawer('none')} className="w-10 h-10 rounded-full bg-neutral-50 flex items-center justify-center">
+                        <div className="p-6 flex items-center gap-4 border-b border-neutral-100">
+                            <button onClick={() => {
+                                setActiveDrawer('none');
+                                setSearchResults([]);
+                            }} className="w-10 h-10 rounded-full bg-neutral-50 flex items-center justify-center flex-shrink-0">
                                 <ChevronLeft size={24} />
                             </button>
-                            <h2 className="text-[18px] font-black text-[#111827]">
-                                {activeDrawer === 'description' && "Your order"}
-                                {activeDrawer === 'recipient' && "Add a recipient"}
-                                {activeDrawer === 'schedule' && "Schedule delivery"}
-                                {activeDrawer === 'pickup' && "Pickup location"}
-                                {activeDrawer === 'dropoff' && "Dropoff location"}
-                            </h2>
-                            <div className="w-10" />
+
+                            {(activeDrawer === 'pickup' || activeDrawer === 'dropoff') ? (
+                                <div className="flex-1">
+                                    <div className="bg-neutral-50 rounded-full px-5 py-2.5 flex items-center gap-3 border border-neutral-100">
+                                        <Search size={18} className="text-neutral-400" />
+                                        <input
+                                            autoFocus
+                                            maxLength={60}
+                                            placeholder={`Search for ${activeDrawer === 'pickup' ? 'pickup' : 'delivery'} address...`}
+                                            onChange={async (e) => {
+                                                const val = e.target.value;
+                                                if (val.length > 2) {
+                                                    const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(val)}&format=json&limit=5&countrycodes=ma`);
+                                                    const data = await res.json();
+                                                    setSearchResults(data.map((r: any) => ({
+                                                        address: r.display_name,
+                                                        lat: parseFloat(r.lat),
+                                                        lng: parseFloat(r.lon)
+                                                    })));
+                                                } else {
+                                                    setSearchResults([]);
+                                                }
+                                            }}
+                                            className="flex-1 bg-transparent border-none outline-none text-[15px] font-bold text-[#111827] placeholder:text-neutral-300 placeholder:font-medium"
+                                        />
+                                        <button
+                                            onClick={() => {
+                                                setMapPickingFor(activeDrawer as 'pickup' | 'dropoff');
+                                                setActiveDrawer('map_picker');
+                                            }}
+                                            className="w-8 h-8 rounded-full bg-white flex items-center justify-center text-neutral-400 active:scale-95 shadow-sm border border-neutral-100"
+                                        >
+                                            <MapIcon size={16} />
+                                        </button>
+                                    </div>
+                                </div>
+                            ) : (
+                                <h2 className="flex-1 text-[18px] font-black text-[#111827] text-center pr-10">
+                                    {activeDrawer === 'description' && "Your order"}
+                                    {activeDrawer === 'recipient' && "Add a recipient"}
+                                    {activeDrawer === 'schedule' && "Schedule delivery"}
+                                </h2>
+                            )}
                         </div>
 
                         {/* Drawer Content */}
-                        <div className="flex-1 overflow-y-auto p-6">
+                        <div className="flex-1 overflow-y-auto p-6 no-scrollbar">
                             {activeDrawer === 'description' && (
-                                <div className="space-y-6">
-                                    <div className="bg-[#F9FAFB] p-5 rounded-[5px] border border-neutral-100">
-                                        <p className="text-[15px] font-bold text-[#4B5563] leading-relaxed">
+                                <div className="space-y-6 pb-20">
+                                    <div className="bg-[#F9FAFB] p-5 rounded-[10px] border border-neutral-100">
+                                        <p className="text-[15px] font-medium text-[#000000] leading-relaxed">
                                             Couriers cannot make purchases. Orders involving purchases will be cancelled.
                                         </p>
                                     </div>
@@ -1629,19 +1992,13 @@ export default function ServiceSetupPage() {
                                         value={itemDescription}
                                         onChange={(e) => setItemDescription(e.target.value)}
                                         placeholder="Enter details of what needs to be transported..."
-                                        className="w-full h-48 p-5 bg-white rounded-[5px] border-2 border-neutral-100 focus:border-[#219178] focus:ring-0 font-bold text-[17px] placeholder:text-neutral-300 resize-none"
+                                        className="w-full h-48 p-5 bg-white rounded-[10px] border-2 border-neutral-100 focus:border-[#219178] focus:ring-0 font-medium text-[17px] placeholder:text-neutral-300 resize-none"
                                     />
-                                    <button
-                                        onClick={() => setActiveDrawer('none')}
-                                        className="w-full py-4 bg-[#219178] text-white rounded-full font-black text-[17px]"
-                                    >
-                                        Save
-                                    </button>
                                 </div>
                             )}
 
                             {activeDrawer === 'recipient' && (
-                                <div className="space-y-6">
+                                <div className="space-y-6 pb-20">
                                     <div className="space-y-4">
                                         <label className="text-[14px] font-black text-[#4B5563]">Recipient name</label>
                                         <input
@@ -1649,81 +2006,98 @@ export default function ServiceSetupPage() {
                                             value={recipientName}
                                             onChange={(e) => setRecipientName(e.target.value)}
                                             placeholder="Who is receiving this?"
-                                            className="w-full p-4 rounded-[5px] border-2 border-neutral-50 font-bold"
+                                            className="w-full p-4 rounded-[10px] border-2 border-neutral-50 font-bold"
                                         />
                                     </div>
                                     <div className="space-y-4">
                                         <label className="text-[14px] font-black text-[#4B5563]">Phone number</label>
                                         <div className="flex gap-2">
-                                            <div className="px-4 py-4 bg-neutral-50 rounded-[5px] font-bold border-2 border-neutral-50">+212</div>
+                                            <div className="px-4 py-4 bg-neutral-50 rounded-[10px] font-bold border-2 border-neutral-50">+212</div>
                                             <input
                                                 type="tel"
                                                 value={recipientPhone}
                                                 onChange={(e) => setRecipientPhone(e.target.value)}
                                                 placeholder="Phone number"
-                                                className="flex-1 p-4 rounded-[5px] border-2 border-neutral-50 font-bold"
+                                                className="flex-1 p-4 rounded-[10px] border-2 border-neutral-50 font-bold"
                                             />
                                         </div>
                                     </div>
                                     <p className="text-[12px] font-bold text-neutral-400 leading-relaxed">
                                         By sharing the recipient's details, you are solely responsible for obtaining their consent and informing them on how their data is processed.
                                     </p>
-                                    <button
-                                        onClick={() => setActiveDrawer('none')}
-                                        className="w-full py-4 bg-[#219178] text-white rounded-full font-black text-[17px]"
-                                    >
-                                        Save
-                                    </button>
                                 </div>
                             )}
 
                             {activeDrawer === 'schedule' && (
-                                <div className="space-y-6">
-                                    <h3 className="text-[16px] font-black text-[#111827]">Select date</h3>
-                                    <div className="flex gap-3 overflow-x-auto pb-2 no-scrollbar">
-                                        {['Today', 'Tomorrow', 'Monday'].map(day => (
-                                            <button
-                                                key={day}
-                                                onClick={() => setDeliveryDate(day)}
-                                                className={`px-6 py-3 rounded-full border-2 font-bold transition-all ${deliveryDate === day ? 'border-[#219178] bg-[#219178] text-white' : 'border-neutral-100 text-neutral-400'}`}
-                                            >
-                                                {day}
-                                            </button>
-                                        ))}
-                                    </div>
+                                <div className="space-y-8 flex flex-col pb-24">
+                                    <div className="flex-1 space-y-8">
+                                        {/* Select Date */}
+                                        <div className="space-y-4">
+                                            <h3 className="text-[20px] font-black text-[#111827]">Select date</h3>
+                                            <div className="flex gap-3 overflow-x-auto pb-4 no-scrollbar -mx-2 px-2">
+                                                {Array.from({ length: 7 }).map((_, i) => {
+                                                    const d = new Date();
+                                                    d.setDate(d.getDate() + i);
+                                                    const dateStr = format(d, 'd MMM');
+                                                    const fullDate = format(d, 'yyyy-MM-dd');
+                                                    const isSelected = deliveryDate === fullDate;
 
-                                    <div className="grid gap-2">
-                                        <OrderAvailabilityPicker
-                                            bricolerId={order.providerId!}
-                                            onSelect={(slots) => {
-                                                setSelectedSlots(slots);
-                                                if (slots.length > 0) {
-                                                    setDeliveryDate(format(slots[0].date, 'yyyy-MM-dd'));
-                                                    setDeliveryTime(slots[0].time);
-                                                    setDeliveryType('schedule');
-                                                }
-                                            }}
-                                            selectedSlots={selectedSlots}
-                                        />
-                                    </div>
+                                                    let label = format(d, 'EEEE');
+                                                    if (i === 0) label = 'Today';
+                                                    if (i === 1) label = 'Tomorrow';
 
+                                                    return (
+                                                        <button
+                                                            key={i}
+                                                            onClick={() => setDeliveryDate(fullDate)}
+                                                            className={`flex-shrink-0 min-w-[140px] h-[90px] p-5 rounded-[10px] border-2 transition-all text-left relative ${isSelected ? 'border-black bg-white' : 'border-neutral-100 bg-white'}`}
+                                                        >
+                                                            <div className="flex flex-col justify-between h-full">
+                                                                <p className="text-[17px] font-black text-[#111827]">{label}</p>
+                                                                <p className="text-[14px] font-bold text-neutral-400">{dateStr}</p>
+                                                            </div>
+                                                            {isSelected && (
+                                                                <div className="absolute top-3 right-3 w-6 h-6 rounded-full bg-[#219178] flex items-center justify-center">
+                                                                    <div className="w-2.5 h-2.5 rounded-full bg-white" />
+                                                                </div>
+                                                            )}
+                                                            {!isSelected && (
+                                                                <div className="absolute top-3 right-3 w-6 h-6 rounded-full border-2 border-neutral-100" />
+                                                            )}
+                                                        </button>
+                                                    );
+                                                })}
+                                            </div>
+                                        </div>
 
-                                    <div className="flex gap-3 pt-6">
-                                        <button
-                                            onClick={() => {
-                                                setDeliveryType('standard');
-                                                setActiveDrawer('none');
-                                            }}
-                                            className="flex-1 py-4 bg-neutral-100 rounded-full font-black text-[17px]"
-                                        >
-                                            Cancel
-                                        </button>
-                                        <button
-                                            onClick={() => setActiveDrawer('none')}
-                                            className="flex-1 py-4 bg-[#219178] text-white rounded-full font-black text-[17px]"
-                                        >
-                                            Confirm
-                                        </button>
+                                        {/* Select Time */}
+                                        <div className="space-y-4">
+                                            <h3 className="text-[20px] font-black text-[#111827]">Select time</h3>
+                                            <div className="divide-y divide-neutral-100 border-t border-neutral-100">
+                                                {["08:00 - 08:30", "08:30 - 09:00", "09:00 - 09:30", "09:30 - 10:00", "10:00 - 10:30", "15:00 - 15:30", "15:30 - 16:00", "16:00 - 16:30", "16:30 - 17:00", "17:00 - 17:30", "17:30 - 18:00", "18:00 - 18:30"].map((time, i) => {
+                                                    const isSelected = deliveryTime === time.split(' - ')[0];
+                                                    return (
+                                                        <button
+                                                            key={i}
+                                                            onClick={() => {
+                                                                setDeliveryTime(time.split(' - ')[0]);
+                                                                setDeliveryType('schedule');
+                                                            }}
+                                                            className="w-full py-5 flex items-center justify-between group active:bg-neutral-50 transition-colors"
+                                                        >
+                                                            <span className={`text-[17px] ${isSelected ? 'font-black text-[#111827]' : 'font-bold text-[#111827]/70'}`}>{time}</span>
+                                                            {isSelected ? (
+                                                                <div className="w-6 h-6 rounded-full bg-[#219178] flex items-center justify-center">
+                                                                    <div className="w-2.5 h-2.5 rounded-full bg-white" />
+                                                                </div>
+                                                            ) : (
+                                                                <div className="w-6 h-6 rounded-full border-2 border-neutral-200" />
+                                                            )}
+                                                        </button>
+                                                    );
+                                                })}
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             )}
@@ -1732,15 +2106,20 @@ export default function ServiceSetupPage() {
                                 <div className="absolute inset-0 flex flex-col bg-white">
                                     <div className="flex-1 relative">
                                         <MapView
-                                            initialLocation={dropoffLocation.lat !== null ? { lat: dropoffLocation.lat, lng: dropoffLocation.lng! } : (pickupLocation.lat !== null ? { lat: pickupLocation.lat, lng: pickupLocation.lng! } : { lat: 31.5085, lng: -9.7595 })}
+                                            initialLocation={mapPickingFor === 'dropoff' && dropoffLocation.lat !== null ? { lat: Number(dropoffLocation.lat), lng: Number(dropoffLocation.lng) } : (mapPickingFor === 'pickup' && pickupLocation.lat !== null ? { lat: Number(pickupLocation.lat), lng: Number(pickupLocation.lng) } : { lat: 31.5085, lng: -9.7595 })}
                                             interactive={true}
                                             onLocationChange={(point) => {
-                                                setDropoffLocation({ address: point.address, lat: point.lat, lng: point.lng });
+                                                if (mapPickingFor === 'pickup') {
+                                                    setPickupLocation({ address: point.address, lat: point.lat, lng: point.lng });
+                                                } else {
+                                                    setDropoffLocation({ address: point.address, lat: point.lat, lng: point.lng });
+                                                }
                                             }}
                                             showCenterPin={true}
                                             pinY={50}
                                             zoom={16}
                                             triggerGps={gpsTrigger}
+                                            centerOnUser={true}
                                         />
 
                                         <div className="absolute top-6 left-6 z-[1001]">
@@ -1805,74 +2184,57 @@ export default function ServiceSetupPage() {
                                 </div>
                             )}
                             {(activeDrawer === 'pickup' || activeDrawer === 'dropoff') && (
-                                <div className="space-y-6">
-                                    <div className="space-y-4">
-                                        <div style={{
-                                            display: 'flex', alignItems: 'center', gap: 10,
-                                            background: '#F3F4F6', borderRadius: 50, padding: '12px 16px',
-                                        }}>
-                                            <input
-                                                autoFocus
-                                                maxLength={60}
-                                                placeholder={`Search for ${activeDrawer === 'pickup' ? 'pickup' : 'delivery'} address...`}
-                                                onChange={async (e) => {
-                                                    const val = e.target.value;
-                                                    if (val.length > 2) {
-                                                        const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(val)}&format=json&limit=5&countrycodes=ma`);
-                                                        const data = await res.json();
-                                                        setSearchResults(data.map((r: any) => ({
-                                                            address: r.display_name,
-                                                            lat: parseFloat(r.lat),
-                                                            lng: parseFloat(r.lon)
-                                                        })));
-                                                    }
-                                                }}
-                                                style={{ flex: 1, border: 'none', background: 'transparent', fontSize: 15, outline: 'none', fontWeight: 600, textOverflow: 'ellipsis' }}
-                                            />
+                                <div className="space-y-4">
+                                    <div className="space-y-2">
+                                        {searchResults.length > 0 ? searchResults.map((r: any, i: number) => (
                                             <button
+                                                key={i}
                                                 onClick={() => {
-                                                    if (navigator.geolocation) {
-                                                        navigator.geolocation.getCurrentPosition((pos) => {
-                                                            const loc = { address: "Current Location", lat: pos.coords.latitude, lng: pos.coords.longitude };
-                                                            if (activeDrawer === 'pickup') setPickupLocation(loc);
-                                                            else setDropoffLocation(loc);
-                                                            setActiveDrawer('none');
-                                                        });
-                                                    }
+                                                    if (activeDrawer === 'pickup') setPickupLocation(r);
+                                                    else setDropoffLocation(r);
+                                                    setActiveDrawer('none');
+                                                    setSearchResults([]);
                                                 }}
-                                                className="w-10 h-10 rounded-full bg-white flex items-center justify-center text-[#219178] active:scale-95"
+                                                className="w-full p-5 bg-neutral-50 rounded-[15px] border border-neutral-100 flex items-center gap-4 group active:bg-neutral-100 transition-all text-left"
                                             >
-                                                <Navigation size={18} fill="currentColor" />
-                                            </button>
-                                        </div>
-                                        <div className="space-y-2 mt-4">
-                                            {searchResults.length > 0 ? searchResults.map((r, i) => (
-                                                <button
-                                                    key={i}
-                                                    onClick={() => {
-                                                        if (activeDrawer === 'pickup') setPickupLocation(r);
-                                                        else setDropoffLocation(r);
-                                                        setActiveDrawer('none');
-                                                        setSearchResults([]);
-                                                    }}
-                                                    className="w-full p-4 bg-white rounded-[5px] border border-neutral-100 flex items-center gap-4 text-left hover:border-[#219178]"
-                                                >
-                                                    <MapPin size={20} className="text-neutral-300" />
-                                                    <div className="flex-1 min-w-0">
-                                                        <p className="font-light text-[#111827] text-[15px] truncate">{r.address.split(',')[0]}</p>
-                                                        <p className="text-[12px] text-neutral-400 font-light truncate">{r.address.split(',').slice(1).join(',')}</p>
-                                                    </div>
-                                                </button>
-                                            )) : (
-                                                <div className="text-center py-8 text-neutral-400 font-bold">
-                                                    Start typing to search...
+                                                <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-sm">
+                                                    <MapPin size={20} className="text-[#219178]" />
                                                 </div>
-                                            )}
-                                        </div>
+                                                <div className="flex-1 min-w-0">
+                                                    <p className="text-[15px] font-black text-[#111827] truncate">{r.address.split(',')[0]}</p>
+                                                    <p className="text-[13px] font-medium text-neutral-400 truncate">{r.address.split(',').slice(1).join(',').trim()}</p>
+                                                </div>
+                                            </button>
+                                        )) : (
+                                            <div className="py-12 text-center space-y-3 opacity-40">
+                                                <Search size={40} className="mx-auto text-neutral-300" />
+                                                <p className="text-[15px] font-medium text-neutral-400">Search for a street, city or district...</p>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             )}
                         </div>
+
+                        {/* Fixed Drawer Footer (For content-heavy drawers) */}
+                        {(activeDrawer === 'schedule' || activeDrawer === 'description' || activeDrawer === 'recipient') && (
+                            <div className="bg-white relative z-[105]">
+                                {/* Wave Top Effect */}
+                                <div className="absolute top-[-30px] left-0 right-0 h-[30px] z-10 pointer-events-none">
+                                    <svg viewBox="0 0 1440 320" preserveAspectRatio="none" className="w-full h-full fill-white">
+                                        <path d="M0,160L48,176C96,192,192,224,288,224C384,224,480,192,576,165.3C672,139,768,117,864,128C960,139,1056,181,1152,192C1248,203,1344,181,1392,170.7L1440,160L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path>
+                                    </svg>
+                                </div>
+                                <div className="p-6 pb-12">
+                                    <button
+                                        onClick={() => setActiveDrawer('none')}
+                                        className="w-full py-5 bg-[#219178] text-white rounded-full font-black text-[18px] active:scale-95 transition-all"
+                                    >
+                                        {activeDrawer === 'schedule' ? 'Confirm' : 'Save Details'}
+                                    </button>
+                                </div>
+                            </div>
+                        )}
                     </motion.div>
                 )}
             </AnimatePresence>
