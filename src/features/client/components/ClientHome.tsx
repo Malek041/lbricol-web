@@ -14,6 +14,7 @@ import { SERVICES_CATALOGUE } from '@/config/services_catalogue';
 import SplashScreen from '@/components/layout/SplashScreen';
 import CompactHomeMap from '@/components/shared/CompactHomeMap';
 import WaveTop from '@/components/shared/WaveTop';
+import { SearchPopup } from './SearchPopup';
 
 
 // ── Palette ────────────────────────────────────────────────────────────────
@@ -53,6 +54,8 @@ interface ClientHomeProps {
     isBricoler?: boolean;
     initialLocation?: { lat: number; lng: number } | null;
     onAddressUpdate?: (address: string) => void;
+    isSearchOpen?: boolean;
+    setIsSearchOpen?: (open: boolean) => void;
 }
 
 // ── Component ──────────────────────────────────────────────────────────────
@@ -204,16 +207,21 @@ const ClientHome: React.FC<ClientHomeProps> = ({
     onBecomeBricoler,
     isBricoler = false,
     initialLocation,
-    onAddressUpdate
+    onAddressUpdate,
+    isSearchOpen: isSearchOpenProp = false,
+    setIsSearchOpen: setIsSearchOpenProp = () => { },
 }) => {
     const { t, language } = useLanguage();
     const router = useRouter();
     const { setOrderField, resetOrder } = useOrder();
 
     const [lastCategoryId, setLastCategoryId] = useState<string | null>(null);
-    const [searchQuery, setSearchQuery] = useState('');
+    const isSearchOpen = isSearchOpenProp;
+    const setIsSearchOpen = setIsSearchOpenProp;
     const [showReferralBanner, setShowReferralBanner] = useState(false);
     const [showBricolerUpsell, setShowBricolerUpsell] = useState(false);
+    const [activeId, setActiveId] = useState<string>('');
+    const [hasManuallySelected, setHasManuallySelected] = useState(false);
 
 
     // Initial load
@@ -366,30 +374,6 @@ const ClientHome: React.FC<ClientHomeProps> = ({
         return base;
     }, [availableServiceIds, trendingSubServiceIds, lastCategoryId, popularServiceIds]);
 
-    const [activeId, setActiveId] = useState<string>('');
-    const [hasManuallySelected, setHasManuallySelected] = useState(false);
-
-    // Filter by search query
-    const filteredServices = searchQuery.trim()
-        ? visibleServices.filter(svc =>
-            svc.label.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            svc.labelFr.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            (svc.labelAr && svc.labelAr.includes(searchQuery)) ||
-            svc.subServices.some(sub =>
-                sub.fr.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                (sub.ar && sub.ar.includes(searchQuery))
-            )
-        )
-        : visibleServices;
-
-    // Auto-select first filtered result when searching
-    useEffect(() => {
-        if (searchQuery && filteredServices.length > 0) {
-            setActiveId(filteredServices[0].id);
-            setHasManuallySelected(false);
-        }
-    }, [searchQuery]);
-
     // Resync activeId to the top of the list if user hasn't made a manual choice or current choice vanished
     useEffect(() => {
         if (visibleServices.length > 0) {
@@ -399,7 +383,54 @@ const ClientHome: React.FC<ClientHomeProps> = ({
         }
     }, [visibleServices, activeId, hasManuallySelected]);
 
-    const active = filteredServices.find(s => s.id === activeId) || filteredServices[0] || visibleServices[0] || SERVICES_CATALOGUE[0];
+    const handleServiceSelection = (serviceId: string, sub: any) => {
+        resetOrder();
+        const currentSub = sub as any;
+
+        // Find the full service configuration for icons and other metadata
+        const serviceTemplate = SERVICES_CATALOGUE.find(s => s.id === serviceId);
+        const config = getServiceById(serviceId);
+        const actualSubConfig = config?.subServices.find(ss =>
+            ss.id === currentSub.id || ss.name === currentSub.en
+        );
+
+        localStorage.setItem('last_service_category', serviceId);
+        setOrderField('serviceType', serviceId);
+        setOrderField('serviceName', serviceTemplate?.label || serviceId);
+        setOrderField('subServiceId', currentSub.id || currentSub.en);
+        setOrderField('subServiceName', t(currentSub));
+
+        // Category Vector Mapping
+        const categoryVectors: Record<string, string> = {
+            handyman: '/Images/Service Category vectors/HandymanVector.webp',
+            babysitting: '/Images/Service Category vectors/babysettingnVector.webp',
+            cleaning: '/Images/Service Category vectors/CleaningVector.webp',
+            plumbing: '/Images/Service Category vectors/PlumbingVector.webp',
+            electricity: '/Images/Service Category vectors/ElectricityVector.webp',
+            painting: '/Images/Service Category vectors/Paintingvector.webp',
+            moving: '/Images/Service Category vectors/MovingHelpVector.webp',
+            gardening: '/Images/Service Category vectors/GardeningVector.webp',
+            assembly: '/Images/Service Category vectors/AsssemblyVector.webp',
+            mounting: '/Images/Service Category vectors/MountingVector.webp'
+        };
+
+        const icon = categoryVectors[serviceId] || (actualSubConfig as any)?.image;
+        if (icon) {
+            setOrderField('serviceIcon', icon);
+        }
+
+        const isErrands = serviceId === 'errands' || serviceId?.includes('delivery');
+        if (isErrands) {
+            setOrderField('isPublic', true);
+            setOrderField('providerId', null);
+            setOrderField('providerName', null);
+            router.push('/order/setup');
+        } else {
+            router.push('/order/step1');
+        }
+    };
+
+    const active = visibleServices.find(s => s.id === activeId) || visibleServices[0] || SERVICES_CATALOGUE[0];
     const [isWhiteSectionVisible, setIsWhiteSectionVisible] = useState(false);
     const [startTicker, setStartTicker] = useState(false);
     const [isWaving, setIsWaving] = useState(true);
@@ -456,7 +487,7 @@ const ClientHome: React.FC<ClientHomeProps> = ({
                         initial={{ opacity: 0, scale: 0.9 }}
                         animate={{ opacity: 1, scale: 1 }}
                         transition={{ delay: 0.8, duration: 0.6, type: "spring", stiffness: 200 }}
-                        className="text-[34px] font-black leading-[1.1] text-Black max-w-[340px] mx-auto"
+                        className="text-[24px] font-black leading-[1.1] text-Black max-w-[340px] mx-auto"
                     >
                         {t({
                             en: 'Book trusted help for home tasks',
@@ -465,33 +496,19 @@ const ClientHome: React.FC<ClientHomeProps> = ({
                         })}
                     </motion.h1>
                 </div>
-                {/* Search bar */}
-                <div className="px-6 pb-1 pt-6 w-full max-w-[400px] mx-auto">
-                    <div className="flex items-center gap-2 bg-neutral-50 rounded-full px-5 py-3.5">
-                        <Search size={18} className=" text-[#000000] flex-shrink-0" strokeWidth={2.5} />
-                        <input
-                            type="text"
-                            value={searchQuery}
-                            onChange={e => setSearchQuery(e.target.value)}
-                            placeholder={t({ en: 'Search services...', fr: 'Rechercher un service...', ar: 'ابحث عن خدمة...' })}
-                            className="flex-1 bg-transparent text-[15.5px] font-medium text-neutral-800 placeholder:text-neutral-400 outline-none"
-                        />
-                        {searchQuery.length > 0 && (
-                            <button onClick={() => setSearchQuery('')} className="text-neutral-400 hover:text-neutral-600 transition-colors active:scale-90">
-                                <X size={18} />
-                            </button>
-                        )}
-                    </div>
+                {/* Search bar trigger */}
+                <div className="px-6 pb-1 pt-6 w-full max-w-[400px] h-[30px] mx-auto">
+                    <button
+                        onClick={() => setIsSearchOpen(true)}
+                        className="w-full flex items-center gap-2 bg-neutral-50 rounded-full px-5 py-3.5 active:scale-[0.98] transition-all"
+                    >
+                        <Search size={18} className=" text-neutral-400 flex-shrink-0" strokeWidth={2.5} />
+                        <span className="text-[15.5px] font-medium text-neutral-400">
+                            {t({ en: 'Search services...', fr: 'Rechercher un service...', ar: 'ابحث عن خدمة...' })}
+                        </span>
+                    </button>
                 </div>
 
-                {/* No results message */}
-                {searchQuery && filteredServices.length === 0 && (
-                    <div className="px-4 py-8 text-center">
-                        <p className="text-[15px] font-medium text-neutral-400">
-                            {t({ en: 'No services found for', fr: 'Aucun service trouvé pour', ar: 'لا توجد خدمات لـ' })} "<span className="text-neutral-600 font-bold">{searchQuery}</span>"
-                        </p>
-                    </div>
-                )}
 
                 {/* 1.5 Animated Icons Row */}
                 <div className="flex gap-4 items-center overflow-x-hidden pt-1 mt-4 pointer-events-none">
@@ -575,8 +592,8 @@ const ClientHome: React.FC<ClientHomeProps> = ({
                                 className="flex gap-4 overflow-x-auto border-b border-neutral-100 px-4 flex-shrink-0"
                                 style={{ scrollbarWidth: 'none' }}
                             >
-                                {filteredServices.length > 0 ? (
-                                    filteredServices.map((svc, idx) => {
+                                {visibleServices.length > 0 ? (
+                                    visibleServices.map((svc: any, idx: number) => {
                                         const isActive = svc.id === activeId;
                                         const isTrending = svc.id === '__trending__';
                                         const activeColor = isTrending ? '#B8860B' : G_GREEN;
@@ -620,8 +637,8 @@ const ClientHome: React.FC<ClientHomeProps> = ({
                                                         duration: 0.3
                                                     }}
                                                     style={{
-                                                        width: 90,
-                                                        height: 90,
+                                                        width: 76,
+                                                        height: 76,
                                                         backgroundColor: isActive ? activeBg : '#FFFFFF',
                                                         display: 'flex',
                                                         alignItems: 'center',
@@ -637,7 +654,7 @@ const ClientHome: React.FC<ClientHomeProps> = ({
                                                         <img
                                                             key={svc.iconPath}
                                                             src={svc.iconPath}
-                                                            className="w-14 h-14 object-contain transition-all duration-300"
+                                                            className="w-12 h-12 object-contain transition-all duration-300"
                                                             style={{ filter: 'none' }}
                                                             alt={svc.label}
                                                         />
@@ -645,7 +662,7 @@ const ClientHome: React.FC<ClientHomeProps> = ({
                                                 </motion.div>
 
                                                 <span
-                                                    className="text-[14px] whitespace-nowrap mt-1"
+                                                    className="text-[13px] whitespace-nowrap mt-1"
                                                     style={{
                                                         fontWeight: isActive ? 900 : 700,
                                                         color: isActive ? activeColor : '#666',
@@ -705,7 +722,7 @@ const ClientHome: React.FC<ClientHomeProps> = ({
                                         {/* Sub-service pill chips */}
                                         <div className="px-4 pb-6 flex flex-wrap gap-2.5">
                                             {active.subServices
-                                                .filter(subObj => {
+                                                .filter((subObj: any) => {
                                                     // Always show these even if no pro is available yet (forced for growth)
                                                     const forceShow = [
                                                         'Electricity (HVAC)',
@@ -742,7 +759,7 @@ const ClientHome: React.FC<ClientHomeProps> = ({
                                                         availableSubServiceIds.includes(subConfig.id.toLowerCase())
                                                     );
                                                 })
-                                                .map((sub, idx) => (
+                                                .map((sub: any, idx: number) => (
                                                     <motion.button
                                                         key={sub.en}
                                                         initial={{ opacity: 0, scale: 0.6 }}
@@ -754,49 +771,8 @@ const ClientHome: React.FC<ClientHomeProps> = ({
                                                             delay: (hasManuallySelected ? 0.1 : 1.6) + idx * 0.04
                                                         }}
                                                         whileTap={{ scale: 0.92 }}
-                                                        onClick={() => {
-                                                            resetOrder();
-                                                            const currentSub = sub as any;
-                                                            const config = getServiceById(active.id);
-                                                            const actualSubConfig = config?.subServices.find(ss =>
-                                                                ss.id === currentSub.id || ss.name === currentSub.en
-                                                            );
-
-                                                            localStorage.setItem('last_service_category', active.id);
-                                                            setOrderField('serviceType', active.id);
-                                                            setOrderField('serviceName', active.label);
-                                                            setOrderField('subServiceId', currentSub.id || currentSub.en);
-                                                            setOrderField('subServiceName', t(currentSub));
-
-                                                            // Category Vector Mapping (matches file names in 'Service Category vectors')
-                                                            const categoryVectors: Record<string, string> = {
-                                                                handyman: '/Images/Service Category vectors/HandymanVector.webp',
-                                                                babysitting: '/Images/Service Category vectors/babysettingnVector.webp',
-                                                                cleaning: '/Images/Service Category vectors/CleaningVector.webp',
-                                                                plumbing: '/Images/Service Category vectors/PlumbingVector.webp',
-                                                                electricity: '/Images/Service Category vectors/ElectricityVector.webp',
-                                                                painting: '/Images/Service Category vectors/Paintingvector.webp',
-                                                                moving: '/Images/Service Category vectors/MovingHelpVector.webp',
-                                                                gardening: '/Images/Service Category vectors/GardeningVector.webp',
-                                                                assembly: '/Images/Service Category vectors/AsssemblyVector.webp',
-                                                                mounting: '/Images/Service Category vectors/MountingVector.webp'
-                                                            };
-
-                                                            const icon = categoryVectors[active.id] || (actualSubConfig as any)?.image;
-                                                            if (icon) {
-                                                                setOrderField('serviceIcon', icon);
-                                                            }
-                                                            const isErrands = active.id === 'errands' || active.id?.includes('delivery');
-                                                            if (isErrands) {
-                                                                setOrderField('isPublic', true);
-                                                                setOrderField('providerId', null);
-                                                                setOrderField('providerName', null);
-                                                                router.push('/order/setup');
-                                                            } else {
-                                                                router.push('/order/step1');
-                                                            }
-                                                        }}
-                                                        className="px-4 py-2.5 rounded-full border border-[#E6E6E6] text-[15px] font-bold text-[#1D1D1D] bg-white hover:border-[#1D1D1D] active:bg-neutral-50 transition-colors shadow-[0_2px_8_rgba(0,0,0,0.03)]"
+                                                        onClick={() => handleServiceSelection(active.id, sub)}
+                                                        className="px-3.5 py-2 rounded-full border border-[#E6E6E6] text-[13.5px] font-bold text-[#1D1D1D] bg-white hover:border-[#1D1D1D] active:bg-neutral-50 transition-colors shadow-[0_2px_8_rgba(0,0,0,0.03)]"
                                                     >
                                                         {t(sub)}
                                                     </motion.button>
@@ -818,8 +794,8 @@ const ClientHome: React.FC<ClientHomeProps> = ({
                                                         delay: (hasManuallySelected ? 0.2 : 1.7) + i * 0.04
                                                     }}
                                                 >
-                                                    <span className="mt-0.5 text-[#B3B3B3] flex-shrink-0 text-[15px]">✓</span>
-                                                    <p className="text-[15px] text-[#4A4A4A] leading-snug font-medium">{t(b)}</p>
+                                                    <span className="mt-0.5 text-[#B3B3B3] flex-shrink-0 text-[14px]">✓</span>
+                                                    <p className="text-[14px] text-[#4A4A4A] leading-snug font-medium">{t(b)}</p>
                                                 </motion.div>
                                             ))}
                                         </div>
@@ -832,6 +808,12 @@ const ClientHome: React.FC<ClientHomeProps> = ({
                         </div>
                     </motion.div>
                 </AnimatePresence>
+
+                <SearchPopup
+                    isOpen={isSearchOpen}
+                    onClose={() => setIsSearchOpen(false)}
+                    onSelectSubService={(serviceId, sub) => handleServiceSelection(serviceId, sub)}
+                />
             </motion.div>
 
             {/* Premium Onboarding Overlay (Absolute, top level) */}
@@ -840,7 +822,6 @@ const ClientHome: React.FC<ClientHomeProps> = ({
                     <ClientOnboarding
                         onComplete={() => {
                             onOnboardingComplete();
-                            // After onboarding completes, trigger the upsell card if not shown
                             const alreadyShown = localStorage.getItem('bricoler_upsell_shown');
                             if (!alreadyShown) {
                                 setTimeout(() => setShowBricolerUpsell(true), 900);
@@ -850,14 +831,7 @@ const ClientHome: React.FC<ClientHomeProps> = ({
                 )}
             </AnimatePresence>
 
-            <PromoBannersWidget
-                showReferral={showReferralBanner}
-                showUpsell={showBricolerUpsell}
-                onReferralClick={handleReferralClick}
-                onUpsellClick={() => onBecomeBricoler?.()}
-                language={language}
-                t={t}
-            />
+            {/* Promo banners hidden as per request */}
 
         </div>
     );

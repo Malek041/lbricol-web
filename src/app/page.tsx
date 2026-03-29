@@ -37,7 +37,6 @@ import ClientNotificationsView from '@/features/client/components/ClientNotifica
 import AdminNotificationsView from '@/features/admin/components/AdminNotificationsView';
 import AdminReceivablesView from '@/features/admin/components/AdminReceivablesView';
 import LocationPicker from '@/components/location-picker/LocationPicker';
-import LocationPermissionPopup from '@/components/location-picker/LocationPermissionPopup';
 import { SavedAddress } from '@/components/location-picker/types';
 import {
   MapPin,
@@ -301,10 +300,10 @@ const Home = () => {
   const [unreadNotifsCount, setUnreadNotifsCount] = useState(0);
   const [mounted, setMounted] = useState(false);
   const [showLocationPicker, setShowLocationPicker] = useState(false);
-  const [showLocationPermissionPopup, setShowLocationPermissionPopup] = useState(false);
   const [autoLocateOnPickerOpen, setAutoLocateOnPickerOpen] = useState(false);
   const [userSavedAddresses, setUserSavedAddresses] = useState<SavedAddress[]>([]);
   const [selectedPoint, setSelectedPoint] = useState<{ lat: number; lng: number, address?: string } | null>(null);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
 
   const handleAddressUpdate = (address: string) => {
     if (!address) return;
@@ -354,8 +353,13 @@ const Home = () => {
     // Check for tab search param
     const params = new URLSearchParams(window.location.search);
     const tabParam = params.get('tab');
-    if (tabParam && ['home', 'search', 'heroes', 'calendar', 'messages', 'profile'].includes(tabParam)) {
+    const onboardingShown = localStorage.getItem('client_onboarding_shown');
+    
+    if (onboardingShown && tabParam && ['home', 'search', 'heroes', 'calendar', 'messages', 'profile'].includes(tabParam)) {
       setMobileNavTab(tabParam as any);
+    } else {
+      // First timers always start on home
+      setMobileNavTab('home');
     }
 
     const saved = localStorage.getItem('lbricol_saved_addresses');
@@ -421,7 +425,8 @@ const Home = () => {
         const onboardingShown = localStorage.getItem('client_onboarding_shown');
         const prefCity = localStorage.getItem('lbricol_preferred_city');
         if (onboardingShown && !prefCity && !showLanguagePopup) {
-          setShowLocationPermissionPopup(true);
+          setAutoLocateOnPickerOpen(true);
+          setShowLocationPicker(true);
         }
       }
     }, 1500);
@@ -593,10 +598,10 @@ const Home = () => {
       }
     }
 
-    // NEW: Check for Client Onboarding
+    // NEW: Check for Client Onboarding - Mark as shown immediately to ensure Home is the first view
     const onboardingShown = localStorage.getItem('client_onboarding_shown');
-    if (!onboardingShown && savedLang) {
-      setShowClientOnboarding(true);
+    if (!onboardingShown) {
+      localStorage.setItem('client_onboarding_shown', 'true');
     }
 
 
@@ -613,7 +618,8 @@ const Home = () => {
       if (!savedLang) {
         setShowLanguagePopup(true);
       } else if (!savedCity) {
-        setShowLocationPermissionPopup(true);
+        setAutoLocateOnPickerOpen(true);
+        setShowLocationPicker(true);
       } else {
         // Migration and Sync
         let migratedCity = savedCity;
@@ -1457,7 +1463,8 @@ const Home = () => {
     setLanguage(lang);
     setShowLanguagePopup(false);
     if (!selectedCity) {
-      setShowLocationPermissionPopup(true);
+      setAutoLocateOnPickerOpen(true);
+      setShowLocationPicker(true);
     } else {
       setActiveSearchSection('what');
     }
@@ -2385,19 +2392,6 @@ const Home = () => {
         )}
       </AnimatePresence>
 
-      <LocationPermissionPopup
-        isOpen={showLocationPermissionPopup}
-        onAllow={() => {
-          setShowLocationPermissionPopup(false);
-          setAutoLocateOnPickerOpen(true);
-          setShowLocationPicker(true);
-        }}
-        onDeny={() => {
-          setShowLocationPermissionPopup(false);
-          setAutoLocateOnPickerOpen(false);
-          setShowLocationPicker(true);
-        }}
-      />
 
       <RatingPopup
         isOpen={!!jobToRate}
@@ -2636,7 +2630,7 @@ const Home = () => {
             className="flex-1 flex flex-col"
           >
             {/* On mobile: Glovo-style flash home; on desktop: full hero */}
-            {isMobile && mobileNavTab === 'home' && !isAdminMode && (
+            {isMobile && mobileNavTab === 'home' && !isAdminMode && !isSearchOpen && (
               <div className="fixed top-8 right-6 z-[110]">
                 <button
                   onClick={() => setShowClientNotifications(true)}
@@ -2657,7 +2651,7 @@ const Home = () => {
             )}
 
             {/* Admin Notifications Bell (Floating) */}
-            {isAdminMode && (
+            {isAdminMode && !isSearchOpen && (
               <div className="fixed top-8 right-6 z-[110]">
                 <button
                   onClick={() => setShowAdminNotifications(true)}
@@ -2673,6 +2667,8 @@ const Home = () => {
 
             {isMobile ? (
               <ClientHome
+                isSearchOpen={isSearchOpen}
+                setIsSearchOpen={setIsSearchOpen}
                 userName={currentUser?.displayName || undefined}
                 selectedCity={selectedCity}
                 selectedArea={selectedArea}
@@ -2736,7 +2732,8 @@ const Home = () => {
                   
                   // Immediately ask for location after onboarding
                   if (!selectedCity) {
-                    setShowLocationPermissionPopup(true);
+                    setAutoLocateOnPickerOpen(true);
+                    setShowLocationPicker(true);
                   }
                 }}
                 onBecomeBricoler={() => {
@@ -3516,10 +3513,12 @@ const Home = () => {
             if (onboardingShown) {
               const prefCity = localStorage.getItem('lbricol_preferred_city');
               if (!prefCity && !selectedCity) {
-                setShowLocationPermissionPopup(true);
+                setAutoLocateOnPickerOpen(true);
+                setShowLocationPicker(true);
               }
             } else {
-              setShowClientOnboarding(true);
+              localStorage.setItem('client_onboarding_shown', 'true');
+              // setShowClientOnboarding(true);
             }
           }}
           onSelectLanguage={handleLanguageSelect}

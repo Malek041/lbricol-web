@@ -771,7 +771,7 @@ export default function ServiceSetupPage() {
 
                                         {/* Trust & Stats Grid (High Visibility) */}
                                         <motion.div variants={staggerItem} className="grid grid-cols-3 gap-3 mb-8">
-                                            <div className="flex flex-col items-center justify-center p-4 rounded-full bg-[#F3F4F6] text-center ">
+                                            <div className="flex flex-col items-center justify-center p-4 rounded-full text-center ">
                                                 <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center text-[#219178] mb-2 ">
                                                     <Trophy size={30} />
                                                 </div>
@@ -780,7 +780,7 @@ export default function ServiceSetupPage() {
                                                 </span>
                                                 <span className="text-[10px] font-bold text-[#219178] uppercase tracking-tighter mt-1">Level</span>
                                             </div>
-                                            <div className="flex flex-col items-center justify-center p-4 rounded-full bg-[#F3F4F6] text-center ">
+                                            <div className="flex flex-col items-center justify-center p-4 rounded-full text-center ">
                                                 <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center text-[#219178] mb-2">
                                                     <Star size={30} />
                                                 </div>
@@ -789,7 +789,7 @@ export default function ServiceSetupPage() {
                                                 </span>
                                                 <span className="text-[10px] font-bold text-[#219178] uppercase tracking-tighter mt-1">Rating</span>
                                             </div>
-                                            <div className="flex flex-col items-center justify-center p-4 rounded-full bg-[#F3F4F6] text-center ">
+                                            <div className="flex flex-col items-center justify-center p-4 rounded-full text-center ">
                                                 <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center text-[#219178] mb-2 ">
                                                     <CheckCircle2 size={30} />
                                                 </div>
@@ -1462,7 +1462,7 @@ export default function ServiceSetupPage() {
                                                     <button
                                                         key={type}
                                                         onClick={() => setPropertyType(type)}
-                                                        className={`px-8 py-3.5 rounded-full border-2 font-medium text-[13px] transition-all ${propertyType === type ? 'border-[#219178] bg-white text-[#219178]' : 'border-neutral-100 text-black'}`}
+                                                        className={`px-8 py-3.5 rounded-full border-2 font-semibold text-[13px] transition-all ${propertyType === type ? 'border-[#219178] bg-white text-[#219178]' : 'border-neutral-100 text-black'}`}
                                                     >
                                                         {type}
                                                     </button>
@@ -1822,7 +1822,7 @@ export default function ServiceSetupPage() {
                             </motion.section>
 
                             {/* Summary Tab Content - Restored & Polished */}
-                            <div className="bg-[#F2F2F2] w-full pt-12 pb-48 px-10 space-y-8 relative">
+                            <div className="bg-[#F2F2F2] w-full pt-12 pb-48 px-10 space-y-8 relative ">
                                 {/* Wave Top Effect for Summary Transition */}
                                 <div className="absolute top-[-40px] left-0 right-0 h-[40px] z-10 pointer-events-none">
                                     <svg viewBox="0 0 1440 320" preserveAspectRatio="none" className="w-full h-full fill-[#F2F2F2]">
