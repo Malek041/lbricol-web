@@ -115,21 +115,28 @@ const MapView: React.FC<MapViewProps> = ({
     if (!mapRef.current || !mapRef.current.getContainer()) return;
     const map = mapRef.current;
 
+    // Safety check for Leaflet initialization
+    // Leaflet requires setView to be called once before flyTo or getZoom
+    if (!(map as any)._loaded) {
+      map.setView([lat, lng], zoom || targetZoom);
+      return;
+    }
+
     // If zoom is not provided, use current map zoom to prevent resets
-    const targetZoom = zoom !== undefined ? zoom : map.getZoom();
+    const effectiveZoom = zoom !== undefined ? zoom : map.getZoom();
 
     if (skipOffset) {
-      map.flyTo([lat, lng], targetZoom, { duration: 1.5 });
+      map.flyTo([lat, lng], effectiveZoom, { duration: 1.5 });
     } else {
       const mapSize = map.getSize();
       const centerPoint = L.point(mapSize.x / 2, mapSize.y / 2);
       const targetPoint = L.point(mapSize.x / 2, mapSize.y * (pinY / 100));
       const targetLatLng = L.latLng(lat, lng);
       const centerLatLng = map.unproject(
-        map.project(targetLatLng, targetZoom).add(centerPoint).subtract(targetPoint),
-        targetZoom
+        map.project(targetLatLng, effectiveZoom).add(centerPoint).subtract(targetPoint),
+        effectiveZoom
       );
-      map.flyTo(centerLatLng, targetZoom, { duration: 1.5 });
+      map.flyTo(centerLatLng, effectiveZoom, { duration: 1.5 });
     }
 
     if (flyToTimeoutRef.current) clearTimeout(flyToTimeoutRef.current);
@@ -231,9 +238,11 @@ const MapView: React.FC<MapViewProps> = ({
       if (mapRef.current && mapRef.current.getContainer()) {
         const mapSize = mapRef.current.getSize();
         if (mapSize.x > 0) {
-          // If we have both pins for a move/delivery, skip the initial setView 
-          // because the routing effect will handle the fitBounds
+          // If we have both pins for a move/delivery, we still need an initial setView
+          // for Leaflet to be ready, but we use the clientPin as early center.
+          // The routing effect will eventually handle the fitBounds.
           if (clientPin?.lat && destinationPin?.lat) {
+            mapRef.current.setView([clientPin.lat, clientPin.lng], zoom);
             setMapReady(true);
             return;
           }

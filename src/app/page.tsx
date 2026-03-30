@@ -618,8 +618,7 @@ const Home = () => {
       if (!savedLang) {
         setShowLanguagePopup(true);
       } else if (!savedCity) {
-        setAutoLocateOnPickerOpen(true);
-        setShowLocationPicker(true);
+        handleFirstArrivalLocationTrigger();
       } else {
         // Migration and Sync
         let migratedCity = savedCity;
@@ -988,6 +987,24 @@ const Home = () => {
       }
     } catch (err) {
       console.error(err);
+    }
+  };
+  const handleFirstArrivalLocationTrigger = () => {
+    if (typeof window !== 'undefined' && navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        () => {
+          setAutoLocateOnPickerOpen(true);
+          setShowLocationPicker(true);
+        },
+        () => {
+          // User denied or error - still show picker for manual entry but without auto-locate
+          setAutoLocateOnPickerOpen(false);
+          setShowLocationPicker(true);
+        },
+        { timeout: 10000, enableHighAccuracy: true }
+      );
+    } else {
+      setShowLocationPicker(true);
     }
   };
 
@@ -3513,8 +3530,7 @@ const Home = () => {
             if (onboardingShown) {
               const prefCity = localStorage.getItem('lbricol_preferred_city');
               if (!prefCity && !selectedCity) {
-                setAutoLocateOnPickerOpen(true);
-                setShowLocationPicker(true);
+                handleFirstArrivalLocationTrigger();
               }
             } else {
               localStorage.setItem('client_onboarding_shown', 'true');
