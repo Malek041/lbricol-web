@@ -320,13 +320,16 @@ const ClientHome: React.FC<ClientHomeProps> = ({
             });
         }
 
-        // 2) Personalization: place the last used category first
-        if (lastCategoryId) {
-            const lastIdx = base.findIndex(s => s.id === lastCategoryId);
-            if (lastIdx > 0) {
+        // 2) Personalization & Default Priority:
+        // Prioritize "Errands" if available, until the user selects another category.
+        const priorityId = lastCategoryId || (base.some(s => s.id === 'errands') ? 'errands' : null);
+
+        if (priorityId) {
+            const prioritizedIdx = base.findIndex(s => s.id === priorityId);
+            if (prioritizedIdx > 0) {
                 const updatedBase = [...base];
-                const [lastUsed] = updatedBase.splice(lastIdx, 1);
-                updatedBase.unshift(lastUsed);
+                const [prioritizedItem] = updatedBase.splice(prioritizedIdx, 1);
+                updatedBase.unshift(prioritizedItem);
                 base = updatedBase;
             }
         }
@@ -395,6 +398,7 @@ const ClientHome: React.FC<ClientHomeProps> = ({
         );
 
         localStorage.setItem('last_service_category', serviceId);
+        setLastCategoryId(serviceId);
         setOrderField('serviceType', serviceId);
         setOrderField('serviceName', serviceTemplate?.label || serviceId);
         setOrderField('subServiceId', currentSub.id || currentSub.en);
