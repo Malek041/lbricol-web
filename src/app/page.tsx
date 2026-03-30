@@ -991,19 +991,42 @@ const Home = () => {
   const handleFirstArrivalLocationTrigger = () => {
     if (typeof window !== 'undefined' && navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
-        () => {
-          setAutoLocateOnPickerOpen(true);
-          setShowLocationPicker(true);
+        async (position) => {
+          const { latitude: lat, longitude: lng } = position.coords;
+          try {
+            // Perform a silent reverse geocode to detect the user's city
+            const res = await fetch(
+              `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=fr,en`,
+              { headers: { 'User-Agent': 'Lbricol/1.0' } }
+            );
+            const data = await res.json();
+            const cityName = data.address?.city || data.address?.town || data.address?.village || '';
+            const neighborhood = data.address?.neighbourhood || data.address?.suburb || '';
+            const street = data.address?.road || '';
+            const finalAddress = street ? `${street}, ${cityName}` : (cityName || 'Custom Location, Morocco');
+            
+            // Silently update the app state. This populates services on Home page.
+            handleLocationConfirm({
+              pickup: {
+                lat,
+                lng,
+                address: finalAddress,
+                city: cityName || undefined,
+                area: neighborhood || undefined
+              }
+            });
+          } catch (err) {
+            console.error("Silent location detection failed:", err);
+            // If reverse geocoding fails, we don't force anything. 
+            // The user can still set their location manually via the header button.
+          }
         },
         () => {
-          // User denied or error - still show picker for manual entry but without auto-locate
-          setAutoLocateOnPickerOpen(false);
-          setShowLocationPicker(true);
+          // On deny or error - stay on Home page. DO NOT show the LocationPicker.
+          // This ensures "nothing steps in the way" of the first-time user experience.
         },
-        { timeout: 10000, enableHighAccuracy: true }
+        { timeout: 30000, enableHighAccuracy: true }
       );
-    } else {
-      setShowLocationPicker(true);
     }
   };
 
