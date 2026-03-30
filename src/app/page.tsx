@@ -425,8 +425,7 @@ const Home = () => {
         const onboardingShown = localStorage.getItem('client_onboarding_shown');
         const prefCity = localStorage.getItem('lbricol_preferred_city');
         if (onboardingShown && !prefCity && !showLanguagePopup) {
-          setAutoLocateOnPickerOpen(true);
-          setShowLocationPicker(true);
+          handleFirstArrivalLocationTrigger();
         }
       }
     }, 1500);
@@ -1480,8 +1479,7 @@ const Home = () => {
     setLanguage(lang);
     setShowLanguagePopup(false);
     if (!selectedCity) {
-      setAutoLocateOnPickerOpen(true);
-      setShowLocationPicker(true);
+      handleFirstArrivalLocationTrigger();
     } else {
       setActiveSearchSection('what');
     }
@@ -2749,8 +2747,7 @@ const Home = () => {
                   
                   // Immediately ask for location after onboarding
                   if (!selectedCity) {
-                    setAutoLocateOnPickerOpen(true);
-                    setShowLocationPicker(true);
+                    handleFirstArrivalLocationTrigger();
                   }
                 }}
                 onBecomeBricoler={() => {
