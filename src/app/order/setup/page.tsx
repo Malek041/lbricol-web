@@ -146,6 +146,17 @@ export default function ServiceSetupPage() {
 
     // Errands/Delivery Specialized States
     const [errandCategory, setErrandCategory] = useState<string>('package');
+
+    // Synchronize errand category with subservice selection from Home
+    useEffect(() => {
+        if (order.serviceType === 'errands' || order.serviceType?.includes('delivery')) {
+            const sid = order.subServiceId;
+            if (sid === 'grocery_shopping') setErrandCategory('grocery');
+            else if (sid === 'pharmacy_pickup') setErrandCategory('pharmacy');
+            else if (sid === 'post_office') setErrandCategory('mailing');
+            else if (sid === 'general_delivery' || sid === 'returns') setErrandCategory('package');
+        }
+    }, [order.serviceType, order.subServiceId]);
     const errandCategories = [
         { id: 'keys', label: 'Keys', icon: '🔑' },
         { id: 'documents', label: 'Docs', icon: '📄' },
