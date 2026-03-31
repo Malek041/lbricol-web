@@ -245,18 +245,26 @@ export default function ServiceSetupPage() {
                     );
                     const servicePortfolio = relevantService?.portfolioImages || [];
 
-                    setProvider(prev => ({
-                        ...prev,
-                        bio: data.bio || data.aboutMe || prev.bio,
-                        yearsOfExperience: data.yearsOfExperience || data.experience || prev.yearsOfExperience,
-                        portfolio: servicePortfolio.length > 0 ? servicePortfolio : (data.portfolio || []),
-                        equipments: Array.isArray(relevantService?.equipments) ? relevantService.equipments : (Array.isArray(data.equipments) ? data.equipments : []),
-                        movingTransports: data.movingTransports || [],
-                        reviews: data.reviews || [],
-                        rating: data.rating || prev.rating,
-                        taskCount: data.completedJobs || data.taskCount || prev.taskCount,
-                        coords: data.location || data.coords || null
-                    }));
+                    setProvider(prev => {
+                        const taskCount = data.completedJobs || data.taskCount || data.jobsCount || prev.taskCount;
+                        const rank = (taskCount < 10 || data.isNew) ? 'New' : (data.badge || 'Classic');
+                        
+                        return {
+                            ...prev,
+                            name: data.name || data.fullName || prev.name,
+                            avatar: data.avatarUrl || data.avatar || data.photoURL || prev.avatar,
+                            bio: data.bio || data.aboutMe || prev.bio,
+                            yearsOfExperience: data.yearsOfExperience || data.experience || prev.yearsOfExperience,
+                            portfolio: servicePortfolio.length > 0 ? servicePortfolio : (data.portfolio || []),
+                            equipments: Array.isArray(relevantService?.equipments) ? relevantService.equipments : (Array.isArray(data.equipments) ? data.equipments : []),
+                            movingTransports: data.movingTransports || [],
+                            reviews: data.reviews || [],
+                            rating: data.rating || data.stars || prev.rating,
+                            taskCount: taskCount,
+                            rank: rank,
+                            coords: data.location || data.coords || null
+                        };
+                    });
                 }
             } catch (err) {
                 console.warn("Failed to fetch full Bricoler profile:", err);
