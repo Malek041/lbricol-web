@@ -246,12 +246,13 @@ export default function ServiceSetupPage() {
                     const servicePortfolio = relevantService?.portfolioImages || [];
 
                     setProvider(prev => {
-                        const taskCount = data.completedJobs || data.taskCount || data.jobsCount || prev.taskCount;
-                        const rank = (taskCount < 10 || data.isNew) ? 'New' : (data.badge || 'Classic');
-                        
+                        const tasks = data.completedJobs || data.taskCount || 0;
+                        const bRating = data.rating || data.stars || prev.rating;
+                        const bRank = (tasks < 10 || data.isNew) ? 'New' : (data.badge || 'Classic');
+
                         return {
                             ...prev,
-                            name: data.name || data.fullName || prev.name,
+                            name: data.name || prev.name,
                             avatar: data.avatarUrl || data.avatar || data.photoURL || prev.avatar,
                             bio: data.bio || data.aboutMe || prev.bio,
                             yearsOfExperience: data.yearsOfExperience || data.experience || prev.yearsOfExperience,
@@ -259,9 +260,9 @@ export default function ServiceSetupPage() {
                             equipments: Array.isArray(relevantService?.equipments) ? relevantService.equipments : (Array.isArray(data.equipments) ? data.equipments : []),
                             movingTransports: data.movingTransports || [],
                             reviews: data.reviews || [],
-                            rating: data.rating || data.stars || prev.rating,
-                            taskCount: taskCount,
-                            rank: rank,
+                            rating: bRating,
+                            taskCount: tasks,
+                            rank: bRank,
                             coords: data.location || data.coords || null
                         };
                     });
@@ -804,7 +805,7 @@ export default function ServiceSetupPage() {
                                                     <Star size={30} />
                                                 </div>
                                                 <span className="text-[23px] font-bold text-[#219178] leading-tight">
-                                                    {provider.taskCount === 0 ? "0.0" : provider.rating.toFixed(1)}
+                                                    {(provider.rating || 0).toFixed(1)}
                                                 </span>
                                                 <span className="text-[10px] font-bold text-[#219178] uppercase tracking-tighter mt-1">Rating</span>
                                             </div>
