@@ -16,62 +16,11 @@ import { CarRentalProfileModal } from './CarRentalProfileModal';
 
 const MapView = dynamic(() => import('@/components/location-picker/MapView'), { ssr: false });
 
-// ── Mock providers for development (used when DB has no providers with GPS) ──
-const DEFAULT_AVAILABILITY = {
-  'Sun': [{ from: '10:00', to: '16:00' }],
-};
-
 const SERVICES_REQUIRING_SETUP = [
   'cleaning', 'home_repairs', 'furniture_assembly', 'moving', 'mounting',
   'plumbing', 'electricity', 'painting', 'appliance_installation',
   'glass_cleaning', 'gardening', 'babysitting', 'pool_cleaning',
   'pets_care', 'elderly_care', 'cooking'
-];
-
-const MOCK_PROVIDERS = [
-  {
-    id: 'mock1',
-    name: 'Mery Majjoud',
-    avatarUrl: null,
-    minRate: 80,
-    rating: 0.0,
-    completedJobs: 20,
-    bio: 'أتعامل مع الأطفال بلطف وصبر، وأهتم بسلامتهم ونظافتهم وأوفر لهم جواً مريحاً وآمناً.',
-    isNew: true,
-    availableToday: true,
-    service_radius_km: 15,
-    availability: DEFAULT_AVAILABILITY
-  },
-  {
-    id: 'mock2',
-    name: 'Khadija Dol',
-    avatarUrl: null,
-    minRate: 85,
-    rating: 4.8,
-    completedJobs: 12,
-    bio: 'مرحباً، أنا خديجة، لدي خبرة 5 سنوات في رعاية الأطفال والأنشطة التعليمية.',
-    isNew: false,
-    availableToday: true,
-    base_lat: 31.511,
-    base_lng: -9.762,
-    service_radius_km: 15,
-    availability: DEFAULT_AVAILABILITY
-  },
-  {
-    id: 'mock3',
-    name: 'Fatoma Ajroud',
-    avatarUrl: null,
-    minRate: 90,
-    rating: 5.0,
-    completedJobs: 24,
-    bio: 'أقدم خدمات رعاية الأطفال باحترافية عالية مع التركيز على الترفيه والتعليم.',
-    isNew: false,
-    availableToday: false,
-    base_lat: 31.508,
-    base_lng: -9.755,
-    service_radius_km: 15,
-    availability: DEFAULT_AVAILABILITY
-  },
 ];
 
 // ── Moving Vehicle Requirement Popup ────────────────────────────────
@@ -255,13 +204,13 @@ function Step2Content() {
           return scoreB - scoreA;
         });
 
-        const finalProviders = sorted.length > 0 ? sorted : MOCK_PROVIDERS;
+        const finalProviders = sorted;
         setProviders(finalProviders);
         if (finalProviders.length > 0) setFocusedId(finalProviders[0].id);
 
       } catch (e) {
         console.error('Failed to load providers:', e);
-        setProviders(MOCK_PROVIDERS);
+        setProviders([]);
       } finally {
         setLoading(false);
       }
@@ -675,7 +624,7 @@ function ProviderCard({
       onClick={onSelect}
       style={{
         border: isSelected ? '1px solid #027963' : '1px solid #F3F4F6',
-        borderRadius: 5,
+        borderRadius: 15,
         padding: '12px 14px',
         background: '#fff',
         transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',

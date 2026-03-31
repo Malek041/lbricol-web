@@ -649,7 +649,7 @@ export default function ServiceSetupPage() {
             </header>
 
             {/* Main Content */}
-            <main className={`flex-1 overflow-y-auto no-scrollbar pt-10 ${(order.serviceType === 'errands' || order.serviceType?.includes('delivery')) ? 'pb-64' : 'pb-20'}`}>
+            <main className="flex-1 overflow-y-auto no-scrollbar pt-10">
                 <AnimatePresence mode="wait">
                     {activeTab === 'details' ? (
                         <motion.div
@@ -658,7 +658,7 @@ export default function ServiceSetupPage() {
                             initial="hidden"
                             animate="visible"
                             exit={{ opacity: 0, x: 10 }}
-                            className="py-8"
+                            className="py-8 pb-40"
                         >
                             <div className="px-6"> {/* Content Wrapper */}
                                 {(order.serviceType === 'errands' || order.serviceType?.includes('delivery')) ? (
@@ -1495,9 +1495,6 @@ export default function ServiceSetupPage() {
                                             <div className="space-y-6">
                                                 <div className="flex items-center justify-between px-1">
                                                     <label className="text-[25px] font-bold text-[#111827] setup-heading">Number of Rooms</label>
-                                                    <span className="text-[12px] font-bold text-[#FFFFFF] bg-[#027963] px-4 py-1.5 rounded-full tracking-widest">
-                                                        {rooms} Selected
-                                                    </span>
                                                 </div>
                                                 <div className="flex gap-4 overflow-x-auto pb-6 pt-2 no-scrollbar -mx-6 px-6 snap-x snap-mandatory">
                                                     {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((num) => (
@@ -1513,7 +1510,7 @@ export default function ServiceSetupPage() {
                                                                 rotate: { repeat: Infinity, duration: 5, ease: "easeInOut" }
                                                             } : { duration: 0 }}
                                                             onClick={() => setRooms(num)}
-                                                            className={`flex-shrink-0 w-16 h-16 flex items-center justify-center font-bold text-[22px] transition-all snap-center relative ${rooms === num ? 'bg-[#E2E2E2] text-black scale-125 z-10' : 'bg-[#F9FAFB] text-neutral-400 border border-neutral-100/50 rounded-full'}`}
+                                                            className={`flex-shrink-0 w-16 h-16 flex items-center justify-center font-bold text-[22px] transition-all snap-center relative ${rooms === num ? 'bg-[#017C3E] text-white scale-125 z-10' : 'bg-[#F9FAFB] text-neutral-400 border border-neutral-100/50 rounded-full'}`}
                                                         >
                                                             {num}
                                                         </motion.button>
@@ -1777,7 +1774,7 @@ export default function ServiceSetupPage() {
                                                     </div>
                                                 ))}
                                                 {photos.length < 6 && (
-                                                    <label className="aspect-square rounded-[10px] border-2 border-dashed border-neutral-200 flex flex-col items-center justify-center gap-2 cursor-pointer transition-all hover:bg-neutral-50 hover:border-[#219178]/30 active:scale-95">
+                                                    <label className="aspect-square rounded-full border-2 border-dashed border-neutral-200 flex flex-col items-center justify-center gap-2 cursor-pointer transition-all hover:bg-neutral-50 hover:border-[#219178]/30 active:scale-95">
                                                         <input type="file" multiple hidden accept="image/*" onChange={handlePhotoUpload} disabled={isUploading} />
                                                         {isUploading ? (
                                                             <Loader2 size={24} className="animate-spin text-[#219178]" />
@@ -1842,7 +1839,7 @@ export default function ServiceSetupPage() {
                             </motion.section>
 
                             {/* Summary Tab Content - Restored & Polished */}
-                            <div className="bg-[#F2F2F2] w-full pt-12 pb-48 px-6 sm:px-10 space-y-8 relative ">
+                            <div className="bg-[#F2F2F2] w-full pt-12 pb-18 px-6 sm:px-10 space-y-8 relative ">
                                 {/* Wave Top Effect for Summary Transition */}
                                 <div className="absolute top-[-40px] left-0 right-0 h-[40px] z-10 pointer-events-none">
                                     <svg viewBox="0 0 1440 320" preserveAspectRatio="none" className="w-full h-full fill-[#F2F2F2]">
@@ -1856,21 +1853,21 @@ export default function ServiceSetupPage() {
                                     <div className="space-y-6">
                                         <div className="flex items-center justify-between">
                                             <div className="flex items-center gap-2">
-                                                <span className="text-[18px] font-medium text-black/60">Base price</span>
+                                                <span className="text-[18px] font-light text-black">Base price</span>
                                                 <button className="w-4 h-4 rounded-full border border-neutral-300 flex items-center justify-center text-[10px] text-neutral-400 font-bold">i</button>
                                             </div>
-                                            <span className="text-[18px] font-black text-black">{estimate.basePrice.toFixed(1)} MAD</span>
+                                            <span className="text-[18px] font-bold text-black">{estimate.basePrice.toFixed(1)} MAD</span>
                                         </div>
                                         <div className="flex items-center justify-between">
-                                            <span className="text-[18px] font-medium text-black/60">Travel coverage <span className="text-[14px] text-black/30">(1.6 km)</span></span>
-                                            <span className="text-[18px] font-black text-black">4.0 MAD</span>
+                                            <span className="text-[18px] font-light text-black">Travel coverage <span className="text-[14px] text-black/30">(1.6 km)</span></span>
+                                            <span className="text-[18px] font-bold text-black">4.0 MAD</span>
                                         </div>
                                         <div className="flex items-center justify-between">
                                             <div className="flex items-center gap-2">
-                                                <span className="text-[18px] font-medium text-black/60">Service fee</span>
+                                                <span className="text-[18px] font-light text-black">Service fee</span>
                                                 <button className="w-4 h-4 rounded-full border border-neutral-300 flex items-center justify-center text-[10px] text-neutral-400 font-bold">i</button>
                                             </div>
-                                            <span className="text-[18px] font-black text-black">1.5 MAD</span>
+                                            <span className="text-[18px] font-bold text-black">1.5 MAD</span>
                                         </div>
                                         <div className="h-px bg-neutral-200/50 w-full" />
 
