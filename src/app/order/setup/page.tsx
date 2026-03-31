@@ -820,6 +820,23 @@ export default function ServiceSetupPage() {
                                             </div>
                                         </motion.div>
 
+                                        {/* Portfolio Section - High Visibility Move */}
+                                        {provider.portfolio && provider.portfolio.length > 0 && (
+                                            <motion.div variants={staggerItem} className="mb-8">
+                                                <div className="flex items-center justify-between mb-4">
+                                                    <h4 className="text-[18px] font-black text-[#111827]">Portfolio</h4>
+                                                    <span className="text-[11px] font-black text-[#219178] tracking-[2px] uppercase">{order.serviceName}</span>
+                                                </div>
+                                                <div className="flex gap-4 overflow-x-auto no-scrollbar -mx-6 px-6 pb-2">
+                                                    {provider.portfolio.map((img, i) => (
+                                                        <div key={i} className="flex-shrink-0">
+                                                            <img src={img} className="w-44 h-56 rounded-[15px] object-cover border border-neutral-100 shadow-sm" alt="Work sample" />
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </motion.div>
+                                        )}
+
                                         {/* Secondary Stats */}
                                         <motion.div variants={staggerItem} className="grid grid-cols-2 gap-3 mb-8">
                                             <div className="p-4 bg-[#F9FAFB] rounded-[5px] border border-neutral-100 flex items-center justify-between">
@@ -838,22 +855,6 @@ export default function ServiceSetupPage() {
                                             </div>
                                         </motion.div>
 
-                                        {/* Portfolio Section */}
-                                        {provider.portfolio && provider.portfolio.length > 0 && (
-                                            <motion.div variants={staggerItem} className="mb-10">
-                                                <div className="flex items-center justify-between mb-4">
-                                                    <h4 className="text-[18px] font-black text-[#111827]">Bricoler Portfolio</h4>
-                                                    <span className="text-[11px] font-black text-[#219178] tracking-[2px]">{order.serviceName}</span>
-                                                </div>
-                                                <div className="flex gap-4 overflow-x-auto no-scrollbar -mx-6 px-6 pb-2">
-                                                    {provider.portfolio.map((img, i) => (
-                                                        <div key={i} className="flex-shrink-0">
-                                                            <img src={img} className="w-44 h-56 rounded-[5px] object-cover border border-neutral-100" alt="Work sample" />
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            </motion.div>
-                                        )}
 
                                         {/* About */}
                                         <motion.div variants={staggerItem} className="mb-10">
