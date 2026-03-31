@@ -481,14 +481,12 @@ function Step1Content() {
           </button>
 
           <div
-            onClick={() => !isFetchingAddress && router.push('/order/step1/search')}
+            onClick={() => router.push('/order/step1/search')}
             style={{
               textAlign: 'center', fontSize: 15,
-              fontWeight: 700, color: isFetchingAddress ? '#9CA3AF' : '#219178',
-              cursor: isFetchingAddress ? 'default' : 'pointer', paddingBottom: 8,
+              fontWeight: 700, color: '#219178',
+              cursor: 'pointer', paddingBottom: 8,
               flexShrink: 0,
-              pointerEvents: isFetchingAddress ? 'none' : 'auto',
-              opacity: isFetchingAddress ? 0.7 : 1
             }}
           >
             Set Another address

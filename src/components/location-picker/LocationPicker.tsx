@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
-import { X, Loader2, Navigation, Search, ChevronLeft } from 'lucide-react';
+import { X, Loader2, Navigation, Search, ChevronLeft, MapPin, Edit2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { LocationPickerProps, LocationPoint, SavedAddress } from './types';
@@ -55,8 +55,15 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
   const [showSearchInput, setShowSearchInput] = useState(false);
   const [radiusView, setRadiusView] = useState(false);
   const [selectedRadius, setSelectedRadius] = useState(initialRadius);
+  const [sheetLoading, setSheetLoading] = useState(true);
 
   const isBricolerBase = serviceType === 'bricoler-base';
+
+  // Simulate loading for 4 seconds as requested
+  useEffect(() => {
+    const timer = setTimeout(() => setSheetLoading(false), 4000);
+    return () => clearTimeout(timer);
+  }, []);
 
   // Sync local addresses with props
   useEffect(() => {
@@ -279,17 +286,32 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
       {/* 2. Bottom Sheet Area (Resizable) */}
       <div className="flex-1 bg-white rounded-t-[32px] shadow-[0_-8px_30px_rgba(0,0,0,0.08)] px-5 py-8 flex flex-col relative z-10 -mt-8 overflow-visible min-h-0">
         {/* New Locator Button relative to sheet */}
-        <button
-          onClick={handleLocate}
-          className="absolute -top-14 right-6 w-12 h-12 bg-white rounded-full shadow-xl border border-neutral-100 flex items-center justify-center text-[#219178] active:scale-90 transition-all z-[100]"
-        >
-          {isLocating ? (
-            <Loader2 size={22} className="animate-spin text-black" />
-          ) : (
-            <Navigation size={22} className="text-black" />
-          )}
-        </button>
-        {isBricolerBase ? (
+        {!sheetLoading && (
+          <button
+            onClick={handleLocate}
+            className="absolute -top-14 right-6 w-12 h-12 bg-white rounded-full shadow-xl border border-neutral-100 flex items-center justify-center text-[#219178] active:scale-90 transition-all z-[100]"
+          >
+            {isLocating ? (
+              <Loader2 size={22} className="animate-spin text-black" />
+            ) : (
+              <Navigation size={22} className="text-black" />
+            )}
+          </button>
+        )}
+
+        {sheetLoading ? (
+          <div className="flex flex-col gap-6 animate-pulse">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 bg-neutral-100 rounded-2xl" />
+              <div className="flex-1 space-y-2">
+                <div className="h-4 bg-neutral-100 rounded w-3/4" />
+                <div className="h-3 bg-neutral-100 rounded w-1/2" />
+              </div>
+            </div>
+            <div className="h-15 bg-neutral-100 rounded-full w-full" />
+            <div className="h-4 bg-neutral-100 rounded w-1/3 mx-auto" />
+          </div>
+        ) : isBricolerBase ? (
           <div className="flex flex-col h-full overflow-y-auto scrollbar-hide">
             <AnimatePresence mode="wait">
               {radiusView ? (
@@ -336,8 +358,26 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -10 }}
-                  className="flex flex-col gap-4 mt-4"
+                  className="flex flex-col gap-4"
                 >
+                  {/* Address Display Row */}
+                  <div className="flex items-center gap-4 mb-2">
+                     <div className="w-12 h-12 bg-neutral-50 rounded-2xl flex items-center justify-center text-neutral-400">
+                        <MapPin size={24} />
+                     </div>
+                     <div className="flex-1 min-w-0">
+                        <p className="text-[16px] font-bold text-neutral-900 line-clamp-2 leading-tight">
+                          {currentPoint?.address || 'Locating...'}
+                        </p>
+                     </div>
+                     <button 
+                        onClick={() => setShowSearchInput(true)}
+                        className="w-10 h-10 rounded-full border border-neutral-100 flex items-center justify-center text-neutral-400 active:bg-neutral-50"
+                     >
+                        <Edit2 size={18} />
+                     </button>
+                  </div>
+
                   <button
                     onClick={handleConfirmPoint}
                     className="w-full h-15 bg-[#219178] text-white rounded-full font-black text-[18px] active:scale-95 transition-all shadow-lg"
@@ -346,7 +386,7 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
                   </button>
                   <button
                     onClick={() => setShowSearchInput(true)}
-                    className="w-full mt-4 text-[#219178] font-bold text-[18px] transition-all"
+                    className="w-full mt-2 text-[#219178] font-bold text-[18px] transition-all"
                   >
                     Set Another address
                   </button>
