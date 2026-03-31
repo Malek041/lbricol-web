@@ -321,8 +321,8 @@ const ClientHome: React.FC<ClientHomeProps> = ({
         }
 
         // 2) Personalization & Default Priority:
-        // Prioritize "Errands" if available, until the user selects another category.
-        const priorityId = lastCategoryId || (base.some(s => s.id === 'errands') ? 'errands' : null);
+        // Prioritize "Cleaning" if available, until the user selects another category.
+        const priorityId = lastCategoryId || (base.some(s => s.id === 'cleaning') ? 'cleaning' : (base.some(s => s.id === 'errands') ? 'errands' : null));
 
         if (priorityId) {
             const prioritizedIdx = base.findIndex(s => s.id === priorityId);
@@ -605,6 +605,13 @@ const ClientHome: React.FC<ClientHomeProps> = ({
                                         return (
                                             <motion.button
                                                 key={svc.id}
+                                                disabled={svc.id !== 'cleaning'}
+                                                onClick={() => {
+                                                    if (svc.id === 'cleaning') {
+                                                        setActiveId(svc.id);
+                                                        setHasManuallySelected(true);
+                                                    }
+                                                }}
                                                 initial={{ opacity: 0, y: 20, scale: 0.8 }}
                                                 animate={{ opacity: 1, y: 0, scale: 1 }}
                                                 transition={{
@@ -613,11 +620,7 @@ const ClientHome: React.FC<ClientHomeProps> = ({
                                                     stiffness: 200,
                                                     delay: 1.4 + idx * 0.07
                                                 }}
-                                                onClick={() => {
-                                                    setActiveId(svc.id);
-                                                    setHasManuallySelected(true);
-                                                }}
-                                                className="flex flex-col items-center gap-3 px-1 pt-4 pb-3 flex-shrink-0 relative transition-all"
+                                                className={`flex flex-col items-center gap-3 px-1 pt-4 pb-3 flex-shrink-0 relative transition-all ${svc.id !== 'cleaning' ? 'opacity-30' : ''}`}
                                             >
                                                 <motion.div
                                                     animate={isActive ? {

@@ -1577,7 +1577,7 @@ export default function ServiceSetupPage() {
                                                 {/* 2. How many TVs? */}
                                                 <div className="space-y-6">
                                                     <h3 className="text-[25px] font-bold text-[#111827] setup-heading">How many TVs do you need installed?*</h3>
-                                                    <div className="flex gap-3 overflow-x-auto pb-2 no-scrollbar">
+                                                    <div className="flex gap-3 overflow-x-auto py-4 px-1 no-scrollbar">
                                                         {[1, 2, 3, 4, 5].map((num) => (
                                                             <button
                                                                 key={num}
@@ -1833,7 +1833,7 @@ export default function ServiceSetupPage() {
                             </motion.section>
 
                             {/* Summary Tab Content - Restored & Polished */}
-                            <div className="bg-[#F2F2F2] w-full pt-12 pb-48 px-10 space-y-8 relative ">
+                            <div className="bg-[#F2F2F2] w-full pt-12 pb-48 px-6 sm:px-10 space-y-8 relative ">
                                 {/* Wave Top Effect for Summary Transition */}
                                 <div className="absolute top-[-40px] left-0 right-0 h-[40px] z-10 pointer-events-none">
                                     <svg viewBox="0 0 1440 320" preserveAspectRatio="none" className="w-full h-full fill-[#F2F2F2]">
@@ -1866,9 +1866,9 @@ export default function ServiceSetupPage() {
                                         <div className="h-px bg-neutral-200/50 w-full" />
 
                                         {/* Total Section */}
-                                        <div className="flex items-center justify-between py-2">
-                                            <span className="text-[25px] font-black text-black">Total to pay</span>
-                                            <span className="text-[28px] font-black text-black">{estimate.total.toFixed(2)} MAD</span>
+                                        <div className="flex items-center justify-between py-2 gap-4">
+                                            <span className="text-[22px] sm:text-[25px] font-black text-black whitespace-nowrap">Total to pay</span>
+                                            <span className="text-[24px] sm:text-[28px] font-black text-black text-right">{estimate.total.toFixed(2)} MAD</span>
                                         </div>
 
                                         {!isErrand && (

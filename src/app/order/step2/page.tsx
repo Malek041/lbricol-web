@@ -738,18 +738,20 @@ function ProviderCard({
             </div>
           </div>
 
-          <span style={{
-            background: available ? 'rgba(1, 160, 131, 0.05)' : '#F9FAFB',
-            color: available ? '#01A082' : '#9CA3AF',
-            fontSize: 9, fontWeight: 950,
-            padding: '4px 10px', borderRadius: 50,
-            border: available ? '1px solid rgba(1, 160, 131, 0.15)' : '1px solid #E5E7EB',
-            display: 'inline-flex', alignItems: 'center', gap: 4,
-            textTransform: 'uppercase'
-          }}>
-            <span style={{ width: 5, height: 5, borderRadius: '50%', background: available ? '#01A082' : '#D1D5DB' }}></span>
-            {available ? 'AVAILABLE TODAY' : 'UNAVAILABLE TODAY'}
-          </span>
+          {available && (
+            <span style={{
+              background: 'rgba(1, 160, 131, 0.05)',
+              color: '#01A082',
+              fontSize: 9, fontWeight: 950,
+              padding: '4px 10px', borderRadius: 50,
+              border: '1px solid rgba(1, 160, 131, 0.15)',
+              display: 'inline-flex', alignItems: 'center', gap: 4,
+              textTransform: 'uppercase'
+            }}>
+              <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#01A082' }}></span>
+              AVAILABLE TODAY
+            </span>
+          )}
         </div>
       </div>
 

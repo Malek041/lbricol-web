@@ -129,14 +129,19 @@ const MapView: React.FC<MapViewProps> = ({
       map.flyTo([lat, lng], effectiveZoom, { duration: 1.5 });
     } else {
       const mapSize = map.getSize();
-      const centerPoint = L.point(mapSize.x / 2, mapSize.y / 2);
-      const targetPoint = L.point(mapSize.x / 2, mapSize.y * (pinY / 100));
-      const targetLatLng = L.latLng(lat, lng);
-      const centerLatLng = map.unproject(
-        map.project(targetLatLng, effectiveZoom).add(centerPoint).subtract(targetPoint),
-        effectiveZoom
-      );
-      map.flyTo(centerLatLng, effectiveZoom, { duration: 1.5 });
+      if (mapSize.x === 0 || mapSize.y === 0) {
+        // Fallback to basic flyTo if size is not yet detected
+        map.flyTo([lat, lng], effectiveZoom, { duration: 1.5 });
+      } else {
+        const centerPoint = L.point(mapSize.x / 2, mapSize.y / 2);
+        const targetPoint = L.point(mapSize.x / 2, mapSize.y * (pinY / 100));
+        const targetLatLng = L.latLng(lat, lng);
+        const centerLatLng = map.unproject(
+          map.project(targetLatLng, effectiveZoom).add(centerPoint).subtract(targetPoint),
+          effectiveZoom
+        );
+        map.flyTo(centerLatLng, effectiveZoom, { duration: 1.5 });
+      }
     }
 
     if (flyToTimeoutRef.current) clearTimeout(flyToTimeoutRef.current);
@@ -144,7 +149,7 @@ const MapView: React.FC<MapViewProps> = ({
       if (mapRef.current && mapRef.current.getContainer()) {
         mapRef.current.invalidateSize();
       }
-    }, 400);
+    }, 450); // Slightly longer to allow fly animation start
   };
 
   const reverseGeocode = async (lat: number, lng: number) => {
@@ -375,54 +380,79 @@ const MapView: React.FC<MapViewProps> = ({
     }
   }, [userPosition, internalUserPos, currentUserPin, mapReady]);
 
+  // ── Handle GPS Trigger ──────────────────────────────────────────────
   useEffect(() => {
-    if (triggerGps && navigator.geolocation && mapRef.current && mapReady) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const { latitude, longitude } = position.coords;
-          flyToWithOffset(latitude, longitude, targetZoom, pinY === 50);
+    if (triggerGps && triggerGps > 0 && mapRef.current && mapReady) {
+      onLoadingChange?.(true);
 
-          if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
-          debounceTimerRef.current = setTimeout(() => {
-            reverseGeocode(latitude, longitude);
-          }, 1000);
+      const requestGps = (highAccuracy: boolean) => {
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            const { latitude, longitude } = position.coords;
+            setInternalUserPos({ lat: latitude, lng: longitude });
 
-          // Safety: if map doesn't move significantly, moveend might not fire
-          // so we force a geocode update after 2s to clear any loading states
-          setTimeout(() => {
-            if (mapRef.current) reverseGeocode(latitude, longitude);
-          }, 2000);
-
-          if (gpsMarkerRef.current) {
-            gpsMarkerRef.current.setLatLng([latitude, longitude]);
-          } else if (mapRef.current) {
-            const gpsIcon = L.divIcon({
-              className: 'gps-pulse-icon',
-              html: `
-                <div style="position:relative;width:20px;height:20px;display:flex;align-items:center;justify-content:center;">
-                  <div style="position:absolute;width:20px;height:20px;background:#10B981;border-radius:50%;opacity:0.4;animation:radarPulse 2s cubic-bezier(0,0,0.2,1) infinite;"></div>
-                  <div style="position:absolute;width:20px;height:20px;background:#10B981;border-radius:50%;opacity:0.2;animation:radarPulse 2s cubic-bezier(0,0,0.2,1) infinite;animation-delay:1s;"></div>
-                  <div style="position:absolute;width:12px;height:12px;background:#10B981;border-radius:50%;border:2px solid white;box-shadow:0 1px 4px rgba(0,0,0,0.2);z-index:10;"></div>
-                </div>
-              `,
-              iconSize: [20, 20],
-              iconAnchor: [10, 10],
-            });
-            gpsMarkerRef.current = L.marker([latitude, longitude], { icon: gpsIcon }).addTo(mapRef.current);
-            // Center map on this NEWLY detected radar if no pins are present
-            if (!clientPin && !destinationPin && !focusedProviderId) {
-                flyToWithOffset(latitude, longitude, targetZoom, true);
+            if (mapRef.current) {
+              mapRef.current.invalidateSize();
+              flyToWithOffset(latitude, longitude, targetZoom, pinY === 50);
             }
+
+            if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
+            debounceTimerRef.current = setTimeout(() => {
+              reverseGeocode(latitude, longitude);
+            }, 1000);
+
+            if (gpsMarkerRef.current) {
+              gpsMarkerRef.current.setLatLng([latitude, longitude]);
+            } else if (mapRef.current) {
+              const gpsIcon = L.divIcon({
+                className: 'gps-pulse-icon',
+                html: `
+                  <div style="position:relative;width:20px;height:20px;display:flex;align-items:center;justify-content:center;">
+                    <div style="position:absolute;width:20px;height:20px;background:#10B981;border-radius:50%;opacity:0.4;animation:radarPulse 2s cubic-bezier(0,0,0.2,1) infinite;"></div>
+                    <div style="position:absolute;width:12px;height:12px;background:#10B981;border-radius:50%;border:2px solid white;box-shadow:0 1px 4px rgba(0,0,0,0.2);z-index:10;"></div>
+                  </div>
+                `,
+                iconSize: [20, 20],
+                iconAnchor: [10, 10],
+              });
+              gpsMarkerRef.current = L.marker([latitude, longitude], { icon: gpsIcon }).addTo(mapRef.current);
+            }
+            onLoadingChange?.(false);
+          },
+          (error) => {
+            console.warn(`Geolocation error (highAccuracy: ${highAccuracy}):`, error);
+            if (highAccuracy) {
+              // Try again without high accuracy if it fails or times out
+              requestGps(false);
+            } else {
+              onLocationError?.(error);
+              onLoadingChange?.(false);
+            }
+          },
+          {
+            enableHighAccuracy: highAccuracy,
+            timeout: highAccuracy ? 8000 : 15000,
+            maximumAge: 30000
           }
-        },
-        (error) => {
-          console.warn('Geolocation error:', error);
-          onLocationError?.(error);
-        },
-        { enableHighAccuracy: true, timeout: 15000, maximumAge: 30000 }
-      );
+        );
+      };
+
+      requestGps(true);
     }
   }, [triggerGps, mapReady]);
+
+  // ── Handle Late-Arriving Initial Location ──────────────────────────
+  const [lastAssignedInitial, setLastAssignedInitial] = useState<string | null>(null);
+  useEffect(() => {
+      if (initialLocation && mapRef.current && mapReady) {
+          const locStr = `${initialLocation.lat},${initialLocation.lng}`;
+          // If the location changed AFTER we already initialized with a default
+          if (lastAssignedInitial !== null && lastAssignedInitial !== locStr) {
+              flyToWithOffset(initialLocation.lat, initialLocation.lng, targetZoom, pinY === 50);
+          }
+          setLastAssignedInitial(locStr);
+      }
+  }, [initialLocation, mapReady]);
 
   useEffect(() => {
     if (flyToPoint && mapRef.current && mapReady) {
