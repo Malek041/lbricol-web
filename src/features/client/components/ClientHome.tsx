@@ -613,14 +613,19 @@ const ClientHome: React.FC<ClientHomeProps> = ({
                                                     }
                                                 }}
                                                 initial={{ opacity: 0, y: 20, scale: 0.8 }}
-                                                animate={{ opacity: 1, y: 0, scale: 1 }}
+                                                animate={{ 
+                                                    opacity: svc.id === 'cleaning' ? 1 : 0.4, 
+                                                    y: 0, 
+                                                    scale: 1,
+                                                    filter: svc.id === 'cleaning' ? 'grayscale(0)' : 'grayscale(1)'
+                                                }}
                                                 transition={{
                                                     type: "spring",
                                                     damping: 15,
                                                     stiffness: 200,
                                                     delay: 1.4 + idx * 0.07
                                                 }}
-                                                className={`flex flex-col items-center gap-3 px-1 pt-4 pb-3 flex-shrink-0 relative transition-all ${svc.id !== 'cleaning' ? 'opacity-30' : ''}`}
+                                                className={`flex flex-col items-center gap-3 px-1 pt-4 pb-3 flex-shrink-0 relative transition-all ${svc.id !== 'cleaning' ? 'cursor-not-allowed' : ''}`}
                                             >
                                                 <motion.div
                                                     animate={isActive ? {
@@ -662,7 +667,6 @@ const ClientHome: React.FC<ClientHomeProps> = ({
                                                             key={svc.iconPath}
                                                             src={svc.iconPath}
                                                             className="w-12 h-12 object-contain transition-all duration-300"
-                                                            style={{ filter: 'none' }}
                                                             alt={svc.label}
                                                         />
                                                     )}
