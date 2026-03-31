@@ -501,7 +501,7 @@ const ClientHome: React.FC<ClientHomeProps> = ({
                     </motion.h1>
                 </div>
                 {/* Search bar trigger */}
-                <div className="px-6 pb-1 pt-6 w-full max-w-[400px] h-[30px] mx-auto">
+                {/*<div className="px-6 pb-1 pt-6 w-full max-w-[400px] h-[30px] mx-auto">
                     <button
                         onClick={() => setIsSearchOpen(true)}
                         className="w-full flex items-center gap-2 bg-neutral-50 rounded-full px-5 py-3.5 active:scale-[0.98] transition-all"
@@ -511,7 +511,7 @@ const ClientHome: React.FC<ClientHomeProps> = ({
                             {t({ en: 'Search services...', fr: 'Rechercher un service...', ar: 'ابحث عن خدمة...' })}
                         </span>
                     </button>
-                </div>
+                </div>*/}
 
 
                 {/* 1.5 Animated Icons Row */}
@@ -613,9 +613,9 @@ const ClientHome: React.FC<ClientHomeProps> = ({
                                                     }
                                                 }}
                                                 initial={{ opacity: 0, y: 20, scale: 0.8 }}
-                                                animate={{ 
-                                                    opacity: svc.id === 'cleaning' ? 1 : 0.4, 
-                                                    y: 0, 
+                                                animate={{
+                                                    opacity: svc.id === 'cleaning' ? 1 : 0.4,
+                                                    y: 0,
                                                     scale: 1,
                                                     filter: svc.id === 'cleaning' ? 'grayscale(0)' : 'grayscale(1)'
                                                 }}
@@ -774,12 +774,24 @@ const ClientHome: React.FC<ClientHomeProps> = ({
                                                     <motion.button
                                                         key={sub.en}
                                                         initial={{ opacity: 0, scale: 0.6 }}
-                                                        animate={{ opacity: 1, scale: 1 }}
+                                                        animate={{ 
+                                                            opacity: 1, 
+                                                            scale: 1,
+                                                            borderColor: ['#E6E6E6', '#219178', '#219178', '#E6E6E6'],
+                                                            borderWidth: [1, 1.8, 1.8, 1],
+                                                            boxShadow: [
+                                                                '0 2px 8px rgba(0,0,0,0.03)',
+                                                                '0 0 12px rgba(33,145,120,0.3)',
+                                                                '0 0 12px rgba(33,145,120,0.3)',
+                                                                '0 2px 8px rgba(0,0,0,0.03)'
+                                                            ]
+                                                        }}
                                                         transition={{
-                                                            type: 'spring',
-                                                            stiffness: 380,
-                                                            damping: 20,
-                                                            delay: (hasManuallySelected ? 0.1 : 1.6) + idx * 0.04
+                                                            opacity: { duration: 0.3, delay: (hasManuallySelected ? 0.1 : 1.6) + idx * 0.04 },
+                                                            scale: { type: 'spring', stiffness: 380, damping: 20, delay: (hasManuallySelected ? 0.1 : 1.6) + idx * 0.04 },
+                                                            borderColor: { duration: 1.5, delay: (hasManuallySelected ? 0.8 : 2.4) + idx * 0.04 },
+                                                            borderWidth: { duration: 1.5, delay: (hasManuallySelected ? 0.8 : 2.4) + idx * 0.04 },
+                                                            boxShadow: { duration: 1.5, delay: (hasManuallySelected ? 0.8 : 2.4) + idx * 0.04 }
                                                         }}
                                                         whileTap={{ scale: 0.92 }}
                                                         onClick={() => handleServiceSelection(active.id, sub)}
