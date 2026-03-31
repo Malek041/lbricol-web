@@ -520,12 +520,12 @@ function Step2Content() {
             providerPins={providerPins}
             focusedProviderId={focusedId}
             lockCenterOnFocus={false}
-            disableFitBounds={true}
+            disableFitBounds={false}
             clientPin={{ lat: clientLat, lng: clientLng }}
             serviceIconUrl={serviceType === 'car_rental' ? '/Images/Vectors Illu/carKey.png' : (order.serviceIcon || undefined)}
             showCenterPin={false}
             pinY={50}
-            zoom={16}
+            zoom={14}
             onProviderClick={handleProviderClick}
             onInteractionStart={() => setIsInteracting(true)}
             onInteractionEnd={() => setIsInteracting(false)}
