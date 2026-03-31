@@ -2394,7 +2394,7 @@ const Home = () => {
   const isFullscreenMobileTab = isMobile && ['home', 'profile', 'share', 'promocodes', 'calendar', 'messages', 'heroes'].includes(mobileNavTab);
 
   // --- PAUSE DEPLOYMENT ---
-  const isMaintenanceMode = true; // process.env.NODE_ENV === 'production';
+  const isMaintenanceMode = false; // process.env.NODE_ENV === 'production';
   if (isMaintenanceMode) {
     return <ComingSoon />;
   }
