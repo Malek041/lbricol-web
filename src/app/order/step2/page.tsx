@@ -210,7 +210,7 @@ function Step2Content() {
           return {
             id: d.id,
             ...data,
-            taskCount: data.completedJobs || data.taskCount || 0,
+            taskCount: data.completedJobs || data.taskCount || data.numReviews || data.jobsDone || 0,
             rating: data.rating || 0,
             numReviews: data.numReviews || 0
           };

@@ -246,7 +246,7 @@ export default function ServiceSetupPage() {
                     const servicePortfolio = relevantService?.portfolioImages || [];
 
                     setProvider(prev => {
-                        const tasks = data.completedJobs || data.taskCount || 0;
+                        const tasks = data.completedJobs || data.taskCount || data.numReviews || data.jobsDone || (data.reviews?.length) || 0;
                         const bRating = data.rating || data.stars || prev.rating;
                         const bRank = (tasks < 10 || data.isNew) ? 'New' : (data.badge || 'Classic');
 
@@ -915,7 +915,7 @@ export default function ServiceSetupPage() {
                                             </div>
                                             <div className="grid grid-cols-1 gap-4">
                                                 {provider.reviews && provider.reviews.length > 0 ? provider.reviews.map((rev, i) => (
-                                                    <div key={i} className="p-5 bg-white rounded-[5px] border border-neutral-100">
+                                                    <div key={i} className="p-5 bg-white rounded-[20px] border border-neutral-100 shadow-sm">
                                                         <div className="flex items-center gap-3 mb-3">
                                                             <div className="w-10 h-10 rounded-full bg-[#219178]/10 flex items-center justify-center font-black text-[#219178] text-sm border border-[#219178]/10">
                                                                 {rev.userName?.charAt(0) || 'C'}
