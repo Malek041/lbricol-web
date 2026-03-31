@@ -501,7 +501,7 @@ const ClientHome: React.FC<ClientHomeProps> = ({
                     </motion.h1>
                 </div>
                 {/* Search bar trigger */}
-                {/*<div className="px-6 pb-1 pt-6 w-full max-w-[400px] h-[30px] mx-auto">
+                <div className="px-6 pb-1 pt-6 w-full max-w-[400px] h-[30px] mx-auto">
                     <button
                         onClick={() => setIsSearchOpen(true)}
                         className="w-full flex items-center gap-2 bg-neutral-50 rounded-full px-5 py-3.5 active:scale-[0.98] transition-all"
@@ -511,7 +511,7 @@ const ClientHome: React.FC<ClientHomeProps> = ({
                             {t({ en: 'Search services...', fr: 'Rechercher un service...', ar: 'ابحث عن خدمة...' })}
                         </span>
                     </button>
-                </div>*/}
+                </div>
 
 
                 {/* 1.5 Animated Icons Row */}
@@ -774,8 +774,8 @@ const ClientHome: React.FC<ClientHomeProps> = ({
                                                     <motion.button
                                                         key={sub.en}
                                                         initial={{ opacity: 0, scale: 0.6 }}
-                                                        animate={{ 
-                                                            opacity: 1, 
+                                                        animate={{
+                                                            opacity: 1,
                                                             scale: 1,
                                                             borderColor: ['#E6E6E6', '#219178', '#219178', '#E6E6E6'],
                                                             borderWidth: [1, 1.8, 1.8, 1],

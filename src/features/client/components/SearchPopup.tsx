@@ -63,19 +63,36 @@ export const SearchPopup: React.FC<SearchPopupProps> = ({
     const filteredResults = useMemo(() => {
         if (!query.trim()) return [];
         const q = query.toLowerCase().trim();
+        const isSearchingForCleaning = q.includes('ménage') || q.includes('menage');
+
         return allSubServices.filter(item => {
             const sub = item.subService;
-            return (
+            
+            // Special check for "Ménage" keyword for Cleaning services
+            const matchesCleaningSynonym = isSearchingForCleaning && item.serviceId === 'cleaning';
+            
+            const matchesStandard = (
                 sub.en.toLowerCase().includes(q) ||
                 sub.fr.toLowerCase().includes(q) ||
                 (sub.ar && sub.ar.includes(q)) ||
                 item.serviceLabel.toLowerCase().includes(q)
             );
+            
+            return matchesCleaningSynonym || matchesStandard;
         }).slice(0, 15);
     }, [query, allSubServices, language]);
 
 
     const handleSelect = (item: any) => {
+        if (item.serviceId !== 'cleaning') {
+            alert(t({
+                en: 'This service is not yet enabled in your city. We are currently focusing on Cleaning services.',
+                fr: 'Ce service n\'est pas encore activé dans votre ville. Nous nous concentrons actuellement sur les services de Nettoyage.',
+                ar: 'هذه الخدمة غير مفعلة في مدينتك بعد. نحن نركز حاليًا على خدمات التنظيف.'
+            }));
+            return;
+        }
+
         // Save to recent
         const term = t(item.subService);
         const updatedRecent = [term, ...recentSearches.filter(s => s !== term)].slice(0, 5);
@@ -195,12 +212,12 @@ export const SearchPopup: React.FC<SearchPopupProps> = ({
                                             <div className="w-12 h-12 rounded-[50] bg-[#FFB700] flex items-center justify-center shrink-0">
                                                 <img src={SERVICES_CATALOGUE.find(s => s.id === item.serviceId)?.iconPath} className="w-8 h-8 object-contain" alt="" />
                                             </div>
-                                            <div className="flex-1 flex flex-col">
+                                            <div className={cn("flex-1 flex flex-col", item.serviceId !== 'cleaning' && "opacity-40 grayscale")}>
                                                 <span className="text-[16px] font-medium text-neutral-900">
                                                     {t(item.subService)}
                                                 </span>
                                                 <span className="text-[13px] font-light text-neutral-500">
-                                                    {item.serviceLabel}
+                                                    {item.serviceLabel} {item.serviceId !== 'cleaning' && `(${t({ en: 'Coming soon', fr: 'Bientôt disponible', ar: 'قريباً' })})`}
                                                 </span>
                                             </div>
                                             <ChevronRight size={20} className="text-neutral-300" />
