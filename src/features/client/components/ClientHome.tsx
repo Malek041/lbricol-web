@@ -773,17 +773,43 @@ const ClientHome: React.FC<ClientHomeProps> = ({
                                                 .map((sub: any, idx: number) => (
                                                     <motion.button
                                                         key={sub.en}
-                                                        initial={{ opacity: 0, scale: 0.6 }}
-                                                        animate={{ opacity: 1, scale: 1 }}
+                                                        initial={{ opacity: 0, scale: 0.6, borderColor: '#E6E6E6' }}
+                                                        animate={{ 
+                                                            opacity: 1, 
+                                                            scale: [1, 1.08, 0.96, 1.04, 1],
+                                                            borderColor: ['#E6E6E6', '#219178', '#E6E6E6', '#219178', '#E6E6E6', '#E6E6E6'],
+                                                            boxShadow: [
+                                                                '0 0 0px rgba(33, 145, 120, 0)',
+                                                                '0 0 12px rgba(33, 145, 120, 0.25)',
+                                                                '0 0 0px rgba(33, 145, 120, 0)',
+                                                                '0 0 12px rgba(33, 145, 120, 0.25)',
+                                                                '0 0 0px rgba(33, 145, 120, 0)'
+                                                            ]
+                                                        }}
                                                         transition={{
-                                                            type: 'spring',
-                                                            stiffness: 380,
-                                                            damping: 20,
-                                                            delay: (hasManuallySelected ? 0.1 : 1.6) + idx * 0.04
+                                                            opacity: { 
+                                                                duration: 0.3, 
+                                                                delay: (hasManuallySelected ? 0.05 : 1.5) + idx * 0.05 
+                                                            },
+                                                            scale: {
+                                                                duration: 1.8,
+                                                                times: [0, 0.2, 0.5, 0.8, 1],
+                                                                delay: (hasManuallySelected ? 0.35 : 1.8) + idx * 0.08
+                                                            },
+                                                            borderColor: {
+                                                                duration: 1.8,
+                                                                times: [0, 0.2, 0.5, 0.8, 1],
+                                                                delay: (hasManuallySelected ? 0.35 : 1.8) + idx * 0.08
+                                                            },
+                                                            boxShadow: {
+                                                                duration: 1.8,
+                                                                times: [0, 0.2, 0.5, 0.8, 1],
+                                                                delay: (hasManuallySelected ? 0.35 : 1.8) + idx * 0.08
+                                                            }
                                                         }}
                                                         whileTap={{ scale: 0.92 }}
                                                         onClick={() => handleServiceSelection(active.id, sub)}
-                                                        className="px-3.5 py-2 rounded-full border border-[#E6E6E6] text-[13.5px] font-bold text-[#1D1D1D] bg-white hover:border-[#1D1D1D] active:bg-neutral-50 transition-colors shadow-[0_2px_8_rgba(0,0,0,0.03)]"
+                                                        className="px-4 py-2.5 rounded-full border border-[#E6E6E6] text-[14px] font-bold text-[#1D1D1D] bg-white hover:border-[#1D1D1D] active:bg-neutral-50 transition-colors shadow-[0_2px_8px_rgba(0,0,0,0.03)]"
                                                     >
                                                         {t(sub)}
                                                     </motion.button>
