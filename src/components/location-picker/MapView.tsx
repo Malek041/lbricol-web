@@ -109,18 +109,10 @@ const MapView: React.FC<MapViewProps> = ({
   const mapReadyTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const flyToTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const loadingCountRef = useRef(0);
-  const setLoading = (val: boolean) => {
-    if (val) {
-      loadingCountRef.current++;
-      onLoadingChange?.(true);
-    } else {
-      loadingCountRef.current = Math.max(0, loadingCountRef.current - 1);
-      if (loadingCountRef.current === 0) {
-        onLoadingChange?.(false);
-      }
-    }
-  };
+  const [loadingStates, setLoadingStates] = useState({ flying: false, geocoding: false, gps: false });
+  useEffect(() => {
+    onLoadingChange?.(loadingStates.flying || loadingStates.geocoding || loadingStates.gps);
+  }, [loadingStates, onLoadingChange]);
 
   const flyToWithOffset = (lat: number, lng: number, zoom?: number, skipOffset = false) => {
     if (!mapRef.current || !mapRef.current.getContainer()) return;
@@ -137,13 +129,13 @@ const MapView: React.FC<MapViewProps> = ({
     const effectiveZoom = zoom !== undefined ? zoom : map.getZoom();
 
     if (skipOffset) {
-      setLoading(true);
+      setLoadingStates(s => ({ ...s, flying: true }));
       map.flyTo([lat, lng], effectiveZoom, { duration: 1.5 });
     } else {
       const mapSize = map.getSize();
       if (mapSize.x === 0 || mapSize.y === 0) {
         // Fallback to basic flyTo if size is not yet detected
-        setLoading(true);
+        setLoadingStates(s => ({ ...s, flying: true }));
         map.flyTo([lat, lng], effectiveZoom, { duration: 1.5 });
       } else {
         const centerPoint = L.point(mapSize.x / 2, mapSize.y / 2);
@@ -153,7 +145,7 @@ const MapView: React.FC<MapViewProps> = ({
           map.project(targetLatLng, effectiveZoom).add(centerPoint).subtract(targetPoint),
           effectiveZoom
         );
-        setLoading(true);
+        setLoadingStates(s => ({ ...s, flying: true }));
         map.flyTo(centerLatLng, effectiveZoom, { duration: 1.5 });
       }
     }
@@ -163,12 +155,12 @@ const MapView: React.FC<MapViewProps> = ({
       if (mapRef.current && mapRef.current.getContainer()) {
         mapRef.current.invalidateSize();
       }
-      setLoading(false);
+      setLoadingStates(s => ({ ...s, flying: false }));
     }, 1600); // 1.5s flight + 100ms buffer
   };
 
   const reverseGeocode = async (lat: number, lng: number) => {
-    setLoading(true);
+    setLoadingStates(s => ({ ...s, geocoding: true }));
     let finalAddress = "";
     let city = "";
     let area = "";
@@ -206,7 +198,7 @@ const MapView: React.FC<MapViewProps> = ({
       city: city || undefined,
       area: area || undefined
     });
-    setLoading(false);
+    setLoadingStates(s => ({ ...s, geocoding: false }));
     try {
       localStorage.setItem('lastKnownLat', lat.toString());
       localStorage.setItem('lastKnownLng', lng.toString());
@@ -399,7 +391,7 @@ const MapView: React.FC<MapViewProps> = ({
   useEffect(() => {
     if (triggerGps && triggerGps > 0 && mapRef.current && mapReady) {
       // Start loading immediately as we're initializing GPS
-      setLoading(true);
+      setLoadingStates(s => ({ ...s, gps: true }));
 
       const requestGps = (highAccuracy: boolean) => {
         navigator.geolocation.getCurrentPosition(
@@ -434,6 +426,7 @@ const MapView: React.FC<MapViewProps> = ({
               });
               gpsMarkerRef.current = L.marker([latitude, longitude], { icon: gpsIcon }).addTo(mapRef.current);
             }
+            setLoadingStates(s => ({ ...s, gps: false }));
           },
           (error) => {
             console.warn(`Geolocation error (highAccuracy: ${highAccuracy}):`, error);
@@ -442,7 +435,7 @@ const MapView: React.FC<MapViewProps> = ({
               requestGps(false);
             } else {
               onLocationError?.(error);
-              setLoading(false);
+              setLoadingStates(s => ({ ...s, gps: false }));
             }
           },
           {
