@@ -860,7 +860,9 @@ export default function ServiceSetupPage() {
                                         <motion.div variants={staggerItem} className="mb-10">
                                             <h4 className="text-[18px] font-black text-[#111827] mb-4">About Me</h4>
                                             <div className="text-[15px] text-[#000000] leading-relaxed font-medium p-6 bg-[#F9FAFB] rounded-[5px] border border-neutral-100">
-                                                "{provider.bio}"
+                                                {provider.bio && provider.bio.trim() ? `"${provider.bio}"` : (
+                                                    <span className="text-neutral-400 italic">No bio provided by the Bricoler yet.</span>
+                                                )}
                                             </div>
                                         </motion.div>
 
@@ -918,15 +920,21 @@ export default function ServiceSetupPage() {
                                                 {provider.reviews && provider.reviews.length > 0 ? provider.reviews.map((rev, i) => (
                                                     <div key={i} className="p-5 bg-white rounded-[20px] border border-neutral-100 shadow-sm">
                                                         <div className="flex items-center gap-3 mb-3">
-                                                            <div className="w-10 h-10 rounded-full bg-[#219178]/10 flex items-center justify-center font-black text-[#219178] text-sm border border-[#219178]/10">
-                                                                {rev.userName?.charAt(0) || 'C'}
+                                                            <div className="w-10 h-10 rounded-full bg-[#219178]/10 overflow-hidden flex items-center justify-center font-black text-[#219178] text-sm border border-[#219178]/10 flex-shrink-0">
+                                                                {(rev.clientAvatar || rev.userPhotoURL) ? (
+                                                                    <img src={rev.clientAvatar || rev.userPhotoURL} className="w-full h-full object-cover" alt="" />
+                                                                ) : (
+                                                                    (rev.clientName || rev.userName || 'C').charAt(0)
+                                                                )}
                                                             </div>
-                                                            <div className="flex-1">
-                                                                <p className="text-[14px] font-black text-[#111827]">{rev.userName || 'Verified Client'}</p>
-                                                                <p className="text-[11px] font-bold text-[#9CA3AF]">{rev.date || 'Recemment'}</p>
+                                                            <div className="flex-1 min-w-0">
+                                                                <p className="text-[14px] font-black text-[#111827] truncate">{rev.clientName || rev.userName || 'Verified Client'}</p>
+                                                                <p className="text-[11px] font-bold text-[#9CA3AF]">
+                                                                    {rev.date ? new Date(rev.date).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }) : 'Recently'}
+                                                                </p>
                                                             </div>
-                                                            <div className="flex items-center gap-1 bg-[#FFFBEB] px-2.5 py-1 rounded-[5px] border border-[#FEF3C7]">
-                                                                <Sparkles size={10} className="text-[#FBBF24] fill-[#FBBF24]" />
+                                                            <div className="flex items-center gap-1 bg-[#FFFBEB] px-2.5 py-1 rounded-[5px] border border-[#FEF3C7] flex-shrink-0">
+                                                                <Star size={10} className="text-[#FBBF24] fill-[#FBBF24]" />
                                                                 <span className="text-[11px] font-black text-[#92400E]">{rev.rating || 5}</span>
                                                             </div>
                                                         </div>
