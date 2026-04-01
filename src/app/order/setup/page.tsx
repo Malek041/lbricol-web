@@ -96,6 +96,7 @@ export default function ServiceSetupPage() {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isUploading, setIsUploading] = useState(false);
     const [isSplashing, setIsSplashing] = useState(false);
+    const [hasLoaded, setHasLoaded] = useState(false);
     const [taskSize, setTaskSize] = useState<'small' | 'medium' | 'large'>('small');
     const [taskDuration, setTaskDuration] = useState(1);
 
@@ -210,6 +211,7 @@ export default function ServiceSetupPage() {
     });
 
     useEffect(() => {
+        setHasLoaded(false);
         if (!order.serviceType || (!order.providerId && !order.isPublic)) {
             router.push('/order/step1');
             return;
@@ -246,9 +248,9 @@ export default function ServiceSetupPage() {
                     const servicePortfolio = relevantService?.portfolioImages || [];
 
                     setProvider(prev => {
-                        const tasks = data.completedJobs || data.taskCount || data.numReviews || data.jobsDone || (data.reviews?.length) || 0;
-                        const bRating = data.rating || data.stars || prev.rating;
-                        const bRank = (tasks < 10 || data.isNew) ? 'New' : (data.badge || 'Classic');
+                        const tasks = Number(data.completedJobs || data.numReviews || 0);
+                        const bRank = tasks > 50 ? 'Elite' : (tasks > 20 ? 'Expert' : (tasks > 5 ? 'Pro' : 'Classic'));
+                        const levelDisplay = (tasks < 10 || data.isNew) ? 'New' : bRank;
 
                         return {
                             ...prev,
@@ -260,12 +262,13 @@ export default function ServiceSetupPage() {
                             equipments: Array.isArray(relevantService?.equipments) ? relevantService.equipments : (Array.isArray(data.equipments) ? data.equipments : []),
                             movingTransports: data.movingTransports || [],
                             reviews: data.reviews || [],
-                            rating: bRating,
-                            taskCount: tasks,
-                            rank: bRank,
+                            level: levelDisplay,
+                            rating: Number(data.rating) || 4.8,
+                            jobs: tasks.toString(),
                             coords: data.location || data.coords || null
                         };
                     });
+                    setHasLoaded(true);
                 }
             } catch (err) {
                 console.warn("Failed to fetch full Bricoler profile:", err);
@@ -653,7 +656,7 @@ export default function ServiceSetupPage() {
                 <AnimatePresence mode="wait">
                     {activeTab === 'details' ? (
                         <motion.div
-                            key="details"
+                            key={`details-${hasLoaded}`}
                             variants={staggerContainer}
                             initial="hidden"
                             animate="visible"
@@ -664,7 +667,7 @@ export default function ServiceSetupPage() {
                                 {(order.serviceType === 'errands' || order.serviceType?.includes('delivery')) ? (
                                     <div className="space-y-4">
                                         {/* 1. Package Details Section */}
-                                        <div className="bg-[#F3F4F6] rounded-[20px] p-1.5 pb-2">
+                                        <div style={{ padding: 16, borderRadius: 12, background: '#F9FAFB', border: '1px solid #F3F4F6' }}>
                                             <div className="px-4 py-3 flex items-center gap-2 text-[#6B7280]">
                                                 <FileText size={18} />
                                                 <span className="text-[15px] font-bold">Package details</span>
@@ -686,7 +689,7 @@ export default function ServiceSetupPage() {
                                         </div>
 
                                         {/* 2. Trip Info Section */}
-                                        <div className="bg-[#F3F4F6] rounded-[20px] p-1.5 pb-2">
+                                        <div style={{ padding: 16, borderRadius: 12, background: '#F9FAFB', border: '1px solid #F3F4F6' }}>
                                             <div className="px-4 py-3 flex items-center justify-between">
                                                 <div className="flex items-center gap-2 text-[#6B7280]">
                                                     <Navigation size={18} />
@@ -747,7 +750,7 @@ export default function ServiceSetupPage() {
                                         </div>
 
                                         {/* 3. Sender Details Section */}
-                                        <div className="bg-[#F3F4F6] rounded-[20px] p-1.5 pb-2">
+                                        <div style={{ padding: 16, borderRadius: 12, background: '#F9FAFB', border: '1px solid #F3F4F6' }}>
                                             <div className="px-4 py-3 flex items-center gap-2 text-[#6B7280]">
                                                 <User size={18} />
                                                 <span className="text-[15px] font-bold">Sender details</span>
@@ -805,7 +808,7 @@ export default function ServiceSetupPage() {
                                                     <Star size={30} />
                                                 </div>
                                                 <span className="text-[23px] font-bold text-[#219178] leading-tight">
-                                                    {(provider.rating || 0).toFixed(1)}
+                                                    {Number(provider.rating || 0).toFixed(1)}
                                                 </span>
                                                 <span className="text-[10px] font-bold text-[#219178] uppercase tracking-tighter mt-1">Rating</span>
                                             </div>
@@ -830,7 +833,7 @@ export default function ServiceSetupPage() {
                                                 <div className="flex gap-4 overflow-x-auto no-scrollbar -mx-6 px-6 pb-2">
                                                     {provider.portfolio.map((img, i) => (
                                                         <div key={i} className="flex-shrink-0">
-                                                            <img src={img} className="w-44 h-56 rounded-[15px] object-cover border border-neutral-100 shadow-sm" alt="Work sample" />
+                                                            <img src={img} className="w-44 h-56 rounded-[15px] object-cover border border-neutral-100" alt="Work sample" />
                                                         </div>
                                                     ))}
                                                 </div>
@@ -899,7 +902,7 @@ export default function ServiceSetupPage() {
                                                 <h4 className="text-[18px] font-black text-[#111827] mb-4">Service Equipment</h4>
                                                 <div className="flex flex-wrap gap-2">
                                                     {provider.equipments.map((item, i) => (
-                                                        <div key={i} className="flex items-center gap-2 px-4 py-2 bg-[#F9FAFB] rounded-[10px] border border-neutral-100 text-[14px] font-bold text-[#4B5563]">
+                                                        <div key={i} className="flex items-center gap-2 px-4 py-2 bg-[#F9FAFB] rounded-full border border-neutral-100 text-[14px] font-bold text-[#4B5563]">
                                                             <div className="w-5 h-5 rounded-full bg-[#219178]/10 flex items-center justify-center">
                                                                 <Check size={12} className="text-[#219178]" strokeWidth={3} />
                                                             </div>
@@ -941,8 +944,8 @@ export default function ServiceSetupPage() {
                                                         <p className="text-[14px] text-[#4B5563] font-medium leading-[1.6]">{rev.comment}</p>
                                                     </div>
                                                 )) : (
-                                                    <div className="py-12 text-center bg-white rounded-[5px] border border-dashed border-neutral-200">
-                                                        <p className="text-[#9CA3AF] font-medium text-[20px] ">Awaiting first reviews on the app</p>
+                                                    <div className="py-12 text-center bg-white rounded-[20px] border border-dashed border-neutral-200">
+                                                        <p className="text-[#9CA3AF] font-medium text-[15px] ">Awaiting first reviews on the app</p>
                                                     </div>
                                                 )}
                                             </div>
@@ -1491,7 +1494,7 @@ export default function ServiceSetupPage() {
                                                     <button
                                                         key={type}
                                                         onClick={() => setPropertyType(type)}
-                                                        className={`px-8 py-3.5 rounded-full border-2 font-semibold text-[13px] transition-all ${propertyType === type ? 'border-[#219178] bg-white text-[#219178]' : 'border-neutral-100 text-black'}`}
+                                                        className={`px-8 py-3.5 rounded-full border-2 font-bold text-[13px] transition-all ${propertyType === type ? 'border-[#219178] bg-white text-[#219178]' : 'border-neutral-100 text-black'}`}
                                                     >
                                                         {type}
                                                     </button>
@@ -1500,7 +1503,7 @@ export default function ServiceSetupPage() {
                                         </div>
 
                                         {/* Room Selector (Eggy Style Redesign) */}
-                                        {(order.serviceType === 'cleaning' || order.serviceType === 'airbnb_cleaning') && (
+                                        {(order.serviceType === 'cleaning' || order.serviceType === 'hospitality') && (
                                             <div className="space-y-6">
                                                 <div className="flex items-center justify-between px-1">
                                                     <label className="text-[25px] font-bold text-[#111827] setup-heading">Number of Rooms</label>
@@ -1519,7 +1522,7 @@ export default function ServiceSetupPage() {
                                                                 rotate: { repeat: Infinity, duration: 5, ease: "easeInOut" }
                                                             } : { duration: 0 }}
                                                             onClick={() => setRooms(num)}
-                                                            className={`flex-shrink-0 w-16 h-16 flex items-center justify-center font-bold text-[22px] transition-all snap-center relative ${rooms === num ? 'bg-[#017C3E] text-white scale-125 z-10' : 'bg-[#F9FAFB] text-neutral-400 border border-neutral-100/50 rounded-full'}`}
+                                                            className={`flex-shrink-0 w-16 h-16 flex items-center justify-center font-medium text-[22px] transition-all snap-center relative ${rooms === num ? 'bg-[#219178] text-white scale-125 z-10' : 'bg-[#F9FAFB] text-neutral-400 border border-neutral-100/50 rounded-full'}`}
                                                         >
                                                             {num}
                                                         </motion.button>
@@ -1865,25 +1868,25 @@ export default function ServiceSetupPage() {
                                                 <span className="text-[18px] font-light text-black">Base price</span>
                                                 <button className="w-4 h-4 rounded-full border border-neutral-300 flex items-center justify-center text-[10px] text-neutral-400 font-bold">i</button>
                                             </div>
-                                            <span className="text-[18px] font-bold text-black">{estimate.basePrice.toFixed(1)} MAD</span>
+                                            <span className="text-[18px] font-light text-black">{estimate.basePrice.toFixed(1)} MAD</span>
                                         </div>
                                         <div className="flex items-center justify-between">
                                             <span className="text-[18px] font-light text-black">Travel coverage <span className="text-[14px] text-black/30">(1.6 km)</span></span>
-                                            <span className="text-[18px] font-bold text-black">4.0 MAD</span>
+                                            <span className="text-[18px] font-light text-black">4.0 MAD</span>
                                         </div>
                                         <div className="flex items-center justify-between">
                                             <div className="flex items-center gap-2">
                                                 <span className="text-[18px] font-light text-black">Service fee</span>
                                                 <button className="w-4 h-4 rounded-full border border-neutral-300 flex items-center justify-center text-[10px] text-neutral-400 font-bold">i</button>
                                             </div>
-                                            <span className="text-[18px] font-bold text-black">1.5 MAD</span>
+                                            <span className="text-[18px] font-light text-black">1.5 MAD</span>
                                         </div>
                                         <div className="h-px bg-neutral-200/50 w-full" />
 
                                         {/* Total Section */}
                                         <div className="flex items-center justify-between py-2 gap-4">
-                                            <span className="text-[22px] sm:text-[25px] font-black text-black whitespace-nowrap">Total to pay</span>
-                                            <span className="text-[24px] sm:text-[28px] font-black text-black text-right">{estimate.total.toFixed(2)} MAD</span>
+                                            <span className="text-[22px] sm:text-[25px] font-bold text-black whitespace-nowrap">Total to pay</span>
+                                            <span className="text-[24px] sm:text-[28px] font-bold text-black text-right">{estimate.total.toFixed(2)} MAD</span>
                                         </div>
 
                                         {!isErrand && (

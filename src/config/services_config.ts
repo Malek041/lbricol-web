@@ -40,7 +40,22 @@ export interface ServiceConfig {
 }
 
 export const SERVICES_HIERARCHY: Record<string, ServiceConfig> = {
-    // 1. Core Services (Immediate / Binary Success)
+    // 1. Recurring Maintenance & Cleaning
+    cleaning: {
+        id: 'cleaning',
+        name: 'Cleaning',
+        icon: Trash2,
+        subServices: [
+            { id: 'family_home', name: 'Family Home Cleaning', pricingArchetype: 'unit' },
+            { id: 'hospitality', name: 'Hospitality Cleaning', pricingArchetype: 'unit' },
+            { id: 'deep_cleaning', name: 'Deep Home Cleaning', pricingArchetype: 'unit' },
+            { id: 'car_washing', name: 'Car Washing', pricingArchetype: 'fixed' },
+            { id: 'car_detailing', name: 'Car Detailing', pricingArchetype: 'fixed' },
+            { id: 'office_cleaning', name: 'Office Cleaning', pricingArchetype: 'unit' }
+        ]
+    },
+
+    // 2. Core Services (Immediate / Binary Success)
     furniture_assembly: {
         id: 'furniture_assembly',
         name: 'Furniture assembly',
@@ -141,7 +156,7 @@ export const SERVICES_HIERARCHY: Record<string, ServiceConfig> = {
             { id: 'caulking_grouting', name: 'Caulking & Grouting', pricingArchetype: 'hourly' },
             { id: 'wall_repair', name: 'Wall Repair', pricingArchetype: 'hourly' },
             { id: 'appliance_install', name: 'Appliance Installation & Repairs', pricingArchetype: 'hourly' },
-                                            { id: 'window_blinds_repair', name: 'Window & Blinds Repair', pricingArchetype: 'hourly' },
+            { id: 'window_blinds_repair', name: 'Window & Blinds Repair', pricingArchetype: 'hourly' },
             { id: 'flooring_tiling', name: 'Flooring & Tiling Help', pricingArchetype: 'hourly' },
             { id: 'electrical_help', name: 'Electrical Help', pricingArchetype: 'hourly' },
             { id: 'plumbing_help', name: 'Plumbing Help', pricingArchetype: 'hourly' },
@@ -219,20 +234,7 @@ export const SERVICES_HIERARCHY: Record<string, ServiceConfig> = {
         ]
     },
 
-    // 3. Recurring Maintenance & Errands
-    cleaning: {
-        id: 'cleaning',
-        name: 'Cleaning',
-        icon: Trash2,
-        subServices: [
-            { id: 'family_home', name: 'Family home cleaning', pricingArchetype: 'unit' },
-            { id: 'airbnb_cleaning', name: 'Airbnb cleaning', pricingArchetype: 'unit' },
-            { id: 'deep_cleaning', name: 'Deep home cleaning', pricingArchetype: 'unit' },
-            { id: 'car_washing', name: 'Car Washing', pricingArchetype: 'fixed' },
-            { id: 'car_detailing', name: 'Car Detailing', pricingArchetype: 'fixed' },
-            { id: 'hospitality', name: 'Airbnb cleaning', pricingArchetype: 'unit' }
-        ]
-    },
+
     car_rental: {
         id: 'car_rental',
         name: 'Transport & Car Rental',

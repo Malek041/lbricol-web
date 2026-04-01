@@ -448,6 +448,14 @@ function Step1Content() {
           <button
             onClick={() => {
               if (isFetchingAddress) return;
+              
+              // Persist to localStorage so Home page remembers the location after order reset
+              if (currentCity) localStorage.setItem('lbricol_preferred_city', currentCity);
+              if (currentArea) localStorage.setItem('lbricol_preferred_area', currentArea);
+              localStorage.setItem('lastKnownLat', currentLat.toString());
+              localStorage.setItem('lastKnownLng', currentLng.toString());
+              localStorage.setItem('lastKnownAddress', currentAddress);
+
               setOrderField('location', {
                 lat: currentLat,
                 lng: currentLng,

@@ -3,7 +3,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { OrderDetails } from '@/features/orders/components/OrderCard';
-import { ChevronLeft, Info, MessageCircle, MessageSquare, Image, HelpCircle, X, MapPin, Clock, Calendar as CalendarIcon, Phone, User, Ban, Check, AlertTriangle, RefreshCw, CreditCard, Wrench, Banknote, Star } from 'lucide-react';
+import { ChevronLeft, Info, MessageCircle, MessageSquare, Image, HelpCircle, X, MapPin, Clock, Calendar as CalendarIcon, Phone, User, Ban, Check, AlertTriangle, RefreshCw, CreditCard, Wrench, Banknote, Star, Home, Layout, Sparkles } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
 import { useToast } from '@/context/ToastContext';
 import { WhatsAppBrandIcon } from '@/components/shared/WhatsAppIcon';
@@ -105,9 +105,9 @@ export const useOrderProgress = () => {
             if (diffMs <= 0) return null;
             const hours = Math.floor(diffMs / (1000 * 60 * 60));
             const mins = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
-            if (hours > 24) return `${Math.floor(hours / 24)}${t({ en: 'd left', fr: 'j restants', ar: 'ي متبقية' })}`;
-            if (hours > 0) return `${hours}h ${mins}m ${t({ en: 'left', fr: 'restantes', ar: 'متبقية' })}`;
-            return `${mins}${t({ en: 'm left', fr: 'min restantes', ar: 'د متبقية' })}`;
+            if (hours > 24) return `(${Math.floor(hours / 24)}${t({ en: 'd left', fr: 'j restants', ar: 'ي متبقية' })})`;
+            if (hours > 0) return `(${hours}h ${mins}min ${t({ en: 'left', fr: 'restantes', ar: 'متبقية' })})`;
+            return `(${mins}min ${t({ en: 'left', fr: 'restantes', ar: 'متبقية' })})`;
         } catch (e) { return null; }
     };
 
@@ -376,9 +376,9 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
             const diffMins = Math.floor(diffMs / 60000);
             const hours = Math.floor(diffMins / 60);
             const mins = diffMins % 60;
-            if (hours > 24) return `${Math.floor(hours / 24)} ${t({ en: 'days left', fr: 'jours restants', ar: 'أيام متبقية' })}`;
-            if (hours > 0) return `${hours}${t({ en: 'h', fr: 'h', ar: 'س' })} ${mins}${t({ en: 'm left', fr: 'min restantes', ar: 'د متبقية' })}`;
-            return `${mins}${t({ en: 'm left', fr: 'min restantes', ar: 'د متبقية' })}`;
+            if (hours > 24) return `(${Math.floor(hours / 24)} ${t({ en: 'days left', fr: 'jours restants', ar: 'أيام متبقية' })})`;
+            if (hours > 0) return `(${hours}h ${mins}min ${t({ en: 'left', fr: 'restantes', ar: 'متبقية' })})`;
+            return `(${mins}min ${t({ en: 'left', fr: 'restantes', ar: 'متبقية' })})`;
         } catch (e) { return null; }
     };
     const [activeTab, setActiveTab] = useState<'activity' | 'calendar'>('activity');
@@ -763,6 +763,40 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
                             </div>
                         </div>
 
+                        {/* Order Progress Header (New) */}
+                        {['programmed', 'in_progress', 'matching', 'pending'].includes(selectedOrder.status || '') && (
+                            <div className="bg-white border-b border-neutral-100/50 pb-4">
+                                <div className="px-12 pt-4">
+                                    <div className="flex items-center justify-between mb-2">
+                                        <div className="flex items-center gap-2">
+                                            <span className={cn(
+                                                "px-2 py-0.5 text-[11px] font-black rounded-md uppercase tracking-wider",
+                                                getProgress(selectedOrder) === 100 ? "bg-[#E6F7F4] text-[#219178]" : "bg-neutral-50 text-neutral-400"
+                                            )}>
+                                                {getProgress(selectedOrder) === 100 ? t({ en: 'In Progress', fr: 'En cours', ar: 'قيد التنفيذ' }) : t({ en: 'Scheduled', fr: 'Planifié', ar: 'مبرمج' })}
+                                            </span>
+                                            {getTimeRemaining(selectedOrder) && (
+                                                <span className="text-[12px] font-black text-[#219178]">
+                                                    {getTimeRemaining(selectedOrder)}
+                                                </span>
+                                            )}
+                                        </div>
+                                        <span className="text-[12px] font-black text-neutral-400">
+                                            {getProgress(selectedOrder)}%
+                                        </span>
+                                    </div>
+                                    <div className="w-full h-1.5 bg-neutral-50 rounded-full overflow-hidden">
+                                        <motion.div
+                                            initial={{ width: 0 }}
+                                            animate={{ width: `${getProgress(selectedOrder)}%` }}
+                                            transition={{ duration: 1 }}
+                                            className="h-full bg-[#219178] rounded-full"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
                         {/* Content */}
                         <div className="flex-1 overflow-y-auto no-scrollbar">
                             <div className="pb-10">
@@ -989,7 +1023,11 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
                                                     </div>
                                                     <div>
                                                         <p className="text-[11px] font-black text-neutral-300 uppercase tracking-widest mb-1">{t({ en: 'Duration', fr: 'Durée', ar: 'المدة' })}</p>
-                                                        <p className="text-[16px] font-black text-black leading-tight">{selectedOrder.duration || 'N/A'}</p>
+                                                        <p className="text-[16px] font-black text-black leading-tight">
+                                                            {selectedOrder.service === 'cleaning' && selectedOrder.details?.rooms 
+                                                                ? `~${selectedOrder.details.rooms} ${t({ en: 'hrs', fr: 'hrs', ar: 'ساعة' })}`
+                                                                : selectedOrder.duration || 'N/A'}
+                                                        </p>
                                                     </div>
                                                 </div>
 
@@ -1096,6 +1134,79 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
                                                         backgroundRepeat: 'repeat-x'
                                                     }} />
                                                 </div>
+
+                                                {/* Cleaning Specific Details */}
+                                                {selectedOrder.service === 'cleaning' && (
+                                                    <div className="px-6 md:px-12 py-8 space-y-8">
+                                                        <h3 className="text-[28px] font-black text-black">
+                                                            {t({ en: 'Cleaning Details', fr: 'Détails du nettoyage', ar: 'تفاصيل التنظيف' })}
+                                                        </h3>
+
+                                                        {/* Summary Grid */}
+                                                        <div className="grid grid-cols-2 gap-4">
+                                                            <div className="p-5 bg-neutral-50 rounded-[24px] border border-neutral-100/50 flex flex-col gap-2">
+                                                                <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-sm">
+                                                                    <Home size={20} className="text-[#219178]" />
+                                                                </div>
+                                                                <div>
+                                                                    <div className="text-[11px] font-black text-neutral-400 uppercase tracking-widest leading-none mb-1">
+                                                                        {t({ en: 'Property', fr: 'Propriété', ar: 'العقار' })}
+                                                                    </div>
+                                                                    <div className="text-[16px] font-black text-black capitalize">
+                                                                        {t({ en: selectedOrder.details?.propertyType || 'Apartment', fr: selectedOrder.details?.propertyType || 'Appartement', ar: selectedOrder.details?.propertyType || 'شقة' })}
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+
+                                                            <div className="p-5 bg-neutral-50 rounded-[24px] border border-neutral-100/50 flex flex-col gap-2">
+                                                                <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-sm">
+                                                                    <Layout size={20} className="text-[#219178]" />
+                                                                </div>
+                                                                <div>
+                                                                    <div className="text-[11px] font-black text-neutral-400 uppercase tracking-widest leading-none mb-1">
+                                                                        {t({ en: 'Space Size', fr: 'Taille', ar: 'المساحة' })}
+                                                                    </div>
+                                                                    <div className="text-[16px] font-black text-black">
+                                                                        {selectedOrder.details?.rooms || 0} {selectedOrder.details?.rooms === 1 ? t({ en: 'Room', fr: 'Pièce', ar: 'غرفة' }) : t({ en: 'Rooms', fr: 'Pièces', ar: 'غرف' })}
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+
+                                                        {/* Image Gallery */}
+                                                        {selectedOrder.images && selectedOrder.images.length > 0 && (
+                                                            <div className="space-y-4">
+                                                                <div className="text-[11px] font-black text-neutral-400 uppercase tracking-widest">
+                                                                    {t({ en: 'Room Photos', fr: 'Photos des pièces', ar: 'صور الغرف' })}
+                                                                </div>
+                                                                <div className="flex gap-3 overflow-x-auto no-scrollbar -mx-6 px-6">
+                                                                    {selectedOrder.images.map((img, idx) => (
+                                                                        <div key={idx} className="w-40 h-40 rounded-[20px] overflow-hidden flex-shrink-0 border border-neutral-100 shadow-sm relative group">
+                                                                            <img src={img} className="w-full h-full object-cover transition-transform group-hover:scale-110" alt={`Room ${idx + 1}`} />
+                                                                        </div>
+                                                                    ))}
+                                                                </div>
+                                                            </div>
+                                                        )}
+
+                                                        {/* Special Instructions (Notes) */}
+                                                        {selectedOrder.details?.note && (
+                                                            <div className="p-6 bg-[#F0FDF9] rounded-[28px] border-2 border-[#D1FAE5]">
+                                                                <div className="flex items-center gap-3 mb-3">
+                                                                    <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center text-[#059669] shadow-sm">
+                                                                        <Sparkles size={16} />
+                                                                    </div>
+                                                                    <span className="text-[13px] font-black uppercase tracking-wider text-[#059669]">
+                                                                        {t({ en: 'Client Instructions', fr: 'Instructions du client', ar: 'تعليمات العميل' })}
+                                                                    </span>
+                                                                </div>
+                                                                <p className="text-[15px] font-bold text-black leading-relaxed">
+                                                                    "{selectedOrder.details.note}"
+                                                                </p>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                )}
 
                                                 <div className="px-6 md:px-12 py-10 space-y-8">
                                                     <h3 className="text-[28px] font-black text-black">{t({ en: 'Summary', fr: 'Résumé', ar: 'الملخص' })}</h3>
@@ -1490,7 +1601,11 @@ function ActivityTab({
                     </div>
 
                     <h3 className="text-[17px] font-black text-black leading-tight">
-                        {order.service} {order.subServiceDisplayName ? `› ${order.subServiceDisplayName}` : ''}
+                        {order.service === 'cleaning' && order.details?.rooms ? (
+                             `${getSubServiceName(order.service, order.subService || '') || t({ en: 'Cleaning', fr: 'Nettoyage', ar: 'تنظيف' })} • ${order.details.rooms} ${order.details.rooms > 1 ? t({ en: 'Rooms', fr: 'Pièces', ar: 'غرف' }) : t({ en: 'Room', fr: 'Pièce', ar: 'غرفة' })}`
+                        ) : (
+                            `${order.service} ${order.subServiceDisplayName ? `› ${order.subServiceDisplayName}` : ''}`
+                        )}
                     </h3>
                     <div className="mt-2 text-[14px] font-black text-black leading-tight">
                         {isCarRental && order.date && order.carReturnDate ? (
@@ -1507,26 +1622,30 @@ function ActivityTab({
                                 </div>
                             </div>
                         ) : (
-                            <p className="text-[20px] font-black mt-1">
-                                {order.time || '12:00-13:00'}
-                            </p>
+                            <div className="flex items-center gap-3 mt-1">
+                                <p className="text-[20px] font-black">
+                                    {order.time || '12:00-13:00'}
+                                </p>
+                                {timeLeft && (
+                                    <span className={cn(
+                                        "text-[14px] font-black whitespace-nowrap pt-1",
+                                        isRentalInProgress ? "text-rose-500" : "text-[#219178]"
+                                    )}>
+                                        {timeLeft}
+                                    </span>
+                                )}
+                            </div>
                         )}
                     </div>
                     <div className="flex justify-between items-end mt-2">
                         <p className="text-[13px] font-medium text-neutral-400 truncate pr-2">
-                            {(order.service === 'errands' || order.service?.includes('delivery')) && !order.bricolerName ? 
+                            {order.service === 'cleaning' && order.details?.propertyType ? (
+                                `${t({ en: order.details.propertyType, fr: order.details.propertyType, ar: order.details.propertyType })} • ${order.city || (typeof order.location === 'object' ? (order.location as any).address : order.location)}`
+                            ) : (order.service === 'errands' || order.service?.includes('delivery')) && !order.bricolerName ? 
                                 (order.city || (typeof order.location === 'object' ? (order.location as any).address : order.location)) : 
                                 `${order.bricolerName || t({ en: 'Matching...', fr: 'Recherche...', ar: 'جاري البحث...' })} • ${order.city || (typeof order.location === 'object' ? (order.location as any).address : order.location)}`
                             }
                         </p>
-                        {timeLeft && (
-                            <span className={cn(
-                                "text-[12px] font-bold whitespace-nowrap mb-0.5",
-                                isRentalInProgress ? "text-rose-500" : "text-[#219178]"
-                            )}>
-                                ({timeLeft})
-                            </span>
-                        )}
                     </div>
                     <div className="w-full h-1.5 bg-neutral-100 rounded-full mt-3 overflow-hidden">
                         <motion.div

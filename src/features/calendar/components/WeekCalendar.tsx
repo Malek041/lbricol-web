@@ -1784,10 +1784,10 @@ const WeekCalendar = ({
             );
         }
 
-        const isAirbnbMobile = isFullscreenView || isWebCalendar;
+        const isHospitalityMobile = isFullscreenView || isWebCalendar;
         const isBricolerMobile = userType === 'provider' && !isWebCalendar;
 
-        if (isAirbnbMobile) {
+        if (isHospitalityMobile) {
             const monthsToRender = 12;
             const months = [];
             const now = new Date();
@@ -1803,7 +1803,7 @@ const WeekCalendar = ({
             }
 
             return (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem', padding: isBricolerMobile ? '1.5rem 1rem 6rem' : (isAirbnbMobile && !isWebCalendar ? '1rem 0' : '1rem 2rem 2rem'), backgroundColor: isBricolerMobile ? '#1C1C1E' : undefined }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem', padding: isBricolerMobile ? '1.5rem 1rem 6rem' : (isHospitalityMobile && !isWebCalendar ? '1rem 0' : '1rem 2rem 2rem'), backgroundColor: isBricolerMobile ? '#1C1C1E' : undefined }}>
                     {months.map((monthData, mIdx) => {
                         const monthName = monthData.date.toLocaleString('default', { month: 'long' });
                         const year = monthData.date.getFullYear();

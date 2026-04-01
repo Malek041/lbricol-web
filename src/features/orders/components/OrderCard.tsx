@@ -119,25 +119,72 @@ const OrderCard = ({ order, onCancel }: OrderCardProps) => {
             .join(' ');
     };
 
+    const [currentTime, setCurrentTime] = React.useState(new Date());
+    React.useEffect(() => {
+        const timer = setInterval(() => setCurrentTime(new Date()), 60000);
+        return () => clearInterval(timer);
+    }, []);
+
+    const getProgress = () => {
+        if (!order.date || !order.time) return 10;
+        try {
+            const rawTime = order.time.split('-')[0].trim();
+            const timePart = rawTime.includes(':') ? (rawTime.split(':').length === 2 ? `${rawTime}:00` : rawTime) : `${rawTime}:00:00`;
+            const datePart = order.date.split('T')[0];
+            const targetDate = new Date(`${datePart}T${timePart}`);
+            if (isNaN(targetDate.getTime())) return 10;
+            const now = currentTime.getTime();
+            const target = targetDate.getTime();
+            const diffMs = target - now;
+            if (diffMs <= 0) return 100;
+            const windowMs = 24 * 60 * 60 * 1000;
+            if (diffMs > windowMs) return 5;
+            return Math.max(5, Math.floor(((windowMs - diffMs) / windowMs) * 100));
+        } catch (e) { return 10; }
+    };
+
+    const getTimeRemaining = () => {
+        if (!order.date || !order.time) return null;
+        try {
+            const rawTime = order.time.split('-')[0].trim();
+            const timePart = rawTime.includes(':') ? (rawTime.split(':').length === 2 ? `${rawTime}:00` : rawTime) : `${rawTime}:00:00`;
+            const datePart = order.date.split('T')[0];
+            const targetDate = new Date(`${datePart}T${timePart}`);
+            if (isNaN(targetDate.getTime())) return null;
+            const diffMs = targetDate.getTime() - currentTime.getTime();
+            if (diffMs < 0) return null;
+            const hours = Math.floor(diffMs / (1000 * 60 * 60));
+            const mins = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+            if (hours > 24) return `(${Math.floor(hours / 24)}${t({ en: 'd left', fr: 'j restants', ar: 'ي متبقية' })})`;
+            if (hours > 0) return `(${hours}h ${mins}min ${t({ en: 'left', fr: 'restantes', ar: 'متبقية' })})`;
+            return `(${mins}min ${t({ en: 'left', fr: 'restantes', ar: 'متبقية' })})`;
+        } catch (e) { return null; }
+    };
+
+    const progress = getProgress();
+    const timeLeft = getTimeRemaining();
+
+    const cardStyles: React.CSSProperties = {
+        position: 'relative',
+        display: 'flex',
+        flexDirection: isMobile ? 'column' : 'row',
+        alignItems: isMobile ? 'flex-start' : 'center',
+        justifyContent: 'space-between',
+        padding: isMobile ? cardPadding : '2rem',
+        backgroundColor: c.bg,
+        borderRadius: '24px',
+        border: `1px solid ${c.border}`,
+        overflow: 'hidden',
+        width: '100%',
+        gap: isCompactPhone ? '0.9rem' : '1.25rem'
+    };
+
     return (
         <motion.div
             initial={{ opacity: 0, scale: 0.98 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.98 }}
-            style={{
-                position: 'relative',
-                display: 'flex',
-                flexDirection: isMobile ? 'column' : 'row',
-                alignItems: isMobile ? 'flex-start' : 'center',
-                justifyContent: 'space-between',
-                padding: isMobile ? cardPadding : '2rem',
-                backgroundColor: c.bg,
-                borderRadius: '24px',
-                border: `1px solid ${c.border}`,
-                overflow: 'hidden',
-                width: '100%',
-                gap: isCompactPhone ? '0.9rem' : '1.25rem'
-            }}
+            style={cardStyles}
         >
             {onCancel && (
                 <button
@@ -162,10 +209,24 @@ const OrderCard = ({ order, onCancel }: OrderCardProps) => {
                         const subDisplay = getSubServiceName(order.serviceId || order.service, order.subService || '') || order.subServiceDisplayName;
                         const translatedSub = subDisplay ? t({ en: subDisplay, fr: subDisplay }) : '';
 
+                        const isCleaning = (order.serviceId || order.service) === 'cleaning';
+                        const rooms = order.details?.rooms;
+
                         return (
                             <>
-                                {translatedBase}
-                                {translatedSub && <span style={{ opacity: 0.6, fontWeight: 600, fontSize: '0.9em', marginLeft: '2px' }}> › {translatedSub}</span>}
+                                {isCleaning && rooms ? (
+                                    <>
+                                        {translatedSub || translatedBase}
+                                        <span style={{ opacity: 0.6, fontWeight: 600, fontSize: '0.85em', marginLeft: '6px' }}>
+                                            • {rooms} {rooms > 1 ? t({ en: 'Rooms', fr: 'Pièces', ar: 'غرف' }) : t({ en: 'Room', fr: 'Pièce', ar: 'غرفة' })}
+                                        </span>
+                                    </>
+                                ) : (
+                                    <>
+                                        {translatedBase}
+                                        {translatedSub && <span style={{ opacity: 0.6, fontWeight: 600, fontSize: '0.9em', marginLeft: '2px' }}> › {translatedSub}</span>}
+                                    </>
+                                )}
                             </>
                         );
                     })()}
@@ -175,8 +236,13 @@ const OrderCard = ({ order, onCancel }: OrderCardProps) => {
                             {order.rating}
                         </div>
                     )}
+                    {timeLeft && (
+                        <span style={{ fontSize: badgeSize, fontWeight: 900, color: '#219178', marginLeft: '4px' }}>
+                            {timeLeft}
+                        </span>
+                    )}
                 </h3>
-                <p style={{ fontSize: isMobile ? bodySize : '15px', color: c.textMuted, fontWeight: 500, lineHeight: 1.6, maxWidth: '440px', direction: language === 'ar' ? 'rtl' : 'ltr' }}>
+                <div style={{ fontSize: isMobile ? bodySize : '15px', color: c.textMuted, fontWeight: 500, lineHeight: 1.6, maxWidth: '440px', direction: language === 'ar' ? 'rtl' : 'ltr' }}>
                     {(() => {
                         const loc = order.city ? t({ en: order.city, fr: order.city }) : (order.location ? t({ en: order.location, fr: order.location }) : '');
                         const isCarRental = order.service === 'car_rental' || order.serviceId === 'car_rental';
@@ -221,24 +287,44 @@ const OrderCard = ({ order, onCancel }: OrderCardProps) => {
                             );
                         }
 
+                        const isCleaning = (order.serviceId || order.service) === 'cleaning';
+                        const propType = order.details?.propertyType;
+
+                        if (isCleaning && propType) {
+                            return (
+                                <p>
+                                    {t({
+                                        en: `${propType} • ${loc} • ${order.date} ${order.time ? 'at ' + order.time : ''}`,
+                                        fr: `${propType} • ${loc} • le ${order.date} ${order.time ? 'à ' + order.time : ''}`,
+                                        ar: `${propType} • ${loc} • يوم ${order.date} ${order.time ? 'على الساعة ' + order.time : ''}`
+                                    })}
+                                </p>
+                            );
+                        }
+
                         return order.bricolerName ? (
-                            t({
+                            <p>
+                            {t({
                                 en: `${order.bricolerName} is scheduled for your task at ${loc} on ${order.date} ${order.time ? 'at ' + order.time : ''}.`,
                                 fr: `${order.bricolerName} est prévu pour votre tâche à ${loc} le ${order.date} ${order.time ? 'à ' + order.time : ''}.`,
                                 ar: `${order.bricolerName} مبرمج لمهمتك في ${loc} يوم ${order.date} ${order.time ? 'على الساعة ' + order.time : ''}.`
-                            })
+                            })}
+                            </p>
                         ) : (
-                            t({
+                            <p>
+                            {t({
                                 en: `Your request at ${loc} for ${order.date} ${order.time ? 'at ' + order.time : ''} is being processed.`,
                                 fr: `Votre demande à ${loc} pour ${order.date} ${order.time ? 'à ' + order.time : ''} est en cours de traitement.`,
                                 ar: `طلبك في ${loc} ليوم ${order.date} ${order.time ? 'على الساعة ' + order.time : ''} قيد المعالجة.`
-                            })
+                            })}
+                            </p>
                         );
                     })()}
-                    <br />
-                    <span style={{ fontWeight: 800, color: c.text }}>
-                        {t({ en: 'Offer', fr: 'Offre', ar: 'عرض' })}: {order.price} MAD
-                    </span>
+                    <div style={{ marginTop: '4px' }}>
+                        <span style={{ fontWeight: 800, color: c.text }}>
+                            {t({ en: 'Offer', fr: 'Offre', ar: 'عرض' })}: {order.price} MAD
+                        </span>
+                    </div>
                     {order.bricolerName && (
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '12px' }}>
                             <div style={{ width: '32px', height: '32px', borderRadius: '50%', backgroundColor: c.border, overflow: 'hidden' }}>
@@ -284,7 +370,7 @@ const OrderCard = ({ order, onCancel }: OrderCardProps) => {
                             "{order.comment}"
                         </span>
                     )}
-                </p>
+                </div>
             </div>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: isCompactPhone ? '0.65rem' : '1rem', width: isMobile ? '100%' : 'auto', justifyContent: isMobile ? 'space-between' : 'flex-start' }}>
@@ -361,13 +447,13 @@ const OrderCard = ({ order, onCancel }: OrderCardProps) => {
             {/* Progress Bar */}
             <div style={{ position: 'absolute', bottom: 0, left: 0, width: '100%', height: '3px', backgroundColor: theme === 'light' ? 'rgba(0,0,0,0.03)' : 'rgba(255,255,255,0.03)' }}>
                 <motion.div
-                    initial={{ width: '0%', opacity: 0.3 }}
-                    animate={{ width: '40%', opacity: 0.3 }}
-                    transition={{ duration: 2, repeat: Infinity, repeatType: 'reverse' }}
-                    style={{ height: '100%', backgroundColor: c.text }}
+                    initial={{ width: '0%' }}
+                    animate={{ width: `${progress}%` }}
+                    transition={{ duration: 1, ease: 'easeOut' }}
+                    style={{ height: '100%', backgroundColor: '#219178' }}
                 />
             </div>
-        </motion.div >
+        </motion.div>
     );
 };
 

@@ -86,7 +86,7 @@ const ClientWhatsAppPopup = ({ isOpen, onClose, onSuccess }: ClientWhatsAppPopup
                     <div style={{ flex: 1, padding: `0 ${contentPaddingX}`, display: 'flex', flexDirection: 'column', paddingTop: contentPaddingTop }}>
                         <h2 style={{
                             fontSize: titleSize,
-                            fontWeight: 900,
+                            fontWeight: 700,
                             color: '#1D1D1D',
                             letterSpacing: '-1px',
                             lineHeight: 1.1,

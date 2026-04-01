@@ -120,7 +120,7 @@ const ProfileView: React.FC<ProfileViewProps> = ({
                 icon: Wrench,
                 label: isBricoler
                     ? t({ en: 'Switch to Provider', fr: 'Passer en Mode Prestataire', ar: 'التحويل إلى وضع مقدم الخدمة' })
-                    : t({ en: 'Become a Bricoler!', fr: 'Devenir un Bricoleur !', ar: 'كن مقدم خدمة!' }),
+                    : t({ en: 'Become a Bricoler', fr: 'Devenir un Bricoleur', ar: 'كن مقدم خدمة' }),
                 action: onBricolerAction,
                 badge: isBricoler ? undefined : { text: t({ en: 'Recommended', fr: 'Recommandé', ar: 'موصى به' }), color: '#219178' } as const
             }] : []),

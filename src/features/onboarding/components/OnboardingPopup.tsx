@@ -325,7 +325,6 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
         steps.push({ id: 'service_details', label: t({ en: 'Details', fr: 'Détails', ar: 'التفاصيل' }) });
 
         if (!isClientEdit) {
-            steps.push({ id: 'base_location', label: t({ en: 'Base Location', fr: 'Emplacement de base', ar: 'الموقع الأساسي' }) });
             steps.push({ id: 'profile', label: t({ en: 'Profile', fr: 'Profil', ar: 'الملف الشخصي' }) });
         }
 
@@ -1194,8 +1193,6 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
         if (step === 'car_selection') return selectedCars.length > 0;
         if (step === 'car_pricing') return selectedCars.length > 0 && selectedCars.every(c => c.quantity > 0 && (c.pricePerDay > 0 || c.price > 0));
         if (step === 'service_details') return currentEntryValid(currentCatEntry);
-        if (step === 'base_location') return baseLat !== null && baseLng !== null;
-        if (step === 'service_radius') return serviceRadiusKm > 0;
         if (step === 'city') return selectedCity !== '';
         if (step === 'moving_selection') return movingTransports.length > 0;
         if (step === 'areas') return selectedAreas.length > 0;
@@ -1455,7 +1452,7 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
         if (!res.ok) {
             let errorDetails: any = null;
             const rawBody = await res.text().catch(() => "No response body");
-            
+
             try {
                 errorDetails = JSON.parse(rawBody);
             } catch (e) {
@@ -1470,10 +1467,10 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                 preset,
                 folder
             });
-            
+
             throw new Error(errorDetails?.error?.message || errorDetails?.message || 'IMAGE_UPLOAD_REJECTED');
         }
-        
+
         const data = await res.json();
         return data.secure_url;
     };
@@ -1580,7 +1577,7 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                         {/* Header */}
                         {step !== 'base_location' && (
                             <>
-                                <div className="flex items-center justify-between px-6 pt-8 pb-4 flex-shrink-0 relative">
+                                <div className="flex items-center justify-between px-6 pt-4 pb-4 flex-shrink-0 relative">
                                     <div className="w-12">
                                         {stepIndex > 0 && (
                                             <motion.button
@@ -2466,123 +2463,54 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                                                             </button>
                                                         </div>
 
-                                                        {/* Pricing Guardrail */}
+                                                        {/* Simplified Pricing Suggestions */}
                                                         {tierInfo && (
-                                                            <div className="flex flex-col items-center gap-2 -mt-2">
-                                                                {(() => {
-                                                                    const rate = currentCatEntry?.hourlyRate || 75;
-                                                                    const min = tierInfo.suggestedMin;
-                                                                    const max = tierInfo.suggestedMax;
-
-                                                                    let statusText = '';
-                                                                    let color = '';
-                                                                    let activeSteps = 1;
-
-                                                                    if (rate < min) {
-                                                                        statusText = t({ en: 'Economy Rate: Highly Competitive', fr: 'Tarif Économique : Très Compétitif' });
-                                                                        color = 'bg-blue-500';
-                                                                        activeSteps = 2;
-                                                                    } else if (rate <= max) {
-                                                                        statusText = t({ en: 'Recommended Range: Standard Market Price', fr: 'Gamme Recommandée : Prix Marché Standard' });
-                                                                        color = 'bg-[#219178]';
-                                                                        activeSteps = 4;
-                                                                    } else {
-                                                                        statusText = t({ en: 'Premium Rate: Best for Expert Work', fr: 'Tarif Premium : Idéal pour Travail d\'Expert' });
-                                                                        color = 'bg-amber-500';
-                                                                        activeSteps = 5;
-                                                                    }
-
-                                                                    const cn = (...args: any[]) => args.filter(Boolean).join(' ');
-
-                                                                    return (
-                                                                        <div className="flex flex-col items-center gap-2">
-                                                                            <div className="flex gap-1">
-                                                                                {[1, 2, 3, 4, 5].map((step) => (
-                                                                                    <div
-                                                                                        key={step}
-                                                                                        className={cn(
-                                                                                            "w-8 h-1.5 rounded-full transition-all duration-500",
-                                                                                            step <= activeSteps ? color : "bg-neutral-200"
-                                                                                        )}
-                                                                                    />
-                                                                                ))}
-                                                                            </div>
-                                                                            <span className={cn(
-                                                                                "text-[10px] font-black uppercase tracking-widest transition-colors duration-500",
-                                                                                color === 'bg-[#219178]' ? 'text-[#219178]' : color.replace('bg-', 'text-')
-                                                                            )}>
-                                                                                {statusText}
-                                                                            </span>
-                                                                        </div>
-                                                                    );
-                                                                })()}
-                                                            </div>
-                                                        )}
-
-                                                        {tierInfo && (tierInfo.suggestedMin > 0) && (
-                                                            <div className="mt-8 pt-8 border-t border-neutral-100 w-full">
-                                                                <div className="flex items-center justify-between mb-5 px-1">
-                                                                    <div className="flex items-center gap-2">
-                                                                        <div className="w-8 h-8 rounded-xl bg-[#FFC244]/20 flex items-center justify-center">
-                                                                            <TrendingUp size={16} className="text-[#FF9500]" />
-                                                                        </div>
-                                                                        <h4 className="text-[15px] font-[1000] text-black uppercase tracking-tight">
-                                                                            {t({ en: 'Market Reference (MAD)', fr: 'Référence Marché (MAD)', ar: 'مرجع السوق (درهم)' })}
-                                                                        </h4>
-                                                                    </div>
+                                                            <div className="w-full space-y-5">
+                                                                <div className="flex gap-2.5">
+                                                                    {[
+                                                                        { rate: tierInfo.suggestedMin, label: t({ en: 'Base', fr: 'Base', ar: 'أساسي' }) },
+                                                                        { rate: Math.round((tierInfo.suggestedMin + tierInfo.suggestedMax) / 2), label: t({ en: 'Ideal', fr: 'Idéal', ar: 'الأمثل' }) },
+                                                                        { rate: tierInfo.suggestedMax, label: t({ en: 'Premium', fr: 'Expert', ar: 'ممتاز' }) }
+                                                                    ].map((opt, i) => {
+                                                                        const isSelected = currentCatEntry?.hourlyRate === opt.rate;
+                                                                        return (
+                                                                            <button
+                                                                                key={i}
+                                                                                onClick={() => updateCatEntry(currentCatId, 'hourlyRate', opt.rate)}
+                                                                                className={cn(
+                                                                                    "flex-1 py-4 px-2 rounded-[24px] border-2 transition-all flex flex-col items-center gap-1.5 relative overflow-hidden",
+                                                                                    isSelected
+                                                                                        ? "border-[#219178] bg-white shadow-lg shadow-[#219178]/5 scale-[1.02]"
+                                                                                        : "border-neutral-100 bg-white/50 text-neutral-400 hover:border-neutral-200 shadow-sm"
+                                                                                )}
+                                                                            >
+                                                                                {isSelected && <div className="absolute top-0 left-0 w-full h-1 bg-[#219178]" />}
+                                                                                <span className={cn(
+                                                                                    "text-[10px] font-black uppercase tracking-widest",
+                                                                                    isSelected ? "text-[#219178]" : "opacity-60"
+                                                                                )}>{opt.label}</span>
+                                                                                <span className={cn(
+                                                                                    "text-[18px] font-black",
+                                                                                    isSelected ? "text-neutral-900" : "text-neutral-500"
+                                                                                )}>{opt.rate} <span className="text-[10px] opacity-60">MAD</span></span>
+                                                                            </button>
+                                                                        );
+                                                                    })}
                                                                 </div>
-                                                                <div className="bg-neutral-100/50 rounded-[32px] p-2">
-                                                                    <div className="flex w-full overflow-x-auto no-scrollbar py-2 -mx-1 px-1">
-                                                                        <div className="flex gap-3 min-w-full">
-                                                                            {[
-                                                                                { rate: tierInfo.suggestedMin, label: t({ en: 'Standard', fr: 'Standard', ar: 'أساسي' }), color: 'text-[#219178]', bg: 'bg-[#E6F6F2]', icon: User },
-                                                                                { rate: Math.round((tierInfo.suggestedMin + tierInfo.suggestedMax) / 2), label: t({ en: 'Average', fr: 'Moyen', ar: 'متوسط' }), color: 'text-[#007AFF]', bg: 'bg-[#E6F0FF]', icon: TrendingUp },
-                                                                                { rate: tierInfo.suggestedMax, label: t({ en: 'Premium', fr: 'Premium', ar: 'ممتاز' }), color: 'text-[#FF9500]', bg: 'bg-[#FFF5E6]', icon: Star }
-                                                                            ].map((mock, idx) => {
-                                                                                const isSelected = currentCatEntry?.hourlyRate === mock.rate;
-                                                                                return (
-                                                                                    <motion.div
-                                                                                        key={idx}
-                                                                                        whileTap={{ scale: 0.95 }}
-                                                                                        onClick={() => updateCatEntry(currentCatId, 'hourlyRate', mock.rate)}
-                                                                                        className={cn(
-                                                                                            "flex-1 min-w-[125px] bg-white border-2 rounded-[24px] p-5 flex flex-col items-center gap-4 transition-all cursor-pointer relative",
-                                                                                            isSelected
-                                                                                                ? "border-[#219178] shadow-lg shadow-[#219178]/10 -translate-y-1"
-                                                                                                : "border-transparent hover:border-neutral-200 shadow-sm"
-                                                                                        )}
-                                                                                    >
-                                                                                        {isSelected && (
-                                                                                            <div className="absolute -top-2.5 left-1/2 -track-x-1/2 bg-[#219178] text-white text-[9px] font-[1000] px-2.5 py-1 rounded-full uppercase tracking-widest whitespace-nowrap shadow-md z-10" style={{ left: '50%', transform: 'translateX(-50%)' }}>
-                                                                                                {t({ en: 'Selected', fr: 'Choisi', ar: 'مختار' })}
-                                                                                            </div>
-                                                                                        )}
-                                                                                        <div className={cn("w-10 h-10 rounded-2xl flex items-center justify-center", mock.bg, mock.color)}>
-                                                                                            <mock.icon size={20} strokeWidth={2.5} />
-                                                                                        </div>
-                                                                                        <div className="flex flex-col items-center gap-0.5">
-                                                                                            <span className={cn("text-[9px] font-black uppercase tracking-[0.15em] opacity-80", mock.color)}>
-                                                                                                {mock.label}
-                                                                                            </span>
-                                                                                            <div className="flex items-baseline gap-0.5">
-                                                                                                <span className="text-[22px] font-black text-black leading-none">
-                                                                                                    {mock.rate}
-                                                                                                </span>
-                                                                                                <span className="text-[10px] font-black text-neutral-300">MAD</span>
-                                                                                            </div>
-                                                                                        </div>
 
-                                                                                        {/* Tiny 'Suggested' tag for the Average one */}
-                                                                                        {mock.label === t({ en: 'Average', fr: 'Moyen', ar: 'متوسط' }) && (
-                                                                                            <div className="mt-1 px-2 py-0.5 bg-neutral-50 rounded-md border border-neutral-100">
-                                                                                                <span className="text-[8px] font-bold text-neutral-400 uppercase tracking-tighter">{t({ en: 'Ideal', fr: 'Idéal' })}</span>
-                                                                                            </div>
-                                                                                        )}
-                                                                                    </motion.div>
-                                                                                );
-                                                                            })}
-                                                                        </div>
+                                                                {/* Helping context */}
+                                                                <div className="bg-white/40 rounded-2xl p-4 border border-neutral-100 flex items-center gap-3">
+                                                                    <div className="w-8 h-8 rounded-full bg-[#219178]/10 flex items-center justify-center flex-shrink-0">
+                                                                        <Info size={16} className="text-[#219178]" />
                                                                     </div>
+                                                                    <p className="text-[12px] font-bold text-neutral-500 leading-tight text-left">
+                                                                        {(() => {
+                                                                            const rate = currentCatEntry?.hourlyRate || 75;
+                                                                            if (rate < tierInfo.suggestedMin) return t({ en: "Your rate is below market average. You might get more jobs, but earn less per task.", fr: "Votre tarif est sous la moyenne. Vous aurez plus de missions mais gagnerez moins par tâche.", ar: "سعرك أقل من متوسط السوق. قد تحصل على مهام أكثر لكن بربح أقل." });
+                                                                            if (rate > tierInfo.suggestedMax) return t({ en: "This is a premium rate. Clients usually expect extensive experience and top-tier equipment.", fr: "C'est un tarif premium. Les clients attendent une grande expérience et du matériel pro.", ar: "هذا سعر ممتاز. يتوقع العملاء خبرة واسعة ومعدات عالية الجودة." });
+                                                                            return t({ en: "Most professional Bricolers in your city set their rate within this range.", fr: "La plupart des professionnels de votre ville fixent leur prix dans cette fourchette.", ar: "معظم المحترفين في مدينتك يحددون أسعارهم في هذا النطاق." });
+                                                                        })()}
+                                                                    </p>
                                                                 </div>
                                                             </div>
                                                         )}
@@ -2904,7 +2832,7 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                                                 whileTap={{ scale: 0.98 }}
                                                 onClick={(mode === 'onboarding' || (mode === 'edit' && !userData?.uid)) ? handleBricolerSignup : (mode === 'admin_add' || mode === 'admin_edit') ? handleAdminSubmit : handleUpdateProfile}
                                                 disabled={isSubmitting}
-                                                className="w-full h-[64px] bg-[#0CB380] hover:bg-[#008C74] text-white rounded-[16px] text-[18px] font-bold flex flex-col items-center justify-center gap-1 transition-all disabled:opacity-60"
+                                                className="w-full h-[64px] bg-[#0CB380] hover:bg-[#008C74] text-white rounded-full text-[18px] font-bold flex flex-col items-center justify-center gap-1 transition-all disabled:opacity-60"
                                             >
                                                 {isSubmitting ? (
                                                     <div className="flex flex-col items-center gap-2">
@@ -2935,14 +2863,14 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                                                 )}
                                             </motion.button>
 
-                                            {!isSubmitting && (
+                                            {/*{!isSubmitting && (
                                                 <button
                                                     onClick={onClose}
                                                     className="w-full py-4 text-neutral-400 font-bold hover:text-red-500 transition-colors"
                                                 >
                                                     {t({ en: 'Discard Changes', fr: 'Ignorer les modifications', ar: 'تجاهل التعديلات' })}
                                                 </button>
-                                            )}
+                                            )}*/}
 
                                             {mode === 'onboarding' && (
                                                 <p className="text-[13px] text-neutral-400 leading-relaxed text-center font-bold px-4">
@@ -2963,7 +2891,7 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                                         whileTap={{ scale: 0.98 }}
                                         onClick={goNext}
                                         disabled={!canGoNext()}
-                                        className="w-full h-16 bg-[#219178] text-white rounded-[16px] text-[18px] font-bold flex items-center justify-center gap-2 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                                        className="w-full h-16 bg-[#219178] text-white rounded-full text-[18px] font-bold flex items-center justify-center gap-2 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
                                     >
                                         {step === 'service_details' && !isLastCat
                                             ? t({ en: 'Next Category', fr: 'Catégorie suivante', ar: 'الفئة التالية' })

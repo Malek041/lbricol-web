@@ -63,14 +63,23 @@ export default function CheckoutPage() {
         const unsub = onAuthStateChanged(auth, async (u) => {
             setUser(u);
             if (u) {
-                const docSnap = await getDoc(doc(db, 'users', u.uid));
-                if (docSnap.exists()) {
-                    setUserData(docSnap.data());
-                } else {
-                    // Check client doc as fallback
-                    const clientSnap = await getDoc(doc(db, 'clients', u.uid));
-                    if (clientSnap.exists()) setUserData(clientSnap.data());
+                // Robust fetch: Check both users and clients and merge data
+                const [uSnap, cSnap] = await Promise.all([
+                    getDoc(doc(db, 'users', u.uid)),
+                    getDoc(doc(db, 'clients', u.uid))
+                ]);
+                
+                let combinedData: any = {};
+                if (uSnap.exists()) combinedData = { ...combinedData, ...uSnap.data() };
+                if (cSnap.exists()) combinedData = { ...combinedData, ...cSnap.data() };
+                
+                // Fallback to localStorage if WhatsApp number is still missing
+                if (!combinedData.whatsappNumber) {
+                    const localPhone = localStorage.getItem('lbricol_user_phone');
+                    if (localPhone) combinedData.whatsappNumber = localPhone;
                 }
+
+                setUserData(combinedData);
             }
             setLoading(false);
         });
@@ -120,11 +129,14 @@ export default function CheckoutPage() {
         setIsSubmitting(true);
         try {
             // 1. Ensure user profile is updated with WhatsApp if new
-            if (finalWhatsApp && (!userData?.whatsappNumber)) {
-                await setDoc(doc(db, 'clients', finalUser.uid), {
-                    whatsappNumber: finalWhatsApp,
-                    updatedAt: serverTimestamp()
-                }, { merge: true });
+            if (finalWhatsApp) {
+                localStorage.setItem('lbricol_user_phone', finalWhatsApp);
+                if (!userData?.whatsappNumber) {
+                    await setDoc(doc(db, 'clients', finalUser.uid), {
+                        whatsappNumber: finalWhatsApp,
+                        updatedAt: serverTimestamp()
+                    }, { merge: true });
+                }
             }
 
             // Determine slots to process
@@ -325,7 +337,7 @@ export default function CheckoutPage() {
 
                 {/* Payment Methods */}
                 <section style={{ marginBottom: 32 }}>
-                    <h3 style={{ fontSize: 30, fontWeight: 700, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <h3 style={{ fontSize: 25, fontWeight: 600, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 10 }}>
                         Payment
                     </h3>
                     <p style={{ fontSize: 14, fontWeight: 400, color: '#9CA3AF', marginBottom: 20 }}>Choose your payment method</p>
@@ -334,7 +346,7 @@ export default function CheckoutPage() {
                         <div
                             onClick={() => setPaymentMethod('cash')}
                             style={{
-                                padding: '24px 20px', borderRadius: 5, border: '2px solid',
+                                padding: '24px 20px', borderRadius: 20, border: '2px solid',
                                 borderColor: paymentMethod === 'cash' ? '#219178' : '#F3F4F6',
                                 background: paymentMethod === 'cash' ? '#F0FDF9' : '#F9FAFB',
                                 cursor: 'pointer', position: 'relative', transition: 'all 0.2s',
@@ -354,7 +366,7 @@ export default function CheckoutPage() {
                         <div
                             onClick={() => setPaymentMethod('bank_transfer')}
                             style={{
-                                padding: '24px 20px', borderRadius: 5, border: '2px solid',
+                                padding: '24px 20px', borderRadius: 20, border: '2px solid',
                                 borderColor: paymentMethod === 'bank_transfer' ? '#219178' : '#F3F4F6',
                                 background: paymentMethod === 'bank_transfer' ? '#F0FDF9' : '#F9FAFB',
                                 cursor: 'pointer', position: 'relative', transition: 'all 0.2s',
@@ -438,28 +450,28 @@ export default function CheckoutPage() {
                 {/* Setup Summary (Rooms, Property Type, etc.) */}
                 {order.serviceDetails && (
                     <div style={{ marginTop: 24 }}>
-                        <h3 style={{ fontSize: 30, fontWeight: 700, marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <h3 style={{ fontSize: 25, fontWeight: 600, marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
                             Setup Summary
                         </h3>
-                        <div style={{ padding: 16, borderRadius: 5, border: '1px solid #E5E7EB' }}>
+                        <div style={{ padding: 16, borderRadius: 12, background: '#F9FAFB', border: '1px solid #F3F4F6' }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                                <span style={{ fontSize: 17, fontWeight: 400, color: '#6B7280' }}>Service</span>
+                                <span style={{ fontSize: 17, fontWeight: 400, color: '#111827' }}>Service</span>
                                 <span style={{ fontSize: 17, fontWeight: 700, color: '#111827' }}>{order.serviceName}</span>
                             </div>
                             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16, borderBottom: '1px solid #F3F4F6', paddingBottom: 12 }}>
-                                <span style={{ fontSize: 17, fontWeight: 400, color: '#6B7280' }}>Category</span>
+                                <span style={{ fontSize: 17, fontWeight: 400, color: '#111827' }}>Category</span>
                                 <span style={{ fontSize: 17, fontWeight: 700, color: '#111827' }}>{order.subServiceName}</span>
                             </div>
                             {/* Standard Setup Fields */}
-                            {(order.serviceType === 'cleaning' || order.serviceType === 'airbnb_cleaning') && (
+                            {(order.serviceType === 'cleaning' || order.serviceType === 'hospitality') && (
                                 <>
                                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                                        <span style={{ fontSize: 14, fontWeight: 700, color: '#6B7280' }}>Property Type</span>
-                                        <span style={{ fontSize: 14, fontWeight: 900, color: '#111827' }}>{order.serviceDetails.propertyType}</span>
+                                        <span style={{ fontSize: 14, fontWeight: 400, color: '#111827' }}>Property Type</span>
+                                        <span style={{ fontSize: 14, fontWeight: 700, color: '#111827' }}>{order.serviceDetails.propertyType}</span>
                                     </div>
                                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                                        <span style={{ fontSize: 14, fontWeight: 700, color: '#6B7280' }}>Rooms</span>
-                                        <span style={{ fontSize: 14, fontWeight: 900, color: '#111827' }}>{order.serviceDetails.rooms} Rooms</span>
+                                        <span style={{ fontSize: 14, fontWeight: 400, color: '#111827' }}>Rooms</span>
+                                        <span style={{ fontSize: 14, fontWeight: 700, color: '#111827' }}>{order.serviceDetails.rooms} Rooms</span>
                                     </div>
                                 </>
                             )}
@@ -469,12 +481,12 @@ export default function CheckoutPage() {
                                 <>
                                     {(order.serviceDetails as any).recipientName && (
                                         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                                            <span style={{ fontSize: 14, fontWeight: 700, color: '#6B7280' }}>Recipient</span>
-                                            <span style={{ fontSize: 14, fontWeight: 900, color: '#111827' }}>{(order.serviceDetails as any).recipientName}</span>
+                                            <span style={{ fontSize: 14, fontWeight: 700, color: '#111827' }}>Recipient</span>
+                                            <span style={{ fontSize: 14, fontWeight: 900, color: '#060708ff' }}>{(order.serviceDetails as any).recipientName}</span>
                                         </div>
                                     )}
                                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                                        <span style={{ fontSize: 14, fontWeight: 700, color: '#6B7280' }}>Schedule</span>
+                                        <span style={{ fontSize: 14, fontWeight: 700, color: '#111827' }}>Schedule</span>
                                         <span style={{ fontSize: 14, fontWeight: 900, color: '#111827' }}>
                                             {(order.serviceDetails as any).deliveryType === 'standard' ? "As soon as possible" : `${(order.serviceDetails as any).deliveryDate} at ${(order.serviceDetails as any).deliveryTime}`}
                                         </span>
@@ -502,7 +514,7 @@ export default function CheckoutPage() {
                         <h3 style={{ fontSize: 30, fontWeight: 700, marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
                             Description
                         </h3>
-                        <div style={{ padding: 16, borderRadius: 5, border: '1px solid #E5E7EB' }}>
+                        <div style={{ padding: 16, borderRadius: 12, background: '#F9FAFB', border: '1px solid #F3F4F6' }}>
                             <p style={{ fontSize: 14, color: '#4B5563', fontWeight: 600, lineHeight: 1.5 }}>
                                 {order.carRentalNote || (order.serviceDetails as any)?.note || (order.serviceDetails as any)?.itemDescription}
                             </p>
@@ -510,7 +522,7 @@ export default function CheckoutPage() {
                     </div>
                 )}
 
-                <h3 style={{ fontSize: 30, fontWeight: 700, marginTop: 32, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 10 }}>
+                <h3 style={{ fontSize: 25, fontWeight: 600, marginTop: 32, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 10 }}>
                     Route Details <span style={{ fontSize: 24 }}>🗺️</span>
                 </h3>
 
@@ -602,8 +614,8 @@ export default function CheckoutPage() {
                         </svg>
                     </div>
 
-                    <div style={{ background: '#F2F2F2', padding: '16px 36px 150px', display: 'flex', flexDirection: 'column', gap: 32 }}>
-                        <h3 style={{ fontSize: 28, fontWeight: 1000, color: '#111827', margin: 0 }}>Summary</h3>
+                    <div style={{ background: '#F2F2F2', padding: '16px 36px 70px', display: 'flex', flexDirection: 'column', gap: 32 }}>
+                        <h3 style={{ fontSize: 35, fontWeight: 700, color: '#111827', margin: 0 }}>Summary</h3>
 
                         {(() => {
                             const slotsCount = (order.multiSlots && order.multiSlots.length > 0) ? order.multiSlots.length : 1;
@@ -636,50 +648,50 @@ export default function CheckoutPage() {
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                                            <span style={{ fontSize: 18, fontWeight: 500, color: '#111827' }}>Base price</span>
+                                            <span style={{ fontSize: 18, fontWeight: 400, color: '#111827' }}>Base price</span>
                                             <div style={{ width: 22, height: 22, borderRadius: '50%', border: '1px solid #D1D5DB', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, color: '#9CA3AF', fontWeight: 700 }}>i</div>
                                         </div>
-                                        <span style={{ fontSize: 18, fontWeight: 800, color: '#111827' }}>
+                                        <span style={{ fontSize: 18, fontWeight: 400, color: '#111827' }}>
                                             {Math.round(basePrice)} MAD/{individualPricing.unit === 'unit' ? 'unit' : individualPricing.unit === 'day' ? 'day' : 'hr'}
                                         </span>
                                     </div>
 
                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                                            <span style={{ fontSize: 18, fontWeight: 500, color: '#111827' }}>Services</span>
+                                            <span style={{ fontSize: 18, fontWeight: 400, color: '#111827' }}>Services</span>
                                             <div style={{ width: 22, height: 22, borderRadius: '50%', border: '1px solid #D1D5DB', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, color: '#9CA3AF', fontWeight: 700 }}>i</div>
                                         </div>
-                                        <span style={{ fontSize: 18, fontWeight: 800, color: '#111827' }}>{servicesTotal.toFixed(2)} MAD</span>
+                                        <span style={{ fontSize: 18, fontWeight: 400, color: '#111827' }}>{servicesTotal.toFixed(2)} MAD</span>
                                     </div>
 
                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                                            <span style={{ fontSize: 18, fontWeight: 500, color: '#111827' }}>Lbricol Fee</span>
+                                            <span style={{ fontSize: 18, fontWeight: 400, color: '#111827' }}>Lbricol Fee</span>
                                             <div style={{ width: 22, height: 22, borderRadius: '50%', border: '1px solid #D1D5DB', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, color: '#9CA3AF', fontWeight: 700 }}>i</div>
                                         </div>
-                                        <span style={{ fontSize: 18, fontWeight: 800, color: '#111827' }}>{serviceFee.toFixed(2)} MAD</span>
+                                        <span style={{ fontSize: 18, fontWeight: 400, color: '#111827' }}>{serviceFee.toFixed(2)} MAD</span>
                                     </div>
 
                                     {individualPricing.travelFee > 0 && (
                                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                             <div style={{ display: 'flex', flexDirection: 'column' }}>
                                                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                                                    <span style={{ fontSize: 18, fontWeight: 500, color: '#111827' }}>Travel Fee</span>
+                                                    <span style={{ fontSize: 18, fontWeight: 400, color: '#111827' }}>Travel Fee</span>
                                                     <div style={{ width: 22, height: 22, borderRadius: '50%', border: '1px solid #D1D5DB', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, color: '#9CA3AF', fontWeight: 700 }}>i</div>
                                                 </div>
                                                 {travelInfo && (
-                                                    <span style={{ fontSize: 11, fontWeight: 900, color: '#9CA3AF' }}>{travelInfo.distanceKm} km · ~{travelInfo.durationMinutes} min</span>
+                                                    <span style={{ fontSize: 11, fontWeight: 400, color: '#9CA3AF' }}>{travelInfo.distanceKm} km · ~{travelInfo.durationMinutes} min</span>
                                                 )}
                                             </div>
-                                            <span style={{ fontSize: 18, fontWeight: 800, color: '#111827' }}>{individualPricing.travelFee.toFixed(2)} MAD</span>
+                                            <span style={{ fontSize: 18, fontWeight: 400, color: '#111827' }}>{individualPricing.travelFee.toFixed(2)} MAD</span>
                                         </div>
                                     )}
 
                                     <div style={{ height: 1, background: '#E5E7EB', width: '100%', margin: '8px 0' }} />
 
                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                        <span style={{ fontSize: 22, fontWeight: 1000, color: '#111827' }}>Total to pay</span>
-                                        <span style={{ fontSize: 25, fontWeight: 1000, color: '#111827' }}>{total.toFixed(2)} MAD</span>
+                                        <span style={{ fontSize: 22, fontWeight: 800, color: '#111827' }}>Total to pay</span>
+                                        <span style={{ fontSize: 25, fontWeight: 800, color: '#111827' }}>{total.toFixed(2)} MAD</span>
                                     </div>
                                 </div>
                             );
@@ -769,25 +781,25 @@ export default function CheckoutPage() {
                     const currUser = auth.currentUser;
                     if (currUser) {
                         setUser(currUser);
-                        // Check users collection first
-                        let userSnap = await getDoc(doc(db, 'users', currUser.uid));
-                        let data = userSnap.exists() ? userSnap.data() : null;
+                        
+                        // Robust check: both collections
+                        const [uSnap, cSnap] = await Promise.all([
+                            getDoc(doc(db, 'users', currUser.uid)),
+                            getDoc(doc(db, 'clients', currUser.uid))
+                        ]);
+                        
+                        let combinedData: any = {};
+                        if (uSnap.exists()) combinedData = { ...combinedData, ...uSnap.data() };
+                        if (cSnap.exists()) combinedData = { ...combinedData, ...cSnap.data() };
+                        
+                        const cachedPhone = localStorage.getItem('lbricol_user_phone');
+                        const finalNumber = combinedData.whatsappNumber || cachedPhone;
 
-                        // If not in users, check clients collection
-                        if (!data) {
-                            const clientSnap = await getDoc(doc(db, 'clients', currUser.uid));
-                            if (clientSnap.exists()) data = clientSnap.data();
-                        }
-
-                        if (data) {
-                            setUserData(data);
-                            if (data.whatsappNumber) {
-                                createOrders(currUser, data.whatsappNumber);
-                            } else {
-                                setShowWhatsAppPopup(true);
-                            }
+                        if (finalNumber) {
+                            setUserData({ ...combinedData, whatsappNumber: finalNumber });
+                            createOrders(currUser, finalNumber);
                         } else {
-                            // No data in either collection
+                            setUserData(combinedData);
                             setShowWhatsAppPopup(true);
                         }
                     }
@@ -799,6 +811,7 @@ export default function CheckoutPage() {
                 onClose={() => setShowWhatsAppPopup(false)}
                 onSuccess={(number) => {
                     setShowWhatsAppPopup(false);
+                    localStorage.setItem('lbricol_user_phone', number);
                     createOrders(user, number);
                 }}
             />
