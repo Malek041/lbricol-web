@@ -464,7 +464,7 @@ const ClientHome: React.FC<ClientHomeProps> = ({
             "fixed inset-0 bg-[#FFC244] overflow-y-auto no-scrollbar h-[100dvh] w-screen font-jakarta",
             "z-0"
         )}>
-            {/* 1. New Green Hero Section */}
+            {/* 1. New yellow Hero Section */}
             <div className="w-full sticky top-0 z-0 bg-[#FFC244] overflow-hidden flex-shrink-0 pt-[env(safe-area-inset-top)] pb-5">
                 {/* Location Pill */}
                 <div className="flex justify-center pt-8 mb-6">
@@ -491,7 +491,8 @@ const ClientHome: React.FC<ClientHomeProps> = ({
                         initial={{ opacity: 0, scale: 0.9 }}
                         animate={{ opacity: 1, scale: 1 }}
                         transition={{ delay: 0.8, duration: 0.6, type: "spring", stiffness: 200 }}
-                        className="text-[24px] font-bold leading-[1.1] text-Black max-w-[340px] mx-auto"
+                        className="text-[28px] font-black leading-[1.0] tracking-tight text-black max-w-[340px] mx-auto"
+                        style={{ fontWeight: 900, fontFamily: '"Uber Move", "UberMoveText", sans-serif' }}
                     >
                         {t({
                             en: 'Book trusted help for home tasks',
@@ -504,7 +505,7 @@ const ClientHome: React.FC<ClientHomeProps> = ({
                 <div className="px-6 pb-1 pt-6 w-full max-w-[400px] h-[30px] mx-auto">
                     <button
                         onClick={() => setIsSearchOpen(true)}
-                        className="w-full flex items-center gap-2 bg-neutral-50 rounded-[35px_25px_45px_30px] px-5 py-3.5 border-2 border-black/5 active:scale-[0.98] transition-all"
+                        className="w-full flex items-center gap-2 bg-neutral-50 rounded-full px-5 py-3.5 border-2 border-black/5 active:scale-[0.98] transition-all"
                     >
                         <Search size={18} className=" text-neutral-400 flex-shrink-0" strokeWidth={2.5} />
                         <span className="text-[15.5px] font-medium text-neutral-400">

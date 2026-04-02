@@ -156,9 +156,9 @@ const OrderCard = ({ order, onCancel }: OrderCardProps) => {
             if (diffMs < 0) return null;
             const hours = Math.floor(diffMs / (1000 * 60 * 60));
             const mins = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
-            if (hours > 24) return `(${Math.floor(hours / 24)}${t({ en: 'd left', fr: 'j restants', ar: 'ي متبقية' })})`;
-            if (hours > 0) return `(${hours}h ${mins}min ${t({ en: 'left', fr: 'restantes', ar: 'متبقية' })})`;
-            return `(${mins}min ${t({ en: 'left', fr: 'restantes', ar: 'متبقية' })})`;
+            if (hours > 24) return `(${Math.floor(hours / 24)}${t({ en: 'd left', fr: 'j rest.', ar: 'ي متبقية' })})`;
+            if (hours > 0) return `(${hours}h ${mins}m ${t({ en: 'left', fr: 'rest.', ar: 'متبقية' })})`;
+            return `(${mins}m ${t({ en: 'left', fr: 'rest.', ar: 'متبقية' })})`;
         } catch (e) { return null; }
     };
 

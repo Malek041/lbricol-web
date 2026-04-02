@@ -95,11 +95,7 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
     setIsManualSelection(true);
 
     if (isBricolerBase) {
-      if (onConfirmRadius) {
-        setRadiusView(true);
-      } else {
-        onConfirm({ pickup: currentPoint });
-      }
+      onConfirm({ pickup: currentPoint });
       return;
     }
 

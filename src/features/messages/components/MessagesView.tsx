@@ -116,10 +116,10 @@ const MessagesView: React.FC<MessagesViewProps> = ({
 
             if (diffHours >= 24) {
                 const diffDays = Math.floor(diffHours / 24);
-                return `(${diffDays}j restantes)`;
+                return `(${diffDays}j rest.)`;
             }
 
-            return `(${diffHours}h ${diffMins}m restantes)`;
+            return `(${diffHours}h ${diffMins}m rest.)`;
         } catch (e) {
             return null;
         }
@@ -130,10 +130,10 @@ const MessagesView: React.FC<MessagesViewProps> = ({
             <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', backgroundColor: c.bg, alignItems: 'center', justifyContent: 'center', padding: '20px', textAlign: 'center' }}>
                 <div style={{ padding: '60px 20px' }}>
                     <MessageSquare size={64} style={{ margin: '0 auto 24px', opacity: 0.1 }} />
-                    <h2 style={{ fontSize: '24px', fontWeight: 950, color: c.text, marginBottom: '12px' }}>
+                    <h2 style={{ fontSize: '24px', fontWeight: 550, color: c.text, marginBottom: '12px' }}>
                         {t({ en: 'Login to see messages', fr: 'Connectez-vous pour voir vos messages' })}
                     </h2>
-                    <p style={{ color: c.textMuted, fontWeight: 600, marginBottom: '24px' }}>
+                    <p style={{ color: c.textMuted, fontWeight: 400, marginBottom: '24px' }}>
                         {t({ en: 'Keep track of your conversations and project updates.', fr: 'Suivez vos conversations et les mises à jour de vos projets.' })}
                     </p>
                 </div>

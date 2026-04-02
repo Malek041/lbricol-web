@@ -275,7 +275,7 @@ const AuthPopup = ({ isOpen, onClose, onSuccess }: AuthPopupProps) => {
                                                 setWhatsapp(v.slice(0, 9));
                                             }}
                                             placeholder="6 00 00 00 00"
-                                            style={{ flex: 1, padding: '16px 24px', borderRadius: '15px', border: '2px solid #E5E7EB', outline: 'none', fontSize: '18px', fontWeight: 400, transition: 'all 0.2s' }}
+                                            style={{ flex: 1, minWidth: 0, padding: '16px 24px', borderRadius: '15px', border: '2px solid #E5E7EB', outline: 'none', fontSize: '18px', fontWeight: 400, transition: 'all 0.2s' }}
                                         />
                                     </div>
                                     <p style={{ fontSize: '12px', color: '#9CA3AF', fontWeight: 700, marginBottom: '50px' }}></p>

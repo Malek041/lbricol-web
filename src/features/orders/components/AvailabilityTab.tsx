@@ -42,21 +42,21 @@ export default function AvailabilityTab({
     }, [userData?.routine]);
 
     return (
-        <div className="flex flex-col bg-[#FAFAFA] h-full p-4 md:p-6">
+        <div className="flex flex-col bg-[#FFFFFF] h-full p-4 md:p-6">
             <h2 className="text-[28px] font-black text-black mb-6">
                 {t({ en: 'My Availability', fr: 'Ma Disponibilité' })}
             </h2>
 
-            <div className="bg-white rounded-[32px] p-4 md:p-6 border border-neutral-100 shadow-sm max-w-[600px] mx-auto w-full">
+            <div className="bg-white rounded-[12px] p-4 md:p-6 border border-neutral-100 shadow-sm max-w-[600px] mx-auto w-full">
                 <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-8 gap-4 w-full">
                     <div>
                         <h3 className="text-[20px] font-black text-black mb-1">
                             {t({ en: 'Weekly Routine', fr: 'Routine hebdomadaire' })}
                         </h3>
                         <p className="text-[14px] text-neutral-500 font-medium leading-tight">
-                            {t({ 
-                                en: 'Your regular working hours.', 
-                                fr: 'Vos horaires de travail réguliers.' 
+                            {t({
+                                en: 'Your regular working hours.',
+                                fr: 'Vos horaires de travail réguliers.'
                             })}
                         </p>
                     </div>
@@ -74,29 +74,26 @@ export default function AvailabilityTab({
                         const dayData = routine[day];
                         const isActive = dayData.active;
                         return (
-                            <div 
-                                key={day} 
-                                className={`flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-[20px] border transition-colors gap-3 ${
-                                    isActive ? 'border-[#01A083]/20 bg-[#E6F7F4]/30' : 'border-neutral-100 bg-neutral-50/50'
-                                }`}
+                            <div
+                                key={day}
+                                className={`flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-[20px] border transition-colors gap-3 ${isActive ? 'border-[#01A083]/20 bg-[#E6F7F4]/30' : 'border-neutral-100 bg-neutral-50/50'
+                                    }`}
                             >
                                 <div className="flex items-center gap-4">
-                                    <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${
-                                        isActive ? 'bg-[#01A083] text-white' : 'bg-neutral-200 text-neutral-400'
-                                    }`}>
+                                    <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${isActive ? 'bg-[#01A083] text-white' : 'bg-neutral-200 text-neutral-400'
+                                        }`}>
                                         {isActive ? <CheckCircle size={20} strokeWidth={2.5} /> : <XCircle size={20} strokeWidth={2.5} />}
                                     </div>
-                                    <span className={`text-[15px] font-black uppercase tracking-wider ${
-                                        isActive ? 'text-black' : 'text-neutral-400'
-                                    }`}>
+                                    <span className={`text-[15px] font-black uppercase tracking-wider ${isActive ? 'text-black' : 'text-neutral-400'
+                                        }`}>
                                         {t({
                                             en: day,
                                             fr: day === 'monday' ? 'lundi' :
                                                 day === 'tuesday' ? 'mardi' :
-                                                day === 'wednesday' ? 'mercredi' :
-                                                day === 'thursday' ? 'jeudi' :
-                                                day === 'friday' ? 'vendredi' :
-                                                day === 'saturday' ? 'samedi' : 'dimanche'
+                                                    day === 'wednesday' ? 'mercredi' :
+                                                        day === 'thursday' ? 'jeudi' :
+                                                            day === 'friday' ? 'vendredi' :
+                                                                day === 'saturday' ? 'samedi' : 'dimanche'
                                         })}
                                     </span>
                                 </div>

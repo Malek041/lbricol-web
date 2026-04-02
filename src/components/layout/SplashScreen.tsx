@@ -69,8 +69,8 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ subStatus }) => {
                             maxWidth: '85vw',
                             textTransform: 'uppercase',
                             letterSpacing: '0.15em',
-                            marginTop: '2rem',
-                            opacity: 0.8
+                            marginTop: '3.5rem',
+                            opacity: 1
                         }}
                     >
                         {subStatus}

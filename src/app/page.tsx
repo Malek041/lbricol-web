@@ -3588,7 +3588,7 @@ const Home = () => {
       </main>
 
       {/* Mobile Bottom Navigation - OUTSIDE main to avoid overflow/stacking issues */}
-      {isMobile && !showSplash && !showClientOnboarding && !isViewingOrderDetails && <MobileBottomNav
+      {isMobile && !showSplash && !showClientOnboarding && !showMobileOnboarding && !showLanguagePopup && !isViewingOrderDetails && <MobileBottomNav
         activeTab={mobileNavTab as any}
         onTabChange={(tab: any) => {
           if (tab === 'calendar' && mobileNavTab === 'calendar') {

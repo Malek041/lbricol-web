@@ -323,6 +323,7 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
         }
 
         steps.push({ id: 'service_details', label: t({ en: 'Details', fr: 'Détails', ar: 'التفاصيل' }) });
+        steps.push({ id: 'base_location', label: t({ en: 'Location', fr: 'Localisation', ar: 'الموقع' }) });
 
         if (!isClientEdit) {
             steps.push({ id: 'profile', label: t({ en: 'Profile', fr: 'Profil', ar: 'الملف الشخصي' }) });
@@ -2411,10 +2412,10 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                                                                 const service = ALL_SERVICES.find(s => s.id === currentCatId);
                                                                 const archetype = service?.subServices?.find(ss => selectedSubServices.includes(ss.id))?.pricingArchetype || 'hourly';
                                                                 if (currentCatId === 'private_driver' || archetype === 'rental') return t({ en: "What's the daily rate you'd like to charge?", fr: "Quel tarif journalier souhaitez-vous ?", ar: "ما هو السعر اليومي؟" });
-                                                                if (archetype === 'unit') return t({
-                                                                    en: `Set your price ${tierInfo?.unitLabel ? t(tierInfo.unitLabel) : "per unit"}:`,
-                                                                    fr: `Fixez votre prix ${tierInfo?.unitLabel ? t(tierInfo.unitLabel) : "par unité"} :`,
-                                                                    ar: `حدد السعر ${tierInfo?.unitLabel ? t(tierInfo.unitLabel) : "للوحدة"}:`
+                                                                if (archetype === 'unit') return t({ 
+                                                                    en: "What's the minimum price you accept for this service?", 
+                                                                    fr: "Quel est le prix minimum que vous acceptez pour ce service ?", 
+                                                                    ar: "ما هو أقل ثمن تقبله مقابل هذه الخدمة؟" 
                                                                 });
                                                                 if (currentCatId === 'errands') return t({ en: "What's the minimum price you accept for a simple delivery task?", fr: "Quel est le prix minimum que vous acceptez pour une simple mission de livraison ?", ar: "ما هو أقل ثمن تقبله مقابل مهمة توصيل بسيطة؟" });
                                                                 return t({ en: "What's the minimum price you accept for this service?", fr: "Quel est le prix minimum que vous acceptez pour ce service ?", ar: "ما هو أقل ثمن تقبله مقابل هذه الخدمة؟" });
@@ -2442,9 +2443,6 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                                                                     <span className="text-[14px] font-bold text-neutral-400 uppercase tracking-widest">
                                                                         {(() => {
                                                                             const service = ALL_SERVICES.find(s => s.id === currentCatId);
-                                                                            const archetype = service?.subServices?.find(ss => selectedSubServices.includes(ss.id))?.pricingArchetype || 'hourly';
-                                                                            if (currentCatId === 'private_driver' || archetype === 'rental') return t({ en: 'DAILY RATE (MAD)', fr: 'TARIF JOUR (MAD)', ar: 'السعر اليومي (درهم)' });
-                                                                            if (archetype === 'unit') return t({ en: tierInfo?.unitLabel ? t(tierInfo.unitLabel).toUpperCase() + ' (MAD)' : 'PER UNIT (MAD)', fr: tierInfo?.unitLabel ? t(tierInfo.unitLabel).toUpperCase() + ' (MAD)' : 'PAR UNITÉ (MAD)' });
                                                                             return t({ en: 'MIN PRICE (MAD)', fr: 'PRIX MIN (MAD)', ar: 'أقل ثمن (درهم)' });
                                                                         })()}
                                                                     </span>
@@ -2614,26 +2612,31 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                                         <div className="space-y-6">
                                             {/* Professional Photo */}
                                             <motion.div variants={itemVariants} className="flex flex-col items-center gap-6">
-                                                <div className="relative group">
-                                                    <div className="w-32 h-32 rounded-[32px] bg-neutral-100 border-1 border-white  overflow-hidden flex items-center justify-center relative ring-4 ring-neutral-50">
+                                                <label className="relative group cursor-pointer">
+                                                    <input type="file" accept="image/*" className="hidden" onChange={(e) => handleProfilePhotoSelection(e.target.files)} />
+                                                    <div className="w-32 h-32 rounded-[32px] bg-neutral-100 border-1 border-white overflow-hidden flex items-center justify-center relative ring-4 ring-neutral-50 group-hover:ring-[#01A083]/20 transition-all">
                                                         {currentProfileAvatar ? (
-                                                            <img src={currentProfileAvatar} alt="Profile" className="w-full h-full object-cover" />
+                                                            <img src={currentProfileAvatar} alt="Profile" className="w-full h-full object-cover group-hover:opacity-80 transition-opacity" />
                                                         ) : (
                                                             <div className="w-full h-full bg-neutral-50 flex items-center justify-center">
                                                                 <User size={64} className="text-neutral-200" strokeWidth={1.5} />
                                                             </div>
                                                         )}
+
+                                                        {/* Hover Overlay */}
+                                                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 flex items-center justify-center transition-all">
+                                                            <div className="p-2 bg-white/90 rounded-xl shadow-sm opacity-0 group-hover:opacity-100 transform translate-y-2 group-hover:translate-y-0 transition-all">
+                                                                <Camera size={20} className="text-[#01A083]" strokeWidth={2.5} />
+                                                            </div>
+                                                        </div>
+
                                                         {isUploadingProfile && (
                                                             <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
                                                                 <div className="w-8 h-8 border-3 border-white/30 border-t-white rounded-full animate-spin" />
                                                             </div>
                                                         )}
                                                     </div>
-                                                    <label className="absolute -bottom-2 -right-2 w-10 h-10 bg-[#01A083] text-white rounded-2xl flex items-center justify-center shadow-lg cursor-pointer hover:bg-[#008C74] hover:scale-110 active:scale-95 transition-all">
-                                                        <input type="file" accept="image/*" className="hidden" onChange={(e) => handleProfilePhotoSelection(e.target.files)} />
-                                                        <Camera size={20} strokeWidth={2.5} />
-                                                    </label>
-                                                </div>
+                                                </label>
                                                 <div className="text-center space-y-1">
                                                     <h3 className="text-[16px] font-black text-neutral-900">{t({ en: 'Professional Photo', fr: 'Photo professionnelle', ar: 'صورة مهنية' })}</h3>
                                                     <p className="text-[12px] text-neutral-500 font-medium max-w-[240px]">{t({ en: 'Bright, clear, and smiling photos get 3x more jobs.', fr: 'Une photo claire et souriante attire 3x plus de clients.', ar: 'الصور الواضحة والمبتسمة تجتذب 3 أضعاف الزبائن.' })}</p>

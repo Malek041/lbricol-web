@@ -108,9 +108,9 @@ export const useOrderProgress = () => {
             if (diffMs <= 0) return null;
             const hours = Math.floor(diffMs / (1000 * 60 * 60));
             const mins = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
-            if (hours > 24) return `(${Math.floor(hours / 24)}${t({ en: 'd left', fr: 'j restants', ar: 'ي متبقية' })})`;
-            if (hours > 0) return `(${hours}h ${mins}min ${t({ en: 'left', fr: 'restantes', ar: 'متبقية' })})`;
-            return `(${mins}min ${t({ en: 'left', fr: 'restantes', ar: 'متبقية' })})`;
+            if (hours > 24) return `(${Math.floor(hours / 24)}${t({ en: 'd left', fr: 'j rest.', ar: 'ي متبقية' })})`;
+            if (hours > 0) return `(${hours}h ${mins}m ${t({ en: 'left', fr: 'rest.', ar: 'متبقية' })})`;
+            return `(${mins}m ${t({ en: 'left', fr: 'rest.', ar: 'متبقية' })})`;
         } catch (e) { return null; }
     };
 
@@ -421,9 +421,9 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
             const diffMins = Math.floor(diffMs / 60000);
             const hours = Math.floor(diffMins / 60);
             const mins = diffMins % 60;
-            if (hours > 24) return `(${Math.floor(hours / 24)} ${t({ en: 'days left', fr: 'jours restants', ar: 'أيام متبقية' })})`;
-            if (hours > 0) return `(${hours}h ${mins}min ${t({ en: 'left', fr: 'restantes', ar: 'متبقية' })})`;
-            return `(${mins}min ${t({ en: 'left', fr: 'restantes', ar: 'متبقية' })})`;
+            if (hours > 24) return `(${Math.floor(hours / 24)} ${t({ en: 'd left', fr: 'j rest.', ar: 'ي متبقية' })})`;
+            if (hours > 0) return `(${hours}h ${mins}m ${t({ en: 'left', fr: 'rest.', ar: 'متبقية' })})`;
+            return `(${mins}m ${t({ en: 'left', fr: 'rest.', ar: 'متبقية' })})`;
         } catch (e) { return null; }
     };
     const [activeTab, setActiveTab] = useState<'activity' | 'calendar'>('activity');
@@ -869,15 +869,15 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
                                                     <Check size={10} className="text-white" />
                                                 </div>
                                             </div>
-                                            <div className="flex-1">
-                                                <h4 className="text-[20px] font-medium text-black mb-1">{selectedOrder.bricolerName}</h4>
-                                                <div className="flex items-center gap-3">
-                                                    <div className="flex items-center gap-1">
+                                            <div className="flex-1 min-w-0">
+                                                <h4 className="text-[20px] font-medium text-black mb-1 truncate">{selectedOrder.bricolerName}</h4>
+                                                <div className="flex items-center gap-2">
+                                                    <div className="flex items-center gap-1 flex-shrink-0">
                                                         <Star size={14} className="fill-yellow-400 text-yellow-400" />
                                                         <span className="text-[14px] font-medium text-black">{selectedOrder.bricolerRating || '4.9'}</span>
                                                     </div>
-                                                    <span className="text-neutral-300">|</span>
-                                                    <span className="text-[14px] font-medium text-neutral-500 uppercase tracking-wider">
+                                                    <span className="text-neutral-300 flex-shrink-0">|</span>
+                                                    <span className="text-[14px] font-medium text-neutral-500 uppercase tracking-wider truncate min-w-0">
                                                         {t({ en: 'Verified Pro', fr: 'Pro Vérifié', ar: 'محترف موثق' })}
                                                     </span>
                                                 </div>
@@ -887,7 +887,7 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
                                                     e.stopPropagation();
                                                     setActiveChatOrderId(selectedOrder.id!);
                                                 }}
-                                                className="w-14 h-14 rounded-[20px] bg-[#01A083] flex items-center justify-center active:scale-90 transition-all "
+                                                className="w-14 h-14 rounded-[20px] bg-[#01A083] flex flex-shrink-0 items-center justify-center active:scale-90 transition-all "
                                             >
                                                 <MessageCircle size={28} className="text-white" />
                                             </button>
