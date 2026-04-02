@@ -141,7 +141,6 @@ const ShareAndEarnView: React.FC<ShareAndEarnViewProps> = ({
                         <strong className="font-black">{REFERRER_REWARD}</strong>
                         {t({ en: ' for each friend you refer', fr: ' pour chaque ami parrainé', ar: ' مقابل كل صديق تدعوه' })}
                         <br />
-                        <span className="text-[22px] font-light text-neutral-400">{t({ en: 'Your friend gets ', fr: 'Votre ami obtient ', ar: 'صديقك يحصل على ' })}<strong className="font-black text-[#01A083]">{NEW_USER_DISCOUNT} OFF</strong>{t({ en: ' their first order', fr: ' leur première commande', ar: ' خصماً على أول طلب' })}</span>
                     </motion.h1>
 
                     <motion.p
@@ -155,7 +154,7 @@ const ShareAndEarnView: React.FC<ShareAndEarnViewProps> = ({
 
                     {/* Code + Copy pill */}
                     <motion.div
-                        className="w-full flex items-center rounded-full bg-white border border-[#E0E0E0] shadow-[0_2px_10px_rgba(0,0,0,0.06)] overflow-hidden"
+                        className="w-full flex items-center rounded-full bg-white border border-[#E0E0E0]  overflow-hidden"
                         initial={{ opacity: 0, scale: 0.96 }}
                         animate={{ opacity: 1, scale: 1 }}
                         transition={{ delay: 0.22, type: 'spring', stiffness: 220, damping: 20 }}
