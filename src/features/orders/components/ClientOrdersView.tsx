@@ -794,10 +794,10 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
                         animate={{ x: 0 }}
                         exit={{ x: '100%' }}
                         transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-                        className="fixed inset-0 z-[4000] bg-white flex flex-col no-scrollbar"
+                        className="fixed inset-0 z-[9100] bg-white flex flex-col overflow-hidden"
                     >
                         {/* Premium Header */}
-                        <div className="sticky top-0 w-full pt-12 px-6 pb-4 bg-white z-[4002] border-b border-neutral-100">
+                        <div className="flex-shrink-0 w-full pt-12 px-6 pb-4 bg-white z-10 border-b border-neutral-100">
                             <div className="flex items-center justify-between">
                                 <button
                                     onClick={() => setSelectedOrder(null)}
@@ -817,7 +817,7 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
                         </div>
 
                         {/* Main Scrollable Content */}
-                        <div className="flex-1 w-full h-full overflow-y-auto no-scrollbar pb-[200px]">
+                        <div className="flex-1 overflow-y-auto no-scrollbar pb-[200px]">
                             <div className="px-6">
                                 {/* Hero Image & Title Section */}
                                 <div className="text-center mt-8 mb-10">
@@ -1245,7 +1245,7 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
                         animate={{ x: 0 }}
                         exit={{ x: '100%' }}
                         transition={{ type: 'spring', damping: 25, stiffness: 220 }}
-                        className="fixed inset-0 z-[5500] bg-white flex flex-col"
+                        className="fixed inset-0 z-[9999] bg-white flex flex-col"
                     >
                         <MessagesView
                             orders={orders}
