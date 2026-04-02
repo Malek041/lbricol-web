@@ -142,11 +142,11 @@ const AdminNotificationsView: React.FC<AdminNotificationsViewProps> = ({
                                     onClick={() => handleTap(notif)}
                                     className={cn(
                                         "w-full flex items-start gap-4 px-5 py-5 text-left transition-colors",
-                                        !notif.read ? "bg-[#219178]/[0.03]" : "bg-white",
+                                        !notif.read ? "bg-[#01A083]/[0.03]" : "bg-white",
                                         "hover:bg-neutral-50 active:bg-neutral-100"
                                     )}
                                 >
-                                    <div className="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0 bg-[#E6F7F4] text-[#219178]">
+                                    <div className="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0 bg-[#E6F7F4] text-[#01A083]">
                                         <DollarSign size={22} />
                                     </div>
                                     <div className="flex-1 min-w-0">
@@ -154,7 +154,7 @@ const AdminNotificationsView: React.FC<AdminNotificationsViewProps> = ({
                                             <p className={cn("text-[15px] leading-tight", notif.read ? "font-medium text-black" : "font-black text-black")}>
                                                 {t({ en: 'Commission Paid', fr: 'Commission Payée', ar: 'عمولة مدفوعة' })}
                                             </p>
-                                            {!notif.read && <div className="w-2 h-2 rounded-full bg-[#219178] flex-shrink-0 mt-1.5" />}
+                                            {!notif.read && <div className="w-2 h-2 rounded-full bg-[#01A083] flex-shrink-0 mt-1.5" />}
                                         </div>
                                         <p className="text-[13px] font-medium text-neutral-500 leading-relaxed mt-0.5">
                                             {notif.bricolerName} {t({ en: 'has sent', fr: 'a envoyé', ar: 'أرسل' })} {notif.amount} MAD.

@@ -25,9 +25,9 @@ const AdminBricolerCreator: React.FC<AdminBricolerCreatorProps> = ({ t, onBack }
         city: 'Marrakech',
         phone: '',
         bio: '',
-        rating: '4.8',
-        jobsDone: '25',
-        totalEarned: '12500',
+        rating: '0.0',
+        jobsDone: '0',
+        totalEarned: '0',
         services: [] as string[]
     });
 

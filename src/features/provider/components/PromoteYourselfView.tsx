@@ -110,8 +110,9 @@ const PromoteYourselfView: React.FC<PromoteYourselfViewProps> = ({
             className="flex flex-col h-full bg-[#F9F9F9] overflow-hidden"
         >
             {/* Header */}
-            <div className="pt-12 px-5 pb-4 bg-white flex items-center gap-4 sticky top-0 z-20 border-b border-neutral-100 shadow-sm">
+            <div id="promote-header" className="pt-12 px-5 pb-4 bg-white flex items-center gap-4 sticky top-0 z-20 border-b border-neutral-100">
                 <button
+                    id="promote-back-button"
                     onClick={onBack}
                     className="w-10 h-10 -ml-1 rounded-full flex items-center justify-center hover:bg-black/5 transition-colors"
                 >
@@ -125,9 +126,9 @@ const PromoteYourselfView: React.FC<PromoteYourselfViewProps> = ({
             <div className="flex-1 overflow-y-auto px-4 pt-6 pb-32 space-y-6">
 
                 {/* Clients Card */}
-                <div className="bg-white rounded-[24px] px-6 py-6 shadow-sm border border-neutral-100">
+                <div id="refer-clients-card" className="bg-white rounded-[24px] px-6 py-6 border border-neutral-100">
                     <div className="w-12 h-12 rounded-full bg-[#E6F7F4] flex items-center justify-center mb-4">
-                        <Users size={24} className="text-[#219178]" />
+                        <Users size={24} className="text-[#01A083]" />
                     </div>
 
                     <h2 className="text-[22px] font-black text-black mb-1">
@@ -156,10 +157,11 @@ const PromoteYourselfView: React.FC<PromoteYourselfViewProps> = ({
                             )}
                         </div>
                         <button
+                            id="copy-client-code-button"
                             onClick={handleCopyClient}
                             className={cn(
                                 "px-5 py-3 font-bold text-[15px] flex items-center gap-2 transition-all active:scale-95",
-                                copiedClient ? 'bg-[#219178] text-white' : 'bg-[#219178]/10 text-[#219178] hover:bg-[#219178]/20'
+                                copiedClient ? 'bg-[#01A083] text-white' : 'bg-[#01A083]/10 text-[#01A083] hover:bg-[#01A083]/20'
                             )}
                         >
                             {copiedClient ? (
@@ -172,7 +174,7 @@ const PromoteYourselfView: React.FC<PromoteYourselfViewProps> = ({
                 </div>
 
                 {/* Bricolers Card */}
-                <div className="bg-white rounded-[24px] px-6 py-6 shadow-sm border border-neutral-100 relative overflow-hidden">
+                <div id="refer-bricolers-card" className="bg-white rounded-[24px] px-6 py-6 border border-neutral-100 relative overflow-hidden">
                     <div className="absolute top-0 right-0 p-4">
                         <div className="px-3 py-1 bg-[#FFF9E5] text-[#FFC244] text-[11px] font-black rounded-full uppercase tracking-wider">
                             {t({ en: '50 MAD Reward', fr: '50 MAD Bonus', ar: 'مكافأة 50 درهم' })}

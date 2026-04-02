@@ -30,7 +30,7 @@ const PrivacyPolicy = () => {
                     animate={{ opacity: 1, y: 0 }}
                     className="flex flex-col items-center text-center mb-12"
                 >
-                    <div className="w-16 h-16 rounded-3xl bg-[#219178]/10 flex items-center justify-center text-[#219178] mb-6">
+                    <div className="w-16 h-16 rounded-3xl bg-[#01A083]/10 flex items-center justify-center text-[#01A083] mb-6">
                         <Shield size={32} />
                     </div>
                     <h2 className="text-3xl font-black text-black leading-tight mb-4">

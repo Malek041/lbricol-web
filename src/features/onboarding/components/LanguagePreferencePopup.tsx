@@ -54,17 +54,17 @@ const LanguagePreferencePopup = ({ isOpen, onSelectLanguage, onClose }: Language
             <button
                 onClick={() => onSelectLanguage(lang.code as 'en' | 'fr' | 'ar')}
                 className={`w-full flex items-center gap-4 p-4 rounded-2xl border-2 transition-all text-left ${isSelected
-                        ? 'bg-[#21917815] border-[#219178]'
+                        ? 'bg-[#01A08315] border-[#01A083]'
                         : 'bg-white border-neutral-100 hover:border-neutral-200 hover:bg-neutral-50'
                     }`}
             >
                 <span className="text-3xl leading-none">{lang.flag}</span>
                 <div className="flex-1">
-                    <p className={`text-[16px] font-black ${isSelected ? 'text-[#219178]' : 'text-[#1D1D1D]'}`}>{lang.name}</p>
+                    <p className={`text-[16px] font-black ${isSelected ? 'text-[#01A083]' : 'text-[#1D1D1D]'}`}>{lang.name}</p>
                     <p className="text-[13px] text-neutral-400 font-medium mt-0.5">{t({ en: lang.region.en, fr: lang.region.fr, ar: lang.region.ar })}</p>
                 </div>
                 {isSelected && (
-                    <div className="w-6 h-6 rounded-full bg-[#219178] flex items-center justify-center flex-shrink-0">
+                    <div className="w-6 h-6 rounded-full bg-[#01A083] flex items-center justify-center flex-shrink-0">
                         <Check size={14} className="text-white" strokeWidth={3} />
                     </div>
                 )}
@@ -117,7 +117,7 @@ const LanguagePreferencePopup = ({ isOpen, onSelectLanguage, onClose }: Language
                                     key={tab}
                                     onClick={() => setActiveTab(tab)}
                                     className={`py-3 text-[15px] font-black capitalize border-b-2 transition-all ${activeTab === tab
-                                            ? 'border-[#219178] text-[#219178]'
+                                            ? 'border-[#01A083] text-[#01A083]'
                                             : 'border-transparent text-neutral-400'
                                         }`}
                                 >
@@ -161,13 +161,13 @@ const LanguagePreferencePopup = ({ isOpen, onSelectLanguage, onClose }: Language
                                             ar: 'جميع الأسعار تظهر بالعملة المحلية.'
                                         })}
                                     </p>
-                                    <div className="w-full flex items-center gap-4 p-4 rounded-2xl border-2 bg-[#21917815] border-[#219178]">
+                                    <div className="w-full flex items-center gap-4 p-4 rounded-2xl border-2 bg-[#01A08315] border-[#01A083]">
                                         <span className="text-3xl leading-none">🇲🇦</span>
                                         <div className="flex-1">
-                                            <p className="text-[16px] font-black text-[#219178]">{t({ en: 'Moroccan Dirham', fr: 'Dirham marocain', ar: 'الدرهم المغربي' })}</p>
+                                            <p className="text-[16px] font-black text-[#01A083]">{t({ en: 'Moroccan Dirham', fr: 'Dirham marocain', ar: 'الدرهم المغربي' })}</p>
                                             <p className="text-[13px] text-neutral-400 font-medium mt-0.5">{t({ en: 'MAD · Morocco', fr: 'MAD · Maroc', ar: 'MAD · المغرب' })}</p>
                                         </div>
-                                        <div className="w-6 h-6 rounded-full bg-[#219178] flex items-center justify-center flex-shrink-0">
+                                        <div className="w-6 h-6 rounded-full bg-[#01A083] flex items-center justify-center flex-shrink-0">
                                             <Check size={14} className="text-white" strokeWidth={3} />
                                         </div>
                                     </div>

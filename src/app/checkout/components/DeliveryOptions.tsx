@@ -28,7 +28,7 @@ export default function DeliveryOptions({
           style={{
             padding: '16px',
             background: deliveryType === 'standard' ? '#F0FDF4' : '#fff',
-            border: `1px solid ${deliveryType === 'standard' ? '#219178' : '#F3F4F6'}`,
+            border: `1px solid ${deliveryType === 'standard' ? '#01A083' : '#F3F4F6'}`,
             borderRadius: '16px',
             display: 'flex',
             alignItems: 'center',
@@ -41,11 +41,11 @@ export default function DeliveryOptions({
             width: 20, 
             height: 20, 
             borderRadius: '50%', 
-            border: `2px solid ${deliveryType === 'standard' ? '#219178' : '#D1D5DB'}`,
+            border: `2px solid ${deliveryType === 'standard' ? '#01A083' : '#D1D5DB'}`,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            background: deliveryType === 'standard' ? '#219178' : 'transparent'
+            background: deliveryType === 'standard' ? '#01A083' : 'transparent'
           }}>
             {deliveryType === 'standard' && <div style={{ width: 8, height: 8, background: '#fff', borderRadius: '50%' }} />}
           </div>
@@ -61,7 +61,7 @@ export default function DeliveryOptions({
           style={{
             padding: '16px',
             background: deliveryType === 'scheduled' ? '#F0FDF4' : '#fff',
-            border: `1px solid ${deliveryType === 'scheduled' ? '#219178' : '#F3F4F6'}`,
+            border: `1px solid ${deliveryType === 'scheduled' ? '#01A083' : '#F3F4F6'}`,
             borderRadius: '16px',
             display: 'flex',
             alignItems: 'center',
@@ -74,11 +74,11 @@ export default function DeliveryOptions({
             width: 20, 
             height: 20, 
             borderRadius: '50%', 
-            border: `2px solid ${deliveryType === 'scheduled' ? '#219178' : '#D1D5DB'}`,
+            border: `2px solid ${deliveryType === 'scheduled' ? '#01A083' : '#D1D5DB'}`,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            background: deliveryType === 'scheduled' ? '#219178' : 'transparent'
+            background: deliveryType === 'scheduled' ? '#01A083' : 'transparent'
           }}>
             {deliveryType === 'scheduled' && <div style={{ width: 8, height: 8, background: '#fff', borderRadius: '50%' }} />}
           </div>
@@ -96,7 +96,7 @@ export default function DeliveryOptions({
                 background: 'transparent',
                 fontSize: 14,
                 fontWeight: 700,
-                color: '#219178',
+                color: '#01A083',
                 outline: 'none'
               }}
             />

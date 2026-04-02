@@ -9,7 +9,7 @@ interface ClientOnboardingProps {
 }
 
 const BRAND_YELLOW = "#FFC244";
-const BRAND_GREEN = "#219178";
+const BRAND_GREEN = "#01A083";
 
 const HERO_IMAGES = [
     "/Images/Desktop hero section images/Driver.gif",

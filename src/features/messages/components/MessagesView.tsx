@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, Settings, ChevronLeft, Send, Clock, MapPin, Calendar, Heart, MessageSquare, X, ChevronDown, Camera, Check, FileText } from 'lucide-react';
+import { Search, Settings, ChevronLeft, Send, Clock, MapPin, Calendar, Heart, MessageSquare, X, ChevronDown, Camera, Mic, Check, FileText } from 'lucide-react';
 import { useTheme } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -19,13 +19,17 @@ import {
 } from 'firebase/firestore';
 import { OrderDetails } from '@/features/orders/components/OrderCard';
 import { getServiceVector } from '@/config/services_config';
+import { uploadToCloudinary } from '@/lib/upload';
+import { compressImageFileToDataUrl } from '@/lib/imageCompression';
 
 interface Message {
     id: string;
     senderId: string;
     senderName: string;
     senderAvatar?: string;
-    text: string;
+    text?: string;
+    imageUrl?: string;
+    audioUrl?: string;
     timestamp: any;
     isOwn: boolean;
 }
@@ -74,7 +78,16 @@ const MessagesView: React.FC<MessagesViewProps> = ({
     const [searchQuery, setSearchQuery] = useState('');
     const [conversations, setConversations] = useState<Conversation[]>([]);
     const [activeMessages, setActiveMessages] = useState<Message[]>([]);
+    const [isUploading, setIsUploading] = useState(false);
+    const [isRecording, setIsRecording] = useState(false);
+    const [recordingDuration, setRecordingDuration] = useState(0);
+    // Staged image: local DataURL shown in preview before upload
+    const [pendingImage, setPendingImage] = useState<{ dataUrl: string; file: File } | null>(null);
+    const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+    const audioChunksRef = useRef<Blob[]>([]);
+    const fileInputRef = useRef<HTMLInputElement>(null);
     const messagesEndRef = useRef<HTMLDivElement>(null);
+    const timerRef = useRef<NodeJS.Timeout | null>(null);
 
     const c = {
         bg: theme === 'light' ? '#FFFFFF' : '#000000',
@@ -82,7 +95,34 @@ const MessagesView: React.FC<MessagesViewProps> = ({
         textMuted: theme === 'light' ? '#717171' : '#B0B0B0',
         border: theme === 'light' ? '#EBEBEB' : '#2D2D2D',
         surface: theme === 'light' ? '#F7F7F7' : '#1A1A1A',
-        accent: '#FF385C'
+        accent: '#01A083'
+    };
+
+    const getTimeRemaining = () => {
+        const conversation = conversations.find(c => c.jobId === selectedJobId);
+        if (!conversation?.jobDates || !conversation?.jobTime) return null;
+
+        try {
+            const dateStr = conversation.jobDates;
+            const timeStr = conversation.jobTime.split('-')[0].trim();
+            const jobDateTime = new Date(`${dateStr}T${timeStr}:00`);
+            const now = new Date();
+            const diffMs = jobDateTime.getTime() - now.getTime();
+
+            if (diffMs <= 0) return null;
+
+            const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+            const diffMins = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+
+            if (diffHours >= 24) {
+                const diffDays = Math.floor(diffHours / 24);
+                return `(${diffDays}j restantes)`;
+            }
+
+            return `(${diffHours}h ${diffMins}m restantes)`;
+        } catch (e) {
+            return null;
+        }
     };
 
     if (!currentUser) {
@@ -189,6 +229,8 @@ const MessagesView: React.FC<MessagesViewProps> = ({
                     senderId: data.senderId,
                     senderName: data.senderName,
                     text: data.text,
+                    imageUrl: data.imageUrl,
+                    audioUrl: data.audioUrl,
                     timestamp: data.timestamp,
                     isOwn: data.senderId === (impersonateBricoler ? impersonateBricoler.id : currentUser.uid)
                 } as Message;
@@ -199,22 +241,28 @@ const MessagesView: React.FC<MessagesViewProps> = ({
         return () => unsub();
     }, [selectedJobId, currentUser]);
 
-    const handleSendMessage = async () => {
-        if (!messageInput.trim() || !selectedJobId) return;
+    const handleSendMessage = async (customContent?: { text?: string, imageUrl?: string, audioUrl?: string }) => {
+        if (!customContent && !messageInput.trim()) return;
+        if (!selectedJobId) return;
 
-        const text = messageInput.trim();
-        setMessageInput('');
+        const text = customContent?.text || messageInput.trim();
+        if (!customContent) setMessageInput('');
 
         try {
             const senderId = impersonateBricoler ? impersonateBricoler.id : currentUser.uid;
             const senderName = impersonateBricoler ? impersonateBricoler.name : (currentUser.displayName || 'You');
 
-            await addDoc(collection(db, 'jobs', selectedJobId, 'messages'), {
+            const messageData: any = {
                 senderId: senderId,
                 senderName: senderName,
-                text: text,
                 timestamp: serverTimestamp()
-            });
+            };
+
+            if (text) messageData.text = text;
+            if (customContent?.imageUrl) messageData.imageUrl = customContent.imageUrl;
+            if (customContent?.audioUrl) messageData.audioUrl = customContent.audioUrl;
+
+            await addDoc(collection(db, 'jobs', selectedJobId, 'messages'), messageData);
 
             // Notify the other participant
             const conversation = conversations.find(c => c.jobId === selectedJobId);
@@ -223,13 +271,17 @@ const MessagesView: React.FC<MessagesViewProps> = ({
                 const isClient = orders.some(o => o.id === selectedJobId && o.clientId === recipientId);
                 const notificationCollection = isClient ? 'client_notifications' : 'bricoler_notifications';
 
+                let notificationText = text;
+                if (!text && customContent?.imageUrl) notificationText = '📷 Sent a photo';
+                if (!text && customContent?.audioUrl) notificationText = '🎤 Sent a voice message';
+
                 await addDoc(collection(db, notificationCollection), {
                     [isClient ? 'clientId' : 'bricolerId']: recipientId,
                     type: 'new_message',
                     jobId: selectedJobId,
                     serviceName: conversation.jobTitle || 'Service',
-                    senderName: impersonateBricoler ? impersonateBricoler.name : (currentUser.displayName || 'User'),
-                    text: text.length > 50 ? `${text.substring(0, 50)}...` : text,
+                    senderName: senderName,
+                    text: notificationText.length > 50 ? `${notificationText.substring(0, 50)}...` : notificationText,
                     read: false,
                     timestamp: serverTimestamp()
                 });
@@ -237,6 +289,105 @@ const MessagesView: React.FC<MessagesViewProps> = ({
         } catch (error) {
             console.error("Error sending message:", error);
         }
+    };
+
+    // handlePhotoUpload: stage the image locally; do NOT upload yet
+    const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        // Reset input so same file can be re-selected if needed
+        e.target.value = '';
+        try {
+            const dataUrl = await compressImageFileToDataUrl(file, { maxWidth: 1024, quality: 0.7 });
+            setPendingImage({ dataUrl, file });
+        } catch (err) {
+            console.error('Image preview failed:', err);
+        }
+    };
+
+    // Upload the staged image and send
+    const handleSendPendingImage = async () => {
+        if (!pendingImage || !selectedJobId) return;
+        setIsUploading(true);
+        try {
+            const imageUrl = await uploadToCloudinary(
+                pendingImage.dataUrl,
+                `lbricol/chat/${selectedJobId}`,
+                'lbricol_portfolio'
+            );
+            await handleSendMessage({ imageUrl });
+            setPendingImage(null);
+        } catch (error) {
+            console.error('Photo upload failed:', error);
+        } finally {
+            setIsUploading(false);
+            if (fileInputRef.current) fileInputRef.current.value = '';
+        }
+    };
+
+    const startRecording = async () => {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            const mediaRecorder = new MediaRecorder(stream);
+            mediaRecorderRef.current = mediaRecorder;
+            audioChunksRef.current = [];
+
+            mediaRecorder.ondataavailable = (event) => {
+                if (event.data.size > 0) {
+                    audioChunksRef.current.push(event.data);
+                }
+            };
+
+            mediaRecorder.onstop = async () => {
+                const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+                setIsUploading(true);
+                try {
+                    // Convert blob to base64 for upload
+                    const reader = new FileReader();
+                    reader.readAsDataURL(audioBlob);
+                    reader.onloadend = async () => {
+                        const base64Audio = reader.result as string;
+                        // Use a generic name for the audio file in cloudinary
+                        const audioUrl = await uploadToCloudinary(
+                            base64Audio,
+                            `lbricol/chat/${selectedJobId}/audio`,
+                            'lbricol_portfolio'
+                        );
+                        await handleSendMessage({ audioUrl });
+                        setIsUploading(false);
+                    };
+                } catch (error) {
+                    console.error("Audio upload failed:", error);
+                    setIsUploading(false);
+                }
+
+                // Stop all tracks
+                stream.getTracks().forEach(track => track.stop());
+            };
+
+            mediaRecorder.start();
+            setIsRecording(true);
+            setRecordingDuration(0);
+            timerRef.current = setInterval(() => {
+                setRecordingDuration(prev => prev + 1);
+            }, 1000);
+        } catch (error) {
+            console.error("Error starting recording:", error);
+        }
+    };
+
+    const stopRecording = () => {
+        if (mediaRecorderRef.current && isRecording) {
+            mediaRecorderRef.current.stop();
+            setIsRecording(false);
+            if (timerRef.current) clearInterval(timerRef.current);
+        }
+    };
+
+    const formatDuration = (seconds: number) => {
+        const mins = Math.floor(seconds / 60);
+        const secs = seconds % 60;
+        return `${mins}:${secs.toString().padStart(2, '0')}`;
     };
 
     // Filter Logic
@@ -271,7 +422,9 @@ const MessagesView: React.FC<MessagesViewProps> = ({
                 }}>
                     <button
                         onClick={() => {
-                            if (onBackToOrders) {
+                            if (selectedJobId && !isModal) {
+                                setSelectedJobId(null);
+                            } else if (onBackToOrders) {
                                 onBackToOrders();
                             } else {
                                 setSelectedJobId(null);
@@ -286,7 +439,7 @@ const MessagesView: React.FC<MessagesViewProps> = ({
                 </div>
 
                 {/* Messages & Task Info Container */}
-                <div style={{ flex: 1, overflowY: 'auto' }}>
+                <div style={{ flex: 1, overflowY: 'auto', paddingBottom: '80px' }}>
                     {/* Relevant Task info card — matching screenshot layout */}
                     <div style={{ padding: '20px 20px 10px' }}>
                         <div style={{
@@ -330,16 +483,31 @@ const MessagesView: React.FC<MessagesViewProps> = ({
                                         {conversation?.jobTitle?.toLowerCase() || 'service'} › {conversation?.jobSubService || 'General'}
                                     </span>
                                 </div>
-                                <div style={{ marginBottom: '8px' }}>
-                                    <span style={{ fontSize: '13px', fontWeight: 700, color: '#666', marginRight: '8px' }}>
-                                        {conversation?.jobDates ? new Date(conversation.jobDates).toLocaleDateString(t({ en: 'en-US', fr: 'fr-FR' }), { day: 'numeric', month: 'short' }) : t({ en: 'Flexible', fr: 'Flexible' })}
-                                    </span>
-                                    <span style={{ fontSize: '16px', fontWeight: 900, color: '#000' }}>
-                                        {conversation?.jobTime || t({ en: 'Flexible', fr: 'Flexible' })}
-                                    </span>
-                                    {conversation?.status === 'confirmed' && (
-                                        <span style={{ fontSize: '13px', color: '#06C167', fontWeight: 700, marginLeft: '6px' }}>({t({ en: 'On track', fr: 'Sur la bonne voie' })})</span>
-                                    )}
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap', marginTop: '4px' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                        <Calendar size={16} color="#666" opacity={0.6} />
+                                        <div style={{ display: 'flex', flexDirection: 'column', lineHeight: '1.1' }}>
+                                            <span style={{ fontSize: '11px', fontWeight: 800, color: '#999', textTransform: 'uppercase' }}>
+                                                {conversation?.jobDates ? new Date(conversation.jobDates).toLocaleDateString(t({ en: 'en-US', fr: 'fr-FR' }), { month: 'short' }) : ''}
+                                            </span>
+                                            <span style={{ fontSize: '15px', fontWeight: 900, color: '#000' }}>
+                                                {conversation?.jobDates ? new Date(conversation.jobDates).getDate() : ''}
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    <div style={{ width: '1.5px', height: '24px', backgroundColor: '#F0F0F0', borderRadius: '1px' }} />
+
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                                        <span style={{ fontSize: '20px', fontWeight: 950, color: '#000', letterSpacing: '-0.02em' }}>
+                                            {conversation?.jobTime || '09:00'}
+                                        </span>
+                                        {['confirmed', 'in_progress', 'ready'].includes(conversation?.status || '') && getTimeRemaining() && (
+                                            <span style={{ fontSize: '12px', fontWeight: 800, color: '#01A083', padding: '2px 0' }}>
+                                                {getTimeRemaining()}
+                                            </span>
+                                        )}
+                                    </div>
                                 </div>
                                 <div style={{ width: '100%', height: '4px', backgroundColor: '#F0F0F0', borderRadius: '2px', overflow: 'hidden' }}>
                                 </div>
@@ -349,7 +517,7 @@ const MessagesView: React.FC<MessagesViewProps> = ({
                         {conversation?.jobDescription && (
                             <div style={{ marginTop: '12px', padding: '12px', backgroundColor: '#F9F9F9', borderRadius: '12px', border: '1px solid #F0F0F0' }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-                                    <FileText size={14} color="#219178" />
+                                    <FileText size={14} color="#01A083" />
                                     <span style={{ fontSize: '11px', fontWeight: 900, color: '#333' }}>{t({ en: 'TASK DESCRIPTION', fr: 'DESCRIPTION DE LA MISSION' })}</span>
                                 </div>
                                 <p style={{ fontSize: '13px', color: '#666', margin: 0 }}>{conversation.jobDescription}</p>
@@ -377,6 +545,17 @@ const MessagesView: React.FC<MessagesViewProps> = ({
                             const showDate = index === 0 ||
                                 (msgDate && activeMessages[index - 1].timestamp?.toDate().toDateString() !== msgDate.toDateString());
 
+                            const bubbleOwn = {
+                                background: '#01A083',
+                                color: '#ffffff',
+                                borderRadius: '22px 22px 4px 22px',
+                            };
+                            const bubbleOther = {
+                                background: '#FFC244',
+                                color: '#1a1a1a',
+                                borderRadius: '22px 22px 22px 4px',
+                            };
+
                             return (
                                 <React.Fragment key={message.id}>
                                     {showDate && msgDate && (
@@ -384,31 +563,48 @@ const MessagesView: React.FC<MessagesViewProps> = ({
                                             {msgDate.toLocaleDateString(t({ en: 'en-US', fr: 'fr-FR' }), { day: 'numeric', month: 'long' })}
                                         </div>
                                     )}
-                                    <div style={{ display: 'flex', flexDirection: message.isOwn ? 'row-reverse' : 'row', gap: '8px', alignItems: 'flex-start', marginBottom: message.isOwn ? '4px' : '8px' }}>
+                                    <div style={{ display: 'flex', flexDirection: message.isOwn ? 'row-reverse' : 'row', gap: '8px', alignItems: 'flex-end', marginBottom: '6px' }}>
                                         {!message.isOwn && (
-                                            <div style={{ width: '28px', height: '28px', borderRadius: '50%', backgroundColor: '#FFC244', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', marginTop: '14px', flexShrink: 0 }}>
-                                                <img src="/Images/Logos/Lbricol_icon_black.webp" style={{ width: '60%', height: '60%', objectFit: 'contain' }} />
+                                            <div style={{ width: '28px', height: '28px', borderRadius: '50%', backgroundColor: c.surface, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0, border: `1px solid ${c.border}` }}>
+                                                {conversation?.participantAvatar ? (
+                                                    <img src={conversation.participantAvatar} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                                ) : (
+                                                    <div style={{ fontSize: '12px', fontWeight: 900, color: c.textMuted }}>{conversation?.participantName?.[0]}</div>
+                                                )}
                                             </div>
                                         )}
                                         <div style={{ maxWidth: '75%', display: 'flex', flexDirection: 'column', gap: '4px' }}>
                                             <motion.div
-                                                initial={{ scale: 0.9, opacity: 0 }}
-                                                animate={{ scale: 1, opacity: 1 }}
+                                                initial={{ scale: 0.9, opacity: 0, y: 6 }}
+                                                animate={{ scale: 1, opacity: 1, y: 0 }}
+                                                transition={{ type: 'spring', stiffness: 300, damping: 24 }}
                                                 style={{
-                                                    backgroundColor: message.isOwn ? '#219178' : '#FFFFFF',
-                                                    color: message.isOwn ? '#FFFFFF' : '#000000',
-                                                    padding: '12px 18px',
-                                                    borderRadius: message.isOwn ? '22px 22px 4px 22px' : '22px 22px 22px 4px',
-                                                    fontSize: '16px',
-                                                    lineHeight: '1.4',
+                                                    padding: (message.imageUrl || message.audioUrl) ? '4px' : '12px 18px',
+                                                    ...(message.isOwn ? bubbleOwn : bubbleOther),
+                                                    fontSize: '15px',
+                                                    lineHeight: '1.45',
                                                     fontWeight: 500,
-                                                    boxShadow: message.isOwn ? 'none' : '0 2px 8px rgba(0,0,0,0.05)',
-                                                    border: message.isOwn ? 'none' : '1px solid #F0F0F0'
+                                                    overflow: 'hidden',
                                                 }}
                                             >
-                                                {message.text}
+                                                {message.imageUrl && (
+                                                    <img
+                                                        src={message.imageUrl}
+                                                        style={{ maxWidth: '100%', maxHeight: '280px', borderRadius: '18px', display: 'block', objectFit: 'cover' }}
+                                                        alt="Sent photo"
+                                                    />
+                                                )}
+                                                {message.audioUrl && (
+                                                    <div style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', gap: '10px', minWidth: '200px' }}>
+                                                        <div style={{ width: '36px', height: '36px', borderRadius: '50%', backgroundColor: message.isOwn ? 'rgba(255,255,255,0.2)' : '#01A08310', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                                            <Mic size={18} color={message.isOwn ? '#FFF' : '#01A083'} />
+                                                        </div>
+                                                        <audio src={message.audioUrl} controls style={{ height: '30px', width: '150px' }} />
+                                                    </div>
+                                                )}
+                                                {message.text && <span>{message.text}</span>}
                                             </motion.div>
-                                            <div style={{ fontSize: '11px', color: '#999', textAlign: message.isOwn ? 'right' : 'left', fontWeight: 600, padding: '0 4px' }}>
+                                            <div style={{ fontSize: '11px', color: '#aaa', textAlign: message.isOwn ? 'right' : 'left', fontWeight: 600, padding: '0 4px' }}>
                                                 {!message.isOwn && <span style={{ marginRight: '6px' }}>{message.senderName?.split(' ')[0]} ·</span>}
                                                 {msgDate ? msgDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}
                                             </div>
@@ -421,60 +617,129 @@ const MessagesView: React.FC<MessagesViewProps> = ({
                     </div>
                 </div>
 
-                {/* Message Input Area — Matching Screenshot */}
+                {/* Message Input Area */}
                 <div
                     style={{
-                        padding: '12px 20px',
                         borderTop: '1px solid #F0F0F0',
                         backgroundColor: '#FFFFFF',
-                        paddingBottom: isModal ? '16px' : 'max(85px, calc(85px + env(safe-area-inset-bottom)))',
+                        paddingBottom: isModal ? '20px' : 'max(76px, calc(76px + env(safe-area-inset-bottom)))',
                         flexShrink: 0
                     }}
                 >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                        <button style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#219178' }}>
+                    {/* ── Pending Image Preview Strip ── */}
+                    <AnimatePresence>
+                        {pendingImage && (
+                            <motion.div
+                                key="img-preview"
+                                initial={{ opacity: 0, height: 0 }}
+                                animate={{ opacity: 1, height: 'auto' }}
+                                exit={{ opacity: 0, height: 0 }}
+                                style={{ padding: '12px 20px 0', overflow: 'hidden' }}
+                            >
+                                <div style={{ position: 'relative', display: 'inline-block' }}>
+                                    <img
+                                        src={pendingImage.dataUrl}
+                                        alt="Preview"
+                                        style={{ height: '120px', borderRadius: '14px', objectFit: 'cover', display: 'block', border: '2px solid #01A083' }}
+                                    />
+                                    <button
+                                        onClick={() => { setPendingImage(null); if (fileInputRef.current) fileInputRef.current.value = ''; }}
+                                        style={{
+                                            position: 'absolute', top: '-8px', right: '-8px',
+                                            width: '24px', height: '24px', borderRadius: '50%',
+                                            background: '#FF385C', border: '2px solid #fff',
+                                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                            cursor: 'pointer', boxShadow: '0 2px 6px rgba(0,0,0,0.2)'
+                                        }}
+                                    >
+                                        <X size={12} color="#fff" />
+                                    </button>
+                                </div>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 20px 0' }}>
+                        <input
+                            type="file"
+                            accept="image/*"
+                            hidden
+                            ref={fileInputRef}
+                            onChange={handlePhotoUpload}
+                        />
+                        <button
+                            onClick={() => fileInputRef.current?.click()}
+                            disabled={isUploading || !!pendingImage}
+                            style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#01A083', opacity: (isUploading || !!pendingImage) ? 0.4 : 1 }}
+                        >
                             <Camera size={26} />
                         </button>
-                        <div style={{
-                            flex: 1,
-                            display: 'flex',
-                            alignItems: 'center',
-                            backgroundColor: '#FFFFFF',
-                            borderRadius: '12px',
-                            padding: '10px 16px',
-                            border: '1.5px solid #219178',
-                        }}>
-                            <input
-                                type="text"
-                                value={messageInput}
-                                onChange={(e) => setMessageInput(e.target.value)}
-                                onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-                                placeholder={t({ en: 'Write a message...', fr: 'Écrire un message...' })}
+
+                        {isRecording ? (
+                            <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '12px', backgroundColor: '#FFF0F0', borderRadius: '12px', padding: '10px 16px', border: '1.5px solid #FF385C' }}>
+                                <motion.div animate={{ opacity: [1, 0, 1] }} transition={{ repeat: Infinity, duration: 1 }} style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#FF385C' }} />
+                                <span style={{ flex: 1, fontSize: '14px', fontWeight: 900, color: '#FF385C' }}>Recording... {formatDuration(recordingDuration)}</span>
+                                <button onClick={stopRecording} style={{ background: '#FF385C', color: '#FFF', border: 'none', padding: '4px 12px', borderRadius: '8px', fontWeight: 900, fontSize: '12px' }}>STOP</button>
+                            </div>
+                        ) : (
+                            <div style={{
+                                flex: 1,
+                                display: 'flex',
+                                alignItems: 'center',
+                                backgroundColor: '#FFFFFF',
+                                borderRadius: '12px',
+                                padding: '10px 16px',
+                                border: '1.5px solid #01A083',
+                                opacity: isUploading ? 0.5 : 1
+                            }}>
+                                <input
+                                    type="text"
+                                    value={messageInput}
+                                    disabled={isUploading}
+                                    onChange={(e) => setMessageInput(e.target.value)}
+                                    onKeyPress={(e) => e.key === 'Enter' && (pendingImage ? handleSendPendingImage() : handleSendMessage())}
+                                    placeholder={isUploading ? 'Sending...' : t({ en: 'Write a message...', fr: 'Écrire un message...' })}
+                                    style={{
+                                        flex: 1,
+                                        background: 'none',
+                                        border: 'none',
+                                        color: '#000',
+                                        fontSize: '16px',
+                                        outline: 'none',
+                                        fontWeight: 500
+                                    }}
+                                />
+                            </div>
+                        )}
+
+                        {/* Right action button: Send (if text or pending image) | Mic */}
+                        {(messageInput.trim() || pendingImage) ? (
+                            <button
+                                onClick={() => pendingImage ? handleSendPendingImage() : handleSendMessage()}
+                                disabled={isUploading}
                                 style={{
-                                    flex: 1,
-                                    background: 'none',
-                                    border: 'none',
-                                    color: '#000',
-                                    fontSize: '16px',
-                                    outline: 'none',
-                                    fontWeight: 500
+                                    width: '42px', height: '42px', borderRadius: '50%',
+                                    background: isUploading ? '#ccc' : 'linear-gradient(135deg, #01A083, #00c9a7)',
+                                    border: 'none', cursor: isUploading ? 'not-allowed' : 'pointer',
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                    boxShadow: '0 4px 12px rgba(1,160,131,0.35)',
+                                    transition: 'all 0.2s',
                                 }}
-                            />
-                        </div>
-                        <button
-                            onClick={handleSendMessage}
-                            disabled={!messageInput.trim()}
-                            style={{
-                                background: 'none',
-                                border: 'none',
-                                cursor: messageInput.trim() ? 'pointer' : 'not-allowed',
-                                color: messageInput.trim() ? '#219178' : '#999',
-                                transition: 'all 0.2s',
-                                transform: messageInput.trim() ? 'scale(1.1)' : 'scale(1)',
-                            }}
-                        >
-                            <Send size={26} fill={messageInput.trim() ? '#21917820' : 'none'} />
-                        </button>
+                            >
+                                {isUploading
+                                    ? <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: 'linear' }} style={{ width: '16px', height: '16px', borderRadius: '50%', border: '2px solid rgba(255,255,255,0.4)', borderTopColor: '#fff' }} />
+                                    : <Send size={18} color="#fff" />
+                                }
+                            </button>
+                        ) : !isRecording ? (
+                            <button
+                                onClick={startRecording}
+                                disabled={isUploading}
+                                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#01A083', opacity: isUploading ? 0.5 : 1 }}
+                            >
+                                <Mic size={26} />
+                            </button>
+                        ) : null}
                     </div>
                 </div>
             </div>
@@ -497,7 +762,7 @@ const MessagesView: React.FC<MessagesViewProps> = ({
                             {t({ en: 'Messages', fr: 'Messages' })}
                         </h1>
                     )}
-                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center', backgroundColor: c.surface, borderRadius: '14px', padding: '12px 16px', border: `1px solid ${c.border}`, width: '100%', maxWidth: '500px', margin: '0 auto' }}>
+                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center', backgroundColor: c.surface, borderRadius: '100px', padding: '12px 16px', border: `1px solid ${c.border}`, width: '100%', maxWidth: '500px', margin: '0 auto' }}>
                         <Search size={18} color={c.textMuted} />
                         <input
                             type="text"
@@ -526,8 +791,8 @@ const MessagesView: React.FC<MessagesViewProps> = ({
                             style={{
                                 padding: '10px 20px',
                                 borderRadius: '100px',
-                                border: activeFilter === filter.id ? '1.5px solid #000' : `1.5px solid ${c.border}`,
-                                backgroundColor: activeFilter === filter.id ? '#000' : 'transparent',
+                                border: activeFilter === filter.id ? '1.5px solid #01A083' : `1.5px solid ${c.border}`,
+                                backgroundColor: activeFilter === filter.id ? '#01A083' : 'transparent',
                                 color: activeFilter === filter.id ? '#FFF' : c.text,
                                 fontSize: '13px',
                                 fontWeight: 800,
@@ -544,7 +809,7 @@ const MessagesView: React.FC<MessagesViewProps> = ({
             </div>
 
             {/* Conversations List */}
-            <div style={{ flex: 1, overflowY: 'auto', paddingBottom: isModal ? '16px' : '90px' }}>
+            <div style={{ flex: 1, overflowY: 'auto', paddingBottom: isModal ? '16px' : '80px' }}>
                 {displayedConversations.length === 0 ? (
                     <div style={{ padding: '60px 20px', textAlign: 'center', color: c.textMuted }}>
                         <MessageSquare size={48} style={{ margin: '0 auto 16px', opacity: 0.1 }} />
@@ -572,7 +837,7 @@ const MessagesView: React.FC<MessagesViewProps> = ({
                                 style={{
                                     width: '60px',
                                     height: '60px',
-                                    borderRadius: '16px',
+                                    borderRadius: '50%',
                                     backgroundColor: c.surface,
                                     flexShrink: 0,
                                     overflow: 'hidden',
@@ -623,7 +888,7 @@ const MessagesView: React.FC<MessagesViewProps> = ({
                                 </div>
 
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                                    <div style={{ fontSize: '11px', fontWeight: 900, color: '#007AFF', backgroundColor: '#007AFF10', padding: '2px 8px', borderRadius: '6px', textTransform: 'uppercase' }}>
+                                    <div style={{ fontSize: '11px', fontWeight: 900, color: '#01A083', backgroundColor: '#01A08310', padding: '2px 8px', borderRadius: '6px', textTransform: 'uppercase' }}>
                                         {conversation.jobTitle}
                                     </div>
                                     <div style={{ fontSize: '11px', color: c.textMuted, fontWeight: 700, display: 'flex', alignItems: 'center', gap: '4px' }}>

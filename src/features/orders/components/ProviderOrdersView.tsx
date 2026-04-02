@@ -11,9 +11,22 @@ import {
 import { useLanguage } from '@/context/LanguageContext';
 import { cn } from '@/lib/utils';
 import LiveOrdersMap from './LiveOrdersMap';
-import { getServiceById, getSubServiceName, getServiceVector } from '@/config/services_config';
+import { getServiceById, getSubServiceName, getServiceVector, getSubService } from '@/config/services_config';
 import { Job } from '@/app/provider/page';
 import ProviderJobCard from './ProviderJobCard';
+import { format, parseISO, isValid } from 'date-fns';
+
+const normalizeDate = (d: any): Date => {
+    if (d instanceof Date) return d;
+    if (d?.toDate && typeof d.toDate === 'function') return d.toDate();
+    if (typeof d === 'string') {
+        const parsed = parseISO(d);
+        if (isValid(parsed)) return parsed;
+        const native = new Date(d);
+        if (isValid(native)) return native;
+    }
+    return new Date();
+};
 
 interface ProviderOrdersViewProps {
     confirmedOrders: OrderDetails[];
@@ -63,6 +76,32 @@ export default function ProviderOrdersView({
         return () => clearInterval(timer);
     }, []);
 
+    const getDynamicStatus = (order: OrderDetails) => {
+        if (!order.date || !order.time) return order.status;
+        const autoStatuses = ['confirmed', 'accepted', 'programmed', 'pending', 'in_progress'];
+        if (!autoStatuses.includes(order.status || '')) return order.status;
+
+        try {
+            const timeStr = order.time.split('-')[0].trim();
+            const dateStr = format(normalizeDate(order.date), 'yyyy-MM-dd');
+            const startTime = parseISO(`${dateStr}T${timeStr}:00`).getTime();
+            const now = currentTime.getTime();
+
+            let durationHr = 2;
+            const subService = getSubService(order.serviceId || order.service || '', order.subService || '');
+            if (subService?.estimatedDurationHr) {
+                durationHr = subService.estimatedDurationHr;
+            }
+
+            const endTime = startTime + (durationHr * 60 * 60 * 1000);
+
+            if (now < startTime) return 'on_time';
+            if (now >= startTime && now < endTime) return 'in_progress';
+            if (now >= endTime) return 'done';
+            return order.status;
+        } catch (e) { return order.status; }
+    };
+
     useEffect(() => {
         if (typeof window !== 'undefined' && !audioRef.current) {
             audioRef.current = new Audio('https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3');
@@ -87,9 +126,12 @@ export default function ProviderOrdersView({
 
     // Filter orders for history (done and cancelled)
     const historyOrders = useMemo(() => {
-        return confirmedOrders.filter(o => ['done', 'cancelled', 'delivered'].includes(o.status || ''))
+        return confirmedOrders.filter(o => {
+            const status = getDynamicStatus(o);
+            return ['done', 'cancelled', 'delivered'].includes(status || '');
+        })
             .sort((a, b) => new Date(b.date || 0).getTime() - new Date(a.date || 0).getTime());
-    }, [confirmedOrders]);
+    }, [confirmedOrders, getDynamicStatus]);
 
     const getHeroImage = (service: string) => {
         const serviceMap: Record<string, string> = {
@@ -153,9 +195,14 @@ export default function ProviderOrdersView({
                 <p className="text-[14px] font-medium text-neutral-400 mt-0.5 truncate">
                     {order.clientName || t({ en: 'Client', fr: 'Client' })} • {order.city ? t({ en: order.city, fr: order.city }) : (order.location ? t({ en: order.location, fr: order.location }) : '')}
                 </p>
-                <p className="text-[14px] font-bold text-neutral-400 mt-1 capitalize">
-                    {order.status === 'done' ? t({ en: 'Completed', fr: 'Terminée' }) : order.status}
-                </p>
+                <div className="flex items-center justify-between mt-1">
+                    <p className="text-[12px] font-black text-[#01A083] bg-[#E6F7F4] px-2 py-0.5 rounded-lg shrink-0 capitalize">
+                        {order.status === 'done' ? t({ en: 'Completed', fr: 'Terminée' }) : (order.status === 'delivered' ? t({ en: 'Delivered', fr: 'Livrée' }) : order.status)}
+                    </p>
+                    <p className="text-[12px] font-bold text-neutral-400">
+                        {order.date ? format(normalizeDate(order.date), 'MMM d, yyyy') : ''}
+                    </p>
+                </div>
             </div>
         </motion.div>
     );
@@ -190,7 +237,7 @@ export default function ProviderOrdersView({
                     onInteractionEnd={() => setIsMapDragging(false)}
                     triggerGps={triggerGps}
                     currentUserPin={{
-                        avatarUrl: userData?.avatar || userData?.photoURL
+                        avatarUrl: userData?.profilePhotoURL || userData?.avatar || userData?.photoURL
                     }}
                     broadcastPins={[
                         ...availableJobs.map(job => ({
@@ -204,7 +251,10 @@ export default function ProviderOrdersView({
                             isMarketplace: true
                         })),
                         ...confirmedOrders
-                            .filter(o => ['programmed', 'accepted', 'in_progress', 'waiting'].includes(o.status || ''))
+                            .filter(o => {
+                                const status = getDynamicStatus(o);
+                                return ['programmed', 'accepted', 'in_progress', 'waiting', 'on_time'].includes(status || '');
+                            })
                             .map(order => ({
                                 id: order.id,
                                 lat: (order as any).locationDetails?.lat || (order.coords?.lat) || 31.5085,
@@ -226,7 +276,7 @@ export default function ProviderOrdersView({
                 animate={{
                     bottom: (!isMapDragging && (availableJobs.length > 0 || confirmedOrders.some(o => ['programmed', 'accepted', 'in_progress', 'waiting'].includes(o.status || '')))) ? '320px' : '102px'
                 }}
-                className="absolute right-6 w-12 h-12 bg-white rounded-full shadow-[0_2px_8px_rgba(0,0,0,0.15)] flex items-center justify-center text-[#374151] active:scale-95 transition-all z-[100]"
+                className="absolute right-6 w-12 h-12 bg-white rounded-full border border-neutral-100 flex items-center justify-center text-[#374151] active:scale-95 transition-all z-[100]"
             >
                 <Navigation size={22} strokeWidth={2.5} />
             </motion.button>
@@ -244,7 +294,10 @@ export default function ProviderOrdersView({
                         >
                             {/* Confirmed Active Orders First */}
                             {confirmedOrders
-                                .filter(o => ['programmed', 'accepted', 'in_progress', 'waiting'].includes(o.status || ''))
+                                .filter(o => {
+                                    const status = getDynamicStatus(o);
+                                    return ['programmed', 'accepted', 'in_progress', 'waiting', 'on_time'].includes(status || '');
+                                })
                                 .map((order: any) => (
                                      <div key={order.id} id={`job-card-${order.id}`} className="flex-none w-[350px] snap-center">
                                           <ProviderJobCard

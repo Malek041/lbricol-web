@@ -67,7 +67,11 @@ export const SERVICES_CATALOGUE: ServiceEntry[] = [
             { id: 'install_shelves', en: 'Shelf Installation', fr: 'Installation d\'Étagères', ar: 'تركيب الرفوف' },
             { id: 'curtain_rod', en: 'Curtain Rod Installation', fr: 'Installation de Tringles à Rideaux', ar: 'تركيب قضبان الستائر' },
             { id: 'mirror_hanging', en: 'Mirror Hanging', fr: 'Accrochage de Miroirs', ar: 'تعليق المرايا' },
-            { id: 'picture_hanging', en: 'Picture Hanging', fr: 'Accrochage de Tableaux', ar: 'تعليق اللوحات' }
+            { id: 'picture_hanging', en: 'Picture Hanging', fr: 'Accrochage de Tableaux', ar: 'تعليق اللوحات' },
+            { id: 'hang_art', en: 'Hang Art, Mirror & Decor', fr: 'Accrochage d’Art et Décor', ar: 'تعليق التحف واللوحات' },
+            { id: 'install_blinds', en: 'Install Blinds & Window Treatments', fr: 'Installation de Stores', ar: 'تركيب الستائر' },
+            { id: 'mount_furniture', en: 'Mount & Anchor Furniture', fr: 'Fixation de Meubles', ar: 'تثبيت الأثاث' },
+            { id: 'other_mounting', en: 'Other Mounting', fr: 'Autres Fixations', ar: 'أعمال تثبيت أخرى' }
         ],
         bullets: [
             { en: 'Securely mount your TV, shelves, art, mirrors, dressers, and more.', fr: 'Montez en toute sécurité votre TV, vos étagères, vos tableaux, vos miroirs, vos commodes et bien plus.', ar: 'تعليق التلفزيون، الرفوف، اللوحات، المرايا والمزيد بأمان.' },
@@ -106,7 +110,9 @@ export const SERVICES_CATALOGUE: ServiceEntry[] = [
             { id: 'hospitality', en: 'Hospitality Cleaning', fr: 'Nettoyage Hospitality', ar: 'تنظيف الضيافة (Hospitality)' },
             { id: 'car_washing', en: 'Car Washing', fr: 'Lavage de Voiture', ar: 'غسل السيارات' },
             { id: 'car_detailing', en: 'Car Detailing', fr: 'Nettoyage Détaillé de Voiture', ar: 'تنظيف سيارات دقيق' },
-            { id: 'deep_cleaning', en: 'Deep Home Cleaning', fr: 'Nettoyage en Profondeur de Maison', ar: 'تنظيف منزل عميق' }
+            { id: 'deep_cleaning', en: 'Deep Home Cleaning', fr: 'Nettoyage en Profondeur de Maison', ar: 'تنظيف منزل عميق' },
+            { id: 'office_cleaning', en: 'Office Cleaning', fr: 'Nettoyage de Bureau', ar: 'تنظيف مكاتب' },
+            { id: 'dish_cleaning', en: 'Dish Cleaning', fr: 'Lavage de vaisselle', ar: 'غسل الصحون' }
         ],
         bullets: [
             { en: 'Clean your home or office; deep-clean appliances and other spaces.', fr: 'Nettoyez votre maison ou votre bureau ; nettoyez en profondeur les appareils ménagers et d\'autres espaces.', ar: 'تنظيف منزلك أو مكتبك؛ تنظيف عميق للأجهزة والمساحات الأخرى.' },

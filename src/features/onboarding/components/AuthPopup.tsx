@@ -237,7 +237,7 @@ const AuthPopup = ({ isOpen, onClose, onSuccess }: AuthPopupProps) => {
                                         }}
                                     >
                                         {isLoading ? (
-                                            <div className="w-6 h-6 border-3 border-gray-200 border-t-[#219178] rounded-full animate-spin" />
+                                            <div className="w-6 h-6 border-3 border-gray-200 border-t-[#01A083] rounded-full animate-spin" />
                                         ) : (
                                             <>
                                                 <FcGoogle size={24} />
@@ -288,7 +288,7 @@ const AuthPopup = ({ isOpen, onClose, onSuccess }: AuthPopupProps) => {
                                             width: '100%',
                                             padding: '18px',
                                             borderRadius: '50px',
-                                            background: (isLoading || whatsapp.length < 9) ? '#E5E7EB' : '#219178',
+                                            background: (isLoading || whatsapp.length < 9) ? '#E5E7EB' : '#01A083',
                                             color: '#fff',
                                             fontSize: '18px',
                                             fontWeight: 900,
@@ -318,7 +318,7 @@ const AuthPopup = ({ isOpen, onClose, onSuccess }: AuthPopupProps) => {
                             <a
                                 href="/privacy"
                                 style={{
-                                    color: '#219178',
+                                    color: '#01A083',
                                     textDecoration: 'none',
                                     fontWeight: 700,
                                     marginLeft: '2px'

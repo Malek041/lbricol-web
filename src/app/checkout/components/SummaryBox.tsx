@@ -46,7 +46,7 @@ export default function SummaryBox({ pricing, roadDistance, roadDurationMinutes 
         </div>
 
         {pricing.discount > 0 && (
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: '#219178' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: '#01A083' }}>
             <div style={{ fontSize: 13, fontWeight: 700 }}>Promo Discount</div>
             <div style={{ fontSize: 14, fontWeight: 800 }}>-{pricing.discount.toFixed(2)} MAD</div>
           </div>
@@ -56,7 +56,7 @@ export default function SummaryBox({ pricing, roadDistance, roadDurationMinutes 
 
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div style={{ fontSize: 18, fontWeight: 900, color: '#111827' }}>Total to pay</div>
-          <div style={{ fontSize: 18, fontWeight: 900, color: '#219178' }}>{pricing.total.toFixed(2)} MAD</div>
+          <div style={{ fontSize: 18, fontWeight: 900, color: '#01A083' }}>{pricing.total.toFixed(2)} MAD</div>
         </div>
       </div>
     </div>

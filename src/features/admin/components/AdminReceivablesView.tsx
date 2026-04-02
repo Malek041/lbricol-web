@@ -107,7 +107,7 @@ const AdminReceivablesView: React.FC<AdminReceivablesViewProps> = ({ onBack }) =
                         <h1 className="text-[24px] font-[1000] text-black leading-tight">
                             {t({ en: 'Receivables', fr: 'Recettes', ar: 'المستحقات' })}
                         </h1>
-                        <p className="text-[14px] font-bold text-[#219178]">
+                        <p className="text-[14px] font-bold text-[#01A083]">
                             {settlements.filter(s => s.status === 'pending').length} {t({ en: 'pending verifications', fr: 'vérifications en attente', ar: 'تحققات معلقة' })}
                         </p>
                     </div>
@@ -140,7 +140,7 @@ const AdminReceivablesView: React.FC<AdminReceivablesViewProps> = ({ onBack }) =
                         >
                             <div className="flex justify-between items-start mb-4">
                                 <div className="flex items-center gap-3">
-                                    <div className="w-12 h-12 rounded-2xl bg-[#E6F7F4] flex items-center justify-center text-[#219178] font-black text-[18px]">
+                                    <div className="w-12 h-12 rounded-2xl bg-[#E6F7F4] flex items-center justify-center text-[#01A083] font-black text-[18px]">
                                         {s.bricolerName[0].toUpperCase()}
                                     </div>
                                     <div>
@@ -216,12 +216,12 @@ const AdminReceivablesView: React.FC<AdminReceivablesViewProps> = ({ onBack }) =
                                 {/* Bricoler Card */}
                                 <div className="bg-[#F8F9FA] rounded-[28px] p-6">
                                     <div className="flex items-center gap-4 mb-6">
-                                        <div className="w-16 h-16 rounded-3xl bg-[#219178] flex items-center justify-center text-white font-black text-[24px]">
+                                        <div className="w-16 h-16 rounded-3xl bg-[#01A083] flex items-center justify-center text-white font-black text-[24px]">
                                             {selectedSettlement.bricolerName[0]}
                                         </div>
                                         <div>
                                             <h3 className="text-[20px] font-black text-black">{selectedSettlement.bricolerName}</h3>
-                                            <p className="text-[14px] font-bold text-[#219178]">{selectedSettlement.whatsapp}</p>
+                                            <p className="text-[14px] font-bold text-[#01A083]">{selectedSettlement.whatsapp}</p>
                                         </div>
                                     </div>
 
@@ -253,7 +253,7 @@ const AdminReceivablesView: React.FC<AdminReceivablesViewProps> = ({ onBack }) =
                                         <h3 className="text-[18px] font-black text-black">{t({ en: 'Payment Receipt', fr: 'Reçu de paiement' })}</h3>
                                         <button
                                             onClick={() => window.open(selectedSettlement.receipt, '_blank')}
-                                            className="text-[#219178] text-[13px] font-black flex items-center gap-1"
+                                            className="text-[#01A083] text-[13px] font-black flex items-center gap-1"
                                         >
                                             <ExternalLink size={14} /> {t({ en: 'Open Full', fr: 'Agrandir' })}
                                         </button>
@@ -285,7 +285,7 @@ const AdminReceivablesView: React.FC<AdminReceivablesViewProps> = ({ onBack }) =
                                     <button
                                         disabled={isProcessing !== null}
                                         onClick={() => handleUpdateStatus(selectedSettlement.id, 'approved')}
-                                        className="flex-2 py-5 rounded-[20px] bg-[#219178] text-white hover:bg-[#008C74] font-black text-[16px] transition-all flex items-center justify-center gap-2 shadow-lg shadow-[#219178]/20"
+                                        className="flex-2 py-5 rounded-[20px] bg-[#01A083] text-white hover:bg-[#008C74] font-black text-[16px] transition-all flex items-center justify-center gap-2 shadow-lg shadow-[#01A083]/20"
                                     >
                                         {isProcessing === selectedSettlement.id ? (
                                             <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin" />

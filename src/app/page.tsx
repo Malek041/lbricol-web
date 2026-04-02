@@ -66,7 +66,13 @@ import {
   Calendar
 } from 'lucide-react';
 import CompactHomeMap from '@/components/shared/CompactHomeMap';
-import { getAllServices, getServiceById, getSubServiceName, getServiceName, getServiceVector, type ServiceConfig } from '@/config/services_config';
+import { getAllServices, getServiceById,  getSubServiceName,
+  getServiceName,
+  getServiceVector,
+  getCategoryForSubService,
+  type ServiceConfig,
+  SERVICES_HIERARCHY
+} from '@/config/services_config';
 import {
   FaHammer,
   FaScrewdriverWrench,
@@ -413,6 +419,8 @@ const Home = () => {
   const [showHistoryInOrders, setShowHistoryInOrders] = useState(false);
 
 
+  const [isViewingOrderDetails, setIsViewingOrderDetails] = useState(false);
+
   // Handle Splash Dismissal based on data syncing
   useEffect(() => {
     // We wait for initial mount and for the main loading flags to clear
@@ -685,10 +693,23 @@ const Home = () => {
         pros.forEach(p => {
           if (Array.isArray(p.services)) {
             p.services.forEach((s: any) => {
-              const id = typeof s === 'string' ? s : (s.categoryId || s.serviceId);
-              if (id) activeIds.add(id);
+              const serviceId = typeof s === 'string' ? s : (s.serviceId || s.categoryId);
+              
+              if (serviceId) {
+                // If it's a category ID, add it
+                if (SERVICES_HIERARCHY[serviceId]) {
+                  activeIds.add(serviceId);
+                } else {
+                  // It might be a sub-service ID, resolve its category
+                  const resolvedCatId = getCategoryForSubService(serviceId);
+                  if (resolvedCatId) {
+                    activeIds.add(resolvedCatId);
+                    activeSubIds.add(serviceId); // Log it as available sub-service
+                  }
+                }
+              }
 
-              const subId = typeof s === 'object' ? s.subServiceId : null;
+              const subId = typeof s === 'object' ? (s.subServiceId || (getCategoryForSubService(serviceId) ? serviceId : null)) : null;
               if (subId) {
                 activeSubIds.add(subId);
                 subFreq[subId] = (subFreq[subId] || 0) + 1;
@@ -2490,6 +2511,7 @@ const Home = () => {
               ) : (
                 <ClientOrdersView
                   orders={orders}
+                  onViewingOrderDetails={setIsViewingOrderDetails}
                   onViewMessages={(jobId: string) => {
                     setMobileNavTab('messages');
                     setSelectedOrderId(jobId);
@@ -3523,19 +3545,7 @@ const Home = () => {
           )}
         </AnimatePresence>
 
-        {/* Mobile Bottom Navigation - only show on mobile */}
-        {isMobile && !showSplash && !showClientOnboarding && <MobileBottomNav
-          activeTab={mobileNavTab as any}
-          onTabChange={(tab: any) => {
-            if (tab === 'calendar' && mobileNavTab === 'calendar') {
-              setCalendarKey(prev => prev + 1);
-            }
-            if (tab === 'calendar') setShowHistoryInOrders(false);
-            setMobileNavTab(tab);
-          }}
-          variant={isAdminMode ? 'admin' : 'client'}
-        />}
-
+        {/* City selection/Language popups moved outside main */}
         <CitySelectionPopup
           isOpen={showCityPopup}
           onClose={() => setShowCityPopup(false)}
@@ -3575,9 +3585,20 @@ const Home = () => {
             window.location.href = '/provider';
           }}
         />
-
-
       </main>
+
+      {/* Mobile Bottom Navigation - OUTSIDE main to avoid overflow/stacking issues */}
+      {isMobile && !showSplash && !showClientOnboarding && !isViewingOrderDetails && <MobileBottomNav
+        activeTab={mobileNavTab as any}
+        onTabChange={(tab: any) => {
+          if (tab === 'calendar' && mobileNavTab === 'calendar') {
+            setCalendarKey(prev => prev + 1);
+          }
+          if (tab === 'calendar') setShowHistoryInOrders(false);
+          setMobileNavTab(tab);
+        }}
+        variant={isAdminMode ? 'admin' : 'client'}
+      />}
     </div>
   );
 };

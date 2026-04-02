@@ -29,19 +29,21 @@ function Step1Content() {
   const [isFetchingAddress, setIsFetchingAddress] = useState(false);
   const [estimateTime, setEstimateTime] = useState<number | null>(null);
 
+  const latStr = searchParams.get('lat');
+  const lngStr = searchParams.get('lng');
+  const addressStr = searchParams.get('address');
+
   useEffect(() => {
-    const latStr = searchParams.get('lat');
-    const lngStr = searchParams.get('lng');
-    const address = searchParams.get('address');
-    if (latStr && lngStr && address) {
+    if (latStr && lngStr && addressStr) {
       const lat = parseFloat(latStr);
       const lng = parseFloat(lngStr);
+      // Only update if it's different from the current to avoid infinite loops or bounces
       setCurrentLat(lat);
       setCurrentLng(lng);
-      setCurrentAddress(decodeURIComponent(address));
+      setCurrentAddress(decodeURIComponent(addressStr));
       setFlyToPoint({ lat, lng, skipOffset: false });
     }
-  }, [searchParams]);
+  }, [latStr, lngStr, addressStr]);
 
   // Estimate arrival time from nearest provider
   useEffect(() => {
@@ -96,29 +98,25 @@ function Step1Content() {
       return;
     }
 
-    // 2. If we already have a location (manual selection in state or confirm), don't auto-reset to GPS
-    if (order.location?.lat && order.location?.lng) {
-      setUserPosition(null); // Just for visualization
-      return;
-    }
-
+    // 2. Always try GPS to "fly" to real location by default first
+    setIsLocating(true);
     navigator.geolocation.getCurrentPosition(
-
       (pos) => {
         const { latitude, longitude } = pos.coords;
-
-        // Set as initial center so map opens here
-        setCurrentLat(latitude);
-        setCurrentLng(longitude);
 
         // Set GPS dot
         setUserPosition({ lat: latitude, lng: longitude });
 
-        // Fly to it (skipOffset: true so pin lands exactly on dot)
-        setFlyToPoint({ lat: latitude, lng: longitude, skipOffset: true });
+        // Fly to it (with small delay to ensure map is ready)
+        setTimeout(() => {
+          setFlyToPoint({ lat: latitude, lng: longitude, skipOffset: true });
+          setIsLocating(false);
+        }, 800);
       },
-      () => { },
-      { enableHighAccuracy: true, timeout: 10000 }
+      () => { 
+        setIsLocating(false);
+      },
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 1000 }
     );
   }, []);
 
@@ -126,15 +124,24 @@ function Step1Content() {
   const handleLocateMe = () => {
     setIsLocating(true);
     if (!navigator.geolocation) { setIsLocating(false); return; }
+
+    const timeoutId = setTimeout(() => {
+        setIsLocating(false);
+    }, 12000); // Failsafe timeout
+
     navigator.geolocation.getCurrentPosition(
       (pos) => {
+        clearTimeout(timeoutId);
         const { latitude, longitude } = pos.coords;
         setFlyToPoint({ lat: latitude, lng: longitude, skipOffset: true });
         setUserPosition({ lat: latitude, lng: longitude });
         setIsLocating(false);
       },
-      () => setIsLocating(false),
-      { enableHighAccuracy: true, timeout: 10000 }
+      () => {
+        clearTimeout(timeoutId);
+        setIsLocating(false);
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
     );
   };
 
@@ -307,7 +314,7 @@ function Step1Content() {
             animation: 'cardBounce 1.2s ease-in-out infinite',
             pointerEvents: 'auto',
           }}>
-            <MapPin size={20} className="text-[#219178]" />
+            <MapPin size={20} className="text-[#01A083]" />
             <div style={{ minWidth: 0 }}>
               <div style={{
                 fontSize: 15, fontWeight: 700, color: '#111827',
@@ -340,7 +347,7 @@ function Step1Content() {
               <div
                 onClick={() => !isFetchingAddress && router.push('/order/step1/search')}
                 style={{
-                  fontSize: 13, fontWeight: 600, color: isFetchingAddress ? '#9CA3AF' : '#219178',
+                  fontSize: 13, fontWeight: 600, color: isFetchingAddress ? '#9CA3AF' : '#01A083',
                   cursor: isFetchingAddress ? 'default' : 'pointer', marginTop: 2,
                 }}
               >
@@ -475,7 +482,7 @@ function Step1Content() {
             disabled={isFetchingAddress}
             style={{
               width: '100%', height: 54, borderRadius: 50,
-              background: isFetchingAddress ? '#E5E7EB' : '#219178', color: isFetchingAddress ? '#9CA3AF' : '#fff',
+              background: isFetchingAddress ? '#E5E7EB' : '#01A083', color: isFetchingAddress ? '#9CA3AF' : '#fff',
               border: 'none', fontSize: 16, fontWeight: 800,
               cursor: isFetchingAddress ? 'wait' : 'pointer', letterSpacing: 0.2,
               flexShrink: 0,
@@ -492,7 +499,7 @@ function Step1Content() {
             onClick={() => router.push('/order/step1/search')}
             style={{
               textAlign: 'center', fontSize: 15,
-              fontWeight: 700, color: '#219178',
+              fontWeight: 700, color: '#01A083',
               cursor: 'pointer', paddingBottom: 8,
               flexShrink: 0,
             }}

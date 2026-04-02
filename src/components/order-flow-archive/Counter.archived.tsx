@@ -90,7 +90,7 @@ const Counter: React.FC<CounterProps> = ({ options, selectedId, onSelect, title,
                         </span>
                     )}
                     {current?.estTime && (
-                        <span className="text-[12px] font-bold text-[#219178] mt-1">
+                        <span className="text-[12px] font-bold text-[#01A083] mt-1">
                             {t(current.estTime)}
                         </span>
                     )}

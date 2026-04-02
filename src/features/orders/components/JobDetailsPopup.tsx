@@ -12,13 +12,18 @@ import {
     Info,
     CheckCircle2,
     XCircle,
-    DollarSign
+    DollarSign,
+    Briefcase,
+    Timer,
+    Truck,
+    ArrowRight
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useIsMobileViewport } from '@/lib/mobileOnly';
 import { useLanguage } from '@/context/LanguageContext';
 import { format, parseISO } from 'date-fns';
 import { WhatsAppBrandIcon } from '@/components/shared/WhatsAppIcon';
+import { getServiceVector } from '@/config/services_config';
 
 export interface JobDetails {
     id: string;
@@ -30,12 +35,14 @@ export interface JobDetails {
     time: string;
     duration: string;
     price: number;
-    status: 'new' | 'accepted' | 'declined' | 'completed' | 'programmed';
+    status: 'new' | 'accepted' | 'declined' | 'completed' | 'programmed' | 'waiting' | 'pending';
     description?: string;
     photos?: string[];
     images?: string[];
     bricolerId?: string;
     bricolerName?: string;
+    bricolerAvatar?: string;
+    bricolerRating?: number;
     clientAvatar?: string;
     bricolerWhatsApp?: string;
     clientWhatsApp?: string;
@@ -44,6 +51,11 @@ export interface JobDetails {
     carReturnTime?: string;
     totalPrice?: number;
     movingVehicle?: string;
+    recipientName?: string;
+    pickupAddress?: string;
+    dropoffAddress?: string;
+    details?: any;
+    city?: string;
 }
 
 interface JobDetailsPopupProps {
@@ -53,9 +65,10 @@ interface JobDetailsPopupProps {
     onDecline?: (jobId: string) => void;
     isAdmin?: boolean;
     onChat?: (jobId: string, bricolerId: string, bricolerName: string) => void;
+    mode?: 'client' | 'provider';
 }
 
-const JobDetailsPopup: React.FC<JobDetailsPopupProps> = ({ job, onClose, onAccept, onDecline, isAdmin, onChat }) => {
+const JobDetailsPopup: React.FC<JobDetailsPopupProps> = ({ job, onClose, onAccept, onDecline, isAdmin, onChat, mode = 'client' }) => {
     const popupRef = useRef<HTMLDivElement>(null);
     const isMobile = useIsMobileViewport(768);
     const { t } = useLanguage();
@@ -82,11 +95,13 @@ const JobDetailsPopup: React.FC<JobDetailsPopupProps> = ({ job, onClose, onAccep
     const getStatusConfig = (status: JobDetails['status']) => {
         switch (status) {
             case 'new':
-                return { color: '#007AFF', bg: '#E5F1FF', icon: Info, label: t({ en: 'NEW', fr: 'NOUVEAU', ar: 'جديد' }) };
+            case 'waiting':
+            case 'pending':
+                return { color: '#FF9500', bg: '#FFF9F0', icon: Timer, label: t({ en: 'PENDING', fr: 'EN ATTENTE', ar: 'قيد الانتظار' }) };
             case 'accepted':
                 return { color: '#34C759', bg: '#EBF9EE', icon: CheckCircle2, label: t({ en: 'ACCEPTED', fr: 'ACCEPTÉE', ar: 'مقبول' }) };
             case 'programmed':
-                return { color: '#34C759', bg: '#EBF9EE', icon: CheckCircle2, label: t({ en: 'PROGRAMMED', fr: 'PROGRAMMÉE', ar: 'مبرمج' }) };
+                return { color: '#01A083', bg: '#F0FDF9', icon: Calendar, label: t({ en: 'PROGRAMMED', fr: 'PROGRAMMÉE', ar: 'مبرمج' }) };
             case 'declined':
                 return { color: '#FF3B30', bg: '#FFEBEA', icon: XCircle, label: t({ en: 'DECLINED', fr: 'REFUSÉE', ar: 'مرفوض' }) };
             case 'completed':
@@ -97,7 +112,19 @@ const JobDetailsPopup: React.FC<JobDetailsPopupProps> = ({ job, onClose, onAccep
     };
 
     const statusConfig = getStatusConfig(job.status);
-    const StatusIcon = statusConfig.icon;
+
+    const DetailItem = ({ icon: Icon, label, value, subValue }: { icon: any, label: string, value: string, subValue?: string }) => (
+        <div className="flex items-start gap-4 py-4 border-b border-neutral-50 last:border-0">
+            <div className="w-10 h-10 rounded-full border border-neutral-100 bg-[#F9FAFB] flex items-center justify-center flex-shrink-0 mt-0.5">
+                <Icon size={18} className="text-neutral-500" />
+            </div>
+            <div className="flex-1 min-w-0">
+                <p className="text-[10px] font-black text-neutral-400 uppercase tracking-widest mb-0.5">{label}</p>
+                <p className="text-[17px] font-black text-[#111827] truncate leading-tight">{value}</p>
+                {subValue && <p className="text-[12px] font-bold text-neutral-400 mt-0.5">{subValue}</p>}
+            </div>
+        </div>
+    );
 
     return (
         <AnimatePresence>
@@ -106,7 +133,7 @@ const JobDetailsPopup: React.FC<JobDetailsPopupProps> = ({ job, onClose, onAccep
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 className={cn(
-                    "fixed inset-0 bg-black/50 backdrop-blur-sm z-[1000] flex justify-center",
+                    "fixed inset-0 bg-black/60 backdrop-blur-md z-[1000] flex justify-center",
                     isMobile ? "items-end p-0" : "items-center p-6"
                 )}
             >
@@ -115,337 +142,242 @@ const JobDetailsPopup: React.FC<JobDetailsPopupProps> = ({ job, onClose, onAccep
                     initial={isMobile ? { y: '100%' } : { scale: 0.9, y: 20 }}
                     animate={isMobile ? { y: 0 } : { scale: 1, y: 0 }}
                     exit={isMobile ? { y: '100%' } : { scale: 0.9, y: 20 }}
-                    transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+                    transition={{ type: 'spring', damping: 28, stiffness: 300 }}
                     className={cn(
-                        "bg-white w-full shadow-2xl relative flex flex-col transition-all overflow-y-auto",
-                        isMobile ? "rounded-t-[32px] max-h-[95vh]" : "max-w-[520px] rounded-2xl max-h-[90vh]"
+                        "bg-[#F9FAFB] w-full relative flex flex-col transition-all overflow-hidden",
+                        isMobile ? "rounded-t-[40px] max-h-[96vh]" : "max-w-[500px] rounded-[32px] max-h-[90vh]"
                     )}
                 >
-                    {isMobile && (
-                        <div className="w-10 h-1 bg-neutral-200 rounded-full mx-auto mt-4 mb-2 flex-shrink-0" />
-                    )}
-                    {/* Close Button */}
-                    <div className="absolute top-5 right-5 flex items-center gap-2 z-10">
-                        {isAdmin && (
-                            <button
-                                onClick={() => onChat?.(job.id, job.bricolerId || '', job.bricolerName || 'Bricoler')}
-                                className="w-10 h-10 rounded-full hover:bg-neutral-100 flex items-center justify-center transition-colors"
-                                title={t({ en: 'Chat with Client', fr: 'Chatter avec le client' })}
-                            >
-                                <WhatsAppBrandIcon className="w-6 h-6" />
-                            </button>
-                        )}
-                        <button
+                    {/* Header Bar */}
+                    <div className="p-6 pb-0 flex items-center justify-between z-10 relative">
+                        <button 
                             onClick={onClose}
-                            className="w-10 h-10 rounded-full hover:bg-neutral-100 flex items-center justify-center transition-colors"
+                            className="w-10 h-10 rounded-full bg-white flex items-center justify-center text-black border border-neutral-100 active:scale-90 transition-all"
                         >
-                            <X size={20} className="text-neutral-900" />
+                            <X size={20} strokeWidth={2.5} />
                         </button>
+                        <h2 className="text-[17px] font-black text-[#111827]">{t({ en: 'Order details', fr: 'Détails de commande' })}</h2>
+                        <div className="w-10" /> {/* Spacer */}
                     </div>
 
-                    {/* Content */}
-                    <div className="p-8 pt-0">
-                        {/* Status Badge */}
-                        <div className="flex items-center gap-2 mb-4">
-                            <div
-                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-wide"
+                    <div className="flex-1 overflow-y-auto no-scrollbar pt-4">
+                        {/* Status Indicator */}
+                        <div className="px-6 mb-8 flex justify-center">
+                             <div 
+                                className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-[12px] font-black"
                                 style={{ backgroundColor: statusConfig.bg, color: statusConfig.color }}
-                            >
-                                <StatusIcon size={14} strokeWidth={3} />
+                             >
+                                <span className="w-2 h-2 rounded-full" style={{ backgroundColor: statusConfig.color }} />
                                 {statusConfig.label}
-                            </div>
+                             </div>
                         </div>
 
-                        {/* Job Title */}
-                        <h2 className="text-3xl font-bold text-neutral-900 mb-6 leading-tight">
-                            {job.service}
-                        </h2>
-
-                        {/* Date & Time */}
-                        <div className="flex items-center gap-4 text-neutral-600 mb-6">
-                            {job.service === 'car_rental' && job.date && job.carReturnDate ? (
-                                <div className="flex items-center gap-3 bg-neutral-50 px-4 py-3 rounded-xl w-full">
-                                    <div className="flex flex-col">
-                                        <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">{t({ en: 'Pickup', fr: 'Départ' })}</span>
-                                        <div className="flex items-center gap-1.5 font-bold text-neutral-900">
-                                            <span>{format(parseISO(job.date), 'MMM d')}</span>
-                                            <span className="opacity-30">|</span>
-                                            <span>{job.time?.split('-')[0] || '09:00'}</span>
+                        <div className="px-6 mb-10 flex justify-center">
+                            <div className="bg-white p-6 rounded-[24px] border border-neutral-100 flex items-center gap-10 relative">
+                                {/* From: Client */}
+                                <div className="flex flex-col items-center gap-2 min-w-[100px]">
+                                    <div className="w-[72px] h-[72px] rounded-full border-[3px] border-[#01A08315] p-1">
+                                        <div className="w-full h-full rounded-full overflow-hidden bg-neutral-100 flex items-center justify-center">
+                                            {job.clientAvatar ? (
+                                                <img src={job.clientAvatar} alt="Client" className="w-full h-full object-cover" />
+                                            ) : (
+                                                <User size={32} className="text-neutral-400" />
+                                            )}
                                         </div>
                                     </div>
-                                    <div className="h-8 w-px bg-neutral-200 mx-2" />
-                                    <div className="flex flex-col">
-                                        <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">{t({ en: 'Return', fr: 'Retour' })}</span>
-                                        <div className="flex items-center gap-1.5 font-bold text-neutral-900">
-                                            <span>{format(parseISO(job.carReturnDate), 'MMM d')}</span>
-                                            <span className="opacity-30">|</span>
-                                            <span>{job.carReturnTime?.split('-')[0] || '09:00'}</span>
+                                    <div className="text-center">
+                                        <p className="text-[14px] font-black text-black leading-none mb-1">{job.clientName}</p>
+                                        <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-tighter">Client</p>
+                                    </div>
+                                </div>
+
+                                {/* Link Arrow */}
+                                <div className="absolute left-1/2 top-[44px] -translate-x-1/2 w-8 h-8 rounded-full bg-[#F3F4F6] flex items-center justify-center border border-white z-10">
+                                    <ArrowRight size={16} className="text-neutral-400" />
+                                </div>
+
+                                {/* To: Bricoler */}
+                                <div className="flex flex-col items-center gap-2 min-w-[100px]">
+                                    <div className="w-[72px] h-[72px] rounded-full border-[3px] border-[#01A08315] p-1">
+                                        <div className="w-full h-full rounded-full overflow-hidden bg-neutral-100 flex items-center justify-center">
+                                            {job.bricolerAvatar ? (
+                                                <img src={job.bricolerAvatar} alt="Bricoler" className="w-full h-full object-cover" />
+                                            ) : (
+                                                <img src="/Images/DefaultAvatar.webp" className="w-full h-full object-cover" />
+                                            )}
+                                        </div>
+                                    </div>
+                                    <div className="text-center">
+                                        <div className="flex items-center justify-center gap-1 mb-1">
+                                            <p className="text-[14px] font-black text-black leading-none">{job.bricolerName || t({ en: 'Searching...', fr: 'Recherche...' })}</p>
+                                        </div>
+                                        <div className="flex items-center justify-center gap-1">
+                                            <Star size={10} fill="#FFC244" stroke="#FFC244" />
+                                            <span className="text-[11px] font-black text-[#FFC244]">{job.bricolerRating?.toFixed(1) || '4.9'}</span>
+                                            <span className="text-[11px] font-bold text-neutral-300 ml-1">· 1.2km</span>
                                         </div>
                                     </div>
                                 </div>
-                            ) : (
-                                <>
-                                    <div className="flex items-center gap-2">
-                                        <Calendar size={16} />
-                                        <span className="text-sm font-semibold">{job.date}</span>
-                                    </div>
-                                    <span className="text-neutral-300">•</span>
-                                    <div className="flex items-center gap-2">
-                                        <Clock size={16} />
-                                        <span className="text-sm font-semibold">{job.time}</span>
-                                    </div>
-                                </>
-                            )}
+                            </div>
                         </div>
 
-                        {/* Client Info */}
-                        <div className="flex items-center gap-4 p-4 bg-neutral-50 rounded-xl mb-6">
-                            <div className="w-12 h-12 rounded-xl overflow-hidden bg-neutral-100 flex items-center justify-center border border-white shadow-sm">
-                                {job.clientAvatar ? (
-                                    <img src={job.clientAvatar} alt={job.clientName} className="w-full h-full object-cover" />
-                                ) : (
-                                    <User size={24} className="text-neutral-500" />
+                        {/* Main Details List */}
+                        <div className="px-6 mb-10">
+                            <div className="bg-white rounded-[24px] border border-neutral-100 overflow-hidden px-5">
+                                {/* Service */}
+                                <DetailItem 
+                                    icon={Briefcase} 
+                                    label={t({ en: 'Service', fr: 'Service' })} 
+                                    value={job.service}
+                                    subValue={job.description}
+                                />
+                                
+                                {/* Date & Time */}
+                                <DetailItem 
+                                    icon={Calendar} 
+                                    label={t({ en: 'Scheduled', fr: 'Programmé' })} 
+                                    value={(() => {
+                                        try {
+                                            return format(parseISO(job.date), 'EEEE, MMM d, yyyy');
+                                        } catch(e) { return job.date; }
+                                    })()}
+                                    subValue={job.time}
+                                />
+
+                                {/* Location */}
+                                <DetailItem 
+                                    icon={MapPin} 
+                                    label={t({ en: 'Address', fr: 'Adresse' })} 
+                                    value={job.location || 'Essaouira'}
+                                    subValue={job.city}
+                                />
+
+                                {/* Duration */}
+                                <DetailItem 
+                                    icon={Timer} 
+                                    label={t({ en: 'Duration', fr: 'Durée' })} 
+                                    value={job.duration || 'Flexible'}
+                                />
+
+                                {/* Delivery Specific User Request: "Who is delivering the order" */}
+                                {job.recipientName && (
+                                    <DetailItem 
+                                        icon={Truck} 
+                                        label={t({ en: 'Delivery for', fr: 'Livraison pour' })} 
+                                        value={job.recipientName}
+                                        subValue={job.dropoffAddress}
+                                    />
+                                )}
+
+                                {/* Moving Specific */}
+                                {job.movingVehicle && (
+                                    <DetailItem 
+                                        icon={Truck} 
+                                        label={t({ en: 'Requested Transport', fr: 'Transport Demandé' })} 
+                                        value={job.movingVehicle}
+                                    />
                                 )}
                             </div>
-                            <div className="flex-1">
-                                <div className="font-bold text-neutral-900 text-base">{job.clientName}</div>
-                                <div className="flex items-center gap-1 text-sm">
-                                    <Star size={14} fill="#FFC244" stroke="#FFC244" />
-                                    <span className="font-semibold text-neutral-900">{job.clientRating.toFixed(1)}</span>
-                                    <span className="text-neutral-500 ml-1">{t({ en: '(Client)', fr: '(Client)', ar: '(عميل)' })}</span>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        {/* Selected Car Details section */}
-                        {job.selectedCar && (
-                            <div className="bg-[#F0FBF8] rounded-2xl p-5 border border-[#219178]/20 flex flex-col gap-4 mb-6">
-                                <div className="flex justify-between items-start">
-                                    <div className="flex-1">
-                                        <h4 className="text-[12px] font-black text-[#219178] uppercase tracking-wider mb-1">{t({ en: 'Rented Vehicle', fr: 'Véhicule Loué' })}</h4>
-                                        <p className="text-[20px] font-black text-black leading-tight">{job.selectedCar.brandName} {job.selectedCar.modelName}</p>
-                                    </div>
-                                    <div className="w-20 h-14 bg-white rounded-xl flex items-center justify-center p-2 border border-neutral-100 shadow-sm overflow-hidden flex-shrink-0 ml-4">
-                                        <img src={job.selectedCar.modelImage || job.selectedCar.image} alt="car" className="w-full h-full object-contain" />
-                                    </div>
-                                </div>
-                                <div className="flex items-center gap-6 pt-2 border-t border-[#219178]/10">
-                                    <div className="flex flex-col">
-                                        <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-tighter">{t({ en: 'Daily Rate', fr: 'Prix/Jour' })}</span>
-                                        <span className="text-[16px] font-black text-black">{job.selectedCar.pricePerDay || job.selectedCar.price} MAD</span>
-                                    </div>
-                                    <div className="flex flex-col items-end ml-auto">
-                                        <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-tighter">{t({ en: 'Total Price', fr: 'Prix Total' })}</span>
-                                        <span className="text-[16px] font-black text-[#219178]">
-                                            {job.totalPrice || job.price} MAD
-                                        </span>
-                                    </div>
-                                    <div className="flex flex-col">
-                                        <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-tighter">{t({ en: 'Duration', fr: 'Durée' })}</span>
-                                        <span className="text-[16px] font-black text-black">
-                                            {(() => {
-                                                if (job.date && job.carReturnDate) {
-                                                    const d = Math.max(1, Math.round((new Date(job.carReturnDate).getTime() - new Date(job.date).getTime()) / 86400000));
-                                                    return `${d} ${t({ en: d > 1 ? 'days' : 'day', fr: d > 1 ? 'jours' : 'jour' })}`;
-                                                }
-                                                return job.duration || '---';
-                                            })()}
-                                        </span>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-
-                        {/* Moving Vehicle Details section */}
-                        {job.movingVehicle && (
-                            <div className="bg-[#F0FBF8] rounded-2xl p-5 border border-[#219178]/20 flex flex-col gap-4 mb-6">
-                                <div className="flex justify-between items-start">
-                                    <div className="flex-1">
-                                        <h4 className="text-[12px] font-black text-[#219178] uppercase tracking-wider mb-1">{t({ en: 'Requested Transport', fr: 'Transport Demandé' })}</h4>
-                                        <p className="text-[20px] font-black text-black leading-tight">
-                                           {(() => {
-                                               const opts = {
-                                                   triporteur: { en: '🛵 Triporteur', fr: '🛵 Triporteur', ar: '🛵 تربورتور' },
-                                                   small_van: { en: '🚐 Small Van', fr: '🚐 Petit Van', ar: '🚐 سيارة "برلانكو"' },
-                                                   large_van: { en: '🚚 Large Van', fr: '🚚 Grand Van', ar: '🚚 شاحنة فورد ترانزيت' },
-                                                   small_truck: { en: '🚛 Small Truck', fr: '🚛 Petit Camion', ar: '🚛 شاحنة صغيرة' },
-                                                   large_truck: { en: '🚚 Large Truck', fr: '🚚 Grand Camion', ar: '🚚 شاحنة كبيرة' },
-                                                   labor_only: { en: '💪 Labor only', fr: '💪 Main-d’œuvre seule', ar: '💪 يد عاملة فقط' }
-                                               };
-                                               return t((opts as any)[job.movingVehicle] || { en: job.movingVehicle });
-                                           })()}
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-
-                        {/* Budget Breakdown */}
-                        <div className="mb-6">
-                            <div className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-3">
-                                {t({ en: 'Budget Breakdown', fr: 'Détail du budget', ar: 'تفاصيل الميزانية' })}
-                            </div>
-                            <div className="flex items-baseline gap-2">
-                                <span className="text-5xl font-bold text-neutral-900">{job.totalPrice || job.price}</span>
-                                <span className="text-xl font-semibold text-neutral-500">MAD</span>
-                            </div>
-                            <div className="text-sm text-neutral-500 mt-1">
-                                {(() => {
-                                    if (job.service === 'car_rental' && job.date && job.carReturnDate) {
-                                        const d = Math.max(1, Math.round((new Date(job.carReturnDate).getTime() - new Date(job.date).getTime()) / 86400000));
-                                        return t({ 
-                                            en: `For ${d} ${d > 1 ? 'days' : 'day'}`, 
-                                            fr: `Pour ${d} ${d > 1 ? 'jours' : 'jour'}`,
-                                            ar: `لمدة ${d} ${d > 1 ? 'أيام' : 'يوم'}`
-                                        });
-                                    }
-                                    return t({ en: `For ${job.duration}`, fr: `Pour ${job.duration}`, ar: `لمدة ${job.duration}` });
-                                })()}
-                            </div>
                         </div>
 
-                        {/* Additional Details */}
-                        {job.description && (
-                            <div className="mb-6">
-                                <div className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-3">
-                                    {t({ en: 'Additional Details', fr: 'Détails supplémentaires', ar: 'تفاصيل إضافية' })}
-                                </div>
-                                <div className="p-4 bg-neutral-50 rounded-xl border border-neutral-200">
-                                    <p className="text-sm text-neutral-700 italic">"{job.description}"</p>
-
-                                    {/* Task Photos */}
-                                    {(job.images && job.images.length > 0) && (
-                                        <div className="mt-4 flex gap-2 overflow-x-auto no-scrollbar pb-2">
-                                            {job.images.map((url, idx) => (
-                                                <div
-                                                    key={idx}
-                                                    className="w-32 h-32 flex-shrink-0 rounded-lg overflow-hidden border border-neutral-100 bg-white"
-                                                    onClick={() => window.open(url, '_blank')}
-                                                >
-                                                    <img src={url} className="w-full h-full object-cover cursor-pointer hover:scale-105 transition-transform" />
-                                                </div>
-                                            ))}
+                        {/* Photos Section */}
+                        {((job.photos && job.photos.length > 0) || (job.images && job.images.length > 0)) && (
+                            <div className="px-6 mb-10">
+                                <p className="text-[10px] font-black text-neutral-400 uppercase tracking-widest mb-3 ml-1">
+                                    {t({ en: 'Work Photos', fr: 'Photos du travail' })}
+                                </p>
+                                <div className="flex gap-3 overflow-x-auto no-scrollbar pb-2">
+                                    {(job.photos || job.images || []).map((url, i) => (
+                                        <div key={i} className="w-24 h-24 rounded-2xl overflow-hidden border border-neutral-100 flex-shrink-0">
+                                            <img src={url} alt="Task detail" className="w-full h-full object-cover" />
                                         </div>
-                                    )}
+                                    ))}
                                 </div>
                             </div>
                         )}
 
-                        {/* Location */}
-                        {job.location && (
-                            <div className="flex items-center gap-2 text-neutral-600 mb-6">
-                                <MapPin size={16} />
-                                <span className="text-sm font-semibold">{job.location}</span>
-                            </div>
-                        )}
-
-                        {/* Payment Method Section (Refined like Step 3) */}
-                        <section className="mb-8 space-y-4">
-                            <h3 className="text-[20px] font-black text-black flex items-center gap-3">
-                                <span className="p-2 bg-neutral-50 rounded-lg border border-neutral-100 flex items-center justify-center">
-                                     <DollarSign size={18} className="text-neutral-900" />
-                                </span>
-                                {t({ en: 'Payment Method', fr: 'Paiement' })}
-                            </h3>
-                            
-                            <div style={{
-                                padding: '20px', borderRadius: 12, border: '2px solid #219178',
-                                background: '#F0FDF9', position: 'relative',
-                                display: 'flex', gap: 14, alignItems: 'center'
-                            }}>
-                                <div style={{ fontSize: 28, flexShrink: 0 }}>
-                                    {job.clientWhatsApp ? '🏦' : '💵'}
-                                </div>
-                                <div style={{ flex: 1 }}>
-                                    <div style={{ fontWeight: 900, fontSize: 16, color: '#111827', marginBottom: 2 }}>
-                                        {job.clientWhatsApp ? t({ en: 'Bank Transfer', fr: 'Virement Bancaire' }) : t({ en: 'Cash on Delivery', fr: 'Paiement à la livraison' })}
-                                    </div>
-                                    <div style={{ fontWeight: 700, fontSize: 12, color: '#219178' }}>
-                                        {job.clientWhatsApp ? t({ en: 'Verified by Receipt', fr: 'Vérifié par Reçu' }) : t({ en: 'Standard payment', fr: 'Paiement standard' })}
-                                    </div>
-                                </div>
-                                <div style={{ width: 22, height: 22, background: '#219178', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                    <CheckCircle2 size={14} color="#fff" />
-                                </div>
-                            </div>
-                        </section>
-
-                        {/* Summary Section (Wave Style) */}
-                        <div className="mt-12 bg-[#F9FAFB] relative -mx-8 px-8 py-10 pb-12">
-                            {/* Wave Divider like Step 3 */}
-                            <div style={{ position: 'absolute', top: -38, left: 0, right: 0, height: 40, pointerEvents: 'none', zIndex: 1 }}>
-                                <div style={{ width: '100%', height: '100%', fill: '#F9FAFB', color: '#F9FAFB' }}>
-                                    <svg viewBox="0 0 1440 100" style={{ width: '100%', height: '100%', display: 'block' }}>
-                                        <path fill="currentColor" d="M0,64L80,69.3C160,75,320,85,480,80C640,75,800,53,960,48C1120,43,1280,53,1360,58.7L1440,64L1440,100L1360,100C1280,100,1120,100,960,100C800,100,640,100,480,100C320,100,160,100,80,100L0,100Z" transform="scaleY(-1) translate(0, -100)"></path>
-                                    </svg>
-                                </div>
+                        {/* Payment / Pricing Wave Wrapper */}
+                        <div className="bg-white pt-10 px-6 pb-20 relative">
+                            <div className="absolute top-[-30px] left-0 right-0 h-8 pointer-events-none z-10">
+                                <svg viewBox="0 0 1440 100" className="w-full h-full text-white fill-current">
+                                    <path d="M0,64L80,69.3C160,75,320,85,480,80C640,75,800,53,960,48C1120,43,1280,53,1360,58.7L1440,64L1440,100L1360,100C1280,100,1120,100,960,100C800,100,640,100,480,100C320,100,160,100,80,100L0,100Z" transform="scaleY(-1) translate(0, -100)"></path>
+                                </svg>
                             </div>
 
                             <div className="space-y-6">
-                                <h3 className="text-[24px] font-black text-black">{t({ en: 'Total Summary', fr: 'Résumé Total' })}</h3>
-                                <div className="space-y-4">
-                                    <div className="flex justify-between items-center">
-                                        <div className="flex flex-col">
-                                            <span className="text-[11px] font-bold text-neutral-400 uppercase tracking-wider mb-0.5">{t({ en: 'Base Fee', fr: 'Frais Base' })}</span>
-                                            <span className="text-[15px] font-black text-black">{job.duration || t({ en: 'Flexible', fr: 'Flexible' })}</span>
-                                        </div>
-                                        <span className="text-[17px] font-black text-black">{job.price} MAD</span>
+                                <div className="flex justify-between items-center">
+                                    <div>
+                                        <p className="text-[10px] font-black text-neutral-400 uppercase tracking-widest mb-1">{t({ en: 'Standard Rate', fr: 'Tarif Standard' })}</p>
+                                        <p className="text-[15px] font-bold text-neutral-500">{t({ en: 'Base Fee for task', fr: 'Frais de base' })}</p>
                                     </div>
-                                    
-                                    {job.totalPrice && job.totalPrice > job.price && (
-                                        <div className="flex justify-between items-center">
-                                            <div className="flex flex-col">
-                                                <span className="text-[11px] font-bold text-neutral-400 uppercase tracking-wider mb-0.5">{t({ en: 'Additional Fees', fr: 'Frais Supp.' })}</span>
-                                                <span className="text-[15px] font-black text-neutral-500">{t({ en: 'Travel/Vehicle', fr: 'Déplacement/Véhicule' })}</span>
-                                            </div>
-                                            <span className="text-[17px] font-black text-black">+{job.totalPrice - job.price} MAD</span>
-                                        </div>
-                                    )}
+                                    <p className="text-[17px] font-black text-black">{job.price} MAD</p>
+                                </div>
 
-                                    <div className="pt-6 border-t border-neutral-200 flex justify-between items-center">
-                                        <span className="text-[20px] font-black text-[#219178]">{t({ en: 'Total Amount', fr: 'Montant Total' })}</span>
-                                        <span className="text-[26px] font-black text-[#219178] tracking-tighter">{job.totalPrice || job.price} MAD</span>
+                                {job.totalPrice && job.totalPrice > job.price && (
+                                    <div className="flex justify-between items-center">
+                                        <div>
+                                            <p className="text-[10px] font-black text-neutral-400 uppercase tracking-widest mb-1">{t({ en: 'Options', fr: 'Options' })}</p>
+                                            <p className="text-[15px] font-bold text-neutral-500">{t({ en: 'Add-ons / Distance', fr: 'Options / Distance' })}</p>
+                                        </div>
+                                        <p className="text-[17px] font-black text-black">+{job.totalPrice - job.price} MAD</p>
+                                    </div>
+                                )}
+
+                                <div className="pt-6 border-t border-neutral-100 flex justify-between items-center">
+                                    <div>
+                                        <p className="text-[11px] font-black text-neutral-400 uppercase tracking-widest mb-1">{t({ en: 'Total Amount', fr: 'Montant Total' })}</p>
+                                        <p className="text-[28px] font-black text-black leading-none">{job.totalPrice || job.price} MAD</p>
+                                    </div>
+                                    <div className="flex flex-col items-end">
+                                        <div className="flex items-center gap-2 px-3 py-1 bg-[#F0FDF9] rounded-full border border-[#01A08322]">
+                                            <DollarSign size={14} className="text-[#01A083]" />
+                                            <span className="text-[12px] font-black text-[#01A083] uppercase">{t({ en: 'Unpaid', fr: 'Non payé' })}</span>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
+                    </div>
 
-                        {/* WhatsApp Button for Programmed/Completed Jobs */}
-                        {(job.status === 'programmed' || job.status === 'completed' || job.status === 'accepted') && (
-                            <div className="mt-8">
-                                <button
-                                    onClick={() => openWhatsApp(job.bricolerWhatsApp || job.clientWhatsApp || '')}
-                                    className="w-full py-5 bg-[#25D366] text-white rounded-2xl font-black text-[17px] hover:bg-[#128C7E] transition-all active:scale-[0.98] flex items-center justify-center gap-3 shadow-lg shadow-[#25D366]/20"
-                                >
-                                    <WhatsAppBrandIcon size={24} fill="currentColor" />
-                                    {t({ en: 'Chat on WhatsApp', fr: 'Parler sur WhatsApp', ar: 'تحدث على واتساب' })}
-                                </button>
-                            </div>
-                        )}
-
-                        {/* Action Buttons */}
-                        {job.status === 'new' && (
-                            <div className="space-y-3 mt-8">
-                                <button
-                                    onClick={() => onAccept?.(job.id)}
-                                    className="w-full py-5 bg-neutral-900 text-white rounded-2xl font-bold text-base hover:bg-neutral-800 transition-all active:scale-[0.98]"
-                                >
-                                    {t({ en: 'Accept Job', fr: 'Accepter la mission', ar: 'قبول المهمة' })}
-                                </button>
+                    {/* Bottom Action Footer */}
+                    <div className="p-6 bg-white border-t border-neutral-100">
+                        {job.status === 'new' && mode === 'provider' ? (
+                            <div className="flex gap-4">
                                 <button
                                     onClick={() => onDecline?.(job.id)}
-                                    className="w-full py-5 bg-red-50 text-red-600 rounded-2xl font-bold text-base hover:bg-red-100 transition-all active:scale-[0.98]"
+                                    className="flex-1 py-5 rounded-[20px] bg-neutral-50 text-neutral-400 text-[15px] font-black hover:bg-neutral-100 active:scale-95 transition-all"
                                 >
-                                    {t({ en: 'Decline', fr: 'Refuser', ar: 'رفض' })}
+                                    {t({ en: 'Decline', fr: 'Refuser' })}
+                                </button>
+                                <button
+                                    onClick={() => onAccept?.(job.id)}
+                                    className="flex-[2] py-5 rounded-[20px] bg-[#01A083] text-white text-[15px] font-black hover:bg-[#008f75] active:scale-95 transition-all"
+                                >
+                                    {t({ en: 'Accept Mission', fr: 'Accepter Mission' })}
                                 </button>
                             </div>
-                        )}
-
-                        {job.status === 'accepted' && (
-                            <div className="space-y-3 mt-4">
-                                <button className="w-full py-5 bg-neutral-100 text-neutral-900 rounded-2xl font-bold text-base hover:bg-neutral-200 transition-all active:scale-[0.98]">
-                                    {t({ en: 'View in Calendar', fr: 'Voir dans le calendrier', ar: 'عرض في التقويم' })}
+                        ) : (
+                            <div className="flex flex-col gap-4">
+                                {(job.bricolerWhatsApp || job.clientWhatsApp) && (
+                                    <button
+                                        onClick={() => openWhatsApp(job.bricolerWhatsApp || job.clientWhatsApp || '')}
+                                        className="w-full py-5 bg-[#25D366] text-white rounded-[20px] text-[17px] font-black hover:bg-[#128C7E] active:scale-95 transition-all flex items-center justify-center gap-3"
+                                    >
+                                        <WhatsAppBrandIcon size={24} fill="currentColor" />
+                                        {t({ en: 'Chat on WhatsApp', fr: 'Discuter sur WhatsApp' })}
+                                    </button>
+                                )}
+                                <button
+                                    onClick={onClose}
+                                    className="w-full py-5 bg-[#F3F4F6] text-neutral-900 rounded-[20px] text-[15px] font-black hover:bg-neutral-200 active:scale-95 transition-all"
+                                >
+                                    {t({ en: 'Back to Orders', fr: 'Retour aux Commandes' })}
                                 </button>
+                                {mode === 'client' && job.status === 'programmed' && (
+                                     <button className="text-[13px] font-black text-red-500 uppercase tracking-tighter mt-2 opacity-60 hover:opacity-100 transition-opacity">
+                                        Cancel Order
+                                     </button>
+                                )}
                             </div>
                         )}
                     </div>

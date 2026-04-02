@@ -3,7 +3,7 @@ import { useEffect, useState, Suspense, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useOrder } from '@/context/OrderContext';
 import { useLanguage } from '@/context/LanguageContext';
-import { collection, getDocs, query, where, limit, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, getDocs, query, where, limit, addDoc, serverTimestamp, onSnapshot } from 'firebase/firestore';
 import { db, auth } from '@/lib/firebase';
 import { calculateDistance, getRoadDistance } from '@/lib/calculateDistance';
 import { matchScore } from '@/lib/matchBricolers';
@@ -142,18 +142,17 @@ function Step2Content() {
     }
   }, [serviceType, hasAnsweredVehicle]);
 
-  // ── Fetch providers ──────────────────────────────────────────────────
+  // ── Fetch providers (Real-time Live Location) ────────────────────────
   useEffect(() => {
-    async function load() {
-      // If moving and haven't answered vehicle, we can still load background but UI will be overlayed
-      setLoading(true);
-      try {
-        const snap = await getDocs(query(
-          collection(db, 'bricolers'),
-          where('isActive', '==', true),
-          limit(30)
-        ));
+    setLoading(true);
+    const q = query(
+      collection(db, 'bricolers'),
+      where('isActive', '==', true),
+      limit(30)
+    );
 
+    const unsubscribe = onSnapshot(q, (snap) => {
+      try {
         const all = snap.docs.map(d => {
           const data = d.data();
           return {
@@ -168,11 +167,9 @@ function Step2Content() {
         // Filter: must offer the selected service category and potentially sub-service
         const filtered = all.filter(b => {
           if (!Array.isArray(b.services)) return false;
-
           return b.services.some((s: any) => {
             const catMatch = s.categoryId === serviceType || s.serviceId === serviceType;
             if (!catMatch) return false;
-
             if (order.subServiceId) {
               return s.subServiceId === order.subServiceId ||
                 s.subServiceName === order.subServiceName ||
@@ -191,10 +188,12 @@ function Step2Content() {
           return true;
         });
 
-        // Filter: must have GPS and client must be within their radius
+        // Filter: must have GPS and client must be within their radius (Live position prioritized)
         const inRange = withVehicle.filter(b => {
-          if (!b.base_lat || !b.base_lng) return true;
-          const dist = calculateDistance(clientLat, clientLng, b.base_lat, b.base_lng);
+          const lat = (b.isLive && b.current_lat) ? b.current_lat : b.base_lat;
+          const lng = (b.isLive && b.current_lng) ? b.current_lng : b.base_lng;
+          if (!lat || !lng) return true;
+          const dist = calculateDistance(clientLat, clientLng, lat, lng);
           return dist <= (b.service_radius_km || 15);
         });
 
@@ -204,18 +203,20 @@ function Step2Content() {
           return scoreB - scoreA;
         });
 
-        const finalProviders = sorted;
-        setProviders(finalProviders);
-        if (finalProviders.length > 0) setFocusedId(finalProviders[0].id);
+        setProviders(sorted);
+        if (sorted.length > 0 && !focusedId) setFocusedId(sorted[0].id);
 
       } catch (e) {
-        console.error('Failed to load providers:', e);
-        setProviders([]);
+        console.error('Failed to process providers snapshot:', e);
       } finally {
         setLoading(false);
       }
-    }
-    load();
+    }, (err) => {
+       console.error('Provider onSnapshot error:', err);
+       setLoading(false);
+    });
+
+    return () => unsubscribe();
   }, [clientLat, clientLng, serviceType, selectedVehicle]);
 
   const saveDraftAndExit = async () => {
@@ -290,8 +291,8 @@ function Step2Content() {
   // ── Provider pin data for MapView ────────────────────────────────────
   const providerPins = providers.map(p => ({
     id: p.id,
-    lat: p.base_lat || clientLat + (Math.random() - 0.5) * 0.015,
-    lng: p.base_lng || clientLng + (Math.random() - 0.5) * 0.015,
+    lat: (p.isLive && p.current_lat) ? p.current_lat : (p.base_lat || clientLat + (Math.random() - 0.5) * 0.015),
+    lng: (p.isLive && p.current_lng) ? p.current_lng : (p.base_lng || clientLng + (Math.random() - 0.5) * 0.015),
     rate: p.minRate || 80,
     rating: p.rating || 0.0,
     taskCount: p.taskCount || 0,

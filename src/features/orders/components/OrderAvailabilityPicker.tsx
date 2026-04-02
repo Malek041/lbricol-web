@@ -29,6 +29,7 @@ interface OrderAvailabilityPickerProps {
     bricolerId: string;
     onSelect: (slots: { date: Date, time: string }[]) => void;
     selectedSlots: { date: Date, time: string }[];
+    taskDurationHours?: number;
 }
 
 const DAYS_NAMES = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
@@ -42,7 +43,8 @@ const TIME_SLOTS = [
 export default function OrderAvailabilityPicker({
     bricolerId,
     onSelect,
-    selectedSlots = []
+    selectedSlots = [],
+    taskDurationHours = 1
 }: OrderAvailabilityPickerProps) {
     const { t, language } = useLanguage();
     const [selectedDate, setSelectedDate] = useState<Date>(startOfToday());
@@ -129,35 +131,60 @@ export default function OrderAvailabilityPicker({
             return jobDate === dateKey;
         });
 
+        const currentTaskDuration = taskDurationHours || 1;
+        const BUFFER_MINS = 30;
+
         const finalSlots = baseSlots.filter(slot => {
-            // Check if any job overlaps with this slot
+            const [sh, sm] = slot.from.split(':').map(Number);
+            const slotStartMinutes = sh * 60 + sm;
+            const slotEndMinutes = slotStartMinutes + (currentTaskDuration * 60) + BUFFER_MINS;
+
+            // 1. Check if ANY existing job J overlaps with this theoretical window [slotStart, slotEnd]
             const isBooked = dateJobs.some(job => {
                 if (!job.time) return false;
 
                 const [jh, jm] = job.time.split(':').map(Number);
                 const jobStartMinutes = jh * 60 + jm;
+                const jobDurationHours = job.estimatedDuration || job.duration || 1;
+                const jobEndMinutes = jobStartMinutes + (jobDurationHours * 60) + BUFFER_MINS;
 
-                const durationHours = job.estimatedDuration || job.duration || 1;
-                const jobEndMinutes = jobStartMinutes + (durationHours * 60);
+                // Overlap exists if:
+                // (New Job Start is within Existing Job) OR (Existing Job Start is within New Job)
+                const newStartsInsideExisting = slotStartMinutes >= jobStartMinutes && slotStartMinutes < jobEndMinutes;
+                const existingStartsInsideNew = jobStartMinutes >= slotStartMinutes && jobStartMinutes < slotEndMinutes;
 
-                const [sh, sm] = slot.from.split(':').map(Number);
-                const slotStartMinutes = sh * 60 + sm;
-
-                return slotStartMinutes >= jobStartMinutes && slotStartMinutes < jobEndMinutes;
+                return newStartsInsideExisting || existingStartsInsideNew;
             });
 
-            if (isToday(selectedDate)) {
-                const now = new Date();
-                const [h, m] = slot.from.split(':').map(Number);
-                const slotTime = setMinutes(setHours(startOfDay(now), h), m);
-                return !isBooked && isAfter(slotTime, now);
+            if (isBooked) return false;
+
+            // 2. Check if the entire task duration fits within the Bricoler's available hours for that day
+            // (Only if we are NOT using calendar overrides which are fixed blocks)
+            if (!hasOverrides) {
+                const routine = availabilityData.routine && availabilityData.routine[dayOfWeek];
+                if (routine && routine.active) {
+                    const [rh_to, rm_to] = routine.to.split(':').map(Number);
+                    const routineEndMinutes = rh_to * 60 + rm_to;
+                    
+                    // Task must finish (including cleanup/buffer) before routine ends
+                    if (slotStartMinutes + (currentTaskDuration * 60) > routineEndMinutes) {
+                        return false;
+                    }
+                }
             }
 
-            return !isBooked;
+            // 3. Current time check for today
+            if (isToday(selectedDate)) {
+                const now = new Date();
+                const slotTime = setMinutes(setHours(startOfDay(now), sh), sm);
+                return isAfter(slotTime, now);
+            }
+
+            return true;
         });
 
         return finalSlots;
-    }, [selectedDate, availabilityData, bookedJobs]);
+    }, [selectedDate, availabilityData, bookedJobs, taskDurationHours]);
 
     const [showAllSlots, setShowAllSlots] = useState(false);
     const INITIAL_SLOTS_LIMIT = 5;
@@ -165,7 +192,7 @@ export default function OrderAvailabilityPicker({
     if (loading) {
         return (
             <div className="flex flex-col items-center justify-center py-12 space-y-4">
-                <div className="w-12 h-12 border-4 border-[#219178] border-t-transparent rounded-full animate-spin" />
+                <div className="w-12 h-12 border-4 border-[#01A083] border-t-transparent rounded-full animate-spin" />
                 <p className="text-sm font-bold text-neutral-400 uppercase tracking-widest">{t({ en: 'Loading availability...', fr: 'Chargement des dispos...' })}</p>
             </div>
         );
@@ -213,12 +240,12 @@ export default function OrderAvailabilityPicker({
                                     "flex flex-col items-start justify-center min-w-[130px] p-4 rounded-[10px] border-2 transition-all relative group",
                                     isCurrentViewing
                                         ? "bg-white border-black"
-                                        : (hasSelectedInDay ? "bg-white border-[#219178]/30" : "bg-white border-neutral-100 text-neutral-400 hover:border-neutral-200")
+                                        : (hasSelectedInDay ? "bg-white border-[#01A083]/30" : "bg-white border-neutral-100 text-neutral-400 hover:border-neutral-200")
                                 )}
                             >
                                 {/* Selection Badge */}
                                 {hasSelectedInDay && !isCurrentViewing && (
-                                    <div className="absolute -top-2 -right-2 bg-[#219178] text-white text-[10px] font-black w-5 h-5 rounded-full flex items-center justify-center shadow-sm">
+                                    <div className="absolute -top-2 -right-2 bg-[#01A083] text-white text-[10px] font-black w-5 h-5 rounded-full flex items-center justify-center shadow-sm">
                                         {selectedSlots.filter(s => isSameDay(s.date, day)).length}
                                     </div>
                                 )}
@@ -227,21 +254,21 @@ export default function OrderAvailabilityPicker({
                                 <div className="absolute top-3 right-3">
                                     <div className={cn(
                                         "w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all",
-                                        isCurrentViewing ? "border-black" : (hasSelectedInDay ? "border-[#219178]" : "border-neutral-200")
+                                        isCurrentViewing ? "border-black" : (hasSelectedInDay ? "border-[#01A083]" : "border-neutral-200")
                                     )}>
                                         {(isCurrentViewing || hasSelectedInDay) && (
                                             <div className={cn(
                                                 "w-2.5 h-2.5 rounded-full",
-                                                isCurrentViewing ? "bg-black" : "bg-[#219178]"
+                                                isCurrentViewing ? "bg-black" : "bg-[#01A083]"
                                             )} />
                                         )}
                                     </div>
                                 </div>
 
-                                <span className={cn("text-[14px] font-bold capitalize mb-1", isCurrentViewing ? "text-black" : (hasSelectedInDay ? "text-[#219178]" : "text-neutral-500"))}>
+                                <span className={cn("text-[14px] font-bold capitalize mb-1", isCurrentViewing ? "text-black" : (hasSelectedInDay ? "text-[#01A083]" : "text-neutral-500"))}>
                                     {label}
                                 </span>
-                                <span className={cn("text-[13px] font-medium", isCurrentViewing ? "text-neutral-600" : (hasSelectedInDay ? "text-[#219178]/70" : "text-neutral-400"))}>
+                                <span className={cn("text-[13px] font-medium", isCurrentViewing ? "text-neutral-600" : (hasSelectedInDay ? "text-[#01A083]/70" : "text-neutral-400"))}>
                                     {format(day, 'd MMM', { locale })}
                                 </span>
                             </button>
@@ -266,14 +293,14 @@ export default function OrderAvailabilityPicker({
                                         "flex items-center justify-between py-6 border-b border-neutral-100 transition-all group active:bg-neutral-50 px-2",
                                     )}
                                 >
-                                    <span className={cn("text-[16px] font-bold", isSelected ? "text-[#219178]" : "text-neutral-900")}>
+                                    <span className={cn("text-[16px] font-bold", isSelected ? "text-[#01A083]" : "text-neutral-900")}>
                                         {slot.from} - {slot.to}
                                     </span>
 
                                     {/* Checkbox/Radio Indicator */}
                                     <div className={cn(
                                         "w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all",
-                                        isSelected ? "border-[#219178] bg-[#219178]" : "border-neutral-200 group-hover:border-neutral-300"
+                                        isSelected ? "border-[#01A083] bg-[#01A083]" : "border-neutral-200 group-hover:border-neutral-300"
                                     )}>
                                         {isSelected && <Check size={14} className="text-white" strokeWidth={4} />}
                                     </div>
@@ -284,7 +311,7 @@ export default function OrderAvailabilityPicker({
                         {hasMoreSlots && (
                             <button
                                 onClick={() => setShowAllSlots(!showAllSlots)}
-                                className="w-full py-6 text-center text-[15px] font-black text-[#219178] hover:bg-neutral-50 transition-all border-b border-neutral-100 flex items-center justify-center gap-2"
+                                className="w-full py-6 text-center text-[15px] font-black text-[#01A083] hover:bg-neutral-50 transition-all border-b border-neutral-100 flex items-center justify-center gap-2"
                             >
                                 {showAllSlots ? (
                                     <>
@@ -323,8 +350,8 @@ export default function OrderAvailabilityPicker({
             {/*{selectedSlots.length > 0 && (
                 <div className="bg-[#FFFFFF] p-4 rounded-[12px] border border-[#000000]/10">
                     <div className="flex items-center gap-2 mb-3">
-                        <CheckCircle2 className="text-[#219178]" size={16} />
-                        <span className="text-[14px] font-black text-[#219178]">
+                        <CheckCircle2 className="text-[#01A083]" size={16} />
+                        <span className="text-[14px] font-black text-[#01A083]">
                             {selectedSlots.length} {selectedSlots.length > 1 ? t({ en: 'Missions selected', fr: 'Missions sélectionnées', ar: 'مهام مختارة' }) : t({ en: 'Mission selected', fr: 'Mission sélectionnée', ar: 'مهمة مختارة' })}
                         </span>
                     </div>

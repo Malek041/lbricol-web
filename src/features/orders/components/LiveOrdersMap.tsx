@@ -107,7 +107,7 @@ export default function LiveOrdersMap({
 
       {/* Floating Header - Adjusted for no global header */}
       <div className="absolute top-[60px] left-6 right-6 z-10 flex justify-between items-start pointer-events-none">
-        <div className="bg-white/90 backdrop-blur-md px-4 py-2.5 rounded-full shadow-lg border border-white/20 flex items-center gap-2 pointer-events-auto">
+        <div className="bg-white/90 backdrop-blur-md px-4 py-2.5 rounded-full border border-neutral-100 flex items-center gap-2 pointer-events-auto">
           <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
           <span className="text-[13px] font-black text-neutral-800">
             {orders.length} {t({ en: 'Live Missions', fr: 'Missions en direct', ar: 'مهام مباشرة' })}
@@ -116,7 +116,7 @@ export default function LiveOrdersMap({
 
         <button
           onClick={onShowNotifications}
-          className="w-12 h-12 flex items-center justify-center text-black relative active:scale-90 transition-transform bg-white/90 backdrop-blur-md rounded-full shadow-lg border border-white/20 pointer-events-auto"
+          className="w-12 h-12 flex items-center justify-center text-black relative active:scale-90 transition-transform bg-white/90 backdrop-blur-md rounded-full border border-neutral-100 pointer-events-auto"
         >
           <Bell size={24} strokeWidth={2.5} />
           {notificationsCount > 0 && (
@@ -136,7 +136,7 @@ export default function LiveOrdersMap({
           >
             <div
               onClick={() => onSelectOrder(focusedOrder)}
-              className="bg-white rounded-[20px] p-4 shadow-xl border border-neutral-100 flex items-center gap-4 cursor-pointer active:scale-[0.98] transition-all"
+              className="bg-white rounded-[20px] p-4 border border-neutral-200 flex items-center gap-4 cursor-pointer active:scale-[0.98] transition-all"
             >
               <div className="w-16 h-16 bg-neutral-50 rounded-2xl flex items-center justify-center flex-shrink-0">
                 <img src={getServiceVector(focusedOrder.serviceType || focusedOrder.service)} className="w-10 h-10 object-contain" />
@@ -166,7 +166,7 @@ export default function LiveOrdersMap({
                   e.stopPropagation();
                   setFocusedOrderId(null);
                 }}
-                className="absolute -top-2 -right-2 w-8 h-8 bg-white rounded-full shadow-md border border-neutral-100 flex items-center justify-center text-neutral-400 hover:text-neutral-600"
+                className="absolute -top-2 -right-2 w-8 h-8 bg-white rounded-full border border-neutral-100 flex items-center justify-center text-neutral-400 hover:text-neutral-600"
               >
                 <X size={16} strokeWidth={3} />
               </button>

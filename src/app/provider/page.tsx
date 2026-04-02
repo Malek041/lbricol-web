@@ -8,6 +8,7 @@ import radarAnimation from '../../../public/Lottifiles Animation/Radar.json';
 import { useLanguage } from '@/context/LanguageContext';
 import confetti from 'canvas-confetti';
 import OrderCard, { OrderDetails } from '@/features/orders/components/OrderCard';
+import JobDetailsPopup, { JobDetails } from '@/features/orders/components/JobDetailsPopup';
 import WeekCalendar from '@/features/calendar/components/WeekCalendar';
 import ProfileView from '@/features/provider/components/ProfileView';
 import MobileBottomNav from '@/components/layout/MobileBottomNav';
@@ -15,6 +16,7 @@ import ProviderOrdersView from '@/features/orders/components/ProviderOrdersView'
 import ActivityTab from '@/features/orders/components/ActivityTab';
 import AvailabilityTab from '@/features/orders/components/AvailabilityTab';
 import ProviderRoutineModal from '@/features/orders/components/ProviderRoutineModal';
+import MessagesView from '@/features/messages/components/MessagesView';
 import PromoteYourselfView from '@/features/provider/components/PromoteYourselfView';
 import PromocodesView from '@/features/client/components/PromocodesView';
 import { isToday, isThisWeek, parseISO, startOfDay, addDays, format } from 'date-fns';
@@ -890,7 +892,7 @@ export default function ProviderPage() {
                     fetchedJobs.push({
                         id: doc.id,
                         clientName: data.clientName || 'Client',
-                        clientAvatar: data.clientAvatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${data.clientId}`,
+                        clientAvatar: data.clientAvatar || undefined,
                         craft: normalizeServiceId(data.craft || data.service || 'general'),
                         title: data.service || data.title,
                         price: parseInt(data.price) || 0,
@@ -982,7 +984,7 @@ export default function ProviderPage() {
                         craft: normalizeServiceId(data.craft || data.service || 'general'),
                         clientName: data.clientName || 'Client',
                         clientId: data.clientId,
-                        clientAvatar: data.clientAvatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${data.clientId}`,
+                        clientAvatar: data.clientAvatar || undefined,
                         confirmedAt: data.confirmedAt,
                         description: data.description || data.comment || '',
                         providerConfirmed: data.providerConfirmed,
@@ -1145,6 +1147,44 @@ export default function ProviderPage() {
 
         return () => unsubs.forEach(u => u());
     }, [user, acceptedJobs]);
+
+    // Live Location Tracking for Bricoler Dashboard
+    useEffect(() => {
+        if (!user || !user.uid) return;
+
+        let watchId: number | null = null;
+        const bricolerRef = doc(db, 'bricolers', user.uid);
+
+        // Mark as live initially
+        updateDoc(bricolerRef, {
+            isLive: true,
+            lastActive: serverTimestamp()
+        }).catch(err => console.error("Error marking bricoler live:", err));
+
+        if (navigator.geolocation) {
+            watchId = navigator.geolocation.watchPosition(
+                (pos) => {
+                    const { latitude, longitude } = pos.coords;
+                    updateDoc(bricolerRef, {
+                        current_lat: latitude,
+                        current_lng: longitude,
+                        lastActive: serverTimestamp()
+                    }).catch(err => console.warn("Live location update failed:", err));
+                },
+                (err) => console.warn("Live location watch error:", err),
+                { enableHighAccuracy: true, maximumAge: 30000, timeout: 27000 }
+            );
+        }
+
+        // Cleanup: Mark as not live when leaving dashboard
+        return () => {
+            if (watchId !== null) navigator.geolocation.clearWatch(watchId);
+            updateDoc(bricolerRef, {
+                isLive: false,
+                lastActive: serverTimestamp()
+            }).catch(() => { /* silent fail on unmount */ });
+        };
+    }, [user]);
 
 
     // Load slots when date changes
@@ -1819,7 +1859,7 @@ export default function ProviderPage() {
             <motion.div
                 whileTap={{ scale: 0.98 }}
                 onClick={() => setViewingJobDetails(job)}
-                className="bg-white rounded-[28px] p-4 flex items-center gap-4 border-2 border-neutral-50 shadow-sm active:border-[#008C74]/20 transition-all"
+                className="bg-white rounded-[28px] p-4 flex items-center gap-4 border border-neutral-100 active:border-[#008C74]/20 transition-all"
             >
                 <div className="w-16 h-16 rounded-2xl overflow-hidden bg-neutral-100 flex-shrink-0">
                     <img src={job.image || undefined} className="w-full h-full object-cover" alt="" />
@@ -1827,7 +1867,7 @@ export default function ProviderPage() {
                 <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between mb-0.5">
                         <h4 className="text-[17px] font-black text-neutral-900 truncate tracking-tight">{job.service}</h4>
-                        <span className="text-[15px] font-black text-[#219178] uppercase">{t({ en: 'MAD', fr: 'MAD' })} {job.priceLabel}</span>
+                        <span className="text-[15px] font-black text-[#01A083] uppercase">{t({ en: 'MAD', fr: 'MAD' })} {job.priceLabel}</span>
                     </div>
                     <div className="flex items-center gap-2 text-neutral-400 text-[12px] font-bold">
                         <span className="truncate">{job.clientName}</span>
@@ -1849,7 +1889,7 @@ export default function ProviderPage() {
                                     const raw = job.rawAccepted || { id: job.id, clientName: job.clientName };
                                     setSelectedChat(raw as any);
                                 }}
-                                className="w-9 h-9 rounded-xl bg-neutral-50 flex items-center justify-center text-neutral-400 hover:text-[#219178] transition-colors"
+                                className="w-9 h-9 rounded-xl bg-neutral-50 flex items-center justify-center text-neutral-400 hover:text-[#01A083] transition-colors"
                             >
                                 <MessageCircle size={18} />
                             </button>
@@ -1938,7 +1978,7 @@ export default function ProviderPage() {
                     <button
                         onClick={() => onAccept(job)}
                         disabled={isSubmittingOffer || isWaiting}
-                        className="px-7 md:px-9 py-3 md:py-3.5 bg-black text-white text-[15px] md:text-[17px] font-bold rounded-full transition-all disabled:opacity-50"
+                        className="px-7 md:px-9 py-3 md:py-3.5 bg-[#01A083] text-white text-[15px] md:text-[17px] font-bold rounded-full transition-all disabled:opacity-50"
                     >
                         {isSubmittingOffer ? '...' : t({ en: 'Accept', fr: 'Accepter' })}
                     </button>
@@ -2157,426 +2197,91 @@ export default function ProviderPage() {
         window.open(`https://wa.me/${finalNumber}`, '_blank');
     };
 
+
+// ── Shared Sub-component for Job Details ────────────────────────────────
+const DetailItem = ({ icon: Icon, label, value, subValue, highlight }: { 
+    icon: any, 
+    label: string, 
+    value: string | number, 
+    subValue?: string,
+    highlight?: boolean
+}) => (
+    <div className="flex items-start gap-5 p-6 border-b border-neutral-50 last:border-0 hover:bg-neutral-50/50 transition-colors group">
+        <div className={cn(
+            "w-12 h-12 rounded-2xl flex items-center justify-center transition-all group-hover:scale-110",
+            highlight ? "bg-[#01A083] text-white border border-[#008f75]" : "bg-neutral-50 text-neutral-400 border border-neutral-100"
+        )}>
+            <Icon size={24} strokeWidth={highlight ? 2.5 : 2} className={cn(!highlight && "group-hover:text-[#01A083]")} />
+        </div>
+        <div className="flex-1 min-w-0">
+            <p className="text-[11px] font-black text-neutral-300 uppercase tracking-widest leading-none mb-2">{label}</p>
+            <p className="text-[16px] font-black text-black leading-tight truncate">{value}</p>
+            {subValue && <p className="text-[13px] font-bold text-neutral-400 mt-1 line-clamp-1">{subValue}</p>}
+        </div>
+    </div>
+);
+
     const renderJobDetailsModal = () => {
         if (!viewingJobDetails) return null;
+        
         const job = viewingJobDetails;
-        const dateStr = job.dateLabel;
-        const timeStr = job.timeLabel || 'Flexible';
+        const raw = job.rawAccepted || job.rawJob || {};
+        
+        let mappedStatus: JobDetails['status'] = 'new';
+        if (job.status === 'done' || raw.status === 'completed') {
+            mappedStatus = 'completed';
+        } else if (raw.status === 'confirmed' || raw.status === 'programmed') {
+            mappedStatus = 'programmed';
+        } else if (job.status === 'waiting' || raw.status === 'waiting') {
+            mappedStatus = 'waiting';
+        } else if (raw.status === 'accepted') {
+            mappedStatus = 'accepted';
+        } else if (raw.status === 'declined') {
+            mappedStatus = 'declined';
+        }
 
-        // Get hero image for vector
-        const serviceVector = getServiceVector(job.rawAccepted?.service || job.rawJob?.craft || '');
+        const popupData: JobDetails = {
+            id: job.id,
+            service: job.service || raw.craft || '',
+            clientName: job.clientName || 'Client',
+            clientRating: job.clientRating || 5,
+            location: raw.address || raw.location || job.city || '',
+            date: raw.date || job.dateLabel || '',
+            time: raw.time || job.timeLabel || '',
+            duration: raw.duration || job.duration || 'Flexible',
+            price: parseFloat(job.priceLabel || '0') || raw.price || 0,
+            status: mappedStatus,
+            description: job.description || raw.description || raw.comment,
+            photos: raw.images || [],
+            clientAvatar: job.clientAvatar || raw.clientAvatar || raw.userPhotoURL,
+            bricolerId: userData?.id,
+            bricolerName: userData?.name,
+            bricolerAvatar: userData?.profilePhotoURL || userData?.avatar || userData?.photoURL || undefined,
+            bricolerRating: userData?.rating || 5,
+            bricolerWhatsApp: userData?.phone,
+            clientWhatsApp: raw.userPhone || raw.clientPhone,
+            selectedCar: raw.selectedCar,
+            carReturnDate: raw.carReturnDate,
+            carReturnTime: raw.carReturnTime,
+            totalPrice: raw.totalPrice || parseFloat(job.priceLabel || '0'),
+            movingVehicle: raw.movingVehicle,
+            recipientName: raw.recipientName,
+            pickupAddress: raw.pickupAddress,
+            dropoffAddress: raw.dropoffAddress,
+            details: raw.details,
+            city: job.city || raw.city || raw.area,
+        };
 
         return (
-            <AnimatePresence key="job-details-modal-presence">
-                <motion.div
-                    key="job-details-modal-content"
-                    initial={{ x: '100%' }}
-                    animate={{ x: 0 }}
-                    exit={{ x: '100%' }}
-                    transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-                    className="fixed inset-0 z-[4000] bg-white flex flex-col"
-                >
-                    {/* Header */}
-                    <div className="flex items-center justify-between px-12 py-5 border-b border-neutral-50 sticky top-0 bg-white z-50">
-                        <div className="flex items-center gap-4">
-                            <button
-                                onClick={() => setViewingJobDetails(null)}
-                                className="w-10 h-10 -ml-2 rounded-full flex items-center justify-center hover:bg-neutral-50 active:scale-90 transition-transform"
-                            >
-                                <ChevronLeft size={28} className="text-black" />
-                            </button>
-                            <h1 className="text-[20px] font-black text-black">{t({ en: 'Job details', fr: 'Détails de la mission' })}</h1>
-                        </div>
-                        <div className="flex items-center gap-4">
-                            {(job.rawAccepted?.status === 'confirmed' || job.rawAccepted?.status === 'programmed' || job.rawAccepted?.status === 'accepted') && (
-                                <button
-                                    onClick={() => openWhatsApp(job.clientWhatsApp, job.rawAccepted?.clientId || job.rawJob?.clientId)}
-                                    className="w-10 h-10 rounded-full flex items-center justify-center hover:bg-neutral-50 active:scale-90 transition-all"
-                                >
-                                    <WhatsAppBrandIcon className="w-6 h-6" />
-                                </button>
-                            )}
-                            {/* Help and Chat hidden as per user request */}
-                        </div>
-                    </div>
-
-                    {/* Content */}
-                    <div className="flex-1 overflow-y-auto no-scrollbar">
-                        <div className="pb-10">
-                            <div className="px-6 md:px-12 pt-10 pb-6 flex flex-col sm:flex-row items-center gap-6 text-center sm:text-left">
-                                <div className="w-32 h-32 md:w-35 md:h-50 flex-shrink-0 overflow-hidden rounded-2xl bg-neutral-100 flex items-center justify-center border border-neutral-100">
-                                    {job.images && job.images.length > 0 ? (
-                                        <img
-                                            src={job.images[0]}
-                                            className="w-full h-full object-cover"
-                                            alt="job highlight"
-                                        />
-                                    ) : (
-                                        <img
-                                            src="/Images/Vectors Illu/NewOrder.webp"
-                                            className="w-full h-full object-contain p-2"
-                                            alt="illustration"
-                                        />
-                                    )}
-                                </div>
-                                <div className="flex flex-col">
-                                    <h2 className="text-[32px] md:text-[42px] font-black text-black leading-[1.1] tracking-tighter">
-                                        {job.status === 'done' ? t({ en: 'Completed', fr: 'Terminée' }) :
-                                            (job.rawAccepted?.status === 'confirmed' || job.rawAccepted?.status === 'programmed') ? t({ en: 'Programmed', fr: 'Programmée' }) :
-                                                t({ en: 'Upcoming', fr: 'À venir' })}
-                                    </h2>
-                                    <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[18px] font-semibold text-black mt-1">
-                                        <div className="flex items-center gap-2">
-                                            <span>{job.rawAccepted?.service?.toLowerCase().includes('rental') || job.rawJob?.craft?.toLowerCase().includes('rental')
-                                                ? formatJobDate(job.rawAccepted?.date || job.rawJob?.date || job.dateLabel)
-                                                : job.dateLabel}
-                                            </span>
-                                            <span className="text-neutral-200">|</span>
-                                            <span>{timeStr}</span>
-                                        </div>
-                                        {job.carReturnDate && (
-                                            <div className="flex items-center gap-2">
-                                                <ChevronRight size={18} className="text-neutral-300" />
-                                                <span>{formatJobDate(job.carReturnDate)}</span>
-                                                <span className="text-neutral-200">|</span>
-                                                <span>{job.carReturnTime || t({ en: 'Flexible', fr: 'Flexible', ar: 'مرن' })}</span>
-                                            </div>
-                                        )}
-                                        <span className="text-neutral-400 font-light ml-1">
-                                            , {new Date(job.rawAccepted?.date || job.rawJob?.date || Date.now()).getFullYear()}
-                                        </span>
-                                    </div>
-                                    <p className="text-[12px] font-light text-black uppercase tracking-[0.2em] mt-2">
-                                        {t({ en: 'ORDER ID', fr: 'ID DE COMMANDE' })}: #{job.id?.slice(-8).toUpperCase() || '---'}
-                                    </p>
-                                </div>
-                            </div>
-
-                            {/* Selected Car Details section */}
-                            {job.selectedCar && (
-                                <div className="px-6 md:px-12 mb-8">
-                                    <div className="bg-[#F0FBF8] rounded-2xl p-5 border border-[#219178]/20 flex flex-col gap-4">
-                                        <div className="flex justify-between items-start">
-                                            <div className="flex-1">
-                                                <h4 className="text-[12px] font-black text-[#219178] uppercase tracking-wider mb-1">{t({ en: 'Rented Vehicle', fr: 'Véhicule Loué' })}</h4>
-                                                <p className="text-[20px] font-black text-black leading-tight">{(job.selectedCar.brandName || '').toUpperCase()} {(job.selectedCar.modelName || '').toUpperCase()}</p>
-                                            </div>
-                                            <div className="w-20 h-14 bg-white rounded-xl flex items-center justify-center p-2 border border-neutral-100 shadow-sm overflow-hidden flex-shrink-0 ml-4">
-                                                <img src={job.selectedCar.modelImage || job.selectedCar.image} alt="car" className="w-full h-full object-contain" />
-                                            </div>
-                                        </div>
-                                        <div className="flex items-center justify-between pt-2 border-t border-[#219178]/10">
-                                            <div className="flex flex-col">
-                                                <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-tighter">{t({ en: 'Rate', fr: 'Prix' })}</span>
-                                                <span className="text-[16px] font-black text-black">{job.selectedCar.pricePerDay || job.selectedCar.price} MAD/j</span>
-                                            </div>
-                                            <div className="flex flex-col">
-                                                <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-tighter">{t({ en: 'Duration', fr: 'Durée' })}</span>
-                                                <span className="text-[16px] font-black text-black">
-                                                    {(() => {
-                                                        const startDateStr = job.rawAccepted?.date || job.rawJob?.date;
-                                                        if (startDateStr && job.carReturnDate) {
-                                                            const d = Math.max(1, Math.round((new Date(job.carReturnDate).getTime() - new Date(startDateStr).getTime()) / 86400000));
-                                                            return `${d} ${t({ en: d > 1 ? 'days' : 'day', fr: d > 1 ? 'jours' : 'jour' })}`;
-                                                        }
-                                                        return job.rawAccepted?.duration || job.rawJob?.duration || '---';
-                                                    })()}
-                                                </span>
-                                            </div>
-                                            <div className="flex flex-col items-end">
-                                                <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-tighter">{t({ en: 'Total Price', fr: 'Prix Total', ar: 'السعر الإجمالي' })}</span>
-                                                <span className="text-[16px] font-black text-[#219178] italic">
-                                                    {job.priceLabel} {t({ en: 'MAD', fr: 'MAD', ar: 'درهم' })}
-                                                </span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* Key Details Grid */}
-                            <div className="px-6 md:px-12 mb-8">
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                    {/* Contact the Client (Moved to top of grid) */}
-                                    {(job.rawAccepted?.status === 'confirmed' || job.rawAccepted?.status === 'programmed' || job.rawAccepted?.status === 'accepted') && (
-                                        <div className="col-span-1 sm:col-span-2 mb-2">
-                                            <button
-                                                onClick={() => openWhatsApp(job.clientWhatsApp, job.rawAccepted?.clientId || job.rawJob?.clientId)}
-                                                className="w-full bg-[#25D366] text-white py-4 rounded-xl font-black text-[18px] flex items-center justify-center gap-3 hover:bg-[#128C7E] transition-all shadow-sm"
-                                            >
-                                                <WhatsAppBrandIcon className="w-6 h-6" />
-                                                {t({ en: 'Contact Client', fr: 'Contacter le Client' })}
-                                            </button>
-                                        </div>
-                                    )}
-                                    <div className="bg-neutral-50 rounded-2xl p-4 flex items-center gap-4 border border-neutral-100/50">
-                                        <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-sm">
-                                            <Clock size={20} className="text-[#219178]" />
-                                        </div>
-                                        <div className="flex flex-col">
-                                            <span className="text-[12px] font-bold text-neutral-400 uppercase tracking-wider">{t({ en: 'Duration', fr: 'Durée' })}</span>
-                                            <span className="text-[16px] font-black text-black">
-                                                {(() => {
-                                                    const startDateStr = job.rawAccepted?.date || job.rawJob?.date;
-                                                    if (startDateStr && job.carReturnDate) {
-                                                        const d = Math.max(1, Math.round((new Date(job.carReturnDate).getTime() - new Date(startDateStr).getTime()) / 86400000));
-                                                        return `${d} ${t({ en: d > 1 ? 'days' : 'day', fr: d > 1 ? 'jours' : 'jour' })}`;
-                                                    }
-                                                    return job.rawAccepted?.duration || job.rawJob?.duration || job.duration || t({ en: 'Flexible', fr: 'Flexible' });
-                                                })()}
-                                            </span>
-                                        </div>
-                                    </div>
-                                    <div className="bg-neutral-50 rounded-2xl p-4 flex items-center gap-4 border border-neutral-100/50">
-                                        <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-sm">
-                                            <Banknote size={20} className="text-[#219178]" />
-                                        </div>
-                                        <div className="flex flex-col">
-                                            <span className="text-[12px] font-bold text-neutral-400 uppercase tracking-wider">{t({ en: 'Your Earnings', fr: 'Tes Gains (NET)' })}</span>
-                                            <span className="text-[16px] font-black text-black">{(parseFloat(job.priceLabel) * (1 - COMMISSION_RATE)).toFixed(0)} {t({ en: 'MAD', fr: 'MAD' })}</span>
-                                        </div>
-                                    </div>
-                                    <div className="bg-neutral-50 rounded-2xl p-4 flex items-center gap-4 border border-neutral-100/50">
-                                        <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-sm">
-                                            <Wrench size={20} className="text-[#219178]" />
-                                        </div>
-                                        <div className="flex flex-col overflow-hidden">
-                                            <span className="text-[12px] font-bold text-neutral-400 uppercase tracking-wider">{t({ en: 'Service', fr: 'Service' })}</span>
-                                            <span className="text-[16px] font-black text-black truncate capitalize">
-                                                {(job.rawAccepted?.service || job.rawJob?.craft || '').replace(/_/g, ' ')}
-                                            </span>
-                                        </div>
-                                    </div>
-                                    <div className="bg-neutral-50 rounded-2xl p-4 flex items-center gap-4 border border-neutral-100/50">
-                                        <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-sm">
-                                            <CreditCard size={20} className="text-[#219178]" />
-                                        </div>
-                                        <div className="flex flex-col">
-                                            <span className="text-[12px] font-bold text-neutral-400 uppercase tracking-wider">{t({ en: 'Payment', fr: 'Paiement' })}</span>
-                                            <span className="text-[16px] font-black text-black">{t({ en: 'Cash', fr: 'Espèces' })}</span>
-                                        </div>
-                                    </div>
-                                    {/* Location */}
-                                    <div className="bg-neutral-50 rounded-2xl p-4 flex items-center gap-4 border border-neutral-100/50">
-                                        <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-sm">
-                                            <MapPin size={20} className="text-[#219178]" />
-                                        </div>
-                                        <div className="flex flex-col overflow-hidden">
-                                            <span className="text-[12px] font-bold text-neutral-400 uppercase tracking-wider">{t({ en: 'Location', fr: 'Localisation' })}</span>
-                                            <span className="text-[16px] font-black text-black">
-                                                {job.rawAccepted?.location || job.rawJob?.city || job.city || t({ en: 'Unknown', fr: 'Inconnu' })}{(job.rawAccepted?.area || job.rawJob?.area) ? `, ${job.rawAccepted?.area || job.rawJob?.area}` : ''}
-                                            </span>
-                                        </div>
-                                    </div>
-                                    {/* Description */}
-                                    <div className="bg-neutral-50 rounded-2xl p-4 col-span-1 sm:col-span-2 flex items-start gap-4 border border-neutral-100/50">
-                                        <div className="w-10 h-10 rounded-full bg-white flex-shrink-0 flex items-center justify-center shadow-sm">
-                                            <Info size={20} className="text-[#219178]" />
-                                        </div>
-                                        <div className="flex flex-col">
-                                            <span className="text-[12px] font-bold text-neutral-400 uppercase tracking-wider">{t({ en: 'Description', fr: 'Description' })}</span>
-                                            <p className="text-[14px] font-semibold text-black leading-tight">
-                                                {job.description || job.rawAccepted?.description || job.rawJob?.description || t({ en: 'No specific instructions.', fr: 'Aucune instruction spécifique.' })}
-                                            </p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Wide Light ZigZag */}
-                            <div className="w-full relative h-[40px] flex items-center overflow-hidden">
-                                <div className="absolute w-full h-[2px] bg-neutral-100/50" />
-                                <div className="w-full h-full flex justify-center opacity-[0.08]" style={{
-                                    backgroundImage: `url("data:image/svg+xml,%3Csvg width='40' height='10' viewBox='0 0 40 10' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 10L20 0L40 10' stroke='black' stroke-width='2'/%3E%3C/svg%3E")`,
-                                    backgroundRepeat: 'repeat-x',
-                                    backgroundPosition: 'center'
-                                }} />
-                            </div>
-
-                            <div className="px-6 py-8 space-y-10">
-                                {/* Service Info */}
-                                <div className="space-y-4">
-                                    <div className="flex items-center gap-2">
-                                        <div className="flex-shrink-0 px-3 py-1 bg-[#FFC244]/20 text-black text-[13px] font-black rounded-md whitespace-nowrap">
-                                            {job.rawAccepted?.duration || job.rawJob?.duration || t({ en: 'Flexible', fr: 'Flexible' })}
-                                        </div>
-                                    </div>
-                                    <div className="space-y-2">
-                                        <p className="text-[20px] font-semibold text-black">
-                                            {job.service.replace(/[_-]/g, ' ').replace(/\b\w/g, c => c.toUpperCase())} {job.subService ? `› ${job.subService}` : ''}
-                                        </p>
-                                        <p className="text-[14px] font-light text-black leading-relaxed">
-                                            {t({ en: 'Work with client ', fr: 'Travail avec le client ' })}<span className="text-black font-semibold">{job.clientName || 'Client'}</span>{t({ en: '. Feel free to chat for more details or location guidance.', fr: '. N\'hésitez pas à discuter pour plus de détails ou d\'itinéraires.' })}
-                                        </p>
-                                    </div>
-                                </div>
-
-                                {/* Client Section */}
-                                <section>
-                                    <h3 className="text-[28px] font-black text-black mb-4">{t({ en: 'Client', fr: 'Client' })}</h3>
-                                    <div className="flex items-center justify-between p-4 border border-neutral-100 rounded-[28px] bg-white">
-                                        <div className="flex items-center gap-4">
-                                            <div className="h-14 w-14 rounded-[18px] overflow-hidden bg-neutral-100">
-                                                {job.clientAvatar ? <img src={job.clientAvatar} alt={job.clientName} className="h-full w-full object-cover" /> : <div className="h-full w-full flex items-center justify-center text-[20px] font-black text-neutral-400">{job.clientName?.[0] || 'C'}</div>}
-                                            </div>
-                                            <div>
-                                                <p className="text-[18px] font-black text-black">{job.clientName || 'Client'}</p>
-                                                <div className="flex items-center gap-1.5 mt-0.5">
-                                                    <div className="flex items-center gap-0.5 mr-1">
-                                                        {[1, 2, 3, 4, 5].map((s) => {
-                                                            const hasReviews = (job.clientReviewCount || 0) > 0;
-                                                            const rating = hasReviews ? (job.clientRating || 0) : 0;
-                                                            return (
-                                                                <Star
-                                                                    key={s}
-                                                                    size={14}
-                                                                    className={cn(
-                                                                        "transition-all",
-                                                                        s <= Math.floor(rating)
-                                                                            ? "fill-[#FFC244] text-[#FFC244]"
-                                                                            : "fill-neutral-100 text-neutral-200"
-                                                                    )}
-                                                                />
-                                                            );
-                                                        })}
-                                                    </div>
-                                                    <span className="text-[13px] font-bold text-[#FFC244]">
-                                                        {((job.clientReviewCount || 0) > 0) ? (job.clientRating || 0).toFixed(1) : '---'}
-                                                    </span>
-                                                    <span className="text-[13px] text-neutral-400 font-medium">({job.clientReviewCount || 0} {t({ en: 'reviews', fr: 'avis' })})</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <button
-                                            onClick={() => {
-                                                const clientId = job.rawAccepted?.clientId || job.rawJob?.clientId;
-                                                const whatsappNumber = job.rawAccepted?.clientWhatsApp || job.rawJob?.clientWhatsApp;
-                                                openWhatsApp(whatsappNumber, clientId);
-                                            }}
-                                            className="h-12 w-12 flex items-center justify-center bg-[#25D366] text-white rounded-full transition-transform active:scale-90 shadow-lg shadow-[#25D366]/20"
-                                        >
-                                            <WhatsAppBrandIcon size={24} />
-                                        </button>
-                                    </div>
-
-                                    {/* Provider rating Client embedded section */}
-                                    {job.status === 'done' && !(job as any).rawJob?.clientRated && !isClientRatedLocally.includes(job.id!) && (
-                                        <div className="mt-4 p-5 bg-neutral-50 rounded-[28px] border border-neutral-100/50 flex flex-col items-center gap-4">
-                                            <div className="text-center">
-                                                <p className="text-[14px] font-black text-black">{t({ en: 'Rate this Client', fr: 'Notez ce Client' })}</p>
-                                                <p className="text-[12px] font-medium text-neutral-400">{t({ en: 'How was your experience?', fr: 'Comment s\'est passée votre expérience ?' })}</p>
-                                            </div>
-                                            <div className="flex gap-1.5">
-                                                {[1, 2, 3, 4, 5].map((s) => (
-                                                    <motion.button
-                                                        key={s}
-                                                        whileHover={{ scale: 1.2 }}
-                                                        whileTap={{ scale: 0.9 }}
-                                                        onClick={() => setClientRating(s)}
-                                                        onMouseEnter={() => setClientHover(s)}
-                                                        onMouseLeave={() => setClientHover(0)}
-                                                    >
-                                                        <Star
-                                                            size={28}
-                                                            className={cn(
-                                                                "transition-all cursor-pointer",
-                                                                (clientHover || clientRating) >= s ? "fill-[#FFC244] text-[#FFC244]" : "fill-white text-neutral-200"
-                                                            )}
-                                                        />
-                                                    </motion.button>
-                                                ))}
-                                            </div>
-                                            <textarea
-                                                value={clientReview || clientRatingComment}
-                                                onChange={(e) => {
-                                                    setClientReview(e.target.value);
-                                                    setClientRatingComment(e.target.value);
-                                                }}
-                                                placeholder={t({ en: 'Client behavior, timing...', fr: 'Comportement du client, ponctualité...' })}
-                                                className="w-full h-20 p-3 rounded-xl bg-white border border-neutral-100 text-[13px] outline-none focus:ring-2 focus:ring-[#FFC244]/50 font-medium resize-none"
-                                            />
-                                            <button
-                                                onClick={() => handleRateClient(job)}
-                                                disabled={clientRating === 0 || isSubmittingRating}
-                                                className={cn(
-                                                    "w-full py-3 rounded-xl text-white font-black text-[14px] transition-all flex items-center justify-center gap-2",
-                                                    clientRating > 0 ? "bg-[#219178]" : "bg-neutral-300 opacity-50"
-                                                )}
-                                            >
-                                                {isSubmittingRating ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : t({ en: 'Submit Rating', fr: 'Envoyer la note' })}
-                                            </button>
-                                        </div>
-                                    )}
-                                </section>
-
-                                {/* Need Description */}
-                                <div className="space-y-3">
-                                    <h3 className="text-[28px] font-black text-black">{t({ en: 'Need Description', fr: 'Description du besoin' })}</h3>
-                                    <div className="p-5 bg-neutral-50 rounded-[16px] text-neutral-500 text-[15px] font-light leading-relaxed">
-                                        {job.description || job.rawJob?.description || job.rawAccepted?.description || job.rawAccepted?.comment || t({ en: 'No specific instructions provided for this task.', fr: 'Aucune instruction spécifique fournie pour cette tâche.' })}
-                                    </div>
-                                </div>
-
-                                {/* Photos */}
-                                {(job.rawJob?.images || job.rawAccepted?.images) && (job.rawJob?.images || job.rawAccepted?.images)!.length > 0 && (
-                                    <div className="space-y-3">
-                                        <h3 className="text-[28px] font-black text-black">{t({ en: 'Photos', fr: 'Photos' })}</h3>
-                                        <div className="flex gap-3 overflow-x-auto no-scrollbar pb-2">
-                                            {(job.rawJob?.images || job.rawAccepted?.images)!.map((img: string, i: number) => (
-                                                <div key={i} className="relative w-40 h-40 flex-shrink-0 rounded-[20px] overflow-hidden border border-neutral-100 shadow-sm">
-                                                    <img
-                                                        src={img}
-                                                        className="w-full h-full object-cover cursor-pointer hover:opacity-90 transition-opacity"
-                                                        alt="Task"
-                                                        onClick={() => window.open(img, '_blank')}
-                                                    />
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                )}
-
-                                {/* Location Section */}
-                                <section className="space-y-4">
-                                    <h3 className="text-[28px] font-black text-black flex items-center gap-2">
-                                        <MapPin size={24} className="text-[#219178]" />
-                                        {t({ en: 'Location', fr: 'Lieu' })}
-                                    </h3>
-                                    <div className="p-5 bg-neutral-50 rounded-[10px] space-y-2">
-                                        <p className="text-[17px] font-black text-black">
-                                            {job.rawAccepted?.address || job.rawJob?.city || job.city}
-                                        </p>
-                                        {(job.rawAccepted?.area || job.rawAccepted?.city) && (
-                                            <p className="text-[14px] font-medium text-neutral-400 capitalize">
-                                                {job.rawAccepted?.area ? `${job.rawAccepted.area}, ` : ''}{job.rawAccepted?.city || job.city}
-                                            </p>
-                                        )}
-                                        {job.rawAccepted?.address && (
-                                            <button
-                                                onClick={() => window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(job.rawAccepted?.address + ', ' + (job.rawAccepted?.area || '') + ', ' + (job.rawAccepted?.city || job.city))}`, '_blank')}
-                                                className="text-[14px] font-bold text-[#219178] mt-2 underline"
-                                            >
-                                                {t({ en: 'Open in Maps', fr: 'Ouvrir dans Maps' })}
-                                            </button>
-                                        )}
-                                     </div>
-                                 </section>
-                                 <section className="space-y-6">
-                                     <p>NEW SECTIONS PLACEHOLDER</p>
-                                 </section>
-                             </div>
-                         </div>
-                     </div>
-
-                    {/* Fixed Total Footer */}
-                    <div className="px-6 md:px-12 py-8 bg-white border-t border-neutral-100 shadow-[0_-10px_40px_rgba(0,0,0,0.05)] z-[4001]">
-                        <div className="flex items-center justify-between gap-4">
-                            <span className="text-[28px] md:text-[32px] font-black text-[#219178] leading-tight">{t({ en: 'Your Net Payout', fr: 'Tes Gains Nets' })}</span>
-                            <span className="text-[28px] md:text-[32px] font-black text-[#219178] tracking-tighter truncate">{(parseFloat(job.priceLabel) * (1 - COMMISSION_RATE)).toFixed(0)} {t({ en: 'MAD', fr: 'MAD' })}</span>
-                        </div>
-                    </div>
-                </motion.div>
-            </AnimatePresence>
+            <JobDetailsPopup
+                job={popupData}
+                onClose={() => setViewingJobDetails(null)}
+                mode="provider"
+                onChat={(jobId, bricolerId, bricolerName) => {
+                    setViewingJobDetails(null);
+                    setSelectedChat(job.rawAccepted || null);
+                }}
+            />
         );
     };
 
@@ -2626,7 +2331,7 @@ export default function ProviderPage() {
                                     >
                                         {tab.label}
                                         {performanceTab === tab.id && (
-                                            <motion.div layoutId="performance-header-tab" className="absolute bottom-0 left-0 right-0 h-[3px] bg-[#219178] rounded-t-full" />
+                                            <motion.div layoutId="performance-header-tab" className="absolute bottom-0 left-0 right-0 h-[3px] bg-[#01A083] rounded-t-full" />
                                         )}
                                     </button>
                                 ))}
@@ -2668,7 +2373,7 @@ export default function ProviderPage() {
                                                     animate={{ opacity: 1, y: 0, scale: 1 }}
                                                     exit={{ opacity: 0, y: -8, scale: 0.97 }}
                                                     transition={{ duration: 0.18 }}
-                                                    className="absolute inset-x-5 top-14 z-50 bg-white rounded-2xl border border-neutral-100 overflow-hidden shadow-sm"
+                                                    className="absolute inset-x-5 top-14 z-50 bg-white rounded-2xl border border-neutral-100 overflow-hidden"
                                                 >
                                                     {/* Year row */}
                                                     <div className="flex items-center justify-between px-5 py-4 border-b border-neutral-100">
@@ -2729,11 +2434,11 @@ export default function ProviderPage() {
                                         <div className="space-y-2.5 max-w-[320px] mx-auto mt-6 mb-2">
                                             {/* Top row: 2 pills */}
                                             <div className="flex items-center justify-center gap-2">
-                                                <div className="h-[34px] px-[18px] bg-[#F9F9F9] rounded-full flex items-center justify-center gap-1.5 shadow-[inset_0_1px_2px_rgba(255,255,255,0.8),0_1px_2px_rgba(0,0,0,0.02)]">
+                                                <div className="h-[34px] px-[18px] bg-[#F9F9F9] rounded-full flex items-center justify-center gap-1.5 border border-neutral-100">
                                                     <Star size={15} className="fill-[#FFC244] text-[#FFC244] -ml-1" />
                                                     <span className="text-[15px] font-medium text-black mt-0.5" style={{ fontFamily: 'Uber Move, var(--font-sans)' }}>{monthAvgRating}</span>
                                                 </div>
-                                                <div className="h-[34px] px-8 flex-1 bg-[#F9F9F9] rounded-full flex items-center justify-center shadow-[inset_0_1px_2px_rgba(255,255,255,0.8),0_1px_2px_rgba(0,0,0,0.02)]">
+                                                <div className="h-[34px] px-8 flex-1 bg-[#F9F9F9] rounded-full flex items-center justify-center border border-neutral-100">
                                                     <span className="text-[13px] font-bold text-black mt-0.5 tracking-wide" style={{ fontFamily: 'Uber Move, var(--font-sans)' }}>
                                                         {t({ en: 'MAD', fr: 'MAD' })} {monthRevenueNum >= 1000 ? `${(monthRevenueNum / 1000).toFixed(0)}K` : monthRevenueNum}
                                                     </span>
@@ -2741,7 +2446,7 @@ export default function ProviderPage() {
                                             </div>
 
                                             {/* Occupancy bar */}
-                                            <div className="h-[34px] bg-[#F9F9F9] rounded-full overflow-hidden relative shadow-[inset_0_1px_2px_rgba(255,255,255,0.8),0_1px_2px_rgba(0,0,0,0.02)] flex items-center mx-0.5">
+                                            <div className="h-[34px] bg-[#F9F9F9] rounded-full overflow-hidden relative border border-neutral-100 flex items-center mx-0.5">
                                                 <motion.div
                                                     className="absolute left-0 top-0 bottom-0 bg-[#FFC244] min-w-[16px]"
                                                     initial={{ width: '0%' }}
@@ -2764,7 +2469,7 @@ export default function ProviderPage() {
                                             className={cn(
                                                 "px-5 py-2.5 rounded-full text-[13px] font-black transition-all whitespace-nowrap border-1.5",
                                                 activeCraftFilter === 'all'
-                                                    ? "bg-black border-black text-white"
+                                                    ? "bg-[#01A083] border-[#008f75] text-white"
                                                     : "bg-[#F9F9F9] border-transparent text-neutral-900"
                                             )}
                                         >
@@ -2780,7 +2485,7 @@ export default function ProviderPage() {
                                                     className={cn(
                                                         "px-5 py-2.5 rounded-full text-[13px] font-black transition-all whitespace-nowrap border-1.5",
                                                         activeCraftFilter === serviceId
-                                                            ? "bg-black border-black text-white"
+                                                            ? "bg-[#01A083] border-[#008f75] text-white"
                                                             : "bg-[#F9F9F9] border-transparent text-neutral-900"
                                                     )}
                                                 >
@@ -2790,7 +2495,7 @@ export default function ProviderPage() {
                                         })}
                                     </div>
 
-                                    <section className="bg-white pt-2 pb-6 shadow-[0_4px_24px_rgba(0,0,0,0.02)] mb-2 relative z-20">
+                                    <section className="bg-white pt-2 pb-6 border-b border-neutral-100 mb-2 relative z-20">
                                         <div className="flex items-center gap-4 overflow-x-auto no-scrollbar snap-x px-5 mt-6 pb-4">
                                             {programmedAcceptedJobs.filter(rawJob => {
                                                 const dateInfo = getJobDateTime(rawJob.time ? `${rawJob.date} at ${rawJob.time}` : rawJob.date);
@@ -2850,7 +2555,7 @@ export default function ProviderPage() {
                                                                         <div className="h-6 w-6 rounded-full border-2 border-white overflow-hidden bg-neutral-200">
                                                                             {job.clientAvatar ? <img src={job.clientAvatar} alt={job.clientName} className="h-full w-full object-cover" /> : <div className="h-full w-full flex items-center justify-center text-[10px] font-black text-neutral-500">{job.clientName[0]}</div>}
                                                                         </div>
-                                                                        <span className="text-white text-[11px] font-bold drop-shadow-sm">{job.clientName}</span>
+                                                                        <span className="text-white text-[11px] font-bold">{job.clientName}</span>
                                                                     </div>
                                                                     <span className="bg-white text-black px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest">{job.statusLabel}</span>
                                                                 </div>
@@ -2889,7 +2594,7 @@ export default function ProviderPage() {
                                                                             e.stopPropagation();
                                                                             setSelectedChat(job.rawAccepted!);
                                                                         }}
-                                                                        className="h-14 flex-1 rounded-2xl bg-[#FFC244] text-black flex items-center justify-center gap-2.5 text-[15px] font-black shadow-[0_4px_12px_rgba(255,205,44,0.3)] active:scale-95 transition-all"
+                                                                        className="h-14 flex-1 rounded-2xl bg-[#01A083] text-white flex items-center justify-center gap-2.5 text-[15px] font-black border border-[#008f75] active:scale-95 transition-all"
                                                                     >
                                                                         <MessageSquare size={20} strokeWidth={2.5} />
                                                                         {t({ en: 'Quick Chat', fr: 'Chat rapide' })}
@@ -2918,8 +2623,8 @@ export default function ProviderPage() {
                                                                                 }}
                                                                                 title={returnLocked ? t({ en: `Locked until return: ${returnLabel}`, fr: `Bloqué jusqu'au retour: ${returnLabel}` }) : t({ en: 'Mark as done', fr: 'Marquer comme terminée' })}
                                                                                 className={cn(
-                                                                                    "h-14 w-14 rounded-2xl flex items-center justify-center active:scale-95 transition-all shadow-lg",
-                                                                                    returnLocked ? "bg-neutral-300 text-neutral-500 cursor-not-allowed" : "bg-black text-white"
+                                                                                    "h-14 w-14 rounded-2xl flex items-center justify-center active:scale-95 transition-all",
+                                                                                    returnLocked ? "bg-neutral-300 text-neutral-500 cursor-not-allowed" : "bg-[#01A083] text-white border border-[#008f75]"
                                                                                 )}
                                                                             >
                                                                                 {returnLocked ? <Clock size={22} strokeWidth={2.5} /> : <Check size={24} strokeWidth={3} />}
@@ -2945,13 +2650,13 @@ export default function ProviderPage() {
                                                     className={cn(
                                                         "relative px-8 h-12 rounded-[24px] text-[15px] font-medium whitespace-nowrap transition-all flex-shrink-0",
                                                         mobileJobsStatus === tab.key
-                                                            ? "bg-black text-white"
+                                                            ? "bg-[#01A083] text-white"
                                                             : "bg-[#F5F5F5] text-[#555555]"
                                                     )}
                                                 >
                                                     {tab.label}
                                                     {tab.count > 0 && (
-                                                        <span className="absolute -top-1.5 -right-1.5 h-4 min-w-4 px-1 rounded-full bg-[#E51B24] text-white text-[9px] font-bold flex items-center justify-center shadow-[0_0_0_2px_#FFFFFF]">
+                                                        <span className="absolute -top-1.5 -right-1.5 h-4 min-w-4 px-1 rounded-full bg-[#E51B24] text-white text-[9px] font-bold flex items-center justify-center border-2 border-white">
                                                             {tab.count > 9 ? '9+' : tab.count}
                                                         </span>
                                                     )}
@@ -2964,7 +2669,7 @@ export default function ProviderPage() {
                                             {isLoading ? (
                                                 <div className="h-[480px] rounded-[30px] border border-neutral-200 bg-neutral-200/80 animate-pulse" />
                                             ) : stackedMobileJobs.length === 0 ? (
-                                                <div className="h-[480px] rounded-[30px] border border-neutral-100 bg-[#FCFCFC] flex flex-col items-center justify-center text-center px-8 relative overflow-hidden shadow-[inset_0_2px_10px_rgba(0,0,0,0.02)]">
+                                                <div className="h-[480px] rounded-[30px] border border-neutral-100 bg-[#FCFCFC] flex flex-col items-center justify-center text-center px-8 relative overflow-hidden">
                                                     {/* Animated Radar Effect */}
                                                     <div className="relative mb-8 flex items-center justify-center w-48 h-48 mx-auto -mt-8">
                                                         <Lottie animationData={radarAnimation} loop={true} />
@@ -3043,7 +2748,7 @@ export default function ProviderPage() {
                                                                     pointerEvents: isTop ? 'auto' : 'none'
                                                                 }}
                                                             >
-                                                                <div className="h-full rounded-none overflow-hidden bg-white shadow-[0_6px_18px_rgba(0,0,0,0.09)] flex flex-col">
+                                                                <div className="h-full rounded-none overflow-hidden bg-white border border-neutral-100 flex flex-col">
                                                                     {job.isUrgent && (
                                                                         <div className="bg-red-600 text-white py-2 px-4 text-center">
                                                                             <span className="text-[11px] font-black uppercase tracking-widest animate-pulse">
@@ -3072,7 +2777,7 @@ export default function ProviderPage() {
                                                                         <span className={cn(
                                                                             "h-7 px-4 rounded-[999px] flex items-center justify-center text-[11px] font-bold text-white",
                                                                             job.status === 'new'
-                                                                                ? "bg-black"
+                                                                                ? "bg-[#01A083]"
                                                                                 : job.status === 'waiting'
                                                                                     ? "bg-neutral-800"
                                                                                     : job.status === 'programmed'
@@ -3181,10 +2886,10 @@ export default function ProviderPage() {
                                                                                     }}
                                                                                     disabled={!canConfirm || actionsDisabled || isSubmittingOffer}
                                                                                     className={cn(
-                                                                                        "h-[64px] w-[64px] rounded-full flex items-center justify-center transition-colors shadow-[0_4px_14px_rgba(0,0,0,0.1)]",
+                                                                                        "h-[64px] w-[64px] rounded-full flex items-center justify-center transition-colors border border-black/10",
                                                                                         (!canConfirm || actionsDisabled)
-                                                                                            ? "bg-neutral-200 text-neutral-400 shadow-none border border-neutral-300"
-                                                                                            : "bg-black text-white"
+                                                                                            ? "bg-neutral-200 text-neutral-400 border border-neutral-300"
+                                                                                            : "bg-[#01A083] text-white border-[#008f75]"
                                                                                     )}
                                                                                 >
                                                                                     <Check size={26} strokeWidth={1.5} />
@@ -3222,7 +2927,7 @@ export default function ProviderPage() {
                                                     initial={{ opacity: 0, y: 12 }}
                                                     animate={{ opacity: 1, y: 0 }}
                                                     onClick={() => setViewingJobDetails(job)}
-                                                    className="bg-white rounded-2xl overflow-hidden shadow-[0_2px_12px_rgba(0,0,0,0.06)] border border-neutral-100 cursor-pointer"
+                                                    className="bg-white rounded-2xl overflow-hidden border border-neutral-200 cursor-pointer"
                                                 >
                                                     {/* Card image strip */}
                                                     <div className="relative h-[130px]">
@@ -3240,7 +2945,7 @@ export default function ProviderPage() {
                                                             <span className={cn(
                                                                 'px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wide',
                                                                 job.status === 'waiting' ? 'bg-amber-400 text-white' :
-                                                                    job.status === 'programmed' ? 'bg-black text-white' : 'bg-emerald-500 text-white'
+                                                                    job.status === 'programmed' ? 'bg-[#01A083] text-white' : 'bg-emerald-500 text-white'
                                                             )}>{job.statusLabel}</span>
                                                         </div>
                                                         <div className="absolute bottom-3 left-3">
@@ -3301,7 +3006,7 @@ export default function ProviderPage() {
                                                                             setSelectedChat(syntheticOrder);
                                                                         }}
                                                                         title={t({ en: 'Chat with client', fr: 'Discuter avec le client' })}
-                                                                        className="h-11 flex-1 rounded-full bg-neutral-900 text-white flex items-center justify-center gap-2 text-[13px] font-bold hover:bg-black transition-colors"
+                                                                        className="h-11 flex-1 rounded-full bg-[#01A083] text-white flex items-center justify-center gap-2 text-[13px] font-bold transition-colors border border-[#008f75]"
                                                                     >
                                                                         <MessageCircle size={16} strokeWidth={1.8} />
                                                                         {t({ en: 'Quick Chat', fr: 'Chat rapide' })}
@@ -3350,8 +3055,8 @@ export default function ProviderPage() {
                                                                                 onClick={() => handleUpdateJob(job.rawAccepted!.id!, { status: 'done' })}
                                                                                 title={returnLocked ? t({ en: `Locked until return: ${returnLabel}`, fr: `Bloqué jusqu'au retour: ${returnLabel}` }) : t({ en: 'Mark as done', fr: 'Marquer comme terminée' })}
                                                                                 className={cn(
-                                                                                    "h-11 flex-1 rounded-full flex items-center justify-center gap-2 text-[13px] font-bold transition-colors shadow-[0_4px_14px_rgba(0,0,0,0.18)]",
-                                                                                    returnLocked ? "bg-neutral-200 text-neutral-500 cursor-not-allowed" : "bg-black text-white hover:bg-neutral-800"
+                                                                                    "h-11 flex-1 rounded-full flex items-center justify-center gap-2 text-[13px] font-bold transition-colors border border-[#008f75]",
+                                                                                    returnLocked ? "bg-neutral-200 text-neutral-500 cursor-not-allowed" : "bg-[#01A083] text-white"
                                                                                 )}
                                                                             >
                                                                                 {returnLocked ? <Clock size={14} strokeWidth={2} /> : <CheckCircle2 size={16} strokeWidth={1.8} />}
@@ -3380,7 +3085,7 @@ export default function ProviderPage() {
                                                                             setShowRateClientModal(true);
                                                                         }}
                                                                         title={t({ en: 'Rate client', fr: 'Noter le client' })}
-                                                                        className="h-11 flex-1 rounded-full bg-black text-white flex items-center justify-center gap-2 text-[13px] font-bold hover:bg-neutral-800 transition-colors shadow-[0_4px_14px_rgba(0,0,0,0.18)]"
+                                                                        className="h-11 flex-1 rounded-full bg-[#01A083] text-white flex items-center justify-center gap-2 text-[13px] font-bold transition-colors border border-[#008f75]"
                                                                     >
                                                                         <Star size={16} strokeWidth={1.8} />
                                                                         {t({ en: 'Rate Client', fr: 'Noter le client' })}
@@ -3394,7 +3099,7 @@ export default function ProviderPage() {
                                                                         e.stopPropagation();
                                                                         if (job.id) handleConfirmJob(job.id);
                                                                     }}
-                                                                    className="flex-1 px-4 py-2.5 bg-black text-white text-[13px] font-bold rounded-full transition-all"
+                                                                    className="flex-1 px-4 py-2.5 bg-[#01A083] text-white text-[13px] font-bold rounded-full transition-all border border-[#008f75]"
                                                                 >
                                                                     {t({ en: 'Confirm Job', fr: 'Confirmer' })}
                                                                 </button>
@@ -3425,7 +3130,7 @@ export default function ProviderPage() {
                                                     className={cn(
                                                         "px-6 py-3 rounded-full text-[14px] font-black transition-all whitespace-nowrap border-2",
                                                         activeCraftFilter === 'all'
-                                                            ? "bg-black border-black text-white"
+                                                            ? "bg-[#01A083] border-[#008f75] text-white"
                                                             : "bg-white border-neutral-100 text-neutral-900 hover:border-neutral-200"
                                                     )}
                                                 >
@@ -3441,7 +3146,7 @@ export default function ProviderPage() {
                                                             className={cn(
                                                                 "px-6 py-3 rounded-full text-[14px] font-black transition-all whitespace-nowrap border-2",
                                                                 activeCraftFilter === serviceId
-                                                                    ? "bg-black border-black text-white"
+                                                                    ? "bg-[#01A083] border-[#008f75] text-white"
                                                                     : "bg-white border-neutral-100 text-neutral-900 hover:border-neutral-200"
                                                             )}
                                                         >
@@ -3461,7 +3166,7 @@ export default function ProviderPage() {
                                     <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 flex-1 min-h-0">
                                         <div className="lg:col-span-4 h-full min-h-0 overflow-y-auto pr-1">
                                             {isLoading ? (
-                                                <div className="bg-white rounded-[40px] h-[320px] animate-pulse border border-neutral-100 relative overflow-hidden">
+                                                <div className="bg-white rounded-[40px] h-[320px] border border-neutral-100 relative overflow-hidden">
                                                     <div className="absolute inset-0 bg-gradient-to-r from-transparent via-neutral-100/60 to-transparent -translate-x-full animate-[shimmer_2s_infinite]" />
                                                 </div>
                                             ) : filteredJobs.length === 0 ? (
@@ -3678,7 +3383,7 @@ export default function ProviderPage() {
                                                                     animate={{ opacity: 1, y: 0, scale: 1 }}
                                                                     exit={{ opacity: 0, y: -8, scale: 0.97 }}
                                                                     transition={{ duration: 0.18 }}
-                                                                    className="absolute inset-x-6 top-0 z-[100] bg-white rounded-2xl border border-neutral-200 overflow-hidden shadow-2xl"
+                                                                    className="absolute inset-x-6 top-0 z-[100] bg-white rounded-2xl border border-neutral-200 overflow-hidden"
                                                                 >
                                                                     {/* Year row */}
                                                                     <div className="flex items-center justify-between px-5 py-4 border-b border-neutral-100">
@@ -3710,7 +3415,7 @@ export default function ProviderPage() {
                                                                                     }}
                                                                                     className={cn(
                                                                                         "py-3 rounded-xl text-[12px] font-black uppercase tracking-widest transition-all",
-                                                                                        isSelectedMonth ? "bg-black text-white" : "bg-neutral-50 text-neutral-400 hover:bg-neutral-100",
+                                                                                        isSelectedMonth ? "bg-[#01A083] text-white" : "bg-neutral-50 text-neutral-400 hover:bg-neutral-100",
                                                                                         isNowMonth && !isSelectedMonth && "border border-neutral-200"
                                                                                     )}
                                                                                 >
@@ -3732,90 +3437,60 @@ export default function ProviderPage() {
                                                                     exit={{ opacity: 0 }}
                                                                     className="space-y-8 pt-4 pb-32"
                                                                 >
-                                                                    <div className="px-6 relative">
-                                                                        <button
+                                                                    <div className="space-y-3 pt-4 pb-32 px-5">
+                                                                        {/* Card 1: Performance Alert / Status */}
+                                                                        <div className="bg-white border border-[#C5C5C5] rounded-lg p-4 flex flex-col items-start text-left">
+                                                                            <div className="flex items-center gap-2 mb-2">
+                                                                                {healthScore < 80 && <div className="text-[#E51B24]"><AlertCircle size={16} /></div>}
+                                                                                <h3 className="text-[14px] font-bold text-black">{t({ en: 'Global Performance', fr: 'Performance Globale' })}</h3>
+                                                                            </div>
+                                                                            <p className="text-[13px] text-neutral-800 mb-4 leading-relaxed">
+                                                                                {healthScore >= 90 ? t({ en: 'You are an Elite Bricoler. Your account is performing flawlessly. Keep up the excellent work to maintain top ranking.', fr: 'Vous êtes un Bricoleur Élite. Votre compte est impeccable. Continuez ainsi pour maintenir le meilleur classement.' }) : healthScore >= 70 ? t({ en: 'Your account is active and performing well. Complete more missions to reach Elite status.', fr: 'Votre compte est actif et performant. Réalisez plus de missions pour atteindre le statut Élite.' }) : t({ en: 'Your global performance score needs attention. Complete more missions and maintain excellent client ratings to increase your visibility.', fr: 'Votre score de performance globale nécessite de l\'attention. Réalisez plus de missions avec dexcellentes notes pour augmenter votre visibilité.' })}
+                                                                            </p>
+                                                                            <button 
+                                                                                onClick={() => setPerformanceDetail('operational')}
+                                                                                className="bg-[#0064e0] text-white text-[13px] font-bold w-full py-2.5 rounded hover:bg-[#0052b8] transition-colors"
+                                                                            >
+                                                                                {t({ en: 'View efficiency details', fr: 'Voir les détails d\'efficacité' })}
+                                                                            </button>
+                                                                        </div>
+
+                                                                        {/* Card 2: Earnings */}
+                                                                        <div 
                                                                             onClick={() => setPerformanceDetail('financial')}
-                                                                            className="absolute top-0 right-6 w-12 h-12 bg-[#219178] text-white rounded-full flex items-center justify-center shadow-lg active:scale-95 transition-all z-20"
+                                                                            className="bg-white border border-[#C5C5C5] rounded-lg p-4 flex flex-col justify-center cursor-pointer hover:bg-neutral-50"
                                                                         >
-                                                                            <Banknote size={24} />
-                                                                        </button>
-                                                                        <div className="p-10 bg-white rounded-[15px] border border-[#C5C5C5] flex flex-col items-center text-center">
-                                                                            <div className="w-[120px] h-[120px] rounded-full bg-white shadow-[0_8px_30px_rgba(0,0,0,0.04)] flex items-center justify-center relative mb-6">
-                                                                                <span className="text-[40px] font-[1000] text-black tracking-tighter">{healthScore}</span>
-                                                                                <svg className="absolute inset-0 w-full h-full -rotate-90">
-                                                                                    <circle cx="60" cy="60" r="54" fill="none" stroke="#E5E5E5" strokeWidth="8" />
-                                                                                    <motion.circle
-                                                                                        cx="60" cy="60" r="54" fill="none" stroke="black" strokeWidth="8" strokeDasharray="339.29"
-                                                                                        initial={{ strokeDashoffset: 339.29 }}
-                                                                                        animate={{ strokeDashoffset: 339.29 - (339.29 * healthScore / 100) }}
-                                                                                        transition={{ duration: 1.2, ease: "easeOut" }}
-                                                                                        strokeLinecap="round"
-                                                                                    />
-                                                                                </svg>
+                                                                            <div className="flex justify-between items-center mb-1">
+                                                                                <span className="text-[12px] text-neutral-500 font-medium">{t({ en: 'Total Net Earnings', fr: 'Gains nets totals' })}</span>
+                                                                                <div className="flex items-center gap-1">
+                                                                                    <span className="text-[12px] text-neutral-500">{t({ en: 'No spending limit', fr: 'Aucune limite de gain' })}</span>
+                                                                                    <ChevronRight size={14} className="text-neutral-400" />
+                                                                                </div>
                                                                             </div>
-                                                                            <div className="space-y-1 mb-8">
-                                                                                <div className="inline-flex px-3 py-1 bg-black rounded-full mb-2">
-                                                                                    <span className="text-white text-[10px] font-black uppercase tracking-[0.2em]">{statusLabel}</span>
-                                                                                </div>
-                                                                                <h2 className="text-black text-[22px] font-[1000] tracking-tight">{t({ en: 'Global Performance', fr: 'Performance Globale' })}</h2>
-                                                                                <p className="text-neutral-500 text-[13px] font-extrabold leading-relaxed px-4">
-                                                                                    {healthScore > 80 ? t({ en: 'You are among the top tier providers!', fr: 'Vous faites partie des meilleurs prestataires !' }) : t({ en: 'Complete more missions to boost your score', fr: 'Réalisez plus de missions pour booster votre score' })}
-                                                                                </p>
-                                                                            </div>
-                                                                            <div className="mt-8 grid grid-cols-2 gap-8 w-full border-t border-neutral-200 pt-6">
-                                                                                <div>
-                                                                                    <p className="text-neutral-400 text-[10px] uppercase font-black tracking-widest mb-0.5">{t({ en: 'Missions', fr: 'Missions' })}</p>
-                                                                                    <p className="text-black text-[16px] font-black">{rDone}</p>
-                                                                                </div>
-                                                                                <div>
-                                                                                    <p className="text-neutral-400 text-[10px] uppercase font-black tracking-widest mb-0.5">{t({ en: 'Rating', fr: 'Note' })}</p>
-                                                                                    <p className="text-black text-[16px] font-black">{Number(avgRating) > 0 ? avgRating : '--'}</p>
-                                                                                </div>
+                                                                            <div className="text-[20px] font-bold text-black mt-1">
+                                                                                {netEarnings.toFixed(2)} <span className="text-[14px]">MAD</span>
                                                                             </div>
                                                                         </div>
-                                                                    </div>
 
-                                                                    <div className="px-6 space-y-3">
-                                                                        <motion.div
-                                                                            onClick={() => setPerformanceDetail('financial')}
-                                                                            whileTap={{ scale: 0.98 }}
-                                                                            className="p-5 bg-white rounded-[13px] border border-[#C5C5C5] cursor-pointer flex items-center justify-between group"
+                                                                        {/* Card 3: Score / Rating */}
+                                                                        <div 
+                                                                            onClick={() => setPerformanceDetail('reputation')}
+                                                                            className="bg-white border border-[#C5C5C5] rounded-lg p-4 cursor-pointer hover:bg-neutral-50"
                                                                         >
-                                                                            <div className="flex items-center gap-4">
-                                                                                <div className="w-12 h-12 bg-emerald-100 rounded-xl flex items-center justify-center text-emerald-700">
-                                                                                    <Wallet size={24} />
-                                                                                </div>
-                                                                                <div>
-                                                                                    <p className="text-[11px] font-black text-neutral-400 uppercase tracking-widest leading-none mb-1">{t({ en: 'Your earnings', fr: 'Vos gains' })}</p>
-                                                                                    <div className="flex items-baseline gap-1">
-                                                                                        <span className="text-[20px] font-black text-black">{netEarnings.toFixed(0)}</span>
-                                                                                        <span className="text-[12px] font-black text-neutral-300 uppercase">{t({ en: 'MAD', fr: 'MAD' })}</span>
-                                                                                    </div>
-                                                                                </div>
+                                                                            <div className="flex justify-between items-center w-full mb-4">
+                                                                                <span className="text-[12px] text-neutral-500 font-medium">{t({ en: 'Opportunity Score', fr: 'Score d\'opportunité' })}</span>
+                                                                                <ChevronRight size={14} className="text-neutral-400" />
                                                                             </div>
-                                                                            <ChevronRight size={18} className="text-neutral-300 group-hover:text-black transition-colors" />
-                                                                        </motion.div>
-
-                                                                        <div className="grid grid-cols-2 gap-3">
-                                                                            <motion.div
-                                                                                onClick={() => setPerformanceDetail('reputation')}
-                                                                                whileTap={{ scale: 0.98 }}
-                                                                                className="p-5 bg-white rounded-[13px] border border-[#C5C5C5] cursor-pointer group"
-                                                                            >
-                                                                                <Star size={20} className="text-[#FFC244] mb-3" fill="#FFC244" />
-                                                                                <p className="text-neutral-500 text-[11px] font-black uppercase tracking-widest mb-0.5">{t({ en: 'Rating', fr: 'Note' })}</p>
-                                                                                <span className="text-[20px] font-black text-black">{Number(avgRating) > 0 ? avgRating : '--'}/5</span>
-                                                                            </motion.div>
-
-                                                                            <motion.div
-                                                                                onClick={() => setPerformanceDetail('operational')}
-                                                                                whileTap={{ scale: 0.98 }}
-                                                                                className="p-5 bg-white rounded-[13px] border border-[#C5C5C5] cursor-pointer group"
-                                                                            >
-                                                                                <TrendingUp size={20} className="text-black mb-3" />
-                                                                                <p className="text-neutral-400 text-[11px] font-black uppercase tracking-widest mb-0.5">{t({ en: 'Efficiency', fr: 'Efficacité' })}</p>
-                                                                                <span className="text-[20px] font-black text-black">{completionRate}%</span>
-                                                                            </motion.div>
+                                                                            <div className="flex items-center justify-between">
+                                                                                <div className="flex items-center gap-3">
+                                                                                    <div className="w-8 h-8 rounded-full border-2 border-neutral-300 flex items-center justify-center -rotate-45 relative">
+                                                                                        <div className="absolute inset-0 border-b-2 border-l-2 border-neutral-100 rounded-full"></div>
+                                                                                        <span className="text-[11px] font-bold text-neutral-600 rotate-45">{avgRating || 0.0}</span>
+                                                                                    </div>
+                                                                                    <span className="text-[13px] font-medium text-neutral-500">{healthScore} {t({ en: 'points', fr: 'points' })}</span>
+                                                                                </div>
+                                                                                <div className="text-[13px] font-medium text-neutral-500">{rDone} {t({ en: 'missions', fr: 'missions' })}</div>
+                                                                            </div>
                                                                         </div>
                                                                     </div>
 
@@ -3867,7 +3542,7 @@ export default function ProviderPage() {
                                                                         {performanceDetail === 'financial' && (
                                                                             <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
                                                                                 {/* TOP CARD: YOUR EARNINGS */}
-                                                                                <div className="p-8 bg-neutral-900 rounded-[28px] relative overflow-hidden group shadow-xl">
+                                                                                <div className="p-8 bg-[#01A083] rounded-[28px] relative overflow-hidden group">
                                                                                     <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -mr-16 -mt-16 blur-2xl" />
                                                                                     <div className="relative z-10">
                                                                                         <p className="text-white/60 text-[11px] font-black uppercase tracking-widest mb-2">{t({ en: 'Your earnings', fr: 'Vos gains' })}</p>
@@ -3891,7 +3566,7 @@ export default function ProviderPage() {
                                                                                     </div>
                                                                                     <div className="p-6 rounded-[24px] border border-neutral-100 bg-neutral-50/50 flex flex-col justify-between h-[120px]">
                                                                                         <p className="text-[11px] font-black text-neutral-400 uppercase tracking-widest">{t({ en: 'Referral Bonus', fr: 'Bonus Parrainage' })}</p>
-                                                                                        <p className="text-[24px] font-black text-[#219178] leading-none">+{referralBonus} <span className="text-[14px] text-[#219178]/30 uppercase">{t({ en: 'MAD', fr: 'MAD' })}</span></p>
+                                                                                        <p className="text-[24px] font-black text-[#01A083] leading-none">+{referralBonus} <span className="text-[14px] text-[#01A083]/30 uppercase">{t({ en: 'MAD', fr: 'MAD' })}</span></p>
                                                                                     </div>
                                                                                 </div>
 
@@ -3902,7 +3577,7 @@ export default function ProviderPage() {
                                                                                     </div>
                                                                                 </div>
 
-                                                                                <div className="p-7 bg-black rounded-[15px] text-white shadow-xl shadow-black/20 space-y-6 relative overflow-hidden">
+                                                                                <div className="p-7 bg-[#01A083] rounded-[15px] text-white border border-[#008f75] space-y-6 relative overflow-hidden">
                                                                                     <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -mr-16 -mt-16 blur-2xl" />
                                                                                     <div className="relative z-10">
                                                                                         <div className="flex items-center justify-between mb-2">
@@ -4010,7 +3685,7 @@ export default function ProviderPage() {
                                                                                                                 setIsSubmittingSettlement(false);
                                                                                                             }
                                                                                                         }}
-                                                                                                        className="flex-1 py-4 bg-[#219178] hover:bg-[#008C74] text-white rounded-xl font-black text-[14px] flex items-center justify-center gap-2 transition-all shadow-lg active:scale-95 disabled:opacity-50"
+                                                                                                        className="flex-1 py-4 bg-[#01A083] hover:bg-[#008C74] text-white rounded-xl font-black text-[14px] flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-50"
                                                                                                     >
                                                                                                         {isSubmittingSettlement ? <RefreshCw className="animate-spin" size={18} /> : <Send size={18} />}
                                                                                                         {t({ en: 'Envoyer', fr: 'Envoyer' })}
@@ -4043,7 +3718,7 @@ export default function ProviderPage() {
                                                                                     </div>
                                                                                     <div className="space-y-2">
                                                                                         <div className="w-full h-2 bg-neutral-200 rounded-full overflow-hidden">
-                                                                                            <motion.div initial={{ width: 0 }} animate={{ width: `${completionRate}%` }} className="h-full bg-[#219178]" />
+                                                                                            <motion.div initial={{ width: 0 }} animate={{ width: `${completionRate}%` }} className="h-full bg-[#01A083]" />
                                                                                         </div>
                                                                                     </div>
                                                                                 </div>
@@ -4119,14 +3794,14 @@ export default function ProviderPage() {
                                                                         {/* MARKETING DETAIL */}
                                                                         {performanceDetail === 'marketing' && (
                                                                             <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                                                                                <div className="bg-[#219178] p-8 rounded-[32px] text-white relative overflow-hidden shadow-lg shadow-emerald-900/10">
+                                                                                <div className="bg-[#01A083] p-8 rounded-[32px] text-white relative overflow-hidden border border-[#008f75]">
                                                                                     <h3 className="text-[18px] font-black mb-2">{t({ en: 'Visibility Metrics', fr: 'Indicateurs de visibilité' })}</h3>
                                                                                     <p className="text-white/80 text-[13px] font-medium leading-relaxed">
                                                                                         {t({ en: 'We are currently calibrating your search performance data. You will soon see exactly how many times your profile appears in search results.', fr: 'Nous calibrons actuellement vos données de performance dans la recherche. Vous verrez bientôt exactement combien de fois votre profil apparaît dans les résultats.' })}
                                                                                     </p>
                                                                                     <div className="mt-6 flex items-center gap-3 px-3 py-1.5 bg-white rounded-full w-fit">
-                                                                                        <div className="w-1.5 h-1.5 rounded-full bg-[#219178]" />
-                                                                                        <span className="text-[10px] font-black uppercase tracking-widest text-[#219178]">{t({ en: 'BETA Access', fr: 'Accès BÊTA' })}</span>
+                                                                                        <div className="w-1.5 h-1.5 rounded-full bg-[#01A083]" />
+                                                                                        <span className="text-[10px] font-black uppercase tracking-widest text-[#01A083]">{t({ en: 'BETA Access', fr: 'Accès BÊTA' })}</span>
                                                                                     </div>
                                                                                 </div>
 
@@ -4147,7 +3822,7 @@ export default function ProviderPage() {
                                                                             <div className="space-y-8">
                                                                                 <div className="p-8 bg-[#FFC244] rounded-[32px] text-black">
                                                                                     <div className="flex items-center gap-4 mb-4">
-                                                                                        <div className="w-10 h-10 bg-black text-[#FFC244] rounded-xl flex items-center justify-center">
+                                                                                        <div className="w-10 h-10 bg-[#01A083] text-white rounded-xl flex items-center justify-center">
                                                                                             <Zap size={20} />
                                                                                         </div>
                                                                                         <h3 className="text-[18px] font-black">{t({ en: 'Unlock Rewards', fr: 'Débloquer des récompenses' })}</h3>
@@ -4155,7 +3830,7 @@ export default function ProviderPage() {
                                                                                     <p className="text-[13px] font-bold text-black/60 leading-relaxed mb-8">{t({ en: 'Refer other Bricolers and earn 50 MAD for each one who completes their first mission.', fr: 'Parrainez d’autres Bricoleurs et gagnez 50 MAD pour chacun qui termine sa première mission.' })}</p>
                                                                                     <button
                                                                                         onClick={() => { setPerformanceDetail('none'); setShowPromotePage(true); }}
-                                                                                        className="w-full py-5 bg-black text-white rounded-[20px] text-[14px] font-black shadow-lg"
+                                                                                        className="w-full py-5 bg-[#01A083] text-white rounded-[20px] text-[14px] font-black border border-[#008f75]"
                                                                                     >
                                                                                         {t({ en: 'Open Referrals', fr: 'Ouvrir les parrainages' })}
                                                                                     </button>
@@ -4309,14 +3984,6 @@ export default function ProviderPage() {
                                             <div className="flex-1 min-h-0 bg-[#FAFAFA] flex flex-col">
                                                 <AvailabilityTab
                                                     userData={userData}
-                                                    setUserData={setUserData as any}
-                                                    horizontalSelectedDate={horizontalSelectedDate}
-                                                    setHorizontalSelectedDate={setHorizontalSelectedDate}
-                                                    handleSaveSlotsManual={handleSaveSlotsManual}
-                                                    AVAILABILITY_SLOTS={AVAILABILITY_SLOTS}
-                                                    TIME_SLOTS={TIME_SLOTS}
-                                                    orders={acceptedJobs}
-                                                    showRoutineModal={showRoutineModal}
                                                     setShowRoutineModal={setShowRoutineModal}
                                                 />
                                             </div>
@@ -4381,119 +4048,13 @@ export default function ProviderPage() {
 
                     {
                         activeNav === 'messages' && (
-                            <motion.div
-                                key="messages-tab-content"
-                                className={cn(
-                                    "h-full flex flex-col pt-4",
-                                    isMobileLayout ? "px-0" : "px-6"
-                                )}>
-                                {/* Header Section */}
-                                <div className={cn(
-                                    "flex flex-col gap-6 mb-6",
-                                    isMobileLayout ? "px-6" : ""
-                                )}>
-
-                                    {/* Search Bar */}
-                                    <div className="flex items-center gap-3 bg-neutral-50 rounded-[14px] px-4 py-3 border border-neutral-100">
-                                        <Search size={18} className="text-neutral-400" />
-                                        <input
-                                            type="text"
-                                            placeholder={t({ en: 'Search...', fr: 'Rechercher...' })}
-                                            value={searchQuery}
-                                            onChange={(e) => setSearchQuery(e.target.value)}
-                                            className="bg-transparent border-none outline-none text-[15px] font-bold text-neutral-900 w-full placeholder:text-neutral-400"
-                                        />
-                                    </div>
-
-                                    {/* Filter Chips */}
-                                    <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
-                                        <button
-                                            onClick={() => setActiveCraftFilter('all')}
-                                            className={cn(
-                                                "px-5 py-2.5 rounded-full text-[13px] font-black transition-all whitespace-nowrap border-1.5",
-                                                activeCraftFilter === 'all'
-                                                    ? "bg-black border-black text-white"
-                                                    : "bg-white border-neutral-100 text-neutral-900"
-                                            )}
-                                        >
-                                            {t({ en: 'All', fr: 'Tout' })}
-                                        </button>
-                                        {Array.from(new Set(acceptedJobs.map(j => j.service).filter(Boolean))).map(service => (
-                                            <button
-                                                key={`filter-${service}`}
-                                                onClick={() => setActiveCraftFilter(service)}
-                                                className={cn(
-                                                    "px-5 py-2.5 rounded-full text-[13px] font-black transition-all whitespace-nowrap border-1.5",
-                                                    activeCraftFilter === service
-                                                        ? "bg-black border-black text-white"
-                                                        : "bg-white border-neutral-100 text-neutral-900"
-                                                )}
-                                            >
-                                                {service}
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-
-                                {/* Conversations List */}
-                                <div className="flex-1 overflow-y-auto no-scrollbar pb-32">
-                                    {acceptedJobs.length === 0 ? (
-                                        <div className="flex flex-col items-center justify-center py-20 px-6 text-center">
-                                            <div className="w-20 h-20 bg-neutral-50 rounded-[32px] flex items-center justify-center mb-6">
-                                                <MessageSquare size={36} className="text-neutral-200" />
-                                            </div>
-                                            <h2 className="text-xl font-black text-neutral-900 mb-2">{t({ en: 'No messages yet', fr: 'Aucun message pour le moment' })}</h2>
-                                            <p className="text-neutral-500 text-sm font-medium max-w-[240px]">{t({ en: 'Messages about your active jobs will appear here.', fr: 'Les messages concernant vos missions actives apparaîtront ici.' })}</p>
-                                        </div>
-                                    ) : (
-                                        <div className="flex flex-col">
-                                            {acceptedJobs
-                                                .filter(job => {
-                                                    const clientName = (job as any).clientName || '';
-                                                    const matchesSearch = clientName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                                                        job.service.toLowerCase().includes(searchQuery.toLowerCase());
-                                                    const matchesFilter = activeCraftFilter === 'all' || job.service === activeCraftFilter;
-                                                    return matchesSearch && matchesFilter;
-                                                })
-                                                .map((job) => (
-                                                    <div
-                                                        key={job.id || Math.random().toString()}
-                                                        onClick={() => setSelectedChat(job)}
-                                                        className="px-6 py-5 flex items-start gap-4 hover:bg-neutral-50 active:bg-neutral-100 transition-colors cursor-pointer border-b border-neutral-50 text-left"
-                                                    >
-                                                        <div className="w-14 h-14 rounded-[18px] bg-neutral-100 flex-shrink-0 overflow-hidden relative border border-neutral-100">
-                                                            <img
-                                                                src={job.clientAvatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${job.id || 'client'}`}
-                                                                alt="Client"
-                                                                className="w-full h-full object-cover"
-                                                            />
-                                                        </div>
-                                                        <div className="flex-1 min-w-0">
-                                                            <div className="flex items-center justify-between mb-0.5">
-                                                                <h3 className="text-[17px] font-black text-neutral-900 truncate">
-                                                                    {(job as any).clientName || 'Client'}
-                                                                </h3>
-                                                                <span className="text-[12px] font-bold text-neutral-400">18/02</span>
-                                                            </div>
-                                                            <p className="text-[14px] font-medium text-neutral-500 truncate mb-3">
-                                                                {t({ en: 'Click to check messages regarding this order...', fr: 'Cliquez pour voir les messages concernant cette commande...' })}
-                                                            </p>
-                                                            <div className="flex items-center gap-2">
-                                                                <span className="px-2 py-0.5 bg-blue-50 text-blue-600 rounded-md text-[10px] font-black uppercase tracking-wider">
-                                                                    {job.service.toUpperCase()}
-                                                                </span>
-                                                                <div className="flex items-center gap-1 text-neutral-400">
-                                                                    <MapPin size={10} />
-                                                                    <span className="text-[11px] font-bold truncate">{job.location}</span>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                ))}
-                                        </div>
-                                    )}
-                                </div>
-                            </motion.div>
+                            <div className="h-full flex flex-col pt-0">
+                                <MessagesView
+                                    orders={acceptedJobs}
+                                    currentUser={user}
+                                    isModal={false}
+                                />
+                            </div>
                         )
                     }
 
@@ -4561,7 +4122,7 @@ export default function ProviderPage() {
                                         animate={{ y: 0 }}
                                         exit={{ y: '100%' }}
                                         transition={{ type: 'spring', damping: 28, stiffness: 300 }}
-                                        className="relative bg-white w-full rounded-t-[32px] p-6 pb-24 shadow-xl border-t border-neutral-100 max-h-[80vh] overflow-y-auto"
+                                        className="relative bg-white w-full rounded-t-[32px] p-6 pb-24 border-t border-neutral-100 max-h-[80vh] overflow-y-auto"
                                     >
                                         <div className="w-10 h-1 bg-neutral-200 rounded-full mx-auto mb-6" />
                                         <div className="flex items-center gap-3 mb-4">
@@ -4587,7 +4148,7 @@ export default function ProviderPage() {
                                                 value={redistributeReason}
                                                 onChange={(e) => setRedistributeReason(e.target.value)}
                                                 placeholder={t({ en: 'Describe your urgent circumstance clearly...', fr: 'Décrivez clairement votre situation urgente...' })}
-                                                className="w-full px-4 py-3 bg-neutral-50 border border-neutral-200 rounded-2xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-black/10 resize-none min-h-[100px]"
+                                                className="w-full px-4 py-3 bg-neutral-50 border border-neutral-200 rounded-2xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#01A083]/10 resize-none min-h-[100px]"
                                             />
                                         </div>
 
@@ -4638,7 +4199,7 @@ export default function ProviderPage() {
                                                         setIsRedistributing(false);
                                                     }
                                                 }}
-                                                className="flex-1 h-12 rounded-2xl bg-black text-white text-sm font-black disabled:opacity-40 disabled:cursor-not-allowed hover:bg-neutral-800 transition-colors"
+                                                className="flex-1 h-12 rounded-2xl bg-[#01A083] text-white text-sm font-black disabled:opacity-40 disabled:cursor-not-allowed transition-colors border border-[#008f75]"
                                             >
                                                 {isRedistributing ? t({ en: 'Processing…', fr: 'En cours…' }) : t({ en: 'Confirm Redistribution', fr: 'Confirmer la redistribution' })}
                                             </button>
@@ -4660,7 +4221,7 @@ export default function ProviderPage() {
                                         animate={{ y: 0 }}
                                         exit={{ y: '100%' }}
                                         transition={{ type: 'spring', damping: 28, stiffness: 300 }}
-                                        className="relative bg-white w-full rounded-t-[32px] p-6 pb-24 shadow-xl border-t border-neutral-100"
+                                        className="relative bg-white w-full rounded-t-[32px] p-6 pb-24 border-t border-neutral-100"
                                     >
                                         <div className="w-10 h-1 bg-neutral-200 rounded-full mx-auto mb-6" />
                                         <div className="text-center mb-6">
@@ -4676,7 +4237,7 @@ export default function ProviderPage() {
                                                     <Star
                                                         size={40}
                                                         strokeWidth={1.5}
-                                                        className={cn('transition-colors', s <= clientRating ? 'text-black fill-black' : 'text-neutral-300')}
+                                                        className={cn('transition-colors', s <= clientRating ? 'text-[#01A083] fill-[#01A083]' : 'text-neutral-300')}
                                                     />
                                                 </button>
                                             ))}
@@ -4688,7 +4249,7 @@ export default function ProviderPage() {
                                                 value={clientRatingComment}
                                                 onChange={(e) => setClientRatingComment(e.target.value)}
                                                 placeholder={t({ en: 'How was the client to work with?', fr: 'Comment était le client ?' })}
-                                                className="w-full px-4 py-3 bg-neutral-50 border border-neutral-200 rounded-2xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-black/10 resize-none min-h-[80px]"
+                                                className="w-full px-4 py-3 bg-neutral-50 border border-neutral-200 rounded-2xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#01A083]/10 resize-none min-h-[80px]"
                                             />
                                         </div>
 
@@ -4711,7 +4272,7 @@ export default function ProviderPage() {
                                                     setIsSubmittingRating(false);
                                                 }
                                             }}
-                                            className="w-full h-14 rounded-2xl bg-black text-white text-[15px] font-black disabled:opacity-40 disabled:cursor-not-allowed hover:bg-neutral-800 transition-colors"
+                                            className="w-full h-14 rounded-2xl bg-[#01A083] text-white text-[15px] font-black disabled:opacity-40 disabled:cursor-not-allowed transition-colors border border-[#008f75]"
                                         >
                                             {isSubmittingRating ? t({ en: 'Submitting…', fr: 'Envoi…' }) : `${t({ en: 'Submit', fr: 'Envoyer' })} ${clientRating > 0 ? `${clientRating}★` : t({ en: 'Rating', fr: 'l\'évaluation' })}`}
                                         </button>
@@ -4721,127 +4282,32 @@ export default function ProviderPage() {
                         }
                     </AnimatePresence >
 
-
-
                     {/* Chat and Other Overlays */}
                     <AnimatePresence key="other-overlays-presence">
-                        {
-                            selectedChat && (
-                                <motion.div
-                                    key="chat-modal-overlay"
-                                    initial={{ opacity: 0 }}
-                                    animate={{ opacity: 1 }}
-                                    exit={{ opacity: 0 }}
-                                    className="fixed inset-0 z-[110] flex items-center justify-center p-4"
-                                >
-                                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setSelectedChat(null)} className="absolute inset-0 bg-black/60 backdrop-blur-md" />
-                                    <motion.div
-                                        initial={{ opacity: 0, scale: 0.95, y: 30 }}
-                                        animate={{ opacity: 1, scale: 1, y: 0 }}
-                                        exit={{ opacity: 0, scale: 0.95, y: 30 }}
-                                        className="relative bg-white w-full max-w-2xl h-[700px] rounded-[40px] shadow-xl border border-neutral-100 overflow-hidden flex flex-col"
-                                    >
-                                        {/* Chat Header */}
-                                        <div className="p-6 border-b border-neutral-100 flex items-center justify-between">
-                                            <div className="flex items-center gap-4">
-                                                <div className="w-12 h-12 rounded-full bg-neutral-100 overflow-hidden">
-                                                    <img src={selectedChat.clientAvatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${selectedChat.id}`} alt="Client" />
-                                                </div>
-                                                <div>
-                                                    <h3 className="font-black text-neutral-900 leading-tight">
-                                                        {selectedChat.clientName || 'Client'}
-                                                    </h3>
-                                                    <p className="text-[10px] font-bold text-green-500 uppercase tracking-widest">{t({ en: 'Online', fr: 'En ligne' })}</p>
-                                                </div>
-                                            </div>
-                                            <div className="flex items-center gap-2">
-
-                                                <button onClick={() => setSelectedChat(null)} className="p-2 hover:bg-neutral-50 rounded-full transition-all text-neutral-400 hover:text-neutral-900">
-                                                    <X size={20} />
-                                                </button>
-                                            </div>
-                                        </div>
-
-                                        {/* Chat Context Box */}
-                                        <div className="bg-neutral-50 p-4 border-b border-neutral-100 flex items-center justify-between">
-                                            <div className="flex items-center gap-3">
-                                                <div className="p-2 bg-white rounded-xl border border-neutral-100 shadow-sm">
-                                                    <Briefcase size={16} className="text-black" />
-                                                </div>
-                                                <div>
-                                                    <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest">{t({ en: 'Subject', fr: 'Objet' })}</p>
-                                                    <p className="text-xs font-bold text-neutral-900">{selectedChat.service} in {selectedChat.location}</p>
-                                                </div>
-                                            </div>
-                                            <div className="text-right">
-                                                <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest">{t({ en: 'Agreed Price', fr: 'Prix convenu' })}</p>
-                                                <p className="text-xs font-bold text-black">{selectedChat.price} {t({ en: 'MAD', fr: 'MAD' })}</p>
-                                            </div>
-                                        </div>
-
-                                        {/* Chat Messages */}
-                                        <div className="flex-1 overflow-y-auto p-8 space-y-6 bg-white">
-                                            {chatMessages.length === 0 ? (
-                                                <div className="flex flex-col items-center justify-center h-full opacity-40">
-                                                    <MessageSquare size={48} className="mb-2" />
-                                                    <p className="text-sm font-bold">{t({ en: 'No messages yet', fr: 'Aucun message pour l\'instant' })}</p>
-                                                </div>
-                                            ) : (
-                                                chatMessages.map((msg: any) => {
-                                                    const isProvider = msg.senderId === user?.uid;
-                                                    return (
-                                                        <div key={msg.id} className={cn("flex gap-3 max-w-[85%]", isProvider ? "ml-auto flex-row-reverse" : "")}>
-                                                            {!isProvider && (
-                                                                <div className="w-8 h-8 rounded-full bg-neutral-100 flex-shrink-0 overflow-hidden mt-auto">
-                                                                    <img src={selectedChat.clientAvatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${selectedChat.id}`} alt="Client" />
-                                                                </div>
-                                                            )}
-                                                            <div className={cn(
-                                                                "p-4 rounded-3xl",
-                                                                isProvider ? "bg-black text-white rounded-br-none" : "bg-neutral-50 text-neutral-900 rounded-bl-none"
-                                                            )}>
-                                                                <p className="text-sm font-medium leading-relaxed">{msg.text}</p>
-                                                                <span className={cn("text-[8px] font-bold uppercase mt-1.5 block", isProvider ? "text-white/40 text-right" : "text-neutral-400")}>
-                                                                    {msg.timestamp?.toDate ? msg.timestamp.toDate().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Just now'}
-                                                                </span>
-                                                            </div>
-                                                        </div>
-                                                    );
-                                                })
-                                            )}
-                                            <div ref={chatEndRef} />
-                                        </div>
-
-                                        {/* Chat Input */}
-                                        <div className="p-6 border-t border-neutral-100 bg-white">
-                                            <form
-                                                onSubmit={handleSubmitChatMessage}
-                                                className="relative"
-                                            >
-                                                <input
-                                                    type="text"
-                                                    placeholder={t({ en: 'Write your message...', fr: 'Écrivez votre message...' })}
-                                                    value={chatMessage}
-                                                    onChange={(e) => setChatMessage(e.target.value)}
-                                                    className="w-full pl-6 pr-16 py-4 bg-neutral-50 border border-neutral-100 rounded-2xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-black/5 transition-all"
-                                                />
-                                                <button
-                                                    type="submit"
-                                                    className="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 bg-black text-white rounded-xl flex items-center justify-center hover:scale-105 active:scale-95 transition-all"
-                                                >
-                                                    <Send size={18} />
-                                                </button>
-                                            </form>
-                                        </div>
-                                    </motion.div>
-                                </motion.div>
-                            )
-                        }
+                        {selectedChat && (
+                            <motion.div
+                                key="chat-modal-overlay"
+                                initial={{ opacity: 0, x: '100%' }}
+                                animate={{ opacity: 1, x: 0 }}
+                                exit={{ opacity: 0, x: '100%' }}
+                                transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+                                className="fixed inset-0 z-[5100] bg-white flex flex-col"
+                                style={{ height: 'calc(100% - 82px - env(safe-area-inset-bottom))', bottom: 'calc(82px + env(safe-area-inset-bottom))', top: 0 }}
+                            >
+                                <MessagesView
+                                    orders={acceptedJobs}
+                                    currentUser={user}
+                                    initialSelectedJobId={selectedChat?.id}
+                                    isModal={true}
+                                    onBackToOrders={() => setSelectedChat(null)}
+                                />
+                            </motion.div>
+                        )}
                         {
                             showCashOutModal && (
                                 <div key="cashout-modal" className="fixed inset-0 z-[110] flex items-center justify-center p-6 pb-20 md:pb-6">
                                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowCashOutModal(false)} className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
-                                    <motion.div initial={{ opacity: 0, scale: 0.9, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.9, y: 20 }} className="relative bg-white w-full max-w-lg rounded-[40px] p-10 shadow-xl border border-neutral-100 overflow-hidden">
+                                    <motion.div initial={{ opacity: 0, scale: 0.9, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.9, y: 20 }} className="relative bg-white w-full max-w-lg rounded-[40px] p-10 border border-neutral-100 overflow-hidden">
                                         <div className="absolute top-0 right-0 p-6">
                                             <button onClick={() => setShowCashOutModal(false)} className="p-2 hover:bg-neutral-50 rounded-full transition-colors text-neutral-400">
                                                 <X size={20} />
@@ -4856,11 +4322,11 @@ export default function ProviderPage() {
                                                 onClick={() => setCashOutMethod('bank')}
                                                 className={cn(
                                                     "p-5 rounded-2xl border-2 transition-all cursor-pointer flex items-center justify-between",
-                                                    cashOutMethod === 'bank' ? "border-black bg-neutral-50" : "border-neutral-100 opacity-60 hover:opacity-100"
+                                                    cashOutMethod === 'bank' ? "border-[#01A083] bg-neutral-50" : "border-neutral-100 opacity-60 hover:opacity-100"
                                                 )}
                                             >
                                                 <div className="flex items-center gap-4">
-                                                    <div className="w-10 h-10 bg-white rounded-xl border border-neutral-100 flex items-center justify-center shadow-sm">
+                                                    <div className="w-10 h-10 bg-white rounded-xl border border-neutral-100 flex items-center justify-center">
                                                         <Wallet size={20} className="text-blue-500" />
                                                     </div>
                                                     <div>
@@ -4868,18 +4334,18 @@ export default function ProviderPage() {
                                                         <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest">{t({ en: 'Free • 2 days', fr: 'Gratuit • 2 jours' })}</p>
                                                     </div>
                                                 </div>
-                                                {cashOutMethod === 'bank' && <CheckCircle2 size={20} className="text-black" />}
+                                                {cashOutMethod === 'bank' && <CheckCircle2 size={20} className="text-[#01A083]" />}
                                             </div>
 
                                             <div
                                                 onClick={() => setCashOutMethod('wafacash')}
                                                 className={cn(
                                                     "p-5 rounded-2xl border-2 transition-all cursor-pointer flex items-center justify-between",
-                                                    cashOutMethod === 'wafacash' ? "border-black bg-neutral-50" : "border-neutral-100 opacity-60 hover:opacity-100"
+                                                    cashOutMethod === 'wafacash' ? "border-[#01A083] bg-neutral-50" : "border-neutral-100 opacity-60 hover:opacity-100"
                                                 )}
                                             >
                                                 <div className="flex items-center gap-4">
-                                                    <div className="w-10 h-10 bg-white rounded-xl border border-neutral-100 flex items-center justify-center shadow-sm">
+                                                    <div className="w-10 h-10 bg-white rounded-xl border border-neutral-100 flex items-center justify-center">
                                                         <Navigation size={20} className="text-red-500" />
                                                     </div>
                                                     <div>
@@ -4887,7 +4353,7 @@ export default function ProviderPage() {
                                                         <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest">{t({ en: '20 MAD fee • Instant', fr: 'Frais 20 MAD • Instantané' })}</p>
                                                     </div>
                                                 </div>
-                                                {cashOutMethod === 'wafacash' && <CheckCircle2 size={20} className="text-black" />}
+                                                {cashOutMethod === 'wafacash' && <CheckCircle2 size={20} className="text-[#01A083]" />}
                                             </div>
                                         </div>
 
@@ -4896,7 +4362,7 @@ export default function ProviderPage() {
                                                 <label className="block text-xs font-black text-neutral-400 uppercase tracking-widest mb-2">{t({ en: 'Payout Details', fr: 'Informations de paiement' })}</label>
                                                 <textarea
                                                     placeholder={cashOutMethod === 'bank' ? t({ en: 'Enter your 24-digit RIB number...', fr: 'Entrez votre numéro RIB de 24 chiffres...' }) : t({ en: 'Enter your Full Name and Phone Number...', fr: 'Entrez votre nom complet et numéro de téléphone...' })}
-                                                    className="w-full px-5 py-4 bg-neutral-50 border border-neutral-100 rounded-2xl focus:outline-none focus:ring-2 focus:ring-black transition-all min-h-[100px] text-sm"
+                                                    className="w-full px-5 py-4 bg-neutral-50 border border-neutral-100 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#01A083]/20 transition-all min-h-[100px] text-sm"
                                                 />
                                             </div>
                                             <button
@@ -4921,7 +4387,7 @@ export default function ProviderPage() {
                             showProfileModal && (
                                 <div key="profile-modal" className="fixed inset-0 z-[110] flex items-center justify-center p-6">
                                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowProfileModal(false)} className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
-                                    <motion.div initial={{ opacity: 0, scale: 0.9, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.9, y: 20 }} className="relative bg-white w-full max-w-lg rounded-[40px] p-10 shadow-xl border border-neutral-100 overflow-hidden">
+                                    <motion.div initial={{ opacity: 0, scale: 0.9, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.9, y: 20 }} className="relative bg-white w-full max-w-lg rounded-[40px] p-10 border border-neutral-100 overflow-hidden">
                                         <div className="absolute top-0 right-0 p-6">
                                             <button onClick={() => setShowProfileModal(false)} className="p-2 hover:bg-neutral-50 rounded-full transition-colors text-neutral-400">
                                                 <X size={20} />
@@ -4938,7 +4404,7 @@ export default function ProviderPage() {
                                                     ref={nameInputRef}
                                                     type="text"
                                                     defaultValue={userData?.name || user?.displayName || ''}
-                                                    className="w-full px-5 py-4 bg-neutral-50 border border-neutral-100 rounded-2xl focus:outline-none focus:ring-2 focus:ring-black transition-all text-sm"
+                                                    className="w-full px-5 py-4 bg-neutral-50 border border-neutral-100 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#01A083]/10 transition-all text-sm"
                                                 />
                                             </div>
                                             <div className="grid grid-cols-2 gap-4">
@@ -4947,7 +4413,7 @@ export default function ProviderPage() {
                                                     <select
                                                         ref={cityInputRef}
                                                         defaultValue={providerCity}
-                                                        className="w-full px-5 py-4 bg-neutral-50 border border-neutral-100 rounded-2xl focus:outline-none focus:ring-2 focus:ring-black transition-all text-sm appearance-none cursor-pointer hover:bg-neutral-100 font-bold"
+                                                        className="w-full px-5 py-4 bg-neutral-50 border border-neutral-100 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#01A083]/10 transition-all text-sm appearance-none cursor-pointer hover:bg-neutral-100 font-bold"
                                                     >
                                                         <option disabled>{t({ en: 'Select City', fr: 'Choisir une ville' })}</option>
                                                         <option>{t({ en: 'Casablanca', fr: 'Casablanca' })}</option>
@@ -4993,7 +4459,7 @@ export default function ProviderPage() {
                                                                     setSelectedWorkAreas([...selectedWorkAreas, val]);
                                                                 }
                                                             }}
-                                                            className="appearance-none pl-3 pr-8 py-1.5 bg-black text-white rounded-full text-xs font-bold hover:bg-neutral-800 transition-colors cursor-pointer outline-none"
+                                                            className="appearance-none pl-3 pr-8 py-1.5 bg-[#01A083] text-white rounded-full text-xs font-bold hover:bg-[#008f75] transition-colors cursor-pointer outline-none"
                                                         >
                                                             <option value="" disabled>{t({ en: '+ Add Neighborhood', fr: '+ Ajouter un quartier' })}</option>
                                                             {(providerCity ? MOROCCAN_CITIES_AREAS[providerCity] || [] : [])
@@ -5020,7 +4486,7 @@ export default function ProviderPage() {
                                                                 {s?.name || sId}
                                                                 <button
                                                                     onClick={() => setTempSelectedServices(prev => prev.filter(id => id !== sId))}
-                                                                    className="p-1 hover:bg-white rounded-full transition-colors text-neutral-400 hover:text-red-500 hover:shadow-sm"
+                                                                    className="p-1 hover:bg-white rounded-full transition-colors text-neutral-400 hover:text-red-500"
                                                                 >
                                                                     <X size={12} />
                                                                 </button>
@@ -5037,7 +4503,7 @@ export default function ProviderPage() {
                                                                     setTempSelectedServices([...tempSelectedServices, val]);
                                                                 }
                                                             }}
-                                                            className="appearance-none pl-3 pr-8 py-1.5 bg-black text-white rounded-full text-xs font-bold hover:bg-neutral-800 transition-colors cursor-pointer outline-none border border-transparent focus:ring-2 focus:ring-offset-1 focus:ring-black"
+                                                            className="appearance-none pl-3 pr-8 py-1.5 bg-[#01A083] text-white rounded-full text-xs font-bold hover:bg-[#008f75] transition-colors cursor-pointer outline-none border border-transparent focus:ring-2 focus:ring-offset-1 focus:ring-[#01A083]/20"
                                                         >
                                                             <option value="" disabled>{t({ en: '+ Add Service', fr: '+ Ajouter un service' })}</option>
                                                             {getAllServices()
@@ -5063,7 +4529,7 @@ export default function ProviderPage() {
                                                     ref={whatsappInputRef}
                                                     type="tel"
                                                     defaultValue={userData?.whatsappNumber || ''}
-                                                    className="w-full px-5 py-4 bg-neutral-50 border border-neutral-100 rounded-2xl focus:outline-none focus:ring-2 focus:ring-black transition-all text-sm"
+                                                    className="w-full px-5 py-4 bg-neutral-50 border border-neutral-100 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#01A083]/10 transition-all text-sm"
                                                 />
                                             </div>
 
@@ -5077,7 +4543,7 @@ export default function ProviderPage() {
                                                 <button
                                                     disabled={isSavingProfile}
                                                     onClick={handleSaveProfile}
-                                                    className="flex-[2] py-4 bg-black text-white font-black rounded-2xl transition-all active:scale-[0.98] disabled:opacity-40"
+                                                    className="flex-[2] py-4 bg-[#01A083] text-white font-black rounded-2xl transition-all active:scale-[0.98] disabled:opacity-40 border border-[#008f75]"
                                                 >
                                                     {isSavingProfile ? <RefreshCw className="animate-spin" size={20} /> : t({ en: 'Save Profile', fr: 'Enregistrer le profil' })}
                                                 </button>
@@ -5098,7 +4564,7 @@ export default function ProviderPage() {
                                         animate={{ y: 0 }}
                                         exit={{ y: '100%' }}
                                         transition={{ type: 'spring', damping: 28, stiffness: 300 }}
-                                        className="relative bg-white w-full rounded-t-[32px] p-6 pb-24 shadow-xl border-t border-neutral-100 max-h-[85vh] overflow-y-auto"
+                                        className="relative bg-white w-full rounded-t-[32px] p-6 pb-24 border-t border-neutral-100 max-h-[85vh] overflow-y-auto"
                                     >
                                         <div className="w-10 h-1 bg-neutral-200 rounded-full mx-auto mb-6" />
 
@@ -5116,10 +4582,10 @@ export default function ProviderPage() {
                                                             onClick={() => setNewServiceData({ ...newServiceData, id: s.id, rate: SERVICE_TIER_RATES[s.id]?.suggestedMin || 75 })}
                                                             className={cn(
                                                                 "p-4 rounded-2xl border-2 transition-all text-left flex flex-col gap-3",
-                                                                newServiceData.id === s.id ? "border-black bg-neutral-50 shadow-sm" : "border-neutral-100 hover:border-neutral-200"
+                                                                newServiceData.id === s.id ? "border-[#01A083] bg-neutral-50" : "border-neutral-100 hover:border-neutral-200"
                                                             )}
                                                         >
-                                                            <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center", newServiceData.id === s.id ? "bg-black text-white" : "bg-neutral-100 text-neutral-400")}>
+                                                            <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center", newServiceData.id === s.id ? "bg-[#01A083] text-white" : "bg-neutral-100 text-neutral-400")}>
                                                                 <s.icon size={20} />
                                                             </div>
                                                             <span className="text-[14px] font-black">{s.name}</span>
@@ -5146,7 +4612,7 @@ export default function ProviderPage() {
                                                                     max={SERVICE_TIER_RATES[newServiceData.id]?.suggestedMax || 500}
                                                                     value={newServiceData.rate}
                                                                     onChange={(e) => setNewServiceData({ ...newServiceData, rate: parseInt(e.target.value) })}
-                                                                    className="w-full h-1.5 bg-neutral-100 rounded-full appearance-none cursor-pointer accent-black"
+                                                                    className="w-full h-1.5 bg-neutral-100 rounded-full appearance-none cursor-pointer accent-[#01A083]"
                                                                 />
                                                             </div>
                                                         </div>
@@ -5159,7 +4625,7 @@ export default function ProviderPage() {
                                                             value={newServiceData.pitch}
                                                             onChange={(e) => setNewServiceData({ ...newServiceData, pitch: e.target.value })}
                                                             placeholder={t({ en: `Describe your experience in ${getServiceById(newServiceData.id)?.name}...`, fr: `Décrivez votre expérience en ${getServiceById(newServiceData.id)?.name}...` })}
-                                                            className="w-full px-5 py-4 bg-neutral-50 border border-neutral-100 rounded-2xl focus:outline-none focus:ring-2 focus:ring-black transition-all min-h-[120px] text-[15px] font-medium"
+                                                            className="w-full px-5 py-4 bg-neutral-50 border border-neutral-100 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#01A083]/10 transition-all min-h-[120px] text-[15px] font-medium"
                                                         />
                                                         <p className="text-[10px] text-neutral-400 font-medium mt-2 ml-1">{t({ en: 'Example: "I have 5 years of experience in furniture assembly and tiling."', fr: 'Exemple : "J’ai 5 ans d’expérience en montage de meubles et carrelage."' })}</p>
                                                     </div>
@@ -5167,7 +4633,7 @@ export default function ProviderPage() {
                                                     <button
                                                         disabled={isSavingProfile || newServiceData.pitch.length < 10}
                                                         onClick={handleAddService}
-                                                        className="w-full h-14 bg-black text-white rounded-2xl text-[16px] font-black uppercase tracking-widest shadow-xl hover:shadow-2xl transition-all active:scale-[0.98] disabled:opacity-40"
+                                                        className="w-full h-14 bg-[#01A083] text-white rounded-2xl text-[16px] font-black uppercase tracking-widest transition-all active:scale-[0.98] disabled:opacity-40 border border-[#008f75]"
                                                     >
                                                         {isSavingProfile ? <RefreshCw className="animate-spin" size={20} /> : t({ en: 'List Service', fr: 'Publier le service' })}
                                                     </button>
@@ -5196,7 +4662,7 @@ export default function ProviderPage() {
                                         initial={{ opacity: 0, scale: 0.96, y: 30 }}
                                         animate={{ opacity: 1, scale: 1, y: 0 }}
                                         exit={{ opacity: 0, scale: 0.96, y: 30 }}
-                                        className="relative bg-white w-full max-w-[760px] rounded-[40px] p-14 shadow-[0_24px_80px_rgba(0,0,0,0.18)] overflow-hidden"
+                                        className="relative bg-white w-full max-w-[760px] rounded-[40px] p-14 border border-neutral-100 overflow-hidden"
                                     >
                                         <div className="text-left mb-8">
                                             <h2
@@ -5228,7 +4694,7 @@ export default function ProviderPage() {
                                             <button
                                                 onClick={handleSubmitCounter}
                                                 disabled={isSubmittingOffer || !counterPrice}
-                                                className="px-12 py-4 bg-black text-white rounded-full font-semibold text-[15px] hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_16px_30px_rgba(0,0,0,0.2)]"
+                                                className="px-12 py-4 bg-[#01A083] text-white rounded-full font-semibold text-[15px] hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed border border-[#008f75]"
                                             >
                                                 {isSubmittingOffer ? t({ en: 'Sending...', fr: 'Envoi...' }) : t({ en: 'Send', fr: 'Envoyer' })}
                                             </button>
@@ -5251,7 +4717,7 @@ export default function ProviderPage() {
                                     className="fixed bottom-24 left-4 right-4 z-[100] md:bottom-10 md:right-10 md:left-auto md:w-[400px]"
                                 >
                                     <div
-                                        className="bg-black text-white p-6 rounded-[32px] shadow-2xl overflow-hidden relative border border-white/10"
+                                        className="bg-black text-white p-6 rounded-[32px] overflow-hidden relative border border-white/10"
                                         style={{
                                             background: 'linear-gradient(135deg, #000 0%, #1a1a1a 100%)',
                                         }}
@@ -5299,7 +4765,7 @@ export default function ProviderPage() {
                                                     setShowNewJobPopup(false);
                                                     // Optionally scroll to job or highlight it
                                                 }}
-                                                className="w-full py-4 bg-white text-black font-black rounded-2xl flex items-center justify-center gap-2 hover:scale-[1.02] active:scale-[0.98] transition-all shadow-xl"
+                                                className="w-full py-4 bg-white text-black font-black rounded-2xl flex items-center justify-center gap-2 hover:scale-[1.02] active:scale-[0.98] transition-all border border-neutral-200"
                                             >
                                                 View Details
                                             </button>
@@ -5317,7 +4783,7 @@ export default function ProviderPage() {
                                 initial={{ opacity: 0, x: 20 }}
                                 animate={{ opacity: 1, x: 0 }}
                                 exit={{ opacity: 0, x: 20 }}
-                                className="fixed inset-0 z-[200] bg-white lg:absolute lg:inset-auto lg:top-0 lg:right-0 lg:w-[480px] lg:h-full lg:shadow-[-5px_0_30px_rgba(0,0,0,0.1)]"
+                                className="fixed inset-0 z-[200] bg-white lg:absolute lg:inset-auto lg:top-0 lg:right-0 lg:w-[480px] lg:h-full border-l border-neutral-100"
                             >
                                 <PromoteYourselfView
                                     currentUser={auth.currentUser}
@@ -5332,7 +4798,7 @@ export default function ProviderPage() {
                                 initial={{ opacity: 0, x: 20 }}
                                 animate={{ opacity: 1, x: 0 }}
                                 exit={{ opacity: 0, x: 20 }}
-                                className="fixed inset-0 z-[200] bg-white lg:absolute lg:inset-auto lg:top-0 lg:right-0 lg:w-[480px] lg:h-full lg:shadow-[-5px_0_30px_rgba(0,0,0,0.1)]"
+                                className="fixed inset-0 z-[200] bg-white lg:absolute lg:inset-auto lg:top-0 lg:right-0 lg:w-[480px] lg:h-full border-l border-neutral-100"
                             >
                                 <PromocodesView
                                     currentUser={auth.currentUser}
@@ -5354,7 +4820,7 @@ export default function ProviderPage() {
                     />
 
                     {
-                        isMobileLayout && (
+                        isMobileLayout && !viewingJobDetails && (
                             <div key="mobile-bottom-nav-wrapper">
                                 <MobileBottomNav
                                     activeTab={activeNav}
@@ -5463,7 +4929,7 @@ export default function ProviderPage() {
                                                     }}
                                                     className={cn(
                                                         'bg-white rounded-2xl p-4 flex gap-3 cursor-pointer active:bg-neutral-50 transition-colors border',
-                                                        !noti.read ? 'border-blue-100 shadow-[0_2px_12px_rgba(59,130,246,0.08)]' : 'border-neutral-100'
+                                                        !noti.read ? 'border-[#01A083]/20 bg-[#01A083]/5' : 'border-neutral-100'
                                                     )}
                                                 >
                                                     <div className={cn('w-11 h-11 rounded-2xl flex items-center justify-center flex-shrink-0', iconBg)}>

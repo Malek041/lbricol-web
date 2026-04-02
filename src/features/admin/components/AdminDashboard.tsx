@@ -21,7 +21,7 @@ const StatCard = memo(({ title, value, icon: Icon, growth, suffix = '', loading 
             <div className="w-12 h-12 bg-[#FFC244]/10 rounded-2xl flex items-center justify-center">
                 <Icon size={24} className="text-black" />
             </div>
-            <div className={`flex items-center gap-1 text-sm font-bold ${growth >= 0 ? 'text-[#219178]' : 'text-red-500'}`}>
+            <div className={`flex items-center gap-1 text-sm font-bold ${growth >= 0 ? 'text-[#01A083]' : 'text-red-500'}`}>
                 {growth >= 0 ? <ArrowUpRight size={16} /> : <ArrowDownRight size={16} />}
                 {Math.abs(growth)}%
             </div>
@@ -165,7 +165,7 @@ const AdminDashboard = memo(({ t }: AdminDashboardProps) => {
                         {cities.map((city) => (
                             <div key={city.cityId} className="flex items-center gap-4 p-4 bg-neutral-50 rounded-2xl">
                                 <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-sm">
-                                    <TrendingUp size={20} className="text-[#219178]" />
+                                    <TrendingUp size={20} className="text-[#01A083]" />
                                 </div>
                                 <div className="flex-1">
                                     <p className="text-sm font-black text-black flex items-center gap-2">
@@ -205,7 +205,7 @@ const AdminDashboard = memo(({ t }: AdminDashboardProps) => {
                                     <motion.div
                                         initial={{ width: 0 }}
                                         animate={{ width: `${(count / (selectedStats.totalOrders || 1)) * 100}%` }}
-                                        className="h-full bg-[#219178] rounded-full"
+                                        className="h-full bg-[#01A083] rounded-full"
                                     />
                                 </div>
                             </div>
@@ -227,14 +227,14 @@ const AdminDashboard = memo(({ t }: AdminDashboardProps) => {
                             return (
                                 <div key={area} className="flex items-center gap-4 p-4 bg-neutral-50 rounded-2xl relative overflow-hidden">
                                     <div
-                                        className="absolute inset-y-0 left-0 bg-[#219178]"
+                                        className="absolute inset-y-0 left-0 bg-[#01A083]"
                                         style={{ width: '4px', opacity: intensity }}
                                     />
                                     <div className="flex-1">
                                         <p className="text-sm font-black text-black">{area}</p>
                                         <p className="text-xs text-neutral-500">{count} {t({ en: 'active requests', fr: 'demandes actives', ar: 'طلب نشط' })}</p>
                                     </div>
-                                    <div className="w-12 h-12 rounded-xl flex items-center justify-center font-black text-sm" style={{ backgroundColor: `rgba(0, 160, 130, ${intensity * 0.2})`, color: '#219178' }}>
+                                    <div className="w-12 h-12 rounded-xl flex items-center justify-center font-black text-sm" style={{ backgroundColor: `rgba(0, 160, 130, ${intensity * 0.2})`, color: '#01A083' }}>
                                         #{idx + 1}
                                     </div>
                                 </div>

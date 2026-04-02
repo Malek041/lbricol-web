@@ -197,10 +197,11 @@ export default function ServiceSetupPage() {
     const [provider, setProvider] = useState({
         name: order.providerName || 'Bricoler',
         avatar: order.providerAvatar || '/Images/Vectors Illu/avatar.png',
-        rating: order.providerRating || 5.0,
+        rating: order.providerRating || 0,
         taskCount: order.providerJobsCount || 0,
         rank: order.providerRank || 'New',
         minRate: order.providerRate || 0,
+        badge: order.providerBadge || 'Pro',
         bio: order.providerBio || 'Experienced Bricoler offering quality services in your area.',
         yearsOfExperience: order.providerExperience || '1 Year',
         portfolio: [] as string[],
@@ -209,6 +210,9 @@ export default function ServiceSetupPage() {
         reviews: [] as any[],
         coords: null as { lat: number, lng: number } | null
     });
+
+    const isNew = !provider.taskCount || provider.taskCount < 5;
+    const effectiveJobs = provider.taskCount || 0;
 
     useEffect(() => {
         setHasLoaded(false);
@@ -263,7 +267,7 @@ export default function ServiceSetupPage() {
                             movingTransports: data.movingTransports || [],
                             reviews: data.reviews || [],
                             level: levelDisplay,
-                            rating: Number(data.rating) || 4.8,
+                            rating: Number(data.rating) || 0,
                             jobs: tasks.toString(),
                             coords: data.location || data.coords || null
                         };
@@ -392,6 +396,51 @@ export default function ServiceSetupPage() {
                 setEstimate(result);
             };
             calculateTVPrice();
+        } else if ((order.serviceType === 'cleaning' || order.serviceType === 'hospitality') && !['car_washing', 'car_detailing', 'dish_cleaning'].includes(order.subServiceId || '')) {
+            // Specialized Cleaning Duration Estimation
+            const getCleaningDuration = () => {
+                let d = 2; // Min 2h for 1 room / studio (as requested: studio, 1 room = 2h min)
+                if (rooms > 1) d += (rooms - 1) * 1; // +1h per extra room (adjusting for better estimation)
+
+                const pType = propertyType?.toLowerCase() || 'apartment';
+                if (pType === 'villa') d *= 1.4;
+                else if (pType === 'riad') d *= 1.3;
+                else if (pType === 'guesthouse' || pType === 'hotel') d *= 1.25;
+
+                return Math.max(2, d);
+            };
+
+            const estimatedHours = getCleaningDuration();
+            const calculateCleaningPrice = async () => {
+                let distance = 0;
+                let durationMinutes = 0;
+                if (provider.coords && order.location) {
+                    try {
+                        const res = await getRoadDistance(
+                            provider.coords.lat, provider.coords.lng,
+                            order.location.lat, order.location.lng
+                        );
+                        distance = res.distanceKm;
+                        durationMinutes = res.durationMinutes;
+                    } catch (e) {
+                        console.warn("Distance calculation failed for Cleaning:", e);
+                    }
+                }
+
+                const result = calculateOrderPrice(
+                    order.subServiceId || order.serviceType,
+                    order.providerRate || 80,
+                    {
+                        rooms,
+                        propertyType,
+                        hours: estimatedHours,
+                        distanceKm: distance,
+                        durationMinutes: durationMinutes
+                    }
+                );
+                setEstimate({ ...result, duration: estimatedHours });
+            };
+            calculateCleaningPrice();
         } else {
             // General fallback: check if it's hourly
             const config = getAllServices().find(s => s.id === order.serviceType);
@@ -402,7 +451,7 @@ export default function ServiceSetupPage() {
                 const result = calculateOrderPrice(
                     order.subServiceId || order.serviceType,
                     order.providerRate || 100,
-                    { hours: taskDuration }
+                    { hours: taskDuration, mountingAddOns }
                 );
                 setEstimate(result);
             } else {
@@ -416,7 +465,8 @@ export default function ServiceSetupPage() {
                     ...result,
                     subtotal: result.subtotal * slotsCount,
                     serviceFee: result.serviceFee * slotsCount,
-                    total: result.total * slotsCount
+                    total: result.total * slotsCount,
+                    duration: 1 // Default fallback duration
                 });
             }
         }
@@ -521,23 +571,31 @@ export default function ServiceSetupPage() {
         setIsSubmitting(true);
         try {
             // Update Context
-            const slotsToSave = finalSlots.map(s => ({
-                date: (typeof s.date === 'string' ? new Date(s.date) : s.date).toISOString(),
-                time: s.time
-            }));
+            const slotsToSave = finalSlots.map(s => {
+                const dateObj = typeof s.date === 'string' ? new Date(s.date) : s.date;
+                return {
+                    date: format(dateObj, 'yyyy-MM-dd'),
+                    time: s.time
+                };
+            });
 
             // Save first one to scheduledDate/Time for backward compat
             setOrderField('scheduledDate', slotsToSave[0].date);
             setOrderField('scheduledTime', slotsToSave[0].time);
             setOrderField('multiSlots', slotsToSave);
 
-            // Determine final task duration for pricing
-            let finalTaskDuration = taskDuration;
+            // Determine final task duration for pricing and availability
+            let finalTaskDuration = estimate?.duration || taskDuration;
             if (order.serviceType === 'moving' || order.serviceType?.includes('moving')) {
                 // Determine duration based on taskSize (Small=1.5h, Medium=3h, Large=5h)
                 finalTaskDuration = taskSize === 'small' ? 1.5 : taskSize === 'medium' ? 3 : 5;
             } else if (order.serviceType === 'furniture_assembly') {
                 finalTaskDuration = Object.values(assemblyItems).reduce((sum, item) => sum + (item.quantity * item.estHours), 0);
+            }
+
+            // Final safety check: ensure cleaning has min 2h
+            if ((order.serviceType === 'cleaning' || order.serviceType === 'hospitality') && !['car_washing', 'car_detailing', 'dish_cleaning'].includes(order.subServiceId || '') && finalTaskDuration < 2) {
+                finalTaskDuration = 2;
             }
 
             const serviceDetails = {
@@ -567,8 +625,8 @@ export default function ServiceSetupPage() {
                 wallMaterial,
                 mountingAddOns,
                 // Moving specific pre-calculated metrics
-                deliveryDistanceKm: estimate?.distanceKm,
-                deliveryDurationMinutes: estimate?.duration,
+                deliveryDistanceKm: estimate?.distanceKm || null,
+                deliveryDurationMinutes: estimate?.duration || null,
                 // Signal to backend for broadcasting errands city-wide
                 isPublic: order.serviceType === 'errands' || order.serviceType?.includes('delivery')
             };
@@ -631,20 +689,20 @@ export default function ServiceSetupPage() {
                     <div className="flex px-2">
                         <button
                             onClick={() => setActiveTab('details')}
-                            className={`flex-1 py-4 text-[14px] font-bold transition-all relative ${activeTab === 'details' ? 'text-[#219178]' : 'text-[#9CA3AF]'}`}
+                            className={`flex-1 py-4 text-[14px] font-bold transition-all relative ${activeTab === 'details' ? 'text-[#01A083]' : 'text-[#9CA3AF]'}`}
                         >
                             Bricoler Details
                             {activeTab === 'details' && (
-                                <motion.div layoutId="tab-underline" className="absolute bottom-0 left-0 right-0 h-[2.5px] bg-[#219178]" />
+                                <motion.div layoutId="tab-underline" className="absolute bottom-0 left-0 right-0 h-[2.5px] bg-[#01A083]" />
                             )}
                         </button>
                         <button
                             onClick={() => setActiveTab('setup')}
-                            className={`flex-1 py-4 text-[14px] font-bold transition-all relative ${activeTab === 'setup' ? 'text-[#219178]' : 'text-[#9CA3AF]'}`}
+                            className={`flex-1 py-4 text-[14px] font-bold transition-all relative ${activeTab === 'setup' ? 'text-[#01A083]' : 'text-[#9CA3AF]'}`}
                         >
                             Order Setup
                             {activeTab === 'setup' && (
-                                <motion.div layoutId="tab-underline" className="absolute bottom-0 left-0 right-0 h-[2.5px] bg-[#219178]" />
+                                <motion.div layoutId="tab-underline" className="absolute bottom-0 left-0 right-0 h-[2.5px] bg-[#01A083]" />
                             )}
                         </button>
                     </div>
@@ -757,7 +815,7 @@ export default function ServiceSetupPage() {
                                             </div>
                                             <div className="bg-white rounded-[16px] px-4 py-4 flex items-center justify-between">
                                                 <div className="flex items-center gap-4">
-                                                    <div className="w-14 h-14 bg-black rounded-[14px] flex items-center justify-center p-2.5">
+                                                    <div className="w-14 h-14 bg-[#01A083] rounded-[14px] flex items-center justify-center p-2.5">
                                                         <img src="https://upload.wikimedia.org/wikipedia/commons/a/a6/Logo_NIKE.svg" className="w-full h-full object-contain brightness-0 invert" alt="Nike Logo" />
                                                     </div>
                                                     <div>
@@ -777,11 +835,11 @@ export default function ServiceSetupPage() {
                                 ) : (
                                     <>
                                         {/* Profile Hero */}
-                                        <motion.div variants={staggerItem} className="flex gap-6 mb-8 items-start">
-                                            <img src={provider.avatar} className="w-24 h-24 rounded-[15px] object-cover border-4 border-[#F9FAFB]" />
+                                        <motion.div variants={staggerItem} className="flex gap-6 mb-4 items-start">
+                                            <img src={provider.avatar} className="w-24 h-24 rounded-full object-cover border-4 border-[#F9FAFB]" />
                                             <div className="flex-1">
-                                                <h2 className="text-[24px] font-black text-[#111827] mb-2">{provider.name}</h2>
-                                                <div className="flex items-baseline gap-2 text-[#219178] mb-4">
+                                                <h2 className="text-[24px] font-black text-[#111827] mb-0">{provider.name}</h2>
+                                                <div className="flex items-baseline gap-2 text-[#01A083] mb-2">
                                                     <span className="text-[20px] font-black">MAD {provider.minRate}</span>
                                                     <span className="text-[14px] font-bold text-[#6B7280]">minimum</span>
                                                 </div>
@@ -792,34 +850,85 @@ export default function ServiceSetupPage() {
                                             </div>
                                         </motion.div>
 
-                                        {/* Trust & Stats Grid (High Visibility) */}
-                                        <motion.div variants={staggerItem} className="grid grid-cols-3 gap-3 mb-8">
-                                            <div className="flex flex-col items-center justify-center p-4 rounded-full text-center ">
-                                                <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center text-[#219178] mb-2 ">
-                                                    <Trophy size={30} />
+                                        <div className="pb-5">
+                                            <motion.button
+                                                whileTap={{ scale: 0.98 }}
+                                                onClick={() => {
+                                                    setActiveTab('setup');
+                                                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                                                }}
+                                                className="w-full h-11 bg-[#01A083] text-white rounded-full font-medium text-[20px] flex items-center justify-center gap-3 transition-all py-5 "
+                                            >
+                                                <span>Book me</span>
+                                            </motion.button>
+                                        </div>
+
+                                        {/* Trust & Stats Grid (Eggy Style Redesign) */}
+                                        <motion.div variants={staggerItem} className="grid grid-cols-4 gap-2 mb-8">
+                                            {/* Level Stat */}
+                                            <div className="flex flex-col items-center gap-2 text-center">
+                                                <div 
+                                                    className="w-[68px] h-[68px] flex items-center justify-center bg-[#F1FEF4] border border-[#DCFCE7]"
+                                                    style={{ borderRadius: '70% 30% 50% 50% / 50% 70% 30% 50%' }}
+                                                >
+                                                    <Trophy size={40} className="text-[#10B981] fill-[#10B981]/20" />
                                                 </div>
-                                                <span className="text-[23px] font-bold text-[#219178] leading-tight capitalize">
-                                                    {provider.rank || 'New'}
-                                                </span>
-                                                <span className="text-[10px] font-bold text-[#219178] uppercase tracking-tighter mt-1">Level</span>
+                                                <div className="flex flex-col items-center -space-y-0.5">
+                                                    <span className="text-[14px] font-semibold text-[#111827] capitalize">{(effectiveJobs < 10 || isNew) ? 'New' : (provider.badge || 'Elite')}</span>
+                                                    <span className="text-[10px] font-medium text-neutral-400 uppercase tracking-widest">Level</span>
+                                                </div>
                                             </div>
-                                            <div className="flex flex-col items-center justify-center p-4 rounded-full text-center ">
-                                                <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center text-[#219178] mb-2">
-                                                    <Star size={30} />
+
+                                            {/* Rating Stat */}
+                                            <div className="flex flex-col items-center gap-2 text-center">
+                                                <div 
+                                                    className="w-[68px] h-[68px] flex items-center justify-center bg-[#FFFBEB] border border-[#FEF3C7]"
+                                                    style={{ borderRadius: '40% 60% 70% 30% / 40% 50% 60% 50%' }}
+                                                >
+                                                    <Star size={40} className="text-[#D97706] fill-[#D97706]/20" />
                                                 </div>
-                                                <span className="text-[23px] font-bold text-[#219178] leading-tight">
-                                                    {Number(provider.rating || 0).toFixed(1)}
-                                                </span>
-                                                <span className="text-[10px] font-bold text-[#219178] uppercase tracking-tighter mt-1">Rating</span>
+                                                <div className="flex flex-col items-center -space-y-0.5">
+                                                    <span className="text-[14px] font-semibold text-[#111827]">{!provider.taskCount || provider.taskCount === 0 || !provider.rating ? '0.0' : provider.rating.toFixed(1)}</span>
+                                                    <span className="text-[10px] font-medium text-neutral-400 uppercase tracking-widest">Rating</span>
+                                                </div>
                                             </div>
-                                            <div className="flex flex-col items-center justify-center p-4 rounded-full text-center ">
-                                                <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center text-[#219178] mb-2 ">
-                                                    <CheckCircle2 size={30} />
+
+                                            {/* Orders Stat */}
+                                            <div className="flex flex-col items-center gap-2 text-center">
+                                                <div 
+                                                    className="w-[68px] h-[68px] flex items-center justify-center bg-[#F0F9FF] border border-[#E0F2FE]"
+                                                    style={{ borderRadius: '60% 40% 30% 70% / 70% 30% 70% 30%' }}
+                                                >
+                                                    <CheckCircle2 size={40} className="text-[#0284C7] fill-[#0284C7]/10" />
                                                 </div>
-                                                <span className="text-[23px] font-bold text-[#219178] leading-tight">
-                                                    {provider.taskCount}
-                                                </span>
-                                                <span className="text-[10px] font-bold text-[#219178] uppercase tracking-tighter mt-1">Orders</span>
+                                                <div className="flex flex-col items-center -space-y-0.5">
+                                                    <span className="text-[14px] font-semibold text-[#111827]">{effectiveJobs}</span>
+                                                    <span className="text-[10px] font-medium text-neutral-400 uppercase tracking-widest">Orders</span>
+                                                </div>
+                                            </div>
+
+                                            {/* Experience Stat */}
+                                            <div className="flex flex-col items-center gap-2 text-center">
+                                                <div 
+                                                    className="w-[68px] h-[68px] flex items-center justify-center bg-[#F5F3FF] border border-[#EDE9FE]"
+                                                    style={{ borderRadius: '50% 50% 20% 80% / 40% 60% 40% 60%' }}
+                                                >
+                                                    <Calendar size={40} className="text-[#6366F1] fill-[#6366F1]/10" />
+                                                </div>
+                                                <div className="flex flex-col items-center -space-y-0.5">
+                                                    <span className="text-[14px] font-semibold text-[#111827]">{provider.yearsOfExperience || "1 Year"}</span>
+                                                    <span className="text-[10px] font-medium text-neutral-400 uppercase tracking-widest">Experience</span>
+                                                </div>
+                                            </div>
+                                        </motion.div>
+
+                                        {/* About */}
+                                        <motion.div variants={staggerItem} className="mb-10">
+                                            <h4 className="text-[18px] font-black text-[#111827] mb-2">About Me</h4>
+                                            <div className="text-[15px] text-[#000000] leading-relaxed font-medium">
+                                                {provider.bio && provider.bio.trim() ? `${provider.bio}` : (
+                                                    <span className="text-neutral-400 italic">No bio provided by the Bricoler yet.</span>
+                                                )}
                                             </div>
                                         </motion.div>
 
@@ -828,12 +937,12 @@ export default function ServiceSetupPage() {
                                             <motion.div variants={staggerItem} className="mb-8">
                                                 <div className="flex items-center justify-between mb-4">
                                                     <h4 className="text-[18px] font-black text-[#111827]">Portfolio</h4>
-                                                    <span className="text-[11px] font-black text-[#219178] tracking-[2px] uppercase">{order.serviceName}</span>
+                                                    <span className="text-[11px] font-black text-[#01A083] tracking-[2px] uppercase">{order.serviceName}</span>
                                                 </div>
                                                 <div className="flex gap-4 overflow-x-auto no-scrollbar -mx-6 px-6 pb-2">
                                                     {provider.portfolio.map((img, i) => (
                                                         <div key={i} className="flex-shrink-0">
-                                                            <img src={img} className="w-44 h-56 rounded-[15px] object-cover border border-neutral-100" alt="Work sample" />
+                                                            <img src={img} className="w-30 h-30 rounded-[15px] object-cover border border-neutral-100" alt="Work sample" />
                                                         </div>
                                                     ))}
                                                 </div>
@@ -841,33 +950,23 @@ export default function ServiceSetupPage() {
                                         )}
 
                                         {/* Secondary Stats */}
-                                        <motion.div variants={staggerItem} className="grid grid-cols-2 gap-3 mb-8">
-                                            <div className="p-4 bg-[#F9FAFB] rounded-[5px] border border-neutral-100 flex items-center justify-between">
-                                                <div>
-                                                    <div className="text-[10px] font-black text-[#9CA3AF] tracking-widest uppercase mb-1">Experience</div>
-                                                    <div className="text-[17px] font-medium text-[#111827]">{provider.yearsOfExperience}</div>
+                                        <motion.div variants={staggerItem} className="grid grid-cols-1 gap-3 mb-8">
+                                            <div className="p-5 bg-[#F9FAFB] rounded-[15px] border border-neutral-100 flex items-center justify-between">
+                                                <div className="flex items-center gap-4">
+                                                    <div className="w-10 h-10 rounded-[12px] bg-white shadow-sm flex items-center justify-center text-[#01A083]">
+                                                        <TrendingUp size={20} />
+                                                    </div>
+                                                    <div>
+                                                        <div className="text-[10px] font-black text-[#9CA3AF] tracking-widest uppercase mb-0.5">Performance</div>
+                                                        <div className="text-[16px] font-bold text-[#111827]">99% Success Rate</div>
+                                                    </div>
                                                 </div>
-                                                <Calendar className="text-neutral-200" size={24} />
-                                            </div>
-                                            <div className="p-4 bg-[#F9FAFB] rounded-[5px] border border-neutral-100 flex items-center justify-between">
-                                                <div>
-                                                    <div className="text-[10px] font-black text-[#9CA3AF] tracking-widest uppercase mb-1">Success Rate</div>
-                                                    <div className="text-[17px] font-medium text-[#111827]">99%</div>
-                                                </div>
-                                                <TrendingUp className="text-neutral-200" size={24} />
+                                                <div className="px-3 py-1 bg-[#F1FEF4] rounded-full text-[#10B981] text-[11px] font-black">EXCELLENT</div>
                                             </div>
                                         </motion.div>
 
 
-                                        {/* About */}
-                                        <motion.div variants={staggerItem} className="mb-10">
-                                            <h4 className="text-[18px] font-black text-[#111827] mb-4">About Me</h4>
-                                            <div className="text-[15px] text-[#000000] leading-relaxed font-medium p-6 bg-[#F9FAFB] rounded-[5px] border border-neutral-100">
-                                                {provider.bio && provider.bio.trim() ? `"${provider.bio}"` : (
-                                                    <span className="text-neutral-400 italic">No bio provided by the Bricoler yet.</span>
-                                                )}
-                                            </div>
-                                        </motion.div>
+
 
                                         {/* Transportation Section */}
                                         {order.serviceType === 'moving' && provider.movingTransports && provider.movingTransports.length > 0 && (
@@ -903,8 +1002,8 @@ export default function ServiceSetupPage() {
                                                 <div className="flex flex-wrap gap-2">
                                                     {provider.equipments.map((item, i) => (
                                                         <div key={i} className="flex items-center gap-2 px-4 py-2 bg-[#F9FAFB] rounded-full border border-neutral-100 text-[14px] font-bold text-[#4B5563]">
-                                                            <div className="w-5 h-5 rounded-full bg-[#219178]/10 flex items-center justify-center">
-                                                                <Check size={12} className="text-[#219178]" strokeWidth={3} />
+                                                            <div className="w-5 h-5 rounded-full bg-[#01A083]/10 flex items-center justify-center">
+                                                                <Check size={12} className="text-[#01A083]" strokeWidth={3} />
                                                             </div>
                                                             {item}
                                                         </div>
@@ -921,9 +1020,9 @@ export default function ServiceSetupPage() {
                                             </div>
                                             <div className="grid grid-cols-1 gap-4">
                                                 {provider.reviews && provider.reviews.length > 0 ? provider.reviews.map((rev, i) => (
-                                                    <div key={i} className="p-5 bg-white rounded-[20px] border border-neutral-100 shadow-sm">
+                                                    <div key={i} className="p-5 bg-white rounded-[20px] border border-neutral-100">
                                                         <div className="flex items-center gap-3 mb-3">
-                                                            <div className="w-10 h-10 rounded-full bg-[#219178]/10 overflow-hidden flex items-center justify-center font-black text-[#219178] text-sm border border-[#219178]/10 flex-shrink-0">
+                                                            <div className="w-10 h-10 rounded-full bg-[#01A083]/10 overflow-hidden flex items-center justify-center font-black text-[#01A083] text-sm border border-[#01A083]/10 flex-shrink-0">
                                                                 {(rev.clientAvatar || rev.userPhotoURL) ? (
                                                                     <img src={rev.clientAvatar || rev.userPhotoURL} className="w-full h-full object-cover" alt="" />
                                                                 ) : (
@@ -938,7 +1037,7 @@ export default function ServiceSetupPage() {
                                                             </div>
                                                             <div className="flex items-center gap-1 bg-[#FFFBEB] px-2.5 py-1 rounded-[5px] border border-[#FEF3C7] flex-shrink-0">
                                                                 <Star size={10} className="text-[#FBBF24] fill-[#FBBF24]" />
-                                                                <span className="text-[11px] font-black text-[#92400E]">{rev.rating || 5}</span>
+                                                                <span className="text-[11px] font-black text-[#92400E]">{rev.rating ?? 0}</span>
                                                             </div>
                                                         </div>
                                                         <p className="text-[14px] text-[#4B5563] font-medium leading-[1.6]">{rev.comment}</p>
@@ -953,7 +1052,7 @@ export default function ServiceSetupPage() {
 
                                         {/* Trusted Provider */}
                                         <motion.div variants={staggerItem} className="p-5 bg-[#F0FDF4] rounded-[5px] border border-[#D1FAE5] flex items-center gap-4 mb-32">
-                                            <div className="w-11 h-11 rounded-full bg-[#D1FAE5] flex items-center justify-center text-[#219178]">
+                                            <div className="w-11 h-11 rounded-full bg-[#D1FAE5] flex items-center justify-center text-[#01A083]">
                                                 <Check size={22} className="stroke-[3]" />
                                             </div>
                                             <div>
@@ -964,28 +1063,7 @@ export default function ServiceSetupPage() {
                                     </>
                                 )}
 
-                                {/* Floating "Book Me" Button wrapper with Wave (Only for profiles, not errands summary) */}
-                                {!(order.serviceType === 'errands' || order.serviceType?.includes('delivery')) && (
-                                    <div className="fixed bottom-0 left-0 right-0 z-[100] bg-transparent">
-                                        <div className="absolute top-[-44px] left-0 right-0 h-[45px] z-20 pointer-events-none">
-                                            <svg viewBox="0 0 1440 120" preserveAspectRatio="none" className="w-full h-full fill-[#FFB700]">
-                                                <path d="M0,64L48,64C96,64,192,64,288,64C384,64,480,64,576,53.3C672,43,768,21,864,16C960,10.7,1056,21.3,1152,42.7C1248,64,1344,96,1392,112L1440,128L1440,120L1392,120C1344,120,1248,120,1152,120C1056,120,960,120,864,120C768,120,672,120,576,120C480,120,384,120,288,120C192,120,96,120,48,120L0,120Z"></path>
-                                            </svg>
-                                        </div>
-                                        <div className="bg-[#FFB700] p-6 pb-8">
-                                            <motion.button
-                                                whileTap={{ scale: 0.98 }}
-                                                onClick={() => {
-                                                    setActiveTab('setup');
-                                                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                                                }}
-                                                className="w-full h-15 bg-[#219178] text-white rounded-full font-black text-[20px] flex items-center justify-center gap-3 transition-all py-5 "
-                                            >
-                                                <span>Book me</span>
-                                            </motion.button>
-                                        </div>
-                                    </div>
-                                )}
+
                             </div>
                         </motion.div>
                     ) : (
@@ -1015,10 +1093,10 @@ export default function ServiceSetupPage() {
                                                 setNote('');
                                                 // If applicable, reset other fields
                                             }}
-                                            className={`flex-shrink-0 px-6 py-4 rounded-[10px] border-2 transition-all flex items-center gap-3 ${selectedProfileId === 'new' ? 'border-[#219178] bg-[#F0FDF9] text-[#219178]' : 'border-neutral-100 bg-white text-[#9CA3AF]'}`}
+                                            className={`flex-shrink-0 px-6 py-4 rounded-[10px] border-2 transition-all flex items-center gap-3 ${selectedProfileId === 'new' ? 'border-[#01A083] bg-[#F0FDF9] text-[#01A083]' : 'border-neutral-100 bg-white text-[#9CA3AF]'}`}
                                         >
                                             <div className={`w-8 h-8 rounded-[10px] flex items-center justify-center ${selectedProfileId === 'new' ? ' text-white' : 'bg-neutral-100'}`}>
-                                                <Home size={20} className="text-[#219178]" />
+                                                <Home size={20} className="text-[#01A083]" />
                                             </div>
                                             <span className="font-black text-[15px]">New setup</span>
                                         </button>
@@ -1034,15 +1112,15 @@ export default function ServiceSetupPage() {
                                                     setNote(p.details.note || '');
                                                 }}
 
-                                                className={`flex-shrink-0 px-6 py-4 rounded-[10px] border-2 transition-all flex items-center gap-3 min-w-[200px] ${selectedProfileId === p.id ? 'border-[#219178] bg-[#F0FDF9] text-[#219178]' : 'border-neutral-100 bg-white text-[#111827]'}`}
+                                                className={`flex-shrink-0 px-6 py-4 rounded-[10px] border-2 transition-all flex items-center gap-3 min-w-[200px] ${selectedProfileId === p.id ? 'border-[#01A083] bg-[#F0FDF9] text-[#01A083]' : 'border-neutral-100 bg-white text-[#111827]'}`}
                                             >
                                                 <div className={`w-8 h-8 rounded-[10px] flex items-center justify-center ${selectedProfileId === 'new' ? ' text-white' : 'bg-neutral-100'}`}>
-                                                    <Home size={20} className="text-[#219178]" />
+                                                    <Home size={20} className="text-[#01A083]" />
                                                 </div>
 
                                                 <div className="text-left">
                                                     <p className="font-black text-[15px] leading-tight">{p.label}</p>
-                                                    <p className={`text-[11px] font-bold ${selectedProfileId === p.id ? 'text-[#219178]/70' : 'text-neutral-400'}`}>
+                                                    <p className={`text-[11px] font-bold ${selectedProfileId === p.id ? 'text-[#01A083]/70' : 'text-neutral-400'}`}>
                                                         {p.details.propertyType || 'Standard'}
                                                     </p>
                                                 </div>
@@ -1060,8 +1138,8 @@ export default function ServiceSetupPage() {
                                         <div className="space-y-6">
                                             <div className="flex items-center justify-between">
                                                 <h3 className="text-[25px] font-bold text-[#111827]">What do you need?</h3>
-                                                <div className="px-3 py-1 bg-[#219178]/10 rounded-full">
-                                                    <span className="text-[12px] font-black text-[#219178] uppercase tracking-wider">Errand</span>
+                                                <div className="px-3 py-1 bg-[#01A083]/10 rounded-full">
+                                                    <span className="text-[12px] font-black text-[#01A083] uppercase tracking-wider">Errand</span>
                                                 </div>
                                             </div>
 
@@ -1074,7 +1152,7 @@ export default function ServiceSetupPage() {
                                                             setErrandCategory(cat.id);
                                                             // Logic for handling title might be here
                                                         }}
-                                                        className={`flex-shrink-0 px-5 py-3.5 rounded-[12px] border-2 transition-all flex flex-col items-center gap-2 min-w-[100px] ${errandCategory === cat.id ? 'border-[#219178] bg-[#F0FDF9]' : 'border-neutral-100 bg-[#F9FAFB]'}`}
+                                                        className={`flex-shrink-0 px-5 py-3.5 rounded-[12px] border-2 transition-all flex flex-col items-center gap-2 min-w-[100px] ${errandCategory === cat.id ? 'border-[#01A083] bg-[#F0FDF9]' : 'border-neutral-100 bg-[#F9FAFB]'}`}
                                                     >
                                                         <span className="text-2xl">{cat.icon}</span>
                                                         <span className="text-[13px] font-bold">{cat.label}</span>
@@ -1095,7 +1173,7 @@ export default function ServiceSetupPage() {
                                                         <p className="text-[13px] font-medium text-[#9CA3AF]">Courier will see this description</p>
                                                     </div>
                                                 </div>
-                                                <ChevronLeft className="rotate-180 text-neutral-300 group-hover:text-[#219178] transition-colors" size={22} />
+                                                <ChevronLeft className="rotate-180 text-neutral-300 group-hover:text-[#01A083] transition-colors" size={22} />
                                             </button>
                                         </div>
 
@@ -1107,7 +1185,7 @@ export default function ServiceSetupPage() {
                                                     <button
                                                         key={size.id}
                                                         onClick={() => setTaskSize(size.id as any)}
-                                                        className={`p-5 rounded-[10px] border-1 text-left transition-all flex items-center justify-between ${taskSize === size.id ? 'border-[#219178] ' : 'border-neutral-100'}`}
+                                                        className={`p-5 rounded-[10px] border-1 text-left transition-all flex items-center justify-between ${taskSize === size.id ? 'border-[#01A083] ' : 'border-neutral-100'}`}
                                                     >
                                                         <div className="flex items-center gap-4">
                                                             <div className="w-12 h-12 rounded-[10px] flex items-center justify-center text-2xl ">
@@ -1119,7 +1197,7 @@ export default function ServiceSetupPage() {
                                                             </div>
                                                         </div>
                                                         {taskSize === size.id && (
-                                                            <div className="w-6 h-6 rounded-full bg-[#219178] flex items-center justify-center">
+                                                            <div className="w-6 h-6 rounded-full bg-[#01A083] flex items-center justify-center">
                                                                 <Check size={14} className="text-white" strokeWidth={3} />
                                                             </div>
                                                         )}
@@ -1148,11 +1226,11 @@ export default function ServiceSetupPage() {
 
                                                 <div className="flex flex-wrap items-center justify-center gap-4 w-full">
                                                     {photos.map((photo, idx) => (
-                                                        <div key={idx} className="w-24 h-24 rounded-[12px] overflow-hidden border-2 border-white shadow-sm relative group active:scale-95 transition-all">
+                                                        <div key={idx} className="w-24 h-24 rounded-[12px] overflow-hidden border-2 border-white relative group active:scale-95 transition-all">
                                                             <img src={photo} className="w-full h-full object-cover" />
                                                             <button
                                                                 onClick={() => setPhotos(prev => prev.filter((_, i) => i !== idx))}
-                                                                className="absolute top-1.5 right-1.5 w-6 h-6 bg-red-500/90 backdrop-blur-sm rounded-full flex items-center justify-center text-white shadow-md active:bg-red-600 transition-colors"
+                                                                className="absolute top-1.5 right-1.5 w-6 h-6 bg-red-500/90 backdrop-blur-sm rounded-full flex items-center justify-center text-white active:bg-red-600 transition-colors"
                                                             >
                                                                 <X size={14} />
                                                             </button>
@@ -1162,7 +1240,7 @@ export default function ServiceSetupPage() {
                                                     {photos.length < 6 && (
                                                         <button
                                                             onClick={() => document.getElementById('errand-photo-input')?.click()}
-                                                            className="w-24 h-24 rounded-[12px] border-2 border-dashed border-neutral-200 bg-white flex flex-col items-center justify-center gap-1 text-neutral-400 hover:border-[#219178] hover:text-[#219178] transition-all active:scale-95"
+                                                            className="w-24 h-24 rounded-[12px] border-2 border-dashed border-neutral-200 bg-white flex flex-col items-center justify-center gap-1 text-neutral-400 hover:border-[#01A083] hover:text-[#01A083] transition-all active:scale-95"
                                                         >
                                                             <Plus size={24} />
                                                             <span className="text-[10px] font-black uppercase tracking-wider">Add</span>
@@ -1198,17 +1276,17 @@ export default function ServiceSetupPage() {
                                                     destinationPin={memoizedDestinationPin}
                                                 />
                                                 <div className="absolute top-4 right-4 z-10">
-                                                    <div className="px-3 py-1.5 bg-white/90 backdrop-blur rounded-full border border-neutral-100 shadow-sm flex items-center gap-2">
-                                                        <Navigation size={14} className="text-[#219178]" />
+                                                    <div className="px-3 py-1.5 bg-white/90 backdrop-blur rounded-full border border-neutral-100 flex items-center gap-2">
+                                                        <Navigation size={14} className="text-[#01A083]" />
                                                         <span className="text-[12px] font-black text-[#111827]">Estimated Route</span>
                                                     </div>
                                                 </div>
 
                                                 {estimate?.duration && (
                                                     <div className="absolute bottom-4 left-4 z-10 transition-all animate-in fade-in slide-in-from-bottom-2 duration-700">
-                                                        <div className="px-4 py-2 bg-white/95 backdrop-blur rounded-[12px] border border-neutral-100 shadow-xl flex items-center gap-3">
-                                                            <div className="w-8 h-8 rounded-full bg-[#219178]/10 flex items-center justify-center">
-                                                                <Clock size={16} className="text-[#219178]" />
+                                                        <div className="px-4 py-2 bg-white/95 backdrop-blur rounded-[12px] border border-neutral-100 flex items-center gap-3">
+                                                            <div className="w-8 h-8 rounded-full bg-[#01A083]/10 flex items-center justify-center">
+                                                                <Clock size={16} className="text-[#01A083]" />
                                                             </div>
                                                             <div className="flex flex-col">
                                                                 <span className="text-[14px] font-black text-[#111827] leading-none mb-0.5">{Math.ceil(estimate.duration)} mins</span>
@@ -1312,7 +1390,7 @@ export default function ServiceSetupPage() {
                                                 className={`w-full p-6 text-left flex items-center justify-between transition-all ${deliveryType === 'standard' ? 'bg-[#F0FDF9]' : 'hover:bg-neutral-50'}`}
                                             >
                                                 <div className="flex items-center gap-4">
-                                                    <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${deliveryType === 'standard' ? 'bg-[#219178] border-[#219178]' : 'border-neutral-200'}`}>
+                                                    <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${deliveryType === 'standard' ? 'bg-[#01A083] border-[#01A083]' : 'border-neutral-200'}`}>
                                                         {deliveryType === 'standard' && <div className="w-2.5 h-2.5 rounded-full bg-white" />}
                                                     </div>
                                                     <div>
@@ -1331,7 +1409,7 @@ export default function ServiceSetupPage() {
                                                 className={`w-full p-6 text-left flex items-center justify-between transition-all ${deliveryType === 'schedule' ? 'bg-[#F0FDF9]' : 'hover:bg-neutral-50'}`}
                                             >
                                                 <div className="flex items-center gap-4">
-                                                    <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${deliveryType === 'schedule' ? 'bg-[#219178] border-[#219178]' : 'border-neutral-200'}`}>
+                                                    <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${deliveryType === 'schedule' ? 'bg-[#01A083] border-[#01A083]' : 'border-neutral-200'}`}>
                                                         {deliveryType === 'schedule' && <div className="w-2.5 h-2.5 rounded-full bg-white" />}
                                                     </div>
                                                     <div>
@@ -1356,6 +1434,7 @@ export default function ServiceSetupPage() {
                                                     setSelectedSlots(slots);
                                                 }}
                                                 selectedSlots={selectedSlots}
+                                                taskDurationHours={estimate?.duration || taskDuration}
                                             />
                                         </div>
 
@@ -1377,14 +1456,14 @@ export default function ServiceSetupPage() {
                                                                     setTaskSize(size.id as any);
                                                                     setTaskDuration(size.hours);
                                                                 }}
-                                                                className={`p-5 rounded-[5px] border-2 text-left transition-all flex items-center justify-between ${taskSize === size.id ? 'border-[#219178] bg-[#F0FDF9]' : 'border-neutral-100 bg-[#F9FAFB]'}`}
+                                                                className={`p-5 rounded-[5px] border-2 text-left transition-all flex items-center justify-between ${taskSize === size.id ? 'border-[#01A083] bg-[#F0FDF9]' : 'border-neutral-100 bg-[#F9FAFB]'}`}
                                                             >
                                                                 <div className="pl-4">
                                                                     <p className="font-bold text-[17px] text-black">{size.name}</p>
                                                                     <p className="font-medium text-[13px] text-black/60">{size.desc}</p>
                                                                 </div>
                                                                 <div className="text-right pr-4">
-                                                                    <p className="font-bold text-[15px] text-[#219178]">Est. {size.duration}</p>
+                                                                    <p className="font-bold text-[15px] text-[#01A083]">Est. {size.duration}</p>
                                                                 </div>
                                                             </button>
                                                         ))}
@@ -1401,13 +1480,13 @@ export default function ServiceSetupPage() {
                                                         <div className="grid grid-cols-2 gap-3 mt-2">
                                                             <button
                                                                 onClick={() => setNeedsTransport(false)}
-                                                                className={`p-5 rounded-[5px] border-2 font-black transition-all ${!needsTransport ? 'border-[#219178] bg-[#F0FDF9] text-[#219178]' : 'border-neutral-100 bg-[#F9FAFB] text-neutral-400'}`}
+                                                                className={`p-5 rounded-[5px] border-2 font-black transition-all ${!needsTransport ? 'border-[#01A083] bg-[#F0FDF9] text-[#01A083]' : 'border-neutral-100 bg-[#F9FAFB] text-neutral-400'}`}
                                                             >
                                                                 No, just packing
                                                             </button>
                                                             <button
                                                                 onClick={() => setNeedsTransport(true)}
-                                                                className={`p-5 rounded-[5px] border-2 font-black transition-all ${needsTransport ? 'border-[#219178] bg-[#F0FDF9] text-[#219178]' : 'border-neutral-100 bg-[#F9FAFB] text-neutral-400'}`}
+                                                                className={`p-5 rounded-[5px] border-2 font-black transition-all ${needsTransport ? 'border-[#01A083] bg-[#F0FDF9] text-[#01A083]' : 'border-neutral-100 bg-[#F9FAFB] text-neutral-400'}`}
                                                             >
                                                                 Yes, pack & move
                                                             </button>
@@ -1471,7 +1550,7 @@ export default function ServiceSetupPage() {
                                                             <div className="p-4 bg-[#F9FAFB] rounded-[5px] flex items-center justify-between border border-neutral-100 italic">
                                                                 <span className="text-[13px] font-light text-neutral-500">Delivery Estimate</span>
                                                                 <div className="flex items-center gap-2">
-                                                                    <span className="text-[13px] font-black text-[#219178]">
+                                                                    <span className="text-[13px] font-black text-[#01A083]">
                                                                         {estimate?.distanceKm ? `${estimate.distanceKm.toFixed(1)} km` : ""}
                                                                     </span>
                                                                     {estimate?.distanceKm && (estimate.duration || estimate.duration === 0) ? <span className="text-neutral-300">·</span> : null}
@@ -1494,7 +1573,7 @@ export default function ServiceSetupPage() {
                                                     <button
                                                         key={type}
                                                         onClick={() => setPropertyType(type)}
-                                                        className={`px-8 py-3.5 rounded-full border-2 font-bold text-[13px] transition-all ${propertyType === type ? 'border-[#219178] bg-white text-[#219178]' : 'border-neutral-100 text-black'}`}
+                                                        className={`px-8 py-3.5 rounded-full border-2 font-bold text-[13px] transition-all ${propertyType === type ? 'border-[#01A083] bg-white text-[#01A083]' : 'border-neutral-100 text-black'}`}
                                                     >
                                                         {type}
                                                     </button>
@@ -1503,7 +1582,7 @@ export default function ServiceSetupPage() {
                                         </div>
 
                                         {/* Room Selector (Eggy Style Redesign) */}
-                                        {(order.serviceType === 'cleaning' || order.serviceType === 'hospitality') && (
+                                        {((order.serviceType === 'cleaning' || order.serviceType === 'hospitality') && !['car_washing', 'car_detailing', 'dish_cleaning'].includes(order.subServiceId || '')) && (
                                             <div className="space-y-6">
                                                 <div className="flex items-center justify-between px-1">
                                                     <label className="text-[25px] font-bold text-[#111827] setup-heading">Number of Rooms</label>
@@ -1522,7 +1601,7 @@ export default function ServiceSetupPage() {
                                                                 rotate: { repeat: Infinity, duration: 5, ease: "easeInOut" }
                                                             } : { duration: 0 }}
                                                             onClick={() => setRooms(num)}
-                                                            className={`flex-shrink-0 w-16 h-16 flex items-center justify-center font-medium text-[22px] transition-all snap-center relative ${rooms === num ? 'bg-[#219178] text-white scale-125 z-10' : 'bg-[#F9FAFB] text-neutral-400 border border-neutral-100/50 rounded-full'}`}
+                                                            className={`flex-shrink-0 w-16 h-16 flex items-center justify-center font-medium text-[22px] transition-all snap-center relative ${rooms === num ? 'bg-[#01A083] text-white scale-125 z-10' : 'bg-[#F9FAFB] text-neutral-400 border border-neutral-100/50 rounded-full'}`}
                                                         >
                                                             {num}
                                                         </motion.button>
@@ -1537,7 +1616,7 @@ export default function ServiceSetupPage() {
                                                 <div className="flex items-center justify-between">
                                                     <label className="text-[25px] font-black text-[#111827] setup-heading">What are we assembling?</label>
                                                     <div className="px-3 py-1 bg-[#F0FDF9] rounded-[5px]">
-                                                        <span className="text-[11px] font-black text-[#219178] tracking-wider">Est. {Object.values(assemblyItems).reduce((sum, item) => sum + (item.quantity * item.estHours), 0).toFixed(1)} hrs</span>
+                                                        <span className="text-[11px] font-black text-[#01A083] tracking-wider">Est. {Object.values(assemblyItems).reduce((sum, item) => sum + (item.quantity * item.estHours), 0).toFixed(1)} hrs</span>
                                                     </div>
                                                 </div>
 
@@ -1600,7 +1679,7 @@ export default function ServiceSetupPage() {
                                                             <button
                                                                 key={num}
                                                                 onClick={() => setTvCount(num)}
-                                                                className={`flex-shrink-0 w-16 h-16 flex items-center justify-center font-bold text-[22px] transition-all rounded-full ${tvCount === num ? 'bg-[#219178] text-white scale-110 shadow-lg' : 'bg-[#F9FAFB] text-neutral-400 border border-neutral-100'}`}
+                                                                className={`flex-shrink-0 w-16 h-16 flex items-center justify-center font-bold text-[22px] transition-all rounded-full ${tvCount === num ? 'bg-[#01A083] text-white scale-110' : 'bg-[#F9FAFB] text-neutral-400 border border-neutral-100'}`}
                                                             >
                                                                 {num}
                                                             </button>
@@ -1624,10 +1703,10 @@ export default function ServiceSetupPage() {
                                                             <button
                                                                 key={opt.id}
                                                                 onClick={() => setLiftingHelp(opt.id)}
-                                                                className={`p-5 rounded-[5px] border-2 text-left transition-all flex items-center justify-between ${liftingHelp === opt.id ? 'border-[#219178] bg-[#F0FDF9]' : 'border-neutral-100 bg-[#F9FAFB]'}`}
+                                                                className={`p-5 rounded-[5px] border-2 text-left transition-all flex items-center justify-between ${liftingHelp === opt.id ? 'border-[#01A083] bg-[#F0FDF9]' : 'border-neutral-100 bg-[#F9FAFB]'}`}
                                                             >
                                                                 <span className="text-[16px] font-bold text-[#111827]">{opt.label}</span>
-                                                                {liftingHelp === opt.id && <Check size={20} className="text-[#219178]" strokeWidth={3} />}
+                                                                {liftingHelp === opt.id && <Check size={20} className="text-[#01A083]" strokeWidth={3} />}
                                                             </button>
                                                         ))}
                                                     </div>
@@ -1652,7 +1731,7 @@ export default function ServiceSetupPage() {
                                                                         setMountTypes(prev => [...prev, type]);
                                                                     }
                                                                 }}
-                                                                className={`px-6 py-3 rounded-full border-2 font-bold text-[13px] transition-all flex items-center gap-2 ${mountTypes.includes(type) ? 'border-[#219178] bg-[#F0FDF9] text-[#219178]' : 'border-neutral-100 text-black'}`}
+                                                                className={`px-6 py-3 rounded-full border-2 font-bold text-[13px] transition-all flex items-center gap-2 ${mountTypes.includes(type) ? 'border-[#01A083] bg-[#F0FDF9] text-[#01A083]' : 'border-neutral-100 text-black'}`}
                                                             >
                                                                 {type}
                                                                 {mountTypes.includes(type) && <Check size={14} strokeWidth={4} />}
@@ -1679,7 +1758,7 @@ export default function ServiceSetupPage() {
                                                             <button
                                                                 key={mat}
                                                                 onClick={() => setWallMaterial(mat)}
-                                                                className={`p-4 rounded-[5px] border-2 text-left transition-all ${wallMaterial === mat ? 'border-[#219178] bg-[#F0FDF9]' : 'border-neutral-100 bg-[#F9FAFB]'}`}
+                                                                className={`p-4 rounded-[5px] border-2 text-left transition-all ${wallMaterial === mat ? 'border-[#01A083] bg-[#F0FDF9]' : 'border-neutral-100 bg-[#F9FAFB]'}`}
                                                             >
                                                                 <span className="text-[14px] font-bold text-[#111827]">{mat}</span>
                                                             </button>
@@ -1711,14 +1790,72 @@ export default function ServiceSetupPage() {
                                                                         setMountingAddOns(prev => [...prev, add.id]);
                                                                     }
                                                                 }}
-                                                                className={`p-5 rounded-[5px] border-2 text-left transition-all flex items-center justify-between ${mountingAddOns.includes(add.id) ? 'border-[#219178] bg-[#F0FDF9]' : 'border-neutral-100 bg-[#F9FAFB]'}`}
+                                                                className={`p-5 rounded-[5px] border-2 text-left transition-all flex items-center justify-between ${mountingAddOns.includes(add.id) ? 'border-[#01A083] bg-[#F0FDF9]' : 'border-neutral-100 bg-[#F9FAFB]'}`}
                                                             >
                                                                 <span className="text-[16px] font-bold text-[#111827]">{add.label}</span>
-                                                                <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${mountingAddOns.includes(add.id) ? 'bg-[#219178] border-[#219178]' : 'border-neutral-300'}`}>
+                                                                <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${mountingAddOns.includes(add.id) ? 'bg-[#01A083] border-[#01A083]' : 'border-neutral-300'}`}>
                                                                     {mountingAddOns.includes(add.id) && <Check size={14} className="text-white" strokeWidth={4} />}
                                                                 </div>
                                                             </button>
                                                         ))}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* Dish Cleaning Specialized Section */}
+                                        {order.subServiceId === 'dish_cleaning' && (
+                                            <div className="space-y-10">
+                                                <div className="flex items-center justify-between">
+                                                    <h3 className="text-[25px] font-black text-[#111827]">{t({ en: 'Dish Cleaning', fr: 'Lavage de vaisselle', ar: 'غسل الصحون' })}</h3>
+                                                </div>
+
+                                                {/* Task Size Selector */}
+                                                <div className="space-y-6">
+                                                    <p className="text-[18px] font-black text-[#111827]">{t({ en: 'What scale is the load?', fr: 'Quelle est la taille de la charge ?', ar: 'ما هو حجم العمل؟' })}</p>
+                                                    <div className="grid grid-cols-1 gap-3">
+                                                        {[
+                                                            { id: 'small', label: 'Quick Wash', desc: '1-2 meals approx. (1 hr)', hours: 1 },
+                                                            { id: 'medium', label: 'Family Dinner / Iftar', desc: 'Standard family load (2 hrs)', hours: 2 },
+                                                            { id: 'large', label: 'Event / Party', desc: 'Large reception (4 hrs)', hours: 4 },
+                                                        ].map((size) => (
+                                                            <button
+                                                                key={size.id}
+                                                                onClick={() => setTaskDuration(size.hours)}
+                                                                className={`p-5 rounded-[20px] border-2 text-left transition-all flex items-center justify-between ${taskDuration === size.hours ? 'border-[#01A083] bg-[#F1FEF4]' : 'border-neutral-100 bg-[#F9FAFB]'}`}
+                                                            >
+                                                                <div>
+                                                                    <span className="text-[16px] font-black text-[#111827]">{t({ en: size.label, fr: size.label, ar: size.label })}</span>
+                                                                    <p className="text-[13px] font-medium text-black/40 mt-1">{t({ en: size.desc, fr: size.desc, ar: size.desc })}</p>
+                                                                </div>
+                                                                <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${taskDuration === size.hours ? 'bg-[#01A083] border-[#01A083]' : 'border-neutral-300'}`}>
+                                                                    {taskDuration === size.hours && <div className="w-2.5 h-2.5 rounded-full bg-white" />}
+                                                                </div>
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                </div>
+
+                                                {/* Optional Supplies */}
+                                                <div className="space-y-6">
+                                                    <h3 className="text-[18px] font-black text-[#111827]">{t({ en: 'Bricoler Supplies', fr: 'Fournitures du Bricoler', ar: 'معدات البريكولور' })}</h3>
+                                                    <p className="text-[13px] font-bold text-black/40 -mt-4 italic">{t({ en: 'Does the Bricoler need to bring their own dish soap and sponges?', fr: 'Le bricoler doit-il apporter son propre liquide vaisselle et ses éponges ?', ar: 'هل يحتاج البريكولور إلى إحضار سائل غسيل الصحون والإسفنج الخاص به؟' })}</p>
+                                                    <div className="grid gap-3">
+                                                        <button
+                                                            onClick={() => {
+                                                                if (mountingAddOns.includes('supplies')) {
+                                                                    setMountingAddOns(prev => prev.filter(a => a !== 'supplies'));
+                                                                } else {
+                                                                    setMountingAddOns(prev => [...prev, 'supplies']);
+                                                                }
+                                                            }}
+                                                            className={`p-5 rounded-[5px] border-2 text-left transition-all flex items-center justify-between ${mountingAddOns.includes('supplies') ? 'border-[#01A083] bg-[#F0FDF9]' : 'border-neutral-100 bg-[#F9FAFB]'}`}
+                                                        >
+                                                            <span className="text-[16px] font-bold text-[#111827]">{t({ en: 'Yes, bring supplies (+15 MAD)', fr: 'Oui, apporter les fournitures (+15 MAD)', ar: 'نعم، أحضر المعدات (+15 درهم)' })}</span>
+                                                            <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${mountingAddOns.includes('supplies') ? 'bg-[#01A083] border-[#01A083]' : 'border-neutral-300'}`}>
+                                                                {mountingAddOns.includes('supplies') && <Check size={14} className="text-white" strokeWidth={4} />}
+                                                            </div>
+                                                        </button>
                                                     </div>
                                                 </div>
                                             </div>
@@ -1747,13 +1884,13 @@ export default function ServiceSetupPage() {
                                                             <button
                                                                 key={size.id}
                                                                 onClick={() => setTaskDuration(size.hours)}
-                                                                className={`p-5 rounded-[5px] border-2 text-left transition-all flex items-center justify-between ${taskDuration === size.hours ? 'border-[#219178] bg-[#F1FEF4]' : 'border-neutral-100 bg-[#F9FAFB]'}`}
+                                                                className={`p-5 rounded-[5px] border-2 text-left transition-all flex items-center justify-between ${taskDuration === size.hours ? 'border-[#01A083] bg-[#F1FEF4]' : 'border-neutral-100 bg-[#F9FAFB]'}`}
                                                             >
                                                                 <div>
                                                                     <p className="text-[17px] font-bold text-[#111827]">{size.label}</p>
                                                                     <p className="text-[13px] font-medium text-[#6B7280]">{size.desc}</p>
                                                                 </div>
-                                                                {taskDuration === size.hours && <Check size={20} className="text-[#219178]" strokeWidth={3} />}
+                                                                {taskDuration === size.hours && <Check size={20} className="text-[#01A083]" strokeWidth={3} />}
                                                             </button>
                                                         ))}
                                                     </div>
@@ -1786,10 +1923,10 @@ export default function ServiceSetupPage() {
                                                     </div>
                                                 ))}
                                                 {photos.length < 6 && (
-                                                    <label className="aspect-square rounded-full border-2 border-dashed border-neutral-200 flex flex-col items-center justify-center gap-2 cursor-pointer transition-all hover:bg-neutral-50 hover:border-[#219178]/30 active:scale-95">
+                                                    <label className="aspect-square rounded-full border-2 border-dashed border-neutral-200 flex flex-col items-center justify-center gap-2 cursor-pointer transition-all hover:bg-neutral-50 hover:border-[#01A083]/30 active:scale-95">
                                                         <input type="file" multiple hidden accept="image/*" onChange={handlePhotoUpload} disabled={isUploading} />
                                                         {isUploading ? (
-                                                            <Loader2 size={24} className="animate-spin text-[#219178]" />
+                                                            <Loader2 size={24} className="animate-spin text-[#01A083]" />
                                                         ) : (
                                                             <>
                                                                 <div className="w-10 h-10 rounded-full bg-neutral-50 flex items-center justify-center">
@@ -1810,15 +1947,15 @@ export default function ServiceSetupPage() {
                                                 value={note}
                                                 onChange={(e) => setNote(e.target.value)}
                                                 placeholder="Tell us more about what needs to be done..."
-                                                className="w-full h-40 p-6 bg-[#F9FAFB] rounded-[5px] border border-neutral-100 outline-none focus:border-[#219178]/30 transition-all resize-none font-medium text-[15px] leading-relaxed placeholder:text-[#9CA3AF] placeholder:italic"
+                                                className="w-full h-40 p-6 bg-[#F9FAFB] rounded-[5px] border border-neutral-100 outline-none focus:border-[#01A083]/30 transition-all resize-none font-medium text-[15px] leading-relaxed placeholder:text-[#9CA3AF] placeholder:italic"
                                             />
                                         </div>
 
                                         {/* Save as Favorite */}
                                         {selectedProfileId === 'new' && user && (
-                                            <div className="p-5 bg-[#FFFFFF] rounded-[5px] border border-[#219178]/10 mb-12">
+                                            <div className="p-5 bg-[#FFFFFF] rounded-[5px] border border-[#01A083]/10 mb-12">
                                                 <label className="flex items-center gap-4 cursor-pointer">
-                                                    <div className={`w-6 h-6 rounded-[5px] border-2 transition-all flex items-center justify-center ${saveAsFavorite ? 'bg-[#219178] border-[#219178]' : 'bg-white border-neutral-300'}`}>
+                                                    <div className={`w-6 h-6 rounded-[5px] border-2 transition-all flex items-center justify-center ${saveAsFavorite ? 'bg-[#01A083] border-[#01A083]' : 'bg-white border-neutral-300'}`}>
                                                         <input type="checkbox" hidden checked={saveAsFavorite} onChange={() => setSaveAsFavorite(!saveAsFavorite)} />
                                                         {saveAsFavorite && <Check size={16} color="white" strokeWidth={4} />}
                                                     </div>
@@ -1833,13 +1970,13 @@ export default function ServiceSetupPage() {
                                                             initial={{ height: 0, opacity: 0 }}
                                                             animate={{ height: 'auto', opacity: 1 }}
                                                             exit={{ height: 0, opacity: 0 }}
-                                                            className="mt-4 pt-4 border-t border-[#219178]/10"
+                                                            className="mt-4 pt-4 border-t border-[#01A083]/10"
                                                         >
                                                             <input
                                                                 type="text"
                                                                 placeholder="Home, Office, Mom's House..."
                                                                 onChange={(e) => setFavoriteLabel(e.target.value)}
-                                                                className="w-full p-4 bg-white rounded-[5px] border border-neutral-100 outline-none font-bold text-[14px] focus:border-[#219178]/30 transition-all"
+                                                                className="w-full p-4 bg-white rounded-[5px] border border-neutral-100 outline-none font-bold text-[14px] focus:border-[#01A083]/30 transition-all"
                                                             />
                                                         </motion.div>
                                                     )}
@@ -1865,28 +2002,51 @@ export default function ServiceSetupPage() {
                                     <div className="space-y-6">
                                         <div className="flex items-center justify-between">
                                             <div className="flex items-center gap-2">
-                                                <span className="text-[18px] font-light text-black">Base price</span>
-                                                <button className="w-4 h-4 rounded-full border border-neutral-300 flex items-center justify-center text-[10px] text-neutral-400 font-bold">i</button>
+                                                <span className="text-[18px] font-normal text-[#111827]">Base price</span>
+                                                <button className="w-[22px] h-[22px] rounded-full border border-[#D1D5DB] flex items-center justify-center text-[10px] text-[#9CA3AF] font-bold">i</button>
                                             </div>
-                                            <span className="text-[18px] font-light text-black">{estimate.basePrice.toFixed(1)} MAD</span>
+                                            <span className="text-[18px] font-normal text-[#111827]">
+                                                {estimate.basePrice.toFixed(0)} MAD/{estimate.unit === 'unit' ? 'unit' : estimate.unit === 'day' ? 'day' : estimate.unit === 'room' ? 'room' : 'hr'}
+                                            </span>
                                         </div>
-                                        <div className="flex items-center justify-between">
-                                            <span className="text-[18px] font-light text-black">Travel coverage <span className="text-[14px] text-black/30">(1.6 km)</span></span>
-                                            <span className="text-[18px] font-light text-black">4.0 MAD</span>
-                                        </div>
+
                                         <div className="flex items-center justify-between">
                                             <div className="flex items-center gap-2">
-                                                <span className="text-[18px] font-light text-black">Service fee</span>
-                                                <button className="w-4 h-4 rounded-full border border-neutral-300 flex items-center justify-center text-[10px] text-neutral-400 font-bold">i</button>
+                                                <span className="text-[18px] font-normal text-[#111827]">Services <span className="text-[14px] text-black/40 font-medium">({estimate.quantity} {estimate.unit}{estimate.quantity > 1 && estimate.unit !== 'hr' ? 's' : ''})</span></span>
+                                                <button className="w-[22px] h-[22px] rounded-full border border-[#D1D5DB] flex items-center justify-center text-[10px] text-[#9CA3AF] font-bold">i</button>
                                             </div>
-                                            <span className="text-[18px] font-light text-black">1.5 MAD</span>
+                                            <span className="text-[18px] font-normal text-[#111827]">{estimate.subtotal.toFixed(2)} MAD</span>
                                         </div>
-                                        <div className="h-px bg-neutral-200/50 w-full" />
+
+                                        <div className="flex flex-col">
+                                            <div className="flex items-center justify-between">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-[18px] font-normal text-[#111827]">Lbricol Fee</span>
+                                                    <button className="w-[22px] h-[22px] rounded-full border border-[#D1D5DB] flex items-center justify-center text-[10px] text-[#9CA3AF] font-bold">i</button>
+                                                </div>
+                                                <span className="text-[18px] font-normal text-[#111827]">{estimate.serviceFee.toFixed(2)} MAD</span>
+                                            </div>
+                                        </div>
+
+                                        {estimate.travelFee > 0 && (
+                                            <div className="flex items-center justify-between">
+                                                <div className="flex flex-col">
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="text-[18px] font-normal text-[#111827]">Travel Fee</span>
+                                                        <button className="w-[22px] h-[22px] rounded-full border border-[#D1D5DB] flex items-center justify-center text-[10px] text-[#9CA3AF] font-bold">i</button>
+                                                    </div>
+                                                    <span className="text-[11px] font-normal text-[#9CA3AF]">{estimate.distanceKm?.toFixed(1) || '0.0'} km · ~{estimate.duration} min</span>
+                                                </div>
+                                                <span className="text-[18px] font-normal text-[#111827]">{estimate.travelFee.toFixed(2)} MAD</span>
+                                            </div>
+                                        )}
+
+                                        <div className="h-px bg-[#E5E7EB] w-full my-2" />
 
                                         {/* Total Section */}
                                         <div className="flex items-center justify-between py-2 gap-4">
-                                            <span className="text-[22px] sm:text-[25px] font-bold text-black whitespace-nowrap">Total to pay</span>
-                                            <span className="text-[24px] sm:text-[28px] font-bold text-black text-right">{estimate.total.toFixed(2)} MAD</span>
+                                            <span className="text-[22px] font-extrabold text-[#111827] whitespace-nowrap">Total to pay</span>
+                                            <span className="text-[25px] font-extrabold text-[#111827] text-right">{estimate.total.toFixed(2)} MAD</span>
                                         </div>
 
                                         {!isErrand && (
@@ -1895,7 +2055,7 @@ export default function ServiceSetupPage() {
                                                     whileTap={{ scale: 0.97 }}
                                                     onClick={handleContinue}
                                                     disabled={isSubmitting}
-                                                    className="w-full py-5 bg-[#219178] text-white rounded-full font-black text-[20px] flex items-center justify-center gap-3 disabled:opacity-50"
+                                                    className="w-full py-5 bg-[#01A083] text-white rounded-full font-black text-[20px] flex items-center justify-center gap-3 disabled:opacity-50"
                                                 >
                                                     {isSubmitting ? <Loader2 className="animate-spin" /> : "Confirm Order"}
                                                 </motion.button>
@@ -1929,7 +2089,7 @@ export default function ServiceSetupPage() {
                                     whileTap={{ scale: 0.98 }}
                                     onClick={handleContinue}
                                     disabled={isSubmitting || isUploading}
-                                    className="w-full h-15 bg-[#219178] text-white rounded-full font-black text-[20px] flex items-center justify-center gap-3 transition-all py-5 "
+                                    className="w-full h-15 bg-[#01A083] text-white rounded-full font-black text-[20px] flex items-center justify-center gap-3 transition-all py-5 "
                                 >
                                     {isSubmitting ? (
                                         <div className="flex items-center gap-2">
@@ -1994,7 +2154,7 @@ export default function ServiceSetupPage() {
                                                 setMapPickingFor(activeDrawer as 'pickup' | 'dropoff');
                                                 setActiveDrawer('map_picker');
                                             }}
-                                            className="w-8 h-8 rounded-full bg-white flex items-center justify-center text-neutral-400 active:scale-95 shadow-sm border border-neutral-100"
+                                            className="w-8 h-8 rounded-full bg-white flex items-center justify-center text-neutral-400 active:scale-95 border border-neutral-100"
                                         >
                                             <MapIcon size={16} />
                                         </button>
@@ -2023,7 +2183,7 @@ export default function ServiceSetupPage() {
                                         value={itemDescription}
                                         onChange={(e) => setItemDescription(e.target.value)}
                                         placeholder="Enter details of what needs to be transported..."
-                                        className="w-full h-48 p-5 bg-white rounded-[10px] border-2 border-neutral-100 focus:border-[#219178] focus:ring-0 font-medium text-[17px] placeholder:text-neutral-300 resize-none"
+                                        className="w-full h-48 p-5 bg-white rounded-[10px] border-2 border-neutral-100 focus:border-[#01A083] focus:ring-0 font-medium text-[17px] placeholder:text-neutral-300 resize-none"
                                     />
                                 </div>
                             )}
@@ -2081,14 +2241,14 @@ export default function ServiceSetupPage() {
                                                         <button
                                                             key={i}
                                                             onClick={() => setDeliveryDate(fullDate)}
-                                                            className={`flex-shrink-0 min-w-[140px] h-[90px] p-5 rounded-[10px] border-2 transition-all text-left relative ${isSelected ? 'border-black bg-white' : 'border-neutral-100 bg-white'}`}
+                                                            className={`flex-shrink-0 min-w-[140px] h-[90px] p-5 rounded-[20px] border-2 transition-all text-left relative ${isSelected ? 'border-[#01A083] bg-white' : 'border-neutral-100 bg-white'}`}
                                                         >
                                                             <div className="flex flex-col justify-between h-full">
                                                                 <p className="text-[17px] font-black text-[#111827]">{label}</p>
                                                                 <p className="text-[14px] font-bold text-neutral-400">{dateStr}</p>
                                                             </div>
                                                             {isSelected && (
-                                                                <div className="absolute top-3 right-3 w-6 h-6 rounded-full bg-[#219178] flex items-center justify-center">
+                                                                <div className="absolute top-3 right-3 w-6 h-6 rounded-full bg-[#01A083] flex items-center justify-center">
                                                                     <div className="w-2.5 h-2.5 rounded-full bg-white" />
                                                                 </div>
                                                             )}
@@ -2118,7 +2278,7 @@ export default function ServiceSetupPage() {
                                                         >
                                                             <span className={`text-[17px] ${isSelected ? 'font-black text-[#111827]' : 'font-bold text-[#111827]/70'}`}>{time}</span>
                                                             {isSelected ? (
-                                                                <div className="w-6 h-6 rounded-full bg-[#219178] flex items-center justify-center">
+                                                                <div className="w-6 h-6 rounded-full bg-[#01A083] flex items-center justify-center">
                                                                     <div className="w-2.5 h-2.5 rounded-full bg-white" />
                                                                 </div>
                                                             ) : (
@@ -2169,7 +2329,7 @@ export default function ServiceSetupPage() {
                                                 </span>
                                                 <button
                                                     onClick={() => setActiveDrawer('none')}
-                                                    className="pointer-events-auto text-[13px] font-black text-[#219178] py-0.5"
+                                                    className="pointer-events-auto text-[13px] font-black text-[#01A083] py-0.5"
                                                 >
                                                     Use this point
                                                 </button>
@@ -2180,7 +2340,7 @@ export default function ServiceSetupPage() {
                                         <div className="absolute bottom-[40px] right-6 z-[1001]">
                                             <button
                                                 onClick={() => setGpsTrigger(prev => prev + 1)}
-                                                className="w-12 h-12 rounded-full bg-white flex items-center justify-center text-black active:scale-95 transition-all shadow-lg border border-neutral-50"
+                                                className="w-12 h-12 rounded-full bg-white flex items-center justify-center text-black active:scale-95 transition-all border border-neutral-50"
                                             >
                                                 <Navigation size={22} />
                                             </button>
@@ -2228,8 +2388,8 @@ export default function ServiceSetupPage() {
                                                 }}
                                                 className="w-full p-5 bg-neutral-50 rounded-[15px] border border-neutral-100 flex items-center gap-4 group active:bg-neutral-100 transition-all text-left"
                                             >
-                                                <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-sm">
-                                                    <MapPin size={20} className="text-[#219178]" />
+                                                <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center border border-neutral-100">
+                                                    <MapPin size={20} className="text-[#01A083]" />
                                                 </div>
                                                 <div className="flex-1 min-w-0">
                                                     <p className="text-[15px] font-black text-[#111827] truncate">{r.address.split(',')[0]}</p>
@@ -2259,7 +2419,7 @@ export default function ServiceSetupPage() {
                                 <div className="p-6 pb-12">
                                     <button
                                         onClick={() => setActiveDrawer('none')}
-                                        className="w-full py-5 bg-[#219178] text-white rounded-full font-black text-[18px] active:scale-95 transition-all"
+                                        className="w-full py-5 bg-[#01A083] text-white rounded-full font-black text-[18px] active:scale-95 transition-all"
                                     >
                                         {activeDrawer === 'schedule' ? 'Confirm' : 'Save Details'}
                                     </button>

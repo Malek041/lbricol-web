@@ -24,6 +24,7 @@ interface OrderState {
   providerRank?: string | null;
   providerBio?: string | null;
   providerExperience?: string | null;
+  providerBadge?: string | null;
   scheduledDate: string | null;
   scheduledTime: string | null;
   serviceIcon: string | null;
@@ -71,6 +72,7 @@ const defaultOrder: OrderState = {
   providerRank: null,
   providerBio: null,
   providerExperience: null,
+  providerBadge: null,
   scheduledDate: null,
   scheduledTime: null,
   serviceIcon: null,

@@ -30,6 +30,7 @@ export interface SubService {
     name: string;
     desc?: { en: string; fr: string; ar: string };
     pricingArchetype?: 'hourly' | 'fixed' | 'unit' | 'rental';
+    estimatedDurationHr?: number;
 }
 
 export interface ServiceConfig {
@@ -46,12 +47,23 @@ export const SERVICES_HIERARCHY: Record<string, ServiceConfig> = {
         name: 'Cleaning',
         icon: Trash2,
         subServices: [
-            { id: 'family_home', name: 'Family Home Cleaning', pricingArchetype: 'unit' },
-            { id: 'hospitality', name: 'Hospitality Cleaning', pricingArchetype: 'unit' },
-            { id: 'deep_cleaning', name: 'Deep Home Cleaning', pricingArchetype: 'unit' },
-            { id: 'car_washing', name: 'Car Washing', pricingArchetype: 'fixed' },
-            { id: 'car_detailing', name: 'Car Detailing', pricingArchetype: 'fixed' },
-            { id: 'office_cleaning', name: 'Office Cleaning', pricingArchetype: 'unit' }
+            { id: 'family_home', name: 'Family Home Cleaning', pricingArchetype: 'unit', estimatedDurationHr: 3 },
+            { id: 'hospitality', name: 'Hospitality Cleaning', pricingArchetype: 'unit', estimatedDurationHr: 2 },
+            { id: 'deep_cleaning', name: 'Deep Home Cleaning', pricingArchetype: 'unit', estimatedDurationHr: 5 },
+            { id: 'car_washing', name: 'Car Washing', pricingArchetype: 'fixed', estimatedDurationHr: 1 },
+            { id: 'car_detailing', name: 'Car Detailing', pricingArchetype: 'fixed', estimatedDurationHr: 3 },
+            { id: 'office_cleaning', name: 'Office Cleaning', pricingArchetype: 'unit', estimatedDurationHr: 4 },
+            { 
+                id: 'dish_cleaning', 
+                name: 'Dish Cleaning', 
+                pricingArchetype: 'hourly',
+                estimatedDurationHr: 2,
+                desc: {
+                    en: 'Professional dish washing after meals or events.',
+                    fr: 'Lavage de vaisselle professionnel après vos repas ou événements.',
+                    ar: 'غسل الصحون الاحترافي بعد الوجبات أو المناسبات.'
+                }
+            }
         ]
     },
 
@@ -128,11 +140,11 @@ export const SERVICES_HIERARCHY: Record<string, ServiceConfig> = {
                     ar: 'المساعدة في نقل الصناديق والأثاث داخل نفس المدينة.'
                 }
             },
-            { id: 'packing', name: 'Packing Services', pricingArchetype: 'hourly' },
-            { id: 'furniture_move', name: 'Furniture Moving Only', pricingArchetype: 'hourly' },
-            { id: 'heavy_hauling', name: 'Heavy Item Hauling', pricingArchetype: 'hourly' },
-            { id: 'trash_removal', name: 'Trash & Furniture Removal', pricingArchetype: 'hourly' },
-            { id: 'rearrange_furniture', name: 'Rearrange Furniture', pricingArchetype: 'hourly' }
+            { id: 'packing', name: 'Packing Services', pricingArchetype: 'hourly', estimatedDurationHr: 4 },
+            { id: 'furniture_move', name: 'Furniture Moving Only', pricingArchetype: 'hourly', estimatedDurationHr: 2 },
+            { id: 'heavy_hauling', name: 'Heavy Item Hauling', pricingArchetype: 'hourly', estimatedDurationHr: 2 },
+            { id: 'trash_removal', name: 'Trash & Furniture Removal', pricingArchetype: 'hourly', estimatedDurationHr: 1 },
+            { id: 'rearrange_furniture', name: 'Rearrange Furniture', pricingArchetype: 'hourly', estimatedDurationHr: 1 }
         ]
     },
     home_repairs: {
@@ -168,14 +180,14 @@ export const SERVICES_HIERARCHY: Record<string, ServiceConfig> = {
         name: 'Mounting',
         icon: Monitor,
         subServices: [
-            { id: 'tv_mounting', name: 'TV Mounting', pricingArchetype: 'fixed' },
-            { id: 'install_shelves', name: 'Install Shelves, Rods & Hooks', pricingArchetype: 'fixed' },
-            { id: 'curtain_rod', name: 'Curtain Rod Installation', pricingArchetype: 'fixed' },
-            { id: 'mirror_hanging', name: 'Mirror Hanging', pricingArchetype: 'fixed' },
-            { id: 'picture_hanging', name: 'Picture Hanging', pricingArchetype: 'fixed' },
-            { id: 'hang_art', name: 'Hang Art, Mirror & Decor', pricingArchetype: 'fixed' },
-            { id: 'install_blinds', name: 'Install Blinds & Window Treatments', pricingArchetype: 'fixed' },
-            { id: 'mount_furniture', name: 'Mount & Anchor Furniture', pricingArchetype: 'fixed' },
+            { id: 'tv_mounting', name: 'TV Mounting', pricingArchetype: 'fixed', estimatedDurationHr: 1.5 },
+            { id: 'install_shelves', name: 'Install Shelves, Rods & Hooks', pricingArchetype: 'fixed', estimatedDurationHr: 1 },
+            { id: 'curtain_rod', name: 'Curtain Rod Installation', pricingArchetype: 'fixed', estimatedDurationHr: 0.5 },
+            { id: 'mirror_hanging', name: 'Mirror Hanging', pricingArchetype: 'fixed', estimatedDurationHr: 0.5 },
+            { id: 'picture_hanging', name: 'Picture Hanging', pricingArchetype: 'fixed', estimatedDurationHr: 0.5 },
+            { id: 'hang_art', name: 'Hang Art, Mirror & Decor', pricingArchetype: 'fixed', estimatedDurationHr: 1 },
+            { id: 'install_blinds', name: 'Install Blinds & Window Treatments', pricingArchetype: 'fixed', estimatedDurationHr: 1 },
+            { id: 'mount_furniture', name: 'Mount & Anchor Furniture', pricingArchetype: 'fixed', estimatedDurationHr: 1 },
             { id: 'other_mounting', name: 'Other Mounting', pricingArchetype: 'hourly' }
         ]
     },
@@ -245,18 +257,21 @@ export const SERVICES_HIERARCHY: Record<string, ServiceConfig> = {
                 id: 'car_wash',
                 name: 'Car Wash',
                 pricingArchetype: 'fixed',
+                estimatedDurationHr: 1,
                 desc: { en: 'Professional car washing and cleaning.', fr: 'Lavage et nettoyage professionnel de voiture.', ar: 'غسيل وتنظيف السيارات بشكل احترافي.' }
             },
             {
                 id: 'car_detail',
                 name: 'Car Detailing',
                 pricingArchetype: 'fixed',
+                estimatedDurationHr: 3,
                 desc: { en: 'Deep cleaning and restoration for your car.', fr: 'Nettoyage en profondeur et restauration de votre voiture.', ar: 'تنظيف عميق واستعادة لسيارتك.' }
             },
             {
                 id: 'automotive_glass',
                 name: 'Automotive Glass',
                 pricingArchetype: 'fixed',
+                estimatedDurationHr: 1.5,
                 desc: { en: 'Windshield and glass repair.', fr: 'Réparation de pare-brise et de vitres.', ar: 'إصلاح الزجاج والزجاج الأمامي.' }
             },
             {
@@ -445,6 +460,15 @@ export const getSubServiceName = (serviceIdOrName: string, subServiceIdOrName: s
     return subService?.name;
 };
 
+// Helper function to get the full sub-service object
+export const getSubService = (serviceIdOrName: string, subServiceIdOrName: string): SubService | undefined => {
+    const service = getServiceById(serviceIdOrName);
+    if (!service) return undefined;
+    return service.subServices.find(ss =>
+        ss.id === subServiceIdOrName || ss.name === subServiceIdOrName
+    );
+};
+
 // Helper function to get the correct vector path for a service
 export const getServiceVector = (serviceIdOrName: string | undefined): string => {
     if (!serviceIdOrName) return '/Images/Service Category vectors/HandymanVector.webp';
@@ -473,4 +497,17 @@ export const getServiceVector = (serviceIdOrName: string | undefined): string =>
     if (id.includes('car_rental') || id.includes('rent') || id.includes('automotive')) return '/Images/Vectors Illu/carKey.png';
 
     return '/Images/Service Category vectors/HandymanVector.webp'; // Fallback
+};
+
+/**
+ * Finds the parent category ID for a given sub-service ID.
+ */
+export const getCategoryForSubService = (subId: string): string | null => {
+    for (const catId in SERVICES_HIERARCHY) {
+        const cat = SERVICES_HIERARCHY[catId];
+        if (cat.subServices.some(ss => ss.id === subId)) {
+            return catId;
+        }
+    }
+    return null;
 };

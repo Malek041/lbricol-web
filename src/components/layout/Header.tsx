@@ -98,7 +98,7 @@ const Header = ({ activeTab, onTabChange, isBricoler = false, user = null, onLog
                     {Icon && <Icon size={18} color={c.text} />}
                     <span style={{
                         fontSize: '14px',
-                        fontWeight: sublabel ? 700 : 500,
+                        fontWeight: sublabel ? 500 : 400,
                         color: c.text
                     }}>
                         {label}
@@ -144,7 +144,7 @@ const Header = ({ activeTab, onTabChange, isBricoler = false, user = null, onLog
                 }}>
                     {!isMobile && (
                         <img
-                            src={theme === 'light' ? "/Images/Logo/Black Lbrico Logo.webp" : "/Images/Logo/White Lbrico Logo.webp"}
+                            src={theme === 'light' ? "/Images/map Assets/LocationPin.png" : "/Images/map Assets/LocationPin.png"}
                             alt="Lbricol"
                             style={{
                                 height: '2rem',
@@ -184,7 +184,7 @@ const Header = ({ activeTab, onTabChange, isBricoler = false, user = null, onLog
                                     style={{
                                         padding: '0.5rem 0',
                                         fontSize: isMobile ? '14px' : '15px',
-                                        fontWeight: 800,
+                                        fontWeight: 500,
                                         border: 'none',
                                         background: 'none',
                                         cursor: 'pointer',
@@ -237,7 +237,7 @@ const Header = ({ activeTab, onTabChange, isBricoler = false, user = null, onLog
                                     cursor: 'pointer',
                                     color: '#FFFFFF',
                                     fontSize: '13px',
-                                    fontWeight: 800,
+                                    fontWeight: 500,
                                     padding: '10px 14px',
                                     borderRadius: '50px',
                                     transition: 'opacity 0.2s ease',
@@ -262,7 +262,7 @@ const Header = ({ activeTab, onTabChange, isBricoler = false, user = null, onLog
                                     cursor: 'pointer',
                                     color: '#FFFFFF',
                                     fontSize: '13px',
-                                    fontWeight: 800,
+                                    fontWeight: 500,
                                     padding: '10px 14px',
                                     borderRadius: '50px',
                                     transition: 'background-color 0.2s ease',
@@ -371,7 +371,7 @@ const Header = ({ activeTab, onTabChange, isBricoler = false, user = null, onLog
                                                     }
                                                     setIsMenuOpen(false);
                                                 }}
-                                                image="/Images/Logo/Black Lbricol Avatar Face.webp"
+                                                image="/Images/map Assets/LocationPin.png"
                                                 bordered
                                             />
 

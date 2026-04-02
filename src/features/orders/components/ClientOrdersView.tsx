@@ -3,15 +3,17 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { OrderDetails } from '@/features/orders/components/OrderCard';
-import { ChevronLeft, Info, MessageCircle, MessageSquare, Image, HelpCircle, X, MapPin, Clock, Calendar as CalendarIcon, Phone, User, Ban, Check, AlertTriangle, RefreshCw, CreditCard, Wrench, Banknote, Star, Home, Layout, Sparkles } from 'lucide-react';
+import { ChevronLeft, Info, MessageCircle, MessageSquare, Image, HelpCircle, X, MapPin, Clock, Calendar as CalendarIcon, Phone, User, Ban, Check, AlertTriangle, RefreshCw, CreditCard, Wrench, Banknote, Star, Home, Layout, Sparkles, AlertCircle, Loader2, Calendar, Camera, Mic, Shield } from 'lucide-react';
+import MessagesView from '@/features/messages/components/MessagesView';
 import { useLanguage } from '@/context/LanguageContext';
 import { useToast } from '@/context/ToastContext';
 import { WhatsAppBrandIcon } from '@/components/shared/WhatsAppIcon';
 import { db, auth } from '@/lib/firebase';
 import { doc, updateDoc, arrayUnion, increment, serverTimestamp, getDoc, addDoc, collection } from 'firebase/firestore';
 import { cn } from '@/lib/utils';
-import { getServiceById, getSubServiceName, getServiceVector } from '@/config/services_config';
+import { getServiceById, getSubServiceName, getServiceVector, getSubService } from '@/config/services_config';
 import { format, isToday, isThisWeek, parseISO, startOfDay, addDays } from 'date-fns';
+import { calculateOrderPrice } from '@/lib/pricing';
 
 
 
@@ -20,6 +22,7 @@ interface ClientOrdersViewProps {
     onViewMessages: (jobId: string) => void;
     initialShowHistory?: boolean;
     onResumeDraft?: (draft: any) => void;
+    onViewingOrderDetails?: (isViewing: boolean) => void;
 }
 
 // ── Shared Hook for Progress ────────────────────────────────────────────────
@@ -111,7 +114,48 @@ export const useOrderProgress = () => {
         } catch (e) { return null; }
     };
 
-    return { currentTime, getProgress, getReturnProgress, getTimeRemaining };
+    const getDynamicStatus = (order: OrderDetails) => {
+        if (!order.date || !order.time) return order.status;
+
+        const autoStatuses = ['confirmed', 'accepted', 'programmed', 'pending', 'in_progress'];
+        if (!autoStatuses.includes(order.status || '')) return order.status;
+
+        try {
+            const start = getOrderStartTime(order);
+            if (!start || isNaN(start.getTime())) return order.status;
+
+            const now = currentTime.getTime();
+            const startTime = start.getTime();
+
+            let durationHr = 2;
+            const subService = getSubService(order.service || '', order.subService || '');
+            if (subService?.estimatedDurationHr) {
+                durationHr = subService.estimatedDurationHr;
+            }
+
+            const endTime = startTime + (durationHr * 60 * 60 * 1000);
+
+            if (now < startTime) return 'on_time';
+            if (now >= startTime && now < endTime) return 'in_progress';
+            if (now >= endTime) return 'done';
+
+            return order.status;
+        } catch (e) {
+            return order.status;
+        }
+    };
+
+    const getOrderStartTime = (order: OrderDetails) => {
+        try {
+            const rawTime = order.time?.split('-')[0].trim();
+            if (!rawTime) return null;
+            const timePart = rawTime.includes(':') ? (rawTime.split(':').length === 2 ? `${rawTime}:00` : rawTime) : `${rawTime}:00:00`;
+            const datePart = order.date.split('T')[0];
+            return new Date(`${datePart}T${timePart}`);
+        } catch (e) { return null; }
+    };
+
+    return { currentTime, getProgress, getReturnProgress, getTimeRemaining, getDynamicStatus };
 };
 
 // ── Calendar Tab Component ──────────────────────────────────────────────
@@ -192,7 +236,7 @@ function CalendarTab({
                         <ChevronLeft size={20} className="text-black" />
                     </button>
                     <div className="flex flex-col items-center">
-                        <span className="text-[15px] font-black text-black tracking-tight">{weekLabel}</span>
+                        <span className="text-[15px] font-medium text-black tracking-tight">{weekLabel}</span>
                     </div>
                     <button
                         onClick={() => setWeekStart(prev => addDays(prev, 7))}
@@ -215,16 +259,16 @@ function CalendarTab({
                                 className={cn(
                                     "flex flex-col items-center py-3 rounded-2xl relative transition-all border",
                                     isSelected
-                                        ? "bg-[#219178] border-[#219178]"
+                                        ? "bg-[#01A083] border-[#01A083]"
                                         : isTodayDay
                                             ? "bg-[#E6F7F4] border-[#E6F7F4]"
                                             : "bg-white border-transparent hover:border-neutral-100"
                                 )}
                             >
-                                <span className={cn("text-[10px] font-black uppercase tracking-wider mb-1", isSelected ? "text-white/70" : "text-neutral-400")}>
+                                <span className={cn("text-[10px] font-medium uppercase tracking-wider mb-1", isSelected ? "text-white/70" : "text-neutral-400")}>
                                     {day.dayLabel}
                                 </span>
-                                <span className={cn("text-[18px] font-black", isSelected ? "text-white" : isTodayDay ? "text-[#219178]" : "text-black")}>
+                                <span className={cn("text-[18px] font-medium", isSelected ? "text-white" : isTodayDay ? "text-[#01A083]" : "text-black")}>
                                     {day.dayNum}
                                 </span>
                                 {hasJobs && !isSelected && (
@@ -245,7 +289,7 @@ function CalendarTab({
                         {hours.map((h) => (
                             <div key={h} className="flex h-[100px] border-b border-[#F0F0F0] group">
                                 <div className="w-16 flex-none flex flex-col items-end justify-start pr-3 -mt-2.5">
-                                    <span className="text-[11px] font-black text-neutral-400 uppercase tracking-tighter">
+                                    <span className="text-[11px] font-medium text-neutral-400 uppercase tracking-tighter">
                                         {new Date(2000, 0, 1, h, 0).toLocaleTimeString(dateLocale, { hour: 'numeric', hour12: true })}
                                     </span>
                                 </div>
@@ -267,7 +311,7 @@ function CalendarTab({
                                     initial={{ opacity: 0, x: 20 }}
                                     animate={{ opacity: 1, x: 0 }}
                                     onClick={() => onSelectOrder(order)}
-                                    className="absolute left-6 right-8 rounded-2xl bg-white border border-neutral-100 p-4 shadow-lg z-20 cursor-pointer hover:shadow-xl active:scale-[0.98] transition-all flex items-start gap-4"
+                                    className="absolute left-6 right-8 rounded-2xl bg-white border border-neutral-100 p-4 z-20 cursor-pointer active:scale-[0.98] transition-all flex items-start gap-4"
                                     style={{
                                         top: getTimePosition(fromTime) + 2,
                                         height: getTimeHeight(fromTime, toTime) - 4
@@ -282,7 +326,7 @@ function CalendarTab({
                                     </div>
                                     <div className="flex-1 min-w-0">
                                         <div className="flex items-center justify-between mb-1">
-                                            <span className="text-[16px] font-black text-black truncate uppercase tracking-tight">
+                                            <span className="text-[16px] font-medium text-black truncate uppercase tracking-tight">
                                                 {order.subServiceDisplayName || order.service}
                                             </span>
                                             <div className="w-6 h-6 rounded-full bg-[#FFC244] flex items-center justify-center">
@@ -292,7 +336,7 @@ function CalendarTab({
                                         <p className="text-[13px] font-medium text-neutral-400 truncate">
                                             {order.bricolerName || t({ en: 'Matching...', fr: 'Recherche...', ar: 'جاري البحث...' })} • {order.city || (typeof order.location === 'object' ? (order.location as any).address : order.location)}
                                         </p>
-                                        <p className="text-[12px] font-black text-[#219178] mt-1">
+                                        <p className="text-[12px] font-medium text-[#01A083] mt-1">
                                             {order.time}
                                         </p>
                                     </div>
@@ -306,9 +350,10 @@ function CalendarTab({
     );
 }
 
-export default function ClientOrdersView({ orders, onViewMessages, initialShowHistory = false, onResumeDraft }: ClientOrdersViewProps) {
+export default function ClientOrdersView({ orders, onViewMessages, initialShowHistory = false, onResumeDraft, onViewingOrderDetails }: ClientOrdersViewProps) {
     const { t, language } = useLanguage();
     const { showToast } = useToast();
+    const { getDynamicStatus } = useOrderProgress();
 
     // ── Shared Helpers & State ──────────────────────────────────────────
     const [currentTime, setCurrentTime] = React.useState(new Date());
@@ -452,14 +497,25 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
     const [horizontalSelectedDate, setHorizontalSelectedDate] = useState<Date>(new Date());
     const [showCancelModal, setShowCancelModal] = useState(false);
     const [cancelReason, setCancelReason] = useState('');
+    const [isRefreshing, setIsRefreshing] = useState(false);
+    const [activeChatOrderId, setActiveChatOrderId] = useState<string | null>(null);
     const [isCancelling, setIsCancelling] = useState(false);
     const [isRedistributeCancellation, setIsRedistributeCancellation] = useState(false);
 
+    useEffect(() => {
+        if (onViewingOrderDetails) {
+            onViewingOrderDetails(selectedOrder !== null && activeChatOrderId === null);
+        }
+    }, [selectedOrder, activeChatOrderId, onViewingOrderDetails]);
+
     // Filter orders for history (done and cancelled)
     const historyOrders = useMemo(() => {
-        return orders.filter(o => ['done', 'cancelled'].includes(o.status || ''))
+        return orders.filter(o => {
+            const status = getDynamicStatus(o);
+            return ['done', 'cancelled', 'delivered'].includes(status || '');
+        })
             .sort((a, b) => new Date(b.date || 0).getTime() - new Date(a.date || 0).getTime());
-    }, [orders]);
+    }, [orders, getDynamicStatus]);
 
     // Cancel order
     const handleConfirmCancel = async () => {
@@ -580,7 +636,7 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
                 });
             }
             const jobRef = doc(db, 'jobs', order.id);
-            await updateDoc(jobRef, { 
+            await updateDoc(jobRef, {
                 rated: true,
                 clientRating: rating,
                 clientReview: review,
@@ -605,9 +661,9 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
                 setShowHistory(false);
             }}
             whileTap={{ scale: 0.98 }}
-            className="flex items-center gap-4 py-4 border-b border-[#F0F0F0] cursor-pointer"
+            className="flex items-center gap-4 py-4 border-b border-[#F0F0F0] cursor-pointer group"
         >
-            <div className="w-20 h-20 rounded-xl overflow-hidden bg-neutral-100 flex-shrink-0">
+            <div className="w-20 h-20 rounded-[25px_18px_20px_12px] overflow-hidden bg-neutral-50 flex-shrink-0 border-2 border-black/5">
                 {order.images && order.images.length > 0 ? (
                     <img
                         src={order.images[0]}
@@ -623,13 +679,13 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
                 )}
             </div>
             <div className="flex-1 min-w-0">
-                <h3 className="text-[17px] font-black text-black leading-tight truncate">
+                <h3 className="text-[17px] font-medium text-black leading-tight truncate">
                     {order.subServiceDisplayName || order.service}
                 </h3>
                 <p className="text-[14px] font-medium text-neutral-400 mt-0.5 truncate">
                     {order.bricolerName ? `${order.bricolerName} • ` : ''}{t({ en: '1x task from', fr: '1x tâche de', ar: 'مهمة واحدة من' })} <span className="capitalize">{order.service}</span>
                 </p>
-                <p className="text-[14px] font-bold text-neutral-400 mt-1 capitalize">
+                <p className="text-[14px] font-medium text-neutral-400 mt-1 capitalize">
                     {order.status === 'done' ? t({ en: 'Completed', fr: 'Terminée', ar: 'مكتملة' }) : order.status} • {order.city || (typeof order.location === 'object' ? (order.location as any).address : order.location)}
                 </p>
             </div>
@@ -645,24 +701,24 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
                         onClick={() => setActiveTab('activity')}
                         className={cn(
                             "pb-3 text-[16px] transition-all relative",
-                            activeTab === 'activity' ? "font-black text-[#1D1D1D]" : "font-bold text-[#6B6B6B]"
+                            activeTab === 'activity' ? "font-medium text-[#1D1D1D]" : "font-medium text-[#6B6B6B]"
                         )}
                     >
                         {t({ en: 'Activity', fr: 'Activité', ar: 'النشاط' })}
                         {activeTab === 'activity' && (
-                            <motion.div layoutId="client-orders-tab" className="absolute bottom-0 left-0 right-0 h-[3px] bg-[#219178] rounded-t-full" />
+                            <motion.div layoutId="client-orders-tab" className="absolute bottom-0 left-0 right-0 h-[3px] bg-[#01A083] rounded-t-full" />
                         )}
                     </button>
                     <button
                         onClick={() => setActiveTab('calendar')}
                         className={cn(
                             "pb-3 text-[16px] transition-all relative",
-                            activeTab === 'calendar' ? "font-black text-[#1D1D1D]" : "font-bold text-[#6B6B6B]"
+                            activeTab === 'calendar' ? "font-medium text-[#1D1D1D]" : "font-medium text-[#6B6B6B]"
                         )}
                     >
                         {t({ en: 'Calendar', fr: 'Calendrier', ar: 'التقويم' })}
                         {activeTab === 'calendar' && (
-                            <motion.div layoutId="client-orders-tab" className="absolute bottom-0 left-0 right-0 h-[3px] bg-[#219178] rounded-t-full" />
+                            <motion.div layoutId="client-orders-tab" className="absolute bottom-0 left-0 right-0 h-[3px] bg-[#01A083] rounded-t-full" />
                         )}
                     </button>
                 </div>
@@ -704,7 +760,7 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
                             >
                                 <ChevronLeft size={28} className="text-black" />
                             </button>
-                            <h1 className="text-[28px] font-black text-black">{t({ en: 'Order history', fr: 'Historique des commandes', ar: 'سجل الطلبات' })}</h1>
+                            <h1 className="text-[28px] font-medium text-black">{t({ en: 'Order history', fr: 'Historique des commandes', ar: 'سجل الطلبات' })}</h1>
                         </div>
 
                         <div className="flex-1 overflow-y-auto px-6 no-scrollbar">
@@ -721,7 +777,7 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
                                             style={{ height: 230, objectFit: 'contain', paddingBottom: 20, paddingTop: 20 }}
                                         />
                                     </div>
-                                    <h3 className="text-[20px] font-black text-black">{t({ en: 'No history yet', fr: 'Aucun historique pour le moment', ar: 'لا يوجد سجل بعد' })}</h3>
+                                    <h3 className="text-[20px] font-medium text-black">{t({ en: 'No history yet', fr: 'Aucun historique pour le moment', ar: 'لا يوجد سجل بعد' })}</h3>
                                     <p className="text-neutral-500 font-light">{t({ en: 'Your completed and cancelled orders will appear here.', fr: 'Vos commandes terminées et annulées apparaîtront ici.', ar: 'ستظهر هنا طلباتك المكتملة والملغاة.' })}</p>
                                 </div>
                             )}
@@ -738,526 +794,324 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
                         animate={{ x: 0 }}
                         exit={{ x: '100%' }}
                         transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-                        className="fixed inset-0 z-[4000] bg-white flex flex-col"
+                        className="fixed inset-0 z-[4000] bg-white flex flex-col no-scrollbar"
                     >
-                        <div className="flex items-center justify-between px-12 py-5 border-b border-neutral-50 sticky top-0 bg-white z-50">
-                            <div className="flex items-center gap-4">
+                        {/* Premium Header */}
+                        <div className="flex-shrink-0 pt-16 px-6 pb-4 bg-white z-[4002]">
+                            <div className="flex items-center justify-between">
                                 <button
                                     onClick={() => setSelectedOrder(null)}
-                                    className="w-10 h-10 -ml-2 rounded-full flex items-center justify-center hover:bg-neutral-50 active:scale-90 transition-transform"
+                                    className="w-12 h-12 flex items-center justify-center rounded-2xl bg-[#01A083] active:scale-95 transition-all"
                                 >
-                                    <ChevronLeft size={28} className="text-black" />
+                                    <ChevronLeft size={28} className="text-white" />
                                 </button>
-                                <h1 className="text-[20px] font-black text-black">{t({ en: 'Order details', fr: 'Détails de la commande', ar: 'تفاصيل الطلب' })}</h1>
-                            </div>
-                            <div className="flex items-center gap-2">
-                                {selectedOrder.bricolerWhatsApp && ['programmed', 'in_progress', 'done', 'delivered'].includes(selectedOrder.status || '') && (
-                                    <button
-                                        onClick={() => selectedOrder.bricolerWhatsApp && openWhatsApp(selectedOrder.bricolerWhatsApp)}
-                                        className="w-12 h-12 md:w-14 md:h-14 rounded-full flex items-center justify-center text-[#25D366] hover:scale-110 active:scale-95 transition-all group"
-                                        title={t({ en: 'Contact Bricoler via WhatsApp', fr: 'Contacter le Bricoler via WhatsApp', ar: 'اتصل بالبريكولر عبر واتساب' })}
-                                    >
-                                        <WhatsAppBrandIcon size={32} className="drop-shadow-sm" />
-                                    </button>
-                                )}
+                                <div className="text-right">
+                                    <span className="text-[11px] font-medium text-neutral-400 uppercase tracking-widest block">
+                                        {t({ en: 'Order ID', fr: 'ID Commande', ar: 'رقم الطلب' })}
+                                    </span>
+                                    <span className="text-[17px] font-medium text-black">
+                                        #{selectedOrder.id?.slice(-6).toUpperCase()}
+                                    </span>
+                                </div>
                             </div>
                         </div>
 
-                        {/* Order Progress Header (New) */}
-                        {['programmed', 'in_progress', 'matching', 'pending'].includes(selectedOrder.status || '') && (
-                            <div className="bg-white border-b border-neutral-100/50 pb-4">
-                                <div className="px-12 pt-4">
-                                    <div className="flex items-center justify-between mb-2">
-                                        <div className="flex items-center gap-2">
-                                            <span className={cn(
-                                                "px-2 py-0.5 text-[11px] font-black rounded-md uppercase tracking-wider",
-                                                getProgress(selectedOrder) === 100 ? "bg-[#E6F7F4] text-[#219178]" : "bg-neutral-50 text-neutral-400"
-                                            )}>
-                                                {getProgress(selectedOrder) === 100 ? t({ en: 'In Progress', fr: 'En cours', ar: 'قيد التنفيذ' }) : t({ en: 'Scheduled', fr: 'Planifié', ar: 'مبرمج' })}
-                                            </span>
-                                            {getTimeRemaining(selectedOrder) && (
-                                                <span className="text-[12px] font-black text-[#219178]">
-                                                    {getTimeRemaining(selectedOrder)}
-                                                </span>
-                                            )}
-                                        </div>
-                                        <span className="text-[12px] font-black text-neutral-400">
-                                            {getProgress(selectedOrder)}%
-                                        </span>
-                                    </div>
-                                    <div className="w-full h-1.5 bg-neutral-50 rounded-full overflow-hidden">
-                                        <motion.div
-                                            initial={{ width: 0 }}
-                                            animate={{ width: `${getProgress(selectedOrder)}%` }}
-                                            transition={{ duration: 1 }}
-                                            className="h-full bg-[#219178] rounded-full"
+                        {/* Main Scrollable Content */}
+                        <div className="flex-1 overflow-y-auto no-scrollbar pb-[200px]">
+                            <div className="px-6">
+                                {/* Hero Image & Title Section */}
+                                <div className="text-center mt-8 mb-10">
+                                    <motion.div
+                                        initial={{ scale: 0.8, opacity: 0 }}
+                                        animate={{ scale: 1, opacity: 1 }}
+                                        className="flex justify-center mb-6"
+                                    >
+                                        <img
+                                            src={selectedOrder.service === 'car_rental' ?
+                                                (selectedOrder.selectedCar?.modelImage || selectedOrder.selectedCar?.image || "/Images/Vectors Illu/carKey.png") :
+                                                getServiceVector(selectedOrder.service || '')
+                                            }
+                                            className="w-40 h-40 object-contain"
+                                            alt="Service"
                                         />
+                                    </motion.div>
+                                    <h2 className="text-[28px] font-medium text-black mb-2 tracking-tight">
+                                        {t({ en: 'Order Details', fr: 'Détails de la mission', ar: 'تفاصيل المهمة' })}
+                                    </h2>
+                                    <div className="text-[17px] font-medium text-neutral-500 flex items-center justify-center gap-2">
+                                        <span>{selectedOrder.date ? format(parseISO(selectedOrder.date), 'MMMM d, yyyy') : ''}</span>
+                                        <span>•</span>
+                                        <span>{selectedOrder.time || '09:00'}</span>
                                     </div>
                                 </div>
-                            </div>
-                        )}
 
-                        {/* Content */}
-                        <div className="flex-1 overflow-y-auto no-scrollbar">
-                            <div className="pb-10">
-                                {(() => {
-                                    const isCarRental = selectedOrder.service === 'car_rental';
-                                    const progress = getProgress(selectedOrder);
-                                    const isRentalInProgress = isCarRental && progress === 100 && !['done', 'delivered'].includes(selectedOrder.status || '');
-                                    
-                                    const calculateDays = () => {
-                                        if (!selectedOrder.date || !selectedOrder.carReturnDate) return 1;
-                                        const start = new Date(selectedOrder.date);
-                                        const end = new Date(selectedOrder.carReturnDate);
-                                        const diff = Math.max(1, Math.round((end.getTime() - start.getTime()) / 86400000));
-                                        return diff;
-                                    };
+                                {/* Decorative Separator */}
+                                <div className="mx-[-24px] mb-8 relative h-5 overflow-hidden">
+                                    <svg width="100%" height="20" viewBox="0 0 400 20" preserveAspectRatio="none">
+                                        <path d="M0 10 Q 5 0, 10 10 T 20 10 T 30 10 T 40 10 T 50 10 T 60 10 T 70 10 T 80 10 T 90 10 T 100 10 T 110 10 T 120 10 T 130 10 T 140 10 T 150 10 T 160 10 T 170 10 T 180 10 T 190 10 T 200 10 T 210 10 T 220 10 T 230 10 T 240 10 T 250 10 T 260 10 T 270 10 T 280 10 T 290 10 T 300 10 T 310 10 T 320 10 T 330 10 T 340 10 T 350 10 T 360 10 T 370 10 T 380 10 T 390 10 T 400 10 V 20 H 0 Z" fill="#F9FAFB" />
+                                    </svg>
+                                </div>
 
-                                    const formatDateLabel = (date: string, time: string) => {
-                                        if (!date) return '';
-                                        const d = new Date(`${date.substring(0, 10)}T${time || '09:00'}`);
-                                        return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) + " " + (time || '09:00');
-                                    };
-
-                                    const formattedDateRange = () => {
-                                        if (isCarRental && selectedOrder.carReturnDate) {
-                                            const startStr = formatDateLabel(selectedOrder.date || '', selectedOrder.time || '09:00');
-                                            const endStr = formatDateLabel(selectedOrder.carReturnDate, selectedOrder.carReturnTime || '09:00');
-                                            return `${startStr} to ${endStr} (${calculateDays()} days)`;
-                                        }
-                                        return selectedOrder.date ? new Date(selectedOrder.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '';
-                                    };
-
-                                    const isDelivery = selectedOrder.service === 'errands' || selectedOrder.service?.includes('delivery');
-
-                                    if (isCarRental) {
-                                        return (
-                                            <div className="px-6 pb-24">
-                                                {/* Hero Section */}
-                                                <div className="text-center mt-6 mb-10">
-                                                    <motion.div
-                                                        initial={{ scale: 0.8, opacity: 0 }}
-                                                        animate={{ scale: 1, opacity: 1 }}
-                                                        className="flex justify-center"
-                                                    >
-                                                        <img
-                                                            src={(selectedOrder.selectedCar?.modelImage || selectedOrder.selectedCar?.image) || (selectedOrder.details?.car?.modelImage || selectedOrder.details?.car?.image) || "/Images/Vectors Illu/carKey.png"}
-                                                            className={cn("object-contain mb-4", ((selectedOrder.selectedCar?.modelImage || selectedOrder.selectedCar?.image) || (selectedOrder.details?.car?.modelImage || selectedOrder.details?.car?.image)) ? "w-[200px] h-[120px]" : "w-[140px] h-[140px]")}
-                                                            alt="Order"
-                                                        />
-                                                    </motion.div>
-                                                    <h2 className="text-[24px] font-black mb-2 tracking-tighter">Your Bricol.com Order</h2>
-                                                    <div className="text-[16px] font-medium text-[#424242] flex items-center justify-center gap-1.5 font-jakarta">
-                                                        <span>{formattedDateRange()}</span>
-                                                    </div>
-                                                    <div className="text-[11px] font-bold text-neutral-400 mt-2 uppercase tracking-widest font-jakarta">
-                                                        ORDER ID: #{selectedOrder.id?.slice(-8).toUpperCase()}
-                                                    </div>
-                                                </div>
-
-                                                {/* Decorative Wave Separator */}
-                                                <div className="mx-[-24px] mb-8 relative h-5 overflow-hidden">
-                                                    <svg width="100%" height="20" viewBox="0 0 400 20" preserveAspectRatio="none">
-                                                        <path d="M0 10 Q 5 0, 10 10 T 20 10 T 30 10 T 40 10 T 50 10 T 60 10 T 70 10 T 80 10 T 90 10 T 100 10 T 110 10 T 120 10 T 130 10 T 140 10 T 150 10 T 160 10 T 170 10 T 180 10 T 190 10 T 200 10 T 210 10 T 220 10 T 230 10 T 240 10 T 250 10 T 260 10 T 270 10 T 280 10 T 290 10 T 300 10 T 310 10 T 320 10 T 330 10 T 340 10 T 350 10 T 360 10 T 370 10 T 380 10 T 390 10 T 400 10 V 20 H 0 Z" fill="#F9FAFB" />
-                                                    </svg>
-                                                </div>
-
-                                                {/* Contact Bricoler CTA - shown when a bricoler is assigned */}
-                                                {selectedOrder.bricolerWhatsApp && ['confirmed', 'accepted', 'programmed', 'in_progress', 'done', 'delivered'].includes(selectedOrder.status || '') && (
-                                                    <div className="mb-8">
-                                                        <button
-                                                            onClick={() => selectedOrder.bricolerWhatsApp && openWhatsApp(selectedOrder.bricolerWhatsApp)}
-                                                            className="w-full flex items-center justify-center gap-4 py-4 rounded-[20px] bg-[#25D366] text-white font-[1000] text-[18px] hover:bg-[#128C7E] active:scale-95 transition-all group relative overflow-hidden"
-                                                        >
-                                                            <div className="absolute inset-0 bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity" />
-                                                            <WhatsAppBrandIcon size={28} className="group-hover:scale-110 transition-transform drop-shadow-sm" />
-                                                            <span className="tracking-tight">{t({ en: 'Contact Agent', fr: 'Contacter l\'agent', ar: 'اتصل بالوكيل' })}</span>
-                                                        </button>
-                                                    </div>
-                                                )}
-
-                                                {/* Payment Methods */}
-                                                <section className="mb-8">
-                                                    <h3 className="text-[20px] font-black mb-4 flex items-center gap-2.5 font-jakarta">
-                                                        Payment <span className="text-[24px]">💸</span>
-                                                    </h3>
-                                                    <p className="text-[14px] font-bold text-neutral-400 mb-5 font-jakarta">Your selected payment method</p>
-
-                                                    <div className="grid grid-cols-2 gap-3">
-                                                        <div className={cn(
-                                                            "p-4 rounded-2xl border-2 transition-all",
-                                                            selectedOrder.paymentMethod === 'cash' ? "border-[#FBBF24] bg-[#FFFBEB]" : "border-neutral-100 bg-neutral-50 opacity-60"
-                                                        )}>
-                                                            <div className="text-[24px] mb-3">💵</div>
-                                                            <div className="font-black text-[15px] text-black">Cash</div>
-                                                            <div className="font-bold text-[11px] text-neutral-400">On delivery</div>
-                                                        </div>
-
-                                                        <div className={cn(
-                                                            "p-4 rounded-2xl border-2 transition-all",
-                                                            selectedOrder.paymentMethod === 'bank_transfer' ? "border-[#FBBF24] bg-[#FFFBEB]" : "border-neutral-100 bg-neutral-50 opacity-60"
-                                                        )}>
-                                                            <div className="text-[24px] mb-3">🏦</div>
-                                                            <div className="font-black text-[15px] text-black">Bank Transfer</div>
-                                                            <div className="font-bold text-[11px] text-neutral-400">WhatsApp verify</div>
-                                                        </div>
-                                                    </div>
-                                                </section>
-
-                                                {/* Description Section */}
-                                                {(selectedOrder.carRentalNote || (selectedOrder as any).note) && (
-                                                    <div className="mt-6">
-                                                        <h3 className="text-[18px] font-black mb-3 flex items-center gap-2 font-jakarta">
-                                                            Description <span className="text-[24px]">📝</span>
-                                                        </h3>
-                                                        <div className="p-4 bg-neutral-50 rounded-2xl border border-neutral-100">
-                                                            <p className="text-[14px] color-[#4B5563] font-bold leading-relaxed font-jakarta">
-                                                                {selectedOrder.carRentalNote || (selectedOrder as any).note}
-                                                            </p>
-                                                        </div>
-                                                    </div>
-                                                )}
-
-                                                {/* Location Section */}
-                                                <h3 className="text-[18px] font-black mt-8 mb-4 flex items-center gap-2 font-jakarta">
-                                                    Location <span className="text-[24px]">📍</span>
-                                                </h3>
-                                                <div className="flex flex-col gap-3 mb-8">
-                                                    <div className="p-4 bg-neutral-50 rounded-[20px] flex items-center gap-4 border border-neutral-100/50">
-                                                        <div className="w-11 h-11 rounded-full bg-white flex items-center justify-center shadow-sm">
-                                                            <MapPin size={22} className="text-[#219178]" />
-                                                        </div>
-                                                        <div className="flex-1">
-                                                            <div className="text-[11px] font-black text-neutral-400 uppercase tracking-widest font-jakarta">Your Location</div>
-                                                            <div className="text-[14px] font-black text-black leading-tight line-clamp-1 font-jakarta">
-                                                                {typeof selectedOrder.location === 'object' ? (selectedOrder.location as any).address : selectedOrder.location}
-                                                            </div>
-                                                        </div>
-                                                    </div>
-
-                                                    {!(selectedOrder.service === 'errands' || selectedOrder.service?.includes('delivery')) && (
-                                                        <div className="p-4 bg-neutral-50 rounded-[20px] flex items-center gap-4 border border-neutral-100/50">
-                                                            <div className="w-11 h-11 rounded-full bg-white flex items-center justify-center shadow-sm">
-                                                                <Star size={22} className="text-[#FBBF24]" />
-                                                            </div>
-                                                            <div className="flex-1">
-                                                                <div className="text-[11px] font-black text-neutral-400 uppercase tracking-widest font-jakarta">Bricoler Location</div>
-                                                                <div className="text-[14px] font-black text-black leading-tight line-clamp-1 font-jakarta">
-                                                                    {selectedOrder.providerAddress || 'Essaouira, Morocco'}
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    )}
-                                                </div>
-
-                                                {/* Pricing Summary */}
-                                                <div className="p-5 bg-neutral-50 rounded-[20px] border border-neutral-100/50">
-                                                    <div className="text-[11px] font-black text-neutral-400 uppercase tracking-widest mb-4 font-jakarta">Pricing Summary</div>
-                                                    <div className="space-y-3">
-                                                        <div className="flex justify-between items-center font-jakarta">
-                                                            <span className="text-[14px] font-bold text-neutral-500">Base Price ({calculateDays()} days)</span>
-                                                            <span className="text-[15px] font-black text-black">{(selectedOrder.basePrice || selectedOrder.price || 0)} MAD</span>
-                                                        </div>
-                                                        <div className="flex justify-between items-center font-jakarta">
-                                                            <span className="text-[14px] font-bold text-neutral-500">Lbricol Fee (10%)</span>
-                                                            <span className="text-[15px] font-black text-[#219178]">+ {Math.round((parseFloat(String(selectedOrder.totalPrice || 0)) - parseFloat(String(selectedOrder.basePrice || selectedOrder.price || 0))))} MAD</span>
-                                                        </div>
-                                                        <div className="h-[1px] bg-neutral-100 my-1" />
-                                                        <div className="flex justify-between items-center font-jakarta">
-                                                            <span className="text-[16px] font-black text-black">Total</span>
-                                                            <span className="text-[18px] font-black text-black">{(selectedOrder.totalPrice || selectedOrder.price || 0)} MAD</span>
-                                                        </div>
-                                                    </div>
+                                {/* Bricoler Details Section (REQUESTED TO KEEP) */}
+                                {selectedOrder.bricolerId && (
+                                    <section className="mb-10">
+                                        <h3 className="text-[25px] font-medium text-black mb-6 flex items-center gap-3">
+                                            Professional <span className="text-2xl">👨‍🔧</span>
+                                        </h3>
+                                        <div className="bg-[#F9FAFB] rounded-[32px] p-6 border border-neutral-100 flex items-center gap-6">
+                                            <div className="w-20 h-20 rounded-[24px] bg-white flex-shrink-0 overflow-hidden relative border-2 border-white">
+                                                <img
+                                                    src={selectedOrder.bricolerAvatar || "/Images/Vectors Illu/Avatar.png"}
+                                                    className="w-full h-full object-cover"
+                                                    alt="Pro"
+                                                />
+                                                <div className="absolute bottom-1 right-1 w-5 h-5 bg-[#01A083] rounded-full border-2 border-white flex items-center justify-center">
+                                                    <Check size={10} className="text-white" />
                                                 </div>
                                             </div>
-                                        );
-                                    }
-
-                                    return (
-                                        <>
-                                            <div className="px-6 md:px-12 pt-10 pb-6 flex flex-col sm:flex-row items-center gap-6 text-center sm:text-left">
-                                                <div className="w-32 h-32 md:w-35 md:h-50 flex-shrink-0 overflow-hidden rounded-2xl bg-neutral-100 flex items-center justify-center border border-neutral-100">
-                                                    {selectedOrder.images && selectedOrder.images.length > 0 ? (
-                                                        <img
-                                                            src={selectedOrder.images[0]}
-                                                            className="w-full h-full object-cover"
-                                                            alt="task preview"
-                                                        />
-                                                    ) : (
-                                                        <img
-                                                            src="/Images/Vectors Illu/NewOrder.webp"
-                                                            className="w-full h-full object-contain p-2"
-                                                            alt="illustration"
-                                                        />
-                                                    )}
-                                                </div>
-                                                <div className="flex flex-col">
-                                                    <h2 className={cn(
-                                                        "text-[32px] md:text-[42px] font-black leading-[1.1] tracking-tighter",
-                                                        (isRentalInProgress) ? "text-rose-500" : "text-black"
-                                                    )}>
-                                                        {selectedOrder.status === 'done' ? t({ en: 'Completed', fr: 'Terminé', ar: 'مكتمل' }) :
-                                                            selectedOrder.status === 'delivered' ? t({ en: 'Job Delivered', fr: 'Job Livré', ar: 'تم التسليم' }) :
-                                                                selectedOrder.status === 'cancelled' ? t({ en: 'Cancelled', fr: 'Annulé', ar: 'ملغى' }) :
-                                                                    isRentalInProgress ? t({ en: 'In Progress', fr: 'En cours', ar: 'قيد التنفيذ' }) :
-                                                                    selectedOrder.status === 'confirmed' || selectedOrder.status === 'programmed' ? t({ en: 'Programmed', fr: 'Programmé', ar: 'مجدول' }) :
-                                                                        t({ en: 'Ongoing', fr: 'En cours', ar: 'جارية' })}
-                                                    </h2>
-                                                    <div className="flex flex-wrap items-center justify-center sm:justify-start gap-3 mt-2">
-                                                        <p className="text-[18px] font-bold text-neutral-400">
-                                                            {selectedOrder.date ? format(parseISO(selectedOrder.date), 'MMM d, yyyy') : ''}
-                                                            <span className="mx-2 opacity-30">|</span>
-                                                            {selectedOrder.time || ''}
-                                                        </p>
+                                            <div className="flex-1">
+                                                <h4 className="text-[20px] font-medium text-black mb-1">{selectedOrder.bricolerName}</h4>
+                                                <div className="flex items-center gap-3">
+                                                    <div className="flex items-center gap-1">
+                                                        <Star size={14} className="fill-yellow-400 text-yellow-400" />
+                                                        <span className="text-[14px] font-medium text-black">{selectedOrder.bricolerRating || '4.9'}</span>
                                                     </div>
-                                                    <p className="text-[11px] font-extrabold text-neutral-300 tracking-widest mt-2 uppercase">
-                                                        ORDER ID: #{selectedOrder.id?.slice(0, 8).toUpperCase() || 'N/A'}
+                                                    <span className="text-neutral-300">|</span>
+                                                    <span className="text-[14px] font-medium text-neutral-500 uppercase tracking-wider">
+                                                        {t({ en: 'Verified Pro', fr: 'Pro Vérifié', ar: 'محترف موثق' })}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    setActiveChatOrderId(selectedOrder.id!);
+                                                }}
+                                                className="w-14 h-14 rounded-[20px] bg-[#01A083] flex items-center justify-center active:scale-90 transition-all "
+                                            >
+                                                <MessageCircle size={28} className="text-white" />
+                                            </button>
+                                        </div>
+                                    </section>
+                                )}
+
+                                {/* Payment Details Section */}
+                                <section className="mb-10">
+                                    <h3 className="text-[25px] font-medium text-black mb-2 flex items-center gap-3">
+                                        Payment <span className="text-2xl">💳</span>
+                                    </h3>
+                                    <p className="text-[15px] font-medium text-neutral-400 mb-6 uppercase tracking-wider">
+                                        {t({ en: 'Method of payment', fr: 'Mode de paiement', ar: 'طريقة الدفع' })}
+                                    </p>
+
+                                    <div className="bg-[#F9FAFB] rounded-[32px] p-6 border border-neutral-100 flex items-center gap-5">
+                                        <div className="w-16 h-16 rounded-[24px] bg-white flex items-center justify-center text-3xl">
+                                            {selectedOrder.paymentMethod === 'bank_transfer' ? '🏦' : '💵'}
+                                        </div>
+                                        <div className="flex-1">
+                                            <h4 className="text-[18px] font-medium text-black mb-1 capitalize">
+                                                {selectedOrder.paymentMethod === 'bank_transfer' ?
+                                                    t({ en: 'Bank Transfer', fr: 'Virement Bancaire', ar: 'تحويل بنكي' }) :
+                                                    t({ en: 'Cash', fr: 'Espèces', ar: 'كاش' })
+                                                }
+                                            </h4>
+                                            <p className="text-[14px] font-medium text-neutral-400">
+                                                {selectedOrder.paymentMethod === 'bank_transfer' ?
+                                                    t({ en: 'Chat verify', fr: 'Vérification par Chat', ar: 'تأكيد عبر الدردشة' }) :
+                                                    t({ en: 'On delivery', fr: 'À la livraison', ar: 'عند الاستلام' })
+                                                }
+                                            </p>
+                                        </div>
+                                        <div className="w-10 h-10 rounded-full bg-[#01A083]/10 flex items-center justify-center">
+                                            <Check size={20} className="text-[#01A083]" />
+                                        </div>
+                                    </div>
+                                </section>
+
+                                {/* Setup Summary Section */}
+                                <section className="mb-10">
+                                    <h3 className="text-[25px] font-medium text-black mb-6">
+                                        Setup Summary <span className="text-2xl">📋</span>
+                                    </h3>
+                                    <div className="bg-[#F9FAFB] rounded-[32px] p-8 border border-neutral-100 space-y-6">
+                                        {(() => {
+                                            const breakdown = calculateOrderPrice(
+                                                (selectedOrder.subService || (selectedOrder as any).subServiceId || (selectedOrder as any).serviceType || selectedOrder.service || 'car_rental'),
+                                                parseFloat(String(selectedOrder.details?.basePrice || (selectedOrder as any).providerRate || selectedOrder.price || '80')),
+                                                {
+                                                    rooms: parseInt(String((selectedOrder.details?.serviceDetails as any)?.rooms || 1)),
+                                                    hours: parseFloat(String((selectedOrder.details?.serviceDetails as any)?.taskDuration || 1)),
+                                                    days: parseInt(String((selectedOrder.details?.serviceDetails as any)?.days || 1)),
+                                                    distanceKm: (selectedOrder.details?.serviceDetails as any)?.deliveryDistanceKm || (selectedOrder.details?.serviceDetails as any)?.distanceKm || 0,
+                                                    deliveryDistanceKm: (selectedOrder.details?.serviceDetails as any)?.deliveryDistanceKm || 0,
+                                                    deliveryDurationMinutes: (selectedOrder.details?.serviceDetails as any)?.deliveryDurationMinutes || 0,
+                                                    propertyType: (selectedOrder.details?.serviceDetails as any)?.propertyType,
+                                                    tvCount: (selectedOrder.details?.serviceDetails as any)?.tvCount,
+                                                    mountTypes: (selectedOrder.details?.serviceDetails as any)?.mountTypes,
+                                                    wallMaterial: (selectedOrder.details?.serviceDetails as any)?.wallMaterial,
+                                                    liftingHelp: (selectedOrder.details?.serviceDetails as any)?.liftingHelp,
+                                                    mountingAddOns: (selectedOrder.details?.serviceDetails as any)?.mountingAddOns,
+                                                    taskSize: (selectedOrder.details?.serviceDetails as any)?.taskSize,
+                                                }
+                                            );
+
+                                            return (
+                                                <>
+                                                    <div className="flex justify-between items-center">
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="text-[17px] font-medium text-neutral-500">{t({ en: 'Base price', fr: 'Prix de base', ar: 'السعر الأساسي' })}</span>
+                                                            <div className="w-5 h-5 rounded-full border border-neutral-200 flex items-center justify-center text-[10px] text-neutral-400 font-medium">i</div>
+                                                        </div>
+                                                        <span className="text-[17px] font-medium text-black">
+                                                            {breakdown.basePrice} MAD/{breakdown.unit === 'room' ? t({ en: 'room', fr: 'pièce', ar: 'غرفة' }) : breakdown.unit === 'hr' ? t({ en: 'hr', fr: 'h', ar: 'س' }) : breakdown.unit === 'day' ? t({ en: 'day', fr: 'jour', ar: 'يوم' }) : t({ en: 'unit', fr: 'unité', ar: 'وحدة' })}
+                                                        </span>
+                                                    </div>
+
+                                                    <div className="flex justify-between items-center">
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="text-[17px] font-medium text-neutral-500">{t({ en: 'Services', fr: 'Services', ar: 'الخدمات' })}</span>
+                                                            <div className="w-5 h-5 rounded-full border border-neutral-200 flex items-center justify-center text-[10px] text-neutral-400 font-medium">i</div>
+                                                        </div>
+                                                        <div className="flex flex-col items-end">
+                                                            <span className="text-[17px] font-medium text-black">{breakdown.subtotal.toFixed(2)} MAD</span>
+                                                            <span className="text-[12px] font-medium text-neutral-400">
+                                                                {breakdown.quantity} {breakdown.unit === 'room' ? (breakdown.quantity > 1 ? t({ en: 'Rooms', fr: 'Pièces', ar: 'غرف' }) : t({ en: 'Room', fr: 'Pièce', ar: 'غرفة' })) : breakdown.unit}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="flex justify-between items-center">
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="text-[17px] font-medium text-neutral-500">{t({ en: 'Lbricol Fee', fr: 'Frais Lbricol', ar: 'رسوم لبريكول' })}</span>
+                                                            <div className="w-5 h-5 rounded-full border border-neutral-200 flex items-center justify-center text-[10px] text-neutral-400 font-medium">i</div>
+                                                        </div>
+                                                        <span className="text-[17px] font-medium text-black">{breakdown.serviceFee.toFixed(2)} MAD</span>
+                                                    </div>
+
+                                                    {breakdown.travelFee > 0 && (
+                                                        <div className="flex justify-between items-center">
+                                                            <div className="flex flex-col">
+                                                                <div className="flex items-center gap-2">
+                                                                    <span className="text-[17px] font-medium text-neutral-500">{t({ en: 'Travel Fee', fr: 'Frais de déplacement', ar: 'رسوم التنقل' })}</span>
+                                                                    <div className="w-5 h-5 rounded-full border border-neutral-200 flex items-center justify-center text-[10px] text-neutral-400 font-medium">i</div>
+                                                                </div>
+                                                                <span className="text-[11px] font-medium text-neutral-400">
+                                                                    {breakdown.distanceKm?.toFixed(1)} km · ~{breakdown.duration} min
+                                                                </span>
+                                                            </div>
+                                                            <span className="text-[17px] font-medium text-black">{breakdown.travelFee.toFixed(2)} MAD</span>
+                                                        </div>
+                                                    )}
+                                                </>
+                                            );
+                                        })()}
+
+                                        {/* Location Section */}
+                                        <div className="pt-6 border-t border-dotted border-neutral-200">
+                                            <div className="flex items-center gap-4">
+                                                <div className="w-12 h-12 rounded-2xl bg-white flex items-center justify-center flex-shrink-0">
+                                                    <MapPin size={24} className="text-[#01A083]" />
+                                                </div>
+                                                <div className="min-w-0">
+                                                    <span className="text-[11px] font-medium text-neutral-400 uppercase tracking-widest block mb-1">
+                                                        {t({ en: 'Your Location', fr: 'Votre Position', ar: 'موقعك' })}
+                                                    </span>
+                                                    <p className="text-[15px] font-medium text-black truncate">
+                                                        {typeof selectedOrder.location === 'object' ? (selectedOrder.location as any).address : selectedOrder.location}
                                                     </p>
                                                 </div>
                                             </div>
+                                        </div>
+                                    </div>
+                                </section>
 
-                                            <div className="px-6 md:px-12 grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                                <div className="p-6 rounded-3xl bg-neutral-50/50 border border-neutral-100 flex items-center gap-5 hover:bg-neutral-50 transition-colors group">
-                                                    <div className="w-12 h-12 rounded-2xl bg-white flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform">
-                                                        <Clock className="text-[#219178]" size={24} />
-                                                    </div>
-                                                    <div>
-                                                        <p className="text-[11px] font-black text-neutral-300 uppercase tracking-widest mb-1">{t({ en: 'Duration', fr: 'Durée', ar: 'المدة' })}</p>
-                                                        <p className="text-[16px] font-black text-black leading-tight">
-                                                            {selectedOrder.service === 'cleaning' && selectedOrder.details?.rooms 
-                                                                ? `~${selectedOrder.details.rooms} ${t({ en: 'hrs', fr: 'hrs', ar: 'ساعة' })}`
-                                                                : selectedOrder.duration || 'N/A'}
-                                                        </p>
-                                                    </div>
-                                                </div>
+                                {/* Description Card */}
+                                {selectedOrder.details?.note && (
+                                    <section className="mb-10">
+                                        <h3 className="text-[25px] font-medium text-black mb-6">
+                                            Description <span className="text-2xl">📝</span>
+                                        </h3>
+                                        <div className="bg-[#F9FAFB] rounded-[32px] p-8 border border-neutral-100">
+                                            <p className="text-[16px] font-medium text-neutral-600 leading-relaxed italic">
+                                                "{selectedOrder.details.note}"
+                                            </p>
+                                        </div>
+                                    </section>
+                                )}
 
-                                                <div className="p-6 rounded-3xl bg-neutral-50/50 border border-neutral-100 flex items-center gap-5 hover:bg-neutral-50 transition-colors group">
-                                                    <div className="w-12 h-12 rounded-2xl bg-white flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform">
-                                                        <CreditCard className="text-[#219178]" size={24} />
-                                                    </div>
-                                                    <div>
-                                                        <p className="text-[11px] font-black text-neutral-300 uppercase tracking-widest mb-1">{t({ en: 'Price', fr: 'Prix', ar: 'الثمن' })}</p>
-                                                        <p className="text-[16px] font-black text-black leading-tight">{selectedOrder.totalPrice || selectedOrder.price} MAD</p>
-                                                    </div>
-                                                </div>
-
-                                                <div className="p-6 rounded-3xl bg-neutral-50/50 border border-neutral-100 flex items-center gap-5 hover:bg-neutral-50 transition-colors group">
-                                                    <div className="w-12 h-12 rounded-2xl bg-white flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform">
-                                                        <Wrench className="text-[#219178]" size={24} />
-                                                    </div>
-                                                    <div>
-                                                        <p className="text-[11px] font-black text-neutral-300 uppercase tracking-widest mb-1">{t({ en: 'Service', fr: 'Service', ar: 'الخدمة' })}</p>
-                                                        <p className="text-[16px] font-black text-black truncate max-w-[150px]">{selectedOrder.subServiceDisplayName || selectedOrder.service}</p>
-                                                    </div>
-                                                </div>
-
-                                                <div className="p-6 rounded-3xl bg-neutral-50/50 border border-neutral-100 flex items-center gap-5 hover:bg-neutral-50 transition-colors group">
-                                                    <div className="w-12 h-12 rounded-2xl bg-white flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform">
-                                                        <Banknote className="text-[#219178]" size={24} />
-                                                    </div>
-                                                    <div>
-                                                        <p className="text-[11px] font-black text-neutral-300 uppercase tracking-widest mb-1">{t({ en: 'Payment', fr: 'Paiement', ar: 'الدفع' })}</p>
-                                                        <p className="text-[16px] font-black text-black leading-tight capitalize">{selectedOrder.paymentMethod || 'Cash'}</p>
-                                                    </div>
-                                                </div>
+                                {/* Attached Photos */}
+                                <section className="mb-10">
+                                    <h3 className="text-[25px] font-medium text-black mb-6">
+                                        {t({ en: 'Attached Photos', fr: 'Photos Jointes', ar: 'الصور المرفقة' })} <span className="text-2xl">📸</span>
+                                    </h3>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        {(selectedOrder.details?.serviceDetails?.photoUrls || (selectedOrder as any)?.images || [])?.map((url: string, i: number) => (
+                                            <div key={i} className="aspect-square bg-neutral-100 rounded-[12px] overflow-hidden border border-neutral-100/50 group relative">
+                                                <img src={url} className="w-full h-full object-cover transition-transform group-hover:scale-105" />
+                                                <div className="absolute inset-0 bg-black/5 opacity-0 group-hover:opacity-100 transition-opacity" />
                                             </div>
+                                        ))}
+                                    </div>
+                                </section>
 
-                                            {/* Summary Section for normal orders */}
-                                            <div className="mt-6 bg-[#FFFFFF] relative">
-                                                {/* Delivery Details Section */}
-                                                {isDelivery && (
-                                                    <div className="px-6 md:px-12 py-8 space-y-6">
-                                                        <h3 className="text-[28px] font-black text-black">Mission Details</h3>
-                                                        
-                                                        {/* Addresses */}
-                                                        <div className="flex flex-col gap-3">
-                                                            <div className="p-4 bg-neutral-50 rounded-[20px] flex items-center gap-4 border border-neutral-100/50">
-                                                                <div className="w-11 h-11 rounded-full bg-white flex items-center justify-center shadow-sm">
-                                                                    <MapPin size={22} className="text-[#219178]" />
-                                                                </div>
-                                                                <div className="flex-1">
-                                                                    <div className="text-[11px] font-black text-neutral-400 uppercase tracking-widest font-jakarta">Pickup</div>
-                                                                    <div className="text-[14px] font-black text-black leading-tight line-clamp-1 font-jakarta">
-                                                                        {(selectedOrder as any).deliveryDetails?.pickupAddress || (selectedOrder as any).serviceDetails?.pickupAddress || 'Address not set'}
-                                                                    </div>
-                                                                </div>
-                                                            </div>
+                                {/* Cancel Order — inside scrollable area */}
+                                {!['done', 'cancelled', 'delivered'].includes(selectedOrder.status || '') && (
+                                    <section className="mb-6">
+                                        <button
+                                            onClick={() => handleCancelOrder(selectedOrder.id!)}
+                                            className="w-full py-4 rounded-2xl border-2 border-red-200 text-red-500 font-bold text-[15px] flex items-center justify-center gap-2 hover:bg-red-50 active:scale-[0.98] transition-all"
+                                        >
+                                            <Ban size={18} />
+                                            {t({ en: 'Cancel Order', fr: 'Annuler la commande', ar: 'إلغاء الطلب' })}
+                                        </button>
+                                    </section>
+                                )}
 
-                                                            <div className="p-4 bg-neutral-50 rounded-[20px] flex items-center gap-4 border border-neutral-100/50">
-                                                                <div className="w-11 h-11 rounded-full bg-white flex items-center justify-center shadow-sm">
-                                                                    <MapPin size={22} className="text-[#EF4444]" />
-                                                                </div>
-                                                                <div className="flex-1">
-                                                                    <div className="text-[11px] font-black text-neutral-400 uppercase tracking-widest font-jakarta">Dropoff</div>
-                                                                    <div className="text-[14px] font-black text-black leading-tight line-clamp-1 font-jakarta">
-                                                                        {(selectedOrder as any).deliveryDetails?.dropoffAddress || (selectedOrder as any).serviceDetails?.dropoffAddress || 'Address not set'}
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                        </div>
+                                {/* Help Link Footer Content */}
+                                <div className="pt-2 pb-[160px] text-center">
+                                    <button
+                                        onClick={() => window.open('https://wa.me/212702814355', '_blank')}
+                                        className="inline-flex items-center gap-2 text-[15px] font-medium text-[#01A083] hover:underline"
+                                    >
+                                        <HelpCircle size={18} />
+                                        {t({ en: 'Need help with this order?', fr: 'Besoin d\'aide pour cette commande ?', ar: 'تحتاج مساعدة؟' })}
+                                    </button>
+                                </div>
 
-                                                        {/* Recipient & Schedule */}
-                                                        <div className="grid grid-cols-2 gap-4">
-                                                            <div className="p-4 bg-neutral-50 rounded-[20px] border border-neutral-100/50">
-                                                                <div className="text-[11px] font-black text-neutral-400 uppercase tracking-widest font-jakarta mb-1">Recipient</div>
-                                                                <div className="text-[14px] font-black text-black">
-                                                                    {(selectedOrder as any).deliveryDetails?.recipientName || (selectedOrder as any).serviceDetails?.recipientName || 'Not specified'}
-                                                                </div>
-                                                            </div>
-                                                            <div className="p-4 bg-neutral-50 rounded-[20px] border border-neutral-100/50">
-                                                                <div className="text-[11px] font-black text-neutral-400 uppercase tracking-widest font-jakarta mb-1">Schedule</div>
-                                                                <div className="text-[14px] font-black text-black">
-                                                                    {(selectedOrder as any).deliveryDetails?.deliveryType === 'standard' ? "ASAP" : `${(selectedOrder as any).deliveryDetails?.deliveryDate} ${(selectedOrder as any).deliveryDetails?.deliveryTime}`}
-                                                                </div>
-                                                            </div>
-                                                        </div>
-
-                                                        {/* Item Description */}
-                                                        {((selectedOrder as any).note || (selectedOrder as any).serviceDetails?.itemDescription) && (
-                                                            <div className="p-5 bg-[#FFC244]/5 rounded-[24px] border-2 border-[#FFC244]/20">
-                                                                <div className="flex items-center gap-2 mb-2">
-                                                                    <span className="text-[18px]">📦</span>
-                                                                    <span className="text-[14px] font-black uppercase tracking-wider text-[#B45309]">Item Description</span>
-                                                                </div>
-                                                                <p className="text-[15px] font-bold text-black leading-relaxed">
-                                                                    {(selectedOrder as any).note || (selectedOrder as any).serviceDetails?.itemDescription}
-                                                                </p>
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                )}
-
-                                                <div className="absolute top-0 left-0 right-0 h-[10px] -translate-y-[10px]">
-                                                    <div className="w-full h-full" style={{
-                                                        backgroundImage: 'linear-gradient(135deg, transparent 45%, #F5F5F5 45%, #F5F5F5 55%, transparent 55%), linear-gradient(-135deg, transparent 45%, #F5F5F5 45%, #F5F5F5 55%, transparent 55%)',
-                                                        backgroundSize: '20px 20px',
-                                                        backgroundRepeat: 'repeat-x'
-                                                    }} />
-                                                </div>
-
-                                                {/* Cleaning Specific Details */}
-                                                {selectedOrder.service === 'cleaning' && (
-                                                    <div className="px-6 md:px-12 py-8 space-y-8">
-                                                        <h3 className="text-[28px] font-black text-black">
-                                                            {t({ en: 'Cleaning Details', fr: 'Détails du nettoyage', ar: 'تفاصيل التنظيف' })}
-                                                        </h3>
-
-                                                        {/* Summary Grid */}
-                                                        <div className="grid grid-cols-2 gap-4">
-                                                            <div className="p-5 bg-neutral-50 rounded-[24px] border border-neutral-100/50 flex flex-col gap-2">
-                                                                <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-sm">
-                                                                    <Home size={20} className="text-[#219178]" />
-                                                                </div>
-                                                                <div>
-                                                                    <div className="text-[11px] font-black text-neutral-400 uppercase tracking-widest leading-none mb-1">
-                                                                        {t({ en: 'Property', fr: 'Propriété', ar: 'العقار' })}
-                                                                    </div>
-                                                                    <div className="text-[16px] font-black text-black capitalize">
-                                                                        {t({ en: selectedOrder.details?.propertyType || 'Apartment', fr: selectedOrder.details?.propertyType || 'Appartement', ar: selectedOrder.details?.propertyType || 'شقة' })}
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-
-                                                            <div className="p-5 bg-neutral-50 rounded-[24px] border border-neutral-100/50 flex flex-col gap-2">
-                                                                <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-sm">
-                                                                    <Layout size={20} className="text-[#219178]" />
-                                                                </div>
-                                                                <div>
-                                                                    <div className="text-[11px] font-black text-neutral-400 uppercase tracking-widest leading-none mb-1">
-                                                                        {t({ en: 'Space Size', fr: 'Taille', ar: 'المساحة' })}
-                                                                    </div>
-                                                                    <div className="text-[16px] font-black text-black">
-                                                                        {selectedOrder.details?.rooms || 0} {selectedOrder.details?.rooms === 1 ? t({ en: 'Room', fr: 'Pièce', ar: 'غرفة' }) : t({ en: 'Rooms', fr: 'Pièces', ar: 'غرف' })}
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-
-                                                        {/* Image Gallery */}
-                                                        {selectedOrder.images && selectedOrder.images.length > 0 && (
-                                                            <div className="space-y-4">
-                                                                <div className="text-[11px] font-black text-neutral-400 uppercase tracking-widest">
-                                                                    {t({ en: 'Room Photos', fr: 'Photos des pièces', ar: 'صور الغرف' })}
-                                                                </div>
-                                                                <div className="flex gap-3 overflow-x-auto no-scrollbar -mx-6 px-6">
-                                                                    {selectedOrder.images.map((img, idx) => (
-                                                                        <div key={idx} className="w-40 h-40 rounded-[20px] overflow-hidden flex-shrink-0 border border-neutral-100 shadow-sm relative group">
-                                                                            <img src={img} className="w-full h-full object-cover transition-transform group-hover:scale-110" alt={`Room ${idx + 1}`} />
-                                                                        </div>
-                                                                    ))}
-                                                                </div>
-                                                            </div>
-                                                        )}
-
-                                                        {/* Special Instructions (Notes) */}
-                                                        {selectedOrder.details?.note && (
-                                                            <div className="p-6 bg-[#F0FDF9] rounded-[28px] border-2 border-[#D1FAE5]">
-                                                                <div className="flex items-center gap-3 mb-3">
-                                                                    <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center text-[#059669] shadow-sm">
-                                                                        <Sparkles size={16} />
-                                                                    </div>
-                                                                    <span className="text-[13px] font-black uppercase tracking-wider text-[#059669]">
-                                                                        {t({ en: 'Client Instructions', fr: 'Instructions du client', ar: 'تعليمات العميل' })}
-                                                                    </span>
-                                                                </div>
-                                                                <p className="text-[15px] font-bold text-black leading-relaxed">
-                                                                    "{selectedOrder.details.note}"
-                                                                </p>
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                )}
-
-                                                <div className="px-6 md:px-12 py-10 space-y-8">
-                                                    <h3 className="text-[28px] font-black text-black">{t({ en: 'Summary', fr: 'Résumé', ar: 'الملخص' })}</h3>
-                                                    <div className="space-y-6">
-                                                        <div className="flex justify-between items-center">
-                                                            <div className="flex items-center gap-4">
-                                                                <span className="text-[16px] font-semibold text-black">{t({ en: 'Task Fee', fr: 'Frais de tâche', ar: 'رسوم المهمة' })}</span>
-                                                            </div>
-                                                            <span className="text-[16px] font-bold text-black tracking-tight">{((selectedOrder.totalPrice || parseFloat(String(selectedOrder.price || '0'))) * 0.85).toFixed(0)} MAD</span>
-                                                        </div>
-                                                        <div className="flex justify-between items-center">
-                                                            <div className="flex items-center gap-4">
-                                                                <span className="text-[16px] font-semibold text-black">{t({ en: 'Lbricol Fee', fr: 'Frais Lbricol', ar: 'رسوم لبريكول' })}</span>
-                                                                <span className="text-[14px] font-light text-black">15%</span>
-                                                            </div>
-                                                            <span className="text-[16px] font-bold text-black tracking-tight">{((selectedOrder.totalPrice || parseFloat(String(selectedOrder.price || '0'))) * 0.15).toFixed(0)} MAD</span>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </>
-                                    );
-                                })()}
                             </div>
                         </div>
 
-                        {/* Fixed Total Footer */}
-                        <div className="px-6 md:px-12 py-3 bg-white border-t border-neutral-100 shadow-[0_-10px_40px_rgba(0,0,0,0.05)] z-[4001] flex flex-col gap-1.5">
-                            <div className="flex items-center justify-between gap-4">
-                                <span className="text-[20px] md:text-[24px] font-black text-black">{t({ en: 'Total Price', fr: 'Prix Total', ar: 'الإجمالي' })}</span>
-                                <span className="text-[20px] md:text-[24px] font-black text-black tracking-tighter truncate">{((selectedOrder?.totalPrice || parseFloat(String(selectedOrder?.price || '0')))).toFixed(0)} MAD</span>
-                            </div>
+                        {/* Fixed Bottom Total Footer (Yellow Signature) */}
+                        {!activeChatOrderId && (
+                            <div className="fixed bottom-0 left-0 right-0 bg-[#FFC244] z-[4005] px-8 pt-10 pb-[calc(24px+env(safe-area-inset-bottom))]">
+                                {/* Wave Top Effect */}
+                                <div className="absolute top-[-30px] left-0 right-0 h-[30px] pointer-events-none">
+                                    <svg viewBox="0 0 1440 320" preserveAspectRatio="none" className="w-full h-full fill-[#FFC244]">
+                                        <path d="M0,160L48,176C96,192,192,224,288,224C384,224,480,192,576,165.3C672,139,768,117,864,128C960,139,1056,181,1152,192C1248,203,1344,181,1392,170.7L1440,160L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path>
+                                    </svg>
+                                </div>
 
-                            {/* Cancellation Button */}
-                            {selectedOrder && !['done', 'cancelled', 'delivered'].includes(selectedOrder.status || '') && (
+                                <div className="flex items-center justify-between mb-6">
+                                    <span className="text-[22px] font-medium text-black">{t({ en: 'Total Price', fr: 'Prix Total', ar: 'الإجمالي' })}</span>
+                                    <div className="flex items-baseline gap-1.5">
+                                        <span className="text-[36px] font-[1000] text-black tracking-tighter">
+                                            {(selectedOrder.totalPrice || parseFloat(String(selectedOrder.price || '0'))).toFixed(0)}
+                                        </span>
+                                        <span className="text-[18px] font-medium text-black">MAD</span>
+                                    </div>
+                                </div>
+
+                                {/* Single CTA — Chat with Bricoler */}
                                 <button
-                                    onClick={() => handleCancelOrder(selectedOrder.id!)}
-                                    className="w-full py-2.5 rounded-xl border-2 border-red-50 text-red-500 font-bold text-[13px] hover:bg-red-50 transition-colors uppercase tracking-widest"
+                                    onClick={() => setActiveChatOrderId(selectedOrder.id!)}
+                                    style={{ background: '#01A083' }}
+                                    className="w-full text-white py-4 rounded-full font-bold text-[16px] flex items-center justify-center gap-2 active:scale-95 transition-transform border border-[#008f75]"
                                 >
-                                    {t({ en: 'Cancel Order', fr: 'Annuler la commande', ar: 'إلغاء الطلب' })}
+                                    <MessageCircle size={20} />
+                                    {t({ en: 'Chat with Bricoler', fr: 'Chatter avec le Bricoler', ar: 'الدردشة مع الصانع' })}
                                 </button>
-                            )}
-
-                            {/* Help link at the bottom */}
-                            <button
-                                onClick={() => window.open('https://wa.me/212702814355', '_blank')}
-                                className="w-full text-center text-[13px] font-bold text-neutral-400 hover:text-[#219178] transition-colors"
-                            >
-                                {t({ en: '💬 Need help with this order?', fr: '💬 Besoin d\'aide pour cette commande ?', ar: '💬 تحتاج مساعدة في هذا الطلب؟' })}
-                            </button>
-                        </div>
+                            </div>
+                        )}
                     </motion.div>
                 )}
             </AnimatePresence>
@@ -1276,16 +1130,16 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
                         <div className="flex-shrink-0 pt-16 px-6 pb-4 bg-[#FFFFFF]">
                             <button
                                 onClick={() => setShowCancelModal(false)}
-                                className="w-12 h-12 flex items-center justify-center rounded-2xl bg-[#000000] active:scale-95 transition-all mb-6"
+                                className="w-12 h-12 flex items-center justify-center rounded-2xl bg-[#01A083] active:scale-95 transition-all mb-6"
                             >
                                 <ChevronLeft size={28} className="text-white" />
                             </button>
-                            <h3 className="text-[32px] font-black text-black leading-tight mb-2 tracking-tight">
+                            <h3 className="text-[32px] font-medium text-black leading-tight mb-2 tracking-tight">
                                 {isRedistributeCancellation
                                     ? t({ en: 'Are you sure?', fr: 'Êtes-vous sûr ?', ar: 'هل أنت متأكد؟' })
                                     : t({ en: 'Wait! Why cancel?', fr: 'Attendez ! Pourquoi annuler ?', ar: 'انتظر! لماذا الإلغاء؟' })}
                             </h3>
-                            <p className="text-neutral-500 font-bold text-[17px] leading-relaxed">
+                            <p className="text-neutral-500 font-medium text-[17px] leading-relaxed">
                                 {isRedistributeCancellation
                                     ? t({
                                         en: 'This action will permanently remove your order.',
@@ -1315,7 +1169,7 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
                                             key={idx}
                                             onClick={() => setCancelReason(t(reason))}
                                             className={cn(
-                                                "w-full p-5 rounded-2xl border-2 text-left font-bold transition-all active:scale-[0.99] flex items-center justify-between group",
+                                                "w-full p-5 rounded-2xl border-2 text-left font-medium transition-all active:scale-[0.99] flex items-center justify-between group",
                                                 cancelReason === t(reason)
                                                     ? "border-[#007AFF] bg-[#007AFF08] text-[#007AFF]"
                                                     : "border-neutral-100 hover:border-neutral-200 text-neutral-600 bg-neutral-50/50"
@@ -1341,7 +1195,7 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
                                         ].includes(cancelReason) ? cancelReason : ''}
                                         onChange={(e) => setCancelReason(e.target.value)}
                                         placeholder={t({ en: 'Other reason...', fr: 'Autre raison...', ar: 'سبب آخر...' })}
-                                        className="w-full p-5 rounded-2xl bg-neutral-50/50 border-2 border-dashed border-neutral-200 focus:border-[#007AFF] focus:bg-white outline-none transition-all font-bold text-black"
+                                        className="w-full p-5 rounded-2xl bg-neutral-50/50 border-2 border-dashed border-neutral-200 focus:border-[#007AFF] focus:bg-white outline-none transition-all font-medium text-black"
                                         rows={3}
                                     />
                                 </>
@@ -1366,7 +1220,7 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
                                 onClick={handleConfirmCancel}
                                 disabled={(!isRedistributeCancellation && !cancelReason) || isCancelling}
                                 className={cn(
-                                    "w-full py-5 rounded-2xl font-black text-[18px] text-white transition-all active:scale-95 flex items-center justify-center h-16",
+                                    "w-full py-5 rounded-2xl font-medium text-[18px] text-white transition-all active:scale-95 flex items-center justify-center h-16",
                                     (!isRedistributeCancellation && !cancelReason) || isCancelling ? "bg-neutral-200 pointer-events-none" : "bg-red-500 hover:bg-red-600"
                                 )}
                             >
@@ -1379,6 +1233,28 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
                                 )}
                             </button>
                         </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+            {/* Chat View Overlay — must be above order details (z-[4000]) */}
+            <AnimatePresence>
+                {activeChatOrderId && (
+                    <motion.div
+                        key="chat-overlay"
+                        initial={{ x: '100%' }}
+                        animate={{ x: 0 }}
+                        exit={{ x: '100%' }}
+                        transition={{ type: 'spring', damping: 25, stiffness: 220 }}
+                        className="fixed inset-0 z-[5500] bg-white flex flex-col"
+                        style={{ height: 'calc(100% - 82px - env(safe-area-inset-bottom))', bottom: 'calc(82px + env(safe-area-inset-bottom))' }}
+                    >
+                        <MessagesView
+                            orders={orders}
+                            currentUser={auth.currentUser}
+                            initialSelectedJobId={activeChatOrderId}
+                            onBackToOrders={() => setActiveChatOrderId(null)}
+                            isModal={true}
+                        />
                     </motion.div>
                 )}
             </AnimatePresence>
@@ -1401,7 +1277,7 @@ function ActivityTab({
     onCancelOrder: (id: string, isFromRedistributed?: boolean) => void
 }) {
     const { t } = useLanguage();
-    const { getProgress, getReturnProgress, getTimeRemaining } = useOrderProgress();
+    const { getProgress, getReturnProgress, getTimeRemaining, getDynamicStatus } = useOrderProgress();
 
     const pendingOrders = useMemo(() => {
         return orders.filter(o => {
@@ -1411,10 +1287,11 @@ function ActivityTab({
                 // For car rentals, only truly 'pending' (waiting for BRICOLER) if status is pending AND progress is 100 (time arrived)
                 return o.status === 'pending' && !o.providerConfirmed && progress === 100;
             }
-            return o.status === 'pending' && !o.providerConfirmed;
+            const status = getDynamicStatus(o);
+            return status === 'pending' && !o.providerConfirmed;
         })
             .sort((a, b) => new Date(b.date || 0).getTime() - new Date(a.date || 0).getTime());
-    }, [orders, getProgress]);
+    }, [orders, getDynamicStatus]);
 
     const redistributedOrders = useMemo(() => {
         return orders.filter(o => o.status === 'redistributed_by_provider')
@@ -1423,16 +1300,19 @@ function ActivityTab({
 
     const activeOrders = useMemo(() => {
         return orders.filter(o => {
+            const status = getDynamicStatus(o);
+            if (status === 'done') return false; // Moves to history
+
             const isCarRental = o.service === 'car_rental';
             if (isCarRental) {
                 const progress = getProgress(o);
                 // Active if status is confirmed/programmed OR if status is pending but time hasn't arrived
-                return ['confirmed', 'accepted', 'programmed'].includes(o.status || '') || (o.status === 'pending' && (o.providerConfirmed || progress < 100));
+                return ['confirmed', 'accepted', 'programmed', 'on_time', 'in_progress'].includes(status || '') || (status === 'pending' && (o.providerConfirmed || progress < 100));
             }
-            return ['confirmed', 'accepted', 'programmed'].includes(o.status || '') || (o.status === 'pending' && o.providerConfirmed);
+            return ['confirmed', 'accepted', 'programmed', 'on_time', 'in_progress'].includes(status || '') || (status === 'pending' && o.providerConfirmed);
         })
             .sort((a, b) => new Date(b.date || 0).getTime() - new Date(a.date || 0).getTime());
-    }, [orders, getProgress]);
+    }, [orders, getDynamicStatus, getProgress]);
 
     const incompleteOrders = useMemo(() => {
         return orders.filter(o => ['new', 'negotiating'].includes(o.status || ''));
@@ -1492,11 +1372,11 @@ function ActivityTab({
 
 
     const renderEmptyState = (title: string, subtitle: string, icon: React.ReactNode) => (
-        <div className="bg-white rounded-[16px] border border-[#BABABA] p-5 flex flex-col items-center text-center">
+        <div className="bg-white rounded-[35px_25px_45px_30px] border-2 border-black/5 p-8 flex flex-col items-center text-center">
             <div className="flex items-center justify-center mb-6">
                 {icon}
             </div>
-            <h3 className="text-[20px] font-black text-black mb-1">{title}</h3>
+            <h3 className="text-[20px] font-medium text-black mb-1">{title}</h3>
             <p className="text-[15px] font-medium text-neutral-500 max-w-[240px] leading-tight">
                 {subtitle}
             </p>
@@ -1509,10 +1389,10 @@ function ActivityTab({
                 key={draft.id}
                 whileTap={{ scale: 0.98 }}
                 onClick={() => onResumeDraft?.(draft)}
-                className="bg-white rounded-[24px] p-5 flex items-center gap-5 cursor-pointer transition-all mb-4 border-2 border-[#FFC244]/10 shadow-sm relative overflow-hidden group hover:border-[#FFC244]/30"
+                className="bg-white rounded-[35px_22px_45px_28px] p-5 flex items-center gap-5 cursor-pointer transition-all mb-4 border-2 border-black/5 relative overflow-hidden group hover:border-[#FFC244]/30"
             >
                 {/* Draft Badge */}
-                <div className="absolute top-0 right-0 px-4 py-1.5 bg-[#FFC244] text-black text-[11px] font-black rounded-bl-xl uppercase tracking-wider">
+                <div className="absolute top-0 right-0 px-4 py-1.5 bg-[#FFC244] text-black text-[11px] font-medium rounded-bl-xl uppercase tracking-wider">
                     {t({ en: 'Resume', fr: 'Reprendre', ar: 'متابعة' })}
                 </div>
 
@@ -1521,7 +1401,7 @@ function ActivityTab({
                 </div>
 
                 <div className="flex-1 min-w-0 pr-8">
-                    <h3 className="text-[18px] font-black text-black truncate leading-tight mb-1">
+                    <h3 className="text-[18px] font-medium text-black truncate leading-tight mb-1">
                         {draft.service} {draft.subService ? `› ${getSubServiceName(draft.service, draft.subService)}` : ''}
                     </h3>
                     <p className="text-[14px] font-medium text-neutral-400 line-clamp-1">
@@ -1557,15 +1437,15 @@ function ActivityTab({
                 key={order.id}
                 whileTap={{ scale: 0.98 }}
                 onClick={() => onSelect(order)}
-                className="bg-white rounded-[16px] p-4 flex items-center gap-4 cursor-pointer transition-all mb-4"
+                className="bg-white rounded-[30px_18px_35px_22px] p-4 flex items-center gap-4 cursor-pointer transition-all mb-4 border-2 border-black/5"
             >
-                <div className="w-28 h-28 bg-white rounded-[16px] border border-[#F0F0F0] flex items-center justify-center flex-shrink-0 p-0 overflow-hidden">
+                <div className="w-28 h-28 bg-white rounded-[22px_15px_28px_18px] border-2 border-black/5 flex items-center justify-center flex-shrink-0 p-0 overflow-hidden">
                     {order.images && order.images.length > 0 ? (
                         <img src={order.images[0]} className="w-full h-full object-cover" />
                     ) : (order.selectedCar || order.details?.car) ? (
-                        <img 
-                            src={(order.selectedCar?.modelImage || order.selectedCar?.image) || (order.details?.car?.modelImage || order.details?.car?.image) || "/Images/Vectors Illu/carKey.png"} 
-                            className="w-full h-full object-contain p-2" 
+                        <img
+                            src={(order.selectedCar?.modelImage || order.selectedCar?.image) || (order.details?.car?.modelImage || order.details?.car?.image) || "/Images/Vectors Illu/carKey.png"}
+                            className="w-full h-full object-contain p-2"
                         />
                     ) : (
                         <img src={getServiceVector(order.service)} className="w-full h-full object-contain p-1" />
@@ -1574,22 +1454,24 @@ function ActivityTab({
                 <div className="flex-1 min-w-0 pr-2">
                     <div className="flex items-center gap-2 mb-1">
                         <span className={cn(
-                            "px-2 py-0.5 text-[11px] font-black rounded-md uppercase tracking-wider",
-                            (order.status === 'pending' && !order.providerConfirmed && progress === 100) ? "bg-orange-100 text-orange-600" : 
-                            isRentalInProgress ? "bg-rose-50 text-rose-500" : "bg-[#E6F7F4] text-[#219178]"
+                            "px-2 py-0.5 text-[11px] font-medium rounded-md uppercase tracking-wider",
+                            (order.status === 'pending' && !order.providerConfirmed && progress === 100) ? "bg-orange-100 text-orange-600" :
+                                isRentalInProgress ? "bg-rose-50 text-rose-500" : "bg-[#E6F7F4] text-[#01A083]"
                         )}>
                             {(() => {
+                                const status = getDynamicStatus(order);
                                 const isDelayedStatus = order.status === 'pending' && !order.providerConfirmed && progress === 100;
+
                                 if (isDelayedStatus) {
                                     return t({ en: 'Pending', fr: 'En attente', ar: 'قيد الانتظار' });
                                 }
-                                if (isRentalInProgress) {
+                                if (isRentalInProgress || status === 'in_progress') {
                                     return t({ en: 'In Progress', fr: 'En cours', ar: 'قيد التنفيذ' });
                                 }
-                                if (progress === 100 && !['done', 'delivered'].includes(order.status || '')) {
-                                    return t({ en: 'In Progress', fr: 'En cours', ar: 'قيد التنفيذ' });
+                                if (status === 'done') {
+                                    return t({ en: 'Completed', fr: 'Terminée', ar: 'مكتملة' });
                                 }
-                                
+
                                 // For car rentals that are active
                                 if (isCarRental && order.status === 'pending' && progress < 100) {
                                     return t({ en: 'New', fr: 'Nouveau', ar: 'جديد' });
@@ -1600,14 +1482,14 @@ function ActivityTab({
                         </span>
                     </div>
 
-                    <h3 className="text-[17px] font-black text-black leading-tight">
+                    <h3 className="text-[17px] font-medium text-black leading-tight">
                         {order.service === 'cleaning' && order.details?.rooms ? (
-                             `${getSubServiceName(order.service, order.subService || '') || t({ en: 'Cleaning', fr: 'Nettoyage', ar: 'تنظيف' })} • ${order.details.rooms} ${order.details.rooms > 1 ? t({ en: 'Rooms', fr: 'Pièces', ar: 'غرف' }) : t({ en: 'Room', fr: 'Pièce', ar: 'غرفة' })}`
+                            `${getSubServiceName(order.service, order.subService || '') || t({ en: 'Cleaning', fr: 'Nettoyage', ar: 'تنظيف' })} • ${order.details.rooms} ${order.details.rooms > 1 ? t({ en: 'Rooms', fr: 'Pièces', ar: 'غرف' }) : t({ en: 'Room', fr: 'Pièce', ar: 'غرفة' })}`
                         ) : (
                             `${order.service} ${order.subServiceDisplayName ? `› ${order.subServiceDisplayName}` : ''}`
                         )}
                     </h3>
-                    <div className="mt-2 text-[14px] font-black text-black leading-tight">
+                    <div className="mt-2 text-[14px] font-medium text-black leading-tight">
                         {isCarRental && order.date && order.carReturnDate ? (
                             <div className="flex flex-col gap-1">
                                 <div className="flex items-center gap-1.5">
@@ -1622,14 +1504,21 @@ function ActivityTab({
                                 </div>
                             </div>
                         ) : (
-                            <div className="flex items-center gap-3 mt-1">
-                                <p className="text-[20px] font-black">
+                            <div className="flex items-center gap-2 mt-1">
+                                <div className="flex items-center gap-1 text-neutral-400">
+                                    <CalendarIcon size={14} className="opacity-70" />
+                                    <span className="text-[14px] font-medium">
+                                        {order.date ? format(parseISO(order.date), 'MMM d') : ''}
+                                    </span>
+                                </div>
+                                <span className="text-neutral-200">|</span>
+                                <p className="text-[18px] font-medium">
                                     {order.time || '12:00-13:00'}
                                 </p>
                                 {timeLeft && (
                                     <span className={cn(
-                                        "text-[14px] font-black whitespace-nowrap pt-1",
-                                        isRentalInProgress ? "text-rose-500" : "text-[#219178]"
+                                        "text-[14px] font-medium whitespace-nowrap pt-1",
+                                        isRentalInProgress ? "text-rose-500" : "text-[#01A083]"
                                     )}>
                                         {timeLeft}
                                     </span>
@@ -1641,8 +1530,8 @@ function ActivityTab({
                         <p className="text-[13px] font-medium text-neutral-400 truncate pr-2">
                             {order.service === 'cleaning' && order.details?.propertyType ? (
                                 `${t({ en: order.details.propertyType, fr: order.details.propertyType, ar: order.details.propertyType })} • ${order.city || (typeof order.location === 'object' ? (order.location as any).address : order.location)}`
-                            ) : (order.service === 'errands' || order.service?.includes('delivery')) && !order.bricolerName ? 
-                                (order.city || (typeof order.location === 'object' ? (order.location as any).address : order.location)) : 
+                            ) : (order.service === 'errands' || order.service?.includes('delivery')) && !order.bricolerName ?
+                                (order.city || (typeof order.location === 'object' ? (order.location as any).address : order.location)) :
                                 `${order.bricolerName || t({ en: 'Matching...', fr: 'Recherche...', ar: 'جاري البحث...' })} • ${order.city || (typeof order.location === 'object' ? (order.location as any).address : order.location)}`
                             }
                         </p>
@@ -1660,7 +1549,7 @@ function ActivityTab({
                             }}
                             className={cn(
                                 "h-full rounded-full relative",
-                                isRentalInProgress ? "bg-rose-500" : "bg-[#219178]"
+                                isRentalInProgress ? "bg-rose-500" : "bg-[#01A083]"
                             )}
                         />
                     </div>
@@ -1679,7 +1568,7 @@ function ActivityTab({
                             <Ban size={24} className="text-white" />
                         </div>
                         <div className="flex-1">
-                            <h3 className="text-[18px] font-black text-black mb-1">
+                            <h3 className="text-[18px] font-medium text-black mb-1">
                                 {t({
                                     en: `${order.bricolerName} can't make it`,
                                     fr: `${order.bricolerName} ne peut plus venir`,
@@ -1717,14 +1606,14 @@ function ActivityTab({
                                             });
                                         }
                                     }}
-                                    className="w-full py-3 bg-[#219178] text-white rounded-xl text-[14px] font-black flex items-center justify-center gap-2 transition-all active:scale-95"
+                                    className="w-full py-3 bg-[#01A083] text-white rounded-xl text-[14px] font-medium flex items-center justify-center gap-2 transition-all active:scale-95"
                                 >
                                     <RefreshCw size={16} />
                                     {t({ en: 'Select New Bricoler', fr: 'Choisir un nouveau Bricoleur', ar: 'اختر بريكولر جديد' })}
                                 </button>
                                 <button
                                     onClick={() => onCancelOrder(order.id!, true)}
-                                    className="w-full py-3 bg-white border border-red-200 text-red-500 hover:bg-red-50 rounded-xl text-[14px] font-bold transition-all active:scale-95"
+                                    className="w-full py-3 bg-white border border-red-200 text-red-500 hover:bg-red-50 rounded-xl text-[14px] font-medium transition-all active:scale-95"
                                 >
                                     {t({ en: 'Cancel Order', fr: 'Annuler la commande', ar: 'إلغاء الطلب' })}
                                 </button>
@@ -1738,7 +1627,7 @@ function ActivityTab({
             {/* Active Orders Section */}
             <div className="space-y-6">
                 <div className="space-y-4">
-                    <h2 className="text-[26px] font-black text-black">{t({ en: 'Active Orders', fr: 'Commandes actives', ar: 'الطلبات النشطة' })}</h2>
+                    <h2 className="text-[26px] font-medium text-black">{t({ en: 'Active Orders', fr: 'Commandes actives', ar: 'الطلبات النشطة' })}</h2>
                 </div>
 
                 {filteredOrders.length > 0 ? (
@@ -1757,14 +1646,14 @@ function ActivityTab({
             {/* Pending Orders Section */}
             {pendingOrders.length > 0 && (
                 <div className="space-y-4">
-                    <h2 className="text-[26px] font-black text-black">{t({ en: 'Pending orders', fr: 'Commandes en attente', ar: 'طلبات قيد الانتظار' })}</h2>
+                    <h2 className="text-[26px] font-medium text-black">{t({ en: 'Pending orders', fr: 'Commandes en attente', ar: 'طلبات قيد الانتظار' })}</h2>
                     <div className="pt-2">{pendingOrders.map(renderOrderCard)}</div>
                 </div>
             )}
 
             {/* Continue Your Order Section */}
             <div className="space-y-4">
-                <h2 className="text-[26px] font-black text-black">{t({ en: 'Continue your order', fr: 'Continuer votre commande', ar: 'أكمل طلبك' })}</h2>
+                <h2 className="text-[26px] font-medium text-black">{t({ en: 'Continue your order', fr: 'Continuer votre commande', ar: 'أكمل طلبك' })}</h2>
                 {(incompleteOrders.length > 0 || localDrafts.length > 0) ? (
                     <div className="pt-2">
                         {localDrafts.map(renderDraftCard)}
@@ -1782,7 +1671,7 @@ function ActivityTab({
             </div>
 
             {/* History Link */}
-            <div className="bg-[#F2F2F2] rounded-[16px] p-6 flex items-center gap-5 mt-4">
+            <div className="bg-[#F2F2F2] rounded-[35px_25px_45px_30px] border-2 border-black/5 p-6 flex items-center gap-5 mt-4">
                 <div className="flex items-center justify-center flex-shrink-0">
                     <img src="/Images/Vectors Illu/OrdersHistory.webp" className="w-20 h-20 object-contain" />
                 </div>
@@ -1790,7 +1679,7 @@ function ActivityTab({
                     <p className="text-[16px] font-light text-black leading-tight">{t({ en: 'Need to review past orders or reorder?', fr: 'Besoin de consulter vos commandes passées ?', ar: 'تريد مراجعة طلباتك السابقة أو إعادة الطلب؟' })}</p>
                     <button
                         onClick={onShowHistory}
-                        className="text-[17px] font-black text-[#219178] mt-1 text-left decoration-[#219178] decoration-2 underline-offset-4 hover:underline"
+                        className="text-[17px] font-medium text-[#01A083] mt-1 text-left decoration-[#01A083] decoration-2 underline-offset-4 hover:underline"
                     >
                         {t({ en: 'Check your order history', fr: 'Voir l\'historique de commandes', ar: 'عرض سجل الطلبات' })}
                     </button>

@@ -122,7 +122,7 @@ const ProfileView: React.FC<ProfileViewProps> = ({
                     ? t({ en: 'Switch to Provider', fr: 'Passer en Mode Prestataire', ar: 'التحويل إلى وضع مقدم الخدمة' })
                     : t({ en: 'Become a Bricoler', fr: 'Devenir un Bricoleur', ar: 'كن مقدم خدمة' }),
                 action: onBricolerAction,
-                badge: isBricoler ? undefined : { text: t({ en: 'Recommended', fr: 'Recommandé', ar: 'موصى به' }), color: '#219178' } as const
+                badge: isBricoler ? undefined : { text: t({ en: 'Recommended', fr: 'Recommandé', ar: 'موصى به' }), color: '#01A083' } as const
             }] : []),
             {
                 icon: ShoppingBag,
@@ -194,7 +194,7 @@ const ProfileView: React.FC<ProfileViewProps> = ({
                         {/* Help Button */}
                         <button
                             onClick={handleHelp}
-                            className="bg-[#008C74] text-white px-5 py-2.5 rounded-full font-black text-[14px] flex items-center gap-2 active:scale-95 transition-all shadow-md group"
+                            className="bg-[#008C74] text-white px-5 py-2.5 rounded-full font-black text-[14px] flex items-center gap-2 active:scale-95 transition-all border border-[#00705d] group"
                         >
                             <CircleHelp size={18} className="text-white group-hover:rotate-12 transition-transform" />
                             {t({ en: 'Help', fr: 'Aide', ar: 'مساعدة' })}
@@ -206,7 +206,7 @@ const ProfileView: React.FC<ProfileViewProps> = ({
                             <motion.div
                                 initial={{ scale: 0.9, opacity: 0 }}
                                 animate={{ scale: 1, opacity: 1 }}
-                                className="w-28 h-28 rounded-[36px] overflow-hidden bg-white relative shadow-sm"
+                                className="w-28 h-28 rounded-[36px] overflow-hidden bg-white relative border border-neutral-100"
                             >
                                 <img
                                     src={userData?.profilePhotoURL || userData?.avatar || userAvatar || userData?.photoURL || "/Images/Vectors Illu/LbricolFaceOY.webp"}
@@ -217,7 +217,7 @@ const ProfileView: React.FC<ProfileViewProps> = ({
                                     }}
                                 />
                             </motion.div>
-                            <div className="absolute -bottom-1 -right-1 w-10 h-10 bg-[#219178] rounded-2xl border-4 border-white flex items-center justify-center">
+                            <div className="absolute -bottom-1 -right-1 w-10 h-10 bg-[#01A083] rounded-2xl border-4 border-white flex items-center justify-center">
                                 <Shield size={16} className="text-white" fill="white" />
                             </div>
                         </div>
@@ -241,7 +241,7 @@ const ProfileView: React.FC<ProfileViewProps> = ({
                 <div className="bg-white relative z-10 px-6 pt-10 w-full min-h-screen pb-48">
                     {/* Wave Border Overlay */}
                     <div className="absolute top-[-44px] left-0 right-0 h-[45px] z-20 pointer-events-none">
-                        <svg viewBox="0 0 1440 120" preserveAspectRatio="none" className="w-full h-full fill-white drop-shadow-[0_-5px_10px_rgba(0,0,0,0.03)] text-white">
+                        <svg viewBox="0 0 1440 120" preserveAspectRatio="none" className="w-full h-full fill-white text-white">
                             <path d="M0,64L48,64C96,64,192,64,288,64C384,64,480,64,576,53.3C672,43,768,21,864,16C960,10.7,1056,21.3,1152,42.7C1248,64,1344,96,1392,112L1440,128L1440,120L1392,120C1344,120,1248,120,1152,120C1056,120,960,120,864,120C768,120,672,120,576,120C480,120,384,120,288,120C192,120,96,120,48,120L0,120Z"></path>
                         </svg>
                     </div>
@@ -288,7 +288,7 @@ const ProfileView: React.FC<ProfileViewProps> = ({
                                     </div>
                                     <span className="text-[17px] text-[#1D1D1D] font-light">{t({ en: 'Log out', fr: 'Déconnexion', ar: 'تسجيل الخروج' })}</span>
                                 </div>
-                                <div className="w-6 h-[2px] rounded-full bg-black mt-2 hidden"></div> {/* Hidden to match design or keep it if needed */}
+                                <div className="w-6 h-[2px] rounded-full bg-black mt-2 hidden"></div>
                             </button>
                         ) : (
                             <button
@@ -406,7 +406,7 @@ const ProfileView: React.FC<ProfileViewProps> = ({
                     exit={{ opacity: 0, x: 20 }}
                     className="flex flex-col min-h-full bg-white relative pb-32"
                 >
-                    <div className="pt-12 px-5 pb-4 bg-white sticky top-0 z-20 shadow-sm border-b border-neutral-100 flex items-center justify-between">
+                    <div className="pt-12 px-5 pb-4 bg-white sticky top-0 z-20 border-b border-neutral-100 flex items-center justify-between">
                         <div className="flex items-center gap-3">
                             <button
                                 onClick={() => setView('main')}
@@ -418,7 +418,7 @@ const ProfileView: React.FC<ProfileViewProps> = ({
                         </div>
 
                         <div className="relative">
-                            <div className="w-12 h-12 rounded-xl overflow-hidden bg-neutral-100 relative border-2 border-white shadow-sm">
+                            <div className="w-12 h-12 rounded-xl overflow-hidden bg-neutral-100 relative border-2 border-white">
                                 <img
                                     src={userData?.profilePhotoURL || userData?.avatar || userAvatar || userData?.photoURL || "/Images/Vectors Illu/LbricolFaceOY.webp"}
                                     className="w-full h-full object-cover"
@@ -439,7 +439,7 @@ const ProfileView: React.FC<ProfileViewProps> = ({
                                         <div className="py-4 flex flex-col gap-3">
                                             <div className="flex items-center gap-5">
                                                 <div className="w-6 flex justify-center">
-                                                    <Icon size={24} className="text-[#219178]" strokeWidth={1.5} />
+                                                    <Icon size={24} className="text-[#01A083]" strokeWidth={1.5} />
                                                 </div>
                                                 <input
                                                     autoFocus
@@ -447,7 +447,7 @@ const ProfileView: React.FC<ProfileViewProps> = ({
                                                     value={editValue}
                                                     onChange={(e) => setEditValue(e.target.value)}
                                                     placeholder={item.label}
-                                                    className="flex-1 text-[17px] text-[#1D1D1D] font-medium leading-tight outline-none border-b-2 border-[#219178] py-1"
+                                                    className="flex-1 text-[17px] text-[#1D1D1D] font-medium leading-tight outline-none border-b-2 border-[#01A083] py-1"
                                                     onKeyDown={(e) => e.key === 'Enter' && handleSaveEdit()}
                                                 />
                                             </div>
@@ -461,7 +461,7 @@ const ProfileView: React.FC<ProfileViewProps> = ({
                                                 <button
                                                     onClick={handleSaveEdit}
                                                     disabled={isSaving}
-                                                    className="px-4 py-2 bg-[#219178] text-white rounded-full text-[14px] font-bold disabled:opacity-50"
+                                                    className="px-4 py-2 bg-[#01A083] text-white rounded-full text-[14px] font-bold disabled:opacity-50"
                                                 >
                                                     {isSaving ? '...' : t({ en: 'Save', fr: 'Enregistrer', ar: 'حفظ' })}
                                                 </button>
@@ -544,14 +544,14 @@ const ProfileView: React.FC<ProfileViewProps> = ({
                                     <div className="py-4 flex flex-col gap-3">
                                         <div className="flex items-center gap-5">
                                             <div className="w-6 flex justify-center">
-                                                <Icon size={24} className="text-[#219178]" strokeWidth={1.5} />
+                                                <Icon size={24} className="text-[#01A083]" strokeWidth={1.5} />
                                             </div>
                                             <input
                                                 autoFocus
                                                 type={isEmail ? "email" : "text"}
                                                 value={editValue}
                                                 onChange={(e) => setEditValue(e.target.value)}
-                                                className="flex-1 text-[17px] text-[#1D1D1D] font-medium leading-tight outline-none border-b-2 border-[#219178] py-1"
+                                                className="flex-1 text-[17px] text-[#1D1D1D] font-medium leading-tight outline-none border-b-2 border-[#01A083] py-1"
                                                 onKeyDown={(e) => e.key === 'Enter' && handleSaveEdit()}
                                             />
                                         </div>
@@ -565,7 +565,7 @@ const ProfileView: React.FC<ProfileViewProps> = ({
                                             <button
                                                 onClick={handleSaveEdit}
                                                 disabled={isSaving}
-                                                className="px-4 py-2 bg-[#219178] text-white rounded-full text-[14px] font-bold disabled:opacity-50"
+                                                className="px-4 py-2 bg-[#01A083] text-white rounded-full text-[14px] font-bold disabled:opacity-50"
                                             >
                                                 {isSaving ? '...' : t({ en: 'Save', fr: 'Enregistrer', ar: 'حفظ' })}
                                             </button>

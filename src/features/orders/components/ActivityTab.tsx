@@ -222,7 +222,7 @@ export default function ActivityTab({
                     <p className="text-[16px] font-light text-black leading-tight">{t({ en: 'Need to review past missions?', fr: 'Besoin de revoir vos missions passées ?' })}</p>
                     <button
                         onClick={onShowHistory}
-                        className="text-[17px] font-black text-[#219178] mt-1 text-left decoration-[#219178] decoration-2 underline-offset-4 hover:underline"
+                        className="text-[17px] font-black text-[#01A083] mt-1 text-left decoration-[#01A083] decoration-2 underline-offset-4 hover:underline"
                     >
                         {t({ en: 'Check my mission history', fr: 'Voir l’historique de mes missions' })}
                     </button>

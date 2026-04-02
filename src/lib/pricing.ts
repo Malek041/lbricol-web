@@ -90,6 +90,11 @@ export const calculateOrderPrice = (
     let unit = 'job';
     let extraFees = 0;
 
+    // General Add-ons Check (Applies to all)
+    if (options.mountingAddOns?.includes('supplies')) {
+        extraFees += 15;
+    }
+
     // Specialized TV Mounting Pricing
     if (subServiceId === 'tv_mounting') {
         // Base: 1.5 hours per TV at Bricoler rate
@@ -172,17 +177,20 @@ export const calculateOrderPrice = (
         }
     }
 
-    const subtotal = (basePrice * quantity) + extraFees;
-    const serviceFee = subtotal * 0.10; // 10% Platform fee
+    const subtotal = Math.round(((basePrice * quantity) + extraFees) * 10) / 10;
+    const serviceFee = Math.round((subtotal * 0.10) * 10) / 10; // 10% Platform fee
     
-    // For Moving and Errands, the travel fee is often folded into the service travel or ignored to match Setup view
+    // Unified Travel Fee logic
     const isMovingOrErrands = subServiceId === 'local_move' || subServiceId === 'moving' || subServiceId.includes('moving') || subServiceId === 'errands' || subServiceId.includes('delivery');
-    const travelFee = isMovingOrErrands ? 0 : (options.distanceKm || 0) * 3; // 3 MAD per Km
     
-    const total = subtotal + serviceFee + travelFee;
+    // For Moving/Errands, distance fees are often already in extraFees. 
+    // We only apply the distanceKm * 3 fee if it's not already covered in extraFees or if it's a standard home service.
+    const travelFee = (isMovingOrErrands && extraFees > 0) ? 0 : Math.round((options.distanceKm || 0) * 3 * 10) / 10;
+    
+    const total = Math.round((subtotal + serviceFee + travelFee) * 100) / 100;
 
     return {
-        basePrice,
+        basePrice: Math.round(basePrice * 10) / 10,
         quantity,
         unit,
         subtotal,
@@ -190,6 +198,6 @@ export const calculateOrderPrice = (
         travelFee,
         total,
         distanceKm: options.deliveryDistanceKm || options.distanceKm,
-        duration: options.deliveryDurationMinutes || options.durationMinutes || Math.ceil((options.distanceKm || 0) * 2) // Prefer OSRM duration
+        duration: options.deliveryDurationMinutes || options.durationMinutes || Math.ceil((options.distanceKm || 0) * 2)
     };
 };

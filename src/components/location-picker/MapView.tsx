@@ -312,24 +312,18 @@ const MapView: React.FC<MapViewProps> = ({
   // ── Watch internal user position if permitted ───────────────────────
   useEffect(() => {
     if (typeof window !== 'undefined' && navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
+
+      const watchId = navigator.geolocation.watchPosition(
         (pos) => {
           const { latitude, longitude } = pos.coords;
           setInternalUserPos({ lat: latitude, lng: longitude });
-          
-          // Initial center on user if map is ready and no specific initialLocation was forced 
-          // or if we're in a view where centering on user is explicitly requested
-          if (mapRef.current && (!initialLocation || centerOnUser)) {
+
+          // Center on user if map is ready and no specific initialLocation was forced 
+          if (mapRef.current && (!initialLocation || centerOnUser) && !internalUserPos) {
              flyToWithOffset(latitude, longitude, targetZoom, true);
           }
         },
-        (error) => console.warn("Initial GPS failed", error),
-        { enableHighAccuracy: true, timeout: 5000 }
-      );
-
-      const watchId = navigator.geolocation.watchPosition(
-        (pos) => setInternalUserPos({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
-        (error) => console.warn(error),
+        (error) => console.warn("Watch GPS failed:", error),
         { enableHighAccuracy: true, maximumAge: 10000 }
       );
       return () => navigator.geolocation.clearWatch(watchId);
@@ -491,6 +485,7 @@ const MapView: React.FC<MapViewProps> = ({
         className: '',
         html: `
           <div style="display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:160px;cursor:pointer;opacity:${opacity};transform:scale(${scale});transition:all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);${bounceStyle}">
+            ${isFocused ? `
             <div style="position: relative; display: flex; flex-direction: column; align-items: center; margin-bottom: 8px;">
               <div style="background:#fff;border-radius:12px;padding:10px 16px; 
                 box-shadow:0 8px 18px rgba(0,0,0,0.15);font-family:sans-serif;text-align:center;white-space:nowrap;
@@ -502,6 +497,7 @@ const MapView: React.FC<MapViewProps> = ({
               </div>
               <div style="width: 0; height: 0; border-left: 8px solid transparent; border-right: 8px solid transparent; border-top: 8px solid white; margin-top: -1px; z-index: 5; filter: drop-shadow(0 4px 4px rgba(0,0,0,0.05));"></div>
             </div>
+            ` : ''}
             <div style="position:relative;width:${size}px;height:${size}px;min-width:${size}px;min-height:${size}px;flex-shrink:0;transition: width 0.3s, height 0.3s; margin-bottom: 0px; border-radius: 50%; border: 3px solid #fff; box-shadow: 0 4px 12px rgba(0,0,0,0.15); overflow: hidden; background: #fff;">
               ${pin.avatarUrl
                 ? `<img src="${pin.avatarUrl}" style="width:100%;height:100%;object-fit:cover" onerror="this.onerror=null; this.src='/Images/Vectors Illu/LbricolFaceOY.webp'; this.parentElement.style.background='#F3F4F6'; this.innerHTML='👤';"/>`
@@ -644,14 +640,16 @@ const MapView: React.FC<MapViewProps> = ({
         className: '',
         html: `
           <div style="display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:160px;cursor:pointer;opacity:${opacity};transform:scale(${scale});transition:all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);${bounceStyle}">
+            ${isFocused ? `
             <div style="background:#fff;border-radius:12px;padding:6px 12px;margin-bottom:6px;
               box-shadow:0 4px 15px rgba(0,0,0,0.18);font-family:sans-serif;text-align:center;white-space:nowrap;
               display: flex; flex-direction: column; align-items: center; border: 1px solid #f3f4f6;">
-              <div style="font-size:14px;font-weight:900;color:#219178">${pin.price} MAD</div>
+              <div style="font-size:14px;font-weight:900;color:#01A083">${pin.price} MAD</div>
               <div style="font-size:13px;color:#FBBF24;font-weight:900;display:flex;align-items:center;gap:3px;">
                 ★ <span style="color:#111827">${!pin.rating || pin.rating === 0 ? '0.0' : pin.rating.toFixed(1)}</span>
               </div>
             </div>
+            ` : ''}
             <div style="position:relative;width:${size}px;height:${size}px;transition: width 0.3s, height 0.3s; margin-bottom: 0px; background: #fff; border-radius: 50%; box-shadow: 0 2px 10px rgba(0,0,0,0.1); padding: 8px;">
               <img src="${pin.serviceIcon || '/Images/Vectors Illu/NewOrder.webp'}" style="width:100%;height:100%;object-fit:contain"/>
             </div>
@@ -712,7 +710,7 @@ const MapView: React.FC<MapViewProps> = ({
           const durationMin = Math.round(route.duration / 60);
 
           routeLayerRef.current = L.polyline(coords, {
-            color: '#219178',
+            color: '#01A083',
             weight: 6,
             opacity: 0.9,
             lineCap: 'round',
@@ -729,7 +727,7 @@ const MapView: React.FC<MapViewProps> = ({
               html: `
                 <div style="position: relative; display: flex; flex-direction: column; align-items: center; pointer-events: none;">
                   <div style="
-                    background: #219178; 
+                    background: #01A083; 
                     padding: 8px 14px; 
                     border-radius: 8px; 
                     box-shadow: 0 4px 15px rgba(0,160,130,0.3); 
@@ -744,7 +742,7 @@ const MapView: React.FC<MapViewProps> = ({
                   ">
                     <span style="font-size: 13px; font-weight: 950; letter-spacing: 0.3px">${durationMin} min</span>
                   </div>
-                  <div style="width: 0; height: 0; border-left: 6px solid transparent; border-right: 6px solid transparent; border-top: 6px solid #219178; margin-top: -1px; z-index: 999;"></div>
+                  <div style="width: 0; height: 0; border-left: 6px solid transparent; border-right: 6px solid transparent; border-top: 6px solid #01A083; margin-top: -1px; z-index: 999;"></div>
                 </div>
               `,
               iconSize: [120, 50],
@@ -805,7 +803,7 @@ const MapView: React.FC<MapViewProps> = ({
           const durationMin = Math.round(route.duration / 60);
 
           routeLayerRef.current = L.polyline(coords, {
-            color: '#219178', // Branded green
+            color: '#01A083', // Branded green
             weight: 7,
             opacity: 0.9,
             lineCap: 'round',
@@ -830,7 +828,7 @@ const MapView: React.FC<MapViewProps> = ({
                   align-items: center; 
                   gap: 6px;
                   white-space: nowrap;
-                  border: 2px solid #219178;
+                  border: 2px solid #01A083;
                   animation: fadeIn 0.3s ease-out;
                   pointer-events: none;
                 ">
@@ -855,7 +853,7 @@ const MapView: React.FC<MapViewProps> = ({
 
         } else if (clientPin && destinationPin && clientPin.lat && destinationPin.lat) {
           routeLayerRef.current = L.polyline([[clientPin.lat, clientPin.lng], [destinationPin.lat, destinationPin.lng]], {
-            color: '#219178', weight: 6, opacity: 0.5
+            color: '#01A083', weight: 6, opacity: 0.5
           }).addTo(map);
           map.fitBounds(L.latLngBounds([[clientPin.lat, clientPin.lng], [destinationPin.lat, destinationPin.lng]]), { padding: [40, 40] });
         }

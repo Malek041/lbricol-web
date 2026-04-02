@@ -13,7 +13,7 @@ interface SearchPopupProps {
     onSelectSubService: (serviceId: string, subService: any) => void;
 }
 
-const G_GREEN = '#219178';
+const G_GREEN = '#01A083';
 
 export const SearchPopup: React.FC<SearchPopupProps> = ({
     isOpen,
@@ -136,7 +136,7 @@ export const SearchPopup: React.FC<SearchPopupProps> = ({
                                 <ArrowLeft size={24} className="text-neutral-900" />
                             </button>
 
-                            <div className="flex-1 flex items-center bg-neutral-100 rounded-full px-4 py-2.5">
+                            <div className="flex-1 flex items-center bg-neutral-100 rounded-[25px_15px_30px_18px] border-2 border-black/5 px-4 py-2.5">
                                 <Search size={18} className="text-neutral-400 mr-2" />
                                 <input
                                     ref={inputRef}
@@ -170,7 +170,7 @@ export const SearchPopup: React.FC<SearchPopupProps> = ({
                                                 <button
                                                     key={i}
                                                     onClick={() => handleRecentClick(term)}
-                                                    className="px-4 py-2 bg-neutral-100 hover:bg-neutral-200 rounded-full text-[14px] font-bold text-neutral-700 transition-colors flex items-center gap-2"
+                                                    className="px-4 py-2 bg-neutral-100 hover:bg-neutral-200 rounded-[15px_10px_18px_12px] border-2 border-black/5 text-[14px] font-bold text-neutral-700 transition-colors flex items-center gap-2"
                                                 >
                                                     <Clock size={14} className="text-neutral-400" />
                                                     {term}
@@ -191,7 +191,7 @@ export const SearchPopup: React.FC<SearchPopupProps> = ({
                                             <button
                                                 key={i}
                                                 onClick={() => handleRecentClick(t(tag))}
-                                                className="px-4 py-2 border border-neutral-100 hover:border-neutral-300 rounded-full text-[14px] font-bold text-neutral-700 transition-colors"
+                                                className="px-4 py-2 border-2 border-black/5 hover:border-neutral-300 rounded-[15px_20px_12px_18px] text-[14px] font-bold text-neutral-700 transition-colors"
                                             >
                                                 {t(tag)}
                                             </button>
@@ -209,7 +209,7 @@ export const SearchPopup: React.FC<SearchPopupProps> = ({
                                             onClick={() => handleSelect(item)}
                                             className="w-full py-4 flex items-center gap-4 border-b border-neutral-50 active:bg-neutral-50 transition-colors text-left"
                                         >
-                                            <div className="w-12 h-12 rounded-[50] bg-[#FFB700] flex items-center justify-center shrink-0">
+                                            <div className="w-12 h-12 rounded-[18px_22px_15px_25px] bg-[#FFB700] flex items-center justify-center shrink-0">
                                                 <img src={SERVICES_CATALOGUE.find(s => s.id === item.serviceId)?.iconPath} className="w-8 h-8 object-contain" alt="" />
                                             </div>
                                             <div className={cn("flex-1 flex flex-col", item.serviceId !== 'cleaning' && "opacity-40 grayscale")}>

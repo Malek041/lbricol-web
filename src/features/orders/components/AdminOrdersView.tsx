@@ -9,6 +9,8 @@ import { db } from '@/lib/firebase';
 import { collection, query, onSnapshot, where } from 'firebase/firestore';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, addMonths } from 'date-fns';
 import JobDetailsPopup, { JobDetails } from '@/features/orders/components/JobDetailsPopup';
+import { getSubService } from '@/config/services_config';
+import { parseISO } from 'date-fns';
 
 interface AdminOrdersViewProps {
     t: (vals: { en: string; fr: string }) => string;
@@ -28,6 +30,38 @@ const AdminOrdersView: React.FC<AdminOrdersViewProps> = ({ t, onChat, onViewMess
     const [selectedOrder, setSelectedOrder] = useState<any | null>(null);
 
     const cities = ['all', 'Marrakech', 'Casablanca', 'Essaouira', 'Agadir', 'Rabat', 'Tangier'];
+    const [currentTime, setCurrentTime] = useState(new Date());
+
+    useEffect(() => {
+        const timer = setInterval(() => setCurrentTime(new Date()), 60000);
+        return () => clearInterval(timer);
+    }, []);
+
+    const getDynamicStatus = (order: any) => {
+        if (!order.date || !order.time) return order.status;
+        const autoStatuses = ['confirmed', 'accepted', 'programmed', 'pending', 'in_progress'];
+        if (!autoStatuses.includes(order.status || '')) return order.status;
+
+        try {
+            const timeStr = order.time.split('-')[0].trim();
+            const dateStr = typeof order.date === 'string' ? order.date : format(new Date(order.date), 'yyyy-MM-dd');
+            const startTime = parseISO(`${dateStr}T${timeStr}:00`).getTime();
+            const now = currentTime.getTime();
+
+            let durationHr = 2;
+            const subService = getSubService(order.serviceId || order.service || '', order.subService || '');
+            if (subService?.estimatedDurationHr) {
+                durationHr = subService.estimatedDurationHr;
+            }
+
+            const endTime = startTime + (durationHr * 60 * 60 * 1000);
+
+            if (now < startTime) return 'on_time';
+            if (now >= startTime && now < endTime) return 'in_progress';
+            if (now >= endTime) return 'done';
+            return order.status;
+        } catch (e) { return order.status; }
+    };
 
     useEffect(() => {
         setLoading(true);
@@ -90,9 +124,9 @@ const AdminOrdersView: React.FC<AdminOrdersViewProps> = ({ t, onChat, onViewMess
 
         if (statusFilter !== 'all') {
             result = result.filter(order => {
-                const s = (order.status || '').toLowerCase();
+                const s = (getDynamicStatus(order) || '').toLowerCase();
                 if (statusFilter === 'open') {
-                    return ['pending', 'waiting', 'new', 'negotiating', 'accepted', 'matching', 'confirmed', 'in_progress'].includes(s);
+                    return ['pending', 'waiting', 'new', 'negotiating', 'accepted', 'matching', 'confirmed', 'in_progress', 'on_time'].includes(s);
                 }
                 if (statusFilter === 'completed') {
                     return ['done', 'completed', 'delivered'].includes(s);
@@ -248,7 +282,7 @@ const AdminOrdersView: React.FC<AdminOrdersViewProps> = ({ t, onChat, onViewMess
                                         <div className="flex justify-between items-start mb-4">
                                             <div className={`px-3 py-1 rounded-full ${style.bg} ${style.text} text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5`}>
                                                 <StatusIcon size={12} />
-                                                {order.status}
+                                                {getDynamicStatus(order)}
                                             </div>
                                             <span className="text-neutral-400 text-[11px] font-medium">
                                                 {order.createdAt?.seconds ? format(order.createdAt.seconds * 1000, 'MMM d, HH:mm') : t({ en: 'Recently', fr: 'Récemment' })}
@@ -358,7 +392,7 @@ const AdminOrdersView: React.FC<AdminOrdersViewProps> = ({ t, onChat, onViewMess
                                     count === 0 ? 'bg-neutral-50 border-neutral-100 text-neutral-400' :
                                         count < 3 ? 'bg-[#E6F6F2] border-[#B3E1D6] text-[#006A52]' :
                                             count < 7 ? 'bg-[#C7EFE4] border-[#7FD7BE] text-[#00513E]' :
-                                                'bg-[#219178] border-[#00846B] text-white';
+                                                'bg-[#01A083] border-[#00846B] text-white';
 
                                 return (
                                     <div

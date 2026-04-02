@@ -1,7 +1,7 @@
 "use client";
 
 import React from 'react';
-import { ShoppingBag, Star, User, Home, Calendar, TrendingUp } from 'lucide-react';
+import { ShoppingBag, Star, User, Home, Calendar, TrendingUp, MessageSquare } from 'lucide-react';
 import { useTheme } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { fluidMobilePx, useMobileTier, useViewportWidth } from '@/lib/mobileOnly';
@@ -34,6 +34,7 @@ const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
 
     const providerTabs = [
         { id: 'calendar' as TabType, icon: ShoppingBag, label: t({ en: 'Orders', fr: 'Commandes', ar: 'الطلبات' }) },
+        { id: 'messages' as TabType, icon: MessageSquare, label: t({ en: 'Messages', fr: 'Messages', ar: 'الرسائل' }) },
         { id: 'performance' as TabType, icon: TrendingUp, label: t({ en: 'Activity', fr: 'Activité', ar: 'النشاط' }) },
         { id: 'services' as TabType, icon: Star, label: t({ en: 'Services', fr: 'Services', ar: 'الخدمات' }) },
         { id: 'profile' as TabType, icon: User, label: t({ en: 'Profile', fr: 'Profil', ar: 'الملف الشخصي' }) },
@@ -42,13 +43,15 @@ const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
     const clientTabs = [
         { id: 'home' as TabType, icon: Home, label: t({ en: 'Home', fr: 'Accueil', ar: 'الرئيسية' }) },
         { id: 'calendar' as TabType, icon: ShoppingBag, label: t({ en: 'Orders', fr: 'Commandes', ar: 'الطلبات' }) },
-        { id: 'heroes' as TabType, icon: Star, label: t({ en: 'My Heroes', fr: 'Mes Héros', ar: 'أبطالي' }) },
+        { id: 'messages' as TabType, icon: MessageSquare, label: t({ en: 'Messages', fr: 'Messages', ar: 'الرسائل' }) },
+        // { id: 'heroes' as TabType, icon: Star, label: t({ en: 'My Heroes', fr: 'Mes Héros', ar: 'أبطالي' }) },
         { id: 'profile' as TabType, icon: User, label: t({ en: 'Profile', fr: 'Profil', ar: 'الملف الشخصي' }) },
     ];
 
     const adminTabs = [
         { id: 'performance' as TabType, icon: TrendingUp, label: t({ en: 'Dashboard', fr: 'Tableau de bord', ar: 'لوحة التحكم' }) },
         { id: 'calendar' as TabType, icon: ShoppingBag, label: t({ en: 'All Orders', fr: 'Toutes les commandes', ar: 'كل الطلبات' }) },
+        { id: 'messages' as TabType, icon: MessageSquare, label: t({ en: 'Messages', fr: 'Messages', ar: 'الرسائل' }) },
         { id: 'services' as TabType, icon: Star, label: t({ en: 'Bricolers', fr: 'Bricoleurs', ar: 'المحترفون' }) },
         { id: 'profile' as TabType, icon: User, label: t({ en: 'Profile', fr: 'Profil', ar: 'الملف الشخصي' }) },
     ];
@@ -96,7 +99,7 @@ const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
                 justifyContent: 'space-around',
                 alignItems: 'center',
                 padding: `${navPadTop} 0 max(${navPadBottom}, env(safe-area-inset-bottom))`,
-                zIndex: 1000,
+                zIndex: 9000,
             }}
         >
             {tabs.map((tab) => {

@@ -315,7 +315,7 @@ export default function HeroesView({ orders }: HeroesViewProps) {
     return (
         <div className="flex flex-col h-full bg-[#FFFFFF] relative">
             {/* Header */}
-            <div className="pt-8 pb-6 px-6 bg-white sticky top-0 z-10 border-b border-neutral-100 shadow-[0_4px_12px_rgba(0,0,0,0.02)]">
+            <div id="heroes-header" className="pt-8 pb-6 px-6 bg-white sticky top-0 z-10 border-b border-neutral-100">
                 <h1 className="text-[32px] font-black text-[#1D1D1D] tracking-tight flex items-center gap-3">
                     <Star size={32} className="text-[#FFC244] fill-[#FFC244]" />
                     {t({ en: 'My Heroes', fr: 'Mes Héros', ar: 'أبطالي' })}
@@ -340,7 +340,7 @@ export default function HeroesView({ orders }: HeroesViewProps) {
                         <motion.div
                             whileTap={{ scale: 0.98 }}
                             key={hero.id}
-                            className="bg-white rounded-[20px] p-5 shadow-[0_4px_12px_rgba(0,0,0,0.06)] flex flex-col gap-4 border border-[#E6E6E6]"
+                            className="bg-white rounded-[20px] p-5 flex flex-col gap-4 border border-[#E6E6E6]"
                         >
                             <div className="flex items-center gap-4">
                                 <img
@@ -393,7 +393,7 @@ export default function HeroesView({ orders }: HeroesViewProps) {
 
                             <button
                                 onClick={() => handleBookHero(hero)}
-                                className="w-full py-4 bg-[#219178] text-white rounded-[16px] font-bold text-[16px] active:bg-[#00876E] transition-colors shadow-[0_4px_12px_rgba(0,160,130,0.2)]"
+                                className="w-full py-4 bg-[#01A083] text-white rounded-[16px] font-bold text-[16px] active:bg-[#00876E] transition-colors"
                             >
                                 {t({ en: 'Book Slots', fr: 'Réserver des créneaux', ar: 'احجز موعداً' })}
                             </button>
@@ -416,8 +416,7 @@ export default function HeroesView({ orders }: HeroesViewProps) {
                             animate={{ y: 0 }}
                             exit={{ y: "100%" }}
                             transition={{ type: "spring", damping: 28, stiffness: 220 }}
-                            className="bg-white w-full rounded-t-[28px] flex flex-col max-h-[90vh] pb-8 overflow-hidden"
-                            style={{ boxShadow: '0 -8px 24px rgba(0,0,0,0.1)' }}
+                            className="bg-white w-full rounded-t-[28px] border-t border-neutral-100 flex flex-col max-h-[90vh] pb-8 overflow-hidden"
                         >
                             {/* Modal Header */}
                             <div className="px-6 pt-6 pb-4 border-b border-[#E6E6E6] flex items-center justify-between sticky top-0 bg-white z-10">
@@ -430,7 +429,7 @@ export default function HeroesView({ orders }: HeroesViewProps) {
                                         <div className="w-10" />
                                     )}
                                     <div className="flex-1">
-                                        <p className="text-[12px] font-bold text-[#219178] uppercase tracking-wider mt-0.5 text-center">
+                                        <p className="text-[12px] font-bold text-[#01A083] uppercase tracking-wider mt-0.5 text-center">
                                             {bookingStep === 1 && t({ en: '1. Date & Time', fr: '1. Date et Heure', ar: '1. التاريخ والوقت' })}
                                             {bookingStep === 2 && t({ en: '2. Select Service', fr: '2. Choisir le service', ar: '2. اختر الخدمة' })}
                                             {bookingStep === 3 && t({ en: '3. Task Details', fr: '3. Détails de la tâche', ar: '3. تفاصيل المهمة' })}
@@ -451,7 +450,7 @@ export default function HeroesView({ orders }: HeroesViewProps) {
                             <div className="flex-1 overflow-y-auto px-6 py-4 space-y-6">
                                 {isLoadingProfile && bookingStep < 5 ? (
                                     <div className="py-20 flex flex-col items-center justify-center">
-                                        <div className="w-10 h-10 rounded-full border-4 border-[#219178] border-t-transparent animate-spin mb-4" />
+                                        <div className="w-10 h-10 rounded-full border-4 border-[#01A083] border-t-transparent animate-spin mb-4" />
                                         <p className="text-[#6B6B6B] font-medium text-[16px]">{t({ en: 'Syncing availability...', fr: 'Synchronisation...', ar: 'جاري المزامنة...' })}</p>
                                     </div>
                                 ) : (
@@ -460,7 +459,7 @@ export default function HeroesView({ orders }: HeroesViewProps) {
                                             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-8">
                                                 <div className="flex items-center gap-3">
                                                     <div className="w-12 h-12 rounded-2xl bg-[#E6F6F2] flex items-center justify-center">
-                                                        <Calendar size={24} className="text-[#219178]" />
+                                                        <Calendar size={24} className="text-[#01A083]" />
                                                     </div>
                                                     <h4 className="text-[22px] font-black text-[#1D1D1D] tracking-tight">{t({ en: 'Select Start Time', fr: 'Choisir l\'heure de début', ar: 'اختر وقت البدء' })}</h4>
                                                 </div>
@@ -489,7 +488,7 @@ export default function HeroesView({ orders }: HeroesViewProps) {
                                                                     <button
                                                                         key={dateStr}
                                                                         disabled
-                                                                        className="flex flex-col items-center justify-center min-w-[70px] h-[90px] rounded-[24px] border-2 bg-neutral-50 border-[#F0F0F0] opacity-40 cursor-not-allowed"
+                                                                        className="flex flex-col items-center justify-center min-w-[70px] h-[90px] rounded-[20px] border-2 bg-neutral-50 border-[#F0F0F0] opacity-40 cursor-not-allowed"
                                                                     >
                                                                         <span className="text-[12px] font-bold uppercase text-[#B3B3B3]">
                                                                             {isTodayDate ? t({ en: 'Today', fr: 'Auj' }) : d.toLocaleDateString(t({ en: 'en-US', fr: 'fr-FR' }), { weekday: 'short' })}
@@ -509,9 +508,9 @@ export default function HeroesView({ orders }: HeroesViewProps) {
                                                                         setSelectedTime('');
                                                                     }}
                                                                     className={cn(
-                                                                        "flex flex-col items-center justify-center min-w-[70px] h-[90px] rounded-[24px] border-2 transition-all",
+                                                                        "flex flex-col items-center justify-center min-w-[70px] h-[90px] rounded-[20px] border-2 transition-all",
                                                                         isSelected
-                                                                            ? "bg-[#219178] border-[#219178] shadow-[0_8px_16px_rgba(0,160,130,0.25)]"
+                                                                            ? "bg-[#01A083] border-[#01A083]"
                                                                             : "bg-white border-[#F0F0F0] hover:border-[#008C74]/50"
                                                                     )}
                                                                 >
@@ -572,7 +571,7 @@ export default function HeroesView({ orders }: HeroesViewProps) {
                                                                     onClick={() => setSelectedTime(timeStr)}
                                                                     className={cn(
                                                                         "py-4 rounded-[18px] border-2 font-bold text-[15px] transition-all",
-                                                                        isSelected ? "bg-[#FFF8E7] border-[#FFC244] text-[#1D1D1D] shadow-sm" : "bg-white border-[#F0F0F0] text-[#1D1D1D] hover:border-[#FFC244]/50"
+                                                                        isSelected ? "bg-[#FFF8E7] border-[#FFC244] text-[#1D1D1D]" : "bg-white border-[#F0F0F0] text-[#1D1D1D] hover:border-[#FFC244]/50"
                                                                     )}
                                                                 >
                                                                     {displayTime}
@@ -582,7 +581,7 @@ export default function HeroesView({ orders }: HeroesViewProps) {
                                                     </div>
                                                 </div>
 
-                                                <div className="bg-[#F7F7F7] p-5 rounded-[24px] flex items-start gap-3">
+                                                <div className="bg-[#F7F7F7] p-5 rounded-[20px] flex items-start gap-3">
                                                     <Info size={20} className="text-[#6B6B6B] mt-0.5" />
                                                     <p className="text-[13px] font-medium text-[#6B6B6B] leading-relaxed">
                                                         {t({ en: `Note: We'll verify this slot matches ${selectedHero.name}'s schedule.`, fr: `Note : Nous vérifierons que ce créneau correspond au planning de ${selectedHero.name}.`, ar: `ملاحظة: سنتحقق أن هذا الموعد يناسب جدول ${selectedHero.name}.` })}
@@ -595,7 +594,7 @@ export default function HeroesView({ orders }: HeroesViewProps) {
                                             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
                                                 <div className="flex items-center gap-3">
                                                     <div className="w-12 h-12 rounded-2xl bg-[#E6F6F2] flex items-center justify-center">
-                                                        <Wrench size={24} className="text-[#219178]" />
+                                                        <Wrench size={24} className="text-[#01A083]" />
                                                     </div>
                                                     <h4 className="text-[22px] font-black text-[#1D1D1D] tracking-tight">{t({ en: 'What do you need?', fr: 'Quel service souhaitez-vous ?', ar: 'ما هي الخدمة التي تحتاجها؟' })}</h4>
                                                 </div>
@@ -615,8 +614,8 @@ export default function HeroesView({ orders }: HeroesViewProps) {
                                                                         setSelectedSubService('');
                                                                     }}
                                                                     className={cn(
-                                                                        "w-full flex items-center justify-between p-5 rounded-[22px] border-2 transition-all",
-                                                                        isSelected ? "bg-[#D9F2EC] border-[#219178]" : "bg-white border-[#F0F0F0] hover:border-[#008C74]/50"
+                                                                        "w-full flex items-center justify-between p-5 rounded-[20px] border-2 transition-all",
+                                                                        isSelected ? "bg-[#D9F2EC] border-[#01A083]" : "bg-white border-[#F0F0F0] hover:border-[#008C74]/50"
                                                                     )}
                                                                 >
                                                                     <div className="flex items-center gap-4">
@@ -625,7 +624,7 @@ export default function HeroesView({ orders }: HeroesViewProps) {
                                                                         </div>
                                                                         <h5 className={cn("text-[17px] font-black", isSelected ? "text-[#008C74]" : "text-[#1D1D1D]")}>{config.name}</h5>
                                                                     </div>
-                                                                    {isSelected && <Check size={20} className="text-[#219178]" strokeWidth={3} />}
+                                                                    {isSelected && <Check size={20} className="text-[#01A083]" strokeWidth={3} />}
                                                                 </button>
 
                                                                 {isSelected && (
@@ -636,7 +635,7 @@ export default function HeroesView({ orders }: HeroesViewProps) {
                                                                                 onClick={() => setSelectedSubService(ss.id)}
                                                                                 className={cn(
                                                                                     "p-3 rounded-[14px] border-2 text-[13px] font-bold text-center transition-all",
-                                                                                    selectedSubService === ss.id ? "bg-[#219178] border-[#219178] text-white" : "bg-white border-[#F0F0F0] text-[#6B6B6B]"
+                                                                                    selectedSubService === ss.id ? "bg-[#01A083] border-[#01A083] text-white" : "bg-white border-[#F0F0F0] text-[#6B6B6B]"
                                                                                 )}
                                                                             >
                                                                                 {ss.name}
@@ -655,7 +654,7 @@ export default function HeroesView({ orders }: HeroesViewProps) {
                                             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
                                                 <div className="flex items-center gap-3">
                                                     <div className="w-12 h-12 rounded-2xl bg-[#E6F6F2] flex items-center justify-center">
-                                                        <Search size={24} className="text-[#219178]" />
+                                                        <Search size={24} className="text-[#01A083]" />
                                                     </div>
                                                     <h4 className="text-[22px] font-black text-[#1D1D1D] tracking-tight">{t({ en: 'Task Details', fr: 'Détails de la tâche', ar: 'تفاصيل المهمة' })}</h4>
                                                 </div>
@@ -668,7 +667,7 @@ export default function HeroesView({ orders }: HeroesViewProps) {
                                                                 key={ts.id}
                                                                 onClick={() => setTaskSize(ts.id)}
                                                                 className={cn(
-                                                                    "flex items-center gap-4 p-5 rounded-[22px] border-2 text-left transition-all",
+                                                                    "flex items-center gap-4 p-5 rounded-[20px] border-2 text-left transition-all",
                                                                     taskSize === ts.id ? "bg-[#FFF8E7] border-[#FFC244]" : "bg-white border-[#F0F0F0] hover:border-[#FFC244]/50"
                                                                 )}
                                                             >
@@ -697,7 +696,7 @@ export default function HeroesView({ orders }: HeroesViewProps) {
                                                         onChange={e => setDescription(e.target.value)}
                                                         placeholder={t({ en: 'Any extra details for the hero?', fr: 'Des détails supplémentaires pour le héros ?', ar: 'أي تفاصيل إضافية لمقدم الخدمة؟' })}
                                                         rows={4}
-                                                        className="w-full p-6 rounded-[24px] border-2 border-[#F0F0F0] focus:border-[#008C74] outline-none text-[16px] text-[#1D1D1D] resize-none font-medium bg-[#FAFAFA]"
+                                                        className="w-full p-6 rounded-[20px] border-2 border-[#F0F0F0] focus:border-[#008C74] outline-none text-[16px] text-[#1D1D1D] resize-none font-medium bg-[#FAFAFA]"
                                                     />
                                                 </div>
                                             </motion.div>
@@ -707,16 +706,16 @@ export default function HeroesView({ orders }: HeroesViewProps) {
                                             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-8 pb-12">
                                                 <div className="flex items-center gap-3">
                                                     <div className="w-12 h-12 rounded-2xl bg-[#E6F6F2] flex items-center justify-center">
-                                                        <Banknote size={24} className="text-[#219178]" />
+                                                        <Banknote size={24} className="text-[#01A083]" />
                                                     </div>
                                                     <h4 className="text-[22px] font-black text-[#1D1D1D] tracking-tight">{t({ en: 'Checkout', fr: 'Paiement', ar: 'الدفع' })}</h4>
                                                 </div>
 
-                                                <div className="bg-[#FAFAFA] rounded-[32px] p-8 border border-neutral-100">
+                                                <div className="bg-[#FAFAFA] rounded-[20px] p-8 border border-neutral-100">
                                                     <div className="space-y-6">
                                                         <div className="flex items-start gap-4">
-                                                            <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-sm shrink-0">
-                                                                <Clock size={20} className="text-[#219178]" />
+                                                            <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center border border-neutral-100 shrink-0">
+                                                                <Clock size={20} className="text-[#01A083]" />
                                                             </div>
                                                             <div className="flex flex-col">
                                                                 <span className="text-[12px] font-black text-neutral-400 uppercase tracking-widest">{t({ en: 'Schedule', fr: 'Date & Heure', ar: 'الموعد' })}</span>
@@ -727,8 +726,8 @@ export default function HeroesView({ orders }: HeroesViewProps) {
                                                         </div>
 
                                                         <div className="flex items-start gap-4">
-                                                            <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-sm shrink-0">
-                                                                <Wrench size={20} className="text-[#219178]" />
+                                                            <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center border border-neutral-100 shrink-0">
+                                                                <Wrench size={20} className="text-[#01A083]" />
                                                             </div>
                                                             <div className="flex flex-col">
                                                                 <span className="text-[12px] font-black text-neutral-400 uppercase tracking-widest">{t({ en: 'Service', fr: 'Service', ar: 'الخدمة' })}</span>
@@ -751,7 +750,7 @@ export default function HeroesView({ orders }: HeroesViewProps) {
                                                         </div>
                                                         <div className="flex justify-between items-center px-1 pt-4 border-t border-neutral-200">
                                                             <span className="text-[20px] font-black text-[#1D1D1D]">{t({ en: 'Total Price', fr: 'Prix Total', ar: 'السعر الإجمالي' })}</span>
-                                                            <span className="text-[22px] font-black text-[#219178]">{Math.round((heroProfile?.hourlyRate || 75) * (TASK_SIZES.find(s => s.id === taskSize)?.duration || 1))} MAD</span>
+                                                            <span className="text-[22px] font-black text-[#01A083]">{Math.round((heroProfile?.hourlyRate || 75) * (TASK_SIZES.find(s => s.id === taskSize)?.duration || 1))} MAD</span>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -777,7 +776,7 @@ export default function HeroesView({ orders }: HeroesViewProps) {
                                                             onClick={() => setPaymentMethod('bank')}
                                                             className={cn(
                                                                 "flex-1 flex flex-col items-center gap-4 p-6 rounded-[24px] border-2 transition-all",
-                                                                paymentMethod === 'bank' ? "bg-[#D9F2EC] border-[#219178]" : "bg-white border-[#F0F0F0]"
+                                                                paymentMethod === 'bank' ? "bg-[#D9F2EC] border-[#01A083]" : "bg-white border-[#F0F0F0]"
                                                             )}
                                                         >
                                                             <span className="text-3xl">🏦</span>
@@ -790,23 +789,23 @@ export default function HeroesView({ orders }: HeroesViewProps) {
 
                                                     {paymentMethod === 'bank' && (
                                                         <motion.div initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} className="space-y-4">
-                                                            <div className="p-6 bg-white rounded-[24px] border-2 border-dashed border-[#219178]/30 space-y-4">
+                                                            <div className="p-6 bg-white rounded-[24px] border-2 border-dashed border-[#01A083]/30 space-y-4">
                                                                 <div className="flex items-center gap-2">
                                                                     <div className="w-8 h-8 rounded-full bg-[#E6F6F2] flex items-center justify-center">
-                                                                        <Banknote size={16} className="text-[#219178]" />
+                                                                        <Banknote size={16} className="text-[#01A083]" />
                                                                     </div>
-                                                                    <p className="text-[14px] font-black text-[#219178] uppercase tracking-wider">{t({ en: 'Bank Details', fr: 'RIB', ar: 'تفاصيل البنك' })}</p>
+                                                                    <p className="text-[14px] font-black text-[#01A083] uppercase tracking-wider">{t({ en: 'Bank Details', fr: 'RIB', ar: 'تفاصيل البنك' })}</p>
                                                                 </div>
                                                                 <div className="p-4 bg-neutral-50 rounded-2xl flex justify-between items-center">
                                                                     <p className="font-mono font-black text-[14px] text-neutral-800 tracking-tighter">350810000000000880844466</p>
-                                                                    <button onClick={() => navigator.clipboard.writeText('350810000000000880844466')} className="px-3 py-1.5 bg-[#219178] text-white rounded-lg text-[11px] font-black uppercase shadow-sm">
+                                                                    <button id="copy-rib-button" onClick={() => navigator.clipboard.writeText('350810000000000880844466')} className="px-3 py-1.5 bg-[#01A083] text-white rounded-lg text-[11px] font-black uppercase">
                                                                         {t({ en: 'Copy', fr: 'Copier', ar: 'نسخ' })}
                                                                     </button>
                                                                 </div>
                                                             </div>
 
-                                                            <div className="flex items-center gap-4 w-full p-5 rounded-[22px] border-2 border-[#219178] bg-[#D9F2EC] border-dashed">
-                                                                <div className="w-12 h-12 rounded-2xl bg-white flex items-center justify-center shadow-sm">
+                                                            <div className="flex items-center gap-4 w-full p-5 rounded-[22px] border-2 border-[#01A083] bg-[#D9F2EC] border-dashed">
+                                                                <div className="w-12 h-12 rounded-2xl bg-white flex items-center justify-center border border-neutral-100">
                                                                     <WhatsAppBrandIcon className="w-6 h-6" />
                                                                 </div>
                                                                 <div className="flex-1">
@@ -827,7 +826,7 @@ export default function HeroesView({ orders }: HeroesViewProps) {
                                                                 </div>
                                                                 <button
                                                                     onClick={() => window.open('https://wa.me/212702814355', '_blank')}
-                                                                    className="bg-[#219178] text-white px-3 py-1.5 rounded-lg text-[11px] font-black uppercase"
+                                                                    className="bg-[#01A083] text-white px-3 py-1.5 rounded-lg text-[11px] font-black uppercase"
                                                                 >
                                                                     {t({ en: 'Chat', fr: 'Discuter', ar: 'محادثة' })}
                                                                 </button>
@@ -841,7 +840,7 @@ export default function HeroesView({ orders }: HeroesViewProps) {
                                         {bookingStep === 5 && (
                                             <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="py-12 flex flex-col items-center justify-center text-center space-y-4">
                                                 <div className="w-20 h-20 rounded-full bg-[#D9F2EC] flex items-center justify-center">
-                                                    <CheckCircle2 size={40} className="text-[#219178]" />
+                                                    <CheckCircle2 size={40} className="text-[#01A083]" />
                                                 </div>
                                                 <h4 className="text-[24px] font-black text-[#1D1D1D]">{t({ en: 'Booking Sent!', fr: 'Réservation envoyée !', ar: 'تم إرسال الحجز!' })}</h4>
                                                 <p className="text-[#6B6B6B] text-[16px] max-w-[260px]">
@@ -870,7 +869,7 @@ export default function HeroesView({ orders }: HeroesViewProps) {
                                             }
                                         }}
                                         disabled={(bookingStep === 1 && !isStep1Valid) || (bookingStep === 2 && !isStep2Valid) || (bookingStep === 3 && !isStep3Valid) || isSubmitting}
-                                        className="w-full py-5 bg-[#219178] text-white rounded-[24px] font-black text-[18px] active:scale-95 disabled:bg-[#F2F2F2] disabled:text-[#A0A0A0] disabled:cursor-not-allowed transition-all shadow-[0_12px_24px_rgba(0,160,130,0.2)]"
+                                        className="w-full py-5 bg-[#01A083] text-white rounded-[24px] font-black text-[18px] active:scale-95 disabled:bg-[#F2F2F2] disabled:text-[#A0A0A0] disabled:cursor-not-allowed transition-all shadow-[0_12px_24px_rgba(0,160,130,0.2)]"
                                     >
                                         {isSubmitting ? t({ en: 'Sending...', fr: 'Envoi...', ar: 'جارٍ الإرسال...' }) : bookingStep === 4 ? t({ en: 'Program Order', fr: 'Programmer la mission', ar: 'برمجة المهمة' }) : t({ en: 'Continue', fr: 'Continuer', ar: 'متابعة' })}
                                     </button>

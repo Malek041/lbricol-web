@@ -172,7 +172,7 @@ export default function ProviderRoutineModal({
                             return (
                                 <div key={day} className={cn(
                                     "bg-white rounded-[20px] p-5 border-2 transition-all",
-                                    active ? "border-[#219178]/20 shadow-sm" : "border-transparent shadow-sm opacity-60"
+                                    active ? "border-[#01A083]/20 shadow-sm" : "border-transparent shadow-sm opacity-60"
                                 )}>
                                     <div className="flex items-center justify-between mb-4">
                                         <h3 className="text-[17px] font-black text-black capitalize">
@@ -182,7 +182,7 @@ export default function ProviderRoutineModal({
                                             onClick={() => handleToggleDay(day)}
                                             className={cn(
                                                 "w-12 h-7 rounded-full p-1 transition-colors duration-300 ease-in-out flex",
-                                                active ? "bg-[#219178] justify-end" : "bg-neutral-200 justify-start"
+                                                active ? "bg-[#01A083] justify-end" : "bg-neutral-200 justify-start"
                                             )}
                                         >
                                             <motion.div
@@ -239,7 +239,7 @@ export default function ProviderRoutineModal({
                             onClick={handleSave}
                             disabled={isSaving}
                             className={cn(
-                                "w-full py-4 bg-[#219178] text-white rounded-2xl text-[18px] font-black shadow-lg shadow-[#219178]/20 active:scale-95 transition-transform",
+                                "w-full py-4 bg-[#01A083] text-white rounded-2xl text-[18px] font-black shadow-lg shadow-[#01A083]/20 active:scale-95 transition-transform",
                                 isSaving && "opacity-70 cursor-not-allowed"
                             )}
                         >

@@ -62,7 +62,7 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ subStatus }) => {
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.5, delay: 0.5 }}
                         style={{
-                            color: '#219178', // Dark Green
+                            color: '#01A083', // Dark Green
                             fontSize: 'clamp(14px, 3.5vw, 16px)',
                             fontWeight: 800,
                             textAlign: 'center',

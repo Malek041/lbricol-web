@@ -18,7 +18,7 @@ import { SearchPopup } from './SearchPopup';
 
 
 // ── Palette ────────────────────────────────────────────────────────────────
-const G_GREEN = '#219178';
+const G_GREEN = '#01A083';
 
 // ── Service catalogue ─────────────────────────────────────────────────────
 interface ServiceEntry {
@@ -90,10 +90,10 @@ const PromoBannersWidget: React.FC<{
 
     const RepeatedText = () => (
         <div className="flex items-center gap-10 px-4">
-            {banners.map((b, i) => <span key={`rep-${i}`} className="text-[14px] font-bold text-neutral-500 whitespace-nowrap">{b.title}</span>)}
-            {banners.map((b, i) => <span key={`rep2-${i}`} className="text-[14px] font-bold text-neutral-500 whitespace-nowrap">{b.title}</span>)}
-            {banners.map((b, i) => <span key={`rep3-${i}`} className="text-[14px] font-bold text-neutral-500 whitespace-nowrap">{b.title}</span>)}
-            {banners.map((b, i) => <span key={`rep4-${i}`} className="text-[14px] font-bold text-neutral-500 whitespace-nowrap">{b.title}</span>)}
+            {banners.map((b, i) => <span key={`rep-${i}`} className="text-[14px] font-medium text-neutral-500 whitespace-nowrap">{b.title}</span>)}
+            {banners.map((b, i) => <span key={`rep2-${i}`} className="text-[14px] font-medium text-neutral-500 whitespace-nowrap">{b.title}</span>)}
+            {banners.map((b, i) => <span key={`rep3-${i}`} className="text-[14px] font-medium text-neutral-500 whitespace-nowrap">{b.title}</span>)}
+            {banners.map((b, i) => <span key={`rep4-${i}`} className="text-[14px] font-medium text-neutral-500 whitespace-nowrap">{b.title}</span>)}
         </div>
     );
 
@@ -105,13 +105,13 @@ const PromoBannersWidget: React.FC<{
                 <div
                     key={`ref-${index}`}
                     onClick={(e) => { e.stopPropagation(); b.onClick(); }}
-                    className="w-[280px] h-[120px] shrink-0 rounded-[12px] p-4 flex flex-col justify-between cursor-pointer relative overflow-hidden shadow-sm active:scale-[0.98] transition-all bg-[#027C3E] mx-1.5"
+                    className="w-[280px] h-[120px] shrink-0 rounded-[20px_30px_18px_40px] p-4 flex flex-col justify-between cursor-pointer relative overflow-hidden border border-white/10 active:scale-[0.98] transition-all bg-[#027C3E] mx-1.5"
                 >
                     <div className="z-10">
-                        <h3 className="text-[16px] font-black text-white leading-tight mb-1">
+                        <h3 className="text-[16px] font-medium text-white leading-tight mb-1">
                             {t({ en: 'Refer friends, win 15%', fr: 'Parrainez, gagnez 15%', ar: 'أحِل أصدقائك واربح 15%' })}
                         </h3>
-                        <p className="text-[10px] font-bold text-white/90 leading-tight pr-4">
+                        <p className="text-[10px] font-medium text-white/90 leading-tight pr-4">
                             {t({
                                 en: 'Invite your friends and win 15% discount for each successful referral!',
                                 fr: 'Invitez vos amis et gagnez 15% de réduction pour chaque parrainage réussi !',
@@ -131,10 +131,10 @@ const PromoBannersWidget: React.FC<{
                 <div
                     key={`up-${index}`}
                     onClick={(e) => { e.stopPropagation(); b.onClick(); }}
-                    className="w-[280px] h-[120px] shrink-0 rounded-[12px] p-4 flex items-center cursor-pointer relative overflow-hidden shadow-sm active:scale-[0.98] transition-all bg-[#219178] mx-1.5"
+                    className="w-[280px] h-[120px] shrink-0 rounded-[35px_15px_40px_20px] p-4 flex items-center cursor-pointer relative overflow-hidden border border-white/10 active:scale-[0.98] transition-all bg-[#01A083] mx-1.5"
                 >
                     <div className={`z-10 w-[55%] ${isRTL ? 'mr-auto text-right' : 'ml-0 text-left'}`}>
-                        <h3 className="text-[16px] font-black text-white leading-tight mb-1.5">
+                        <h3 className="text-[16px] font-medium text-white leading-tight mb-1.5">
                             {t({ en: 'Earn with your skills', fr: 'Gagnez avec vos talents', ar: 'اربح بمهاراتك' })}
                         </h3>
                         <p className="text-[10px] font-medium text-white/90 leading-snug">
@@ -146,9 +146,9 @@ const PromoBannersWidget: React.FC<{
                         </p>
                     </div>
                     <div className={`absolute ${isRTL ? 'left-0' : 'right-0'} bottom-0 h-full w-[45%] flex items-end justify-end`}>
-                        <img src="/Images/Vectors Illu/Groceriedbag.png" alt="Grocery bag" className={`absolute w-[50px] top-[15%] ${isRTL ? 'left-4' : 'right-4'} z-10 drop-shadow-sm`} />
-                        <img src="/Images/4c456a03818b25032d0e4e80a711d569-Photoroom.png" alt="Moving Helper" className={`absolute w-[45px] -bottom-1 ${isRTL ? 'left-12' : 'right-12'} z-20 drop-shadow-md`} />
-                        <img src="/Images/Vectors Illu/Dogwalker.png" alt="Dogwalker" className={`absolute w-[40px] bottom-0 ${isRTL ? 'left-0' : 'right-0'} z-20 drop-shadow-md`} />
+                        <img src="/Images/Vectors Illu/Groceriedbag.png" alt="Grocery bag" className={`absolute w-[50px] top-[15%] ${isRTL ? 'left-4' : 'right-4'} z-10`} />
+                        <img src="/Images/4c456a03818b25032d0e4e80a711d569-Photoroom.png" alt="Moving Helper" className={`absolute w-[45px] -bottom-1 ${isRTL ? 'left-12' : 'right-12'} z-20`} />
+                        <img src="/Images/Vectors Illu/Dogwalker.png" alt="Dogwalker" className={`absolute w-[40px] bottom-0 ${isRTL ? 'left-0' : 'right-0'} z-20`} />
                     </div>
                 </div>
             )
@@ -166,7 +166,7 @@ const PromoBannersWidget: React.FC<{
     );
 
     return (
-        <div className="fixed left-0 right-0 z-40 bg-white/95 backdrop-blur-md border border-neutral-100 transition-all duration-300 shadow-[0_-8px_30px_rgba(0,0,0,0.06)] overflow-hidden" style={{ bottom: '70px', borderRadius: '24px 24px 0 0' }}>
+        <div className="fixed left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-neutral-100 transition-all duration-300 overflow-hidden" style={{ bottom: '70px', borderRadius: '35px 45px 0 0' }}>
             <div className="w-full" onClick={() => !expanded && setExpanded(true)}>
                 {expanded ? (
                     <div className="flex flex-col relative w-full pt-2 pb-5">
@@ -473,12 +473,12 @@ const ClientHome: React.FC<ClientHomeProps> = ({
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 1.0, duration: 0.6, type: "spring", stiffness: 180 }}
                         onClick={onChangeLocation}
-                        className="flex items-center gap-1 bg-white  px-3 py-2.5 rounded-full  active:scale-95 transition-transform"
+                        className="flex items-center gap-1 bg-white px-3 py-2.5 rounded-[20px_35px_22px_45px] border-2 border-black/5 active:scale-95 transition-transform"
                     >
                         <div className="w-5 h-5 rounded-full flex items-center justify-center">
                             <Building size={25} className="text-[#000000]" />
                         </div>
-                        <span className="text-[13px] font-bold text-[#111827] truncate max-w-[180px]">
+                        <span className="text-[13px] font-medium text-[#111827] truncate max-w-[180px]">
                             {localizePlace(selectedCity || 'Set Location')}
                         </span>
                         <ChevronDown size={25} className="text-[#000000]" />
@@ -491,7 +491,7 @@ const ClientHome: React.FC<ClientHomeProps> = ({
                         initial={{ opacity: 0, scale: 0.9 }}
                         animate={{ opacity: 1, scale: 1 }}
                         transition={{ delay: 0.8, duration: 0.6, type: "spring", stiffness: 200 }}
-                        className="text-[24px] font-black leading-[1.1] text-Black max-w-[340px] mx-auto"
+                        className="text-[24px] font-bold leading-[1.1] text-Black max-w-[340px] mx-auto"
                     >
                         {t({
                             en: 'Book trusted help for home tasks',
@@ -504,7 +504,7 @@ const ClientHome: React.FC<ClientHomeProps> = ({
                 <div className="px-6 pb-1 pt-6 w-full max-w-[400px] h-[30px] mx-auto">
                     <button
                         onClick={() => setIsSearchOpen(true)}
-                        className="w-full flex items-center gap-2 bg-neutral-50 rounded-full px-5 py-3.5 active:scale-[0.98] transition-all"
+                        className="w-full flex items-center gap-2 bg-neutral-50 rounded-[35px_25px_45px_30px] px-5 py-3.5 border-2 border-black/5 active:scale-[0.98] transition-all"
                     >
                         <Search size={18} className=" text-neutral-400 flex-shrink-0" strokeWidth={2.5} />
                         <span className="text-[15.5px] font-medium text-neutral-400">
@@ -637,7 +637,7 @@ const ClientHome: React.FC<ClientHomeProps> = ({
                                                         rotate: [-10, 5, -10],
                                                         scale: [1.05, 1.08, 1.05]
                                                     } : {
-                                                        borderRadius: '50%',
+                                                        borderRadius: '45% 55% 50% 60% / 55% 45% 65% 50%',
                                                         rotate: 0,
                                                         scale: 1
                                                     }}
@@ -704,7 +704,7 @@ const ClientHome: React.FC<ClientHomeProps> = ({
                                                     alt="Not available"
                                                 />
                                             </div>
-                                            <p className="text-[16px] font-black text-neutral-800 mb-1">
+                                            <p className="text-[16px] font-medium text-neutral-800 mb-1">
                                                 {t({ en: 'Not available here yet', fr: 'Pas encore disponible ici', ar: 'غير متوفر هنا بعد' })}
                                             </p>
                                             <p className="text-[13px] font-medium text-neutral-500 max-w-[380px] mx-auto leading-relaxed">
@@ -741,7 +741,8 @@ const ClientHome: React.FC<ClientHomeProps> = ({
                                                         'Electricity (Cams)',
                                                         'Cooling & heating systems',
                                                         'EV charger installation',
-                                                        'Surveillance cameras'
+                                                        'Surveillance cameras',
+                                                        'Dish Cleaning'
                                                     ];
                                                     if (forceShow.includes(subObj.en)) return true;
 
@@ -749,10 +750,11 @@ const ClientHome: React.FC<ClientHomeProps> = ({
                                                     const config = getServiceById(active.id);
                                                     if (!config) return true;
 
-                                                    // Try to find the sub-service config by matching the English name from the local catalogue
+                                                    // Try to find the sub-service config by matching the ID or English name from the local catalogue
                                                     const subConfig = config.subServices.find(ss =>
+                                                        ss.id === subObj.id ||
                                                         ss.name === subObj.en ||
-                                                        ss.id === subObj.en
+                                                        ss.id === subObj.en // Keep as fallback
                                                     );
 
                                                     if (!subConfig) return true; // Fallback: if we can't find a config mapping, show it anyway
@@ -777,25 +779,18 @@ const ClientHome: React.FC<ClientHomeProps> = ({
                                                         animate={{
                                                             opacity: 1,
                                                             scale: 1,
-                                                            borderColor: ['#E6E6E6', '#219178', '#219178', '#E6E6E6'],
-                                                            borderWidth: [1, 1.8, 1.8, 1],
-                                                            boxShadow: [
-                                                                '0 2px 8px rgba(0,0,0,0.03)',
-                                                                '0 0 12px rgba(33,145,120,0.3)',
-                                                                '0 0 12px rgba(33,145,120,0.3)',
-                                                                '0 2px 8px rgba(0,0,0,0.03)'
-                                                            ]
+                                                            borderColor: ['#000000ff', '#F2F2F3', '#F2F2F3', '#000000ff'],
+                                                            borderWidth: [0.5, 1, 1, 0.5]
                                                         }}
                                                         transition={{
                                                             opacity: { duration: 0.3, delay: (hasManuallySelected ? 0.1 : 1.6) + idx * 0.04 },
                                                             scale: { type: 'spring', stiffness: 380, damping: 20, delay: (hasManuallySelected ? 0.1 : 1.6) + idx * 0.04 },
                                                             borderColor: { duration: 1.5, delay: (hasManuallySelected ? 0.8 : 2.4) + idx * 0.04 },
-                                                            borderWidth: { duration: 1.5, delay: (hasManuallySelected ? 0.8 : 2.4) + idx * 0.04 },
-                                                            boxShadow: { duration: 1.5, delay: (hasManuallySelected ? 0.8 : 2.4) + idx * 0.04 }
+                                                            borderWidth: { duration: 1.5, delay: (hasManuallySelected ? 0.8 : 2.4) + idx * 0.04 }
                                                         }}
                                                         whileTap={{ scale: 0.92 }}
                                                         onClick={() => handleServiceSelection(active.id, sub)}
-                                                        className="px-3.5 py-2 rounded-full border border-[#E6E6E6] text-[13.5px] font-bold text-[#1D1D1D] bg-white hover:border-[#1D1D1D] active:bg-neutral-50 transition-colors shadow-[0_2px_8_rgba(0,0,0,0.03)]"
+                                                        className="px-3.5 py-2 rounded-full border-2 border-black/10 text-[13.5px] font-bold text-[#000000] bg-[#FFFFFF] hover:border-[#1D1D1D] active:bg-neutral-50 transition-colors"
                                                     >
                                                         {t(sub)}
                                                     </motion.button>

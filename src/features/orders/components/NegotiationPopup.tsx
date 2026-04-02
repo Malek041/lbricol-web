@@ -24,8 +24,8 @@ const NegotiationPopup = ({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
         border: theme === 'light' ? '#E2E2E2' : '#2D2D2D',
         surface: theme === 'light' ? '#F5F5F5' : '#111111',
         card: theme === 'light' ? '#F7F7F7' : '#111111',
-        primary: theme === 'light' ? '#000000' : '#FFFFFF',
-        onPrimary: theme === 'light' ? '#FFFFFF' : '#000000'
+        primary: '#01A083',
+        onPrimary: '#FFFFFF'
     };
 
     if (!isOpen) return null;
@@ -52,7 +52,6 @@ const NegotiationPopup = ({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
                     width: '100%',
                     maxWidth: isMobile ? 'none' : '440px',
                     borderRadius: isMobile ? '32px 32px 0 0' : '32px',
-                    boxShadow: isMobile ? '0 -10px 25px rgba(0,0,0,0.1)' : (theme === 'light' ? '0 25px 50px -12px rgba(0,0,0,0.3)' : '0 25px 50px -12px rgba(0,0,0,0.6)'),
                     overflow: 'hidden',
                     position: 'relative',
                     padding: isMobile ? '1.5rem 2rem 3rem' : '2.5rem',
@@ -274,8 +273,7 @@ const NegotiationPopup = ({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
                                     display: 'flex',
                                     alignItems: 'center',
                                     justifyContent: 'center',
-                                    marginBottom: '2rem',
-                                    boxShadow: '0 10px 25px rgba(0,0,0,0.2)'
+                                    marginBottom: '2rem'
                                 }}>
                                     <User size={40} color={c.onPrimary} />
                                 </div>

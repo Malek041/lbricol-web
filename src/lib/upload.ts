@@ -12,8 +12,9 @@ export const uploadToCloudinary = async (dataUrl: string, folder: string, preset
     formData.append('file', dataUrl);
     formData.append('upload_preset', preset);
     formData.append('folder', folder);
+    formData.append('resource_type', 'auto');
     
-    const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
+    const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/auto/upload`, {
         method: 'POST',
         body: formData
     });
@@ -28,7 +29,7 @@ export const uploadToCloudinary = async (dataUrl: string, folder: string, preset
             folder,
             cloudName
         });
-        throw new Error(`Cloudinary upload failed: ${res.statusText}`);
+        throw new Error(`Cloudinary ${res.status} upload failed: ${errorDetails.error?.message || res.statusText || 'Unknown error'}`);
     }
     
     const data = await res.json();

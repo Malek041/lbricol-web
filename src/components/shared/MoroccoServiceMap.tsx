@@ -156,8 +156,8 @@ export const MoroccoServiceMap: React.FC<MoroccoServiceMapProps> = ({ className 
                                                     width: '8px',
                                                     height: '8px',
                                                     borderRadius: '50%',
-                                                    backgroundColor: '#219178',
-                                                    boxShadow: '0 0 12px #219178'
+                                                    backgroundColor: '#01A083',
+                                                    boxShadow: '0 0 12px #01A083'
                                                 }} />
                                             )}
                                         </div>

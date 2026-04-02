@@ -22,6 +22,7 @@ import {
     Truck,
     Package
 } from 'lucide-react';
+import { format } from 'date-fns';
 import dynamic from 'next/dynamic';
 const MapView = dynamic(() => import('@/components/location-picker/MapView'), { ssr: false });
 import { useOrder } from '@/context/OrderContext';
@@ -55,7 +56,7 @@ export default function CheckoutPage() {
 
     // ── Pre-flight Checks ────────────────────────────────────────────────
     useEffect(() => {
-        if ((!order.providerId && !order.isPublic) || !order.location) {
+        if (!showSuccess && ((!order.providerId && !order.isPublic) || !order.location)) {
             router.push('/order/step1');
             return;
         }
@@ -166,7 +167,7 @@ export default function CheckoutPage() {
                     }
                 );
 
-                const slotDate = slot.date.includes('T') ? slot.date.split('T')[0] : slot.date;
+                const slotDate = format(new Date(slot.date), 'yyyy-MM-dd');
 
                 const jobData = {
                     clientId: finalUser.uid,
@@ -177,6 +178,7 @@ export default function CheckoutPage() {
                     bricolerAvatar: order.providerAvatar,
                     service: order.serviceType || 'car_rental',
                     serviceType: order.serviceType,
+                    subServiceId: order.subServiceId || order.serviceType,
                     serviceName: order.serviceName,
                     location: order.location?.address || '',
                     locationDetails: order.location,
@@ -185,6 +187,7 @@ export default function CheckoutPage() {
                     isPublic: order.isPublic || false,
                     date: slotDate,
                     time: slot.time,
+                    estimatedDuration: (order.serviceDetails as any)?.taskDuration || 1,
                     selectedCar: order.selectedCar,
                     carRentalDates: order.carRentalDates,
                     carReturnDate: order.carRentalDates?.returnDate,
@@ -347,7 +350,7 @@ export default function CheckoutPage() {
                             onClick={() => setPaymentMethod('cash')}
                             style={{
                                 padding: '24px 20px', borderRadius: 20, border: '2px solid',
-                                borderColor: paymentMethod === 'cash' ? '#219178' : '#F3F4F6',
+                                borderColor: paymentMethod === 'cash' ? '#01A083' : '#F3F4F6',
                                 background: paymentMethod === 'cash' ? '#F0FDF9' : '#F9FAFB',
                                 cursor: 'pointer', position: 'relative', transition: 'all 0.2s',
                                 display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center'
@@ -355,9 +358,9 @@ export default function CheckoutPage() {
                         >
                             <div style={{ fontSize: 32, marginBottom: 12 }}>💵</div>
                             <div style={{ fontWeight: 1000, fontSize: 16, color: '#111827', marginBottom: 4 }}>Cash</div>
-                            <div style={{ fontWeight: 700, fontSize: 12, color: paymentMethod === 'cash' ? '#219178' : '#9CA3AF' }}>On delivery</div>
+                            <div style={{ fontWeight: 700, fontSize: 12, color: paymentMethod === 'cash' ? '#01A083' : '#9CA3AF' }}>On delivery</div>
                             {paymentMethod === 'cash' && (
-                                <div style={{ position: 'absolute', top: 12, right: 12, width: 24, height: 24, background: '#219178', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                <div style={{ position: 'absolute', top: 12, right: 12, width: 24, height: 24, background: '#01A083', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                     <Check size={14} color="#fff" strokeWidth={5} />
                                 </div>
                             )}
@@ -367,7 +370,7 @@ export default function CheckoutPage() {
                             onClick={() => setPaymentMethod('bank_transfer')}
                             style={{
                                 padding: '24px 20px', borderRadius: 20, border: '2px solid',
-                                borderColor: paymentMethod === 'bank_transfer' ? '#219178' : '#F3F4F6',
+                                borderColor: paymentMethod === 'bank_transfer' ? '#01A083' : '#F3F4F6',
                                 background: paymentMethod === 'bank_transfer' ? '#F0FDF9' : '#F9FAFB',
                                 cursor: 'pointer', position: 'relative', transition: 'all 0.2s',
                                 display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center'
@@ -375,9 +378,9 @@ export default function CheckoutPage() {
                         >
                             <div style={{ fontSize: 32, marginBottom: 12 }}>🏦</div>
                             <div style={{ fontWeight: 1000, fontSize: 16, color: '#111827', marginBottom: 4 }}>Bank Transfer</div>
-                            <div style={{ fontWeight: 700, fontSize: 12, color: paymentMethod === 'bank_transfer' ? '#219178' : '#9CA3AF' }}>WhatsApp verify</div>
+                            <div style={{ fontWeight: 700, fontSize: 12, color: paymentMethod === 'bank_transfer' ? '#01A083' : '#9CA3AF' }}>Internal Chat</div>
                             {paymentMethod === 'bank_transfer' && (
-                                <div style={{ position: 'absolute', top: 12, right: 12, width: 24, height: 24, background: '#219178', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                <div style={{ position: 'absolute', top: 12, right: 12, width: 24, height: 24, background: '#01A083', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                     <Check size={14} color="#fff" strokeWidth={5} />
                                 </div>
                             )}
@@ -434,11 +437,11 @@ export default function CheckoutPage() {
                                             style={{
                                                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12,
                                                 height: 56, borderRadius: 5, background: receiptImage ? '#F0FDF4' : '#fff',
-                                                border: '2px dashed', borderColor: receiptImage ? '#219178' : '#D1D5DB',
-                                                cursor: 'pointer', transition: 'all 0.2s', fontWeight: 900, color: receiptImage ? '#219178' : '#6B7280', fontSize: 15
+                                                border: '2px dashed', borderColor: receiptImage ? '#01A083' : '#D1D5DB',
+                                                cursor: 'pointer', transition: 'all 0.2s', fontWeight: 900, color: receiptImage ? '#01A083' : '#6B7280', fontSize: 15
                                             }}
                                         >
-                                            {isUploading ? 'Uploading...' : (receiptImage ? <><CheckCircle2 size={20} color="#219178" /> Receipt Saved</> : <><CreditCard size={20} /> Select Image</>)}
+                                            {isUploading ? 'Uploading...' : (receiptImage ? <><CheckCircle2 size={20} color="#01A083" /> Receipt Saved</> : <><CreditCard size={20} /> Select Image</>)}
                                         </label>
                                     </div>
                                 </div>
@@ -550,7 +553,7 @@ export default function CheckoutPage() {
                             <div style={{ padding: 16, background: '#F9FAFB', borderRadius: 5, display: 'flex', alignItems: 'center', justifyContent: 'space-between', border: '1px solid #F3F4F6', fontStyle: 'italic' }}>
                                 <span style={{ fontSize: 13, fontWeight: 700, color: '#6B7280' }}>Delivery Estimate</span>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                    <span style={{ fontSize: 13, fontWeight: 950, color: '#219178' }}>{travelInfo.distanceKm.toFixed(1)} km</span>
+                                    <span style={{ fontSize: 13, fontWeight: 950, color: '#01A083' }}>{travelInfo.distanceKm.toFixed(1)} km</span>
                                     <span style={{ color: '#D1D5DB' }}>·</span>
                                     <span style={{ fontSize: 13, fontWeight: 900, color: '#111827' }}>{travelInfo.durationMinutes} min delivery</span>
                                 </div>
@@ -754,7 +757,7 @@ export default function CheckoutPage() {
                             flex: 1,
                             height: 60,
                             borderRadius: 50,
-                            background: (paymentMethod === 'bank_transfer' && !receiptImage) ? '#9CA3AF' : '#219178',
+                            background: (paymentMethod === 'bank_transfer' && !receiptImage) ? '#9CA3AF' : '#01A083',
                             color: '#FFFFFF',
                             border: 'none',
                             fontSize: 17,
@@ -826,7 +829,7 @@ export default function CheckoutPage() {
                         <div style={{ textAlign: 'center' }}>
                             <motion.div initial={{ scale: 0.5 }} animate={{ scale: 1 }} transition={{ type: 'spring' }}>
                                 <div style={{ width: 100, height: 100, background: 'rgba(0, 160, 130, 0.1)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px' }}>
-                                    <Check size={50} color="#219178" strokeWidth={4} />
+                                    <Check size={50} color="#01A083" strokeWidth={4} />
                                 </div>
                             </motion.div>
                             <h2 style={{ fontSize: 24, fontWeight: 900, marginBottom: 12 }}>Mission Programmed!</h2>

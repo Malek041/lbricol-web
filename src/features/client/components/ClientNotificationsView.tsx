@@ -36,13 +36,13 @@ interface ClientNotificationsViewProps {
 }
 
 const TYPE_CONFIG: Record<ClientNotification['type'], { icon: React.ElementType; color: string; bg: string }> = {
-    order_programmed: { icon: Package, color: '#219178', bg: '#E6F7F4' },
-    order_confirmed: { icon: CheckCircle2, color: '#219178', bg: '#E6F7F4' },
+    order_programmed: { icon: Package, color: '#01A083', bg: '#E6F7F4' },
+    order_confirmed: { icon: CheckCircle2, color: '#01A083', bg: '#E6F7F4' },
     order_delivered: { icon: CheckCircle2, color: '#FFC244', bg: '#FFF9ED' },
     // new_message type removed - using WhatsApp only
     referral_reward: { icon: Gift, color: '#E91E8C', bg: '#FCE4F1' },
-    job_status_update: { icon: Clock, color: '#219178', bg: '#E6F7F4' },
-    bricoler_offer: { icon: CheckCircle2, color: '#219178', bg: '#E6F7F4' },
+    job_status_update: { icon: Clock, color: '#01A083', bg: '#E6F7F4' },
+    bricoler_offer: { icon: CheckCircle2, color: '#01A083', bg: '#E6F7F4' },
     bricoler_counter_offer: { icon: CheckCircle2, color: '#FFC244', bg: '#FFF9ED' },
 };
 
@@ -219,7 +219,7 @@ const ClientNotificationsView: React.FC<ClientNotificationsViewProps> = ({
                                         onClick={() => handleTap(notif)}
                                         className={cn(
                                             "w-full flex items-start gap-4 px-5 py-5 text-left transition-colors",
-                                            !notif.read ? "bg-[#219178]/[0.03]" : "bg-white",
+                                            !notif.read ? "bg-[#01A083]/[0.03]" : "bg-white",
                                             isActionable ? "hover:bg-neutral-50 active:bg-neutral-100" : "cursor-default"
                                         )}
                                     >
@@ -238,7 +238,7 @@ const ClientNotificationsView: React.FC<ClientNotificationsViewProps> = ({
                                                     {getTitle(notif, t)}
                                                 </p>
                                                 {!notif.read && (
-                                                    <div className="w-2 h-2 rounded-full bg-[#219178] flex-shrink-0 mt-1.5" />
+                                                    <div className="w-2 h-2 rounded-full bg-[#01A083] flex-shrink-0 mt-1.5" />
                                                 )}
                                             </div>
                                             <p className="text-[13px] font-medium text-neutral-500 leading-relaxed mt-0.5">

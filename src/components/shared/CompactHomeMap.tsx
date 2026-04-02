@@ -97,7 +97,7 @@ const CompactHomeMap: React.FC<CompactHomeMapProps> = ({
     return (
         <div
             className={cn(
-                "relative w-full h-full rounded-[32px] overflow-hidden bg-neutral-50 border border-neutral-100 group shadow-sm",
+                "relative w-full h-full rounded-[45px_15px_50px_25px] overflow-hidden bg-neutral-50 border-2 border-black/5 group",
                 className
             )}
             onClick={onInteract}
@@ -140,7 +140,7 @@ const CompactHomeMap: React.FC<CompactHomeMapProps> = ({
                 <img
                     src="/Images/map Assets/LocationPin.png"
                     alt="Pin"
-                    className="w-[45px] h-auto drop-shadow-lg animate-bounce-subtle"
+                    className="w-[45px] h-auto animate-bounce-subtle filter-none"
                 />
             </div>
 
@@ -156,7 +156,7 @@ const CompactHomeMap: React.FC<CompactHomeMapProps> = ({
                             e.stopPropagation();
                             onBack();
                         }}
-                        className="w-12 h-12 bg-white rounded-full shadow-[0_2px_8px_rgba(0,0,0,0.15)] flex items-center justify-center text-[#374151] pointer-events-auto active:scale-95 transition-transform cursor-pointer"
+                        className="w-12 h-12 bg-white rounded-[15px_18px_12px_20px] border-2 border-black/5 flex items-center justify-center text-[#374151] pointer-events-auto active:scale-95 transition-transform cursor-pointer"
                     >
                         <ChevronLeft size={24} strokeWidth={2.5} />
                     </button>
@@ -171,7 +171,7 @@ const CompactHomeMap: React.FC<CompactHomeMapProps> = ({
                             e.stopPropagation();
                             onCloseFlow();
                         }}
-                        className="w-10 h-10 bg-white rounded-full shadow-lg flex items-center justify-center active:scale-95 transition-transform"
+                        className="w-10 h-10 bg-white rounded-[12px_15px_10px_14px] border-2 border-black/5 flex items-center justify-center active:scale-95 transition-transform"
                     >
                         <X size={20} className="text-neutral-900" />
                     </button>
@@ -191,10 +191,10 @@ const CompactHomeMap: React.FC<CompactHomeMapProps> = ({
                         e.stopPropagation();
                         handleLocateMe();
                     }}
-                    className="w-12 h-12 bg-white rounded-full shadow-[0_2px_8px_rgba(0,0,0,0.15)] flex items-center justify-center text-[#374151] pointer-events-auto active:scale-95 transition-transform cursor-pointer"
+                    className="w-12 h-12 bg-white rounded-[18px_12px_20px_14px] border-2 border-black/5 flex items-center justify-center text-[#374151] pointer-events-auto active:scale-95 transition-transform cursor-pointer"
                 >
                     {isLocating ? (
-                        <div className="w-5 h-5 border-2 border-[#219178] border-t-transparent rounded-full animate-spin" />
+                        <div className="w-5 h-5 border-2 border-[#01A083] border-t-transparent rounded-full animate-spin" />
                     ) : (
                         <Navigation size={22} strokeWidth={2.5} />
                     )}

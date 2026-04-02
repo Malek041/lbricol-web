@@ -206,7 +206,7 @@ const RatingPopup: React.FC<RatingPopupProps> = ({
                         animate={{ y: 0 }}
                         exit={{ y: '100%' }}
                         transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-                        className="relative bg-white w-full max-w-[450px] rounded-t-[40px] md:rounded-[40px] shadow-2xl overflow-hidden pb-10 md:pb-6"
+                        className="relative bg-white w-full max-w-[450px] rounded-t-[40px] md:rounded-[40px] overflow-hidden pb-10 md:pb-6"
                     >
                         {/* Drag indicator (mobile feel) */}
                         <div className="w-12 h-1.5 bg-neutral-200 rounded-full mx-auto mt-4 mb-2 md:hidden" />
@@ -238,7 +238,7 @@ const RatingPopup: React.FC<RatingPopupProps> = ({
                                                     <img src={serviceVector} alt={serviceName} className="w-full h-full object-contain" />
                                                 </div>
                                                 <div className="min-w-0">
-                                                    <p className="text-[11px] font-black text-[#219178] uppercase tracking-[0.15em] mb-1">
+                                                    <p className="text-[11px] font-black text-[#01A083] uppercase tracking-[0.15em] mb-1">
                                                         {t({ en: 'Mission Completed', fr: 'Mission terminée' })}
                                                     </p>
                                                     <h3 className="text-[18px] font-black text-black leading-tight truncate capitalize">
@@ -255,7 +255,7 @@ const RatingPopup: React.FC<RatingPopupProps> = ({
                                                     {bricolerAvatar ? (
                                                         <img src={bricolerAvatar} className="w-full h-full object-cover" alt={bricolerName} />
                                                     ) : (
-                                                        <div className="w-full h-full flex items-center justify-center text-[#219178] font-black text-xl">
+                                                        <div className="w-full h-full flex items-center justify-center text-[#01A083] font-black text-xl">
                                                             {bricolerName[0]?.toUpperCase()}
                                                         </div>
                                                     )}
@@ -317,7 +317,7 @@ const RatingPopup: React.FC<RatingPopupProps> = ({
                                                 </motion.div>
                                             </button>
                                             <div className="flex-1">
-                                                <p className="text-[13px] font-black text-[#219178] uppercase tracking-widest">{t({ en: 'Write a review', fr: 'Écrire un avis' })}</p>
+                                                <p className="text-[13px] font-black text-[#01A083] uppercase tracking-widest">{t({ en: 'Write a review', fr: 'Écrire un avis' })}</p>
                                                 <h2 className="text-[20px] font-black text-black leading-tight">
                                                     {t({ en: `How was your experience with ${bricolerName}?`, fr: `Comment était votre expérience avec ${bricolerName} ?` })}
                                                 </h2>
@@ -338,11 +338,11 @@ const RatingPopup: React.FC<RatingPopupProps> = ({
                                         </div>
 
                                         <div className="flex flex-col gap-3">
-                                            <button
-                                                onClick={() => handleSubmit(false)}
-                                                disabled={isSubmitting}
-                                                className="w-full h-16 bg-black text-white rounded-[24px] font-black text-[18px] flex items-center justify-center gap-3 shadow-xl active:scale-[0.98] transition-all disabled:opacity-50"
-                                            >
+                                                <button
+                                                    onClick={() => handleSubmit(false)}
+                                                    disabled={isSubmitting}
+                                                    className="w-full h-16 bg-[#01A083] text-white rounded-[24px] font-black text-[18px] flex items-center justify-center gap-3 active:scale-[0.98] transition-all disabled:opacity-50"
+                                                >
                                                 {isSubmitting ? <div className="w-6 h-6 border-3 border-white/30 border-t-white rounded-full animate-spin" /> : (
                                                     <>
                                                         <Send size={20} />

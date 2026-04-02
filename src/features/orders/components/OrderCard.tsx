@@ -2,7 +2,8 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Package, X, Star } from 'lucide-react';
+import { Package, X, Star, Calendar } from 'lucide-react';
+import { format } from 'date-fns';
 import { useLanguage } from '@/context/LanguageContext';
 import { useTheme } from '@/context/ThemeContext';
 import { fluidMobilePx, useIsMobileViewport, useMobileTier, useViewportWidth } from '@/lib/mobileOnly';
@@ -192,7 +193,7 @@ const OrderCard = ({ order, onCancel }: OrderCardProps) => {
                         e.stopPropagation();
                         onCancel();
                     }}
-                    className="absolute top-4 right-4 w-9 h-9 rounded-full bg-white/80 backdrop-blur-md border border-neutral-100 shadow-sm flex items-center justify-center text-neutral-400 hover:text-red-500 hover:bg-white transition-all active:scale-90 z-[30]"
+                    className="absolute top-4 right-4 w-9 h-9 rounded-full bg-white/80 backdrop-blur-md border border-neutral-100 flex items-center justify-center text-neutral-400 hover:text-red-500 hover:bg-white transition-all active:scale-90 z-[30]"
                 >
                     <X size={18} strokeWidth={2.5} />
                 </button>
@@ -200,7 +201,7 @@ const OrderCard = ({ order, onCancel }: OrderCardProps) => {
 
             {/* Left Content Area */}
             <div style={{ flex: 1, position: 'relative', zIndex: 10 }}>
-                <h3 style={{ fontSize: isMobile ? titleSize : '1.5rem', fontWeight: 900, color: c.text, marginBottom: '0.4rem', letterSpacing: '-0.03em', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', fontFamily: 'Uber Move, var(--font-sans)', direction: language === 'ar' ? 'rtl' : 'ltr' }}>
+                <h3 style={{ fontSize: isMobile ? titleSize : '1.5rem', fontWeight: 500, color: c.text, marginBottom: '0.4rem', letterSpacing: '-0.03em', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', fontFamily: 'Uber Move, var(--font-sans)', direction: language === 'ar' ? 'rtl' : 'ltr' }}>
                     {(() => {
                         const config = getServiceById(order.serviceId || order.service);
                         const stableBase = config ? config.name : formatServiceName(order.service);
@@ -217,14 +218,14 @@ const OrderCard = ({ order, onCancel }: OrderCardProps) => {
                                 {isCleaning && rooms ? (
                                     <>
                                         {translatedSub || translatedBase}
-                                        <span style={{ opacity: 0.6, fontWeight: 600, fontSize: '0.85em', marginLeft: '6px' }}>
+                                        <span style={{ opacity: 0.6, fontWeight: 500, fontSize: '0.85em', marginLeft: '6px' }}>
                                             • {rooms} {rooms > 1 ? t({ en: 'Rooms', fr: 'Pièces', ar: 'غرف' }) : t({ en: 'Room', fr: 'Pièce', ar: 'غرفة' })}
                                         </span>
                                     </>
                                 ) : (
                                     <>
                                         {translatedBase}
-                                        {translatedSub && <span style={{ opacity: 0.6, fontWeight: 600, fontSize: '0.9em', marginLeft: '2px' }}> › {translatedSub}</span>}
+                                        {translatedSub && <span style={{ opacity: 0.6, fontWeight: 500, fontSize: '0.9em', marginLeft: '2px' }}> › {translatedSub}</span>}
                                     </>
                                 )}
                             </>
@@ -237,10 +238,14 @@ const OrderCard = ({ order, onCancel }: OrderCardProps) => {
                         </div>
                     )}
                     {timeLeft && (
-                        <span style={{ fontSize: badgeSize, fontWeight: 900, color: '#219178', marginLeft: '4px' }}>
+                        <span style={{ fontSize: badgeSize, fontWeight: 500, color: '#01A083', marginLeft: '4px' }}>
                             {timeLeft}
                         </span>
                     )}
+                    <span style={{ fontSize: '0.75em', fontWeight: 500, color: c.textMuted, marginLeft: 'auto', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                        <Calendar size={14} />
+                        {order.date ? (typeof order.date === 'string' ? order.date : format(new Date(order.date), 'MMM d, yyyy')) : '---'}
+                    </span>
                 </h3>
                 <div style={{ fontSize: isMobile ? bodySize : '15px', color: c.textMuted, fontWeight: 500, lineHeight: 1.6, maxWidth: '440px', direction: language === 'ar' ? 'rtl' : 'ltr' }}>
                     {(() => {
@@ -268,19 +273,19 @@ const OrderCard = ({ order, onCancel }: OrderCardProps) => {
                                         display: 'flex', 
                                         gap: '15px', 
                                         padding: '12px 16px', 
-                                        backgroundColor: theme === 'light' ? '#21917808' : '#21917815', 
+                                        backgroundColor: theme === 'light' ? '#01A08308' : '#01A08315', 
                                         borderRadius: '16px', 
-                                        border: `1px dashed ${theme === 'light' ? '#21917833' : '#21917855'}`,
+                                        border: `1px dashed ${theme === 'light' ? '#01A08333' : '#01A08355'}`,
                                         marginTop: '4px'
                                     }}>
                                         <div style={{ flex: 1 }}>
-                                            <span style={{ fontSize: '10px', fontWeight: 900, color: '#219178', textTransform: 'uppercase', letterSpacing: '0.1em', display: 'block', marginBottom: '2px' }}>{t({ en: 'Pickup', fr: 'Départ', ar: 'الاستلام' })}</span>
-                                            <div style={{ fontSize: '13px', fontWeight: 800, color: c.text }}>{order.date} <span style={{ opacity: 0.6 }}>{order.time}</span></div>
+                                            <span style={{ fontSize: '10px', fontWeight: 500, color: '#01A083', textTransform: 'uppercase', letterSpacing: '0.1em', display: 'block', marginBottom: '2px' }}>{t({ en: 'Pickup', fr: 'Départ', ar: 'الاستلام' })}</span>
+                                            <div style={{ fontSize: '13px', fontWeight: 500, color: c.text }}>{order.date} <span style={{ opacity: 0.6 }}>{order.time}</span></div>
                                         </div>
-                                        <div style={{ width: '1px', backgroundColor: theme === 'light' ? '#21917822' : '#21917844' }} />
+                                        <div style={{ width: '1px', backgroundColor: theme === 'light' ? '#01A08322' : '#01A08344' }} />
                                         <div style={{ flex: 1 }}>
-                                            <span style={{ fontSize: '10px', fontWeight: 900, color: '#008C74', textTransform: 'uppercase', letterSpacing: '0.1em', display: 'block', marginBottom: '2px' }}>{t({ en: 'Return', fr: 'Retour', ar: 'الاسترجاع' })}</span>
-                                            <div style={{ fontSize: '13px', fontWeight: 800, color: c.text }}>{order.carReturnDate} <span style={{ opacity: 0.6 }}>{order.carReturnTime}</span></div>
+                                            <span style={{ fontSize: '10px', fontWeight: 500, color: '#008C74', textTransform: 'uppercase', letterSpacing: '0.1em', display: 'block', marginBottom: '2px' }}>{t({ en: 'Return', fr: 'Retour', ar: 'الاسترجاع' })}</span>
+                                            <div style={{ fontSize: '13px', fontWeight: 500, color: c.text }}>{order.carReturnDate} <span style={{ opacity: 0.6 }}>{order.carReturnTime}</span></div>
                                         </div>
                                     </div>
                                 </div>
@@ -321,8 +326,11 @@ const OrderCard = ({ order, onCancel }: OrderCardProps) => {
                         );
                     })()}
                     <div style={{ marginTop: '4px' }}>
-                        <span style={{ fontWeight: 800, color: c.text }}>
+                        <span style={{ fontWeight: 500, color: c.text }}>
                             {t({ en: 'Offer', fr: 'Offre', ar: 'عرض' })}: {order.price} MAD
+                        </span>
+                        <span style={{ opacity: 0.6, fontSize: '0.9em', marginLeft: '8px', fontWeight: 500 }}>
+                            • {order.time}
                         </span>
                     </div>
                     {order.bricolerName && (
@@ -335,7 +343,7 @@ const OrderCard = ({ order, onCancel }: OrderCardProps) => {
                                     onError={(e: any) => e.target.src = '/Images/DefaultAvatar.webp'}
                                 />
                             </div>
-                            <span style={{ fontSize: '14px', fontWeight: 700, color: c.text }}>
+                            <span style={{ fontSize: '14px', fontWeight: 500, color: c.text }}>
                                 {order.bricolerName}
                             </span>
                         </div>
@@ -351,7 +359,7 @@ const OrderCard = ({ order, onCancel }: OrderCardProps) => {
                         </span>
                     )}
                     {order.movingVehicle && (
-                        <span style={{ marginLeft: '12px', fontSize: '13px', backgroundColor: '#21917815', padding: '2px 8px', borderRadius: '4px', color: '#219178', fontWeight: 700 }}>
+                        <span style={{ marginLeft: '12px', fontSize: '13px', backgroundColor: '#01A08315', padding: '2px 8px', borderRadius: '4px', color: '#01A083', fontWeight: 500 }}>
                             {(() => {
                                 const opts = {
                                     triporteur: { en: '🛵 Triporteur', fr: '🛵 Triporteur', ar: '🛵 تربورتور' },
@@ -379,11 +387,11 @@ const OrderCard = ({ order, onCancel }: OrderCardProps) => {
                     backgroundColor: (theme === 'light' ? '#FFFFFF' : '#000000'),
                     color: c.text,
                     fontSize: isMobile ? badgeSize : '14px',
-                    fontWeight: 800,
+                    fontWeight: 500,
                     borderRadius: '100px',
                     border: `1px solid ${c.border}`,
                     cursor: 'pointer',
-                    boxShadow: theme === 'light' ? '0 2px 8px rgba(0,0,0,0.05)' : 'none'
+                    boxShadow: 'none'
                 }}>
                     {t({ en: 'Details', fr: 'Détails', ar: 'تفاصيل' })}
                 </button>
@@ -404,7 +412,7 @@ const OrderCard = ({ order, onCancel }: OrderCardProps) => {
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
-                            boxShadow: theme === 'light' ? '0 10px 30px rgba(0,0,0,0.1)' : '0 10px 30px rgba(0,0,0,0.5)',
+                            boxShadow: 'none',
                             border: `2px solid #FFF`,
                             position: 'relative'
                         }}
@@ -433,7 +441,7 @@ const OrderCard = ({ order, onCancel }: OrderCardProps) => {
                             backgroundColor: '#000',
                             color: '#FFF',
                             fontSize: '10px',
-                            fontWeight: 900,
+                            fontWeight: 500,
                             padding: '2px 6px',
                             borderRadius: '6px',
                             zIndex: 20
@@ -450,7 +458,7 @@ const OrderCard = ({ order, onCancel }: OrderCardProps) => {
                     initial={{ width: '0%' }}
                     animate={{ width: `${progress}%` }}
                     transition={{ duration: 1, ease: 'easeOut' }}
-                    style={{ height: '100%', backgroundColor: '#219178' }}
+                    style={{ height: '100%', backgroundColor: '#01A083' }}
                 />
             </div>
         </motion.div>
