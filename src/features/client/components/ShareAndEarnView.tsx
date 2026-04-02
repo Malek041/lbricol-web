@@ -132,7 +132,7 @@ const ShareAndEarnView: React.FC<ShareAndEarnViewProps> = ({
                     </motion.div>
 
                     <motion.h1
-                        className="text-[35px] font-normal text-[#1D1D1D] leading-tight mb-3 max-w-[350px] text-center"
+                        className="text-[25px] font-normal text-[#1D1D1D] leading-tight mb-3 max-w-[350px] text-center"
                         initial={{ opacity: 0, y: 8 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.1, duration: 0.3 }}

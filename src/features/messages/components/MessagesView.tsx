@@ -407,7 +407,13 @@ const MessagesView: React.FC<MessagesViewProps> = ({
         const conversation = conversations.find((c) => c.jobId === selectedJobId);
 
         return (
-            <div style={{ display: 'flex', flexDirection: 'column', height: '100%', backgroundColor: '#FFFFFF' }}>
+            <div style={{ 
+                display: 'flex', 
+                flexDirection: 'column', 
+                height: '100%', 
+                backgroundColor: '#FFFFFF',
+                ...( !isModal ? { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 9999 } : {} )
+            }}>
                 {/* Chat Header — Matching Screenshot */}
                 <div style={{
                     display: 'flex',
@@ -438,93 +444,8 @@ const MessagesView: React.FC<MessagesViewProps> = ({
                     <div style={{ width: '40px' }} /> {/* Spacer to center title */}
                 </div>
 
-                {/* Messages & Task Info Container */}
+                {/* Messages Container */}
                 <div style={{ flex: 1, overflowY: 'auto', paddingBottom: '80px' }}>
-                    {/* Relevant Task info card — matching screenshot layout */}
-                    <div style={{ padding: '20px 20px 10px' }}>
-                        <div style={{
-                            display: 'flex',
-                            gap: '12px',
-                            padding: '16px',
-                            backgroundColor: '#FFFFFF',
-                            borderRadius: '16px',
-                            border: '1px solid #F0F0F0',
-                            boxShadow: '0 4px 12px rgba(0,0,0,0.03)'
-                        }}>
-                            <div style={{
-                                width: '64px',
-                                height: '64px',
-                                borderRadius: '12px',
-                                backgroundColor: '#F9F9F9',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                border: '1px solid #F0F0F0',
-                                overflow: 'hidden'
-                            }}>
-                                <img
-                                    src={getServiceVector(conversation?.jobTitle)}
-                                    style={{ width: '80%', height: '80%', objectFit: 'contain' }}
-                                />
-                            </div>
-                            <div style={{ flex: 1 }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-                                    <div style={{
-                                        backgroundColor: '#06C16710',
-                                        color: '#06C167',
-                                        fontSize: '10px',
-                                        fontWeight: 900,
-                                        padding: '2px 8px',
-                                        borderRadius: '4px'
-                                    }}>
-                                        {conversation?.status?.replace('_', ' ').toUpperCase() || 'ON TIME'}
-                                    </div>
-                                    <span style={{ fontSize: '13px', fontWeight: 800, color: '#000', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                        {conversation?.jobTitle?.toLowerCase() || 'service'} › {conversation?.jobSubService || 'General'}
-                                    </span>
-                                </div>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap', marginTop: '4px' }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                        <Calendar size={16} color="#666" opacity={0.6} />
-                                        <div style={{ display: 'flex', flexDirection: 'column', lineHeight: '1.1' }}>
-                                            <span style={{ fontSize: '11px', fontWeight: 800, color: '#999', textTransform: 'uppercase' }}>
-                                                {conversation?.jobDates ? new Date(conversation.jobDates).toLocaleDateString(t({ en: 'en-US', fr: 'fr-FR' }), { month: 'short' }) : ''}
-                                            </span>
-                                            <span style={{ fontSize: '15px', fontWeight: 900, color: '#000' }}>
-                                                {conversation?.jobDates ? new Date(conversation.jobDates).getDate() : ''}
-                                            </span>
-                                        </div>
-                                    </div>
-
-                                    <div style={{ width: '1.5px', height: '24px', backgroundColor: '#F0F0F0', borderRadius: '1px' }} />
-
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
-                                        <span style={{ fontSize: '20px', fontWeight: 950, color: '#000', letterSpacing: '-0.02em' }}>
-                                            {conversation?.jobTime || '09:00'}
-                                        </span>
-                                        {['confirmed', 'in_progress', 'ready'].includes(conversation?.status || '') && getTimeRemaining() && (
-                                            <span style={{ fontSize: '12px', fontWeight: 800, color: '#01A083', padding: '2px 0' }}>
-                                                {getTimeRemaining()}
-                                            </span>
-                                        )}
-                                    </div>
-                                </div>
-                                <div style={{ width: '100%', height: '4px', backgroundColor: '#F0F0F0', borderRadius: '2px', overflow: 'hidden' }}>
-                                </div>
-                            </div>
-                        </div>
-
-                        {conversation?.jobDescription && (
-                            <div style={{ marginTop: '12px', padding: '12px', backgroundColor: '#F9F9F9', borderRadius: '12px', border: '1px solid #F0F0F0' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-                                    <FileText size={14} color="#01A083" />
-                                    <span style={{ fontSize: '11px', fontWeight: 900, color: '#333' }}>{t({ en: 'TASK DESCRIPTION', fr: 'DESCRIPTION DE LA MISSION' })}</span>
-                                </div>
-                                <p style={{ fontSize: '13px', color: '#666', margin: 0 }}>{conversation.jobDescription}</p>
-                            </div>
-                        )}
-                    </div>
-
                     <div
                         style={{
                             padding: '10px 20px 20px',
