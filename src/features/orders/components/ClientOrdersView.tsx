@@ -858,8 +858,8 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
                                         <h3 className="text-[25px] font-medium text-black mb-6 flex items-center gap-3">
                                             Professional <span className="text-2xl">👨‍🔧</span>
                                         </h3>
-                                        <div className="bg-[#F9FAFB] rounded-[32px] p-6 border border-neutral-100 flex items-center gap-6">
-                                            <div className="w-20 h-20 rounded-[24px] bg-white flex-shrink-0 overflow-hidden relative border-2 border-white">
+                                        <div className="bg-[#F9FAFB] rounded-[32px] p-4 sm:p-6 border border-neutral-100 flex flex-wrap items-center gap-4 sm:gap-6">
+                                            <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-[24px] bg-white flex-shrink-0 overflow-hidden relative border-2 border-white">
                                                 <img
                                                     src={selectedOrder.bricolerAvatar || "/Images/Vectors Illu/Avatar.png"}
                                                     className="w-full h-full object-cover"
@@ -869,15 +869,15 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
                                                     <Check size={10} className="text-white" />
                                                 </div>
                                             </div>
-                                            <div className="flex-1 min-w-0">
-                                                <h4 className="text-[20px] font-medium text-black mb-1 truncate">{selectedOrder.bricolerName}</h4>
-                                                <div className="flex items-center gap-2">
+                                            <div className="flex-1 min-w-[120px]">
+                                                <h4 className="text-[20px] font-medium text-black mb-1 leading-tight">{selectedOrder.bricolerName}</h4>
+                                                <div className="flex flex-wrap items-center gap-2 mt-1">
                                                     <div className="flex items-center gap-1 flex-shrink-0">
                                                         <Star size={14} className="fill-yellow-400 text-yellow-400" />
                                                         <span className="text-[14px] font-medium text-black">{selectedOrder.bricolerRating || '4.9'}</span>
                                                     </div>
                                                     <span className="text-neutral-300 flex-shrink-0">|</span>
-                                                    <span className="text-[14px] font-medium text-neutral-500 uppercase tracking-wider truncate min-w-0">
+                                                    <span className="text-[13px] font-medium text-neutral-500 uppercase tracking-wider whitespace-nowrap">
                                                         {t({ en: 'Verified Pro', fr: 'Pro Vérifié', ar: 'محترف موثق' })}
                                                     </span>
                                                 </div>
@@ -1504,8 +1504,8 @@ function ActivityTab({
                                 </div>
                             </div>
                         ) : (
-                            <div className="flex items-center gap-2 mt-1">
-                                <div className="flex items-center gap-1 text-neutral-400">
+                            <div className="flex flex-wrap items-center gap-2 mt-1">
+                                <div className="flex items-center gap-1 text-neutral-400 whitespace-nowrap">
                                     <CalendarIcon size={14} className="opacity-70" />
                                     <span className="text-[14px] font-medium">
                                         {order.date ? format(parseISO(order.date), 'MMM d') : ''}
