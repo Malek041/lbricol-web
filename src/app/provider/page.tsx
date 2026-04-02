@@ -83,7 +83,8 @@ import {
     Gift,
     Eye,
     Image,
-    MessageCircle
+    MessageCircle,
+    AlertCircle
 } from 'lucide-react';
 import { WhatsAppBrandIcon } from '@/components/shared/WhatsAppIcon';
 import { cn } from '@/lib/utils';
@@ -2224,8 +2225,9 @@ const DetailItem = ({ icon: Icon, label, value, subValue, highlight }: {
     const renderJobDetailsModal = () => {
         if (!viewingJobDetails) return null;
         
-        const job = viewingJobDetails;
-        const raw = job.rawAccepted || job.rawJob || {};
+        const job = viewingJobDetails as any;
+        const raw = (job.rawAccepted || job.rawJob || {}) as any;
+        const user = userData as any;
         
         let mappedStatus: JobDetails['status'] = 'new';
         if (job.status === 'done' || raw.status === 'completed') {
@@ -2254,11 +2256,11 @@ const DetailItem = ({ icon: Icon, label, value, subValue, highlight }: {
             description: job.description || raw.description || raw.comment,
             photos: raw.images || [],
             clientAvatar: job.clientAvatar || raw.clientAvatar || raw.userPhotoURL,
-            bricolerId: userData?.id,
-            bricolerName: userData?.name,
-            bricolerAvatar: userData?.profilePhotoURL || userData?.avatar || userData?.photoURL || undefined,
-            bricolerRating: userData?.rating || 5,
-            bricolerWhatsApp: userData?.phone,
+            bricolerId: user?.id || user?.uid,
+            bricolerName: user?.name,
+            bricolerAvatar: user?.profilePhotoURL || user?.avatar || user?.photoURL || undefined,
+            bricolerRating: user?.rating || 5,
+            bricolerWhatsApp: user?.phone || user?.whatsappNumber,
             clientWhatsApp: raw.userPhone || raw.clientPhone,
             selectedCar: raw.selectedCar,
             carReturnDate: raw.carReturnDate,
@@ -2270,7 +2272,7 @@ const DetailItem = ({ icon: Icon, label, value, subValue, highlight }: {
             dropoffAddress: raw.dropoffAddress,
             details: raw.details,
             city: job.city || raw.city || raw.area,
-        };
+        } as any;
 
         return (
             <JobDetailsPopup
@@ -4820,7 +4822,7 @@ const DetailItem = ({ icon: Icon, label, value, subValue, highlight }: {
                     />
 
                     {
-                        isMobileLayout && !viewingJobDetails && (
+                        isMobileLayout && !viewingJobDetails && !showLanguagePopup && !showProfileModal && !showAddServiceModal && !showNIDModal && (
                             <div key="mobile-bottom-nav-wrapper">
                                 <MobileBottomNav
                                     activeTab={activeNav}
