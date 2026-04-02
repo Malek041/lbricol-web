@@ -412,7 +412,7 @@ const MessagesView: React.FC<MessagesViewProps> = ({
                 flexDirection: 'column', 
                 height: '100%', 
                 backgroundColor: '#FFFFFF',
-                ...( !isModal ? { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 9999 } : {} )
+                position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 9999
             }}>
                 {/* Chat Header — Matching Screenshot */}
                 <div style={{

@@ -1435,7 +1435,7 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
     };
 
     const uploadToCloudinary = async (dataUrl: string, folder: string, preset: string) => {
-        const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
+        const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || 'dxgdmbcc2';
         if (!cloudName) {
             console.error("Cloudinary Error: NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME is missing in env");
             throw new Error('Cloud Name is not configured');
