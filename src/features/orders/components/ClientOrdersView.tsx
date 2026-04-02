@@ -797,7 +797,7 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
                         className="fixed inset-0 z-[4000] bg-white flex flex-col no-scrollbar"
                     >
                         {/* Premium Header */}
-                        <div className="absolute top-0 left-0 w-full pt-16 px-6 pb-4 bg-white/90 backdrop-blur-md z-[4002] border-b border-neutral-100">
+                        <div className="sticky top-0 w-full pt-12 px-6 pb-4 bg-white z-[4002] border-b border-neutral-100">
                             <div className="flex items-center justify-between">
                                 <button
                                     onClick={() => setSelectedOrder(null)}
@@ -817,7 +817,7 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
                         </div>
 
                         {/* Main Scrollable Content */}
-                        <div className="flex-1 w-full h-full overflow-y-auto no-scrollbar pb-[200px] pt-[120px]">
+                        <div className="flex-1 w-full h-full overflow-y-auto no-scrollbar pb-[200px]">
                             <div className="px-6">
                                 {/* Hero Image & Title Section */}
                                 <div className="text-center mt-8 mb-10">
@@ -1246,7 +1246,6 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
                         exit={{ x: '100%' }}
                         transition={{ type: 'spring', damping: 25, stiffness: 220 }}
                         className="fixed inset-0 z-[5500] bg-white flex flex-col"
-                        style={{ height: 'calc(100% - 82px - env(safe-area-inset-bottom))', bottom: 'calc(82px + env(safe-area-inset-bottom))' }}
                     >
                         <MessagesView
                             orders={orders}
