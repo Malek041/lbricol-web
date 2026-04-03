@@ -169,6 +169,22 @@ export default function CheckoutPage() {
 
                 const slotDate = format(new Date(slot.date), 'yyyy-MM-dd');
 
+                // Calculate expected end time (start time + duration + 30m buffer)
+                let expectedEndTime = null;
+                try {
+                    if (order.carRentalDates?.returnDate && order.carRentalDates?.returnTime) {
+                        expectedEndTime = new Date(`${order.carRentalDates.returnDate}T${order.carRentalDates.returnTime}`);
+                    } else if (slot.date && slot.time) {
+                        const [h, m] = slot.time.split(':').map(Number);
+                        const startDate = new Date(slot.date);
+                        startDate.setHours(h, m, 0, 0);
+                        const durationHr = (order.serviceDetails as any)?.taskDuration || 1;
+                        expectedEndTime = new Date(startDate.getTime() + (durationHr * 60 * 60 * 1000) + (30 * 60 * 1000));
+                    }
+                } catch (e) {
+                    console.error("Error calculating expectedEndTime", e);
+                }
+
                 const jobData = {
                     clientId: finalUser.uid,
                     clientName: finalUser.displayName || 'Client',
@@ -193,6 +209,7 @@ export default function CheckoutPage() {
                     carReturnDate: order.carRentalDates?.returnDate,
                     carReturnTime: order.carRentalDates?.returnTime,
                     carRentalNote: order.carRentalNote,
+                    expectedEndTime: expectedEndTime || null,
                     status: order.isPublic ? 'broadcast' : 'programmed',
                     paymentMethod,
                     totalPrice: pricing.total,

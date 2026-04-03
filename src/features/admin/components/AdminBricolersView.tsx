@@ -2,7 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { collection, onSnapshot, doc, updateDoc, deleteDoc } from 'firebase/firestore';
+import { collection, onSnapshot, doc, updateDoc, deleteDoc, query, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useLanguage } from '@/context/LanguageContext';
 import { MapPin, Search, Shield, User as UserIcon, Star, Phone, Plus, Edit2, EyeOff, Eye, Trash2, Calendar, Save, Check } from 'lucide-react';
@@ -398,7 +398,7 @@ const ReceivableCard = ({ b, t, onMarkAsPaid }: any) => (
 );
 
 const BricolerProfileBottomSheet = ({ bricoler, isOpen, onClose, t }: any) => {
-  const [activeTab, setActiveTab] = useState<'profile' | 'performance'>('profile');
+  const [activeTab, setActiveTab] = useState<'profile' | 'performance' | 'financials'>('profile');
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
 
@@ -475,6 +475,15 @@ const BricolerProfileBottomSheet = ({ bricoler, isOpen, onClose, t }: any) => {
                 >
                   {t({ en: 'Performance', fr: 'Performance' })}
                 </button>
+                <button
+                  onClick={() => setActiveTab('financials')}
+                  className={cn(
+                    "flex-1 py-2.5 text-xs font-black rounded-xl transition-all",
+                    activeTab === 'financials' ? "bg-white text-black shadow-sm" : "text-neutral-500 hover:text-neutral-700"
+                  )}
+                >
+                  {t({ en: 'Financials', fr: 'Finances' })}
+                </button>
               </div>
             </div>
 
@@ -539,7 +548,7 @@ const BricolerProfileBottomSheet = ({ bricoler, isOpen, onClose, t }: any) => {
                     </div>
                   </div>
                 </div>
-              ) : (
+              ) : activeTab === 'performance' ? (
                 <div className="space-y-6">
                   {/* Month Filter */}
                   <div className="flex items-center justify-between bg-neutral-50 p-4 rounded-[24px]">
@@ -629,6 +638,8 @@ const BricolerProfileBottomSheet = ({ bricoler, isOpen, onClose, t }: any) => {
                     </div>
                   </div>
                 </div>
+              ) : (
+                <BricolerFinancialsLedger bricoler={bricoler} t={t} />
               )}
             </div>
           </motion.div>
@@ -661,5 +672,180 @@ const KpiCard = ({ label, value, icon }: any) => (
     </div>
   </div>
 );
+
+const BricolerFinancialsLedger = ({ bricoler, t }: any) => {
+  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [jobs, setJobs] = useState<any[]>([]);
+  const [settlements, setSettlements] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!bricoler?.id) return;
+    setLoading(true);
+
+    const qJobs = query(
+      collection(db, 'jobs'),
+      where('bricolerId', '==', bricoler.id),
+      where('status', '==', 'done')
+    );
+
+    const qSettlements = query(
+      collection(db, 'commission_settlements'),
+      where('bricolerId', '==', bricoler.id)
+    );
+
+    let jobsList: any[] = [];
+    let settlementsList: any[] = [];
+    let jobsDone = false;
+    let settlementsDone = false;
+
+    const checkDone = () => {
+      if (jobsDone && settlementsDone) {
+        setJobs(jobsList);
+        setSettlements(settlementsList);
+        setLoading(false);
+      }
+    };
+
+    const unsubJobs = onSnapshot(qJobs, (snap) => {
+      jobsList = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      jobsDone = true;
+      checkDone();
+    });
+
+    const unsubSettlements = onSnapshot(qSettlements, (snap) => {
+      settlementsList = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      settlementsDone = true;
+      checkDone();
+    });
+
+    return () => {
+      unsubJobs();
+      unsubSettlements();
+    };
+  }, [bricoler?.id]);
+
+  const financials = useMemo(() => {
+    let cashEarnings = 0;
+    let onlineEarnings = 0;
+
+    const filteredJobs = jobs.filter(j => {
+      const date = j.timestamp?.toDate ? j.timestamp.toDate() : new Date(typeof j.timestamp === 'number' ? j.timestamp * 1000 : j.timestamp);
+      if (!date || isNaN(date.getTime())) return false;
+      return date.getMonth() === selectedMonth && date.getFullYear() === selectedYear;
+    });
+
+    filteredJobs.forEach(j => {
+      const amount = j.priceObject?.totalPrice || j.price || 0;
+      if (j.paymentMethod === 'bank_transfer' || j.paymentMethod === 'bank' || j.paymentMethod === 'card') {
+        onlineEarnings += amount;
+      } else {
+        cashEarnings += amount;
+      }
+    });
+
+    // Bricoler owes us 15% of cash jobs
+    const bricolerOwes = cashEarnings * 0.15;
+    
+    // We owe Bricoler 85% of online jobs
+    const adminOwes = onlineEarnings * 0.85;
+
+    // Total transfers made by bricoler to admin this month (approved only, though maybe pending counts as paid)
+    const filteredSettlements = settlements.filter(s => {
+      const date = s.timestamp?.toDate ? s.timestamp.toDate() : new Date(s.timestamp || Date.now());
+      if (!date || isNaN(date.getTime())) return false;
+      return date.getMonth() === selectedMonth && date.getFullYear() === selectedYear && s.status === 'approved';
+    });
+
+    const totalTransferred = filteredSettlements.reduce((acc, curr) => acc + (curr.amount || 0), 0);
+
+    // If Bricoler owes us 300, and transferred 300, net is 0.
+    // If We owe Bricoler 500, and Bricoler owes us 100, Net Admin Owes is 400.
+    const netBricolerOwes = bricolerOwes - adminOwes - totalTransferred;
+    const finalBalanceStr = netBricolerOwes > 0 
+      ? `Bricoler owes Admin: ${Math.round(netBricolerOwes)} MAD`
+      : netBricolerOwes < 0 
+        ? `Admin owes Bricoler: ${Math.round(Math.abs(netBricolerOwes))} MAD`
+        : `Settled (Balanced)`;
+
+    return {
+      cashEarnings,
+      onlineEarnings,
+      bricolerOwes,
+      adminOwes,
+      totalTransferred,
+      netBricolerOwes,
+      finalBalanceStr,
+      jobsCount: filteredJobs.length,
+    };
+  }, [jobs, settlements, selectedMonth, selectedYear]);
+
+  const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between bg-neutral-50 p-4 rounded-[24px]">
+        <div className="flex items-center gap-2">
+          <Calendar size={18} className="text-[#01A083]" />
+          <select
+            value={selectedMonth}
+            onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
+            className="bg-transparent border-none text-sm font-black focus:ring-0 cursor-pointer"
+          >
+            {months.map((m, i) => <option key={m} value={i}>{m}</option>)}
+          </select>
+          <select
+            value={selectedYear}
+            onChange={(e) => setSelectedYear(parseInt(e.target.value))}
+            className="bg-transparent border-none text-sm font-black focus:ring-0 cursor-pointer"
+          >
+            {[2024, 2025, 2026].map(y => <option key={y} value={y}>{y}</option>)}
+          </select>
+        </div>
+      </div>
+
+      {loading ? (
+        <div className="animate-pulse space-y-4">
+          <div className="h-24 bg-neutral-100 rounded-2xl w-full" />
+          <div className="h-24 bg-neutral-100 rounded-2xl w-full" />
+        </div>
+      ) : (
+        <>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="bg-neutral-50 p-4 rounded-2xl border border-neutral-100">
+              <p className="text-[10px] font-black text-neutral-400 uppercase tracking-widest leading-none mb-2">Cash Jobs (Bricoler Holds)</p>
+              <p className="text-xl font-black text-black">{Math.round(financials.cashEarnings)} MAD</p>
+              <p className="text-xs text-red-500 font-bold mt-1">Comm: {Math.round(financials.bricolerOwes)} MAD</p>
+            </div>
+            <div className="bg-[#D9F2EC] p-4 rounded-2xl border border-[#01A083]/20">
+              <p className="text-[10px] font-black text-[#01A083] uppercase tracking-widest leading-none mb-2">Online Jobs (Admin Holds)</p>
+              <p className="text-xl font-black text-black">{Math.round(financials.onlineEarnings)} MAD</p>
+              <p className="text-xs text-[#01A083] font-bold mt-1">Payout: {Math.round(financials.adminOwes)} MAD</p>
+            </div>
+          </div>
+
+          <div className="bg-white p-5 rounded-2xl border border-neutral-100 flex items-center justify-between">
+            <div>
+              <p className="text-[11px] font-black text-neutral-400 uppercase tracking-widest leading-none mb-1">Approved Transfers</p>
+              <p className="text-xs font-bold text-neutral-600">Settlements from Bricoler</p>
+            </div>
+            <p className="text-lg font-black text-black">{Math.round(financials.totalTransferred)} MAD</p>
+          </div>
+
+          <div className={cn("p-6 rounded-[32px] space-y-2 shadow-xl", financials.netBricolerOwes > 0 ? "bg-red-50 text-red-900 border border-red-100" : financials.netBricolerOwes < 0 ? "bg-black text-white" : "bg-neutral-100 text-black")}>
+            <p className={cn("text-[11px] font-black uppercase tracking-widest", financials.netBricolerOwes < 0 ? "text-white/60" : financials.netBricolerOwes > 0 ? "text-red-500" : "text-neutral-500")}>
+              Final Monthly Balance
+            </p>
+            <h4 className="text-2xl font-black">{financials.finalBalanceStr}</h4>
+            <div className="flex items-center gap-2 mt-4 text-xs font-bold pt-4 border-t border-black/10">
+              <span>{financials.jobsCount} {t({ en: 'jobs completed', fr: 'jobs complétés' })}</span>
+            </div>
+          </div>
+        </>
+      )}
+    </div>
+  );
+};
 
 export default AdminBricolersView;

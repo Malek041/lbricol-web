@@ -165,7 +165,7 @@ const AuthPopup = ({ isOpen, onClose, onSuccess }: AuthPopupProps) => {
                     }}
                 >
                     {/* Header */}
-                    <div style={{ padding: headerPadding, display: 'flex', alignItems: 'center' }}>
+                    <div style={{ padding: headerPadding, display: 'flex', alignItems: 'center', position: 'relative', zIndex: 10 }}>
                         <button
                             onClick={onClose}
                             style={{

@@ -110,6 +110,7 @@ const MapView: React.FC<MapViewProps> = ({
   const mapReadyTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const flyToTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const latestGeocodeRef = useRef<{lat: number, lng: number} | null>(null);
 
   const flyToWithOffset = (lat: number, lng: number, zoom?: number, skipOffset = false) => {
     if (!mapRef.current || !mapRef.current.getContainer()) return;
@@ -153,6 +154,7 @@ const MapView: React.FC<MapViewProps> = ({
   };
 
   const reverseGeocode = async (lat: number, lng: number) => {
+    latestGeocodeRef.current = { lat, lng };
     onLoadingChange?.(true);
     let finalAddress = "";
     let city = "";
@@ -183,19 +185,22 @@ const MapView: React.FC<MapViewProps> = ({
     } catch {
       finalAddress = "Custom Location, Morocco";
     }
-    setAddress(finalAddress);
-    onLocationChange({
-      lat,
-      lng,
-      address: finalAddress,
-      city: city || undefined,
-      area: area || undefined
-    });
-    onLoadingChange?.(false);
-    try {
-      localStorage.setItem('lastKnownLat', lat.toString());
-      localStorage.setItem('lastKnownLng', lng.toString());
-    } catch (e) { }
+
+    if (latestGeocodeRef.current?.lat === lat && latestGeocodeRef.current?.lng === lng) {
+      setAddress(finalAddress);
+      onLocationChange({
+        lat,
+        lng,
+        address: finalAddress,
+        city: city || undefined,
+        area: area || undefined
+      });
+      onLoadingChange?.(false);
+      try {
+        localStorage.setItem('lastKnownLat', lat.toString());
+        localStorage.setItem('lastKnownLng', lng.toString());
+      } catch (e) { }
+    }
   };
 
   useEffect(() => {

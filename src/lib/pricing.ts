@@ -145,16 +145,20 @@ export const calculateOrderPrice = (
             const sizeFee = sizeFees[options.taskSize || 'small'];
             const distanceFee = (options.deliveryDistanceKm || 0) * 2.5; // 2.5 MAD per Km
             
-            quantity = 1;
-            unit = 'errand';
-            extraFees = sizeFee + distanceFee;
-        } else {
-            extraFees = deliveryTravelCost + distanceOverage;
-            quantity = hours;
-            unit = 'hr';
-        }
+        quantity = options.hours || 1;
+        unit = 'errand';
+        extraFees = sizeFee + distanceFee;
     } else {
-        // 2. Apply Standard Archetype Logic
+        extraFees = deliveryTravelCost + distanceOverage;
+        quantity = hours;
+        unit = 'hr';
+    }
+} else if (subServiceId === 'office_cleaning') {
+    // Office Cleaning Pricing
+    quantity = options.hours || 2;
+    unit = 'hr';
+} else {
+    // 2. Apply Standard Archetype Logic
         switch (archetype) {
             case 'unit':
                 // For cleaning/painting, quantity is typically room count

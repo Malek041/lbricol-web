@@ -127,13 +127,27 @@ export const useOrderProgress = () => {
             const now = currentTime.getTime();
             const startTime = start.getTime();
 
-            let durationHr = 2;
-            const subService = getSubService(order.service || '', order.subService || '');
-            if (subService?.estimatedDurationHr) {
-                durationHr = subService.estimatedDurationHr;
+            // Use expectedEndTime if available, otherwise calculate fallback
+            let endTime: number;
+            if (order.expectedEndTime) {
+                const end = order.expectedEndTime.toDate ? order.expectedEndTime.toDate() : new Date(order.expectedEndTime);
+                endTime = end.getTime();
+            } else {
+                let durationHr = 2;
+                // 1. Try to use explicit order duration if stored (e.g., "3h")
+                if (order.duration) {
+                    const parsed = parseFloat(String(order.duration).replace(/[^\d.]/g, ''));
+                    if (!isNaN(parsed) && parsed > 0) durationHr = parsed;
+                } else {
+                    // 2. Try to get from config
+                    const subServiceId = order.subService || '';
+                    const subService = getSubService(order.service || '', subServiceId);
+                    if (subService?.estimatedDurationHr) {
+                        durationHr = subService.estimatedDurationHr;
+                    }
+                }
+                endTime = startTime + (durationHr * 60 * 60 * 1000);
             }
-
-            const endTime = startTime + (durationHr * 60 * 60 * 1000);
 
             if (now < startTime) return 'on_time';
             if (now >= startTime && now < endTime) return 'in_progress';
@@ -663,7 +677,7 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
             whileTap={{ scale: 0.98 }}
             className="flex items-center gap-4 py-4 border-b border-[#F0F0F0] cursor-pointer group"
         >
-            <div className="w-20 h-20 rounded-[25px_18px_20px_12px] overflow-hidden bg-neutral-50 flex-shrink-0 border-2 border-black/5">
+            <div className="w-20 h-20 rounded-[15px] overflow-hidden bg-neutral-50 flex-shrink-0 border-2 border-black/5">
                 {order.images && order.images.length > 0 ? (
                     <img
                         src={order.images[0]}
@@ -1372,7 +1386,7 @@ function ActivityTab({
 
 
     const renderEmptyState = (title: string, subtitle: string, icon: React.ReactNode) => (
-        <div className="bg-white rounded-[35px_25px_45px_30px] border-2 border-black/5 p-8 flex flex-col items-center text-center">
+        <div className="bg-white rounded-[20px] border-2 border-black/5 p-8 flex flex-col items-center text-center">
             <div className="flex items-center justify-center mb-6">
                 {icon}
             </div>
@@ -1439,7 +1453,7 @@ function ActivityTab({
                 onClick={() => onSelect(order)}
                 className="bg-white rounded-[30px_18px_35px_22px] p-4 flex items-center gap-4 cursor-pointer transition-all mb-4 border-2 border-black/5"
             >
-                <div className="w-28 h-28 bg-white rounded-[22px_15px_28px_18px] border-2 border-black/5 flex items-center justify-center flex-shrink-0 p-0 overflow-hidden">
+                <div className="w-28 h-28 bg-white rounded-[22px_15px_28px_18px] flex items-center justify-center flex-shrink-0 p-0 overflow-hidden">
                     {order.images && order.images.length > 0 ? (
                         <img src={order.images[0]} className="w-full h-full object-cover" />
                     ) : (order.selectedCar || order.details?.car) ? (
@@ -1671,7 +1685,7 @@ function ActivityTab({
             </div>
 
             {/* History Link */}
-            <div className="bg-[#F2F2F2] rounded-[35px_25px_45px_30px] border-2 border-black/5 p-6 flex items-center gap-5 mt-4">
+            <div className="bg-[#F2F2F2] rounded-[30px] border-2 border-black/5 p-6 flex items-center gap-5 mt-4">
                 <div className="flex items-center justify-center flex-shrink-0">
                     <img src="/Images/Vectors Illu/OrdersHistory.webp" className="w-20 h-20 object-contain" />
                 </div>

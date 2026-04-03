@@ -119,7 +119,7 @@ const AdminOrdersView: React.FC<AdminOrdersViewProps> = ({ t, onChat, onViewMess
         let result = orders.filter(order =>
             (order.service || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
             (order.clientId || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-            (order.location || '').toLowerCase().includes(searchQuery.toLowerCase())
+            ((typeof order.location === 'object' ? order.location.address : order.location) || '').toLowerCase().includes(searchQuery.toLowerCase())
         );
 
         if (statusFilter !== 'all') {
@@ -276,64 +276,62 @@ const AdminOrdersView: React.FC<AdminOrdersViewProps> = ({ t, onChat, onViewMess
                                         initial={{ opacity: 0, y: 10 }}
                                         animate={{ opacity: 1, y: 0 }}
                                         key={order.id}
-                                        className="bg-white rounded-[28px] p-5 border border-neutral-100 shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+                                        className="bg-white rounded-[32px] p-6 border border-neutral-100 shadow-sm hover:shadow-md transition-all cursor-pointer group active:scale-[0.98]"
                                         onClick={() => setSelectedOrder(order)}
                                     >
                                         <div className="flex justify-between items-start mb-4">
-                                            <div className={`px-3 py-1 rounded-full ${style.bg} ${style.text} text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5`}>
-                                                <StatusIcon size={12} />
-                                                {getDynamicStatus(order)}
+                                            <div className="flex flex-col gap-1">
+                                                <div className={`w-fit px-3 py-1 rounded-full ${style.bg} ${style.text} text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5`}>
+                                                    <StatusIcon size={12} />
+                                                    {getDynamicStatus(order)}
+                                                </div>
+                                                <span className="text-neutral-400 text-[11px] font-bold uppercase tracking-widest mt-2">{order.city}</span>
                                             </div>
-                                            <span className="text-neutral-400 text-[11px] font-medium">
-                                                {order.createdAt?.seconds ? format(order.createdAt.seconds * 1000, 'MMM d, HH:mm') : t({ en: 'Recently', fr: 'Récemment' })}
-                                            </span>
+                                            <div className="text-right">
+                                                <p className="text-black font-black text-xl leading-none">{price.toLocaleString(undefined, { maximumFractionDigits: 0 })} MAD</p>
+                                                <p className="text-neutral-400 text-[11px] font-medium mt-1">
+                                                    {order.createdAt?.seconds ? format(order.createdAt.seconds * 1000, 'MMM d, HH:mm') : t({ en: 'Recently', fr: 'Récemment' })}
+                                                </p>
+                                            </div>
                                         </div>
 
-                                        <h3 className="text-lg font-black text-black mb-1">{order.service}</h3>
-                                        <div className="flex items-center gap-2 text-neutral-500 text-sm mb-1">
-                                            <MapPin size={14} />
-                                            {order.city} • {order.location}
-                                        </div>
-
-                                        {/* Ratings row */}
-                                        <div className="flex items-center gap-4 text-[11px] text-neutral-500 mb-3">
-                                            {typeof order.bricolerRating === 'number' && (
-                                                <div className="flex items-center gap-1">
-                                                    <Star size={11} className="text-[#FFC244] fill-[#FFC244]" />
-                                                    <span className="font-bold text-neutral-800">
-                                                        {order.bricolerRating.toFixed(1)}
-                                                    </span>
-                                                    <span className="text-neutral-400">
-                                                        {t({ en: 'Bricoler', fr: 'Bricoleur' })}
-                                                    </span>
+                                        <div className="flex items-center gap-4 mb-5">
+                                            <div className="w-14 h-14 bg-neutral-50 rounded-2xl flex items-center justify-center p-2 group-hover:bg-[#FFC244]/10 transition-colors">
+                                                <img 
+                                                    src="/Images/Vectors Illu/LbricolFaceOY.webp" 
+                                                    className="w-full h-full object-contain" 
+                                                    alt="Service" 
+                                                />
+                                            </div>
+                                            <div className="flex flex-col flex-1">
+                                                <h3 className="text-[20px] font-black text-black leading-tight tracking-tight">{order.service}</h3>
+                                                <div className="flex items-center gap-1.5 text-neutral-400 mt-1">
+                                                    <MapPin size={12} />
+                                                    <p className="text-[12px] font-bold truncate max-w-[180px]">
+                                                        {typeof order.location === 'object' ? order.location.address : order.location}
+                                                    </p>
                                                 </div>
-                                            )}
-                                            {typeof order.clientRating === 'number' && (
-                                                <div className="flex items-center gap-1">
-                                                    <Star size={11} className="text-[#FFC244] fill-[#FFC244]" />
-                                                    <span className="font-bold text-neutral-800">
-                                                        {order.clientRating.toFixed(1)}
-                                                    </span>
-                                                    <span className="text-neutral-400">
-                                                        {t({ en: 'Client', fr: 'Client' })}
-                                                    </span>
-                                                </div>
-                                            )}
+                                            </div>
                                         </div>
 
                                         <div className="flex items-center justify-between pt-4 border-t border-neutral-50">
-                                            <div className="flex items-center gap-2">
-                                                <div className="w-8 h-8 bg-neutral-100 rounded-full flex items-center justify-center">
-                                                    <ShoppingBag size={14} className="text-neutral-400" />
+                                            <div className="flex items-center gap-3">
+                                                <div className="flex -space-x-2">
+                                                    <div className="w-8 h-8 rounded-full bg-neutral-100 border-2 border-white flex items-center justify-center text-[10px] font-black text-neutral-400">
+                                                        {order.clientName ? order.clientName[0] : 'C'}
+                                                    </div>
                                                 </div>
-                                                <div className="text-xs">
-                                                    <p className="text-neutral-400 font-medium">{t({ en: 'Client ID', fr: 'ID Client' })}</p>
-                                                    <p className="text-black font-bold">...{order.clientId?.slice(-6)}</p>
+                                                <div className="flex flex-col">
+                                                    <p className="text-[11px] font-black text-black">{order.clientName || 'Client'}</p>
+                                                    <div className="flex items-center gap-1">
+                                                        <Star size={10} className="text-[#FFC244] fill-[#FFC244]" />
+                                                        <span className="text-[10px] font-bold text-neutral-500">{(order.clientRating || 5.0).toFixed(1)}</span>
+                                                    </div>
                                                 </div>
                                             </div>
-                                            <div className="text-right">
-                                                <p className="text-neutral-400 text-xs font-medium">{t({ en: 'Total', fr: 'Total' })}</p>
-                                                <p className="text-black font-black text-lg">{price.toLocaleString(undefined, { maximumFractionDigits: 0 })} MAD</p>
+                                            <div className="flex items-center gap-1 text-neutral-400">
+                                                <span className="text-[11px] font-bold uppercase tracking-widest mt-0.5">Details</span>
+                                                <ChevronRight size={14} className="group-hover:translate-x-1 transition-transform" />
                                             </div>
                                         </div>
                                     </motion.div>

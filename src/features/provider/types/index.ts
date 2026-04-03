@@ -17,6 +17,7 @@ export interface UserData {
     workAreas?: string[];
     quickPitch?: string;
     bio?: string;
+    bio_translations?: { en?: string; fr?: string; ar?: string };
     calendarSlots?: Record<string, { from: string; to: string }[]>;
     photoURL?: string;
     avatar?: string;
@@ -51,6 +52,7 @@ export interface Job {
     area?: string;
     clientWhatsApp?: string;
     locationDetails?: any;
+    expectedEndTime?: any;
 }
 
 export type MobileJobsStatus = 'new' | 'waiting' | 'programmed' | 'done' | 'delivered';

@@ -47,23 +47,13 @@ export const SERVICES_HIERARCHY: Record<string, ServiceConfig> = {
         name: 'Cleaning',
         icon: Trash2,
         subServices: [
-            { id: 'family_home', name: 'Family Home Cleaning', pricingArchetype: 'unit', estimatedDurationHr: 3 },
-            { id: 'hospitality', name: 'Hospitality Cleaning', pricingArchetype: 'unit', estimatedDurationHr: 2 },
-            { id: 'deep_cleaning', name: 'Deep Home Cleaning', pricingArchetype: 'unit', estimatedDurationHr: 5 },
-            { id: 'car_washing', name: 'Car Washing', pricingArchetype: 'fixed', estimatedDurationHr: 1 },
-            { id: 'car_detailing', name: 'Car Detailing', pricingArchetype: 'fixed', estimatedDurationHr: 3 },
-            { id: 'office_cleaning', name: 'Office Cleaning', pricingArchetype: 'unit', estimatedDurationHr: 4 },
-            { 
-                id: 'dish_cleaning', 
-                name: 'Dish Cleaning', 
-                pricingArchetype: 'hourly',
-                estimatedDurationHr: 2,
-                desc: {
-                    en: 'Professional dish washing after meals or events.',
-                    fr: 'Lavage de vaisselle professionnel après vos repas ou événements.',
-                    ar: 'غسل الصحون الاحترافي بعد الوجبات أو المناسبات.'
-                }
-            }
+            { id: 'standard_small', name: 'Standard Cleaning (Small Home)', pricingArchetype: 'unit', estimatedDurationHr: 2.5 },
+            { id: 'standard_large', name: 'Standard Cleaning (Large Home)', pricingArchetype: 'unit', estimatedDurationHr: 4.5 },
+            { id: 'deep_cleaning', name: 'Deep Home Cleaning (Move-in/Out)', pricingArchetype: 'unit', estimatedDurationHr: 6 },
+            { id: 'hospitality_turnover', name: 'Short-term Rental (Airbnb) Turnover', pricingArchetype: 'unit', estimatedDurationHr: 2.5 },
+            { id: 'office_cleaning', name: 'Office & Workspace Cleaning', pricingArchetype: 'unit', estimatedDurationHr: 4 },
+            { id: 'dish_cleaning', name: 'Dish Washing & Kitchen Tidy', pricingArchetype: 'hourly', estimatedDurationHr: 1.5 },
+            { id: 'car_detailing', name: 'Full Car Detailing (Inside & Out)', pricingArchetype: 'fixed', estimatedDurationHr: 3 }
         ]
     },
 

@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronLeft, X, User, ExternalLink } from 'lucide-react';
 import { useOrder } from '@/context/OrderContext';
+import { useLanguage } from '@/context/LanguageContext';
 import { CheckoutState, PricingData } from '@/lib/checkoutTypes';
 import {
   validateCheckout,
@@ -30,6 +31,7 @@ function CheckoutContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { order, setOrderField } = useOrder();
+  const { t, language } = useLanguage();
   
   const [activeTab, setActiveTab] = useState<'setup' | 'details'>('setup');
   const [isSplashing, setIsSplashing] = useState(false);
@@ -362,7 +364,7 @@ function CheckoutContent() {
               <div style={{ padding: '24px', background: '#F9FAFB', borderRadius: '24px', border: '1px solid #F3F4F6' }}>
                 <h3 style={{ fontSize: 16, fontWeight: 900, color: '#111827', marginBottom: 12 }}>About {order.providerName}</h3>
                 <p style={{ fontSize: 14, color: '#4B5563', lineHeight: 1.6, fontWeight: 500 }}>
-                  {order.providerBio || "This professional provider hasn't added a bio yet, but they are vetted and highly rated by the Lbricol community."}
+                  {order.providerBioTranslations?.[language as keyof typeof order.providerBioTranslations] || order.providerBio || t({ en: "This professional provider hasn't added a bio yet, but they are vetted and highly rated by the Lbricol community.", fr: "Ce prestataire professionnel n'a pas encore ajouté de biographie, mais il est vérifié et très bien noté par la communauté Lbricol." })}
                 </p>
                 <div style={{ display: 'flex', gap: 20, marginTop: 20 }}>
                   <div>

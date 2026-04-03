@@ -100,6 +100,14 @@ export default function ServiceSetupPage() {
     const [taskSize, setTaskSize] = useState<'small' | 'medium' | 'large'>('small');
     const [taskDuration, setTaskDuration] = useState(1);
 
+    // Office Cleaning State
+    const [officeDesks, setOfficeDesks] = useState<number>(order.serviceDetails?.officeDesks || 10);
+    const [officeMeetingRooms, setOfficeMeetingRooms] = useState<number>(order.serviceDetails?.officeMeetingRooms || 1);
+    const [officeBathrooms, setOfficeBathrooms] = useState<number>(order.serviceDetails?.officeBathrooms || 1);
+    const [hasKitchenette, setHasKitchenette] = useState<boolean>(order.serviceDetails?.hasKitchenette || false);
+    const [hasReception, setHasReception] = useState<boolean>(order.serviceDetails?.hasReception || false);
+    const [officeAddOns, setOfficeAddOns] = useState<string[]>(order.serviceDetails?.officeAddOns || []);
+
     // TV Mounting State
     const [tvCount, setTvCount] = useState(1);
     const [liftingHelp, setLiftingHelp] = useState<string | null>(null);
@@ -203,6 +211,7 @@ export default function ServiceSetupPage() {
         minRate: order.providerRate || 0,
         badge: order.providerBadge || 'Pro',
         bio: order.providerBio || 'Experienced Bricoler offering quality services in your area.',
+        bio_translations: {} as { en?: string; fr?: string; ar?: string },
         yearsOfExperience: order.providerExperience || '1 Year',
         portfolio: [] as string[],
         equipments: [] as string[],
@@ -261,6 +270,7 @@ export default function ServiceSetupPage() {
                             name: data.name || prev.name,
                             avatar: data.avatarUrl || data.avatar || data.photoURL || prev.avatar,
                             bio: data.bio || data.aboutMe || prev.bio,
+                            bio_translations: data.bio_translations || prev.bio_translations,
                             yearsOfExperience: data.yearsOfExperience || data.experience || prev.yearsOfExperience,
                             portfolio: servicePortfolio.length > 0 ? servicePortfolio : (data.portfolio || []),
                             equipments: Array.isArray(relevantService?.equipments) ? relevantService.equipments : (Array.isArray(data.equipments) ? data.equipments : []),
@@ -399,6 +409,18 @@ export default function ServiceSetupPage() {
         } else if ((order.serviceType === 'cleaning' || order.serviceType === 'hospitality') && !['car_washing', 'car_detailing', 'dish_cleaning'].includes(order.subServiceId || '')) {
             // Specialized Cleaning Duration Estimation
             const getCleaningDuration = () => {
+                if (order.subServiceId === 'office_cleaning') {
+                    let d = 0;
+                    d += officeDesks * 0.25; // 15 mins per desk
+                    d += officeMeetingRooms * 0.5; // 30 mins per meeting room
+                    d += officeBathrooms * 0.33; // ~20 mins per bathroom
+                    if (hasKitchenette) d += 0.75; // 45 mins
+                    if (hasReception) d += 0.5; // 30 mins
+                    if (officeAddOns.includes('it_sanitization')) d += (officeDesks * 0.1); 
+                    if (officeAddOns.includes('glass_partitions')) d += 0.5;
+                    return Math.max(2, parseFloat(d.toFixed(1)));
+                }
+
                 let d = 2; // Min 2h for 1 room / studio (as requested: studio, 1 room = 2h min)
                 if (rooms > 1) d += (rooms - 1) * 1; // +1h per extra room (adjusting for better estimation)
 
@@ -490,6 +512,13 @@ export default function ServiceSetupPage() {
         mountTypes,
         wallMaterial,
         mountingAddOns,
+        // Office Cleaning deps
+        officeDesks,
+        officeMeetingRooms,
+        officeBathrooms,
+        hasKitchenette,
+        hasReception,
+        officeAddOns,
         provider.coords
     ]);
 
@@ -604,6 +633,13 @@ export default function ServiceSetupPage() {
                 photoUrls: photos,
                 note,
                 assemblyItems,
+                // Office specific
+                officeDesks,
+                officeMeetingRooms,
+                officeBathrooms,
+                hasKitchenette,
+                hasReception,
+                officeAddOns,
                 // Delivery fields
                 pickupAddress: pickupLocation.address,
                 dropoffAddress: dropoffLocation.address,
@@ -924,10 +960,14 @@ export default function ServiceSetupPage() {
 
                                         {/* About */}
                                         <motion.div variants={staggerItem} className="mb-10">
-                                            <h4 className="text-[18px] font-black text-[#111827] mb-2">About Me</h4>
-                                            <div className="text-[15px] text-[#000000] leading-relaxed font-medium">
-                                                {provider.bio && provider.bio.trim() ? `${provider.bio}` : (
-                                                    <span className="text-neutral-400 italic">No bio provided by the Bricoler yet.</span>
+                                            <h4 className="text-[18px] font-black text-[#111827]">{t({ en: 'About Me', fr: 'À propos de moi' })}</h4>
+                                            <div className="text-[15px] text-[#000000] leading-relaxed font-medium mt-2">
+                                                {provider.bio_translations?.[language as keyof typeof provider.bio_translations] ? (
+                                                    provider.bio_translations[language as keyof typeof provider.bio_translations]
+                                                ) : provider.bio && provider.bio.trim() ? (
+                                                    `${provider.bio}`
+                                                ) : (
+                                                    <span className="text-neutral-400 italic">{t({ en: 'No bio provided by the Bricoler yet.', fr: 'Aucune biographie fournie par le Bricoleur.' })}</span>
                                                 )}
                                             </div>
                                         </motion.div>
@@ -1566,26 +1606,28 @@ export default function ServiceSetupPage() {
                                         )}
 
                                         {/* Property Type */}
-                                        <div className="space-y-6">
-                                            <h3 className="text-[25px] text-[#111827] font-bold">What's your property type?</h3>
-                                            <div className="flex flex-wrap gap-2">
-                                                {['Studio', 'Apartment', 'Villa', 'Guesthouse', 'Riad', 'Hotel'].map(type => (
-                                                    <button
-                                                        key={type}
-                                                        onClick={() => setPropertyType(type)}
-                                                        className={`px-8 py-3.5 rounded-full border-2 font-bold text-[13px] transition-all ${propertyType === type ? 'border-[#01A083] bg-white text-[#01A083]' : 'border-neutral-100 text-black'}`}
-                                                    >
-                                                        {type}
-                                                    </button>
-                                                ))}
+                                        {order.subServiceId !== 'office_cleaning' && (
+                                            <div className="space-y-6">
+                                                <h3 className="text-[25px] text-[#111827] font-bold">What kind of place is this?</h3>
+                                                <div className="flex flex-wrap gap-2">
+                                                    {['Studio', 'Apartment', 'Villa', 'Guesthouse', 'Riad', 'Hotel'].map(type => (
+                                                        <button
+                                                            key={type}
+                                                            onClick={() => setPropertyType(type)}
+                                                            className={`px-8 py-3.5 rounded-full border-2 font-bold text-[13px] transition-all ${propertyType === type ? 'border-[#01A083] bg-white text-[#01A083]' : 'border-neutral-100 text-black'}`}
+                                                        >
+                                                            {type}
+                                                        </button>
+                                                    ))}
+                                                </div>
                                             </div>
-                                        </div>
+                                        )}
 
                                         {/* Room Selector (Eggy Style Redesign) */}
-                                        {((order.serviceType === 'cleaning' || order.serviceType === 'hospitality') && !['car_washing', 'car_detailing', 'dish_cleaning'].includes(order.subServiceId || '')) && (
+                                        {((order.serviceType === 'cleaning' || order.serviceType === 'hospitality') && !['car_washing', 'car_detailing', 'dish_cleaning', 'office_cleaning'].includes(order.subServiceId || '')) && (
                                             <div className="space-y-6">
                                                 <div className="flex items-center justify-between px-1">
-                                                    <label className="text-[25px] font-bold text-[#111827] setup-heading">Number of Rooms</label>
+                                                    <label className="text-[25px] font-bold text-[#111827] setup-heading">How many rooms?</label>
                                                 </div>
                                                 <div className="flex gap-4 overflow-x-auto pb-6 pt-2 no-scrollbar -mx-6 px-6 snap-x snap-mandatory">
                                                     {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((num) => (
@@ -1606,6 +1648,129 @@ export default function ServiceSetupPage() {
                                                             {num}
                                                         </motion.button>
                                                     ))}
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* Office Cleaning Specialized Section */}
+                                        {order.subServiceId === 'office_cleaning' && (
+                                            <div className="space-y-10">
+                                                {/* Scale: Desks */}
+                                                <div className="space-y-6">
+                                                    <div className="flex flex-col px-1">
+                                                        <label className="text-[25px] font-bold text-[#111827] setup-heading">How many desks are there?</label>
+                                                        <p className="text-[13px] font-bold text-black/40 mt-1 italic">This helps us know how big the office is.</p>
+                                                    </div>
+                                                    <div className="flex gap-4 overflow-x-auto pb-6 pt-2 no-scrollbar -mx-6 px-6 snap-x snap-mandatory">
+                                                        {[1, 2, 3, 4, 5, 10, 15, 20, 30, 40, 50, 60, 70, 80, 100].map((num) => (
+                                                            <motion.button
+                                                                key={`desk-${num}`}
+                                                                whileTap={{ scale: 0.9 }}
+                                                                onClick={() => setOfficeDesks(num)}
+                                                                className={`flex-shrink-0 w-16 h-16 flex items-center justify-center font-medium text-[22px] transition-all snap-center relative ${officeDesks === num ? 'bg-[#01A083] text-white scale-110 z-10 rounded-[20px]' : 'bg-[#F9FAFB] text-neutral-400 border border-neutral-100 rounded-full'}`}
+                                                            >
+                                                                {num}
+                                                            </motion.button>
+                                                        ))}
+                                                    </div>
+                                                </div>
+
+                                                {/* Rooms */}
+                                                <div className="space-y-6">
+                                                    <label className="text-[25px] font-bold text-[#111827] setup-heading px-1">How many meeting or private rooms?</label>
+                                                    <div className="flex gap-4 overflow-x-auto pb-4 pt-2 no-scrollbar -mx-6 px-6">
+                                                        {[0, 1, 2, 3, 4, 5, 8, 10].map((num) => (
+                                                            <motion.button
+                                                                key={`mr-${num}`}
+                                                                whileTap={{ scale: 0.9 }}
+                                                                onClick={() => setOfficeMeetingRooms(num)}
+                                                                className={`flex-shrink-0 px-6 py-3 flex items-center justify-center font-bold text-[15px] transition-all rounded-full ${officeMeetingRooms === num ? 'bg-[#111827] text-white' : 'bg-white border border-neutral-200 text-neutral-600'}`}
+                                                            >
+                                                                {num} {num === 1 ? 'room' : 'rooms'}
+                                                            </motion.button>
+                                                        ))}
+                                                    </div>
+                                                </div>
+
+                                                {/* Restrooms */}
+                                                <div className="space-y-6">
+                                                    <label className="text-[25px] font-bold text-[#111827] setup-heading px-1">How many bathrooms?</label>
+                                                    <div className="flex gap-4 overflow-x-auto pb-4 pt-2 no-scrollbar -mx-6 px-6">
+                                                        {[0, 1, 2, 3, 4, 5].map((num) => (
+                                                            <motion.button
+                                                                key={`wr-${num}`}
+                                                                whileTap={{ scale: 0.9 }}
+                                                                onClick={() => setOfficeBathrooms(num)}
+                                                                className={`flex-shrink-0 px-6 py-3 flex items-center justify-center font-bold text-[15px] transition-all rounded-full ${officeBathrooms === num ? 'bg-[#111827] text-white' : 'bg-white border border-neutral-200 text-neutral-600'}`}
+                                                            >
+                                                                {num} {num === 1 ? 'restroom' : 'restrooms'}
+                                                            </motion.button>
+                                                        ))}
+                                                    </div>
+                                                </div>
+
+                                                {/* High Traffic Areas */}
+                                                <div className="space-y-4">
+                                                    <label className="text-[20px] font-bold text-[#111827] setup-heading px-1">Busy Areas</label>
+                                                    <div className="grid grid-cols-2 gap-3">
+                                                        <button
+                                                            onClick={() => setHasKitchenette(!hasKitchenette)}
+                                                            className={`p-5 rounded-[12px] border-2 text-left transition-all ${hasKitchenette ? 'border-[#01A083] bg-[#F0FDF9]' : 'border-neutral-100 bg-[#F9FAFB]'}`}
+                                                        >
+                                                            <div className="flex justify-between items-start mb-2">
+                                                                <span className="text-2xl">☕</span>
+                                                                <div className={`w-5 h-5 rounded-full border flex items-center justify-center transition-all ${hasKitchenette ? 'bg-[#01A083] border-[#01A083]' : 'border-neutral-300 bg-white'}`}>
+                                                                    {hasKitchenette && <Check size={12} className="text-white" strokeWidth={4} />}
+                                                                </div>
+                                                            </div>
+                                                            <span className="text-[14px] font-bold text-[#111827]">Kitchen or Breakroom</span>
+                                                        </button>
+                                                        
+                                                        <button
+                                                            onClick={() => setHasReception(!hasReception)}
+                                                            className={`p-5 rounded-[12px] border-2 text-left transition-all ${hasReception ? 'border-[#01A083] bg-[#F0FDF9]' : 'border-neutral-100 bg-[#F9FAFB]'}`}
+                                                        >
+                                                            <div className="flex justify-between items-start mb-2">
+                                                                <span className="text-2xl">🏢</span>
+                                                                <div className={`w-5 h-5 rounded-full border flex items-center justify-center transition-all ${hasReception ? 'bg-[#01A083] border-[#01A083]' : 'border-neutral-300 bg-white'}`}>
+                                                                    {hasReception && <Check size={12} className="text-white" strokeWidth={4} />}
+                                                                </div>
+                                                            </div>
+                                                            <span className="text-[14px] font-bold text-[#111827]">Reception or Waiting Area</span>
+                                                        </button>
+                                                    </div>
+                                                </div>
+
+                                                {/* Commercial Add-ons */}
+                                                <div className="space-y-6">
+                                                    <h3 className="text-[20px] font-bold text-[#111827] setup-heading px-1">Extra Cleaning (Optional)</h3>
+                                                    <div className="grid gap-3">
+                                                        {[
+                                                            { id: 'it_sanitization', label: 'Clean Keyboards & Monitors', desc: 'Wipe screens to kill germs', icon: '💻' },
+                                                            { id: 'glass_partitions', label: 'Clean Glass Walls', desc: 'Wash inside glass doors and walls', icon: '🪟' },
+                                                            { id: 'post_event', label: 'Big Party Cleanup', desc: 'Deep cleaning after an office party', icon: '🎉' }
+                                                        ].map((add) => (
+                                                            <button
+                                                                key={add.id}
+                                                                onClick={() => {
+                                                                    if (officeAddOns.includes(add.id)) setOfficeAddOns(prev => prev.filter(a => a !== add.id));
+                                                                    else setOfficeAddOns(prev => [...prev, add.id]);
+                                                                }}
+                                                                className={`p-4 rounded-[12px] border-2 text-left transition-all flex items-center justify-between ${officeAddOns.includes(add.id) ? 'border-[#01A083] bg-[#F0FDF9]' : 'border-neutral-100 bg-white'}`}
+                                                            >
+                                                                <div className="flex gap-3">
+                                                                    <div className="text-2xl">{add.icon}</div>
+                                                                    <div>
+                                                                        <span className="text-[15px] font-bold text-[#111827] block">{add.label}</span>
+                                                                        <span className="text-[12px] font-medium text-black/50 block mt-0.5">{add.desc}</span>
+                                                                    </div>
+                                                                </div>
+                                                                <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all flex-shrink-0 ${officeAddOns.includes(add.id) ? 'bg-[#01A083] border-[#01A083]' : 'border-neutral-200 bg-neutral-50'}`}>
+                                                                    {officeAddOns.includes(add.id) && <Check size={14} className="text-white" strokeWidth={4} />}
+                                                                </div>
+                                                            </button>
+                                                        ))}
+                                                    </div>
                                                 </div>
                                             </div>
                                         )}

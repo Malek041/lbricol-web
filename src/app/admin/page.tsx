@@ -13,12 +13,13 @@ import AdminBricolersView from '@/features/admin/components/AdminBricolersView';
 import AdminBricolerCreator from '@/features/admin/components/AdminBricolerCreator';
 import AdminNotificationsView from '@/features/admin/components/AdminNotificationsView';
 import AdminReceivablesView from '@/features/admin/components/AdminReceivablesView';
+import AdminReviewsView from '@/features/admin/components/AdminReviewsView';
 import MessagesView from '@/features/messages/components/MessagesView';
 import MobileBottomNav from '@/components/layout/MobileBottomNav';
 import { useIsMobileViewport } from '@/lib/mobileOnly';
 import { Shield, Bell, X, Home, LayoutDashboard, Users, ClipboardList } from 'lucide-react';
 
-type AdminTab = 'performance' | 'services' | 'calendar' | 'messages' | 'profile';
+type AdminTab = 'performance' | 'services' | 'calendar' | 'messages' | 'reviews' | 'profile';
 
 export default function AdminPage() {
     const router = useRouter();
@@ -115,6 +116,7 @@ export default function AdminPage() {
                             { id: 'performance', label: t({ en: 'Dashboard', fr: 'Tableau de bord', ar: 'لوحة التحكم' }) },
                             { id: 'services', label: t({ en: 'Bricolers', fr: 'Bricoleurs', ar: 'المحترفون' }) },
                             { id: 'calendar', label: t({ en: 'Orders', fr: 'Commandes', ar: 'الطلبات' }) },
+                            { id: 'reviews', label: t({ en: 'Reviews', fr: 'Avis', ar: 'التقييمات' }) },
                             { id: 'messages', label: t({ en: 'Messages', fr: 'Messages', ar: 'الرسائل' }) },
                         ].map(tab => (
                             <button
@@ -133,6 +135,12 @@ export default function AdminPage() {
             <div className={`flex-1 ${isMobile ? 'pt-14 pb-24' : 'pt-24 pb-8'} w-full max-w-2xl mx-auto`}>
                 {activeTab === 'performance' && (
                     <AdminDashboard t={t} />
+                )}
+
+                {activeTab === 'reviews' && (
+                    <div className="px-0">
+                        <AdminReviewsView />
+                    </div>
                 )}
 
                 {activeTab === 'services' && (

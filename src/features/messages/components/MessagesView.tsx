@@ -18,7 +18,7 @@ import {
     Timestamp
 } from 'firebase/firestore';
 import { OrderDetails } from '@/features/orders/components/OrderCard';
-import { getServiceVector } from '@/config/services_config';
+import { getServiceVector, getSubServiceName } from '@/config/services_config';
 import { uploadToCloudinary } from '@/lib/upload';
 import { compressImageFileToDataUrl } from '@/lib/imageCompression';
 import { format, parseISO } from 'date-fns';
@@ -59,7 +59,7 @@ interface MessagesViewProps {
     initialSelectedJobId?: string | null;
     isModal?: boolean;
     onBackToOrders?: () => void;
-    impersonateBricoler?: { id: string; name: string };
+    impersonateBricoler?: { id: string; name: string; avatar?: string };
 }
 
 const MessagesView: React.FC<MessagesViewProps> = ({
@@ -178,7 +178,7 @@ const MessagesView: React.FC<MessagesViewProps> = ({
                         lastMessage: lastMsgData?.text || t({ en: 'Send a message to start', fr: 'Envoyez un message pour commencer' }),
                         lastMessageTime: lastMsgData?.timestamp || null,
                         jobTitle: order.service,
-                        jobSubService: order.subServiceDisplayName,
+                        jobSubService: order.subServiceDisplayName || getSubServiceName(order.serviceId || order.service, order.subService || '') || order.service,
                         jobDates: order.date,
                         jobTime: order.time,
                         jobLocation: order.city || order.area || order.location,
@@ -282,6 +282,7 @@ const MessagesView: React.FC<MessagesViewProps> = ({
                     jobId: selectedJobId,
                     serviceName: conversation.jobTitle || 'Service',
                     senderName: senderName,
+                    senderAvatar: impersonateBricoler ? (impersonateBricoler.avatar || null) : (currentUser.photoURL || null),
                     text: notificationText.length > 50 ? `${notificationText.substring(0, 50)}...` : notificationText,
                     read: false,
                     timestamp: serverTimestamp()
@@ -408,10 +409,10 @@ const MessagesView: React.FC<MessagesViewProps> = ({
         const conversation = conversations.find((c) => c.jobId === selectedJobId);
 
         return (
-            <div style={{ 
-                display: 'flex', 
-                flexDirection: 'column', 
-                height: '100%', 
+            <div style={{
+                display: 'flex',
+                flexDirection: 'column',
+                height: '100%',
                 backgroundColor: '#FFFFFF',
                 position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 9999
             }}>
@@ -459,20 +460,39 @@ const MessagesView: React.FC<MessagesViewProps> = ({
                         <div style={{
                             width: '52px',
                             height: '52px',
-                            background: 'linear-gradient(135deg, #01A083 0%, #008f75 100%)',
+                            background: 'white',
                             borderRadius: '16px',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
-                            fontSize: '28px',
-                            boxShadow: '0 8px 16px rgba(1, 160, 131, 0.2)',
-                            color: '#FFF'
+                            color: '#FFF',
+                            overflow: 'hidden',
+                            padding: '10px'
                         }}>
-                            {getServiceVector(conversation?.jobTitle || '')}
+                            <img
+                                src={getServiceVector(conversation?.jobTitle || '')}
+                                style={{
+                                    width: '100%',
+                                    height: '100%',
+                                    objectFit: 'contain',
+                                    filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.1))'
+                                }}
+                                alt={conversation?.jobTitle}
+                            />
                         </div>
                         <div style={{ flex: 1, minWidth: 0 }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                                <h3 style={{ fontSize: '17px', fontWeight: 950, margin: 0, color: '#000', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontFamily: 'Uber Move, var(--font-sans)' }}>
+                                <h3 style={{
+                                    fontSize: '18px',
+                                    fontWeight: 1000,
+                                    margin: 0,
+                                    color: '#000',
+                                    whiteSpace: 'nowrap',
+                                    overflow: 'hidden',
+                                    textOverflow: 'ellipsis',
+                                    fontFamily: 'Uber Move, var(--font-sans)',
+                                    textTransform: 'capitalize'
+                                }}>
                                     {conversation?.jobSubService || conversation?.jobTitle}
                                 </h3>
                                 {(() => {
@@ -532,66 +552,66 @@ const MessagesView: React.FC<MessagesViewProps> = ({
                                 }}
                                 style={{
                                     flex: 1,
-                                    height: '42px',
-                                    borderRadius: '12px',
-                                    backgroundColor: '#000',
+                                    height: '44px',
+                                    borderRadius: '100px',
+                                    backgroundColor: '#01A083',
                                     color: '#FFF',
                                     display: 'flex',
                                     alignItems: 'center',
                                     justifyContent: 'center',
                                     gap: '8px',
-                                    fontSize: '13px',
+                                    fontSize: '14px',
                                     fontWeight: 900,
                                     border: 'none',
-                                    cursor: 'pointer'
+                                    cursor: 'pointer',
                                 }}
                             >
-                                <MapPin size={16} strokeWidth={2.5} />
+                                <MapPin size={18} strokeWidth={2.5} />
                                 {t({ en: 'Navigate', fr: 'Naviguer' })}
                             </motion.button>
-                            
-                            {orders.find(o => o.id === selectedJobId)?.providerStatus !== 'heading' && 
-                             (orders.find(o => o.id === selectedJobId)?.status === 'accepted' || orders.find(o => o.id === selectedJobId)?.status === 'programmed') && (
-                                <motion.button
-                                    whileTap={{ scale: 0.98 }}
-                                    onClick={async () => {
-                                        const order = orders.find(o => o.id === selectedJobId);
-                                        if (!order || !order.id) return;
-                                        
-                                        // Find the provider status update function from parent if passed, 
-                                        // or we can handle it here via direct firebase update if we had the context.
-                                        // For now, let's assume we can trigger a message at least.
-                                        const messageText = t({ en: "On my way! 🚀", fr: "Je suis en chemin ! 🚀" });
-                                        await handleSendMessage({ text: messageText });
-                                        
-                                        // Note: In a real app, we'd call a prop to update the DB status too.
-                                        try {
-                                            const { doc, updateDoc } = await import('firebase/firestore');
-                                            const jobRef = doc(db, 'jobs', order.id);
-                                            await updateDoc(jobRef, { providerStatus: 'heading' });
-                                        } catch (e) { console.error(e); }
-                                    }}
-                                    style={{
-                                        flex: 1.2,
-                                        height: '42px',
-                                        borderRadius: '12px',
-                                        backgroundColor: '#01A083',
-                                        color: '#FFF',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        gap: '8px',
-                                        fontSize: '13px',
-                                        fontWeight: 900,
-                                        border: 'none',
-                                        cursor: 'pointer',
-                                        boxShadow: '0 4px 12px rgba(1, 160, 131, 0.2)'
-                                    }}
-                                >
-                                    <Navigation size={16} strokeWidth={2.5} />
-                                    {t({ en: 'On My Way', fr: 'Je suis en route' })}
-                                </motion.button>
-                            )}
+
+                            {orders.find(o => o.id === selectedJobId)?.providerStatus !== 'heading' &&
+                                (orders.find(o => o.id === selectedJobId)?.status === 'accepted' || orders.find(o => o.id === selectedJobId)?.status === 'programmed') && (
+                                    <motion.button
+                                        whileTap={{ scale: 0.98 }}
+                                        onClick={async () => {
+                                            const order = orders.find(o => o.id === selectedJobId);
+                                            if (!order || !order.id) return;
+
+                                            // Find the provider status update function from parent if passed, 
+                                            // or we can handle it here via direct firebase update if we had the context.
+                                            // For now, let's assume we can trigger a message at least.
+                                            const messageText = t({ en: "On my way! 🚀", fr: "Je suis en chemin ! 🚀" });
+                                            await handleSendMessage({ text: messageText });
+
+                                            // Note: In a real app, we'd call a prop to update the DB status too.
+                                            try {
+                                                const { doc, updateDoc } = await import('firebase/firestore');
+                                                const jobRef = doc(db, 'jobs', order.id);
+                                                await updateDoc(jobRef, { providerStatus: 'heading' });
+                                            } catch (e) { console.error(e); }
+                                        }}
+                                        style={{
+                                            flex: 1.2,
+                                            height: '42px',
+                                            borderRadius: '12px',
+                                            backgroundColor: '#01A083',
+                                            color: '#FFF',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            gap: '8px',
+                                            fontSize: '13px',
+                                            fontWeight: 900,
+                                            border: 'none',
+                                            cursor: 'pointer',
+                                            boxShadow: '0 4px 12px rgba(1, 160, 131, 0.2)'
+                                        }}
+                                    >
+                                        <Navigation size={16} strokeWidth={2.5} />
+                                        {t({ en: 'On My Way', fr: 'Je suis en route' })}
+                                    </motion.button>
+                                )}
                         </div>
                     )}
                 </div>

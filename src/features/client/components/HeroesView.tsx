@@ -9,6 +9,9 @@ import {
     collection,
     doc,
     getDoc,
+    getDocs,
+    query,
+    where,
     serverTimestamp,
     addDoc
 } from 'firebase/firestore';
@@ -175,20 +178,34 @@ export default function HeroesView({ orders }: HeroesViewProps) {
         fetchLiveStats();
     }, [orders]);
 
+    const [heroActiveJobs, setHeroActiveJobs] = useState<any[]>([]);
+
     const handleBookHero = async (hero: HeroData) => {
         setSelectedHero(hero);
         setIsLoadingProfile(true);
         setBookingStep(1); // Open modal with loader
 
         try {
-            const docSnap = await getDoc(doc(db, 'bricolers', hero.id));
+            const [docSnap, jobsSnap] = await Promise.all([
+                getDoc(doc(db, 'bricolers', hero.id)),
+                getDocs(query(
+                    collection(db, 'jobs'),
+                    where('bricolerId', '==', hero.id),
+                    where('status', 'in', ['accepted', 'confirmed', 'programmed', 'in_progress', 'pending'])
+                ))
+            ]);
+
             if (docSnap.exists()) {
                 setHeroProfile(docSnap.data());
             } else {
                 setHeroProfile({ services: hero.services.map(s => ({ serviceId: s })) }); // Fallback
             }
+
+            const activeJobs = jobsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            setHeroActiveJobs(activeJobs);
+
         } catch (e) {
-            console.error("Error fetching hero profile", e);
+            console.error("Error fetching hero profile/jobs", e);
             setHeroProfile({ services: hero.services.map(s => ({ serviceId: s })) }); // Fallback
         } finally {
             setIsLoadingProfile(false);
@@ -254,6 +271,19 @@ export default function HeroesView({ orders }: HeroesViewProps) {
             const city = lastHeroOrder?.city || lastOrder?.city || heroProfile?.city || 'Essaouira';
             const location = lastHeroOrder?.location || lastOrder?.location || city;
 
+            // Calculate expected end time (start time + duration + 30m buffer)
+            let expectedEndTime = null;
+            if (selectedDate && selectedTime) {
+                try {
+                    const [h, m] = selectedTime.split(':').map(Number);
+                    const startDate = new Date(selectedDate);
+                    startDate.setHours(h, m, 0, 0);
+                    expectedEndTime = new Date(startDate.getTime() + (duration * 60 * 60 * 1000) + (30 * 60 * 1000));
+                } catch (e) {
+                    console.error("Error calculating expectedEndTime", e);
+                }
+            }
+
             const orderData = {
                 service: selectedService,
                 subService: selectedSubService || null,
@@ -281,6 +311,7 @@ export default function HeroesView({ orders }: HeroesViewProps) {
                 totalPrice,
                 paymentMethod,
                 bankReceipt: null,
+                expectedEndTime: expectedEndTime || null,
                 createdAt: serverTimestamp()
             };
 
@@ -545,7 +576,6 @@ export default function HeroesView({ orders }: HeroesViewProps) {
                                                                 const [h, m] = hhmm.split(':').map(Number);
                                                                 return h * 60 + m;
                                                             };
-
                                                             const candidateStart = toMinutes(timeStr);
                                                             const hasSlot = daySlots.some((slot: { from: string; to: string }) => {
                                                                 if (!slot?.from || !slot?.to) return false;
@@ -554,8 +584,43 @@ export default function HeroesView({ orders }: HeroesViewProps) {
                                                                 return candidateStart >= fromM && candidateStart < toM;
                                                             });
 
-                                                            // Skip times that are not within any declared slot
-                                                            if (!hasSlot) return null;
+                                                            // 3. Check for collisions with active jobs (including 30m travel buffer)
+                                                            const isSlotBusy = heroActiveJobs.some(job => {
+                                                                if (!job.date || !job.time || job.date !== selectedDate) return false;
+                                                                
+                                                                const toMinutes = (hhmm: string) => {
+                                                                    const [h, m] = hhmm.split(':').map(Number);
+                                                                    return h * 60 + m;
+                                                                };
+
+                                                                const jobStart = toMinutes(job.time);
+                                                                // Use stored expectedEndTime if available, otherwise fallback to duration calculation
+                                                                let jobEnd;
+                                                                if (job.expectedEndTime) {
+                                                                    const endTime = job.expectedEndTime.toDate ? job.expectedEndTime.toDate() : new Date(job.expectedEndTime);
+                                                                    jobEnd = endTime.getHours() * 60 + endTime.getMinutes();
+                                                                } else {
+                                                                    const dur = (job.duration || 2) * 60;
+                                                                    jobEnd = jobStart + dur + 30; // 30m buffer included in duration fallback
+                                                                }
+
+                                                                const buffer = 30;
+                                                                // A slot is busy if the candidate start is between [jobStart - buffer, jobEnd]
+                                                                // Or if the job starts within our candidate window [candidateStart, candidateStart + duration + buffer]
+                                                                // For simplicity, we check if candidateStart is within the job's blocked window
+                                                                const currentTaskDuration = TASK_SIZES.find(s => s.id === taskSize)?.duration || 1;
+                                                                const candidateEnd = candidateStart + (currentTaskDuration * 60);
+
+                                                                const jobBlockedStart = jobStart - buffer;
+                                                                const jobBlockedEnd = jobEnd; // expectedEndTime already includes the 30m buffer from creation logic
+
+                                                                return (candidateStart >= jobBlockedStart && candidateStart < jobBlockedEnd) ||
+                                                                       (candidateEnd > jobBlockedStart && candidateEnd <= jobBlockedEnd) ||
+                                                                       (candidateStart <= jobBlockedStart && candidateEnd >= jobBlockedEnd);
+                                                            });
+
+                                                            // Skip times that are not within any declared slot or are busy
+                                                            if (!hasSlot || isSlotBusy) return null;
 
                                                             // Check if slot is in past for today
                                                             if (selectedDate === new Date().toISOString().split('T')[0]) {

@@ -338,6 +338,7 @@ function Step2Content() {
     setOrderField('providerJobsCount', provider.taskCount || 0);
     setOrderField('providerRank', ((provider.taskCount || 0) < 10 || provider.isNew) ? 'New' : (provider.badge || 'Classic'));
     setOrderField('providerBio', provider.bio || provider.aboutMe || '');
+    setOrderField('providerBioTranslations', provider.bio_translations || {});
     setOrderField('providerExperience', provider.yearsOfExperience || '1 Year');
     setOrderField('providerCoords', provider.base_lat ? { lat: provider.base_lat, lng: provider.base_lng } : null);
 

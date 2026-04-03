@@ -33,6 +33,7 @@ import SplashScreen from '@/components/layout/SplashScreen';
 import { useIsMobileViewport } from '@/lib/mobileOnly';
 import { isImageDataUrl, compressImageFileToDataUrl, dataUrlToBlob } from '@/lib/imageCompression';
 import { CAR_BRANDS } from '@/config/cars_config';
+import { translateBio } from '@/lib/translateBio';
 import { SERVICES_CATALOGUE } from '@/config/services_catalogue';
 import LocationPicker from '@/components/location-picker/LocationPicker';
 
@@ -683,6 +684,11 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                 return newObj;
             };
 
+            // Translate bio before building bricolerData so it can be included atomically
+            setSubmittingStatus("Translating bio...");
+            const bioText = mergedServices.find((s: any) => s.pitch)?.pitch || (mergedServices[0] as any)?.pitch || "";
+            const bioTranslations = bioText ? await translateBio(bioText) : {};
+
             const bricolerData = cleanObj({
                 uid: user.uid,
                 name: (fullName || user.displayName || "Bricoler").trim(),
@@ -709,6 +715,7 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                 portfolio: allPortfolioUrls,
                 images: allPortfolioUrls,
                 bio: mergedServices.find((s: any) => s.pitch)?.pitch || (mergedServices[0] as any)?.pitch || "",
+                bio_translations: bioTranslations || {},
                 experience: mergedServices.find((s: any) => s.experience)?.experience || (mergedServices[0] as any)?.experience || "",
                 city: selectedCity || "",
                 workAreas: selectedAreas || [],

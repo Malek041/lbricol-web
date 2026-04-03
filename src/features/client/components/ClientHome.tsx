@@ -473,7 +473,7 @@ const ClientHome: React.FC<ClientHomeProps> = ({
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 1.0, duration: 0.6, type: "spring", stiffness: 180 }}
                         onClick={onChangeLocation}
-                        className="flex items-center gap-1 bg-white px-3 py-2.5 rounded-[20px_35px_22px_45px] border-2 border-black/5 active:scale-95 transition-transform"
+                        className="flex items-center gap-1 bg-white px-3 py-2.5 rounded-full border-2 border-black/5 active:scale-95 transition-transform"
                     >
                         <div className="w-5 h-5 rounded-full flex items-center justify-center">
                             <Building size={25} className="text-[#000000]" />
@@ -505,7 +505,7 @@ const ClientHome: React.FC<ClientHomeProps> = ({
                 <div className="px-6 pb-1 pt-6 w-full max-w-[400px] h-[30px] mx-auto">
                     <button
                         onClick={() => setIsSearchOpen(true)}
-                        className="w-full flex items-center gap-2 bg-neutral-50 rounded-full px-5 py-3.5 border-2 border-black/5 active:scale-[0.98] transition-all"
+                        className="w-full flex items-center gap-2 bg-neutral-50 rounded-full px-5 py-3.5 active:scale-[0.98] transition-all"
                     >
                         <Search size={18} className=" text-neutral-400 flex-shrink-0" strokeWidth={2.5} />
                         <span className="text-[15.5px] font-medium text-neutral-400">

@@ -21,6 +21,7 @@ import PromoteYourselfView from '@/features/provider/components/PromoteYourselfV
 import PromocodesView from '@/features/client/components/PromocodesView';
 import { isToday, isThisWeek, parseISO, startOfDay, addDays, format } from 'date-fns';
 import { getAllServices, getServiceById, getServiceVector, getSubServiceName } from '@/config/services_config';
+import { FloatingMessengerBubble } from '@/components/shared/FloatingMessengerBubble';
 import { useIsMobileViewport } from '@/lib/mobileOnly';
 import {
     Menu,
@@ -209,6 +210,7 @@ export default function ProviderPage() {
     const [providerDetails, setProviderDetails] = useState<any>(null);
     const [activeCounterOffer, setActiveCounterOffer] = useState<{ jobId: string, bricolerId: string, oldPrice: number } | null>(null);
     const [counterInputPrice, setCounterInputPrice] = useState("");
+    const [activeBubble, setActiveBubble] = useState<{ id: string, avatar?: string, count: number, jobId: string } | null>(null);
     const [selectedChat, setSelectedChat] = useState<OrderDetails | null>(null);
     const [chatMessage, setChatMessage] = useState('');
     const [showCashOutModal, setShowCashOutModal] = useState(false);
@@ -233,7 +235,7 @@ export default function ProviderPage() {
     const [isClientRatedLocally, setIsClientRatedLocally] = useState<string[]>([]);
     const [showMonthPicker, setShowMonthPicker] = useState(false);
     const [viewingJobDetails, setViewingJobDetails] = useState<MobileJobsViewItem | null>(null);
-    const [performanceTab, setPerformanceTab] = useState<'activity' | 'insights' | 'availability'>('activity');
+    const [performanceTab, setPerformanceTab] = useState<'activity' | 'performance' | 'availability'>('performance');
     const [performanceDetail, setPerformanceDetail] = useState<'none' | 'financial' | 'operational' | 'reputation' | 'marketing' | 'growth' | 'tips-profile' | 'tips-pricing' | 'tips-stars' | 'tips-visibility' | 'availability'>('none');
     const [tempSelectedServices, setTempSelectedServices] = useState<string[]>([]);
     const [dailySlots, setDailySlots] = useState<{ from: string, to: string }[]>([]);
@@ -647,13 +649,24 @@ export default function ProviderPage() {
                             title = t({ en: "New Counter Offer 💰", fr: "Nouvelle Contre-offre 💰", ar: "عرض مقابل جديد 💰" });
                             description = t({ en: `Client sent a counter offer of ${noti.price} MAD for ${noti.serviceName || 'a job'}.`, fr: `Le client a envoyé une contre-offre de ${noti.price} MAD pour ${noti.serviceName || 'une mission'}.`, ar: `أرسل العميل عرضاً مقابلاً بقيمة ${noti.price} درهم لـ ${noti.serviceName || 'مهمة'}.` });
                             variant = 'info';
+                        } else if (noti.type === 'new_message') {
+                            setActiveBubble({
+                                id: change.doc.id,
+                                avatar: noti.senderAvatar,
+                                count: 1, 
+                                jobId: noti.jobId
+                            });
+                            // Skip toast for messages as bubble is shown
+                            title = "";
                         }
 
-                        showToast({
-                            variant,
-                            title,
-                            description
-                        });
+                        if (title !== "") {
+                            showToast({
+                                variant,
+                                title,
+                                description
+                            });
+                        }
 
                         // Mark as read after a slight delay to ensure the animation triggers
                         setTimeout(async () => {
@@ -668,8 +681,8 @@ export default function ProviderPage() {
             });
         }, (err) => {
             console.error("❌ Notification Listener Error:", err);
-            if (err.code === 'permission-denied') {
-                console.warn("Please ensure firestore.rules are deployed with 'bricoler_notifications' match block.");
+            if (err.code !== 'permission-denied') {
+                console.error("Notif listener error:", err);
             }
         });
 
@@ -1158,6 +1171,22 @@ export default function ProviderPage() {
 
 
     // 3. Logic Handlers
+    // --- Sound Effects ---
+    const playNewJobSound = () => {
+        try {
+            const audio = new Audio('https://assets.mixkit.co/sfx/preview/mixkit-software-interface-start-2574.mp3');
+            audio.volume = 0.5;
+            audio.play().catch(e => console.log('Audio playback failed:', e));
+        } catch (e) {
+            console.log('Audio error:', e);
+        }
+    };
+
+    useEffect(() => {
+        if (showNewJobPopup) {
+            playNewJobSound();
+        }
+    }, [showNewJobPopup]);
     const handleUpdateJob = async (id: string, updates: any) => {
         try {
             const jobRef = doc(db, 'jobs', id);
@@ -2040,9 +2069,29 @@ const DetailItem = ({ icon: Icon, label, value, subValue, highlight }: {
                 job={popupData}
                 onClose={() => setViewingJobDetails(null)}
                 mode="provider"
+                onAccept={(jobId) => {
+                    setViewingJobDetails(null);
+                    if (job.rawJob) handleAcceptJob(job.rawJob);
+                }}
                 onChat={(jobId, bricolerId, bricolerName) => {
                     setViewingJobDetails(null);
-                    setSelectedChat(job.rawAccepted || null);
+                    if (job.rawAccepted) {
+                        setSelectedChat(job.rawAccepted);
+                        setActiveNav('messages');
+                    } else if (job.rawJob) {
+                        // Construct minimal OrderDetails for chat if not yet accepted
+                        setSelectedChat({
+                            id: jobId,
+                            service: job.service,
+                            serviceId: job.rawJob.craft || job.rawJob.serviceId,
+                            clientId: job.rawJob.clientId,
+                            clientName: job.clientName,
+                            clientAvatar: job.clientAvatar,
+                            jobTitle: job.service,
+                            status: job.rawJob.status
+                        } as any);
+                        setActiveNav('messages');
+                    }
                 }}
             />
         );
@@ -2055,53 +2104,53 @@ const DetailItem = ({ icon: Icon, label, value, subValue, highlight }: {
             </AnimatePresence>
             {renderJobDetailsModal()}
             <AnimatePresence key="main-app-presence">
-                {isMobileLayout && (activeNav === 'jobs' || activeNav === 'performance') && (
-                    <header key="bricoler-mobile-header" className="pt-10 pb-3 px-6 flex flex-col flex-none sticky top-0 z-[100] transition-colors duration-300 bg-white border-b border-neutral-100">
-                        {(activeNav as string) === 'jobs' && (
-                            <div className="flex items-center justify-between mb-4">
-                                <h2 className="text-black text-[22px] font-black tracking-tight" style={{ fontFamily: 'Uber Move, var(--font-sans)' }}>
-                                    {t({ en: 'Market', fr: 'Missions' })}
-                                </h2>
+            {isMobileLayout && (activeNav === 'jobs' || (activeNav === 'performance' && performanceDetail === 'none')) && (
+                <header key="bricoler-mobile-header" className="pt-10 pb-3 px-6 flex flex-col flex-none sticky top-0 z-[100] transition-colors duration-300 bg-white border-b border-neutral-100">
+                    {(activeNav as string) === 'jobs' && (
+                        <div className="flex items-center justify-between mb-4">
+                            <h2 className="text-black text-[22px] font-black tracking-tight" style={{ fontFamily: 'Uber Move, var(--font-sans)' }}>
+                                {t({ en: 'Market', fr: 'Missions' })}
+                            </h2>
+                            <button
+                                onClick={() => setShowNotificationsPage(true)}
+                                className="w-10 h-10 flex items-center justify-center text-black relative active:scale-90 transition-transform bg-neutral-50 rounded-full"
+                            >
+                                <Bell size={22} strokeWidth={2.5} />
+                                {mobileNotificationsCount > 0 && (
+                                    <span className="absolute top-[10px] right-[10px] h-2.5 w-2.5 rounded-full bg-[#E51B24] border-2 border-white" />
+                                )}
+                            </button>
+                        </div>
+                    )}
+
+                    {(activeNav as string) === 'performance' && performanceDetail === 'none' && (
+                        <div className="flex items-center gap-6 overflow-x-auto no-scrollbar">
+                            {[
+                                { id: 'activity' as const, label: t({ en: 'Orders', fr: 'Commandes' }) },
+                                { id: 'performance' as const, label: t({ en: 'Performance', fr: 'Performance' }) },
+                                { id: 'availability' as const, label: t({ en: 'Availability', fr: 'Dispo' }) }
+                            ].map((tab) => (
                                 <button
-                                    onClick={() => setShowNotificationsPage(true)}
-                                    className="w-10 h-10 flex items-center justify-center text-black relative active:scale-90 transition-transform bg-neutral-50 rounded-full"
+                                    key={tab.id}
+                                    onClick={() => {
+                                        setPerformanceTab(tab.id as any);
+                                        if ((activeNav as string) !== 'performance') setActiveNav('performance');
+                                    }}
+                                    className={cn(
+                                        "pb-2 text-[15px] transition-all relative shrink-0",
+                                        performanceTab === tab.id ? "font-black text-black" : "font-bold text-neutral-400"
+                                    )}
                                 >
-                                    <Bell size={22} strokeWidth={2.5} />
-                                    {mobileNotificationsCount > 0 && (
-                                        <span className="absolute top-[10px] right-[10px] h-2.5 w-2.5 rounded-full bg-[#E51B24] border-2 border-white" />
+                                    {tab.label}
+                                    {performanceTab === tab.id && (
+                                        <motion.div layoutId="performance-header-tab" className="absolute bottom-0 left-0 right-0 h-[3px] bg-[#01A083] rounded-t-full" />
                                     )}
                                 </button>
-                            </div>
-                        )}
-
-                        {(activeNav as string) === 'performance' && (
-                            <div className="flex items-center gap-6 overflow-x-auto no-scrollbar">
-                                {[
-                                    { id: 'activity' as const, label: t({ en: 'Orders', fr: 'Commandes' }) },
-                                    { id: 'insights' as const, label: t({ en: 'Insights', fr: 'Analyses' }) },
-                                    { id: 'availability' as const, label: t({ en: 'Availability', fr: 'Dispo' }) }
-                                ].map((tab) => (
-                                    <button
-                                        key={tab.id}
-                                        onClick={() => {
-                                            setPerformanceTab(tab.id as any);
-                                            if ((activeNav as string) !== 'performance') setActiveNav('performance');
-                                        }}
-                                        className={cn(
-                                            "pb-2 text-[15px] transition-all relative shrink-0",
-                                            performanceTab === tab.id ? "font-black text-black" : "font-bold text-neutral-400"
-                                        )}
-                                    >
-                                        {tab.label}
-                                        {performanceTab === tab.id && (
-                                            <motion.div layoutId="performance-header-tab" className="absolute bottom-0 left-0 right-0 h-[3px] bg-[#01A083] rounded-t-full" />
-                                        )}
-                                    </button>
-                                ))}
-                            </div>
-                        )}
-                    </header>
-                )}
+                            ))}
+                        </div>
+                    )}
+                </header>
+            )}
 
                 <main key="provider-main" className={cn(
                     "flex-1 min-h-0 overflow-hidden bg-white",
@@ -3868,7 +3917,7 @@ const DetailItem = ({ icon: Icon, label, value, subValue, highlight }: {
                     />
 
                     {
-                        isMobileLayout && !viewingJobDetails && !showLanguagePopup && !showProfileModal && !showAddServiceModal && !showNIDModal && (
+                        isMobileLayout && !selectedChat && !viewingJobDetails && performanceDetail === 'none' && !showLanguagePopup && !showProfileModal && !showAddServiceModal && !showNIDModal && (
                             <div key="mobile-bottom-nav-wrapper">
                                 <MobileBottomNav
                                     activeTab={activeNav}
@@ -4012,6 +4061,23 @@ const DetailItem = ({ icon: Icon, label, value, subValue, highlight }: {
                     </AnimatePresence>
                 </main>
             </AnimatePresence>
+            {/* Floating Messenger Bubble */}
+            {activeBubble && (
+                <FloatingMessengerBubble
+                    avatar={activeBubble.avatar}
+                    count={activeBubble.count}
+                    jobId={activeBubble.jobId}
+                    onOpen={(jobId) => {
+                        const job = acceptedJobs.find(j => j.id === jobId);
+                        if (job) {
+                            setSelectedChat(job);
+                            setActiveNav('messages');
+                        }
+                        setActiveBubble(null);
+                    }}
+                    onDismiss={() => setActiveBubble(null)}
+                />
+            )}
         </div>
     );
 }

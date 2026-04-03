@@ -31,6 +31,7 @@ export interface CityIndexEntry {
     routine?: Record<string, { active: boolean; from: string; to: string }>;
     quickPitch?: string | null;
     bio?: string | null;
+    bio_translations?: { en?: string; fr?: string; ar?: string };
     numReviews?: number;
     jobsDone?: number;
     errandsTransport?: string | null;
@@ -97,6 +98,7 @@ export const writeCityIndex = async (
         routine?: Record<string, { active: boolean; from: string; to: string }>;
         quickPitch?: string | null;
         bio?: string | null;
+        bio_translations?: { en?: string; fr?: string; ar?: string };
         numReviews?: number;
         name?: string | null;
         jobsDone?: number;
@@ -141,6 +143,7 @@ export const writeCityIndex = async (
         routine: data.routine || {},
         quickPitch: data.quickPitch,
         bio: data.bio,
+        bio_translations: data.bio_translations || {},
         numReviews: data.numReviews || 0,
         jobsDone: data.jobsDone || data.completedJobs || 0,
         errandsTransport: data.errandsTransport,

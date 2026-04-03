@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Star, X, Send, MessageSquare } from 'lucide-react';
+import { Star, X, Send, ChevronLeft } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
 import { db, auth } from '@/lib/firebase';
 import { doc, updateDoc, arrayUnion, increment, getDoc } from 'firebase/firestore';
@@ -206,17 +206,17 @@ const RatingPopup: React.FC<RatingPopupProps> = ({
                         animate={{ y: 0 }}
                         exit={{ y: '100%' }}
                         transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-                        className="relative bg-white w-full max-w-[450px] rounded-t-[40px] md:rounded-[40px] overflow-hidden pb-10 md:pb-6"
+                        className="relative bg-white w-full max-w-[450px] rounded-t-[24px] md:rounded-[24px] overflow-hidden pb-8 shadow-2xl"
                     >
                         {/* Drag indicator (mobile feel) */}
-                        <div className="w-12 h-1.5 bg-neutral-200 rounded-full mx-auto mt-4 mb-2 md:hidden" />
+                        <div className="w-10 h-1 bg-neutral-200 rounded-full mx-auto mt-3 mb-1 md:hidden" />
 
                         {/* Close button */}
                         <button
                             onClick={handleClose}
-                            className="absolute top-6 right-6 z-10 w-10 h-10 bg-neutral-100 rounded-full flex items-center justify-center text-neutral-400 hover:text-black transition-colors"
+                            className="absolute top-4 left-4 z-10 w-9 h-9 rounded-full flex items-center justify-center text-[#222222] hover:bg-neutral-100 transition-colors"
                         >
-                            <X size={20} />
+                            <X size={20} strokeWidth={2} />
                         </button>
 
                         <div className="relative overflow-hidden">
@@ -230,48 +230,28 @@ const RatingPopup: React.FC<RatingPopupProps> = ({
                                         animate="center"
                                         exit="exit"
                                         transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-                                        className="px-6 md:px-8 py-4"
+                                        className="px-6 md:px-8 py-6 mt-8"
                                     >
-                                        <div className="mb-6">
-                                            <div className="flex items-center gap-4 mb-4">
-                                                <div className="w-16 h-16 rounded-2xl bg-neutral-50 border border-neutral-100 p-2 flex items-center justify-center">
-                                                    <img src={serviceVector} alt={serviceName} className="w-full h-full object-contain" />
-                                                </div>
-                                                <div className="min-w-0">
-                                                    <p className="text-[11px] font-black text-[#01A083] uppercase tracking-[0.15em] mb-1">
-                                                        {t({ en: 'Mission Completed', fr: 'Mission terminée' })}
-                                                    </p>
-                                                    <h3 className="text-[18px] font-black text-black leading-tight truncate capitalize">
-                                                        {subServiceName || serviceName}
-                                                    </h3>
-                                                    <p className="text-[13px] font-bold text-neutral-400">
-                                                        {[displayDate, displayTime].filter(Boolean).join(' · ')}
-                                                    </p>
-                                                </div>
+                                        <div className="flex flex-col items-center mb-10 mt-2">
+                                            <div className="w-[100px] h-[100px] rounded-full overflow-hidden flex-shrink-0 bg-neutral-100 mb-5 relative shadow-[0_4px_16px_rgba(0,0,0,0.08)]">
+                                                {bricolerAvatar ? (
+                                                    <img src={bricolerAvatar} className="w-full h-full object-cover" alt={bricolerName} />
+                                                ) : (
+                                                    <div className="w-full h-full flex items-center justify-center text-[#222222] font-semibold text-3xl">
+                                                        {bricolerName[0]?.toUpperCase()}
+                                                    </div>
+                                                )}
                                             </div>
-
-                                            <div className="bg-neutral-50 rounded-[28px] p-5 flex items-center gap-4 border border-neutral-100">
-                                                <div className="w-12 h-12 rounded-full overflow-hidden flex-shrink-0 bg-neutral-200">
-                                                    {bricolerAvatar ? (
-                                                        <img src={bricolerAvatar} className="w-full h-full object-cover" alt={bricolerName} />
-                                                    ) : (
-                                                        <div className="w-full h-full flex items-center justify-center text-[#01A083] font-black text-xl">
-                                                            {bricolerName[0]?.toUpperCase()}
-                                                        </div>
-                                                    )}
-                                                </div>
-                                                <div className="flex-1">
-                                                    <p className="text-[10px] font-black text-neutral-400 uppercase tracking-widest mb-0.5">{t({ en: 'Your Pro', fr: 'Votre Pro' })}</p>
-                                                    <p className="text-[17px] font-black text-black">{bricolerName}</p>
-                                                </div>
-                                            </div>
+                                            <h3 className="text-[28px] font-bold text-[#222222] leading-tight text-center tracking-tight">
+                                                {t({ en: `Rate ${bricolerName.split(' ')[0]}`, fr: `Notez ${bricolerName.split(' ')[0]}` })}
+                                            </h3>
+                                            <p className="text-[15px] text-neutral-500 mt-1 font-medium">
+                                                {subServiceName || serviceName} · {[displayDate].filter(Boolean).join(', ')}
+                                            </p>
                                         </div>
 
-                                        <div className="text-center space-y-4 mb-8">
-                                            <h2 className="text-[24px] font-black text-black leading-tight">
-                                                {t({ en: 'Rate your experience', fr: 'Notez votre expérience' })}
-                                            </h2>
-                                            <div className="flex justify-center gap-2">
+                                        <div className="text-center space-y-4 mb-6">
+                                            <div className="flex justify-center gap-3">
                                                 {[1, 2, 3, 4, 5].map((star) => (
                                                     <motion.button
                                                         key={star}
@@ -287,8 +267,8 @@ const RatingPopup: React.FC<RatingPopupProps> = ({
                                                             className={cn(
                                                                 'transition-all duration-200',
                                                                 (hover || rating) >= star
-                                                                    ? 'text-[#FFC244] fill-[#FFC244] drop-shadow-[0_0_8px_rgba(255,194,68,0.3)]'
-                                                                    : 'text-neutral-200 fill-neutral-100'
+                                                                    ? 'text-[#222222] fill-[#222222]'
+                                                                    : 'text-neutral-300 fill-transparent stroke-[1.5]'
                                                             )}
                                                         />
                                                     </motion.button>
@@ -305,57 +285,51 @@ const RatingPopup: React.FC<RatingPopupProps> = ({
                                         animate="center"
                                         exit="exit"
                                         transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-                                        className="px-6 md:px-8 py-4"
+                                        className="px-6 md:px-8 py-6 mt-6"
                                     >
-                                        <div className="flex items-center gap-4 mb-8">
+                                        <div className="flex items-start gap-3 mb-8">
                                             <button
                                                 onClick={() => setStepWithDirection(1)}
-                                                className="w-10 h-10 rounded-full flex items-center justify-center bg-neutral-100 text-black hover:bg-neutral-200 transition-colors"
+                                                className="w-8 h-8 rounded-full flex items-center justify-center text-[#222222] hover:bg-neutral-100 transition-colors mt-0.5"
                                             >
-                                                <motion.div animate={{ rotate: 0 }} whileHover={{ x: -2 }}>
-                                                    <Send className="rotate-180" size={18} />
+                                                <motion.div animate={{ rotate: 0 }}>
+                                                    <ChevronLeft size={24} strokeWidth={2.5} />
                                                 </motion.div>
                                             </button>
                                             <div className="flex-1">
-                                                <p className="text-[13px] font-black text-[#01A083] uppercase tracking-widest">{t({ en: 'Write a review', fr: 'Écrire un avis' })}</p>
-                                                <h2 className="text-[20px] font-black text-black leading-tight">
-                                                    {t({ en: `How was your experience with ${bricolerName}?`, fr: `Comment était votre expérience avec ${bricolerName} ?` })}
+                                                <h2 className="text-[26px] font-bold text-[#222222] leading-tight tracking-tight">
+                                                    {t({ en: `How was the service?`, fr: `Comment était le service ?` })}
                                                 </h2>
+                                                <p className="text-[15px] text-neutral-500 mt-2 font-medium pr-4">
+                                                    {t({ en: `Share more about your experience with ${bricolerName.split(' ')[0]}.`, fr: `Partagez plus sur votre expérience avec ${bricolerName.split(' ')[0]}.` })}
+                                                </p>
                                             </div>
                                         </div>
 
-                                        <div className="relative mb-6">
+                                        <div className="relative mb-8">
                                             <textarea
                                                 autoFocus
                                                 value={review}
                                                 onChange={(e) => setReview(e.target.value)}
-                                                placeholder={t({ en: 'Clean work? Great communication?', fr: 'Travail soigné ? Bonne communication ?' })}
-                                                className="w-full bg-neutral-50 rounded-[32px] p-6 text-[16px] font-semibold border-2 border-transparent focus:border-[#FFC244] focus:bg-white transition-all outline-none resize-none min-h-[160px]"
+                                                placeholder={t({ en: 'Did they arrive on time? Was the space left clean?', fr: 'Sont-ils arrivés à l\'heure ? L\'espace était-il propre ?' })}
+                                                className="w-full bg-white rounded-[12px] p-4 text-[16px] border border-neutral-400 focus:border-[#222222] focus:ring-[1px] focus:ring-[#222222] transition-colors outline-none resize-none min-h-[140px] shadow-sm"
                                             />
-                                            <div className="absolute top-6 right-6 text-neutral-300">
-                                                <MessageSquare size={20} />
-                                            </div>
                                         </div>
 
-                                        <div className="flex flex-col gap-3">
-                                                <button
-                                                    onClick={() => handleSubmit(false)}
-                                                    disabled={isSubmitting}
-                                                    className="w-full h-16 bg-[#01A083] text-white rounded-[24px] font-black text-[18px] flex items-center justify-center gap-3 active:scale-[0.98] transition-all disabled:opacity-50"
-                                                >
-                                                {isSubmitting ? <div className="w-6 h-6 border-3 border-white/30 border-t-white rounded-full animate-spin" /> : (
-                                                    <>
-                                                        <Send size={20} />
-                                                        {t({ en: 'Send Review', fr: 'Envoyer l\'avis' })}
-                                                    </>
-                                                )}
-                                            </button>
+                                        <div className="flex flex-row items-center justify-between gap-4 mt-2">
                                             <button
                                                 onClick={() => handleSubmit(true)}
                                                 disabled={isSubmitting}
-                                                className="w-full h-14 bg-neutral-100 text-neutral-500 rounded-[20px] font-black text-[15px] uppercase tracking-widest active:scale-[0.98] transition-all"
+                                                className="text-[15px] font-semibold text-[#222222] underline decoration-[#222222]/30 decoration-1 underline-offset-4 hover:decoration-[#222222] transition-colors ml-2"
                                             >
-                                                {t({ en: 'Skip & Submit Stars', fr: 'Passer et envoyer les étoiles' })}
+                                                {t({ en: 'Skip', fr: 'Passer' })}
+                                            </button>
+                                            <button
+                                                onClick={() => handleSubmit(false)}
+                                                disabled={isSubmitting || review.length === 0}
+                                                className="h-12 px-8 bg-[#222222] text-white rounded-[8px] font-semibold text-[16px] flex items-center justify-center gap-2 active:scale-[0.98] transition-all disabled:opacity-30"
+                                            >
+                                                {isSubmitting ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : t({ en: 'Submit', fr: 'Envoyer' })}
                                             </button>
                                         </div>
                                     </motion.div>

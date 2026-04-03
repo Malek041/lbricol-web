@@ -84,6 +84,7 @@ export interface OrderDetails {
     coords?: { lat: number; lng: number } | null;
     details?: any;
     providerStatus?: 'heading' | 'arrived' | 'working' | null;
+    expectedEndTime?: any;
 }
 
 interface OrderCardProps {

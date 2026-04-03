@@ -23,6 +23,7 @@ interface OrderState {
   providerJobsCount?: number | null;
   providerRank?: string | null;
   providerBio?: string | null;
+  providerBioTranslations?: { en?: string; fr?: string; ar?: string };
   providerExperience?: string | null;
   providerBadge?: string | null;
   scheduledDate: string | null;
@@ -71,6 +72,7 @@ const defaultOrder: OrderState = {
   providerJobsCount: null,
   providerRank: null,
   providerBio: null,
+  providerBioTranslations: {},
   providerExperience: null,
   providerBadge: null,
   scheduledDate: null,

@@ -21,6 +21,7 @@ import OrderHistoryCarousel from '@/features/orders/components/OrderHistoryCarou
 import LanguagePreferencePopup from '@/features/onboarding/components/LanguagePreferencePopup';
 import MobileBottomNav from '@/components/layout/MobileBottomNav';
 import MessagesView from '@/features/messages/components/MessagesView';
+import { FloatingMessengerBubble } from '@/components/shared/FloatingMessengerBubble';
 import ProfileView from '@/features/provider/components/ProfileView';
 import ComingSoon from '@/components/layout/ComingSoon';
 import ClientHome from '@/features/client/components/ClientHome';
@@ -36,6 +37,7 @@ import RatingPopup from '@/features/orders/components/RatingPopup';
 import ClientNotificationsView from '@/features/client/components/ClientNotificationsView';
 import AdminNotificationsView from '@/features/admin/components/AdminNotificationsView';
 import AdminReceivablesView from '@/features/admin/components/AdminReceivablesView';
+import AdminReviewsView from '@/features/admin/components/AdminReviewsView';
 import LocationPicker from '@/components/location-picker/LocationPicker';
 import { SavedAddress } from '@/components/location-picker/types';
 import {
@@ -281,7 +283,7 @@ const Home = () => {
   const [showLanguagePopup, setShowLanguagePopup] = useState(false);
   const [showMobileOnboarding, setShowMobileOnboarding] = useState(false);
   const [activeTab, setActiveTab] = useState<'domestic' | 'go'>('domestic');
-  const [mobileNavTab, setMobileNavTab] = useState<'home' | 'search' | 'heroes' | 'calendar' | 'messages' | 'profile' | 'share' | 'promocodes' | 'performance' | 'services'>('home');
+  const [mobileNavTab, setMobileNavTab] = useState<'home' | 'search' | 'heroes' | 'calendar' | 'messages' | 'profile' | 'share' | 'promocodes' | 'performance' | 'services' | 'reviews'>('home');
   const [calendarKey, setCalendarKey] = useState(0);
   const [activeSearchSection, setActiveSearchSection] = useState<string | null>(null);
   const [serviceSearchQuery, setServiceSearchQuery] = useState('');
@@ -507,6 +509,7 @@ const Home = () => {
   const [activeCounterOffer, setActiveCounterOffer] = useState<{ jobId: string, bricolerId: string, oldPrice: number } | null>(null);
   const [counterInputPrice, setCounterInputPrice] = useState("");
   const [incomingMessages, setIncomingMessages] = useState<any[]>([]);
+  const [activeBubble, setActiveBubble] = useState<{ id: string, avatar?: string, count: number, jobId: string } | null>(null);
   const [dismissedMessages, setDismissedMessages] = useState<string[]>([]);
 
   // Persist dismissed items
@@ -952,12 +955,22 @@ const Home = () => {
               }
 
               // Show Toast
-              showToast({
-                title: data.title || 'Notification',
-                description: data.body,
-                variant: data.type === 'order_confirmed' ? 'success' : 'info',
-                duration: 5000
-              });
+              // Show Toast OR Floating Bubble
+              if (data.type === 'new_message') {
+                setActiveBubble({
+                  id,
+                  avatar: data.senderAvatar,
+                  count: unreadNotifsCount + 1,
+                  jobId: data.jobId
+                });
+              } else {
+                showToast({
+                  title: data.title || 'Notification',
+                  description: data.body,
+                  variant: data.type === 'order_confirmed' ? 'success' : 'info',
+                  duration: 5000
+                });
+              }
             } else {
               // Even if not fresh, mark as notified so it doesn't toast if it becomes "fresh" later (unlikely but safe)
               notifiedNotificationIds.current.add(id);
@@ -1268,7 +1281,16 @@ const Home = () => {
                       feedback: null,
                       comment: null,
                       frequency: job.frequency,
-                      nextRunDate: advanceDate.toISOString()
+                      nextRunDate: advanceDate.toISOString(),
+                      expectedEndTime: (() => {
+                        try {
+                          const [h, m] = (job.time || "10:00").split(':').map(Number);
+                          const start = new Date(nextDate);
+                          start.setHours(h, m, 0, 0);
+                          const dur = (job as any).estimatedDuration || 1;
+                          return new Date(start.getTime() + (dur * 60 * 60 * 1000) + (30 * 60 * 1000));
+                        } catch (e) { return null; }
+                      })()
                     };
                     delete newJobData.id;
 
@@ -1368,30 +1390,35 @@ const Home = () => {
 
             if (isNaN(scheduledStart.getTime())) continue;
 
-            // Calculate estimated duration
-            let durationHours = 2; // Default
-            const size = (order.taskSize || 'medium').toLowerCase();
-            const service = (order.service || '').toLowerCase();
+            // Use expectedEndTime if available, otherwise calculate fallback
+            let scheduledEnd: Date;
+            if (order.expectedEndTime) {
+                scheduledEnd = order.expectedEndTime.toDate ? order.expectedEndTime.toDate() : new Date(order.expectedEndTime);
+            } else {
+                // Calculate estimated duration fallback
+                let durationHours = 2; // Default
+                const size = (order.taskSize || 'medium').toLowerCase();
+                const serviceStr = (order.service || '').toLowerCase();
 
-            if (size === 'small') durationHours = 1;
-            else if (size === 'medium') durationHours = 2;
-            else if (size === 'large') {
-              if (service.includes('painting')) durationHours = 8;
-              else if (service.includes('moving')) durationHours = 6;
-              else if (service.includes('cleaning')) durationHours = 5;
-              else if (service.includes('gardening')) durationHours = 5;
-              else if (service.includes('electricity') || service.includes('plumbing')) durationHours = 5;
-              else durationHours = 4;
+                if (size === 'small') durationHours = 1;
+                else if (size === 'medium') durationHours = 2;
+                else if (size === 'large') {
+                    if (serviceStr.includes('painting')) durationHours = 8;
+                    else if (serviceStr.includes('moving')) durationHours = 6;
+                    else if (serviceStr.includes('cleaning')) durationHours = 5;
+                    else if (serviceStr.includes('gardening')) durationHours = 5;
+                    else if (serviceStr.includes('electricity') || serviceStr.includes('plumbing')) durationHours = 5;
+                    else durationHours = 4;
+                }
+                scheduledEnd = new Date(scheduledStart.getTime() + durationHours * 60 * 60 * 1000);
             }
-
-            const scheduledEnd = new Date(scheduledStart.getTime() + durationHours * 60 * 60 * 1000);
 
             let newStatus: string | null = null;
             if (now >= scheduledEnd) {
               newStatus = 'done';
             } else if (now >= scheduledStart) {
               // Mark as pending/in_progress once time starts
-              if (['confirmed', 'accepted'].includes(order.status || '')) {
+              if (['confirmed', 'accepted', 'programmed'].includes(order.status || '')) {
                 newStatus = 'pending';
               }
             }
@@ -1916,6 +1943,23 @@ const Home = () => {
           clientId: effectiveUser.uid
         });
 
+        // NEW: Calculate expected end time (start time + estimated duration + 30m buffer)
+        let expectedEndTime = null;
+        try {
+          const [h, m] = (order.time || "10:00").split(':').map(Number);
+          const startDate = new Date(order.date);
+          startDate.setHours(h, m, 0, 0);
+          
+          // Estimate duration based on service
+          const serviceConfig = getServiceById(service as string);
+          const subConfig = (serviceConfig as any)?.subServices?.find((s: any) => s.id === subService);
+          const durationHr = subConfig?.estimatedDurationHr || (serviceConfig as any)?.estimatedDurationHr || 2;
+          
+          expectedEndTime = new Date(startDate.getTime() + (durationHr * 60 * 60 * 1000) + (30 * 60 * 1000));
+        } catch (e) {
+          console.error("Error calculating expectedEndTime in handleProgramOrder", e);
+        }
+
         const jobData = {
           clientId: effectiveUser.uid,
           clientName: effectiveUser.displayName || "Anonymous",
@@ -1925,6 +1969,7 @@ const Home = () => {
           subServiceDisplayName: order.subServiceDisplayName || null, // NEW: Include translated sub-service
           date: order.date,
           time: order.time,
+          expectedEndTime: expectedEndTime || null,
           status: 'new',
           offers: [],
           offeredTo: distribution.providerIds, // NEW: Tag with selected providers
@@ -2563,6 +2608,10 @@ const Home = () => {
 
             {mobileNavTab === 'services' && isAdminMode && (
               <AdminBricolersView t={t} />
+            )}
+
+            {mobileNavTab === 'reviews' && isAdminMode && (
+              <AdminReviewsView />
             )}
 
             {mobileNavTab === 'profile' && (
@@ -3588,7 +3637,7 @@ const Home = () => {
       </main>
 
       {/* Mobile Bottom Navigation - OUTSIDE main to avoid overflow/stacking issues */}
-      {isMobile && !showSplash && !showClientOnboarding && !showMobileOnboarding && !showLanguagePopup && !isViewingOrderDetails && <MobileBottomNav
+      {isMobile && !showSplash && !showClientOnboarding && !showMobileOnboarding && !showLanguagePopup && !isViewingOrderDetails && !showMessagesModal && <MobileBottomNav
         activeTab={mobileNavTab as any}
         onTabChange={(tab: any) => {
           if (tab === 'calendar' && mobileNavTab === 'calendar') {
@@ -3599,6 +3648,20 @@ const Home = () => {
         }}
         variant={isAdminMode ? 'admin' : 'client'}
       />}
+      {/* Floating Messenger Bubble */}
+      {activeBubble && (
+        <FloatingMessengerBubble
+          avatar={activeBubble.avatar}
+          count={unreadNotifsCount || 1}
+          jobId={activeBubble.jobId}
+          onOpen={(jobId) => {
+            setMessagesModalJobId(jobId);
+            setShowMessagesModal(true);
+            setActiveBubble(null);
+          }}
+          onDismiss={() => setActiveBubble(null)}
+        />
+      )}
     </div>
   );
 };

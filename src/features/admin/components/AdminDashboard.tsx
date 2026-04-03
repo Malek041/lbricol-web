@@ -130,7 +130,7 @@ const AdminDashboard = memo(({ t }: AdminDashboardProps) => {
                         title={t({ en: 'Active Bricolers', fr: 'Bricoleurs', ar: 'المحترفون النشطون' })}
                         value={selectedStats.activeBricolers}
                         icon={Users}
-                        growth={5.2}
+                        growth={100}
                         loading={loading}
                     />
                 </div>
