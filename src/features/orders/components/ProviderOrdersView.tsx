@@ -12,7 +12,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { cn } from '@/lib/utils';
 import LiveOrdersMap from './LiveOrdersMap';
 import { getServiceById, getSubServiceName, getServiceVector, getSubService } from '@/config/services_config';
-import { Job } from '@/app/provider/page';
+import { Job } from '@/features/provider/types';
 import ProviderJobCard from './ProviderJobCard';
 import { format, parseISO, isValid } from 'date-fns';
 
