@@ -794,11 +794,12 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
                         animate={{ x: 0 }}
                         exit={{ x: '100%' }}
                         transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-                        className="fixed inset-0 z-[9100] bg-white flex flex-col overflow-hidden"
+                        className="fixed inset-0 z-[9100] bg-white"
+                        style={{ display: 'flex', flexDirection: 'column', height: '100%' }}
                     >
-                        {/* Premium Header */}
-                        <div className="flex-shrink-0 w-full pt-12 px-6 pb-4 bg-white z-10 border-b border-neutral-100">
-                            <div className="flex items-center justify-between">
+                        {/* Fixed Header */}
+                        <div style={{ flexShrink: 0, width: '100%', paddingTop: '48px', paddingBottom: '16px', paddingLeft: '24px', paddingRight: '24px', backgroundColor: '#fff', borderBottom: '1px solid #F0F0F0', zIndex: 10 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                                 <button
                                     onClick={() => setSelectedOrder(null)}
                                     className="w-12 h-12 flex items-center justify-center rounded-2xl bg-[#01A083] active:scale-95 transition-all"
@@ -816,8 +817,8 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
                             </div>
                         </div>
 
-                        {/* Main Scrollable Content */}
-                        <div className="flex-1 overflow-y-auto no-scrollbar pb-[200px]">
+                        {/* Scrollable Content */}
+                        <div style={{ flex: 1, overflowY: 'auto', WebkitOverflowScrolling: 'touch', paddingBottom: '200px' }} className="no-scrollbar">
                             <div className="px-6">
                                 {/* Hero Image & Title Section */}
                                 <div className="text-center mt-8 mb-10">
