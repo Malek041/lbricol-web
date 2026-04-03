@@ -21,6 +21,7 @@ interface ActivityTabProps {
     onShowHistory: () => void;
     onConfirmJob?: (jobId: string) => void;
     onRedistributeJob?: (order: OrderDetails) => void;
+    onStatusUpdate?: (jobId: string, status: string, subStatus?: string) => void;
     userData: any;
 }
 
@@ -39,6 +40,7 @@ export default function ActivityTab({
     onShowHistory,
     onConfirmJob,
     onRedistributeJob,
+    onStatusUpdate,
     userData
 }: ActivityTabProps) {
     const { t, language } = useLanguage();
@@ -157,6 +159,7 @@ export default function ActivityTab({
                     onSelect={onSelect}
                     onConfirm={onConfirmJob}
                     onRedistribute={onRedistributeJob}
+                    onStatusUpdate={onStatusUpdate}
                     currentTime={currentTime}
                 />
             </div>

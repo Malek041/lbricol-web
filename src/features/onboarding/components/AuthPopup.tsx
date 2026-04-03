@@ -86,17 +86,22 @@ const AuthPopup = ({ isOpen, onClose, onSuccess }: AuthPopupProps) => {
 
     const handleAuth = async () => {
         if (isLoading) return;
-        setIsLoading(true);
+        
         try {
             const provider = new GoogleAuthProvider();
-            // Try popup first, then fall back to redirect if blocked or on mobile
+            // Important: Call signInWithPopup as the absolute first async thing in the handler
+            // to maximize chances of browser allowing the popup.
+            let result;
             try {
-                const result = await signInWithPopup(auth, provider, browserPopupRedirectResolver);
+                result = await signInWithPopup(auth, provider, browserPopupRedirectResolver);
                 if (result.user) {
+                    setIsLoading(true); // Only show loading after popup is out
                     await handleAuthSuccess(result.user);
                 }
             } catch (popupError: any) {
+                console.warn("Popup blocked or closed:", popupError.code);
                 if (popupError.code === 'auth/popup-blocked' || /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
+                    setIsLoading(true);
                     await signInWithRedirect(auth, provider);
                 } else if (popupError.code !== 'auth/popup-closed-by-user') {
                     throw popupError;

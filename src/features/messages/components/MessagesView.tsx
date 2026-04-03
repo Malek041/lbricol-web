@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, Settings, ChevronLeft, Send, Clock, MapPin, Calendar, Heart, MessageSquare, X, ChevronDown, Camera, Mic, Check, FileText } from 'lucide-react';
+import { Search, Settings, ChevronLeft, Send, Clock, MapPin, Calendar, Heart, MessageSquare, X, ChevronDown, Camera, Mic, Check, FileText, Navigation } from 'lucide-react';
 import { useTheme } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -21,6 +21,7 @@ import { OrderDetails } from '@/features/orders/components/OrderCard';
 import { getServiceVector } from '@/config/services_config';
 import { uploadToCloudinary } from '@/lib/upload';
 import { compressImageFileToDataUrl } from '@/lib/imageCompression';
+import { format, parseISO } from 'date-fns';
 
 interface Message {
     id: string;
@@ -442,6 +443,157 @@ const MessagesView: React.FC<MessagesViewProps> = ({
                     </button>
                     <h2 style={{ fontSize: '18px', fontWeight: 900, color: '#000', margin: 0 }}>{t({ en: 'Chat', fr: 'Chat' })}</h2>
                     <div style={{ width: '40px' }} /> {/* Spacer to center title */}
+                </div>
+
+                {/* Mini Job Dashboard Header — Premium Refinement */}
+                <div style={{
+                    padding: '20px 24px',
+                    background: 'linear-gradient(135deg, #FFFFFF 0%, #FAFAFA 100%)',
+                    borderBottom: '1px solid #F0F0F0',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '16px',
+                    boxShadow: '0 4px 20px rgba(0,0,0,0.02)'
+                }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                        <div style={{
+                            width: '52px',
+                            height: '52px',
+                            background: 'linear-gradient(135deg, #01A083 0%, #008f75 100%)',
+                            borderRadius: '16px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontSize: '28px',
+                            boxShadow: '0 8px 16px rgba(1, 160, 131, 0.2)',
+                            color: '#FFF'
+                        }}>
+                            {getServiceVector(conversation?.jobTitle || '')}
+                        </div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                                <h3 style={{ fontSize: '17px', fontWeight: 950, margin: 0, color: '#000', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontFamily: 'Uber Move, var(--font-sans)' }}>
+                                    {conversation?.jobSubService || conversation?.jobTitle}
+                                </h3>
+                                {(() => {
+                                    const status = conversation?.status || 'new';
+                                    const isDone = status === 'done' || status === 'delivered';
+                                    const isProgrammed = status === 'accepted' || status === 'programmed';
+                                    return (
+                                        <div style={{
+                                            padding: '4px 10px',
+                                            borderRadius: '8px',
+                                            backgroundColor: isDone ? '#E6F7F4' : isProgrammed ? '#EBF5FF' : '#FFF9E5',
+                                            color: isDone ? '#01A083' : isProgrammed ? '#0064E0' : '#FFB800',
+                                            fontSize: '11px',
+                                            fontWeight: 900,
+                                            textTransform: 'uppercase',
+                                            letterSpacing: '0.06em',
+                                            border: `1px solid ${isDone ? '#01A08320' : isProgrammed ? '#0064E020' : '#FFB80020'}`
+                                        }}>
+                                            {status}
+                                        </div>
+                                    );
+                                })()}
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '4px' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                                    <Calendar size={13} color="#999" strokeWidth={2.5} />
+                                    <span style={{ fontSize: '13px', color: '#666', fontWeight: 700 }}>
+                                        {conversation?.jobDates && conversation.jobDates !== 'flexible' ? format(parseISO(conversation.jobDates), 'd MMM') : 'Flexible'}
+                                    </span>
+                                </div>
+                                <div style={{ width: '4px', height: '4px', borderRadius: '50%', backgroundColor: '#DDD' }} />
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                                    <Clock size={13} color="#999" strokeWidth={2.5} />
+                                    <span style={{ fontSize: '13px', color: '#666', fontWeight: 700 }}>{conversation?.jobTime}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div style={{ textAlign: 'right' }}>
+                            <span style={{ display: 'block', fontSize: '11px', color: '#999', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.02em', marginBottom: '2px' }}>{t({ en: 'Budget', fr: 'Budget' })}</span>
+                            <div style={{ fontSize: '20px', fontWeight: 1000, color: '#000', fontFamily: 'Uber Move, var(--font-sans)' }}>
+                                {orders.find(o => o.id === selectedJobId)?.totalPrice || orders.find(o => o.id === selectedJobId)?.price || '--'}
+                                <span style={{ fontSize: '12px', color: '#01A083', marginLeft: '4px' }}>MAD</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Provider-only Quick Actions */}
+                    {currentUser.uid !== (orders.find(o => o.id === selectedJobId)?.clientId) && (
+                        <div style={{ display: 'flex', gap: '10px', paddingTop: '4px' }}>
+                            <motion.button
+                                whileTap={{ scale: 0.98 }}
+                                onClick={() => {
+                                    const order = orders.find(o => o.id === selectedJobId);
+                                    if (!order) return;
+                                    const query = order.coords ? `${order.coords.lat},${order.coords.lng}` : `${order.area || ''} ${order.city || ''}`;
+                                    window.open(`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(query)}`, '_blank');
+                                }}
+                                style={{
+                                    flex: 1,
+                                    height: '42px',
+                                    borderRadius: '12px',
+                                    backgroundColor: '#000',
+                                    color: '#FFF',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    gap: '8px',
+                                    fontSize: '13px',
+                                    fontWeight: 900,
+                                    border: 'none',
+                                    cursor: 'pointer'
+                                }}
+                            >
+                                <MapPin size={16} strokeWidth={2.5} />
+                                {t({ en: 'Navigate', fr: 'Naviguer' })}
+                            </motion.button>
+                            
+                            {orders.find(o => o.id === selectedJobId)?.providerStatus !== 'heading' && 
+                             (orders.find(o => o.id === selectedJobId)?.status === 'accepted' || orders.find(o => o.id === selectedJobId)?.status === 'programmed') && (
+                                <motion.button
+                                    whileTap={{ scale: 0.98 }}
+                                    onClick={async () => {
+                                        const order = orders.find(o => o.id === selectedJobId);
+                                        if (!order || !order.id) return;
+                                        
+                                        // Find the provider status update function from parent if passed, 
+                                        // or we can handle it here via direct firebase update if we had the context.
+                                        // For now, let's assume we can trigger a message at least.
+                                        const messageText = t({ en: "On my way! 🚀", fr: "Je suis en chemin ! 🚀" });
+                                        await handleSendMessage({ text: messageText });
+                                        
+                                        // Note: In a real app, we'd call a prop to update the DB status too.
+                                        try {
+                                            const { doc, updateDoc } = await import('firebase/firestore');
+                                            const jobRef = doc(db, 'jobs', order.id);
+                                            await updateDoc(jobRef, { providerStatus: 'heading' });
+                                        } catch (e) { console.error(e); }
+                                    }}
+                                    style={{
+                                        flex: 1.2,
+                                        height: '42px',
+                                        borderRadius: '12px',
+                                        backgroundColor: '#01A083',
+                                        color: '#FFF',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        gap: '8px',
+                                        fontSize: '13px',
+                                        fontWeight: 900,
+                                        border: 'none',
+                                        cursor: 'pointer',
+                                        boxShadow: '0 4px 12px rgba(1, 160, 131, 0.2)'
+                                    }}
+                                >
+                                    <Navigation size={16} strokeWidth={2.5} />
+                                    {t({ en: 'On My Way', fr: 'Je suis en route' })}
+                                </motion.button>
+                            )}
+                        </div>
+                    )}
                 </div>
 
                 {/* Messages Container */}

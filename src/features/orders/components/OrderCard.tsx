@@ -83,6 +83,7 @@ export interface OrderDetails {
     movingVehicle?: string | null;
     coords?: { lat: number; lng: number } | null;
     details?: any;
+    providerStatus?: 'heading' | 'arrived' | 'working' | null;
 }
 
 interface OrderCardProps {

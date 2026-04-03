@@ -797,28 +797,28 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
                         className="fixed inset-0 z-[9100] bg-white"
                         style={{ display: 'flex', flexDirection: 'column', height: '100%' }}
                     >
-                        {/* Fixed Header */}
-                        <div style={{ flexShrink: 0, width: '100%', paddingTop: '48px', paddingBottom: '16px', paddingLeft: '24px', paddingRight: '24px', backgroundColor: '#fff', borderBottom: '1px solid #F0F0F0', zIndex: 10 }}>
-                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                                <button
-                                    onClick={() => setSelectedOrder(null)}
-                                    className="w-12 h-12 flex items-center justify-center rounded-2xl bg-[#01A083] active:scale-95 transition-all"
-                                >
-                                    <ChevronLeft size={28} className="text-white" />
-                                </button>
-                                <div className="text-right">
-                                    <span className="text-[11px] font-medium text-neutral-400 uppercase tracking-widest block">
-                                        {t({ en: 'Order ID', fr: 'ID Commande', ar: 'رقم الطلب' })}
-                                    </span>
-                                    <span className="text-[17px] font-medium text-black">
-                                        #{selectedOrder.id?.slice(-6).toUpperCase()}
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
-
                         {/* Scrollable Content */}
                         <div style={{ flex: 1, overflowY: 'auto', WebkitOverflowScrolling: 'touch', paddingBottom: '200px' }} className="no-scrollbar">
+                            {/* Header (Moved here to be scrollable) */}
+                            <div style={{ flexShrink: 0, width: '100%', paddingTop: '48px', paddingBottom: '16px', paddingLeft: '24px', paddingRight: '24px', backgroundColor: '#fff', borderBottom: '1px solid #F0F0F0' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                    <button
+                                        onClick={() => setSelectedOrder(null)}
+                                        className="w-12 h-12 flex items-center justify-center rounded-2xl bg-[#01A083] active:scale-95 transition-all"
+                                    >
+                                        <ChevronLeft size={28} className="text-white" />
+                                    </button>
+                                    <div className="text-right">
+                                        <span className="text-[11px] font-medium text-neutral-400 uppercase tracking-widest block">
+                                            {t({ en: 'Order ID', fr: 'ID Commande', ar: 'رقم الطلب' })}
+                                        </span>
+                                        <span className="text-[17px] font-medium text-black">
+                                            #{selectedOrder.id?.slice(-6).toUpperCase()}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+
                             <div className="px-6">
                                 {/* Hero Image & Title Section */}
                                 <div className="text-center mt-8 mb-10">

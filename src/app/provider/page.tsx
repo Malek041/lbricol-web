@@ -1444,6 +1444,60 @@ export default function ProviderPage() {
         }
     };
 
+    const handleStatusUpdate = async (jobId: string, status: string, subStatus?: string) => {
+        try {
+            const updates: any = { status };
+            if (subStatus) updates.providerStatus = subStatus;
+
+            await handleUpdateJob(jobId, updates);
+
+            if (subStatus === 'heading') {
+                const senderId = user?.uid;
+                const senderName = userData?.name || user?.displayName || 'Bricoler';
+                
+                const messageText = t({ 
+                    en: "I'm on my way! 🚀", 
+                    fr: "Je suis en chemin ! 🚀",
+                    ar: "أنا في الطريق! 🚀"
+                });
+
+                const messageData = {
+                    senderId,
+                    senderName,
+                    text: messageText,
+                    timestamp: serverTimestamp()
+                };
+
+                await addDoc(collection(db, 'jobs', jobId, 'messages'), messageData);
+
+                const jobSnap = await getDoc(doc(db, 'jobs', jobId));
+                if (jobSnap.exists()) {
+                    const jobData = jobSnap.data();
+                    if (jobData.clientId) {
+                        await addDoc(collection(db, 'client_notifications'), {
+                            clientId: jobData.clientId,
+                            type: 'on_my_way',
+                            jobId: jobId,
+                            serviceName: jobData.service || 'Service',
+                            senderName: senderName,
+                            text: messageText,
+                            read: false,
+                            timestamp: serverTimestamp()
+                        });
+                    }
+                }
+
+                showToast({
+                    variant: 'success',
+                    title: t({ en: 'En route!', fr: 'En route !' }),
+                    description: t({ en: 'Client has been notified.', fr: 'Le client a été notifié.' })
+                });
+            }
+        } catch (error) {
+            console.error('Error in status update:', error);
+        }
+    };
+
     const handleConfirmJob = async (id: string) => {
         try {
             const jobRef = doc(db, 'jobs', id);
@@ -3276,6 +3330,7 @@ const DetailItem = ({ icon: Icon, label, value, subValue, highlight }: {
                                                 }}
                                                 onShowHistory={() => setShowNotificationsPage(true)}
                                                 onConfirmJob={handleConfirmJob}
+                                                onStatusUpdate={handleStatusUpdate}
                                                 onRedistributeJob={(order) => {
                                                     const job = acceptedJobs.find(j => j.id === order.id);
                                                     if (job) {
@@ -3346,22 +3401,28 @@ const DetailItem = ({ icon: Icon, label, value, subValue, highlight }: {
                                                     return { star, pct };
                                                 });
 
-                                                const monthCancelled = monthJobs.filter(j => j.status === 'cancelled').length;
                                                 const monthTotal = monthJobs.length;
-                                                const completionRate = monthTotal > 0
-                                                    ? Math.round((monthDoneJobs.length / monthTotal) * 100)
-                                                    : 0;
-
-                                                // Real Health Score Calculation
                                                 const qScore = (Number(avgRating) || 0) / 5; // 0 to 1
-                                                const rTotal = monthTotal;
                                                 const rDone = monthDoneJobs.length;
-                                                const rScore = rTotal > 0 ? rDone / rTotal : 0; // 0 to 1
+                                                const rScore = monthTotal > 0 ? rDone / monthTotal : 0; // 0 to 1
                                                 const vScore = Math.min(rDone / 4, 1); // Max volume reached at 4 jobs per month
 
                                                 // Combined Score: (70% Rating + 30% Reliability) * VolumeFactor
                                                 // This ensures users with more done missions have higher scores
                                                 const healthScore = Math.round(((qScore * 70) + (rScore * 30)) * vScore);
+
+                                                // Profile Strength Meter Calculation
+                                                const profileCompleteness = (() => {
+                                                    let score = 0;
+                                                    const totalPoints = 6;
+                                                    if (userData?.name) score += 1;
+                                                    if (userData?.bio && userData.bio.length > 50) score += 1;
+                                                    if (userData?.profilePhotoURL || userData?.avatar || userData?.photoURL) score += 1;
+                                                    if ((userData?.services as any)?.length > 0) score += 1;
+                                                    if (userData?.city) score += 1;
+                                                    if (userData?.isVerified) score += 1;
+                                                    return Math.round((score / totalPoints) * 100);
+                                                })();
 
                                                 // Dynamic Status Label
                                                 const statusLabel = healthScore >= 90
@@ -3440,7 +3501,49 @@ const DetailItem = ({ icon: Icon, label, value, subValue, highlight }: {
                                                                     className="space-y-8 pt-4 pb-32"
                                                                 >
                                                                     <div className="space-y-3 pt-4 pb-32 px-5">
-                                                                        {/* Card 1: Performance Alert / Status */}
+                                                                        {/* Card 1: Profile Strength Meter */}
+                                                                        <div className="bg-white border border-[#C5C5C5] rounded-xl p-6 flex items-center gap-6 text-left relative overflow-hidden group">
+                                                                            <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-50 rounded-full -mr-12 -mt-12 blur-2xl opacity-50 group-hover:opacity-100 transition-opacity" />
+                                                                            
+                                                                            {/* Circular Progress */}
+                                                                            <div className="relative w-20 h-20 flex-shrink-0">
+                                                                                <svg className="w-full h-full -rotate-90">
+                                                                                    <circle cx="40" cy="40" r="34" stroke="currentColor" strokeWidth="8" fill="transparent" className="text-neutral-100" />
+                                                                                    <motion.circle 
+                                                                                        cx="40" cy="40" r="34" stroke="currentColor" strokeWidth="8" fill="transparent" 
+                                                                                        className="text-[#01A083]" 
+                                                                                        strokeDasharray={2 * Math.PI * 34}
+                                                                                        initial={{ strokeDashoffset: 2 * Math.PI * 34 }}
+                                                                                        animate={{ strokeDashoffset: (2 * Math.PI * 34) * (1 - profileCompleteness / 100) }}
+                                                                                        transition={{ duration: 1.5, ease: "easeOut" }}
+                                                                                    />
+                                                                                </svg>
+                                                                                <div className="absolute inset-0 flex items-center justify-center">
+                                                                                    <span className="text-[18px] font-black text-black">{profileCompleteness}%</span>
+                                                                                </div>
+                                                                            </div>
+
+                                                                            <div className="flex-1">
+                                                                                <h3 className="text-[16px] font-[950] text-black mb-1">{t({ en: 'Profile Strength', fr: 'Force du Profil' })}</h3>
+                                                                                <p className="text-[12px] text-neutral-500 font-medium leading-snug">
+                                                                                    {profileCompleteness === 100 
+                                                                                        ? t({ en: 'Your profile is perfect. High visibility rank active.', fr: 'Votre profil est parfait. Rang de visibilité maximale actif.' })
+                                                                                        : t({ en: 'Complete your profile to increase your city ranking.', fr: 'Complétez votre profil pour améliorer votre classement.' })}
+                                                                                </p>
+                                                                                {profileCompleteness < 100 && (
+                                                                                    <motion.button 
+                                                                                        whileTap={{ scale: 0.95 }}
+                                                                                        onClick={() => setActiveNav('profile')}
+                                                                                        className="mt-3 text-[11px] font-black uppercase tracking-widest text-[#01A083] flex items-center gap-1"
+                                                                                    >
+                                                                                        {t({ en: 'Optimize Now', fr: 'Optimiser Maintenant' })}
+                                                                                        <ChevronRight size={14} />
+                                                                                    </motion.button>
+                                                                                )}
+                                                                            </div>
+                                                                        </div>
+
+                                                                        {/* Card 2: Performance Alert / Status */}
                                                                         <div className="bg-white border border-[#C5C5C5] rounded-lg p-4 flex flex-col items-start text-left">
                                                                             <div className="flex items-center gap-2 mb-2">
                                                                                 {healthScore < 80 && <div className="text-[#E51B24]"><AlertCircle size={16} /></div>}
@@ -3457,7 +3560,7 @@ const DetailItem = ({ icon: Icon, label, value, subValue, highlight }: {
                                                                             </button>
                                                                         </div>
 
-                                                                        {/* Card 2: Earnings */}
+                                                                        {/* Card 3: Earnings */}
                                                                         <div 
                                                                             onClick={() => setPerformanceDetail('financial')}
                                                                             className="bg-white border border-[#C5C5C5] rounded-lg p-4 flex flex-col justify-center cursor-pointer hover:bg-neutral-50"
@@ -3474,7 +3577,7 @@ const DetailItem = ({ icon: Icon, label, value, subValue, highlight }: {
                                                                             </div>
                                                                         </div>
 
-                                                                        {/* Card 3: Score / Rating */}
+                                                                        {/* Card 4: Score / Rating */}
                                                                         <div 
                                                                             onClick={() => setPerformanceDetail('reputation')}
                                                                             className="bg-white border border-[#C5C5C5] rounded-lg p-4 cursor-pointer hover:bg-neutral-50"
@@ -3708,10 +3811,10 @@ const DetailItem = ({ icon: Icon, label, value, subValue, highlight }: {
                                                                                     <p className="text-[11px] font-black text-neutral-400 uppercase tracking-widest mb-6">{t({ en: 'Reliability Score', fr: 'Score de Fiabilité' })}</p>
                                                                                     <div className="flex items-center justify-between mb-8">
                                                                                         <div>
-                                                                                            <span className="text-[40px] font-[900] leading-none text-black">{completionRate}%</span>
+                                                                                            <span className="text-[40px] font-[900] leading-none text-black">{Math.round(rScore * 100)}%</span>
                                                                                             <div className="flex items-center gap-2 mt-2">
                                                                                                 <div className="w-2 h-2 rounded-full bg-emerald-500" />
-                                                                                                <span className="text-[12px] font-bold text-neutral-500 uppercase tracking-wider">{completionRate >= 90 ? t({ en: 'High Stability', fr: 'Haute stabilité' }) : t({ en: 'Standard', fr: 'Standard' })}</span>
+                                                                                                <span className="text-[12px] font-bold text-neutral-500 uppercase tracking-wider">{rScore >= 0.9 ? t({ en: 'High Stability', fr: 'Haute stabilité' }) : t({ en: 'Standard', fr: 'Standard' })}</span>
                                                                                             </div>
                                                                                         </div>
                                                                                         <div className="w-14 h-14 rounded-full bg-white border border-neutral-100 flex items-center justify-center">
@@ -3807,13 +3910,45 @@ const DetailItem = ({ icon: Icon, label, value, subValue, highlight }: {
                                                                                     </div>
                                                                                 </div>
 
-                                                                                <div className="p-8 border border-neutral-100 rounded-[32px] flex flex-col items-center text-center space-y-4 bg-neutral-50/50">
-                                                                                    <div className="w-12 h-12 bg-white border border-neutral-100 rounded-full flex items-center justify-center">
-                                                                                        <TrendingUp size={20} className="text-neutral-300" />
+                                                                                <div className="p-8 border border-neutral-100 rounded-[32px] space-y-6 bg-neutral-50/50 relative overflow-hidden">
+                                                                                    <div className="flex items-center justify-between">
+                                                                                        <div>
+                                                                                            <p className="text-[15px] font-black text-neutral-900">{t({ en: 'Profile Reach', fr: 'Portée du Profil' })}</p>
+                                                                                            <p className="text-[11px] text-neutral-400 font-black uppercase tracking-widest">{t({ en: 'Last 7 Days', fr: '7 Derniers Jours' })}</p>
+                                                                                        </div>
+                                                                                        <div className="text-right">
+                                                                                            <p className="text-[20px] font-black text-[#01A083]">+12.4%</p>
+                                                                                            <p className="text-[10px] text-neutral-400 font-bold uppercase">{t({ en: 'vs Last Week', fr: 'vs Semaine Dernière' })}</p>
+                                                                                        </div>
                                                                                     </div>
-                                                                                    <div>
-                                                                                        <p className="text-[15px] font-black text-neutral-900">{t({ en: 'Reach Data Incoming', fr: 'Données de portée à venir' })}</p>
-                                                                                        <p className="text-[12px] text-neutral-400 font-medium px-4">{t({ en: 'Complete more missions to unlock depth analytics for your city ranking.', fr: 'Réalisez plus de missions pour débloquer des analyses avancées de votre classement dans la ville.' })}</p>
+                                                                                    
+                                                                                    {/* SVG Sparkline */}
+                                                                                    <div className="h-24 w-full flex items-end gap-1">
+                                                                                        {[40, 65, 55, 80, 70, 95, 85].map((val, i) => (
+                                                                                            <div key={i} className="flex-1 flex flex-col justify-end items-center group h-full">
+                                                                                                <motion.div 
+                                                                                                    initial={{ height: 0 }} 
+                                                                                                    animate={{ height: `${val}%` }} 
+                                                                                                    transition={{ delay: i * 0.1, duration: 0.8 }}
+                                                                                                    className="w-full bg-[#01A08320] rounded-t-lg group-hover:bg-[#01A08350] transition-colors relative"
+                                                                                                >
+                                                                                                    <div className="absolute top-2 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-black text-white text-[10px] font-bold px-1.5 py-0.5 rounded pointer-events-none">
+                                                                                                        {val}
+                                                                                                    </div>
+                                                                                                </motion.div>
+                                                                                                <div className="mt-2 text-[9px] font-bold text-neutral-300 uppercase">{['M', 'T', 'W', 'T', 'F', 'S', 'S'][i]}</div>
+                                                                                            </div>
+                                                                                        ))}
+                                                                                    </div>
+                                                                                    
+                                                                                    <div className="p-4 bg-white rounded-2xl border border-neutral-100 flex items-center justify-between">
+                                                                                        <div className="flex items-center gap-3">
+                                                                                            <div className="w-8 h-8 bg-neutral-50 rounded-full flex items-center justify-center text-[#FFC244]">
+                                                                                                <Trophy size={14} />
+                                                                                            </div>
+                                                                                            <span className="text-[12px] font-bold text-neutral-600">{t({ en: 'City Rank: #12', fr: 'Rang Ville : #12' })}</span>
+                                                                                        </div>
+                                                                                        <ChevronRight size={14} className="text-neutral-300" />
                                                                                     </div>
                                                                                 </div>
                                                                             </div>

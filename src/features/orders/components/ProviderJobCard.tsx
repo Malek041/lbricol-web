@@ -2,8 +2,8 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Clock, Check, RefreshCw, Calendar } from 'lucide-react';
-import { format, isToday, parseISO } from 'date-fns';
+import { Clock, Check, RefreshCw, Calendar, Navigation, MapPin } from 'lucide-react';
+import { format, isToday, parseISO, differenceInMinutes } from 'date-fns';
 import { useLanguage } from '@/context/LanguageContext';
 import { cn } from '@/lib/utils';
 import { getServiceById, getSubServiceName, getServiceVector, getSubService } from '@/config/services_config';
@@ -14,6 +14,7 @@ interface ProviderJobCardProps {
     onSelect: (o: OrderDetails) => void;
     onConfirm?: (jobId: string) => void;
     onRedistribute?: (order: OrderDetails) => void;
+    onStatusUpdate?: (jobId: string, status: string, subStatus?: string) => void;
     currentTime?: Date;
 }
 
@@ -31,6 +32,7 @@ export default function ProviderJobCard({
     onSelect,
     onConfirm,
     onRedistribute,
+    onStatusUpdate,
     currentTime = new Date()
 }: ProviderJobCardProps) {
     const { t } = useLanguage();
@@ -112,18 +114,67 @@ export default function ProviderJobCard({
     const isDone = dynamicStatus === 'done' || order.status === 'done' || order.status === 'delivered';
     const isInProgress = dynamicStatus === 'in_progress';
 
+    const isUrgent = (() => {
+        if (isDone || !order.date || !order.time) return false;
+        const normDate = normalizeToDate(order.date);
+        if (!normDate) return false;
+        const timeStr = order.time.split('-')[0].trim();
+        const dateStr = format(normDate, 'yyyy-MM-dd');
+        const startTime = parseISO(`${dateStr}T${timeStr}:00`);
+        const diffMins = differenceInMinutes(startTime, currentTime);
+        return diffMins > 0 && diffMins < 120; // Within 2 hours
+    })();
+
+    const handleNavigate = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        const lat = order.locationDetails?.latitude || order.locationDetails?.lat;
+        const lng = order.locationDetails?.longitude || order.locationDetails?.lng;
+        
+        if (lat && lng) {
+            window.open(`https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`, '_blank');
+        } else {
+            const query = encodeURIComponent(`${order.area || ''} ${order.city || ''} Morocco`);
+            window.open(`https://www.google.com/maps/search/?api=1&query=${query}`, '_blank');
+        }
+    };
+
     return (
         <motion.div
             whileTap={{ scale: 0.98 }}
             onClick={() => onSelect(order)}
-            className="bg-white rounded-[5px] p-3 flex items-center gap-5 cursor-pointer transition-all border border-neutral-100 w-full"
+            className={cn(
+                "bg-white rounded-[15px] p-4 flex items-center gap-5 cursor-pointer transition-all border w-full relative overflow-hidden",
+                isUrgent ? "border-amber-200 bg-amber-50/10 shadow-sm" : "border-neutral-100 shadow-none"
+            )}
         >
+            {isUrgent && (
+                <div className="absolute top-0 right-0 p-2">
+                    <div className="flex items-center gap-1.5">
+                        <motion.div 
+                            animate={{ scale: [1, 1.2, 1], opacity: [0.3, 1, 0.3] }}
+                            transition={{ repeat: Infinity, duration: 1.5 }}
+                            className="w-2.5 h-2.5 rounded-full bg-[#FFC244]"
+                        />
+                        <span className="text-[9px] font-black uppercase text-amber-600 tracking-wider font-sans">{t({ en: 'Urgent', fr: 'Urgent' })}</span>
+                    </div>
+                </div>
+            )}
+
             {/* Circular Service / Task Image */}
-            <div className="w-[100px] h-[100px] bg-[#F7F7F7] rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden border border-neutral-50">
+            <div className="w-[85px] h-[85px] bg-[#F7F7F7] rounded-2xl flex items-center justify-center flex-shrink-0 overflow-hidden border border-neutral-100 relative group">
                 {order.images && order.images.length > 0 ? (
                     <img src={order.images[0]} className="w-full h-full object-cover" />
                 ) : (
-                    <img src={getServiceVector(order.service)} className="w-[85%] h-[85%] object-contain" />
+                    <img src={getServiceVector(order.service)} className="w-[80%] h-[80%] object-contain" />
+                )}
+                {isInProgress && (
+                    <div className="absolute inset-0 bg-[#01A083]/40 flex items-center justify-center">
+                        <motion.div 
+                            animate={{ rotate: 360 }}
+                            transition={{ repeat: Infinity, duration: 8, ease: "linear" }}
+                            className="w-[80%] h-[80%] border-2 border-white border-dashed rounded-full"
+                        />
+                    </div>
                 )}
             </div>
 
@@ -209,6 +260,28 @@ export default function ProviderJobCard({
                                      <Check size={18} strokeWidth={3} />
                                  </button>
                              </>
+                         )}
+                         {(order.status === 'programmed' || order.status === 'accepted') && order.providerConfirmed && (
+                             <div className="flex items-center gap-2">
+                                 {onStatusUpdate && !order.providerStatus && isUrgent && (
+                                     <button
+                                         onClick={(e) => {
+                                             e.stopPropagation();
+                                             if (order.id) onStatusUpdate(order.id, 'in_progress', 'heading');
+                                         }}
+                                         className="px-4 h-10 rounded-full bg-[#01A083] text-white text-[12px] font-black border border-[#008f75] hover:bg-[#008f75] active:scale-95 transition-all flex items-center gap-1.5"
+                                     >
+                                         <Navigation size={14} fill="currentColor" />
+                                         {t({ en: 'On My Way', fr: 'En chemin' })}
+                                     </button>
+                                 )}
+                                 <button
+                                     onClick={handleNavigate}
+                                     className="w-10 h-10 rounded-full bg-neutral-50 text-neutral-600 flex items-center justify-center border border-neutral-200 hover:bg-neutral-100 active:scale-95 transition-all"
+                                 >
+                                     <Navigation size={18} strokeWidth={2.5} />
+                                 </button>
+                             </div>
                          )}
                          {(order.status === 'new' || order.status === 'waiting') && !order.providerConfirmed && onConfirm && (
                              <button
