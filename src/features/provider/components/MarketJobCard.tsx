@@ -34,13 +34,13 @@ export const NewJobCard = ({ job, onClick, onChat }: NewJobCardProps) => {
                 <div className="flex items-center gap-2 text-neutral-400 text-[12px] font-bold">
                     <span className="truncate">{job.clientName}</span>
                     <span>•</span>
-                    <span>{job.dateLabel} {job.timeLabel && `at ${job.timeLabel}`}</span>
+                    <span>{job.dateLabel} {job.timeLabel && (t({ en: 'at', fr: 'à', ar: 'على' }) + ` ${job.timeLabel}`)}</span>
                 </div>
                 <div className="mt-2 flex items-center gap-2">
-                    {isNew && <span className="px-3 py-1 bg-red-50 text-red-500 text-[10px] font-black rounded-full uppercase">{t({ en: 'Action Required', fr: 'Action requise' })}</span>}
-                    {isWaiting && <span className="px-3 py-1 bg-amber-50 text-amber-500 text-[10px] font-black rounded-full uppercase">{t({ en: 'Waiting Client', fr: 'En attente du client' })}</span>}
-                    {isProgrammed && <span className="px-3 py-1 bg-blue-50 text-blue-500 text-[10px] font-black rounded-full uppercase">{t({ en: 'Scheduled', fr: 'Programmée' })}</span>}
-                    {isDone && <span className="px-3 py-1 bg-emerald-50 text-emerald-500 text-[10px] font-black rounded-full uppercase">{t({ en: 'Completed', fr: 'Terminée' })}</span>}
+                    {isNew && <span className="px-3 py-1 bg-red-50 text-red-500 text-[10px] font-black rounded-full uppercase">{t({ en: 'Action Required', fr: 'Action requise', ar: 'مهمة عاجلة' })}</span>}
+                    {isWaiting && <span className="px-3 py-1 bg-amber-50 text-amber-500 text-[10px] font-black rounded-full uppercase">{t({ en: 'Waiting Client', fr: 'En attente du client', ar: 'في انتظار العميل' })}</span>}
+                    {isProgrammed && <span className="px-3 py-1 bg-blue-50 text-blue-500 text-[10px] font-black rounded-full uppercase">{t({ en: 'Scheduled', fr: 'Programmée', ar: 'مبرمج' })}</span>}
+                    {isDone && <span className="px-3 py-1 bg-emerald-50 text-emerald-500 text-[10px] font-black rounded-full uppercase">{t({ en: 'Completed', fr: 'Terminée', ar: 'مكتمل' })}</span>}
 
                     <div className="flex-1" />
 
@@ -100,8 +100,8 @@ export const JobCard = ({ job, isWaiting, isSubmitting, onAccept, onCounter, for
             </div>
 
             <div className="mt-4 flex flex-col items-start gap-1">
-                <span className="text-[32px] md:text-[54px] font-black tracking-tight text-[#BDBDBD] leading-none uppercase">{t({ en: 'MAD', fr: 'MAD' })} {cardPrice}</span>
-                <span className="text-[13px] font-bold text-neutral-400 uppercase tracking-widest">{t({ en: 'Estimated Payout', fr: 'Paiement estimé' })}</span>
+                <span className="text-[32px] md:text-[54px] font-black tracking-tight text-[#BDBDBD] leading-none uppercase">{t({ en: 'MAD', fr: 'MAD', ar: 'درهم' })} {cardPrice}</span>
+                <span className="text-[13px] font-bold text-neutral-400 uppercase tracking-widest">{t({ en: 'Estimated Payout', fr: 'Paiement estimé', ar: 'المبلغ المقدر' })}</span>
             </div>
 
             <div className="mt-4 flex items-center gap-3">
@@ -140,7 +140,7 @@ export const JobCard = ({ job, isWaiting, isSubmitting, onAccept, onCounter, for
             </div>
 
             <div className="mt-4">
-                <p className="text-[14px] md:text-[15px] leading-relaxed text-neutral-700 line-clamp-3">{job.description || t({ en: 'No description provided.', fr: 'Aucune description fournie.' })}</p>
+                <p className="text-[14px] md:text-[15px] leading-relaxed text-neutral-700 line-clamp-3">{job.description || t({ en: 'No description provided.', fr: 'Aucune description fournie.', ar: 'لا يوجد وصف متاح.' })}</p>
                 <div className="mt-2 text-[11px] font-bold uppercase tracking-[0.08em] text-neutral-500">{job.craft}</div>
             </div>
 
@@ -150,14 +150,14 @@ export const JobCard = ({ job, isWaiting, isSubmitting, onAccept, onCounter, for
                     disabled={isSubmitting || isWaiting}
                     className="px-7 md:px-9 py-3 md:py-3.5 bg-[#01A083] text-white text-[15px] md:text-[17px] font-bold rounded-full transition-all disabled:opacity-50"
                 >
-                    {isSubmitting ? '...' : t({ en: 'Accept', fr: 'Accepter' })}
+                    {isSubmitting ? '...' : t({ en: 'Accept', fr: 'Accepter', ar: 'قبول' })}
                 </button>
                 <button
                     onClick={() => onCounter(job)}
                     disabled={isWaiting}
                     className="px-7 md:px-9 py-3 md:py-3.5 bg-neutral-100 text-neutral-900 text-[15px] md:text-[17px] font-bold rounded-full transition-all disabled:opacity-50"
                 >
-                    {t({ en: 'Counter Offer', fr: 'Contre-offre' })}
+                    {t({ en: 'Counter Offer', fr: 'Contre-offre', ar: 'عرض مقابل' })}
                 </button>
             </div>
         </motion.div>

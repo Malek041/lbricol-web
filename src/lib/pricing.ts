@@ -10,6 +10,7 @@ export interface PricingBreakdown {
     total: number;
     distanceKm?: number;
     duration?: number;
+    details?: { label: { en: string; fr: string; ar: string }; amount: number }[];
 }
 
 /**
@@ -39,8 +40,15 @@ export const calculateOrderPrice = (
         liftingHelp?: string;
         mountingAddOns?: string[];
         taskSize?: 'small' | 'medium' | 'large';
+        // Office Cleaning specific
+        officeDesks?: number;
+        officeMeetingRooms?: number;
+        officeBathrooms?: number;
+        hasKitchenette?: boolean;
+        hasReception?: boolean;
+        officeAddOns?: string[];
     } = {}
-): PricingBreakdown => {
+) => {
     // 1. Find the subservice to get its archetype
     let archetype: string = 'hourly'; // Default
     let subSvc: SubService | undefined;
@@ -89,13 +97,14 @@ export const calculateOrderPrice = (
     let quantity = 1;
     let unit = 'job';
     let extraFees = 0;
+    let details: { label: { en: string; fr: string; ar: string }; amount: number }[] = [];
 
     // General Add-ons Check (Applies to all)
     if (options.mountingAddOns?.includes('supplies')) {
         extraFees += 15;
     }
 
-    // Specialized TV Mounting Pricing
+    // Specialized Pricing Flows
     if (subServiceId === 'tv_mounting') {
         // Base: 1.5 hours per TV at Bricoler rate
         quantity = options.tvCount || 1;
@@ -145,23 +154,56 @@ export const calculateOrderPrice = (
             const sizeFee = sizeFees[options.taskSize || 'small'];
             const distanceFee = (options.deliveryDistanceKm || 0) * 2.5; // 2.5 MAD per Km
             
-        quantity = options.hours || 1;
-        unit = 'errand';
-        extraFees = sizeFee + distanceFee;
+            quantity = options.hours || 1;
+            unit = 'errand';
+            extraFees = sizeFee + distanceFee;
+        } else {
+            extraFees = deliveryTravelCost + distanceOverage;
+            quantity = hours;
+            unit = 'hr';
+        }
+    } else if (subServiceId === 'office_cleaning') {
+        // Office Cleaning Specialized Pricing: Base + Supplements
+        basePrice = providerRate;
+        quantity = 1;
+        unit = 'office';
+        
+        // Desk fee (19 MAD each)
+        const deskCount = options.officeDesks || 1;
+        const deskFee = deskCount * 19;
+        details.push({ label: { en: `Bureaus (${deskCount})`, fr: `Bureaux (${deskCount})`, ar: `المكاتب (${deskCount})` }, amount: deskFee });
+        
+        // Meeting Room fee (20 MAD each)
+        if (options.officeMeetingRooms && options.officeMeetingRooms > 0) {
+            const roomFee = options.officeMeetingRooms * 20;
+            details.push({ label: { en: `Meeting Rooms (${options.officeMeetingRooms})`, fr: `Salles de réunion (${options.officeMeetingRooms})`, ar: `غرف الاجتماعات (${options.officeMeetingRooms})` }, amount: roomFee });
+        }
+        
+        // Bathroom fee (20 MAD each)
+        if (options.officeBathrooms && options.officeBathrooms > 0) {
+            const bathFee = options.officeBathrooms * 20;
+            details.push({ label: { en: `Bathrooms (${options.officeBathrooms})`, fr: `Salles de bain (${options.officeBathrooms})`, ar: `الحمامات (${options.officeBathrooms})` }, amount: bathFee });
+        }
+        
+        // Extra Cleaning (20 MAD per selected add-on)
+        if (options.officeAddOns && options.officeAddOns.length > 0) {
+            const addonFee = options.officeAddOns.length * 20;
+            details.push({ label: { en: 'Extra Cleaning Add-ons', fr: 'Extras nettoyage', ar: 'إضافات تنظيف' }, amount: addonFee });
+        }
+        
+        // Include Kitchenette/Reception if not in add-ons but selected
+        if (options.hasKitchenette) {
+            details.push({ label: { en: 'Kitchenette', fr: 'Kitchenette', ar: 'مطبخ صغير' }, amount: 20 });
+        }
+        if (options.hasReception) {
+            details.push({ label: { en: 'Reception Area', fr: 'Zone de réception', ar: 'منطقة الاستقبال' }, amount: 20 });
+        }
+
+        extraFees = details.reduce((sum: number, item) => sum + item.amount, 0);
     } else {
-        extraFees = deliveryTravelCost + distanceOverage;
-        quantity = hours;
-        unit = 'hr';
-    }
-} else if (subServiceId === 'office_cleaning') {
-    // Office Cleaning Pricing
-    quantity = options.hours || 2;
-    unit = 'hr';
-} else {
-    // 2. Apply Standard Archetype Logic
+        // Standard Archetype Logic
         switch (archetype) {
             case 'unit':
-                // For cleaning/painting, quantity is typically room count
                 quantity = options.rooms || options.quantity || 1;
                 unit = subServiceId.includes('cleaning') || subServiceId.includes('hospitality') || subServiceId.includes('home') ? 'room' : 'unit';
                 break;
@@ -186,9 +228,6 @@ export const calculateOrderPrice = (
     
     // Unified Travel Fee logic
     const isMovingOrErrands = subServiceId === 'local_move' || subServiceId === 'moving' || subServiceId.includes('moving') || subServiceId === 'errands' || subServiceId.includes('delivery');
-    
-    // For Moving/Errands, distance fees are often already in extraFees. 
-    // We only apply the distanceKm * 3 fee if it's not already covered in extraFees or if it's a standard home service.
     const travelFee = (isMovingOrErrands && extraFees > 0) ? 0 : Math.round((options.distanceKm || 0) * 3 * 10) / 10;
     
     const total = Math.round((subtotal + serviceFee + travelFee) * 100) / 100;
@@ -201,6 +240,7 @@ export const calculateOrderPrice = (
         serviceFee,
         travelFee,
         total,
+        details: details.length > 0 ? details : undefined,
         distanceKm: options.deliveryDistanceKm || options.distanceKm,
         duration: options.deliveryDurationMinutes || options.durationMinutes || Math.ceil((options.distanceKm || 0) * 2)
     };

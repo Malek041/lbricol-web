@@ -490,7 +490,7 @@ const ProfileView: React.FC<ProfileViewProps> = ({
                                                 </button>
                                             ) : (
                                                 <div className="px-3 py-1 bg-neutral-50 border border-neutral-100 rounded-md text-[11px] font-bold text-neutral-400">
-                                                    {t({ en: 'Read Only', fr: 'Lecture seule', ar: 'قراءة فقط' })}
+                                                    {t({ en: 'Read Only', fr: 'Lecture seule', ar: 'للقراءة فقط' })}
                                                 </div>
                                             )}
                                         </div>
@@ -626,7 +626,7 @@ const ProfileView: React.FC<ProfileViewProps> = ({
             } else {
                 acc.push({
                     categoryId: categoryId,
-                    categoryName: t({ en: current.categoryName || getServiceName(categoryId) || '', fr: current.categoryName || getServiceName(categoryId) || '' }),
+                    categoryName: t({ en: current.categoryName || getServiceName(categoryId) || '', fr: current.categoryName || getServiceName(categoryId) || '', ar: current.categoryName || getServiceName(categoryId) || '' }),
                     hourlyRate: current.hourlyRate,
                     experience: current.experience,
                     pitch: current.pitch || '',
@@ -692,7 +692,7 @@ const ProfileView: React.FC<ProfileViewProps> = ({
                                             </div>
                                             <div className="flex flex-col">
                                                 <h3 className={cn("text-[30px] font-black tracking-tighter leading-none mb-1.5 transition-all text-[#1D1D1D]", !group.isActive && "text-neutral-400")}>
-                                                    {t({ en: group.categoryName, fr: group.categoryName })}
+                                                    {t({ en: group.categoryName, fr: group.categoryName, ar: group.categoryName })}
                                                 </h3>
                                                 {group.categoryId === 'car_rental' ? (
                                                     <span className="text-[14px] font-medium text-neutral-400">
@@ -700,7 +700,7 @@ const ProfileView: React.FC<ProfileViewProps> = ({
                                                     </span>
                                                 ) : (
                                                     <span className={cn("text-[18px] font-bold transition-all text-neutral-600", !group.isActive && "text-neutral-300")}>
-                                                        MAD {group.hourlyRate || '150'}/hr
+                                                        MAD {group.hourlyRate || '150'}/{t({ en: 'hr', fr: 'h', ar: 'ساعة' })}
                                                     </span>
                                                 )}
                                             </div>
@@ -764,7 +764,7 @@ const ProfileView: React.FC<ProfileViewProps> = ({
                                                     </div>
                                                     <div className="px-1">
                                                         <p className="text-[11px] font-black text-black truncate leading-tight uppercase tracking-tight">{car.modelName}</p>
-                                                        <p className="text-[10px] font-bold text-[#0CB380]">{car.pricePerDay || car.price} MAD/{t({ en: 'day', fr: 'jour' })}</p>
+                                                        <p className="text-[10px] font-bold text-[#0CB380]">{car.pricePerDay || car.price} MAD/{t({ en: 'day', fr: 'jour', ar: 'يوم' })}</p>
                                                     </div>
                                                 </div>
                                             ))

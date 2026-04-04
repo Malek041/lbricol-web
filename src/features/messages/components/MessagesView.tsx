@@ -117,10 +117,10 @@ const MessagesView: React.FC<MessagesViewProps> = ({
 
             if (diffHours >= 24) {
                 const diffDays = Math.floor(diffHours / 24);
-                return `(${diffDays}j rest.)`;
+                return `(${diffDays}${t({ en: 'd left', fr: 'j rest.', ar: 'يوم متبقي' })})`;
             }
 
-            return `(${diffHours}h ${diffMins}m rest.)`;
+            return `(${diffHours}h ${diffMins}m ${t({ en: 'left', fr: 'rest.', ar: 'متبقي' })})`;
         } catch (e) {
             return null;
         }
@@ -132,10 +132,10 @@ const MessagesView: React.FC<MessagesViewProps> = ({
                 <div style={{ padding: '60px 20px' }}>
                     <MessageSquare size={64} style={{ margin: '0 auto 24px', opacity: 0.1 }} />
                     <h2 style={{ fontSize: '24px', fontWeight: 550, color: c.text, marginBottom: '12px' }}>
-                        {t({ en: 'Login to see messages', fr: 'Connectez-vous pour voir vos messages' })}
+                        {t({ en: 'Login to see messages', fr: 'Connectez-vous pour voir vos messages', ar: 'سجل الدخول لرؤية الرسائل' })}
                     </h2>
                     <p style={{ color: c.textMuted, fontWeight: 400, marginBottom: '24px' }}>
-                        {t({ en: 'Keep track of your conversations and project updates.', fr: 'Suivez vos conversations et les mises à jour de vos projets.' })}
+                        {t({ en: 'Keep track of your conversations and project updates.', fr: 'Suivez vos conversations et les mises à jour de vos projets.', ar: 'تابع محادثاتك وتحديثات المشروع.' })}
                     </p>
                 </div>
             </div>
@@ -175,7 +175,7 @@ const MessagesView: React.FC<MessagesViewProps> = ({
                         participantId: participantId,
                         participantName: (currentUser.uid === order.clientId ? order.bricolerName : order.clientName) || 'User',
                         participantAvatar: (currentUser.uid === order.clientId ? order.bricolerAvatar : order.clientAvatar) || undefined,
-                        lastMessage: lastMsgData?.text || t({ en: 'Send a message to start', fr: 'Envoyez un message pour commencer' }),
+                        lastMessage: lastMsgData?.text || t({ en: 'Send a message to start', fr: 'Envoyez un message pour commencer', ar: 'أرسل رسالة للبدء' }),
                         lastMessageTime: lastMsgData?.timestamp || null,
                         jobTitle: order.service,
                         jobSubService: order.subServiceDisplayName || getSubServiceName(order.serviceId || order.service, order.subService || '') || order.service,
@@ -442,7 +442,7 @@ const MessagesView: React.FC<MessagesViewProps> = ({
                     >
                         <X size={24} color="#333" />
                     </button>
-                    <h2 style={{ fontSize: '18px', fontWeight: 900, color: '#000', margin: 0 }}>{t({ en: 'Chat', fr: 'Chat' })}</h2>
+                    <h2 style={{ fontSize: '18px', fontWeight: 900, color: '#000', margin: 0 }}>{t({ en: 'Chat', fr: 'Chat', ar: 'دردشة' })}</h2>
                     <div style={{ width: '40px' }} /> {/* Spacer to center title */}
                 </div>
 
@@ -531,7 +531,7 @@ const MessagesView: React.FC<MessagesViewProps> = ({
                             </div>
                         </div>
                         <div style={{ textAlign: 'right' }}>
-                            <span style={{ display: 'block', fontSize: '11px', color: '#999', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.02em', marginBottom: '2px' }}>{t({ en: 'Budget', fr: 'Budget' })}</span>
+                            <span style={{ display: 'block', fontSize: '11px', color: '#999', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.02em', marginBottom: '2px' }}>{t({ en: 'Budget', fr: 'Budget', ar: 'الميزانية' })}</span>
                             <div style={{ fontSize: '20px', fontWeight: 1000, color: '#000', fontFamily: 'Uber Move, var(--font-sans)' }}>
                                 {orders.find(o => o.id === selectedJobId)?.totalPrice || orders.find(o => o.id === selectedJobId)?.price || '--'}
                                 <span style={{ fontSize: '12px', color: '#01A083', marginLeft: '4px' }}>MAD</span>
@@ -567,7 +567,7 @@ const MessagesView: React.FC<MessagesViewProps> = ({
                                 }}
                             >
                                 <MapPin size={18} strokeWidth={2.5} />
-                                {t({ en: 'Navigate', fr: 'Naviguer' })}
+                                {t({ en: 'Navigate', fr: 'Naviguer', ar: 'توجيه' })}
                             </motion.button>
 
                             {orders.find(o => o.id === selectedJobId)?.providerStatus !== 'heading' &&
@@ -609,7 +609,7 @@ const MessagesView: React.FC<MessagesViewProps> = ({
                                         }}
                                     >
                                         <Navigation size={16} strokeWidth={2.5} />
-                                        {t({ en: 'On My Way', fr: 'Je suis en route' })}
+                                        {t({ en: 'On My Way', fr: 'Je suis en route', ar: 'أنا في الطريق' })}
                                     </motion.button>
                                 )}
                         </div>
@@ -629,7 +629,7 @@ const MessagesView: React.FC<MessagesViewProps> = ({
                         {activeMessages.length === 0 && (
                             <div style={{ padding: '60px 20px', textAlign: 'center', color: '#999', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
                                 <MessageSquare size={48} opacity={0.2} />
-                                <p style={{ fontWeight: 600 }}>{t({ en: 'Start chatting about your service', fr: 'Commencez à discuter de votre service' })}</p>
+                                <p style={{ fontWeight: 600 }}>{t({ en: 'Start chatting about your service', fr: 'Commencez à discuter de votre service', ar: 'ابدأ الدردشة حول خدمتك' })}</p>
                             </div>
                         )}
 
@@ -791,7 +791,7 @@ const MessagesView: React.FC<MessagesViewProps> = ({
                                     disabled={isUploading}
                                     onChange={(e) => setMessageInput(e.target.value)}
                                     onKeyPress={(e) => e.key === 'Enter' && (pendingImage ? handleSendPendingImage() : handleSendMessage())}
-                                    placeholder={isUploading ? 'Sending...' : t({ en: 'Write a message...', fr: 'Écrire un message...' })}
+                                    placeholder={isUploading ? 'Sending...' : t({ en: 'Write a message...', fr: 'Écrire un message...', ar: 'اكتب رسالة...' })}
                                     style={{
                                         flex: 1,
                                         background: 'none',

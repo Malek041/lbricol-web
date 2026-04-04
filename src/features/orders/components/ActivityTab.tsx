@@ -114,9 +114,9 @@ export default function ActivityTab({
             const hours = Math.floor(diffMins / 60);
             const mins = diffMins % 60;
 
-            if (hours > 24) return `${Math.floor(hours / 24)}d left`;
-            if (hours > 0) return `${hours}h ${mins}m left`;
-            return `${mins}m left`;
+            if (hours > 24) return `${Math.floor(hours / 24)}${t({ en: 'd left', fr: 'j restants', ar: 'يوم متبقي' })}`;
+            if (hours > 0) return `${hours}h ${mins}m ${t({ en: 'left', fr: 'restant', ar: 'متبقي' })}`;
+            return `${mins}m ${t({ en: 'left', fr: 'restant', ar: 'متبقي' })}`;
         } catch (e) {
             return null;
         }
@@ -170,15 +170,15 @@ export default function ActivityTab({
         <div className="flex flex-col gap-10 p-6 pb-32 bg-[#FFFFFF]">
             <div className="space-y-4">
                 <h2 className="text-[26px] font-black text-black">
-                    {t({ en: 'New Jobs', fr: 'Nouvelles missions' })}
+                    {t({ en: 'New Jobs', fr: 'Nouvelles missions', ar: 'مهام جديدة' })}
                 </h2>
                 {scheduledJobs.length > 0 ? (
                     <div className="pt-2">{scheduledJobs.map(renderOrderCard)}</div>
                 ) : (
                     <div className="pt-2">
                         {renderEmptyState(
-                            t({ en: 'No missions scheduled', fr: 'Aucune mission programmée' }),
-                            t({ en: 'Your upcoming missions will be listed here', fr: 'Vos prochaines missions seront affichées ici' }),
+                            t({ en: 'No missions scheduled', fr: 'Aucune mission programmée', ar: 'لا توجد مهام مبرمجة' }),
+                            t({ en: 'Your upcoming missions will be listed here', fr: 'Vos prochaines missions seront affichées ici', ar: 'ستظهر مهامك القادمة هنا' }),
                             <img src="/Images/Vectors Illu/NewOrder.webp" className="w-28 h-28 object-contain grayscale opacity-40" />
                         )}
                     </div>
@@ -186,14 +186,14 @@ export default function ActivityTab({
             </div>
 
             <div className="space-y-4">
-                <h2 className="text-[26px] font-black text-black">{t({ en: 'Pending Jobs', fr: 'Missions en cours' })}</h2>
+                <h2 className="text-[26px] font-black text-black">{t({ en: 'Pending Jobs', fr: 'Missions en cours', ar: 'مهام قيد التنفيذ' })}</h2>
                 {pendingJobs.length > 0 ? (
                     <div className="pt-2">{pendingJobs.map(renderOrderCard)}</div>
                 ) : (
                     <div className="pt-2">
                         {renderEmptyState(
-                            t({ en: 'No jobs in progress', fr: 'Aucune mission en cours' }),
-                            t({ en: 'Missions you are currently executing will appear here', fr: 'Les missions que vous exécutez actuellement apparaîtront ici' }),
+                            t({ en: 'No jobs in progress', fr: 'Aucune mission en cours', ar: 'لا توجد مهام قيد التنفيذ' }),
+                            t({ en: 'Missions you are currently executing will appear here', fr: 'Les missions que vous exécutez actuellement apparaîtront ici', ar: 'ستظهر المهام التي تنفذها حالياً هنا' }),
                             <img src="/Images/Vectors Illu/DraftOrders2.webp" className="w-28 h-28 object-contain grayscale opacity-40" />
                         )}
                     </div>
@@ -201,14 +201,14 @@ export default function ActivityTab({
             </div>
 
             <div className="space-y-4">
-                <h2 className="text-[26px] font-black text-black">{t({ en: 'Jobs Delivered', fr: 'Missions livrées' })}</h2>
+                <h2 className="text-[26px] font-black text-black">{t({ en: 'Jobs Delivered', fr: 'Missions livrées', ar: 'مهام مكتملة' })}</h2>
                 {deliveredJobs.length > 0 ? (
                     <div className="pt-2">{deliveredJobs.map(renderOrderCard)}</div>
                 ) : (
                     <div className="pt-2">
                         {renderEmptyState(
-                            t({ en: 'No jobs delivered yet', fr: 'Aucune mission livrée pour le moment' }),
-                            t({ en: 'Missions you successfully complete will appear here', fr: 'Les missions que vous terminez avec succès apparaîtront ici' }),
+                            t({ en: 'No jobs delivered yet', fr: 'Aucune mission livrée pour le moment', ar: 'لم يتم تسليم أي مهام بعد' }),
+                            t({ en: 'Missions you successfully complete will appear here', fr: 'Les missions que vous terminez avec succès apparaîtront ici', ar: 'ستظهر المهام التي أكملتها بنجاح هنا' }),
                             <div className="w-28 h-28  rounded-full flex items-center justify-center">
                                 <img src="/Images/Vectors Illu/LocationFlag_VI.webp" className="w-20 h-20 object-contain" />
                             </div>
@@ -222,12 +222,12 @@ export default function ActivityTab({
                     <img src="/Images/Vectors Illu/OrdersHistory.webp" className="w-20 h-20 object-contain" />
                 </div>
                 <div className="flex flex-col">
-                    <p className="text-[16px] font-light text-black leading-tight">{t({ en: 'Need to review past missions?', fr: 'Besoin de revoir vos missions passées ?' })}</p>
+                    <p className="text-[16px] font-light text-black leading-tight">{t({ en: 'Need to review past missions?', fr: 'Besoin de revoir vos missions passées ?', ar: 'هل تحتاج إلى مراجعة المهام السابقة؟' })}</p>
                     <button
                         onClick={onShowHistory}
                         className="text-[17px] font-black text-[#01A083] mt-1 text-left decoration-[#01A083] decoration-2 underline-offset-4 hover:underline"
                     >
-                        {t({ en: 'Check my mission history', fr: 'Voir l’historique de mes missions' })}
+                        {t({ en: 'Check my mission history', fr: 'Voir l’historique de mes missions', ar: 'التحقق من سجل مهامي' })}
                     </button>
                 </div>
             </div>

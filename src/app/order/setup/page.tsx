@@ -167,19 +167,19 @@ export default function ServiceSetupPage() {
         }
     }, [order.serviceType, order.subServiceId]);
     const errandCategories = [
-        { id: 'keys', label: 'Keys', icon: '🔑' },
-        { id: 'documents', label: 'Docs', icon: '📄' },
-        { id: 'package', label: 'Parcel', icon: '📦' },
-        { id: 'grocery', label: 'Grocery', icon: '🛍️' },
-        { id: 'food', label: 'Food', icon: '🍛' },
-        { id: 'pharmacy', label: 'Pharmacy', icon: '💊' },
-        { id: 'mailing', label: 'Mailing', icon: '✉️' }
+        { id: 'keys', label: t({ en: 'Keys', fr: 'Clés', ar: 'مفاتيح' }), icon: '🔑' },
+        { id: 'documents', label: t({ en: 'Docs', fr: 'Docs', ar: 'وثائق' }), icon: '📄' },
+        { id: 'package', label: t({ en: 'Parcel', fr: 'Colis', ar: 'طرد' }), icon: '📦' },
+        { id: 'grocery', label: t({ en: 'Grocery', fr: 'Courses', ar: 'بقالة' }), icon: '🛍️' },
+        { id: 'food', label: t({ en: 'Food', fr: 'Nourriture', ar: 'طعام' }), icon: '🍛' },
+        { id: 'pharmacy', label: t({ en: 'Pharmacy', fr: 'Pharmacie', ar: 'صيدلية' }), icon: '💊' },
+        { id: 'mailing', label: t({ en: 'Mailing', fr: 'Courrier', ar: 'بريد' }), icon: '✉️' }
     ];
 
     const errandSizes = (order.serviceType === 'errands' || order.serviceType?.includes('delivery')) ? [
-        { id: 'small', name: 'Envelope/Bag', desc: 'Fits in a backpack (Moto)', icon: '🏍️' },
-        { id: 'medium', name: 'Standard Box', desc: 'Requires car trunk', icon: '🚗' },
-        { id: 'large', name: 'Large Package', desc: 'Fits in an SUV/Truck', icon: '🚚' }
+        { id: 'small', name: t({ en: 'Envelope/Bag', fr: 'Enveloppe/Sac', ar: 'ظرف/حقيبة' }), desc: t({ en: 'Fits in a backpack (Moto)', fr: 'Tient dans un sac à dos (Moto)', ar: 'يناسب حقيبة الظهر (موتو)' }), icon: '🏍️' },
+        { id: 'medium', name: t({ en: 'Standard Box', fr: 'Boîte standard', ar: 'صندوق قياسي' }), desc: t({ en: 'Requires car trunk', fr: 'Nécessite un coffre de voiture', ar: 'يتطلب صندوق السيارة' }), icon: '🚗' },
+        { id: 'large', name: t({ en: 'Large Package', fr: 'Grand colis', ar: 'طرد كبير' }), desc: t({ en: 'Fits in an SUV/Truck', fr: 'Tient dans un SUV/Camion', ar: 'يناسب سيارة رباعية/شاحنة' }), icon: '🚚' }
     ] : [];
 
     const isErrand = order.serviceType === 'errands' || order.serviceType?.includes('delivery');
@@ -407,32 +407,6 @@ export default function ServiceSetupPage() {
             };
             calculateTVPrice();
         } else if ((order.serviceType === 'cleaning' || order.serviceType === 'hospitality') && !['car_washing', 'car_detailing', 'dish_cleaning'].includes(order.subServiceId || '')) {
-            // Specialized Cleaning Duration Estimation
-            const getCleaningDuration = () => {
-                if (order.subServiceId === 'office_cleaning') {
-                    let d = 0;
-                    d += officeDesks * 0.25; // 15 mins per desk
-                    d += officeMeetingRooms * 0.5; // 30 mins per meeting room
-                    d += officeBathrooms * 0.33; // ~20 mins per bathroom
-                    if (hasKitchenette) d += 0.75; // 45 mins
-                    if (hasReception) d += 0.5; // 30 mins
-                    if (officeAddOns.includes('it_sanitization')) d += (officeDesks * 0.1); 
-                    if (officeAddOns.includes('glass_partitions')) d += 0.5;
-                    return Math.max(2, parseFloat(d.toFixed(1)));
-                }
-
-                let d = 2; // Min 2h for 1 room / studio (as requested: studio, 1 room = 2h min)
-                if (rooms > 1) d += (rooms - 1) * 1; // +1h per extra room (adjusting for better estimation)
-
-                const pType = propertyType?.toLowerCase() || 'apartment';
-                if (pType === 'villa') d *= 1.4;
-                else if (pType === 'riad') d *= 1.3;
-                else if (pType === 'guesthouse' || pType === 'hotel') d *= 1.25;
-
-                return Math.max(2, d);
-            };
-
-            const estimatedHours = getCleaningDuration();
             const calculateCleaningPrice = async () => {
                 let distance = 0;
                 let durationMinutes = 0;
@@ -455,12 +429,19 @@ export default function ServiceSetupPage() {
                     {
                         rooms,
                         propertyType,
-                        hours: estimatedHours,
                         distanceKm: distance,
-                        durationMinutes: durationMinutes
+                        durationMinutes: durationMinutes,
+                        // Office specific
+                        officeDesks,
+                        officeMeetingRooms,
+                        officeBathrooms,
+                        hasKitchenette,
+                        hasReception,
+                        officeAddOns
                     }
                 );
-                setEstimate({ ...result, duration: estimatedHours });
+
+                setEstimate(result);
             };
             calculateCleaningPrice();
         } else {
@@ -727,7 +708,7 @@ export default function ServiceSetupPage() {
                             onClick={() => setActiveTab('details')}
                             className={`flex-1 py-4 text-[14px] font-bold transition-all relative ${activeTab === 'details' ? 'text-[#01A083]' : 'text-[#9CA3AF]'}`}
                         >
-                            Bricoler Details
+                            {t({ en: 'Bricoler Details', fr: 'Détails du Bricoleur', ar: 'تفاصيل الحرفي' })}
                             {activeTab === 'details' && (
                                 <motion.div layoutId="tab-underline" className="absolute bottom-0 left-0 right-0 h-[2.5px] bg-[#01A083]" />
                             )}
@@ -736,7 +717,7 @@ export default function ServiceSetupPage() {
                             onClick={() => setActiveTab('setup')}
                             className={`flex-1 py-4 text-[14px] font-bold transition-all relative ${activeTab === 'setup' ? 'text-[#01A083]' : 'text-[#9CA3AF]'}`}
                         >
-                            Order Setup
+                            {t({ en: 'Order Setup', fr: 'Configuration de la commande', ar: 'إعداد الطلب' })}
                             {activeTab === 'setup' && (
                                 <motion.div layoutId="tab-underline" className="absolute bottom-0 left-0 right-0 h-[2.5px] bg-[#01A083]" />
                             )}
@@ -877,11 +858,11 @@ export default function ServiceSetupPage() {
                                                 <h2 className="text-[24px] font-black text-[#111827] mb-0">{provider.name}</h2>
                                                 <div className="flex items-baseline gap-2 text-[#01A083] mb-2">
                                                     <span className="text-[20px] font-black">MAD {provider.minRate}</span>
-                                                    <span className="text-[14px] font-bold text-[#6B7280]">minimum</span>
+                                                    <span className="text-[14px] font-bold text-[#6B7280]">{t({ en: 'minimum', fr: 'minimum', ar: 'كحد أدنى' })}</span>
                                                 </div>
                                                 <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#F1FEF4] rounded-full border border-[#027963]">
                                                     <ShieldCheck size={14} className="text-[#027963]" />
-                                                    <span className="text-[11px] font-black text-[#166534]  tracking-wider">Identity Verified</span>
+                                                    <span className="text-[11px] font-black text-[#166534]  tracking-wider">{t({ en: 'Identity Verified', fr: 'Identité vérifiée', ar: 'تم التحقق من الهوية' })}</span>
                                                 </div>
                                             </div>
                                         </motion.div>
@@ -895,7 +876,7 @@ export default function ServiceSetupPage() {
                                                 }}
                                                 className="w-full h-11 bg-[#01A083] text-white rounded-full font-medium text-[20px] flex items-center justify-center gap-3 transition-all py-5 "
                                             >
-                                                <span>Book me</span>
+                                                <span>{t({ en: 'Book me', fr: 'Réservez-moi', ar: 'احجزني' })}</span>
                                             </motion.button>
                                         </div>
 
@@ -903,21 +884,21 @@ export default function ServiceSetupPage() {
                                         <motion.div variants={staggerItem} className="grid grid-cols-4 gap-2 mb-8">
                                             {/* Level Stat */}
                                             <div className="flex flex-col items-center gap-2 text-center">
-                                                <div 
+                                                <div
                                                     className="w-[68px] h-[68px] flex items-center justify-center bg-[#F1FEF4] border border-[#DCFCE7]"
                                                     style={{ borderRadius: '70% 30% 50% 50% / 50% 70% 30% 50%' }}
                                                 >
                                                     <Trophy size={40} className="text-[#10B981] fill-[#10B981]/20" />
                                                 </div>
                                                 <div className="flex flex-col items-center -space-y-0.5">
-                                                    <span className="text-[14px] font-semibold text-[#111827] capitalize">{(effectiveJobs < 10 || isNew) ? 'New' : (provider.badge || 'Elite')}</span>
-                                                    <span className="text-[10px] font-medium text-neutral-400 uppercase tracking-widest">Level</span>
+                                                    <span className="text-[14px] font-semibold text-[#111827] capitalize">{(effectiveJobs < 10 || isNew) ? (t({ en: 'New', fr: 'Nouveau', ar: 'جديد' })) : (provider.badge || (t({ en: 'Elite', fr: 'Élite', ar: 'نخبة' })))}</span>
+                                                    <span className="text-[10px] font-medium text-neutral-400 uppercase tracking-widest">{t({ en: 'Level', fr: 'Niveau', ar: 'مستوى' })}</span>
                                                 </div>
                                             </div>
 
                                             {/* Rating Stat */}
                                             <div className="flex flex-col items-center gap-2 text-center">
-                                                <div 
+                                                <div
                                                     className="w-[68px] h-[68px] flex items-center justify-center bg-[#FFFBEB] border border-[#FEF3C7]"
                                                     style={{ borderRadius: '40% 60% 70% 30% / 40% 50% 60% 50%' }}
                                                 >
@@ -925,13 +906,13 @@ export default function ServiceSetupPage() {
                                                 </div>
                                                 <div className="flex flex-col items-center -space-y-0.5">
                                                     <span className="text-[14px] font-semibold text-[#111827]">{!provider.taskCount || provider.taskCount === 0 || !provider.rating ? '0.0' : provider.rating.toFixed(1)}</span>
-                                                    <span className="text-[10px] font-medium text-neutral-400 uppercase tracking-widest">Rating</span>
+                                                    <span className="text-[10px] font-medium text-neutral-400 uppercase tracking-widest">{t({ en: 'Rating', fr: 'Note', ar: 'تقييم' })}</span>
                                                 </div>
                                             </div>
 
                                             {/* Orders Stat */}
                                             <div className="flex flex-col items-center gap-2 text-center">
-                                                <div 
+                                                <div
                                                     className="w-[68px] h-[68px] flex items-center justify-center bg-[#F0F9FF] border border-[#E0F2FE]"
                                                     style={{ borderRadius: '60% 40% 30% 70% / 70% 30% 70% 30%' }}
                                                 >
@@ -939,21 +920,21 @@ export default function ServiceSetupPage() {
                                                 </div>
                                                 <div className="flex flex-col items-center -space-y-0.5">
                                                     <span className="text-[14px] font-semibold text-[#111827]">{effectiveJobs}</span>
-                                                    <span className="text-[10px] font-medium text-neutral-400 uppercase tracking-widest">Orders</span>
+                                                    <span className="text-[10px] font-medium text-neutral-400 uppercase tracking-widest">{t({ en: 'Orders', fr: 'Commandes', ar: 'طلبات' })}</span>
                                                 </div>
                                             </div>
 
                                             {/* Experience Stat */}
                                             <div className="flex flex-col items-center gap-2 text-center">
-                                                <div 
+                                                <div
                                                     className="w-[68px] h-[68px] flex items-center justify-center bg-[#F5F3FF] border border-[#EDE9FE]"
                                                     style={{ borderRadius: '50% 50% 20% 80% / 40% 60% 40% 60%' }}
                                                 >
                                                     <Calendar size={40} className="text-[#6366F1] fill-[#6366F1]/10" />
                                                 </div>
                                                 <div className="flex flex-col items-center -space-y-0.5">
-                                                    <span className="text-[14px] font-semibold text-[#111827]">{provider.yearsOfExperience || "1 Year"}</span>
-                                                    <span className="text-[10px] font-medium text-neutral-400 uppercase tracking-widest">Experience</span>
+                                                    <span className="text-[14px] font-semibold text-[#111827]">{provider.yearsOfExperience || (t({ en: '1 Year', fr: '1 an', ar: 'سنة واحدة' }))}</span>
+                                                    <span className="text-[10px] font-medium text-neutral-400 uppercase tracking-widest">{t({ en: 'Experience', fr: 'Expérience', ar: 'خبرة' })}</span>
                                                 </div>
                                             </div>
                                         </motion.div>
@@ -976,7 +957,7 @@ export default function ServiceSetupPage() {
                                         {provider.portfolio && provider.portfolio.length > 0 && (
                                             <motion.div variants={staggerItem} className="mb-8">
                                                 <div className="flex items-center justify-between mb-4">
-                                                    <h4 className="text-[18px] font-black text-[#111827]">Portfolio</h4>
+                                                    <h4 className="text-[18px] font-black text-[#111827]">{t({ en: 'Portfolio', fr: 'Portfolio', ar: 'معرض الأعمال' })}</h4>
                                                     <span className="text-[11px] font-black text-[#01A083] tracking-[2px] uppercase">{order.serviceName}</span>
                                                 </div>
                                                 <div className="flex gap-4 overflow-x-auto no-scrollbar -mx-6 px-6 pb-2">
@@ -997,11 +978,11 @@ export default function ServiceSetupPage() {
                                                         <TrendingUp size={20} />
                                                     </div>
                                                     <div>
-                                                        <div className="text-[10px] font-black text-[#9CA3AF] tracking-widest uppercase mb-0.5">Performance</div>
-                                                        <div className="text-[16px] font-bold text-[#111827]">99% Success Rate</div>
+                                                        <div className="text-[10px] font-black text-[#9CA3AF] tracking-widest uppercase mb-0.5">{t({ en: 'Performance', fr: 'Performance', ar: 'الأداء' })}</div>
+                                                        <div className="text-[16px] font-bold text-[#111827]">{t({ en: '99% Success Rate', fr: 'Taux de réussite de 99%', ar: '99% نسبة النجاح' })}</div>
                                                     </div>
                                                 </div>
-                                                <div className="px-3 py-1 bg-[#F1FEF4] rounded-full text-[#10B981] text-[11px] font-black">EXCELLENT</div>
+                                                <div className="px-3 py-1 bg-[#F1FEF4] rounded-full text-[#10B981] text-[11px] font-black">{t({ en: 'EXCELLENT', fr: 'EXCELLENT', ar: 'ممتاز' })}</div>
                                             </div>
                                         </motion.div>
 
@@ -1055,8 +1036,8 @@ export default function ServiceSetupPage() {
                                         {/* Reviews Section */}
                                         <motion.div variants={staggerItem} className="mb-10">
                                             <div className="flex items-center justify-between mb-4">
-                                                <h4 className="text-[18px] font-black text-[#111827]">Client Reviews</h4>
-                                                <span className="text-[11px] font-black text-[#9CA3AF] tracking-widest">{provider.reviews?.length || 0} reviews</span>
+                                                <h4 className="text-[18px] font-black text-[#111827]">{t({ en: 'Client Reviews', fr: 'Avis clients', ar: 'آراء العملاء' })}</h4>
+                                                <span className="text-[11px] font-black text-[#9CA3AF] tracking-widest">{provider.reviews?.length || 0} {t({ en: 'reviews', fr: 'avis', ar: 'تقييمات' })}</span>
                                             </div>
                                             <div className="grid grid-cols-1 gap-4">
                                                 {provider.reviews && provider.reviews.length > 0 ? provider.reviews.map((rev, i) => (
@@ -1072,7 +1053,7 @@ export default function ServiceSetupPage() {
                                                             <div className="flex-1 min-w-0">
                                                                 <p className="text-[14px] font-black text-[#111827] truncate">{rev.clientName || rev.userName || 'Verified Client'}</p>
                                                                 <p className="text-[11px] font-bold text-[#9CA3AF]">
-                                                                    {rev.date ? new Date(rev.date).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }) : 'Recently'}
+                                                                    {rev.date ? new Date(rev.date).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }) : (t({ en: 'Recently', fr: 'Récemment', ar: 'مؤخراً' }))}
                                                                 </p>
                                                             </div>
                                                             <div className="flex items-center gap-1 bg-[#FFFBEB] px-2.5 py-1 rounded-[5px] border border-[#FEF3C7] flex-shrink-0">
@@ -1084,7 +1065,7 @@ export default function ServiceSetupPage() {
                                                     </div>
                                                 )) : (
                                                     <div className="py-12 text-center bg-white rounded-[20px] border border-dashed border-neutral-200">
-                                                        <p className="text-[#9CA3AF] font-medium text-[15px] ">Awaiting first reviews on the app</p>
+                                                        <p className="text-[#9CA3AF] font-medium text-[15px] ">{t({ en: 'Awaiting first reviews on the app', fr: 'En attente des premiers avis sur l\'application', ar: 'في انتظار المراجعات الأولى على التطبيق' })}</p>
                                                     </div>
                                                 )}
                                             </div>
@@ -1096,8 +1077,8 @@ export default function ServiceSetupPage() {
                                                 <Check size={22} className="stroke-[3]" />
                                             </div>
                                             <div>
-                                                <p className="text-[16px] font-black text-[#065F46]">Verified Bricoler</p>
-                                                <p className="text-[13px] font-medium text-[#047857]">Identity and skills verified by Lbricol team.</p>
+                                                <p className="text-[16px] font-black text-[#065F46]">{t({ en: 'Verified Bricoler', fr: 'Bricoleur vérifié', ar: 'حرفي موثوق' })}</p>
+                                                <p className="text-[13px] font-medium text-[#047857]">{t({ en: 'Identity and skills verified by Lbricol team.', fr: 'Identité et compétences vérifiées par l\'équipe Lbricol.', ar: 'تم التحقق من الهوية والمهارات من قبل فريق Lbricol.' })}</p>
                                             </div>
                                         </motion.div>
                                     </>
@@ -1121,7 +1102,7 @@ export default function ServiceSetupPage() {
                             {profiles.length > 0 && (
                                 <motion.section variants={staggerItem} className="px-6">
                                     <h3 className="text-[18px] font-Bold text-[#111827] mb-5 px-1 flex items-center gap-2">
-                                        Saved Setups
+                                        {t({ en: 'Saved Setups', fr: 'Installations enregistrées', ar: 'الإعدادات المحفوظة' })}
                                     </h3>
                                     <div className="flex gap-4 overflow-x-auto pb-4 no-scrollbar -mx-1 px-1">
                                         <button
@@ -1138,7 +1119,7 @@ export default function ServiceSetupPage() {
                                             <div className={`w-8 h-8 rounded-[10px] flex items-center justify-center ${selectedProfileId === 'new' ? ' text-white' : 'bg-neutral-100'}`}>
                                                 <Home size={20} className="text-[#01A083]" />
                                             </div>
-                                            <span className="font-black text-[15px]">New setup</span>
+                                            <span className="font-black text-[15px]">{t({ en: 'New setup', fr: 'Nouvelle installation', ar: 'إعداد جديد' })}</span>
                                         </button>
 
                                         {profiles.map(p => (
@@ -1177,9 +1158,9 @@ export default function ServiceSetupPage() {
                                         {/* 1. Category & Description */}
                                         <div className="space-y-6">
                                             <div className="flex items-center justify-between">
-                                                <h3 className="text-[25px] font-bold text-[#111827]">What do you need?</h3>
+                                                <h3 className="text-[25px] font-bold text-[#111827]">{t({ en: 'What do you need?', fr: 'Que vous faut-il ?', ar: 'ماذا تحتاج؟' })}</h3>
                                                 <div className="px-3 py-1 bg-[#01A083]/10 rounded-full">
-                                                    <span className="text-[12px] font-black text-[#01A083] uppercase tracking-wider">Errand</span>
+                                                    <span className="text-[12px] font-black text-[#01A083] uppercase tracking-wider">{t({ en: 'Errand', fr: 'Coursier', ar: 'خدمة' })}</span>
                                                 </div>
                                             </div>
 
@@ -1208,9 +1189,9 @@ export default function ServiceSetupPage() {
 
                                                     <div>
                                                         <p className="text-[16px] font-bold text-[#111827]">
-                                                            {itemDescription || "Add details (e.g. key from A to B)"}
+                                                            {itemDescription || t({ en: 'Add details (e.g. key from A to B)', fr: 'Ajouter des détails (ex: clé de A à B)', ar: 'إضافة تفاصيل (مثلاً: مفتاح من أ إلى ب)' })}
                                                         </p>
-                                                        <p className="text-[13px] font-medium text-[#9CA3AF]">Courier will see this description</p>
+                                                        <p className="text-[13px] font-medium text-[#9CA3AF]">{t({ en: 'Courier will see this description', fr: 'Le coursier verra cette description', ar: 'سيقوم المندوب برؤية هذا الوصف' })}</p>
                                                     </div>
                                                 </div>
                                                 <ChevronLeft className="rotate-180 text-neutral-300 group-hover:text-[#01A083] transition-colors" size={22} />
@@ -1219,7 +1200,7 @@ export default function ServiceSetupPage() {
 
                                         {/* 2. Load Size Picker */}
                                         <div className="space-y-6">
-                                            <h3 className="text-[25px] text-[#111827] font-medium">Package Size</h3>
+                                            <h3 className="text-[25px] text-[#111827] font-medium">{t({ en: 'Package Size', fr: 'Taille du colis', ar: 'حجم الطرد' })}</h3>
                                             <div className="grid grid-cols-1 gap-3">
                                                 {errandSizes.map((size) => (
                                                     <button
@@ -1249,7 +1230,7 @@ export default function ServiceSetupPage() {
                                         {/* 3. Photo Section (Trust) */}
                                         <div className="space-y-6">
                                             <div className="flex items-center justify-between">
-                                                <h3 className="text-[25px] text-[#111827] font-bold">Item Photo</h3>
+                                                <h3 className="text-[25px] text-[#111827] font-bold">{t({ en: 'Item Photo', fr: 'Photo de l\'article', ar: 'صورة الغرض' })}</h3>
                                             </div>
                                             <div className="p-8 border-2 border-dashed border-neutral-100 rounded-[15px] bg-[#F9FAFB] flex flex-col items-center justify-center gap-6 text-center">
                                                 {!photos.length && (
@@ -1258,8 +1239,8 @@ export default function ServiceSetupPage() {
                                                             <ImageIcon size={32} />
                                                         </div>
                                                         <div className="space-y-1">
-                                                            <p className="text-[15px] font-bold text-[#111827]">Show the Bricoler the item</p>
-                                                            <p className="text-[13px] font-medium text-neutral-500 max-w-[240px]">Helps them prepare and confirms it fits their vehicle</p>
+                                                            <p className="text-[15px] font-bold text-[#111827]">{t({ en: 'Show the Bricoler the item', fr: 'Montrez l\'article au Bricoleur', ar: 'أظهر الغرض للحرفي' })}</p>
+                                                            <p className="text-[13px] font-medium text-neutral-500 max-w-[240px]">{t({ en: 'Helps them prepare and confirms it fits their vehicle', fr: 'L\'aide à se préparer et confirme que cela rentre dans son véhicule', ar: 'يساعدهم في التحضير والتأكد من ملاءمة السيارة' })}</p>
                                                         </div>
                                                     </div>
                                                 )}
@@ -1283,7 +1264,7 @@ export default function ServiceSetupPage() {
                                                             className="w-24 h-24 rounded-[12px] border-2 border-dashed border-neutral-200 bg-white flex flex-col items-center justify-center gap-1 text-neutral-400 hover:border-[#01A083] hover:text-[#01A083] transition-all active:scale-95"
                                                         >
                                                             <Plus size={24} />
-                                                            <span className="text-[10px] font-black uppercase tracking-wider">Add</span>
+                                                            <span className="text-[10px] font-black uppercase tracking-wider">{t({ en: 'Add', fr: 'Ajouter', ar: 'إضافة' })}</span>
                                                         </button>
                                                     )}
                                                 </div>
@@ -1302,7 +1283,7 @@ export default function ServiceSetupPage() {
 
                                         {/* 4. Routing Display */}
                                         <div className="space-y-6">
-                                            <h3 className="text-[25px] font-bold text-[#111827]">Delivery Route</h3>
+                                            <h3 className="text-[25px] font-bold text-[#111827]">{t({ en: 'Delivery Route', fr: 'Itinéraire de livraison', ar: 'مسار التوصيل' })}</h3>
 
                                             <div className="h-56 bg-[#F3F4F6] rounded-[10px] border border-neutral-100 relative overflow-hidden ">
                                                 <MapView
@@ -1318,7 +1299,7 @@ export default function ServiceSetupPage() {
                                                 <div className="absolute top-4 right-4 z-10">
                                                     <div className="px-3 py-1.5 bg-white/90 backdrop-blur rounded-full border border-neutral-100 flex items-center gap-2">
                                                         <Navigation size={14} className="text-[#01A083]" />
-                                                        <span className="text-[12px] font-black text-[#111827]">Estimated Route</span>
+                                                        <span className="text-[12px] font-black text-[#111827]">{t({ en: 'Estimated Route', fr: 'Itinéraire estimé', ar: 'المسار المقدر' })}</span>
                                                     </div>
                                                 </div>
 
@@ -1329,8 +1310,8 @@ export default function ServiceSetupPage() {
                                                                 <Clock size={16} className="text-[#01A083]" />
                                                             </div>
                                                             <div className="flex flex-col">
-                                                                <span className="text-[14px] font-black text-[#111827] leading-none mb-0.5">{Math.ceil(estimate.duration)} mins</span>
-                                                                <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Travel Time</span>
+                                                                <span className="text-[14px] font-black text-[#111827] leading-none mb-0.5">{Math.ceil(estimate.duration)} {t({ en: 'mins', fr: 'mins', ar: 'دقائق' })}</span>
+                                                                <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">{t({ en: 'Travel Time', fr: 'Temps de trajet', ar: 'وقت الرحلة' })}</span>
                                                             </div>
                                                         </div>
                                                     </div>
@@ -1347,9 +1328,9 @@ export default function ServiceSetupPage() {
                                                             <img src="/Images/Icons/Lightpin.png" alt="from" className="w-10 h-10 object-contain" />
                                                         </div>
                                                         <div className="text-left">
-                                                            <p className="text-[13px] font-bold text-[#000000] uppercase tracking-wider mb-0.5">Pickup Point</p>
+                                                            <p className="text-[13px] font-bold text-[#000000] uppercase tracking-wider mb-0.5">{t({ en: 'Pickup Point', fr: 'Point de retrait', ar: 'نقطة الاستلام' })}</p>
                                                             <p className={`text-[15px] font-bold truncate max-w-[220px] ${pickupLocation.address ? 'text-[#111827]' : 'text-neutral-300'}`}>
-                                                                {pickupLocation.address || "Where do we start?"}
+                                                                {pickupLocation.address || t({ en: 'Where do we start?', fr: 'Où commençons-nous ?', ar: 'من أين نبدأ؟' })}
                                                             </p>
                                                         </div>
                                                     </div>
@@ -1369,9 +1350,9 @@ export default function ServiceSetupPage() {
                                                             <img src="/Images/Icons/Lightpin.png" alt="from" className="w-10 h-10 object-contain" />
                                                         </div>
                                                         <div className="text-left">
-                                                            <p className="text-[11px] font-bold text-[#000000] uppercase tracking-wider mb-0.5">Drop-off Point</p>
+                                                            <p className="text-[11px] font-bold text-[#000000] uppercase tracking-wider mb-0.5">{t({ en: 'Drop-off Point', fr: 'Point de livraison', ar: 'نقطة التسليم' })}</p>
                                                             <p className={`text-[15px] font-bold truncate max-w-[220px] ${dropoffLocation.address ? 'text-[#111827]' : 'text-neutral-300'}`}>
-                                                                {dropoffLocation.address || "Where to deliver?"}
+                                                                {dropoffLocation.address || t({ en: 'Where to deliver?', fr: 'Où livrer ?', ar: 'أين التسليم؟' })}
                                                             </p>
                                                         </div>
                                                     </div>
@@ -1388,16 +1369,16 @@ export default function ServiceSetupPage() {
                                                 <AlertCircle size={24} className="text-[#000000]" />
                                             </div>
                                             <div className="space-y-1">
-                                                <p className="text-[20px] font-medium text-[#000000]">Strict: No Purchases</p>
+                                                <p className="text-[20px] font-medium text-[#000000]">{t({ en: 'Strict: No Purchases', fr: 'Strict : Pas d\'achats', ar: 'تنبيه: لا يوجد مشتريات' })}</p>
                                                 <p className="text-[14px] font-Light text-[#000000] leading-relaxed">
-                                                    Bricolers are couriers, not shoppers. They cannot buy products for you. Items must be prepaid or ready for pickup.
+                                                    {t({ en: 'Bricolers are couriers, not shoppers. They cannot buy products for you. Items must be prepaid or ready for pickup.', fr: 'Les Bricoleurs sont des coursiers, pas des acheteurs. Ils ne peuvent pas acheter de produits pour vous. Les articles doivent être prépayés ou prêts pour le retrait.', ar: 'الحرفيون هم عمال توصيل وليسوا متسوقين. لا يمكنهم شراء المنتجات لك. يجب أن تكون الأصناف مدفوعة مسبقاً أو جاهزة للاستلام.' })}
                                                 </p>
                                             </div>
                                         </div>
 
                                         {/* 6. Recipient Details */}
                                         <div className="space-y-6">
-                                            <h3 className="text-[25px] font-medium text-[#111827]">Handling Info</h3>
+                                            <h3 className="text-[25px] font-medium text-[#111827]">{t({ en: 'Handling Info', fr: 'Infos de manutention', ar: 'معلومات الاستلام' })}</h3>
                                             <button
                                                 onClick={() => setActiveDrawer('recipient')}
                                                 className="w-full p-6 flex items-center justify-between rounded-[15px] border border-neutral-100 transition-all active:scale-[0.99]"
@@ -1408,9 +1389,9 @@ export default function ServiceSetupPage() {
                                                     </div>
                                                     <div>
                                                         <p className={`text-[16px] font-bold ${recipientName ? 'text-[#111827]' : 'text-[#111827]'}`}>
-                                                            {recipientName ? `Recipient: ${recipientName}` : "Sending to someone else?"}
+                                                            {recipientName ? `${t({ en: 'Recipient', fr: 'Destinataire', ar: 'المستلم' })}: ${recipientName}` : t({ en: 'Sending to someone else?', fr: 'Envoyer à quelqu\'un d\'autre ?', ar: 'إرسال لشخص آخر؟' })}
                                                         </p>
-                                                        <p className="text-[13px] font-medium text-[#9CA3AF]">Who should the courier meet at drop-off?</p>
+                                                        <p className="text-[13px] font-medium text-[#9CA3AF] text-left">{t({ en: 'Who should the courier meet at drop-off?', fr: 'Qui le coursier doit-il rencontrer à la livraison ?', ar: 'من يجب أن يقابل المندوب عند التسليم؟' })}</p>
                                                     </div>
                                                 </div>
                                                 <ChevronLeft className="rotate-180 text-neutral-400" size={20} />
@@ -1420,7 +1401,7 @@ export default function ServiceSetupPage() {
                                         {/* 7. Scheduling (Pic 3 Design) */}
                                         <div className="space-y-6">
                                             <div className="flex items-center gap-2">
-                                                <h3 className="text-[25px] font-bold text-[#111827]">Delivery options</h3>
+                                                <h3 className="text-[25px] font-bold text-[#111827]">{t({ en: 'Delivery options', fr: 'Options de livraison', ar: 'خيارات التوصيل' })}</h3>
                                                 <button className="w-5 h-5 rounded-full border border-neutral-300 flex items-center justify-center text-neutral-400 text-[10px] font-black">i</button>
                                             </div>
 
@@ -1434,8 +1415,8 @@ export default function ServiceSetupPage() {
                                                         {deliveryType === 'standard' && <div className="w-2.5 h-2.5 rounded-full bg-white" />}
                                                     </div>
                                                     <div>
-                                                        <p className="text-[20px] font-medium text-[#111827]">Standard</p>
-                                                        <p className="text-[14px] font-light text-[#111827]">As soon as possible</p>
+                                                        <p className="text-[20px] font-medium text-[#111827]">{t({ en: 'Standard', fr: 'Standard', ar: 'عادي' })}</p>
+                                                        <p className="text-[14px] font-light text-[#111827]">{t({ en: 'As soon as possible', fr: 'Dès que possible', ar: 'في أقرب وقت ممكن' })}</p>
                                                     </div>
                                                 </div>
                                             </button>
@@ -1453,9 +1434,9 @@ export default function ServiceSetupPage() {
                                                         {deliveryType === 'schedule' && <div className="w-2.5 h-2.5 rounded-full bg-white" />}
                                                     </div>
                                                     <div>
-                                                        <p className="text-[20px] font-medium text-[#111827]">Schedule</p>
+                                                        <p className="text-[20px] font-medium text-[#111827]">{t({ en: 'Schedule', fr: 'Planifier', ar: 'جدولة' })}</p>
                                                         <p className="text-[14px] font-light text-[#111827]">
-                                                            {deliveryDate ? `${deliveryDate} at ${deliveryTime}` : "Select time"}
+                                                            {deliveryDate ? `${deliveryDate} ${t({ en: 'at', fr: 'à', ar: 'في' })} ${deliveryTime}` : t({ en: 'Select time', fr: 'Choisir l\'heure', ar: 'اختر الوقت' })}
                                                         </p>
                                                     </div>
                                                 </div>
@@ -1467,7 +1448,7 @@ export default function ServiceSetupPage() {
                                     <>
                                         {/* Availability Picker */}
                                         <div className="space-y-6">
-                                            <h3 className="text-[25px] text-[#111827] font-bold">When do you need the Bricoler?</h3>
+                                            <h3 className="text-[25px] text-[#111827] font-bold">{t({ en: 'When do you need the Bricoler?', fr: 'Quand avez-vous besoin du Bricoleur ?' })}</h3>
                                             <OrderAvailabilityPicker
                                                 bricolerId={order.providerId!}
                                                 onSelect={(slots) => {
@@ -1483,12 +1464,12 @@ export default function ServiceSetupPage() {
                                             <div className="space-y-10">
                                                 {/* Task Size */}
                                                 <div className="space-y-6">
-                                                    <h3 className="text-[25px] text-[#111827] font-bold">How big is the move?</h3>
+                                                    <h3 className="text-[25px] text-[#111827] font-bold">{t({ en: 'How big is the move?', fr: 'Quelle est la taille du déménagement ?', ar: 'ما هو حجم الانتقال؟' })}</h3>
                                                     <div className="grid grid-cols-1 gap-3">
                                                         {[
-                                                            { id: 'small', name: 'Small', desc: 'A few items or 1 room', duration: '1.5h', hours: 1.5 },
-                                                            { id: 'medium', name: 'Medium', desc: '2-3 rooms / Small apartment', duration: '3h', hours: 3 },
-                                                            { id: 'large', name: 'Large', desc: '4+ rooms / Big house', duration: '5h+', hours: 5 },
+                                                            { id: 'small', name: t({ en: 'Small', fr: 'Petit', ar: 'صغير' }), desc: t({ en: 'A few items or 1 room', fr: 'Quelques objets ou 1 pièce', ar: 'بضعة أشياء أو غرفة واحدة' }), duration: '1.5h', hours: 1.5 },
+                                                            { id: 'medium', name: t({ en: 'Medium', fr: 'Moyen', ar: 'متوسط' }), desc: t({ en: '2-3 rooms / Small apartment', fr: '2-3 pièces / Petit appartement', ar: '2-3 غرف / شقة صغيرة' }), duration: '3h', hours: 3 },
+                                                            { id: 'large', name: t({ en: 'Large', fr: 'Grand', ar: 'كبير' }), desc: t({ en: '4+ rooms / Big house', fr: '4+ pièces / Grande maison', ar: 'أكثر من 4 غرف / منزل كبير' }), duration: '5h+', hours: 5 },
                                                         ].map((size) => (
                                                             <button
                                                                 key={size.id}
@@ -1503,7 +1484,7 @@ export default function ServiceSetupPage() {
                                                                     <p className="font-medium text-[13px] text-black/60">{size.desc}</p>
                                                                 </div>
                                                                 <div className="text-right pr-4">
-                                                                    <p className="font-bold text-[15px] text-[#01A083]">Est. {size.duration}</p>
+                                                                    <p className="font-bold text-[15px] text-[#01A083]">{t({ en: 'Est.', fr: 'Est.' })} {size.duration}</p>
                                                                 </div>
                                                             </button>
                                                         ))}
@@ -1513,22 +1494,22 @@ export default function ServiceSetupPage() {
                                                 {/* Packing Service: Move items too? */}
                                                 {order.subServiceId === 'packing' && (
                                                     <div className="space-y-4">
-                                                        <h3 className="text-[25px] text-[#111827] font-black">Move these items too?</h3>
+                                                        <h3 className="text-[25px] text-[#111827] font-black">{t({ en: 'Move these items too?', fr: 'Déménager ces objets aussi ?', ar: 'هل تريد نقل هذه الأشياء أيضاً؟' })}</h3>
                                                         <p className="text-neutral-500 text-[15px] font-medium leading-relaxed max-w-[90%]">
-                                                            Do you need the items to be transported to a second location after they are packed?
+                                                            {t({ en: 'Do you need the items to be transported to a second location after they are packed?', fr: 'Avez-vous besoin que les objets soient transportés vers un second lieu après l\'emballage ?', ar: 'هل تحتاج لنقل الأشياء إلى موقع ثانٍ بعد تغليفها؟' })}
                                                         </p>
                                                         <div className="grid grid-cols-2 gap-3 mt-2">
                                                             <button
                                                                 onClick={() => setNeedsTransport(false)}
                                                                 className={`p-5 rounded-[5px] border-2 font-black transition-all ${!needsTransport ? 'border-[#01A083] bg-[#F0FDF9] text-[#01A083]' : 'border-neutral-100 bg-[#F9FAFB] text-neutral-400'}`}
                                                             >
-                                                                No, just packing
+                                                                {t({ en: 'No, just packing', fr: 'Non, juste l\'emballage', ar: 'لا، تغليف فقط' })}
                                                             </button>
                                                             <button
                                                                 onClick={() => setNeedsTransport(true)}
                                                                 className={`p-5 rounded-[5px] border-2 font-black transition-all ${needsTransport ? 'border-[#01A083] bg-[#F0FDF9] text-[#01A083]' : 'border-neutral-100 bg-[#F9FAFB] text-neutral-400'}`}
                                                             >
-                                                                Yes, pack & move
+                                                                {t({ en: 'Yes, pack & move', fr: 'Oui, emballer & déménager' })}
                                                             </button>
                                                         </div>
                                                     </div>
@@ -1564,7 +1545,7 @@ export default function ServiceSetupPage() {
                                                                         <img src="/Images/Icons/Lightpin.png" alt="from" className="w-10 h-10 object-contain" />
                                                                     </div>
                                                                     <span className={`text-[17px] font-medium flex-1 truncate ${pickupLocation.address ? 'text-light' : 'text-neutral-400'}`}>
-                                                                        {pickupLocation.address || "Where from?"}
+                                                                        {pickupLocation.address || t({ en: 'Where from?', fr: 'D\'où ?' })}
                                                                     </span>
                                                                 </div>
                                                                 <ChevronRight className="text-neutral-300 group-hover:text-black transition-colors" size={18} />
@@ -1579,7 +1560,7 @@ export default function ServiceSetupPage() {
                                                                         <img src="/Images/Icons/Lightpin.png" alt="to" className="w-10 h-10 object-contain" />
                                                                     </div>
                                                                     <span className={`text-[17px] font-medium flex-1 truncate ${dropoffLocation.address ? 'text-light' : 'text-neutral-400'}`}>
-                                                                        {dropoffLocation.address || "Where to?"}
+                                                                        {dropoffLocation.address || t({ en: 'Where to?', fr: 'Vers où ?' })}
                                                                     </span>
                                                                 </div>
                                                                 <ChevronRight className="text-neutral-300 group-hover:text-black transition-colors" size={18} />
@@ -1588,14 +1569,14 @@ export default function ServiceSetupPage() {
 
                                                         {pickupLocation.address && dropoffLocation.address && (
                                                             <div className="p-4 bg-[#F9FAFB] rounded-[5px] flex items-center justify-between border border-neutral-100 italic">
-                                                                <span className="text-[13px] font-light text-neutral-500">Delivery Estimate</span>
+                                                                <span className="text-[13px] font-light text-neutral-500">{t({ en: 'Delivery Estimate', fr: 'Estimation de livraison' })}</span>
                                                                 <div className="flex items-center gap-2">
                                                                     <span className="text-[13px] font-black text-[#01A083]">
                                                                         {estimate?.distanceKm ? `${estimate.distanceKm.toFixed(1)} km` : ""}
                                                                     </span>
                                                                     {estimate?.distanceKm && (estimate.duration || estimate.duration === 0) ? <span className="text-neutral-300">·</span> : null}
                                                                     <span className="text-[13px] font-medium text-black">
-                                                                        {(estimate?.duration || estimate?.duration === 0) ? `${estimate.duration} min travel` : "Calculating route..."}
+                                                                        {(estimate?.duration || estimate?.duration === 0) ? `${estimate.duration} ${t({ en: 'min travel', fr: 'min de trajet' })}` : t({ en: 'Calculating route...', fr: 'Calcul de l\'itinéraire...' })}
                                                                     </span>
                                                                 </div>
                                                             </div>
@@ -1608,7 +1589,7 @@ export default function ServiceSetupPage() {
                                         {/* Property Type */}
                                         {order.subServiceId !== 'office_cleaning' && (
                                             <div className="space-y-6">
-                                                <h3 className="text-[25px] text-[#111827] font-bold">What kind of place is this?</h3>
+                                                <h3 className="text-[25px] text-[#111827] font-bold">{t({ en: 'What kind of place is this?', fr: 'Quel type de lieu est-ce ?' })}</h3>
                                                 <div className="flex flex-wrap gap-2">
                                                     {['Studio', 'Apartment', 'Villa', 'Guesthouse', 'Riad', 'Hotel'].map(type => (
                                                         <button
@@ -1627,7 +1608,7 @@ export default function ServiceSetupPage() {
                                         {((order.serviceType === 'cleaning' || order.serviceType === 'hospitality') && !['car_washing', 'car_detailing', 'dish_cleaning', 'office_cleaning'].includes(order.subServiceId || '')) && (
                                             <div className="space-y-6">
                                                 <div className="flex items-center justify-between px-1">
-                                                    <label className="text-[25px] font-bold text-[#111827] setup-heading">How many rooms?</label>
+                                                    <label className="text-[25px] font-bold text-[#111827] setup-heading">{t({ en: 'How many rooms?', fr: 'Combien de pièces ?', ar: 'كم عدد الغرف؟' })}</label>
                                                 </div>
                                                 <div className="flex gap-4 overflow-x-auto pb-6 pt-2 no-scrollbar -mx-6 px-6 snap-x snap-mandatory">
                                                     {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((num) => (
@@ -1651,15 +1632,14 @@ export default function ServiceSetupPage() {
                                                 </div>
                                             </div>
                                         )}
-
                                         {/* Office Cleaning Specialized Section */}
                                         {order.subServiceId === 'office_cleaning' && (
                                             <div className="space-y-10">
                                                 {/* Scale: Desks */}
                                                 <div className="space-y-6">
                                                     <div className="flex flex-col px-1">
-                                                        <label className="text-[25px] font-bold text-[#111827] setup-heading">How many desks are there?</label>
-                                                        <p className="text-[13px] font-bold text-black/40 mt-1 italic">This helps us know how big the office is.</p>
+                                                        <label className="text-[25px] font-bold text-[#111827] setup-heading">{t({ en: 'How many desks are there?', fr: 'Combien de bureaux y a-t-il ?', ar: 'كم عدد المكاتب الموجودة؟' })}</label>
+                                                        <p className="text-[13px] font-bold text-black/40 mt-1 italic">{t({ en: 'This helps us know how big the office is.', fr: 'Cela nous aide à connaître la taille du bureau.', ar: 'هذا يساعدنا في معرفة حجم المكتب.' })}</p>
                                                     </div>
                                                     <div className="flex gap-4 overflow-x-auto pb-6 pt-2 no-scrollbar -mx-6 px-6 snap-x snap-mandatory">
                                                         {[1, 2, 3, 4, 5, 10, 15, 20, 30, 40, 50, 60, 70, 80, 100].map((num) => (
@@ -1677,7 +1657,7 @@ export default function ServiceSetupPage() {
 
                                                 {/* Rooms */}
                                                 <div className="space-y-6">
-                                                    <label className="text-[25px] font-bold text-[#111827] setup-heading px-1">How many meeting or private rooms?</label>
+                                                    <label className="text-[25px] font-bold text-[#111827] setup-heading px-1">{t({ en: 'How many meeting or private rooms?', fr: 'Combien de salles de réunion ou bureaux privés ?', ar: 'كم عدد غرف الاجتماعات أو الغرف الخاصة؟' })}</label>
                                                     <div className="flex gap-4 overflow-x-auto pb-4 pt-2 no-scrollbar -mx-6 px-6">
                                                         {[0, 1, 2, 3, 4, 5, 8, 10].map((num) => (
                                                             <motion.button
@@ -1686,7 +1666,7 @@ export default function ServiceSetupPage() {
                                                                 onClick={() => setOfficeMeetingRooms(num)}
                                                                 className={`flex-shrink-0 px-6 py-3 flex items-center justify-center font-bold text-[15px] transition-all rounded-full ${officeMeetingRooms === num ? 'bg-[#111827] text-white' : 'bg-white border border-neutral-200 text-neutral-600'}`}
                                                             >
-                                                                {num} {num === 1 ? 'room' : 'rooms'}
+                                                                {num} {num === 1 ? t({ en: 'room', fr: 'salle', ar: 'غرفة' }) : t({ en: 'rooms', fr: 'salles', ar: 'غرف' })}
                                                             </motion.button>
                                                         ))}
                                                     </div>
@@ -1694,7 +1674,7 @@ export default function ServiceSetupPage() {
 
                                                 {/* Restrooms */}
                                                 <div className="space-y-6">
-                                                    <label className="text-[25px] font-bold text-[#111827] setup-heading px-1">How many bathrooms?</label>
+                                                    <label className="text-[25px] font-bold text-[#111827] setup-heading px-1">{t({ en: 'How many bathrooms?', fr: 'Combien de salles de bain ?', ar: 'كم عدد الحمامات؟' })}</label>
                                                     <div className="flex gap-4 overflow-x-auto pb-4 pt-2 no-scrollbar -mx-6 px-6">
                                                         {[0, 1, 2, 3, 4, 5].map((num) => (
                                                             <motion.button
@@ -1703,7 +1683,7 @@ export default function ServiceSetupPage() {
                                                                 onClick={() => setOfficeBathrooms(num)}
                                                                 className={`flex-shrink-0 px-6 py-3 flex items-center justify-center font-bold text-[15px] transition-all rounded-full ${officeBathrooms === num ? 'bg-[#111827] text-white' : 'bg-white border border-neutral-200 text-neutral-600'}`}
                                                             >
-                                                                {num} {num === 1 ? 'restroom' : 'restrooms'}
+                                                                {num} {num === 1 ? t({ en: 'restroom', fr: 'toilettes', ar: 'حمام' }) : t({ en: 'restrooms', fr: 'toilettes', ar: 'حمامات' })}
                                                             </motion.button>
                                                         ))}
                                                     </div>
@@ -1711,7 +1691,7 @@ export default function ServiceSetupPage() {
 
                                                 {/* High Traffic Areas */}
                                                 <div className="space-y-4">
-                                                    <label className="text-[20px] font-bold text-[#111827] setup-heading px-1">Busy Areas</label>
+                                                    <label className="text-[20px] font-bold text-[#111827] setup-heading px-1">{t({ en: 'Busy Areas', fr: 'Zones fréquentées', ar: 'المناطق المزدحمة' })}</label>
                                                     <div className="grid grid-cols-2 gap-3">
                                                         <button
                                                             onClick={() => setHasKitchenette(!hasKitchenette)}
@@ -1723,9 +1703,9 @@ export default function ServiceSetupPage() {
                                                                     {hasKitchenette && <Check size={12} className="text-white" strokeWidth={4} />}
                                                                 </div>
                                                             </div>
-                                                            <span className="text-[14px] font-bold text-[#111827]">Kitchen or Breakroom</span>
+                                                            <span className="text-[14px] font-bold text-[#111827]">{t({ en: 'Kitchen or Breakroom', fr: 'Cuisine ou salle de pause', ar: 'المطبخ أو غرفة الاستراحة' })}</span>
                                                         </button>
-                                                        
+
                                                         <button
                                                             onClick={() => setHasReception(!hasReception)}
                                                             className={`p-5 rounded-[12px] border-2 text-left transition-all ${hasReception ? 'border-[#01A083] bg-[#F0FDF9]' : 'border-neutral-100 bg-[#F9FAFB]'}`}
@@ -1736,19 +1716,19 @@ export default function ServiceSetupPage() {
                                                                     {hasReception && <Check size={12} className="text-white" strokeWidth={4} />}
                                                                 </div>
                                                             </div>
-                                                            <span className="text-[14px] font-bold text-[#111827]">Reception or Waiting Area</span>
+                                                            <span className="text-[14px] font-bold text-[#111827]">{t({ en: 'Reception or Waiting Area', fr: 'Réception ou salle d\'attente', ar: 'الاستقبال أو منطقة الانتظار' })}</span>
                                                         </button>
                                                     </div>
                                                 </div>
 
                                                 {/* Commercial Add-ons */}
                                                 <div className="space-y-6">
-                                                    <h3 className="text-[20px] font-bold text-[#111827] setup-heading px-1">Extra Cleaning (Optional)</h3>
+                                                    <h3 className="text-[20px] font-bold text-[#111827] setup-heading px-1">{t({ en: 'Extra Cleaning (Optional)', fr: 'Nettoyage supplémentaire (Optionnel)', ar: 'تنظيف إضافي (اختياري)' })}</h3>
                                                     <div className="grid gap-3">
                                                         {[
-                                                            { id: 'it_sanitization', label: 'Clean Keyboards & Monitors', desc: 'Wipe screens to kill germs', icon: '💻' },
-                                                            { id: 'glass_partitions', label: 'Clean Glass Walls', desc: 'Wash inside glass doors and walls', icon: '🪟' },
-                                                            { id: 'post_event', label: 'Big Party Cleanup', desc: 'Deep cleaning after an office party', icon: '🎉' }
+                                                            { id: 'it_sanitization', label: t({ en: 'Clean Keyboards & Monitors', fr: 'Nettoyer claviers & écrans', ar: 'تنظيف لوحات المفاتيح والشاشات' }), desc: t({ en: 'Wipe screens to kill germs', fr: 'Essuyer les écrans pour tuer les germes', ar: 'مسح الشاشات لقتل الجراثيم' }), icon: '💻' },
+                                                            { id: 'glass_partitions', label: t({ en: 'Clean Glass Walls', fr: 'Nettoyer les parois vitrées', ar: 'تنظيف الجدران الزجاجية' }), desc: t({ en: 'Wash inside glass doors and walls', fr: 'Laver l\'intérieur des parois et vitres', ar: 'غسل الأبواب والجدران الزجاجية الداخلية' }), icon: '🪟' },
+                                                            { id: 'post_event', label: t({ en: 'Big Party Cleanup', fr: 'Nettoyage après événement', ar: 'تنظيف بعد الحفلات الكبيرة' }), desc: t({ en: 'Deep cleaning after an office party', fr: 'Nettoyage complet après une fête', ar: 'تنظيف عميق بعد حفلة مكتبية' }), icon: '🎉' }
                                                         ].map((add) => (
                                                             <button
                                                                 key={add.id}
@@ -1779,27 +1759,27 @@ export default function ServiceSetupPage() {
                                         {order.serviceType === 'furniture_assembly' && (
                                             <div className="space-y-6">
                                                 <div className="flex items-center justify-between">
-                                                    <label className="text-[25px] font-black text-[#111827] setup-heading">What are we assembling?</label>
+                                                    <label className="text-[25px] font-black text-[#111827] setup-heading">{t({ en: 'What are we assembling?', fr: 'Que devons-nous assembler ?', ar: 'ماذا سنقوم بتجميعه؟' })}</label>
                                                     <div className="px-3 py-1 bg-[#F0FDF9] rounded-[5px]">
-                                                        <span className="text-[11px] font-black text-[#01A083] tracking-wider">Est. {Object.values(assemblyItems).reduce((sum, item) => sum + (item.quantity * item.estHours), 0).toFixed(1)} hrs</span>
+                                                        <span className="text-[11px] font-black text-[#01A083] tracking-wider">{t({ en: 'Est.', fr: 'Est.', ar: 'تقدير' })} {Object.values(assemblyItems).reduce((sum, item) => sum + (item.quantity * item.estHours), 0).toFixed(1)} {t({ en: 'hrs', fr: 'h', ar: 'ساعات' })}</span>
                                                     </div>
                                                 </div>
 
                                                 <div className="grid grid-cols-1 gap-3">
                                                     {[
-                                                        { id: 'bed', name: 'Bed Frame', icon: '🛏️', estHours: 1.5 },
-                                                        { id: 'desk', name: 'Desk / Table', icon: '🖥️', estHours: 1.2 },
-                                                        { id: 'dresser', name: 'Dresser / Cabinet', icon: '📦', estHours: 2.0 },
-                                                        { id: 'bookshelf', name: 'Bookshelf', icon: '📚', estHours: 0.8 },
-                                                        { id: 'wardrobe', name: 'Wardrobe', icon: '👗', estHours: 3.0 },
-                                                        { id: 'other', name: 'Other Item', icon: '✨', estHours: 1.0 },
+                                                        { id: 'bed', name: t({ en: 'Bed Frame', fr: 'Cadre de lit', ar: 'إطار سرير' }), icon: '🛏️', estHours: 1.5 },
+                                                        { id: 'desk', name: t({ en: 'Desk / Table', fr: 'Bureau / Table', ar: 'مكتب / طاولة' }), icon: '🖥️', estHours: 1.2 },
+                                                        { id: 'dresser', name: t({ en: 'Dresser / Cabinet', fr: 'Commode / Armoire', ar: 'خزانة أدراج / كابينة' }), icon: '📦', estHours: 2.0 },
+                                                        { id: 'bookshelf', name: t({ en: 'Bookshelf', fr: 'Bibliothèque', ar: 'خزانة كتب' }), icon: '📚', estHours: 0.8 },
+                                                        { id: 'wardrobe', name: t({ en: 'Wardrobe', fr: 'Garde-robe', ar: 'خزانة ملابس' }), icon: '👗', estHours: 3.0 },
+                                                        { id: 'other', name: t({ en: 'Other Item', fr: 'Autre objet', ar: 'غرض آخر' }), icon: '✨', estHours: 1.0 },
                                                     ].map((item) => (
                                                         <div key={item.id} className="bg-white p-5 rounded-[5px] border border-neutral-100 flex items-center justify-between">
                                                             <div className="flex items-center gap-4">
                                                                 <span className="text-2xl">{item.icon}</span>
                                                                 <div>
                                                                     <p className="text-[15px] font-black text-[#111827]">{item.name}</p>
-                                                                    <p className="text-[12px] font-bold text-black/40">~{item.estHours} hr per unit</p>
+                                                                    <p className="text-[12px] font-bold text-black/40">~{item.estHours} {t({ en: 'hr per unit', fr: 'h par unité', ar: 'ساعة لكل وحدة' })}</p>
                                                                 </div>
                                                             </div>
                                                             <div className="flex items-center gap-3 bg-neutral-50 p-2 rounded-[5px] border border-neutral-100">
@@ -1838,7 +1818,7 @@ export default function ServiceSetupPage() {
                                             <div className="space-y-12">
                                                 {/* 2. How many TVs? */}
                                                 <div className="space-y-6">
-                                                    <h3 className="text-[25px] font-bold text-[#111827] setup-heading">How many TVs do you need installed?*</h3>
+                                                    <h3 className="text-[25px] font-bold text-[#111827] setup-heading">{t({ en: 'How many TVs do you need installed?*', fr: 'Combien de téléviseurs faut-il installer ?*', ar: 'كم عدد أجهزة التلفاز التي تحتاج لتركيبها؟*' })}</h3>
                                                     <div className="flex gap-3 overflow-x-auto py-4 px-1 no-scrollbar">
                                                         {[1, 2, 3, 4, 5].map((num) => (
                                                             <button
@@ -1855,15 +1835,15 @@ export default function ServiceSetupPage() {
                                                 {/* 3. Lifting Help */}
                                                 <div className="space-y-6">
                                                     <div>
-                                                        <h3 className="text-[25px] font-bold text-[#111827] setup-heading">Lifting assistance*</h3>
-                                                        <p className="text-[13px] font-bold text-black/40 mt-1 italic">Larger TVs (60" +) may require a second person for safe mounting.</p>
+                                                        <h3 className="text-[25px] font-bold text-[#111827] setup-heading">{t({ en: 'Lifting assistance*', fr: 'Aide à la manutention*', ar: 'المساعدة في الرفع*' })}</h3>
+                                                        <p className="text-[13px] font-bold text-black/40 mt-1 italic">{t({ en: 'Larger TVs (60" +) may require a second person for safe mounting.', fr: 'Les grands téléviseurs (60" +) peuvent nécessiter une deuxième personne pour une installation sécurisée.', ar: 'أجهزة التلفاز الكبيرة (60 بوصة +) قد تتطلب شخصًا ثانيًا للتركيب الآمن.' })}</p>
                                                     </div>
                                                     <div className="grid gap-3">
                                                         {[
-                                                            { id: 'yes', label: 'Someone will be around' },
-                                                            { id: 'no_60', label: 'No one. 1 or more TVs above 60"' },
-                                                            { id: 'not_needed', label: 'Not needed. No TVs above 60"' },
-                                                            { id: 'unsure', label: 'Unsure if needed' }
+                                                            { id: 'yes', label: t({ en: 'Someone will be around', fr: 'Quelqu\'un sera sur place', ar: 'سيكون هناك شخص ما للمساعدة' }) },
+                                                            { id: 'no_60', label: t({ en: 'No one. 1 or more TVs above 60"', fr: 'Personne. 1 ou plusieurs téléviseurs de plus de 60"', ar: 'لا يوجد أحد. جهاز تلفاز واحد أو أكثر أكبر من 60 بوصة' }) },
+                                                            { id: 'not_needed', label: t({ en: 'Not needed. No TVs above 60"', fr: 'Non nécessaire. Aucun téléviseur de plus de 60"', ar: 'غير مطلوب. لا توجد أجهزة تلفاز أكبر من 60 بوصة' }) },
+                                                            { id: 'unsure', label: t({ en: 'Unsure if needed', fr: 'Pas certain du besoin', ar: 'غير متأكد إذا كان الأمر مطلوباً' }) }
                                                         ].map((opt) => (
                                                             <button
                                                                 key={opt.id}
@@ -1879,13 +1859,13 @@ export default function ServiceSetupPage() {
 
                                                 {/* 4. Mount Type */}
                                                 <div className="space-y-6">
-                                                    <h3 className="text-[25px] font-bold text-[#111827] setup-heading">What type of TV mount?*</h3>
+                                                    <h3 className="text-[25px] font-bold text-[#111827] setup-heading">{t({ en: 'What type of TV mount?*', fr: 'Quel type de support TV ?*', ar: 'ما هو نوع حامل التلفاز؟*' })}</h3>
                                                     <div className="flex flex-wrap gap-2">
                                                         {[
-                                                            'Fixed / low profile',
-                                                            'Tilting',
-                                                            'Articulating / full motion',
-                                                            'Other / Not sure'
+                                                            t({ en: 'Fixed / low profile', fr: 'Fixe / profil bas', ar: 'ثابت / مظهر جانبي منخفض' }),
+                                                            t({ en: 'Tilting', fr: 'Inclinable', ar: 'قابل للإمالة' }),
+                                                            t({ en: 'Articulating / full motion', fr: 'Articulé / mouvement complet', ar: 'مفصلي / حركة كاملة' }),
+                                                            t({ en: 'Other / Not sure', fr: 'Autre / Pas sûr', ar: 'أخرى / غير متأكد' })
                                                         ].map((type) => (
                                                             <button
                                                                 key={type}
@@ -1908,17 +1888,17 @@ export default function ServiceSetupPage() {
                                                 {/* 5. Wall Material */}
                                                 <div className="space-y-6">
                                                     <div>
-                                                        <h3 className="text-[25px] font-bold text-[#111827] setup-heading">Wall material?*</h3>
+                                                        <h3 className="text-[25px] font-bold text-[#111827] setup-heading">{t({ en: 'Wall material?*', fr: 'Matériau du mur ?*', ar: 'مادة الجدار؟*' })}</h3>
                                                         <p className="text-[13px] font-black text-black/50 mt-1 leading-relaxed">
-                                                            Test by knocking: Hollow sound = drywall/wood. No echo = brick/concrete.
+                                                            {t({ en: 'Test by knocking: Hollow sound = drywall/wood. No echo = brick/concrete.', fr: 'Testez en frappant : Son creux = cloison/bois. Pas d\'écho = brique/béton.', ar: 'اختبر بالنقر: صوت أجوف = جدار جاف/خشب. لا يوجد صدى = طوب/خرسانة.' })}
                                                         </p>
                                                     </div>
                                                     <div className="grid grid-cols-2 gap-3">
                                                         {[
-                                                            'Drywall, plaster, or wood',
-                                                            'Brick or concrete',
-                                                            'Metal',
-                                                            'Other / not sure'
+                                                            t({ en: 'Drywall, plaster, or wood', fr: 'Placoplâtre, plâtre ou bois', ar: 'جدار جاف، جص، أو خشب' }),
+                                                            t({ en: 'Brick or concrete', fr: 'Brique ou béton', ar: 'طوب أو خرسانة' }),
+                                                            t({ en: 'Metal', fr: 'Métal', ar: 'معدن' }),
+                                                            t({ en: 'Other / not sure', fr: 'Autre / pas sûr', ar: 'أخرى / غير متأكد' })
                                                         ].map((mat) => (
                                                             <button
                                                                 key={mat}
@@ -1933,18 +1913,18 @@ export default function ServiceSetupPage() {
 
                                                 {/* Divider / Call to Action */}
                                                 <div className="py-4 border-y border-neutral-100 text-center space-y-2">
-                                                    <p className="text-[15px] font-black text-black">Help Taskers Say “Yes” Faster</p>
-                                                    <p className="text-[12px] font-bold text-black/40">A little extra detail now means quicker task acceptance.</p>
+                                                    <p className="text-[15px] font-black text-black">{t({ en: 'Help Taskers Say “Yes” Faster', fr: 'Aidez les Taskeurs à dire "Oui" plus vite', ar: 'ساعد الحرفيين على الرد "بنعم" بشكل أسرع' })}</p>
+                                                    <p className="text-[12px] font-bold text-black/40">{t({ en: 'A little extra detail now means quicker task acceptance.', fr: 'Un peu plus de détails maintenant signifie une acceptation plus rapide.', ar: 'القليل من التفاصيل الإضافية الآن تعني قبولاً أسرع للمهمة.' })}</p>
                                                 </div>
 
                                                 {/* 6. Add-ons */}
                                                 <div className="space-y-6">
-                                                    <h3 className="text-[25px] font-bold text-[#111827] setup-heading">Add-on services?</h3>
+                                                    <h3 className="text-[25px] font-bold text-[#111827] setup-heading">{t({ en: 'Add-on services?', fr: 'Services complémentaires ?', ar: 'خدمات إضافية؟' })}</h3>
                                                     <div className="grid gap-3">
                                                         {[
-                                                            { id: 'wires', label: 'Hide wires behind the wall' },
-                                                            { id: 'audio', label: 'Install speakers or soundbars' },
-                                                            { id: 'setup', label: 'Device & accessory setup' }
+                                                            { id: 'wires', label: t({ en: 'Hide wires behind the wall', fr: 'Cacher les câbles derrière le mur', ar: 'إخفاء الأسلاك خلف الجدار' }) },
+                                                            { id: 'audio', label: t({ en: 'Install speakers or soundbars', fr: 'Installer enceintes ou barres de son', ar: 'تركيب مكبرات صوت أو أشرطة صوتية' }) },
+                                                            { id: 'setup', label: t({ en: 'Device & accessory setup', fr: 'Configuration appareil & accessoires', ar: 'إعداد الأجهزة والملحقات' }) }
                                                         ].map((add) => (
                                                             <button
                                                                 key={add.id}
@@ -1980,9 +1960,9 @@ export default function ServiceSetupPage() {
                                                     <p className="text-[18px] font-black text-[#111827]">{t({ en: 'What scale is the load?', fr: 'Quelle est la taille de la charge ?', ar: 'ما هو حجم العمل؟' })}</p>
                                                     <div className="grid grid-cols-1 gap-3">
                                                         {[
-                                                            { id: 'small', label: 'Quick Wash', desc: '1-2 meals approx. (1 hr)', hours: 1 },
-                                                            { id: 'medium', label: 'Family Dinner / Iftar', desc: 'Standard family load (2 hrs)', hours: 2 },
-                                                            { id: 'large', label: 'Event / Party', desc: 'Large reception (4 hrs)', hours: 4 },
+                                                            { id: 'small', label: t({ en: 'Quick Wash', fr: 'Lavage rapide' }), desc: t({ en: '1-2 meals approx. (1 hr)', fr: '1-2 repas environ (1 h)' }), hours: 1 },
+                                                            { id: 'medium', label: t({ en: 'Family Dinner / Iftar', fr: 'Dîner de famille / Iftar' }), desc: t({ en: 'Standard family load (2 hrs)', fr: 'Charge familiale standard (2 h)' }), hours: 2 },
+                                                            { id: 'large', label: t({ en: 'Event / Party', fr: 'Événement / Fête' }), desc: t({ en: 'Large reception (4 hrs)', fr: 'Grande réception (4 h)' }), hours: 4 },
                                                         ].map((size) => (
                                                             <button
                                                                 key={size.id}
@@ -1990,8 +1970,8 @@ export default function ServiceSetupPage() {
                                                                 className={`p-5 rounded-[20px] border-2 text-left transition-all flex items-center justify-between ${taskDuration === size.hours ? 'border-[#01A083] bg-[#F1FEF4]' : 'border-neutral-100 bg-[#F9FAFB]'}`}
                                                             >
                                                                 <div>
-                                                                    <span className="text-[16px] font-black text-[#111827]">{t({ en: size.label, fr: size.label, ar: size.label })}</span>
-                                                                    <p className="text-[13px] font-medium text-black/40 mt-1">{t({ en: size.desc, fr: size.desc, ar: size.desc })}</p>
+                                                                    <span className="text-[16px] font-black text-[#111827]">{size.label}</span>
+                                                                    <p className="text-[13px] font-medium text-black/40 mt-1">{size.desc}</p>
                                                                 </div>
                                                                 <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${taskDuration === size.hours ? 'bg-[#01A083] border-[#01A083]' : 'border-neutral-300'}`}>
                                                                     {taskDuration === size.hours && <div className="w-2.5 h-2.5 rounded-full bg-white" />}
@@ -2039,12 +2019,12 @@ export default function ServiceSetupPage() {
 
                                                 {/* Task Size Selector */}
                                                 <div className="space-y-6">
-                                                    <p className="text-[18px] font-black text-[#111827]">How big is your task?</p>
+                                                    <p className="text-[18px] font-black text-[#111827]">{t({ en: 'How big is your task?', fr: 'Quelle est la taille de votre tâche ?', ar: 'ما هو حجم مهمتك؟' })}</p>
                                                     <div className="grid grid-cols-1 gap-3">
                                                         {[
-                                                            { id: 'small', label: 'Small', desc: 'Est. 1 hr', hours: 1 },
-                                                            { id: 'medium', label: 'Medium', desc: 'Est. 2-3 hrs', hours: 2.5 },
-                                                            { id: 'large', label: 'Large', desc: 'Est. 4+ hrs', hours: 4 },
+                                                            { id: 'small', label: t({ en: 'Small', fr: 'Petit', ar: 'صغير' }), desc: t({ en: 'Est. 1 hr', fr: 'Est. 1 h', ar: 'تقدير ساعة' }), hours: 1 },
+                                                            { id: 'medium', label: t({ en: 'Medium', fr: 'Moyen', ar: 'متوسط' }), desc: t({ en: 'Est. 2-3 hrs', fr: 'Est. 2-3 h', ar: 'تقدير 2-3 ساعات' }), hours: 2.5 },
+                                                            { id: 'large', label: t({ en: 'Large', fr: 'Grand', ar: 'كبير' }), desc: t({ en: 'Est. 4+ hrs', fr: 'Est. 4+ h', ar: 'تقدير +4 ساعات' }), hours: 4 },
                                                         ].map((size) => (
                                                             <button
                                                                 key={size.id}
@@ -2067,11 +2047,11 @@ export default function ServiceSetupPage() {
                                         <div className="space-y-6">
                                             <div className="flex items-center justify-between ">
                                                 <label className="text-[25px]  font-bold text-[#111827] setup-heading">
-                                                    {order.subServiceId?.toLowerCase().includes('tv') ? "Wall & Area Photos" :
-                                                        order.serviceType === 'mounting' ? "Task Area Photos" :
-                                                            order.serviceType === 'moving' ? "Inventory Photos" :
-                                                                order.serviceType === 'cleaning' ? "Room Photos" :
-                                                                    "Include Photos"}
+                                                    {order.subServiceId?.toLowerCase().includes('tv') ? t({ en: 'Wall & Area Photos', fr: 'Photos du mur & zone', ar: 'صور الجدار والمنطقة' }) :
+                                                        order.serviceType === 'mounting' ? t({ en: 'Task Area Photos', fr: 'Photos de la zone', ar: 'صور منطقة المهمة' }) :
+                                                            order.serviceType === 'moving' ? t({ en: 'Inventory Photos', fr: 'Photos de l\'inventaire', ar: 'صور الجرد' }) :
+                                                                order.serviceType === 'cleaning' ? t({ en: 'Room Photos', fr: 'Photos des pièces', ar: 'صور الغرف' }) :
+                                                                    t({ en: 'Include Photos', fr: 'Inclure des photos', ar: 'إضافة صور' })}
                                                 </label>
                                                 <span className="text-[12px] font-medium text-[#9CA3AF] tracking-wider">{photos.length}/6</span>
                                             </div>
@@ -2097,7 +2077,7 @@ export default function ServiceSetupPage() {
                                                                 <div className="w-10 h-10 rounded-full bg-neutral-50 flex items-center justify-center">
                                                                     <ImageIcon size={20} className="text-[#9CA3AF]" />
                                                                 </div>
-                                                                <span className="text-[10px] font-bold text-[#9CA3AF] tracking-[0.5px]">Add photo</span>
+                                                                <span className="text-[10px] font-bold text-[#9CA3AF] tracking-[0.5px]">{t({ en: 'Add photo', fr: 'Ajouter', ar: 'إضافة صورة' })}</span>
                                                             </>
                                                         )}
                                                     </label>
@@ -2107,11 +2087,11 @@ export default function ServiceSetupPage() {
 
                                         {/* Optional Note */}
                                         <div className="space-y-6 pb-1">
-                                            <label className="text-[25px] font-bold text-[#111827] ">Instructions or Notes</label>
+                                            <label className="text-[25px] font-bold text-[#111827] ">{t({ en: 'Instructions or Notes', fr: 'Instructions ou Notes', ar: 'تعليمات أو ملاحظات' })}</label>
                                             <textarea
                                                 value={note}
                                                 onChange={(e) => setNote(e.target.value)}
-                                                placeholder="Tell us more about what needs to be done..."
+                                                placeholder={t({ en: 'Tell us more about what needs to be done...', fr: 'Dites-nous en plus sur ce qui doit être fait...', ar: 'أخبرنا بالمزيد عما يجب القيام به...' })}
                                                 className="w-full h-40 p-6 bg-[#F9FAFB] rounded-[5px] border border-neutral-100 outline-none focus:border-[#01A083]/30 transition-all resize-none font-medium text-[15px] leading-relaxed placeholder:text-[#9CA3AF] placeholder:italic"
                                             />
                                         </div>
@@ -2125,8 +2105,8 @@ export default function ServiceSetupPage() {
                                                         {saveAsFavorite && <Check size={16} color="white" strokeWidth={4} />}
                                                     </div>
                                                     <div>
-                                                        <p className="text-[15px] font-bold text-[#111827]">Save this setup for next time</p>
-                                                        <p className="text-[12px] font-bold text-[#9CA3AF]">You won't have to enter these details again.</p>
+                                                        <p className="text-[15px] font-bold text-[#111827]">{t({ en: 'Save this setup for next time', fr: 'Enregistrer cette installation', ar: 'احفظ هذا الإعداد للمرة القادمة' })}</p>
+                                                        <p className="text-[12px] font-bold text-[#9CA3AF]">{t({ en: 'You won\'t have to enter these details again.', fr: 'Vous n\'aurez plus à saisir ces détails.', ar: 'لن تضطر لإدخال هذه التفاصيل مرة أخرى.' })}</p>
                                                     </div>
                                                 </label>
                                                 <AnimatePresence>
@@ -2139,7 +2119,7 @@ export default function ServiceSetupPage() {
                                                         >
                                                             <input
                                                                 type="text"
-                                                                placeholder="Home, Office, Mom's House..."
+                                                                placeholder={t({ en: 'Home, Office, Mom\'s House...', fr: 'Maison, Bureau, Chez maman...', ar: 'المنزل، المكتب، منزل أمي...' })}
                                                                 onChange={(e) => setFavoriteLabel(e.target.value)}
                                                                 className="w-full p-4 bg-white rounded-[5px] border border-neutral-100 outline-none font-bold text-[14px] focus:border-[#01A083]/30 transition-all"
                                                             />
@@ -2161,23 +2141,30 @@ export default function ServiceSetupPage() {
                                     </svg>
                                 </div>
 
-                                <h3 className="text-[28px] font-black text-[#111827]">Summary</h3>
+                                <h3 className="text-[28px] font-black text-[#111827]">{t({ en: 'Summary', fr: 'Résumé', ar: 'الملخص' })}</h3>
 
                                 {estimate && (
                                     <div className="space-y-6">
                                         <div className="flex items-center justify-between">
                                             <div className="flex items-center gap-2">
-                                                <span className="text-[18px] font-normal text-[#111827]">Base price</span>
+                                                <span className="text-[18px] font-normal text-[#111827]">{t({ en: 'Base price', fr: 'Prix de base', ar: 'السعر الأساسي' })}</span>
                                                 <button className="w-[22px] h-[22px] rounded-full border border-[#D1D5DB] flex items-center justify-center text-[10px] text-[#9CA3AF] font-bold">i</button>
                                             </div>
                                             <span className="text-[18px] font-normal text-[#111827]">
-                                                {estimate.basePrice.toFixed(0)} MAD/{estimate.unit === 'unit' ? 'unit' : estimate.unit === 'day' ? 'day' : estimate.unit === 'room' ? 'room' : 'hr'}
+                                                {estimate.basePrice.toFixed(0)} MAD/{estimate.unit === 'unit' ? (t({ en: 'unit', fr: 'unité', ar: 'وحدة' })) : estimate.unit === 'day' ? (t({ en: 'day', fr: 'jour', ar: 'يوم' })) : estimate.unit === 'room' ? (t({ en: 'room', fr: 'pièce', ar: 'غرفة' })) : estimate.unit === 'office' ? (t({ en: 'office', fr: 'bureau', ar: 'مكتب' })) : (t({ en: 'hr', fr: 'h', ar: 'ساعة' }))}
                                             </span>
                                         </div>
 
+                                        {estimate.details && estimate.details.map((detail: any, idx: number) => (
+                                            <div key={idx} className="flex items-center justify-between pl-4 border-l-2 border-[#01A083]/20 py-1">
+                                                <span className="text-[16px] font-normal text-[#4B5563]">{t(detail.label)}</span>
+                                                <span className="text-[16px] font-bold text-[#111827]">{detail.amount.toFixed(0)} MAD</span>
+                                            </div>
+                                        ))}
+
                                         <div className="flex items-center justify-between">
                                             <div className="flex items-center gap-2">
-                                                <span className="text-[18px] font-normal text-[#111827]">Services <span className="text-[14px] text-black/40 font-medium">({estimate.quantity} {estimate.unit}{estimate.quantity > 1 && estimate.unit !== 'hr' ? 's' : ''})</span></span>
+                                                <span className="text-[18px] font-normal text-[#111827]">{t({ en: 'Services', fr: 'Services', ar: 'الخدمات' })} <span className="text-[14px] text-black/40 font-medium">({estimate.quantity} {t({ en: estimate.unit, fr: estimate.unit, ar: estimate.unit === 'unit' ? 'وحدة' : estimate.unit === 'day' ? 'يوم' : estimate.unit === 'room' ? 'غرفة' : estimate.unit === 'office' ? 'مكتب' : 'ساعة' })}{estimate.quantity > 1 && estimate.unit !== 'hr' && estimate.unit !== 'office' ? 's' : ''})</span></span>
                                                 <button className="w-[22px] h-[22px] rounded-full border border-[#D1D5DB] flex items-center justify-center text-[10px] text-[#9CA3AF] font-bold">i</button>
                                             </div>
                                             <span className="text-[18px] font-normal text-[#111827]">{estimate.subtotal.toFixed(2)} MAD</span>
@@ -2186,7 +2173,7 @@ export default function ServiceSetupPage() {
                                         <div className="flex flex-col">
                                             <div className="flex items-center justify-between">
                                                 <div className="flex items-center gap-2">
-                                                    <span className="text-[18px] font-normal text-[#111827]">Lbricol Fee</span>
+                                                    <span className="text-[18px] font-normal text-[#111827]">{t({ en: 'Lbricol Fee', fr: 'Frais Lbricol', ar: 'رسوم Lbricol' })}</span>
                                                     <button className="w-[22px] h-[22px] rounded-full border border-[#D1D5DB] flex items-center justify-center text-[10px] text-[#9CA3AF] font-bold">i</button>
                                                 </div>
                                                 <span className="text-[18px] font-normal text-[#111827]">{estimate.serviceFee.toFixed(2)} MAD</span>
@@ -2197,10 +2184,10 @@ export default function ServiceSetupPage() {
                                             <div className="flex items-center justify-between">
                                                 <div className="flex flex-col">
                                                     <div className="flex items-center gap-2">
-                                                        <span className="text-[18px] font-normal text-[#111827]">Travel Fee</span>
+                                                        <span className="text-[18px] font-normal text-[#111827]">{t({ en: 'Travel Fee', fr: 'Frais de déplacement', ar: 'رسوم التنقل' })}</span>
                                                         <button className="w-[22px] h-[22px] rounded-full border border-[#D1D5DB] flex items-center justify-center text-[10px] text-[#9CA3AF] font-bold">i</button>
                                                     </div>
-                                                    <span className="text-[11px] font-normal text-[#9CA3AF]">{estimate.distanceKm?.toFixed(1) || '0.0'} km · ~{estimate.duration} min</span>
+                                                    <span className="text-[11px] font-normal text-[#9CA3AF] text-left">{estimate.distanceKm?.toFixed(1) || '0.0'} km · ~{estimate.duration} {t({ en: 'min', fr: 'min', ar: 'دقيقة' })}</span>
                                                 </div>
                                                 <span className="text-[18px] font-normal text-[#111827]">{estimate.travelFee.toFixed(2)} MAD</span>
                                             </div>
@@ -2210,7 +2197,7 @@ export default function ServiceSetupPage() {
 
                                         {/* Total Section */}
                                         <div className="flex items-center justify-between py-2 gap-4">
-                                            <span className="text-[22px] font-extrabold text-[#111827] whitespace-nowrap">Total to pay</span>
+                                            <span className="text-[22px] font-extrabold text-[#111827] whitespace-nowrap">{t({ en: 'Total to pay', fr: 'Total à payer', ar: 'الإجمالي للدفع' })}</span>
                                             <span className="text-[25px] font-extrabold text-[#111827] text-right">{estimate.total.toFixed(2)} MAD</span>
                                         </div>
 
@@ -2222,7 +2209,7 @@ export default function ServiceSetupPage() {
                                                     disabled={isSubmitting}
                                                     className="w-full py-5 bg-[#01A083] text-white rounded-full font-black text-[20px] flex items-center justify-center gap-3 disabled:opacity-50"
                                                 >
-                                                    {isSubmitting ? <Loader2 className="animate-spin" /> : "Confirm Order"}
+                                                    {isSubmitting ? <Loader2 className="animate-spin" /> : t({ en: 'Confirm Order', fr: 'Confirmer la commande', ar: 'تأكيد الطلب' })}
                                                 </motion.button>
                                             </div>
                                         )}
@@ -2259,10 +2246,10 @@ export default function ServiceSetupPage() {
                                     {isSubmitting ? (
                                         <div className="flex items-center gap-2">
                                             <Loader2 size={24} className="animate-spin" />
-                                            <span>Processing...</span>
+                                            <span>{t({ en: 'Processing...', fr: 'Traitement...', ar: 'جاري المعالجة...' })}</span>
                                         </div>
                                     ) : (
-                                        <span>Broadcast Order</span>
+                                        <span>{t({ en: 'Broadcast Order', fr: 'Diffuser la commande', ar: 'نشر الطلب' })}</span>
                                     )}
                                 </motion.button>
                             </div>
@@ -2297,7 +2284,7 @@ export default function ServiceSetupPage() {
                                         <input
                                             autoFocus
                                             maxLength={60}
-                                            placeholder={`Search for ${activeDrawer === 'pickup' ? 'pickup' : 'delivery'} address...`}
+                                            placeholder={t({ en: `Search for ${activeDrawer === 'pickup' ? 'pickup' : 'delivery'} address...`, fr: `Chercher l'adresse de ${activeDrawer === 'pickup' ? 'retrait' : 'livraison'}...`, ar: `ابحث عن عنوان ${activeDrawer === 'pickup' ? 'الاستلام' : 'التسليم'}...` })}
                                             onChange={async (e) => {
                                                 const val = e.target.value;
                                                 if (val.length > 2) {
@@ -2327,9 +2314,9 @@ export default function ServiceSetupPage() {
                                 </div>
                             ) : (
                                 <h2 className="flex-1 text-[18px] font-black text-[#111827] text-center pr-10">
-                                    {activeDrawer === 'description' && "Your order"}
-                                    {activeDrawer === 'recipient' && "Add a recipient"}
-                                    {activeDrawer === 'schedule' && "Schedule delivery"}
+                                    {activeDrawer === 'description' && t({ en: "Your order", fr: "Votre commande", ar: "طلبك" })}
+                                    {activeDrawer === 'recipient' && t({ en: "Add a recipient", fr: "Ajouter un destinataire", ar: "إضافة مستلم" })}
+                                    {activeDrawer === 'schedule' && t({ en: "Schedule delivery", fr: "Planifier la livraison", ar: "جدولة التسليم" })}
                                 </h2>
                             )}
                         </div>
@@ -2340,14 +2327,14 @@ export default function ServiceSetupPage() {
                                 <div className="space-y-6 pb-20">
                                     <div className="bg-[#F9FAFB] p-5 rounded-[10px] border border-neutral-100">
                                         <p className="text-[15px] font-medium text-[#000000] leading-relaxed">
-                                            Couriers cannot make purchases. Orders involving purchases will be cancelled.
+                                            {t({ en: 'Couriers cannot make purchases. Orders involving purchases will be cancelled.', fr: 'Les coursiers ne peuvent pas effectuer d\'achats. Les commandes incluant des achats seront annulées.', ar: 'لا يمكن للمناديب القيام بعمليات شراء. سيتم إلغاء الطلبات التي تتضمن مشتريات.' })}
                                         </p>
                                     </div>
                                     <textarea
                                         autoFocus
                                         value={itemDescription}
                                         onChange={(e) => setItemDescription(e.target.value)}
-                                        placeholder="Enter details of what needs to be transported..."
+                                        placeholder={t({ en: 'Enter details of what needs to be transported...', fr: 'Saisissez les détails de ce qui doit être transporté...', ar: 'أدخل تفاصيل ما يجب نقله...' })}
                                         className="w-full h-48 p-5 bg-white rounded-[10px] border-2 border-neutral-100 focus:border-[#01A083] focus:ring-0 font-medium text-[17px] placeholder:text-neutral-300 resize-none"
                                     />
                                 </div>
@@ -2356,30 +2343,30 @@ export default function ServiceSetupPage() {
                             {activeDrawer === 'recipient' && (
                                 <div className="space-y-6 pb-20">
                                     <div className="space-y-4">
-                                        <label className="text-[14px] font-black text-[#4B5563]">Recipient name</label>
+                                        <label className="text-[14px] font-black text-[#4B5563]">{t({ en: 'Recipient name', fr: 'Nom du destinataire', ar: 'اسم المستلم' })}</label>
                                         <input
                                             type="text"
                                             value={recipientName}
                                             onChange={(e) => setRecipientName(e.target.value)}
-                                            placeholder="Who is receiving this?"
+                                            placeholder={t({ en: 'Who is receiving this?', fr: 'Qui reçoit cela ?', ar: 'من هو المستلم؟' })}
                                             className="w-full p-4 rounded-[10px] border-2 border-neutral-50 font-bold"
                                         />
                                     </div>
                                     <div className="space-y-4">
-                                        <label className="text-[14px] font-black text-[#4B5563]">Phone number</label>
+                                        <label className="text-[14px] font-black text-[#4B5563]">{t({ en: 'Phone number', fr: 'Numéro de téléphone', ar: 'رقم الهاتف' })}</label>
                                         <div className="flex gap-2">
                                             <div className="px-4 py-4 bg-neutral-50 rounded-[10px] font-bold border-2 border-neutral-50">+212</div>
                                             <input
                                                 type="tel"
                                                 value={recipientPhone}
                                                 onChange={(e) => setRecipientPhone(e.target.value)}
-                                                placeholder="Phone number"
+                                                placeholder={t({ en: 'Phone number', fr: 'Numéro de téléphone', ar: 'رقم الهاتف' })}
                                                 className="flex-1 p-4 rounded-[10px] border-2 border-neutral-50 font-bold"
                                             />
                                         </div>
                                     </div>
                                     <p className="text-[12px] font-bold text-neutral-400 leading-relaxed">
-                                        By sharing the recipient's details, you are solely responsible for obtaining their consent and informing them on how their data is processed.
+                                        {t({ en: 'By sharing the recipient\'s details, you are solely responsible for obtaining their consent and informing them on how their data is processed.', fr: 'En partageant les coordonnées du destinataire, vous êtes seul responsable de l\'obtention de son consentement et de son information sur le traitement de ses données.', ar: 'من خلال مشاركة تفاصيل المستلم، أنت المسؤول الوحيد عن الحصول على موافقته وإبلاغه بكيفية معالجة بياناته.' })}
                                     </p>
                                 </div>
                             )}
@@ -2389,7 +2376,7 @@ export default function ServiceSetupPage() {
                                     <div className="flex-1 space-y-8">
                                         {/* Select Date */}
                                         <div className="space-y-4">
-                                            <h3 className="text-[20px] font-black text-[#111827]">Select date</h3>
+                                            <h3 className="text-[20px] font-black text-[#111827]">{t({ en: 'Select date', fr: 'Choisir la date', ar: 'اختر التاريخ' })}</h3>
                                             <div className="flex gap-3 overflow-x-auto pb-4 no-scrollbar -mx-2 px-2">
                                                 {Array.from({ length: 7 }).map((_, i) => {
                                                     const d = new Date();
@@ -2399,8 +2386,8 @@ export default function ServiceSetupPage() {
                                                     const isSelected = deliveryDate === fullDate;
 
                                                     let label = format(d, 'EEEE');
-                                                    if (i === 0) label = 'Today';
-                                                    if (i === 1) label = 'Tomorrow';
+                                                    if (i === 0) label = t({ en: 'Today', fr: 'Aujourd\'hui', ar: 'اليوم' });
+                                                    if (i === 1) label = t({ en: 'Tomorrow', fr: 'Demain', ar: 'غدًا' });
 
                                                     return (
                                                         <button
@@ -2428,7 +2415,7 @@ export default function ServiceSetupPage() {
 
                                         {/* Select Time */}
                                         <div className="space-y-4">
-                                            <h3 className="text-[20px] font-black text-[#111827]">Select time</h3>
+                                            <h3 className="text-[20px] font-black text-[#111827]">{t({ en: 'Select time', fr: 'Choisir l\'heure', ar: 'اختر الوقت' })}</h3>
                                             <div className="divide-y divide-neutral-100 border-t border-neutral-100">
                                                 {["08:00 - 08:30", "08:30 - 09:00", "09:00 - 09:30", "09:30 - 10:00", "10:00 - 10:30", "15:00 - 15:30", "15:30 - 16:00", "16:00 - 16:30", "16:30 - 17:00", "17:00 - 17:30", "17:30 - 18:00", "18:00 - 18:30"].map((time, i) => {
                                                     const isSelected = deliveryTime === time.split(' - ')[0];
@@ -2490,13 +2477,13 @@ export default function ServiceSetupPage() {
                                         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-[120%] z-[1001] pointer-events-none">
                                             <div className="bg-white px-4 py-2.5 rounded-[5px] border border-neutral-100 flex flex-col items-center gap-1 min-w-[140px]">
                                                 <span className="text-[14px] font-medium text-black leading-none truncate max-w-[200px]">
-                                                    {dropoffLocation.address?.split(',')[0] || "Select Point"}
+                                                    {dropoffLocation.address?.split(',')[0] || t({ en: 'Select Point', fr: 'Choisir un point', ar: 'اختر نقطة' })}
                                                 </span>
                                                 <button
                                                     onClick={() => setActiveDrawer('none')}
                                                     className="pointer-events-auto text-[13px] font-black text-[#01A083] py-0.5"
                                                 >
-                                                    Use this point
+                                                    {t({ en: 'Use this point', fr: 'Utiliser ce point', ar: 'استخدم هذه النقطة' })}
                                                 </button>
                                                 <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-white border-r border-b border-neutral-100 rotate-45" />
                                             </div>
@@ -2521,8 +2508,8 @@ export default function ServiceSetupPage() {
                                         </div>
                                         <div className="bg-white p-6 pb-10 space-y-6">
                                             <div className="text-center space-y-1">
-                                                <p className="text-[15px] font-light text-neutral-800">Trouble locating your address?</p>
-                                                <p className="text-[13px] font-medium text-neutral-400">Try using search instead</p>
+                                                <p className="text-[15px] font-light text-neutral-800">{t({ en: 'Trouble locating your address?', fr: 'Problème pour localiser votre adresse ?', ar: 'هل تواجه مشكلة في تحديد عنوانك؟' })}</p>
+                                                <p className="text-[13px] font-medium text-neutral-400">{t({ en: 'Try using search instead', fr: 'Essayez d\'utiliser la recherche', ar: 'جرب استخدام البحث بدلاً من ذلك' })}</p>
                                             </div>
 
                                             <button
@@ -2533,7 +2520,7 @@ export default function ServiceSetupPage() {
                                                     <path d="M11 19C15.4183 19 19 15.4183 19 11C19 6.58172 15.4183 3 11 3C6.58172 3 3 6.58172 3 11C3 15.4183 6.58172 19 11 19Z" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
                                                     <path d="M21 21L16.65 16.65" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
                                                 </svg>
-                                                Search street, city, district...
+                                                {t({ en: 'Search street, city, district...', fr: 'Chercher rue, ville, quartier...', ar: 'ابحث عن شارع، مدينة، حي...' })}
                                             </button>
                                         </div>
                                     </div>
@@ -2564,7 +2551,7 @@ export default function ServiceSetupPage() {
                                         )) : (
                                             <div className="py-12 text-center space-y-3 opacity-40">
                                                 <Search size={40} className="mx-auto text-neutral-300" />
-                                                <p className="text-[15px] font-medium text-neutral-400">Search for a street, city or district...</p>
+                                                <p className="text-[15px] font-medium text-neutral-400">{t({ en: 'Search for a street, city or district...', fr: 'Cherchez une rue, ville ou quartier...' })}</p>
                                             </div>
                                         )}
                                     </div>
@@ -2586,7 +2573,7 @@ export default function ServiceSetupPage() {
                                         onClick={() => setActiveDrawer('none')}
                                         className="w-full py-5 bg-[#01A083] text-white rounded-full font-black text-[18px] active:scale-95 transition-all"
                                     >
-                                        {activeDrawer === 'schedule' ? 'Confirm' : 'Save Details'}
+                                        {activeDrawer === 'schedule' ? t({ en: 'Confirm', fr: 'Confirmer' }) : t({ en: 'Save Details', fr: 'Enregistrer les détails' })}
                                     </button>
                                 </div>
                             </div>

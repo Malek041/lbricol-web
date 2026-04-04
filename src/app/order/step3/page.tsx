@@ -164,6 +164,13 @@ export default function CheckoutPage() {
                         mountingAddOns: (order.serviceDetails as any)?.mountingAddOns,
                         deliveryDistanceKm: (order.serviceDetails as any)?.deliveryDistanceKm,
                         deliveryDurationMinutes: (order.serviceDetails as any)?.deliveryDurationMinutes,
+                        // Office Cleaning specific
+                        officeDesks: (order.serviceDetails as any)?.officeDesks,
+                        officeMeetingRooms: (order.serviceDetails as any)?.officeMeetingRooms,
+                        officeBathrooms: (order.serviceDetails as any)?.officeBathrooms,
+                        hasKitchenette: (order.serviceDetails as any)?.hasKitchenette,
+                        hasReception: (order.serviceDetails as any)?.hasReception,
+                        officeAddOns: (order.serviceDetails as any)?.officeAddOns,
                     }
                 );
 
@@ -213,6 +220,7 @@ export default function CheckoutPage() {
                     status: order.isPublic ? 'broadcast' : 'programmed',
                     paymentMethod,
                     totalPrice: pricing.total,
+                    price: order.providerRate || 80,
                     whatsappNumber: finalWhatsApp,
                     details: {
                         car: order.selectedCar,
@@ -668,17 +676,24 @@ export default function CheckoutPage() {
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                                            <span style={{ fontSize: 18, fontWeight: 400, color: '#111827' }}>Base price</span>
+                                            <span style={{ fontSize: 18, fontWeight: 400, color: '#111827' }}>{t({ en: 'Base price', fr: 'Prix de base', ar: 'السعر الأساسي' })}</span>
                                             <div style={{ width: 22, height: 22, borderRadius: '50%', border: '1px solid #D1D5DB', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, color: '#9CA3AF', fontWeight: 700 }}>i</div>
                                         </div>
                                         <span style={{ fontSize: 18, fontWeight: 400, color: '#111827' }}>
-                                            {Math.round(basePrice)} MAD/{individualPricing.unit === 'unit' ? 'unit' : individualPricing.unit === 'day' ? 'day' : 'hr'}
+                                            {Math.round(basePrice)} MAD/{individualPricing.unit === 'unit' ? (t({ en: 'unit', fr: 'unité', ar: 'وحدة' })) : individualPricing.unit === 'day' ? (t({ en: 'day', fr: 'jour', ar: 'يوم' })) : individualPricing.unit === 'office' ? (t({ en: 'office', fr: 'bureau', ar: 'مكتب' })) : (t({ en: 'hr', fr: 'h', ar: 'ساعة' }))}
                                         </span>
                                     </div>
 
+                                    {individualPricing.details && individualPricing.details.map((detail, idx) => (
+                                        <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingLeft: 16, borderLeft: '2px solid rgba(1, 160, 131, 0.2)' }}>
+                                            <span style={{ fontSize: 16, fontWeight: 600, color: '#4B5563' }}>{t(detail.label)}</span>
+                                            <span style={{ fontSize: 16, fontWeight: 800, color: '#111827' }}>{detail.amount.toFixed(0)} MAD</span>
+                                        </div>
+                                    ))}
+
                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                                            <span style={{ fontSize: 18, fontWeight: 400, color: '#111827' }}>Services</span>
+                                            <span style={{ fontSize: 18, fontWeight: 400, color: '#111827' }}>{t({ en: 'Services', fr: 'Services', ar: 'الخدمات' })}</span>
                                             <div style={{ width: 22, height: 22, borderRadius: '50%', border: '1px solid #D1D5DB', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, color: '#9CA3AF', fontWeight: 700 }}>i</div>
                                         </div>
                                         <span style={{ fontSize: 18, fontWeight: 400, color: '#111827' }}>{servicesTotal.toFixed(2)} MAD</span>
@@ -686,7 +701,7 @@ export default function CheckoutPage() {
 
                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                                            <span style={{ fontSize: 18, fontWeight: 400, color: '#111827' }}>Lbricol Fee</span>
+                                            <span style={{ fontSize: 18, fontWeight: 400, color: '#111827' }}>{t({ en: 'Lbricol Fee', fr: 'Frais Lbricol', ar: 'رسوم Lbricol' })}</span>
                                             <div style={{ width: 22, height: 22, borderRadius: '50%', border: '1px solid #D1D5DB', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, color: '#9CA3AF', fontWeight: 700 }}>i</div>
                                         </div>
                                         <span style={{ fontSize: 18, fontWeight: 400, color: '#111827' }}>{serviceFee.toFixed(2)} MAD</span>
@@ -696,7 +711,7 @@ export default function CheckoutPage() {
                                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                             <div style={{ display: 'flex', flexDirection: 'column' }}>
                                                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                                                    <span style={{ fontSize: 18, fontWeight: 400, color: '#111827' }}>Travel Fee</span>
+                                                    <span style={{ fontSize: 18, fontWeight: 400, color: '#111827' }}>{t({ en: 'Travel Fee', fr: 'Frais de déplacement', ar: 'رسوم التنقل' })}</span>
                                                     <div style={{ width: 22, height: 22, borderRadius: '50%', border: '1px solid #D1D5DB', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, color: '#9CA3AF', fontWeight: 700 }}>i</div>
                                                 </div>
                                                 {travelInfo && (
@@ -710,7 +725,7 @@ export default function CheckoutPage() {
                                     <div style={{ height: 1, background: '#E5E7EB', width: '100%', margin: '8px 0' }} />
 
                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                        <span style={{ fontSize: 22, fontWeight: 800, color: '#111827' }}>Total to pay</span>
+                                        <span style={{ fontSize: 22, fontWeight: 800, color: '#111827' }}>{t({ en: 'Total to pay', fr: 'Total à payer', ar: 'الإجمالي للدفع' })}</span>
                                         <span style={{ fontSize: 25, fontWeight: 800, color: '#111827' }}>{total.toFixed(2)} MAD</span>
                                     </div>
                                 </div>
@@ -747,6 +762,13 @@ export default function CheckoutPage() {
                             mountingAddOns: (order.serviceDetails as any)?.mountingAddOns,
                             deliveryDistanceKm: (order.serviceDetails as any)?.deliveryDistanceKm,
                             deliveryDurationMinutes: (order.serviceDetails as any)?.deliveryDurationMinutes,
+                            // Office Cleaning specific
+                            officeDesks: (order.serviceDetails as any)?.officeDesks,
+                            officeMeetingRooms: (order.serviceDetails as any)?.officeMeetingRooms,
+                            officeBathrooms: (order.serviceDetails as any)?.officeBathrooms,
+                            hasKitchenette: (order.serviceDetails as any)?.hasKitchenette,
+                            hasReception: (order.serviceDetails as any)?.hasReception,
+                            officeAddOns: (order.serviceDetails as any)?.officeAddOns,
                         }
                     );
                     const total = individualPricing.total * slotsCount;

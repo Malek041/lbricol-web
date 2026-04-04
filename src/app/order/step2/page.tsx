@@ -537,12 +537,12 @@ function Step2Content() {
           <div className="step2-cards" ref={cardsRef} onScroll={handleScroll}>
             {loading ? (
               <div style={{ textAlign: 'center', padding: 32, flex: 1, color: '#9CA3AF', fontSize: 14 }}>
-                Finding Bricolers...
+                {t({ en: 'Finding Bricolers...', fr: 'Recherche de Bricoleurs...', ar: 'جاري البحث عن "بريكولير"...' })}
               </div>
             ) : providers.length === 0 ? (
               <div style={{ textAlign: 'center', padding: 32, flex: 1 }}>
                 <div style={{ fontSize: 16, fontWeight: 700, color: '#111827' }}>
-                  No Bricolers available
+                  {t({ en: 'No Bricolers available', fr: 'Aucun Bricoleur disponible', ar: 'لا يوجد "بريكولير" متاحون' })}
                 </div>
               </div>
             ) : (
@@ -602,12 +602,12 @@ function ProviderCard({
 
   const getRankBadge = () => {
     const isNew = ((provider.taskCount || 0) < 10 || provider.isNew);
-    if (isNew) return { text: 'NEW', bg: '#F5F3FF', color: '#7C3AED', icon: '✦' };
+    if (isNew) return { text: t({ en: 'NEW', fr: 'NOUVEAU', ar: 'جديد' }), bg: '#F5F3FF', color: '#7C3AED', icon: '✦' };
 
     const badge = provider.badge?.toUpperCase() || 'CLASSIC';
-    if (badge === 'ELITE') return { text: 'ELITE', bg: '#FFF7ED', color: '#EA580C', icon: '🏆' };
-    if (badge === 'PRO') return { text: 'PRO', bg: '#F0FDF4', color: '#16A34A', icon: '💎' };
-    return { text: badge, bg: '#F3F4F6', color: '#4B5563', icon: '🛡️' };
+    if (badge === 'ELITE') return { text: t({ en: 'ELITE', fr: 'ÉLITE', ar: 'نخبة' }), bg: '#FFF7ED', color: '#EA580C', icon: '🏆' };
+    if (badge === 'PRO') return { text: t({ en: 'PRO', fr: 'PRO', ar: 'محترف' }), bg: '#F0FDF4', color: '#16A34A', icon: '💎' };
+    return { text: t({ en: 'CLASSIC', fr: 'CLASSIQUE', ar: 'كلاسيكي' }), bg: '#F3F4F6', color: '#4B5563', icon: '🛡️' };
   };
 
   const rank = getRankBadge();
@@ -700,7 +700,7 @@ function ProviderCard({
               textTransform: 'uppercase'
             }}>
               <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#01A082' }}></span>
-              AVAILABLE TODAY
+              {t({ en: 'AVAILABLE TODAY', fr: 'DISPONIBLE AUJOURD\'HUI', ar: 'متاح اليوم' })}
             </span>
           )}
         </div>
@@ -713,7 +713,7 @@ function ProviderCard({
             <CheckCircle2 size={9} color="#9CA3AF" />
           </div>
           <span style={{ fontSize: 12, color: '#6B7280', fontWeight: 900 }}>
-            {provider.taskCount || 0} {order.serviceName || (isCarRental ? 'Car rental' : 'tasks')}
+            {provider.taskCount || 0} {order.serviceName || (isCarRental ? t({ en: 'Car rental', fr: 'Location de voiture', ar: 'كراء سيارة' }) : t({ en: 'tasks', fr: 'missions', ar: 'مهام' }))}
           </span>
         </div>
 

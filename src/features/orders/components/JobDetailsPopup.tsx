@@ -312,14 +312,28 @@ const JobDetailsPopup: React.FC<JobDetailsPopupProps> = ({ job, onClose, onAccep
                             </h3>
                             <div className="bg-white rounded-[24px] p-8 border border-neutral-100 space-y-6 shadow-sm">
                                 {(() => {
-                                    const breakdown = calculateOrderPrice(job.service, job.price, job.details);
+                                    const breakdown = calculateOrderPrice(job.service, job.price || 80, job.details?.serviceDetails || job.details || {});
                                     const netEarnings = breakdown.total - breakdown.serviceFee;
                                     
                                     return (
                                         <>
                                             <div className="flex justify-between items-center text-neutral-500">
-                                                <span className="text-[17px] font-bold">{t({ en: 'Total Price', fr: 'Prix Total' })}</span>
-                                                <span className="text-[17px] font-black text-black">{breakdown.total} MAD</span>
+                                                <span className="text-[17px] font-bold">{t({ en: 'Base price', fr: 'Prix de base', ar: 'السعر الأساسي' })}</span>
+                                                <span className="text-[17px] font-black text-black">
+                                                    {breakdown.basePrice.toFixed(0)} MAD/{breakdown.unit === 'unit' ? (t({ en: 'unit', fr: 'unité', ar: 'وحدة' })) : breakdown.unit === 'day' ? (t({ en: 'day', fr: 'jour', ar: 'يوم' })) : breakdown.unit === 'office' ? (t({ en: 'office', fr: 'bureau', ar: 'مكتب' })) : (t({ en: 'hr', fr: 'h', ar: 'ساعة' }))}
+                                                </span>
+                                            </div>
+
+                                            {breakdown.details && breakdown.details.map((detail: any, idx: number) => (
+                                                <div key={idx} className="flex justify-between items-center pl-4 border-l-2 border-[#01A083]/20 py-1">
+                                                    <span className="text-[16px] font-bold text-neutral-500">{t(detail.label)}</span>
+                                                    <span className="text-[16px] font-black text-black">{detail.amount.toFixed(0)} MAD</span>
+                                                </div>
+                                            ))}
+
+                                            <div className="flex justify-between items-center text-neutral-500">
+                                                <span className="text-[17px] font-bold">{t({ en: 'Services', fr: 'Services', ar: 'الخدمات' })} <span className="text-[14px] text-black/40 font-medium">({breakdown.quantity} {t({ en: breakdown.unit, fr: breakdown.unit, ar: breakdown.unit === 'unit' ? 'وحدة' : breakdown.unit === 'day' ? 'يوم' : breakdown.unit === 'room' ? 'غرفة' : breakdown.unit === 'office' ? 'مكتب' : 'ساعة' })}{breakdown.quantity > 1 && breakdown.unit !== 'hr' && breakdown.unit !== 'office' ? 's' : ''})</span></span>
+                                                <span className="text-[17px] font-black text-black">{breakdown.subtotal.toFixed(2)} MAD</span>
                                             </div>
                                             
                                             <div className="flex justify-between items-center text-neutral-500">
@@ -445,7 +459,7 @@ const JobDetailsPopup: React.FC<JobDetailsPopupProps> = ({ job, onClose, onAccep
                             <div className="flex items-baseline gap-1.5">
                                 <span className="text-[44px] font-[1000] text-black leading-none tracking-tighter">
                                     {(() => {
-                                        const breakdown = calculateOrderPrice(job.service, job.price, job.details);
+                                        const breakdown = calculateOrderPrice(job.service, job.price || 80, job.details?.serviceDetails || job.details || {});
                                         return mode === 'provider' ? (breakdown.total - breakdown.serviceFee).toFixed(2) : breakdown.total.toFixed(2);
                                     })()}
                                 </span>

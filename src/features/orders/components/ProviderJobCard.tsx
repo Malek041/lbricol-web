@@ -65,9 +65,9 @@ export default function ProviderJobCard({
             const hours = Math.floor(diffMins / 60);
             const mins = diffMins % 60;
 
-            if (hours > 24) return `${Math.floor(hours / 24)}d left`;
-            if (hours > 0) return `${hours}h${mins}min left`;
-            return `${mins}min left`;
+            if (hours > 24) return `${Math.floor(hours / 24)}${t({ en: 'd left', fr: 'j restants', ar: 'يوم متبقي' })}`;
+            if (hours > 0) return `${hours}h${mins}min ${t({ en: 'left', fr: 'restant', ar: 'متبقي' })}`;
+            return `${mins}min ${t({ en: 'left', fr: 'restant', ar: 'متبقي' })}`;
         } catch (e) {
             return null;
         }
@@ -155,7 +155,7 @@ export default function ProviderJobCard({
                             transition={{ repeat: Infinity, duration: 1.5 }}
                             className="w-2.5 h-2.5 rounded-full bg-[#FFC244]"
                         />
-                        <span className="text-[9px] font-black uppercase text-amber-600 tracking-wider font-sans">{t({ en: 'Urgent', fr: 'Urgent' })}</span>
+                        <span className="text-[9px] font-black uppercase text-amber-600 tracking-wider font-sans">{t({ en: 'Urgent', fr: 'Urgent', ar: 'عاجل' })}</span>
                     </div>
                 </div>
             )}
@@ -185,7 +185,7 @@ export default function ProviderJobCard({
                         "px-2.5 py-0.5 text-[10px] font-black rounded-lg uppercase tracking-wider",
                         isOffer ? "bg-amber-50 text-amber-600" : (isInProgress ? "bg-[#E6F7F4] text-[#01A083]" : (isDone ? "bg-emerald-50 text-emerald-600" : "bg-blue-50 text-blue-600"))
                     )}>
-                        {isOffer ? t({ en: 'Active Offer', fr: 'Offre active' }) : (isDone ? t({ en: 'Delivered', fr: 'Livrée' }) : (isInProgress ? t({ en: 'In Progress', fr: 'En cours' }) : t({ en: 'On time', fr: 'À l’heure' })))}
+                        {isOffer ? t({ en: 'Active Offer', fr: 'Offre active', ar: 'عرض نشط' }) : (isDone ? t({ en: 'Delivered', fr: 'Livrée', ar: 'تم التسليم' }) : (isInProgress ? t({ en: 'In Progress', fr: 'En cours', ar: 'قيد التنفيذ' }) : t({ en: 'On time', fr: 'À l’heure', ar: 'في الموعد' })))}
                     </span>
                 </div>
 
@@ -218,14 +218,14 @@ export default function ProviderJobCard({
                  {/* Progress Bar & Actions Row */}
                  <div className="mt-4">
                      <div className="flex justify-between items-end mb-1">
-                         <div className="text-[14px] font-bold text-neutral-300">
-                              {order.clientName || t({ en: 'Client', fr: 'Client' })}
-                         </div>
-                         {timeLeft && !isDone && (
-                             <span className="text-[12px] font-black text-[#01A083] tracking-tight">
-                                 ({timeLeft.replace(' left', t({ en: ' left', fr: ' restant' }))})
-                             </span>
-                         )}
+                          <div className="text-[14px] font-bold text-neutral-300">
+                               {order.clientName || t({ en: 'Client', fr: 'Client', ar: 'عميل' })}
+                          </div>
+                          {timeLeft && !isDone && (
+                              <span className="text-[12px] font-black text-[#01A083] tracking-tight">
+                                  ({timeLeft})
+                              </span>
+                          )}
                      </div>
                      <div className="flex items-center justify-between gap-4">
                          <div className="flex-1 h-[4px] bg-neutral-50 rounded-full overflow-hidden">
@@ -271,9 +271,9 @@ export default function ProviderJobCard({
                                          }}
                                          className="px-4 h-10 rounded-full bg-[#01A083] text-white text-[12px] font-black border border-[#008f75] hover:bg-[#008f75] active:scale-95 transition-all flex items-center gap-1.5"
                                      >
-                                         <Navigation size={14} fill="currentColor" />
-                                         {t({ en: 'On My Way', fr: 'En chemin' })}
-                                     </button>
+                                          <Navigation size={14} fill="currentColor" />
+                                          {t({ en: 'On My Way', fr: 'En chemin', ar: 'في الطريق' })}
+                                      </button>
                                  )}
                                  <button
                                      onClick={handleNavigate}
@@ -291,7 +291,7 @@ export default function ProviderJobCard({
                                  }}
                                  className="px-6 py-2.5 rounded-full bg-[#01A083] text-white text-[13px] font-black border border-[#008f75] hover:bg-[#008f75] active:scale-95 transition-all"
                              >
-                                 {t({ en: 'Confirm Mission', fr: 'Confirmer la mission' })}
+                                  {t({ en: 'Confirm Mission', fr: 'Confirmer la mission', ar: 'تأكيد المهمة' })}
                              </button>
                          )}
                          </div>

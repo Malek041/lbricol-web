@@ -44,19 +44,20 @@ export default function AvailabilityTab({
     return (
         <div className="flex flex-col bg-[#FFFFFF] h-full p-4 md:p-6">
             <h2 className="text-[28px] font-black text-black mb-6">
-                {t({ en: 'My Availability', fr: 'Ma Disponibilité' })}
+                {t({ en: 'My Availability', fr: 'Ma Disponibilité', ar: 'توفري' })}
             </h2>
 
             <div className="bg-white rounded-[12px] p-4 md:p-6 border border-neutral-100 shadow-sm max-w-[600px] mx-auto w-full">
                 <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-8 gap-4 w-full">
                     <div>
                         <h3 className="text-[20px] font-black text-black mb-1">
-                            {t({ en: 'Weekly Routine', fr: 'Routine hebdomadaire' })}
+                            {t({ en: 'Weekly Routine', fr: 'Routine hebdomadaire', ar: 'الروتين الأسبوعي' })}
                         </h3>
                         <p className="text-[14px] text-neutral-500 font-medium leading-tight">
                             {t({
                                 en: 'Your regular working hours.',
-                                fr: 'Vos horaires de travail réguliers.'
+                                fr: 'Vos horaires de travail réguliers.',
+                                ar: 'ساعات عملك المنتظمة.'
                             })}
                         </p>
                     </div>
@@ -65,7 +66,7 @@ export default function AvailabilityTab({
                         className="flex items-center gap-2 px-5 py-3 rounded-full bg-[#01A083] text-white font-black text-[14px] hover:bg-[#01A083]/90 active:scale-95 transition-all w-full md:w-auto justify-center"
                     >
                         <Edit2 size={16} strokeWidth={3} />
-                        {t({ en: 'Edit Routine', fr: 'Modifier' })}
+                        {t({ en: 'Edit Routine', fr: 'Modifier', ar: 'تعديل الروتين' })}
                     </button>
                 </div>
 
@@ -93,7 +94,13 @@ export default function AvailabilityTab({
                                                     day === 'wednesday' ? 'mercredi' :
                                                         day === 'thursday' ? 'jeudi' :
                                                             day === 'friday' ? 'vendredi' :
-                                                                day === 'saturday' ? 'samedi' : 'dimanche'
+                                                                day === 'saturday' ? 'samedi' : 'dimanche',
+                                            ar: day === 'monday' ? 'الاثنين' :
+                                                day === 'tuesday' ? 'الثلاثاء' :
+                                                    day === 'wednesday' ? 'الأربعاء' :
+                                                        day === 'thursday' ? 'الخميس' :
+                                                            day === 'friday' ? 'الجمعة' :
+                                                                day === 'saturday' ? 'السبت' : 'الأحد'
                                         })}
                                     </span>
                                 </div>
@@ -111,7 +118,7 @@ export default function AvailabilityTab({
                                         </>
                                     ) : (
                                         <div className="px-5 py-2 text-[14px] font-black text-neutral-400 bg-white rounded-xl border border-neutral-100 flex-1 sm:flex-none text-center">
-                                            {t({ en: 'Unavailable', fr: 'Indisponible' })}
+                                            {t({ en: 'Unavailable', fr: 'Indisponible', ar: 'غير متاح' })}
                                         </div>
                                     )}
                                 </div>

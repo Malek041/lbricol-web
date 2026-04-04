@@ -235,7 +235,7 @@ export default function ProviderPage() {
     const [isClientRatedLocally, setIsClientRatedLocally] = useState<string[]>([]);
     const [showMonthPicker, setShowMonthPicker] = useState(false);
     const [viewingJobDetails, setViewingJobDetails] = useState<MobileJobsViewItem | null>(null);
-    const [performanceTab, setPerformanceTab] = useState<'activity' | 'performance' | 'availability'>('performance');
+    const [performanceTab, setPerformanceTab] = useState<'activity' | 'performance' | 'availability'>('activity');
     const [performanceDetail, setPerformanceDetail] = useState<'none' | 'financial' | 'operational' | 'reputation' | 'marketing' | 'growth' | 'tips-profile' | 'tips-pricing' | 'tips-stars' | 'tips-visibility' | 'availability'>('none');
     const [tempSelectedServices, setTempSelectedServices] = useState<string[]>([]);
     const [dailySlots, setDailySlots] = useState<{ from: string, to: string }[]>([]);
@@ -3227,24 +3227,24 @@ const DetailItem = ({ icon: Icon, label, value, subValue, highlight }: {
                                                 <RefreshCw size={20} className="text-amber-500" />
                                             </div>
                                             <div>
-                                                <h2 className="text-[20px] font-black text-neutral-900">{t({ en: 'Redistribute Job', fr: 'Redistribuer la mission' })}</h2>
+                                                <h2 className="text-[20px] font-black text-neutral-900">{t({ en: 'Redistribute Job', fr: 'Redistribuer la mission', ar: 'إعادة توزيع المهمة' })}</h2>
                                                 <p className="text-[12px] text-neutral-500 font-medium">{redistributeJob.service} · {redistributeJob.date}</p>
                                             </div>
                                         </div>
 
                                         <div className="bg-amber-50 border border-amber-100 rounded-2xl p-4 mb-5">
-                                            <p className="text-[13px] font-bold text-amber-700">{t({ en: '⚠️ Financial Penalty Notice', fr: '⚠️ Avis de pénalité financière' })}</p>
+                                            <p className="text-[13px] font-bold text-amber-700">{t({ en: '⚠️ Financial Penalty Notice', fr: '⚠️ Avis de pénalité financière', ar: '⚠️ تنبيه بخصم مالي' })}</p>
                                             <p className="text-[12px] font-medium text-amber-600 mt-1 leading-relaxed">
-                                                {t({ en: 'Redistributing a confirmed job applies a', fr: 'La redistribution d’une mission confirmée applique une' })} <strong>{t({ en: 'penalty deduction', fr: 'déduction de pénalité' })}</strong> {t({ en: 'to your next earnings. Use this only for urgent, genuine circumstances.', fr: 'sur vos prochains gains. Utilisez cela uniquement pour des circonstances urgentes et réelles.' })}
+                                                {t({ en: 'Redistributing a confirmed job applies a', fr: 'La redistribution d’une mission confirmée applique une', ar: 'تؤدي إعادة توزيع مهمة مؤكدة إلى تطبيق' })} <strong>{t({ en: 'penalty deduction', fr: 'déduction de pénalité', ar: 'خصم جزائي' })}</strong> {t({ en: 'to your next earnings. Use this only for urgent, genuine circumstances.', fr: 'sur vos prochains gains. Utilisez cela uniquement pour des circonstances urgentes et réelles.', ar: 'على أرباحك القادمة. استخدم هذا فقط للظروف العاجلة والحقيقية.' })}
                                             </p>
                                         </div>
 
                                         <div className="mb-5">
-                                            <label className="block text-xs font-black text-neutral-400 uppercase tracking-widest mb-2">{t({ en: 'Reason for redistribution *', fr: 'Raison de redistribution *' })}</label>
+                                            <label className="block text-xs font-black text-neutral-400 uppercase tracking-widest mb-2">{t({ en: 'Reason for redistribution *', fr: 'Raison de redistribution *', ar: 'سبب إعادة التوزيع *' })}</label>
                                             <textarea
                                                 value={redistributeReason}
                                                 onChange={(e) => setRedistributeReason(e.target.value)}
-                                                placeholder={t({ en: 'Describe your urgent circumstance clearly...', fr: 'Décrivez clairement votre situation urgente...' })}
+                                                placeholder={t({ en: 'Describe your urgent circumstance clearly...', fr: 'Décrivez clairement votre situation urgente...', ar: 'صف ظروفك العاجلة بوضوح...' })}
                                                 className="w-full px-4 py-3 bg-neutral-50 border border-neutral-200 rounded-2xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#01A083]/10 resize-none min-h-[100px]"
                                             />
                                         </div>
@@ -3254,7 +3254,7 @@ const DetailItem = ({ icon: Icon, label, value, subValue, highlight }: {
                                                 onClick={() => setShowRedistributeModal(false)}
                                                 className="flex-1 h-12 rounded-2xl border border-neutral-200 text-sm font-black text-neutral-600 hover:bg-neutral-50 transition-colors"
                                             >
-                                                {t({ en: 'Cancel', fr: 'Annuler' })}
+                                                {t({ en: 'Cancel', fr: 'Annuler', ar: 'إلغاء' })}
                                             </button>
                                             <button
                                                 disabled={!redistributeReason.trim() || isRedistributing}
@@ -3276,10 +3276,11 @@ const DetailItem = ({ icon: Icon, label, value, subValue, highlight }: {
                                                             await sendClientNotification({
                                                                 clientId: redistributeJob.clientId!,
                                                                 type: 'job_status_update',
-                                                                title: t({ en: 'Order Redistributed', fr: 'Commande redistribuée' }),
+                                                                title: t({ en: 'Order Redistributed', fr: 'Commande redistribuée', ar: 'تمت إعادة توزيع الطلب' }),
                                                                 body: t({
                                                                     en: `${userData?.name || 'Your professional'} had to redistribute your job. Please choose someone else or cancel.`,
-                                                                    fr: `${userData?.name || 'Votre professionnel'} a dû redistribuer votre mission. Veuillez choisir quelqu'un d'autre ou annuler.`
+                                                                    fr: `${userData?.name || 'Votre professionnel'} a dû redistribuer votre mission. Veuillez choisir quelqu'un d'autre ou annuler.`,
+                                                                    ar: `اضطر ${userData?.name || 'المحترف'} لإعادة توزيع مهمتك. يرجى اختيار شخص آخر أو الإلغاء.`
                                                                 }),
                                                                 orderId: redistributeJob.id
                                                             });
@@ -3287,18 +3288,18 @@ const DetailItem = ({ icon: Icon, label, value, subValue, highlight }: {
                                                             console.warn("Failed to notify client about redistribution:", notifErr);
                                                         }
 
-                                                        showToast({ variant: 'info', title: t({ en: 'Job redistributed', fr: 'Mission redistribuée' }), description: t({ en: 'A penalty has been applied to your earnings.', fr: 'Une pénalité a été appliquée à vos revenus.' }) });
+                                                        showToast({ variant: 'info', title: t({ en: 'Job redistributed', fr: 'Mission redistribuée', ar: 'تمت إعادة توزيع المهمة' }), description: t({ en: 'A penalty has been applied to your earnings.', fr: 'Une pénalité a été appliquée à vos revenus.', ar: 'تم تطبيق خصم جزائي على أرباحك.' }) });
                                                         setShowRedistributeModal(false);
                                                         setRedistributeReason('');
                                                     } catch (e) {
-                                                        showToast({ variant: 'error', title: t({ en: 'Error', fr: 'Erreur' }), description: t({ en: 'Could not redistribute. Please try again.', fr: 'Impossible de redistribuer. Veuillez réessayer.' }) });
+                                                        showToast({ variant: 'error', title: t({ en: 'Error', fr: 'Erreur', ar: 'خطأ' }), description: t({ en: 'Could not redistribute. Please try again.', fr: 'Impossible de redistribuer. Veuillez réessayer.', ar: 'تعذر إعادة التوزيع. يرجى المحاولة مرة أخرى.' }) });
                                                     } finally {
                                                         setIsRedistributing(false);
                                                     }
                                                 }}
                                                 className="flex-1 h-12 rounded-2xl bg-[#01A083] text-white text-sm font-black disabled:opacity-40 disabled:cursor-not-allowed transition-colors border border-[#008f75]"
                                             >
-                                                {isRedistributing ? t({ en: 'Processing…', fr: 'En cours…' }) : t({ en: 'Confirm Redistribution', fr: 'Confirmer la redistribution' })}
+                                                {isRedistributing ? t({ en: 'Processing…', fr: 'En cours…', ar: 'جاري المعالجة...' }) : t({ en: 'Confirm Redistribution', fr: 'Confirmer la redistribution', ar: 'تأكيد إعادة التوزيع' })}
                                             </button>
                                         </div>
                                     </motion.div>
@@ -3322,7 +3323,7 @@ const DetailItem = ({ icon: Icon, label, value, subValue, highlight }: {
                                     >
                                         <div className="w-10 h-1 bg-neutral-200 rounded-full mx-auto mb-6" />
                                         <div className="text-center mb-6">
-                                            <p className="text-[12px] font-black text-neutral-400 uppercase tracking-widest mb-1">{t({ en: 'Rate your client', fr: 'Évaluez votre client' })}</p>
+                                            <p className="text-[12px] font-black text-neutral-400 uppercase tracking-widest mb-1">{t({ en: 'Rate your client', fr: 'Évaluez votre client', ar: 'قيم عميلك' })}</p>
                                             <h2 className="text-[22px] font-black text-neutral-900" style={{ fontFamily: 'Uber Move, var(--font-sans)' }}>{rateClientJob.service}</h2>
                                             <p className="text-[13px] font-medium text-neutral-500 mt-1">{rateClientJob.clientName} · {rateClientJob.date}</p>
                                         </div>
@@ -3341,11 +3342,11 @@ const DetailItem = ({ icon: Icon, label, value, subValue, highlight }: {
                                         </div>
 
                                         <div className="mb-5">
-                                            <label className="block text-xs font-black text-neutral-400 uppercase tracking-widest mb-2">{t({ en: 'Comment (optional)', fr: 'Commentaire (optionnel)' })}</label>
+                                            <label className="block text-xs font-black text-neutral-400 uppercase tracking-widest mb-2">{t({ en: 'Comment (optional)', fr: 'Commentaire (optionnel)', ar: 'تعليق (اختياري)' })}</label>
                                             <textarea
                                                 value={clientRatingComment}
                                                 onChange={(e) => setClientRatingComment(e.target.value)}
-                                                placeholder={t({ en: 'How was the client to work with?', fr: 'Comment était le client ?' })}
+                                                placeholder={t({ en: 'How was the client to work with?', fr: 'Comment était le client ?', ar: 'كيف كان التعامل مع العميل؟' })}
                                                 className="w-full px-4 py-3 bg-neutral-50 border border-neutral-200 rounded-2xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#01A083]/10 resize-none min-h-[80px]"
                                             />
                                         </div>
@@ -3361,17 +3362,17 @@ const DetailItem = ({ icon: Icon, label, value, subValue, highlight }: {
                                                         bricolerComment: clientRatingComment,
                                                     });
                                                     confetti({ particleCount: 80, spread: 60, origin: { y: 0.7 } });
-                                                    showToast({ variant: 'success', title: t({ en: 'Rating submitted!', fr: 'Évaluation envoyée !' }), description: t({ en: 'Thank you for your feedback.', fr: 'Merci pour votre retour.' }) });
+                                                    showToast({ variant: 'success', title: t({ en: 'Rating submitted!', fr: 'Évaluation envoyée !', ar: 'تم إرسال التقييم!' }), description: t({ en: 'Thank you for your feedback.', fr: 'Merci pour votre retour.', ar: 'شكراً لتعليقك.' }) });
                                                     setShowRateClientModal(false);
                                                 } catch (e) {
-                                                    showToast({ variant: 'error', title: t({ en: 'Error', fr: 'Erreur' }), description: t({ en: 'Could not submit rating. Try again.', fr: 'Impossible d\'envoyer l\'évaluation. Réessayez.' }) });
+                                                    showToast({ variant: 'error', title: t({ en: 'Error', fr: 'Erreur', ar: 'خطأ' }), description: t({ en: 'Could not submit rating. Try again.', fr: 'Impossible d\'envoyer l\'évaluation. Réessayez.', ar: 'تعذر إرسال التقييم. حاول مرة أخرى.' }) });
                                                 } finally {
                                                     setIsSubmittingRating(false);
                                                 }
                                             }}
                                             className="w-full h-14 rounded-2xl bg-[#01A083] text-white text-[15px] font-black disabled:opacity-40 disabled:cursor-not-allowed transition-colors border border-[#008f75]"
                                         >
-                                            {isSubmittingRating ? t({ en: 'Submitting…', fr: 'Envoi…' }) : `${t({ en: 'Submit', fr: 'Envoyer' })} ${clientRating > 0 ? `${clientRating}★` : t({ en: 'Rating', fr: 'l\'évaluation' })}`}
+                                            {isSubmittingRating ? t({ en: 'Submitting…', fr: 'Envoi…', ar: 'جاري الإرسال...' }) : `${t({ en: 'Submit', fr: 'Envoyer', ar: 'إرسال' })} ${clientRating > 0 ? `${clientRating}★` : t({ en: 'Rating', fr: 'l\'évaluation', ar: 'التقييم' })}`}
                                         </button>
                                     </motion.div>
                                 </div>
@@ -3411,8 +3412,8 @@ const DetailItem = ({ icon: Icon, label, value, subValue, highlight }: {
                                             </button>
                                         </div>
 
-                                        <h2 className="text-3xl font-black text-neutral-900 mb-2">{t({ en: 'Request Payout', fr: 'Demande de paiement' })}</h2>
-                                        <p className="text-neutral-500 text-sm mb-8 font-medium">{t({ en: 'Choose your preferred withdrawal method. Payouts are usually processed within 24-48 hours.', fr: 'Choisissez votre méthode de retrait préférée. Les paiements sont généralement traités sous 24-48 heures.' })}</p>
+                                        <h2 className="text-3xl font-black text-neutral-900 mb-2">{t({ en: 'Request Payout', fr: 'Demande de paiement', ar: 'طلب سحب الأرباح' })}</h2>
+                                        <p className="text-neutral-500 text-sm mb-8 font-medium">{t({ en: 'Choose your preferred withdrawal method. Payouts are usually processed within 24-48 hours.', fr: 'Choisissez votre méthode de retrait préférée. Les paiements sont généralement traités sous 24-48 heures.', ar: 'اختر طريقة السحب المفضلة لديك. يتم عادةً معالجة المدفوعات في غضون 24-48 ساعة.' })}</p>
 
                                         <div className="space-y-4 mb-8">
                                             <div
@@ -3427,8 +3428,8 @@ const DetailItem = ({ icon: Icon, label, value, subValue, highlight }: {
                                                         <Wallet size={20} className="text-blue-500" />
                                                     </div>
                                                     <div>
-                                                        <p className="font-bold text-sm text-neutral-900">{t({ en: 'Bank Transfer (RIB)', fr: 'Virement bancaire (RIB)' })}</p>
-                                                        <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest">{t({ en: 'Free • 2 days', fr: 'Gratuit • 2 jours' })}</p>
+                                                        <p className="font-bold text-sm text-neutral-900">{t({ en: 'Bank Transfer (RIB)', fr: 'Virement bancaire (RIB)', ar: 'تحويل بنكي (RIB)' })}</p>
+                                                        <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest">{t({ en: 'Free • 2 days', fr: 'Gratuit • 2 jours', ar: 'مجاني • يومين' })}</p>
                                                     </div>
                                                 </div>
                                                 {cashOutMethod === 'bank' && <CheckCircle2 size={20} className="text-[#01A083]" />}
@@ -3446,8 +3447,8 @@ const DetailItem = ({ icon: Icon, label, value, subValue, highlight }: {
                                                         <Navigation size={20} className="text-red-500" />
                                                     </div>
                                                     <div>
-                                                        <p className="font-bold text-sm text-neutral-900">{t({ en: 'Wafacash / Cash Plus', fr: 'Wafacash / Cash Plus' })}</p>
-                                                        <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest">{t({ en: '20 MAD fee • Instant', fr: 'Frais 20 MAD • Instantané' })}</p>
+                                                        <p className="font-bold text-sm text-neutral-900">{t({ en: 'Wafacash / Cash Plus', fr: 'Wafacash / Cash Plus', ar: 'وفاكاش / كاش بلوس' })}</p>
+                                                        <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest">{t({ en: '20 MAD fee • Instant', fr: 'Frais 20 MAD • Instantané', ar: 'عمولة 20 درهم • فوري' })}</p>
                                                     </div>
                                                 </div>
                                                 {cashOutMethod === 'wafacash' && <CheckCircle2 size={20} className="text-[#01A083]" />}
@@ -3456,9 +3457,9 @@ const DetailItem = ({ icon: Icon, label, value, subValue, highlight }: {
 
                                         <div className="space-y-6">
                                             <div>
-                                                <label className="block text-xs font-black text-neutral-400 uppercase tracking-widest mb-2">{t({ en: 'Payout Details', fr: 'Informations de paiement' })}</label>
+                                                <label className="block text-xs font-black text-neutral-400 uppercase tracking-widest mb-2">{t({ en: 'Payout Details', fr: 'Informations de paiement', ar: 'تفاصيل السحب' })}</label>
                                                 <textarea
-                                                    placeholder={cashOutMethod === 'bank' ? t({ en: 'Enter your 24-digit RIB number...', fr: 'Entrez votre numéro RIB de 24 chiffres...' }) : t({ en: 'Enter your Full Name and Phone Number...', fr: 'Entrez votre nom complet et numéro de téléphone...' })}
+                                                    placeholder={cashOutMethod === 'bank' ? t({ en: 'Enter your 24-digit RIB number...', fr: 'Entrez votre numéro RIB de 24 chiffres...', ar: 'أدخل رقم RIB المكون من 24 رقماً...' }) : t({ en: 'Enter your Full Name and Phone Number...', fr: 'Entrez votre nom complet et numéro de téléphone...', ar: 'أدخل اسمك الكامل ورقم هاتفك...' })}
                                                     className="w-full px-5 py-4 bg-neutral-50 border border-neutral-100 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#01A083]/20 transition-all min-h-[100px] text-sm"
                                                 />
                                             </div>
@@ -3466,14 +3467,14 @@ const DetailItem = ({ icon: Icon, label, value, subValue, highlight }: {
                                                 onClick={() => {
                                                     showToast({
                                                         variant: 'success',
-                                                        title: t({ en: 'Payout request sent.', fr: 'Demande de paiement envoyée.' }),
-                                                        description: t({ en: 'You will receive a confirmation message shortly.', fr: 'Vous recevrez un message de confirmation prochainement.' })
+                                                        title: t({ en: 'Payout request sent.', fr: 'Demande de paiement envoyée.', ar: 'تم إرسال طلب السحب.' }),
+                                                        description: t({ en: 'You will receive a confirmation message shortly.', fr: 'Vous recevrez un message de confirmation prochainement.', ar: 'ستتلقى رسالة تأكيد قريباً.' })
                                                     });
                                                     setShowCashOutModal(false);
                                                 }}
                                                 className="w-full py-5 bg-black text-white font-black rounded-2xl transition-all active:scale-[0.98]"
                                             >
-                                                {t({ en: 'Submit Request', fr: 'Envoyer la demande' })}
+                                                {t({ en: 'Submit Request', fr: 'Envoyer la demande', ar: 'إرسال الطلب' })}
                                             </button>
                                         </div>
                                     </motion.div>
@@ -3491,12 +3492,12 @@ const DetailItem = ({ icon: Icon, label, value, subValue, highlight }: {
                                             </button>
                                         </div>
 
-                                        <h2 className="text-3xl font-black text-neutral-900 mb-2">{t({ en: 'Profile Settings', fr: 'Paramètres du profil' })}</h2>
-                                        <p className="text-neutral-500 text-sm mb-8 font-medium">{t({ en: 'Update your professional details and contact information.', fr: 'Mettez à jour vos informations professionnelles et vos coordonnées.' })}</p>
+                                        <h2 className="text-3xl font-black text-neutral-900 mb-2">{t({ en: 'Profile Settings', fr: 'Paramètres du profil', ar: 'إعدادات الحساب' })}</h2>
+                                        <p className="text-neutral-500 text-sm mb-8 font-medium">{t({ en: 'Update your professional details and contact information.', fr: 'Mettez à jour vos informations professionnelles et vos coordonnées.', ar: 'تحديث بياناتك المهنية ومعلومات الاتصال.' })}</p>
 
                                         <div className="space-y-6">
                                             <div>
-                                                <label className="block text-xs font-black text-neutral-400 uppercase tracking-widest mb-2">{t({ en: 'Display Name', fr: 'Nom affiché' })}</label>
+                                                <label className="block text-xs font-black text-neutral-400 uppercase tracking-widest mb-2">{t({ en: 'Display Name', fr: 'Nom affiché', ar: 'اسم العرض' })}</label>
                                                 <input
                                                     ref={nameInputRef}
                                                     type="text"
@@ -3506,34 +3507,34 @@ const DetailItem = ({ icon: Icon, label, value, subValue, highlight }: {
                                             </div>
                                             <div className="grid grid-cols-2 gap-4">
                                                 <div className="relative">
-                                                    <label className="block text-xs font-black text-neutral-400 uppercase tracking-widest mb-2">{t({ en: 'City', fr: 'Ville' })}</label>
+                                                    <label className="block text-xs font-black text-neutral-400 uppercase tracking-widest mb-2">{t({ en: 'City', fr: 'Ville', ar: 'المدينة' })}</label>
                                                     <select
                                                         ref={cityInputRef}
                                                         defaultValue={providerCity}
                                                         className="w-full px-5 py-4 bg-neutral-50 border border-neutral-100 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#01A083]/10 transition-all text-sm appearance-none cursor-pointer hover:bg-neutral-100 font-bold"
                                                     >
-                                                        <option disabled>{t({ en: 'Select City', fr: 'Choisir une ville' })}</option>
-                                                        <option>{t({ en: 'Casablanca', fr: 'Casablanca' })}</option>
-                                                        <option>{t({ en: 'Rabat', fr: 'Rabat' })}</option>
-                                                        <option>{t({ en: 'Marrakech', fr: 'Marrakech' })}</option>
-                                                        <option>{t({ en: 'Tangier', fr: 'Tanger' })}</option>
-                                                        <option>{t({ en: 'Essaouira', fr: 'Essaouira' })}</option>
+                                                        <option disabled>{t({ en: 'Select City', fr: 'Choisir une ville', ar: 'اختر المدينة' })}</option>
+                                                        <option>{t({ en: 'Casablanca', fr: 'Casablanca', ar: 'الدار البيضاء' })}</option>
+                                                        <option>{t({ en: 'Rabat', fr: 'Rabat', ar: 'الرباط' })}</option>
+                                                        <option>{t({ en: 'Marrakech', fr: 'Marrakech', ar: 'مراكش' })}</option>
+                                                        <option>{t({ en: 'Tangier', fr: 'Tanger', ar: 'طنجة' })}</option>
+                                                        <option>{t({ en: 'Essaouira', fr: 'Essaouira', ar: 'الصويرة' })}</option>
                                                     </select>
                                                     <div className="absolute right-4 top-[42px] pointer-events-none">
                                                         <ChevronDown size={16} className="text-neutral-400" />
                                                     </div>
                                                 </div>
                                                 <div>
-                                                    <label className="block text-xs font-black text-neutral-400 uppercase tracking-widest mb-2">{t({ en: 'Language', fr: 'Langue' })}</label>
+                                                    <label className="block text-xs font-black text-neutral-400 uppercase tracking-widest mb-2">{t({ en: 'Language', fr: 'Langue', ar: 'اللغة' })}</label>
                                                     <div className="w-full px-5 py-4 bg-neutral-100 border border-neutral-100 rounded-2xl text-sm opacity-50 cursor-not-allowed flex items-center gap-2">
-                                                        <Globe size={14} /> {t({ en: 'English', fr: 'Anglais' })}
+                                                        <Globe size={14} /> {t({ en: 'English', fr: 'Anglais', ar: 'الإنجليزية' })}
                                                     </div>
                                                 </div>
                                             </div>
 
                                             {/* Work Areas Selector */}
                                             <div>
-                                                <label className="block text-xs font-black text-neutral-400 uppercase tracking-widest mb-3">{t({ en: 'Work Areas (Neighborhoods)', fr: 'Zones de travail (quartiers)' })}</label>
+                                                <label className="block text-xs font-black text-neutral-400 uppercase tracking-widest mb-3">{t({ en: 'Work Areas (Neighborhoods)', fr: 'Zones de travail (quartiers)', ar: 'مناطق العمل (الأحياء)' })}</label>
                                                 <div className="flex flex-wrap gap-2 mb-3">
                                                     {selectedWorkAreas.map(area => (
                                                         <div key={area} className="pl-3 pr-2 py-1.5 bg-neutral-100 rounded-full text-xs font-bold text-neutral-700 flex items-center gap-2 border border-transparent">
@@ -3558,7 +3559,7 @@ const DetailItem = ({ icon: Icon, label, value, subValue, highlight }: {
                                                             }}
                                                             className="appearance-none pl-3 pr-8 py-1.5 bg-[#01A083] text-white rounded-full text-xs font-bold hover:bg-[#008f75] transition-colors cursor-pointer outline-none"
                                                         >
-                                                            <option value="" disabled>{t({ en: '+ Add Neighborhood', fr: '+ Ajouter un quartier' })}</option>
+                                                            <option value="" disabled>{t({ en: '+ Add Neighborhood', fr: '+ Ajouter un quartier', ar: '+ إضافة حي' })}</option>
                                                             {(providerCity ? MOROCCAN_CITIES_AREAS[providerCity] || [] : [])
                                                                 .filter(a => !selectedWorkAreas.includes(a))
                                                                 .map(a => <option key={a} value={a} className="text-black bg-white">{a}</option>)
@@ -3573,7 +3574,7 @@ const DetailItem = ({ icon: Icon, label, value, subValue, highlight }: {
 
                                             {/* Services Section */}
                                             <div>
-                                                <label className="block text-xs font-black text-neutral-400 uppercase tracking-widest mb-3">{t({ en: 'My Services', fr: 'Mes services' })}</label>
+                                                <label className="block text-xs font-black text-neutral-400 uppercase tracking-widest mb-3">{t({ en: 'My Services', fr: 'Mes services', ar: 'خدماتي' })}</label>
                                                 <div className="flex flex-wrap gap-2 mb-3">
                                                     {tempSelectedServices.map(sId => {
                                                         const s = getServiceById(sId);
@@ -3602,7 +3603,7 @@ const DetailItem = ({ icon: Icon, label, value, subValue, highlight }: {
                                                             }}
                                                             className="appearance-none pl-3 pr-8 py-1.5 bg-[#01A083] text-white rounded-full text-xs font-bold hover:bg-[#008f75] transition-colors cursor-pointer outline-none border border-transparent focus:ring-2 focus:ring-offset-1 focus:ring-[#01A083]/20"
                                                         >
-                                                            <option value="" disabled>{t({ en: '+ Add Service', fr: '+ Ajouter un service' })}</option>
+                                                            <option value="" disabled>{t({ en: '+ Add Service', fr: '+ Ajouter un service', ar: '+ إضافة خدمة' })}</option>
                                                             {getAllServices()
                                                                 .filter(s => !tempSelectedServices.includes(s.id))
                                                                 .map(s => (
@@ -3616,12 +3617,12 @@ const DetailItem = ({ icon: Icon, label, value, subValue, highlight }: {
                                                     </div>
                                                 </div>
                                                 <p className="text-[10px] text-neutral-400 font-medium ml-1">
-                                                    {t({ en: 'Adding services increases your job visibility.', fr: 'Ajouter des services augmente votre visibilité sur les missions.' })}
+                                                    {t({ en: 'Adding services increases your job visibility.', fr: 'Ajouter des services augmente votre visibilité sur les missions.', ar: 'إضافة الخدمات تزيد من ظهورك للطلبات.' })}
                                                 </p>
                                             </div>
 
                                             <div>
-                                                <label className="block text-xs font-black text-neutral-400 uppercase tracking-widest mb-2">{t({ en: 'WhatsApp Number', fr: 'Numéro WhatsApp' })}</label>
+                                                <label className="block text-xs font-black text-neutral-400 uppercase tracking-widest mb-2">{t({ en: 'WhatsApp Number', fr: 'Numéro WhatsApp', ar: 'رقم الواتساب' })}</label>
                                                 <input
                                                     ref={whatsappInputRef}
                                                     type="tel"
@@ -3635,14 +3636,14 @@ const DetailItem = ({ icon: Icon, label, value, subValue, highlight }: {
                                                     onClick={() => setShowProfileModal(false)}
                                                     className="flex-1 py-4 border border-neutral-200 text-neutral-900 font-black rounded-2xl hover:bg-neutral-50 transition-all"
                                                 >
-                                                    {t({ en: 'Cancel', fr: 'Annuler' })}
+                                                    {t({ en: 'Cancel', fr: 'Annuler', ar: 'إلغاء' })}
                                                 </button>
                                                 <button
                                                     disabled={isSavingProfile}
                                                     onClick={handleSaveProfile}
                                                     className="flex-[2] py-4 bg-[#01A083] text-white font-black rounded-2xl transition-all active:scale-[0.98] disabled:opacity-40 border border-[#008f75]"
                                                 >
-                                                    {isSavingProfile ? <RefreshCw className="animate-spin" size={20} /> : t({ en: 'Save Profile', fr: 'Enregistrer le profil' })}
+                                                    {isSavingProfile ? <RefreshCw className="animate-spin" size={20} /> : t({ en: 'Save Profile', fr: 'Enregistrer le profil', ar: 'حفظ الحساب' })}
                                                 </button>
                                             </div>
                                         </div>
@@ -3665,13 +3666,13 @@ const DetailItem = ({ icon: Icon, label, value, subValue, highlight }: {
                                     >
                                         <div className="w-10 h-1 bg-neutral-200 rounded-full mx-auto mb-6" />
 
-                                        <h2 className="text-[24px] font-black text-neutral-900 mb-2" style={{ fontFamily: 'Uber Move, var(--font-sans)' }}>{t({ en: 'Offer New Service', fr: 'Proposer un nouveau service' })}</h2>
-                                        <p className="text-[13px] font-medium text-neutral-500 mb-8 font-medium">{t({ en: 'Add a new specialty to your profile to receive more job offers.', fr: 'Ajoutez une nouvelle spécialité à votre profil pour recevoir plus d’offres de missions.' })}</p>
+                                        <h2 className="text-[24px] font-black text-neutral-900 mb-2" style={{ fontFamily: 'Uber Move, var(--font-sans)' }}>{t({ en: 'Offer New Service', fr: 'Proposer un nouveau service', ar: 'تقديم خدمة جديدة' })}</h2>
+                                        <p className="text-[13px] font-medium text-neutral-500 mb-8 font-medium">{t({ en: 'Add a new specialty to your profile to receive more job offers.', fr: 'Ajoutez une nouvelle spécialité à votre profil pour recevoir plus d’offres de missions.', ar: 'أضف تخصصاً جديداً إلى ملفك الشخصي لتلقي المزيد من عروض العمل.' })}</p>
 
                                         <div className="space-y-8">
                                             {/* Step 1: Category */}
                                             <div>
-                                                <label className="block text-xs font-black text-neutral-400 uppercase tracking-widest mb-4">{t({ en: 'Select Category', fr: 'Choisir une catégorie' })}</label>
+                                                <label className="block text-xs font-black text-neutral-400 uppercase tracking-widest mb-4">{t({ en: 'Select Category', fr: 'Choisir une catégorie', ar: 'اختر الفئة' })}</label>
                                                 <div className="grid grid-cols-2 gap-3">
                                                     {getAllServices().filter(s => !selectedServices.includes(s.id)).map(s => (
                                                         <button
@@ -3695,13 +3696,13 @@ const DetailItem = ({ icon: Icon, label, value, subValue, highlight }: {
                                                 <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-8">
                                                     {/* Step 2: Rate */}
                                                     <div>
-                                                        <label className="block text-xs font-black text-neutral-400 uppercase tracking-widest mb-4">{t({ en: 'Your Hourly Rate (MAD)', fr: 'Votre tarif horaire (MAD)' })}</label>
+                                                        <label className="block text-xs font-black text-neutral-400 uppercase tracking-widest mb-4">{t({ en: 'Your Hourly Rate (MAD)', fr: 'Votre tarif horaire (MAD)', ar: 'سعرك بالساعة (درهم)' })}</label>
                                                         <div className="flex items-center gap-6">
                                                             <div className="flex-1">
                                                                 <div className="flex items-center justify-between mb-2">
-                                                                    <span className="text-[12px] font-bold text-neutral-400">{t({ en: 'Low', fr: 'Bas' })}</span>
-                                                                    <span className="text-[12px] font-black text-black">{newServiceData.rate} {t({ en: 'MAD', fr: 'MAD' })}</span>
-                                                                    <span className="text-[12px] font-bold text-neutral-400">{t({ en: 'High', fr: 'Élevé' })}</span>
+                                                                    <span className="text-[12px] font-bold text-neutral-400">{t({ en: 'Low', fr: 'Bas', ar: 'منخفض' })}</span>
+                                                                    <span className="text-[12px] font-black text-black">{newServiceData.rate} {t({ en: 'MAD', fr: 'MAD', ar: 'درهم' })}</span>
+                                                                    <span className="text-[12px] font-bold text-neutral-400">{t({ en: 'High', fr: 'Élevé', ar: 'مرتفع' })}</span>
                                                                 </div>
                                                                 <input
                                                                     type="range"
@@ -3717,14 +3718,14 @@ const DetailItem = ({ icon: Icon, label, value, subValue, highlight }: {
 
                                                     {/* Step 3: Pitch */}
                                                     <div>
-                                                        <label className="block text-xs font-black text-neutral-400 uppercase tracking-widest mb-4">{t({ en: 'Your Professional Pitch', fr: 'Votre présentation professionnelle' })}</label>
+                                                        <label className="block text-xs font-black text-neutral-400 uppercase tracking-widest mb-4">{t({ en: 'Your Professional Pitch', fr: 'Votre présentation professionnelle', ar: 'عرضك المهني' })}</label>
                                                         <textarea
                                                             value={newServiceData.pitch}
                                                             onChange={(e) => setNewServiceData({ ...newServiceData, pitch: e.target.value })}
-                                                            placeholder={t({ en: `Describe your experience in ${getServiceById(newServiceData.id)?.name}...`, fr: `Décrivez votre expérience en ${getServiceById(newServiceData.id)?.name}...` })}
+                                                            placeholder={t({ en: `Describe your experience in ${getServiceById(newServiceData.id)?.name}...`, fr: `Décrivez votre expérience en ${getServiceById(newServiceData.id)?.name}...`, ar: `صف خبرتك في ${getServiceById(newServiceData.id)?.name}...` })}
                                                             className="w-full px-5 py-4 bg-neutral-50 border border-neutral-100 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#01A083]/10 transition-all min-h-[120px] text-[15px] font-medium"
                                                         />
-                                                        <p className="text-[10px] text-neutral-400 font-medium mt-2 ml-1">{t({ en: 'Example: "I have 5 years of experience in furniture assembly and tiling."', fr: 'Exemple : "J’ai 5 ans d’expérience en montage de meubles et carrelage."' })}</p>
+                                                        <p className="text-[10px] text-neutral-400 font-medium mt-2 ml-1">{t({ en: 'Example: "I have 5 years of experience in furniture assembly and tiling."', fr: 'Exemple : "J’ai 5 ans d’expérience en montage de meubles et carrelage."', ar: 'مثال: "لدي 5 سنوات من الخبرة في تجميع الأثاث والتبليط."' })}</p>
                                                     </div>
 
                                                     <button
@@ -3732,7 +3733,7 @@ const DetailItem = ({ icon: Icon, label, value, subValue, highlight }: {
                                                         onClick={handleAddService}
                                                         className="w-full h-14 bg-[#01A083] text-white rounded-2xl text-[16px] font-black uppercase tracking-widest transition-all active:scale-[0.98] disabled:opacity-40 border border-[#008f75]"
                                                     >
-                                                        {isSavingProfile ? <RefreshCw className="animate-spin" size={20} /> : t({ en: 'List Service', fr: 'Publier le service' })}
+                                                        {isSavingProfile ? <RefreshCw className="animate-spin" size={20} /> : t({ en: 'List Service', fr: 'Publier le service', ar: 'إدراج الخدمة' })}
                                                     </button>
                                                 </motion.div>
                                             )}
@@ -3766,13 +3767,13 @@ const DetailItem = ({ icon: Icon, label, value, subValue, highlight }: {
                                                 className="text-[48px] md:text-[56px] font-black text-neutral-900 leading-[1.05]"
                                                 style={{ fontFamily: 'Uber Move, var(--font-sans)' }}
                                             >
-                                                {t({ en: 'How Much', fr: 'Combien' })}<br />{t({ en: 'do you want?', fr: 'voulez-vous ?' })}
+                                                {t({ en: 'How Much', fr: 'Combien', ar: 'كم' })}<br />{t({ en: 'do you want?', fr: 'voulez-vous ?', ar: 'تريد؟' })}
                                             </h2>
                                         </div>
 
                                         <div className="mb-10">
                                             <div className="relative flex items-baseline gap-3 pb-3 border-b border-neutral-200">
-                                                <span className="text-[40px] font-black text-[#BFBFBF] uppercase">{t({ en: 'MAD', fr: 'MAD' })}</span>
+                                                <span className="text-[40px] font-black text-[#BFBFBF] uppercase">{t({ en: 'MAD', fr: 'MAD', ar: 'درهم' })}</span>
                                                 <input
                                                     type="number"
                                                     value={counterPrice}
