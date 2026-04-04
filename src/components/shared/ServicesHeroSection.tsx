@@ -19,7 +19,7 @@ const ServiceCard = ({ title, description, image, onOrder }: ServiceCardProps) =
         flex: '0 0 450px',
         height: '450px',
         backgroundColor: '#FFD700',
-        borderRadius: '0px',
+        borderRadius: '20px',
         overflow: 'hidden',
         display: 'flex',
         flexDirection: 'column',
@@ -42,16 +42,32 @@ const ServiceCard = ({ title, description, image, onOrder }: ServiceCardProps) =
         />
       </div>
 
-      {/* Bottom Yellow Section */}
+      {/* Bottom Yellow Section with Waved Edge */}
       <div style={{
         height: '40%',
         padding: '24px',
+        backgroundColor: '#FFD700',
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'space-between',
         position: 'relative'
       }}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+        {/* SVG Wave at the top of the yellow section */}
+        <div style={{
+          position: 'absolute',
+          top: '-45px',
+          left: 0,
+          right: 0,
+          height: '50px',
+          overflow: 'hidden',
+          zIndex: 1
+        }}>
+          <svg viewBox="0 0 500 50" preserveAspectRatio="none" style={{ width: '100%', height: '100%' }}>
+            <path d="M0,50 Q250,5 500,50 L500,50 L0,50 Z" fill="#FFD700" />
+          </svg>
+        </div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', position: 'relative', zIndex: 2 }}>
           <h3 style={{
             fontSize: '48px',
             fontWeight: 900,
@@ -87,7 +103,8 @@ const ServiceCard = ({ title, description, image, onOrder }: ServiceCardProps) =
           borderRadius: '24px',
           fontSize: '13px',
           fontWeight: 800,
-          textTransform: 'none'
+          textTransform: 'none',
+          zIndex: 2
         }}>
           Order
         </div>
@@ -141,7 +158,7 @@ const ServicesHeroSection = () => {
   return (
     <section className="desktop-only-hero" style={{
       backgroundColor: '#fff',
-      padding: '20px 0 0px 0',
+      padding: '40px 0 0px 0',
       overflow: 'hidden',
       display: 'none'
     }}>
@@ -161,13 +178,40 @@ const ServicesHeroSection = () => {
         }
       `}</style>
 
+      {/* Header for Desktop */}
+      <div style={{
+        maxWidth: '1280px',
+        margin: '0 auto 30px auto',
+        padding: '0 40px',
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center'
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <img src="/Images/App Icons/transparent_logo.png" alt="Logo" style={{ height: '32px' }} />
+          <span style={{ fontSize: '24px', fontWeight: 900, color: '#000' }}>Lbricol</span>
+        </div>
+        <button style={{
+          backgroundColor: '#027963',
+          color: '#fff',
+          padding: '12px 24px',
+          borderRadius: '24px',
+          border: 'none',
+          fontSize: '14px',
+          fontWeight: 700,
+          cursor: 'pointer'
+        }}>
+          Become a Bricoler
+        </button>
+      </div>
+
       {/* Cards Scrollable Container */}
       <div
         className="services-scroll-container"
         style={{
           display: 'flex',
           overflowX: 'auto',
-          padding: '20px 40px 60px 40px',
+          padding: '60px 40px 60px 40px',
           scrollSnapType: 'x mandatory',
           scrollBehavior: 'smooth'
         }}

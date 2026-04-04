@@ -52,8 +52,8 @@ export const SearchPopup: React.FC<SearchPopupProps> = ({
 
         SERVICES_CATALOGUE.forEach(svc => {
             svc.subServices.forEach(sub => {
-                if (!softBlocklist.includes(sub.id)) {
-                    const translation: Translation = { 
+                if (sub.id && !softBlocklist.includes(sub.id)) {
+                    const translation: any = { 
                         en: svc.label || '', 
                         fr: svc.labelFr || '', 
                         ar: svc.labelAr || svc.labelFr || '' 
