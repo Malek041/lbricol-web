@@ -588,6 +588,7 @@ function ProviderCard({
   order: any;
   displayRate: number;
 }) {
+  const { t } = useLanguage();
   const [roadInfo, setRoadInfo] = useState<{ distanceKm: number; durationMinutes: number } | null>(null);
 
   const isAvailableToday = () => {
