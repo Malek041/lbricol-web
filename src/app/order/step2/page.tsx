@@ -167,7 +167,7 @@ function Step2Content() {
         // Filter: must offer the selected service category and potentially sub-service
         const filtered = all.filter(b => {
           if (!Array.isArray(b.services)) return false;
-          
+
           const normalizeSubId = (id: string | undefined | null) => {
             if (!id) return null;
             const strId = String(id).toLowerCase().trim();
@@ -193,38 +193,38 @@ function Step2Content() {
             const sCatId = typeof s.categoryId === 'string' ? s.categoryId.toLowerCase().trim() : null;
             const sServId = typeof s.serviceId === 'string' ? s.serviceId.toLowerCase().trim() : null;
             const sId = typeof s.id === 'string' ? s.id.toLowerCase().trim() : null;
-            
+
             const catMatch = (sCatId === safeServiceType) || (sServId === safeServiceType) || (sId === safeServiceType);
-            
+
             if (!catMatch) return false;
-            
+
             // If they match the category, check sub-service if applicable
             if (targetSubId) {
               const sSubServId = typeof s.subServiceId === 'string' ? s.subServiceId.toLowerCase().trim() : null;
               const bSubId = normalizeSubId(sSubServId || sId);
-              
+
               if (bSubId === targetSubId) return true;
-              if (s.subServiceName && order.subServiceName && 
-                  s.subServiceName.toLowerCase().trim() === order.subServiceName.toLowerCase().trim()) return true;
+              if (s.subServiceName && order.subServiceName &&
+                s.subServiceName.toLowerCase().trim() === order.subServiceName.toLowerCase().trim()) return true;
 
               // Optional structure: array of subservices
               if (Array.isArray(s.subServices)) {
-                 const hasSubMatch = s.subServices.some((sub: any) => {
-                     const subIdVal = typeof sub === 'string' ? sub : (sub.id || sub.subServiceId);
-                     return normalizeSubId(subIdVal) === targetSubId;
-                 });
-                 if (hasSubMatch) return true;
+                const hasSubMatch = s.subServices.some((sub: any) => {
+                  const subIdVal = typeof sub === 'string' ? sub : (sub.id || sub.subServiceId);
+                  return normalizeSubId(subIdVal) === targetSubId;
+                });
+                if (hasSubMatch) return true;
               }
 
               // If the provider obj doesn't specify any sub-service identifiers, 
               // we can assume they just offer the whole category.
               if (!sSubServId && !sId && !s.subServices) {
-                return true; 
+                return true;
               }
 
               return false;
             }
-            
+
             return true;
           });
         });
@@ -262,8 +262,8 @@ function Step2Content() {
         setLoading(false);
       }
     }, (err) => {
-       console.error('Provider onSnapshot error:', err);
-       setLoading(false);
+      console.error('Provider onSnapshot error:', err);
+      setLoading(false);
     });
 
     return () => unsubscribe();
@@ -320,12 +320,12 @@ function Step2Content() {
     const scrollLeft = container.scrollLeft;
     const containerWidth = container.offsetWidth;
     const children = Array.from(container.children);
-    
+
     if (children.length === 0) return;
 
     // Use the center of the viewport to determine which card is focused
     const viewportCenter = scrollLeft + containerWidth / 2;
-    
+
     let closestIndex = 0;
     let minDistance = Infinity;
 
@@ -333,7 +333,7 @@ function Step2Content() {
       const childRect = (child as HTMLElement);
       const childCenter = childRect.offsetLeft + childRect.offsetWidth / 2;
       const distance = Math.abs(viewportCenter - childCenter);
-      
+
       if (distance < minDistance) {
         minDistance = distance;
         closestIndex = idx;
@@ -373,6 +373,7 @@ function Step2Content() {
     taskCount: p.taskCount || 0,
     avatarUrl: p.avatarUrl || p.avatar || p.photoURL,
     isSelected: p.id === focusedId,
+    badge: ((p.taskCount || 0) < 10 || p.isNew) ? 'NEW' : (p.badge || 'CLASSIC'),
   }));
 
   const [viewedBricoler, setViewedBricoler] = useState<any>(null);
@@ -485,11 +486,14 @@ function Step2Content() {
           left: 0;
           right: 0;
           z-index: 10;
-          background: transparent;
-          padding: 8px 0;
-          padding-bottom: calc(24px + env(safe-area-inset-bottom));
+          background: #fff;
+          padding: 0;
+          padding-bottom: calc(20px + env(safe-area-inset-bottom));
           display: flex;
           flex-direction: column;
+          border-radius: 32px 32px 0 0;
+          box-shadow: 0 -12px 40px rgba(0,0,0,0.12);
+          border-top: 1px solid rgba(0,0,0,0.02);
         }
         .step2-cards {
           display: flex;
@@ -550,7 +554,7 @@ function Step2Content() {
             clientPin={{ lat: clientLat, lng: clientLng }}
             serviceIconUrl={serviceType === 'car_rental' ? '/Images/Vectors Illu/carKey.png' : (order.serviceIcon || undefined)}
             showCenterPin={false}
-            pinY={50}
+            pinY={38}
             zoom={14}
             onProviderClick={handleProviderClick}
             onInteractionStart={() => setIsInteracting(true)}
@@ -598,14 +602,26 @@ function Step2Content() {
           }}
           transition={{
             type: 'spring',
-            damping: 25,
-            stiffness: 200
+            damping: 30,
+            stiffness: 300,
+            mass: 0.5
           }}
           style={{ pointerEvents: isInteracting ? 'none' : 'auto' }}
         >
-          {/* SHEET HEADER (Simplified) */}
-          <div style={{ padding: '20px 0 12px', display: 'flex', justifyContent: 'center' }}>
-            <div style={{ width: 40, height: 5, background: '#E5E7EB', borderRadius: 10 }}></div>
+          {/* SHEET HEADER */}
+          <div style={{ padding: '16px 20px 8px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+            <div style={{ width: 36, height: 4, background: '#E5E7EB', borderRadius: 10, marginBottom: 16 }}></div>
+            <div style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+              <div>
+                <h3 style={{ fontSize: 25, fontWeight: 350, color: '#111827', letterSpacing: '-0.3px', margin: 0, lineHeight: 1 }}>
+                  {t({ en: 'Ideal Bricolers', fr: 'Bricoleurs Idéaux', ar: 'بريكولير مثالي' })}
+                </h3>
+
+              </div>
+              <div style={{ fontSize: 12, fontWeight: 900, color: '#027963', background: '#F0FDF4', padding: '4px 10px', borderRadius: 8 }}>
+                {t({ en: 'BEST PRICE', fr: 'MEILLEUR PRIX', ar: 'أفضل سعر' })}
+              </div>
+            </div>
           </div>
 
           {/* Provider cards (Horizontal Scroll) */}

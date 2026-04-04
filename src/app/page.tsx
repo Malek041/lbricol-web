@@ -103,6 +103,7 @@ import { MOROCCAN_CITIES, MOROCCAN_CITIES_AREAS } from '@/config/moroccan_areas'
 import { useTheme } from '@/context/ThemeContext';
 import { useToast } from '@/context/ToastContext';
 import MillionsImpactSection from '@/components/shared/MillionsImpactSection';
+import ServicesHeroSection from '@/components/shared/ServicesHeroSection';
 import { auth, db, storage } from '@/lib/firebase';
 import {
   onAuthStateChanged,
@@ -2877,7 +2878,12 @@ const Home = () => {
             ) : (
 
               <>
+                <ServicesHeroSection />
+                <MillionsImpactSection />
+                <MoroccoServiceMap />
 
+                {false && (
+                  <>
                 {/* Hero Section */}
                 <DesktopHeroScroll
                   onOrderClick={(serviceId) => {
@@ -3183,6 +3189,8 @@ const Home = () => {
                     )}
                   </AnimatePresence>
                 )}
+                  </>
+                )}
 
 
                 {/* Info Section */}
@@ -3344,10 +3352,6 @@ const Home = () => {
 
                   </div>
                 </section>
-
-                <MillionsImpactSection />
-
-                <MoroccoServiceMap />
 
 
 

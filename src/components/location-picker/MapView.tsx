@@ -28,6 +28,7 @@ interface MapViewProps {
     taskCount: number;
     avatarUrl?: string | null;
     isSelected: boolean;
+    badge?: string | null; // 'NEW' | 'PRO' | 'ELITE' | 'CLASSIC'
   }>;
   broadcastPins?: Array<{
     id: string;
@@ -106,11 +107,11 @@ const MapView: React.FC<MapViewProps> = ({
   const [mapReady, setMapReady] = useState(false);
   const [internalUserPos, setInternalUserPos] = useState<{ lat: number, lng: number } | null>(null);
 
-  const targetZoom = requestedZoom || 15;
+  const targetZoom = requestedZoom || 17;
   const mapReadyTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const flyToTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const latestGeocodeRef = useRef<{lat: number, lng: number} | null>(null);
+  const latestGeocodeRef = useRef<{ lat: number, lng: number } | null>(null);
 
   const flyToWithOffset = (lat: number, lng: number, zoom?: number, skipOffset = false) => {
     if (!mapRef.current || !mapRef.current.getContainer()) return;
@@ -315,6 +316,7 @@ const MapView: React.FC<MapViewProps> = ({
   }, []);
 
   // ── Watch internal user position if permitted ───────────────────────
+  const hasFlownToGPSOnce = useRef(false);
   useEffect(() => {
     if (typeof window !== 'undefined' && navigator.geolocation) {
 
@@ -323,9 +325,11 @@ const MapView: React.FC<MapViewProps> = ({
           const { latitude, longitude } = pos.coords;
           setInternalUserPos({ lat: latitude, lng: longitude });
 
-          // Center on user if map is ready and no specific initialLocation was forced 
-          if (mapRef.current && (!initialLocation || centerOnUser) && !internalUserPos) {
-             flyToWithOffset(latitude, longitude, targetZoom, true);
+          // Center on user only the FIRST time, and only if no explicit initialLocation was set
+          // This prevents the map from constantly snapping back to GPS on drag/zoom
+          if (mapRef.current && (!initialLocation || centerOnUser) && !hasFlownToGPSOnce.current) {
+            hasFlownToGPSOnce.current = true;
+            flyToWithOffset(latitude, longitude, targetZoom, true);
           }
         },
         (error) => console.warn("Watch GPS failed:", error),
@@ -352,20 +356,20 @@ const MapView: React.FC<MapViewProps> = ({
       const radarIcon = L.divIcon({
         className: 'gps-pulse-icon',
         html: `
-          <div style="position: relative; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;">
-            <div style="position: absolute; width: 40px; height: 40px; background: #10B981; border-radius: 50%; opacity: 0.3; animation: radarPulse 2s cubic-bezier(0,0,0.2,1) infinite;"></div>
+          <div style="position: relative; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;">
+            <div style="position: absolute; width: 32px; height: 32px; background: #10B981; border-radius: 50%; opacity: 0.3; animation: radarPulse 2s cubic-bezier(0,0,0.2,1) infinite;"></div>
             ${avatar ? `
-              <div style="position: relative; width: 34px; height: 34px; background: white; border: 2px solid white; border-radius: 50%; box-shadow: 0 4px 10px rgba(0,0,0,0.25); z-index: 10; overflow: hidden; display: flex; items-center; justify-center;">
+              <div style="position: relative; width: 28px; height: 28px; background: white; border: 2px solid white; border-radius: 50%; box-shadow: 0 4px 10px rgba(0,0,0,0.25); z-index: 10; overflow: hidden; display: flex; items-center; justify-center;">
                 <img src="${avatar}" style="width: 100%; height: 100%; object-fit: cover;" />
               </div>
             ` : `
-              <div style="position: absolute; width: 20px; height: 20px; background: #10B981; border-radius: 50%; opacity: 0.2; animation: radarPulse 2s cubic-bezier(0,0,0.2,1) infinite; animation-delay: 1s;"></div>
-              <div style="position: absolute; width: 12px; height: 12px; background: #10B981; border-radius: 50%; border: 2px solid white; box-shadow: 0 1px 4px rgba(0,0,0,0.2); z-index: 10;"></div>
+              <div style="position: absolute; width: 16px; height: 16px; background: #10B981; border-radius: 50%; opacity: 0.2; animation: radarPulse 2s cubic-bezier(0,0,0.2,1) infinite; animation-delay: 1s;"></div>
+              <div style="position: absolute; width: 10px; height: 10px; background: #10B981; border-radius: 50%; border: 2px solid white; box-shadow: 0 1px 4px rgba(0,0,0,0.2); z-index: 10;"></div>
             `}
           </div>
         `,
-        iconSize: [40, 40],
-        iconAnchor: [20, 20],
+        iconSize: [32, 32],
+        iconAnchor: [16, 16],
       });
 
       gpsMarkerRef.current = L.marker([lat, lng], { icon: radarIcon, zIndexOffset: 7000 }).addTo(map);
@@ -443,14 +447,14 @@ const MapView: React.FC<MapViewProps> = ({
   // ── Handle Late-Arriving Initial Location ──────────────────────────
   const [lastAssignedInitial, setLastAssignedInitial] = useState<string | null>(null);
   useEffect(() => {
-      if (initialLocation && mapRef.current && mapReady) {
-          const locStr = `${initialLocation.lat},${initialLocation.lng}`;
-          // If the location changed AFTER we already initialized with a default
-          if (lastAssignedInitial !== null && lastAssignedInitial !== locStr) {
-              flyToWithOffset(initialLocation.lat, initialLocation.lng, targetZoom, pinY === 50);
-          }
-          setLastAssignedInitial(locStr);
+    if (initialLocation && mapRef.current && mapReady) {
+      const locStr = `${initialLocation.lat},${initialLocation.lng}`;
+      // If the location changed AFTER we already initialized with a default
+      if (lastAssignedInitial !== null && lastAssignedInitial !== locStr) {
+        flyToWithOffset(initialLocation.lat, initialLocation.lng, targetZoom, pinY === 50);
       }
+      setLastAssignedInitial(locStr);
+    }
   }, [initialLocation, mapReady]);
 
   useEffect(() => {
@@ -482,7 +486,7 @@ const MapView: React.FC<MapViewProps> = ({
       const hasFocus = !!focusedProviderId;
       const opacity = hasFocus && !isFocused ? 0.6 : 1;
       const scale = hasFocus && !isFocused ? 0.8 : (isFocused ? 1.15 : 1);
-      const size = isFocused ? 72 : 56;
+      const size = isFocused ? 62 : 44;
 
       const bounceStyle = isFocused ? "animation: pinBounce 2s ease-in-out infinite;" : "";
 
@@ -491,24 +495,55 @@ const MapView: React.FC<MapViewProps> = ({
         html: `
           <div style="display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:160px;cursor:pointer;opacity:${opacity};transform:scale(${scale});transform-origin:bottom center;transition:all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);">
             <div style="${bounceStyle} display:flex;flex-direction:column;align-items:center;">
-              ${isFocused ? `
+              ${isFocused ? (() => {
+            const b = (pin.badge || '').toUpperCase();
+            const isNew = (pin.taskCount || 0) < 10 || b === 'NEW';
+            const badgeText = isNew ? 'NEW' : (b === 'ELITE' ? 'ELITE' : b === 'PRO' ? 'PRO' : 'CLASSIC');
+            const badgeBg = isNew ? '#F5F3FF' : (b === 'ELITE' ? '#FFF7ED' : b === 'PRO' ? '#F0FDF4' : '#F3F4F6');
+            const badgeColor = isNew ? '#7C3AED' : (b === 'ELITE' ? '#EA580C' : b === 'PRO' ? '#16A34A' : '#4B5563');
+            const badgeIcon = isNew ? '✦' : (b === 'ELITE' ? '🏆' : b === 'PRO' ? '💎' : '🛡️');
+            const ratingStr = (!pin.taskCount || pin.taskCount === 0 || !pin.rating) ? '0.0' : pin.rating.toFixed(1);
+            return `
               <div style="position: relative; display: flex; flex-direction: column; align-items: center; margin-bottom: 8px;">
-                <div style="background:#fff;border-radius:12px;padding:10px 16px; 
-                  box-shadow:0 8px 18px rgba(0,0,0,0.15);font-family:sans-serif;text-align:center;white-space:nowrap;
-                  display: flex; flex-direction: column; align-items: center; border: 1px solid #f3f4f6; position: relative; z-index: 10;">
-                  <div style="font-size:16px;font-weight:950;color:#111827">${pin.taskCount || 0} Jobs</div>
-                  <div style="font-size:20px;color:#111827;font-weight:950;display:flex;align-items:center;gap:6px;margin-top:2px;">
-                    <span style="color:#FBBF24;font-size:24px;">★</span> ${!pin.taskCount || pin.taskCount === 0 || !pin.rating ? '0.0' : pin.rating.toFixed(1)}
+                <div style="background:#fff;border-radius:14px;padding:10px 14px;
+                  box-shadow:0 8px 24px rgba(0,0,0,0.13);font-family:sans-serif;
+                  display:flex;flex-direction:column;align-items:center;gap:6px;
+                  border:1px solid #f3f4f6;position:relative;z-index:10;min-width:110px;">
+                  
+                  <!-- Badge row -->
+                  <div style="background:${badgeBg};color:${badgeColor};font-size:9px;font-weight:900;
+                    padding:2px 8px;border-radius:4px;display:inline-flex;align-items:center;gap:3px;
+                    letter-spacing:0.05em;">
+                    <span>${badgeIcon}</span><span>${badgeText}</span>
+                  </div>
+
+                  <!-- Jobs + Stars row -->
+                  <div style="display:flex;align-items:center;gap:8px;">
+                    <div style="display:flex;flex-direction:column;align-items:center;line-height:1.1;">
+                      <span style="font-size:15px;font-weight:950;color:#111827;">${pin.taskCount || 0}</span>
+                      <span style="font-size:9px;font-weight:700;color:#9CA3AF;text-transform:uppercase;letter-spacing:0.05em;">Jobs</span>
+                    </div>
+                    <div style="width:1px;height:24px;background:#F3F4F6;"></div>
+                    <div style="display:flex;flex-direction:column;align-items:center;line-height:1.1;">
+                      <span style="font-size:15px;font-weight:950;color:#111827;display:flex;align-items:center;gap:2px;">
+                        <span style="color:#FBBF24;font-size:13px;">★</span>${ratingStr}
+                      </span>
+                    </div>
+                    <div style="width:1px;height:24px;background:#F3F4F6;"></div>
+                    <div style="display:flex;flex-direction:column;align-items:center;line-height:1.1;">
+                      <span style="font-size:14px;font-weight:950;color:#01A083;">${pin.rate || 80}</span>
+                      <span style="font-size:9px;font-weight:700;color:#9CA3AF;text-transform:uppercase;letter-spacing:0.05em;">MAD/hr</span>
+                    </div>
                   </div>
                 </div>
-                <div style="width: 0; height: 0; border-left: 8px solid transparent; border-right: 8px solid transparent; border-top: 8px solid white; margin-top: -1px; z-index: 5; filter: drop-shadow(0 4px 4px rgba(0,0,0,0.05));"></div>
-              </div>
-              ` : ''}
+                <div style="width:0;height:0;border-left:8px solid transparent;border-right:8px solid transparent;border-top:8px solid white;margin-top:-1px;z-index:5;filter:drop-shadow(0 4px 4px rgba(0,0,0,0.05));"></div>
+              </div>`;
+          })() : ''}
               <div style="position:relative;width:${size}px;height:${size}px;min-width:${size}px;min-height:${size}px;flex-shrink:0;transition: all 0.3s; margin-bottom: 0px; border-radius: 50%; border: 3px solid #fff; box-shadow: 0 4px 12px rgba(0,0,0,0.15); overflow: hidden; background: #fff;">
                 ${pin.avatarUrl
-                  ? `<img src="${pin.avatarUrl}" style="width:100%;height:100%;object-fit:cover" onerror="this.onerror=null; this.src='/Images/Vectors Illu/LbricolFaceOY.webp'; this.parentElement.style.background='#F3F4F6'; this.innerHTML='👤';"/>`
-                  : `<div style="width:100%;height:100%;background:#F3F4F6;display:flex;align-items:center;justify-content:center;font-size:24px">👤</div>`
-                }
+            ? `<img src="${pin.avatarUrl}" style="width:100%;height:100%;object-fit:cover" onerror="this.onerror=null; this.src='/Images/Vectors Illu/LbricolFaceOY.webp'; this.parentElement.style.background='#F3F4F6'; this.innerHTML='👤';"/>`
+            : `<div style="width:100%;height:100%;background:#F3F4F6;display:flex;align-items:center;justify-content:center;font-size:24px">👤</div>`
+          }
               </div>
             </div>
           </div>
@@ -548,7 +583,7 @@ const MapView: React.FC<MapViewProps> = ({
           </div>
         ` : `
           <div style="background:#027963; color:white; border-radius:12px; padding:4px 10px; margin-bottom:4px; box-shadow:0 4px 12px rgba(0,0,0,0.15); font-size:11px; font-weight:900; text-transform:uppercase; letter-spacing:0.05em; white-space:nowrap; position:relative; z-index:10;">
-            DÉPART
+            TOI
             <div style="position:absolute; bottom:-4px; left:50%; margin-left:-4px; width:8px; height:8px; background:#027963; transform:rotate(45deg);"></div>
           </div>
         `}
@@ -755,9 +790,9 @@ const MapView: React.FC<MapViewProps> = ({
               iconSize: [120, 50],
               iconAnchor: [60, 50],
             });
-            routeLabelRef.current = L.marker(midPoint, { 
-              icon: labelIcon, 
-              zIndexOffset: 3000 
+            routeLabelRef.current = L.marker(midPoint, {
+              icon: labelIcon,
+              zIndexOffset: 3000
             }).addTo(map);
           }
 

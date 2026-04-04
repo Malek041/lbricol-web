@@ -2859,7 +2859,7 @@ const WeekCalendar = ({
                                         <div style={{ height: '1px', backgroundColor: '#EFEFF0' }} />
                                         <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                                             <div style={{ fontSize: '12px', fontWeight: 800, color: '#8E8E93', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-                                                {t({ en: 'Departure', fr: 'Départ' })}
+                                                {t({ en: 'You', fr: 'Toi' })}
                                             </div>
                                             <div style={{ fontSize: '15px', fontWeight: 700, color: '#111111' }}>{departureLabel}</div>
                                         </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import dynamic from 'next/dynamic';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
@@ -45,6 +45,8 @@ export default function LiveOrdersMap({
   const [focusedOrderId, setFocusedOrderId] = useState<string | null>(null);
   const [isInteracting, setIsInteracting] = useState(false);
   const [requestedFlyTo, setRequestedFlyTo] = useState<{ lat: number, lng: number } | undefined>(undefined);
+  // Freeze initial map center — never update after first assignment to prevent snap-back
+  const frozenInitialLocation = useRef<{ lat: number; lng: number } | undefined>(undefined);
 
   useEffect(() => {
     if (!city || externalPins) return; // Don't fetch if pins are provided externally
@@ -77,10 +79,15 @@ export default function LiveOrdersMap({
   const finalPins = externalPins || internalPins;
   const focusedOrder = useMemo(() => orders.find(o => o.id === focusedOrderId), [orders, focusedOrderId]);
 
+  // Freeze initial location — only set once so map never snaps back on re-render
+  if (!frozenInitialLocation.current && finalPins.length > 0) {
+    frozenInitialLocation.current = { lat: finalPins[0].lat, lng: finalPins[0].lng };
+  }
+
   return (
     <div className="relative w-full h-full bg-neutral-50">
       <MapView
-        initialLocation={finalPins.length > 0 ? { lat: finalPins[0].lat, lng: finalPins[0].lng } : undefined}
+        initialLocation={frozenInitialLocation.current}
         onLocationChange={() => { }}
         broadcastPins={finalPins}
         focusedOrderId={focusedOrderId}
@@ -96,7 +103,7 @@ export default function LiveOrdersMap({
         }}
         interactive={true}
         pinY={25}
-        zoom={15}
+        zoom={17}
         showCenterPin={false}
         centerAddress={undefined}
         userPosition={null}

@@ -22,17 +22,17 @@ const MillionsImpactSection = () => {
 
     const bubbleData = [
         // Top Left
-        { x: '-35vw', y: '-25vh', delay: 0.2, content: t({ en: "Looking for a plumber", fr: "Je cherche un plombier" }), avatar: "https://i.pravatar.cc/150?u=1" },
-        { x: '-42vw', y: '-12vh', delay: 0.5, avatar: "https://i.pravatar.cc/150?u=2" },
+        { x: '-35vw', y: '-25vh', delay: 0.2, content: t({ en: "Looking for a plumber", fr: "Je cherche un plombier", ar: "أبحث عن سباك" }), avatar: "/Images/Service Category vectors/HandymanVector.webp" },
+        { x: '-42vw', y: '-12vh', delay: 0.5, avatar: "/Images/Service Category vectors/CleaningVector.webp" },
         // Top Right
-        { x: '35vw', y: '-28vh', content: t({ en: "Thank you so much!", fr: "Merci beaucoup !" }), delay: 0.3, avatar: "https://i.pravatar.cc/150?u=3" },
-        { x: '42vw', y: '-15vh', delay: 0.6, avatar: "https://i.pravatar.cc/150?u=4" },
+        { x: '35vw', y: '-28vh', content: t({ en: "Thank you so much!", fr: "Merci beaucoup !", ar: "شكرا جزيلا!" }), delay: 0.3, avatar: "/Images/Vectors Illu/CarWithDriver.png" },
+        { x: '42vw', y: '-15vh', delay: 0.6, avatar: "/Images/Vectors Illu/babysetting.webp" },
         // Bottom Left
-        { x: '-38vw', y: '10vh', content: t({ en: "Arrived safely", fr: "Arrivé en toute sécurité" }), delay: 0.4, avatar: "https://i.pravatar.cc/150?u=5" },
-        { x: '-28vw', y: '15vh', delay: 0.7, avatar: "https://i.pravatar.cc/150?u=6" },
+        { x: '-38vw', y: '10vh', content: t({ en: "Arrived safely", fr: "Arrivé en toute sécurité", ar: "وصلت بأمان" }), delay: 0.4, avatar: "/Images/Vectors Illu/Groceriedbag.png" },
+        { x: '-28vw', y: '15vh', delay: 0.7, avatar: "/Images/Service Category vectors/MovingHelpVector.webp" },
         // Bottom Right
-        { x: '38vw', y: '8vh', content: t({ en: "Great pricing!", fr: "Excellent prix !" }), delay: 0.2, avatar: "https://i.pravatar.cc/150?u=7" },
-        { x: '32vw', y: '18vh', delay: 0.8, avatar: "https://i.pravatar.cc/150?u=8" },
+        { x: '38vw', y: '8vh', content: t({ en: "Great pricing!", fr: "Excellent prix !", ar: "أسعار ممتازة!" }), delay: 0.2, avatar: "/Images/Service Category vectors/AsssemblyVector.webp" },
+        { x: '32vw', y: '18vh', delay: 0.8, avatar: "/Images/Vectors Illu/shoppingbag.webp" },
     ];
 
     return (
@@ -72,7 +72,7 @@ const MillionsImpactSection = () => {
                         fontFamily: 'Uber Move, var(--font-sans)'
                     }}>
                         {t({
-                            en: "Facilitating the lives of people in the city, Lbricol connects you to expert help and seamless mobility.",
+                            en: "Facilitating the lives of people in the city, Lbricol connects you to nearby expert help in 10 seconds.",
                             fr: "Facilitant la vie des citadins, Lbricol vous connecte à une aide experte et à une mobilité fluide.",
                             ar: "نسهل حياة سكان المدينة، ونوصلك بمساعدة الخبراء وتسهيل التنقل."
                         })}
