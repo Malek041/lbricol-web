@@ -48,112 +48,142 @@ export const calculateOrderPrice = (
         hasReception?: boolean;
         officeAddOns?: string[];
     } = {}
-) => {
+): PricingBreakdown => {
     // 1. Find the subservice to get its archetype
     let archetype: string = 'hourly'; // Default
     let subSvc: SubService | undefined;
 
     for (const [catId, cat] of Object.entries(SERVICES_HIERARCHY)) {
-        // Check if the ID matches a subservice
         subSvc = cat.subServices.find(ss => ss.id === subServiceId);
         if (subSvc) {
             archetype = subSvc.pricingArchetype || 'hourly';
             break;
         }
-        // Check if the ID matches a category itself
         if (catId === subServiceId) {
-            // Use the archetype of the first subservice as representative
             archetype = cat.subServices[0]?.pricingArchetype || 'hourly';
             break;
         }
     }
 
     let basePrice = providerRate;
-
-    // Apply property coefficient for unit-based services (like cleaning)
-    if (options.propertyType) {
-        const coefMap: Record<string, number> = {
-            studio: 0.9,
-            apartment: 1.0,
-            villa: 1.2,
-            guesthouse: 1.3,
-            riad: 1.4,
-            hotel: 1.5
-        };
-        const key = options.propertyType.toLowerCase();
-        const coefficient = coefMap[key];
-        if (coefficient !== undefined) {
-            basePrice *= coefficient;
-        }
-    }
-
-    // Apply specialized cleaning coefficients
-    if (subServiceId === 'family_home') {
-        basePrice *= 2.0;
-    } else if (subServiceId === 'deep_cleaning') {
-        basePrice *= 3.0;
-    }
-
     let quantity = 1;
     let unit = 'job';
     let extraFees = 0;
     let details: { label: { en: string; fr: string; ar: string }; amount: number }[] = [];
 
-    // General Add-ons Check (Applies to all)
-    if (options.mountingAddOns?.includes('supplies')) {
-        extraFees += 15;
-    }
+    const isSpecialCleaning = ['standard_small', 'standard_large', 'family_home', 'deep_cleaning', 'hospitality_turnover', 'hospitality', 'cleaning'].includes(subServiceId);
+    const isMovingOrErrands = subServiceId === 'local_move' || subServiceId === 'moving' || subServiceId === 'packing' || subServiceId === 'furniture_move' || subServiceId.includes('moving') || subServiceId === 'errands' || subServiceId.includes('delivery') || subServiceId.includes('shopping') || subServiceId.includes('pickup');
 
-    // Specialized Pricing Flows
-    if (subServiceId === 'tv_mounting') {
-        // Base: 1.5 hours per TV at Bricoler rate
+    // --- New Smart ELC (Estimated Labor & Complexity) Calculation ---
+    if (isSpecialCleaning && subSvc) {
+        // 1. Base Setup (Prep, travel, unloading)
+        const baseSetup = subSvc.baseSetupHr || 0.5;
+        
+        // 2. Marginal Time per Room/Unit
+        // If it's a "standard_small", one room might take 0.75h more.
+        // If it's "deep_cleaning", one room might take 1.5h more.
+        const marginalTimePerUnit = (subSvc.estimatedDurationHr || 2) / 3; // Approx 1/3 of total Est for a 3-room base
+        
+        // 3. Property Context Multiplier (The "Vibe" factor)
+        const contextMap: Record<string, number> = {
+            studio: 0.85,
+            apartment: 1.0,
+            villa: 1.4,
+            guesthouse: 1.5,
+            riad: 1.9, // Riads have high complexity (tiles, ornaments, height)
+            hotel: 1.6
+        };
+        const contextMultiplier = contextMap[(options.propertyType || 'Apartment').toLowerCase()] || 1.0;
+        
+        // 4. Complexity Multiplier (Standard vs Deep vs Hospitality)
+        const complexityMultiplier = subSvc.complexityMultiplier || 1.0;
+        
+        // 5. Volume Decay (Efficiency for larger jobs)
+        const rooms = options.rooms || 1;
+        // Non-linear scaling: the 1st room is full price, 
+        // subsequent rooms are 10% faster/cheaper due to shared overhead.
+        const effectiveQuantity = 1 + (Math.max(0, rooms - 1) * 0.9);
+        
+        // 6. Total Estimated Effort (in Hours)
+        const totalEstimatedEffort = (baseSetup + (effectiveQuantity * marginalTimePerUnit)) * complexityMultiplier * contextMultiplier;
+        
+        // 7. Map back to Output
+        let rateMultiplier = 1.0;
+        if (subServiceId === 'standard_small' || subServiceId === 'standard_large' || subServiceId === 'family_home') {
+            rateMultiplier = 2.0;
+        } else if (subServiceId === 'deep_cleaning') {
+            rateMultiplier = 3.0;
+        }
+
+        basePrice = providerRate * rateMultiplier; 
+        quantity = Math.round(totalEstimatedEffort * 10) / 10;
+        unit = 'hr-equivalent';
+        
+    } else if (isSpecialCleaning && !subSvc) {
+        // Fallback for missing subSvc metadata (using old logic but simplified)
+        let multiplier = subServiceId === 'deep_cleaning' ? 3.0 : 1.5;
+        basePrice = providerRate * multiplier;
+        const rooms = options.rooms || 1;
+        quantity = 1 + (rooms * 0.2);
+        unit = 'job';
+    } else if (subServiceId === 'tv_mounting' && subSvc) {
+        // 1. Base Setup (Preparation of tools, laser leveling)
+        const baseSetup = subSvc.baseSetupHr || 0.6;
+        
+        // 2. Technical Complexity (Base for mounting a TV)
+        const complexityMultiplier = subSvc.complexityMultiplier || 1.5;
+        
+        // 3. Technical Factors
+        let mountMultiplier = 1.0;
+        if (options.mountTypes?.some(t => t.toLowerCase().includes('articulating'))) mountMultiplier = 1.35;
+        else if (options.mountTypes?.some(t => t.toLowerCase().includes('tilting'))) mountMultiplier = 1.15;
+        
+        // Wall Material Difficulty
+        let wallMultiplier = 1.0;
+        const wall = (options. wallMaterial || '').toLowerCase();
+        if (wall.includes('brick') || wall.includes('concrete') || wall.includes('stone')) wallMultiplier = 1.3;
+        else if (wall.includes('metal')) wallMultiplier = 1.5;
+        else if (wall.includes('wood')) wallMultiplier = 1.1;
+
+        // 4. Effort Calculation
+        const tvCount = options.tvCount || 1;
+        // Non-linear scaling for multiple TVs (setup is done once)
+        const effectiveQuantity = 1 + (Math.max(0, tvCount - 1) * 0.85);
+        
+        const totalEstimatedEffort = (baseSetup + (effectiveQuantity * 0.9)) * complexityMultiplier * mountMultiplier * wallMultiplier;
+
+        // 5. Output
+        basePrice = providerRate;
+        quantity = Math.round(totalEstimatedEffort * 10) / 10;
+        unit = 'hr-equivalent';
+
+        // 6. Extra Fees (Cables, hardware)
+        if (options.liftingHelp === 'no_60') extraFees += 50;
+        if (options.mountingAddOns?.includes('wires')) extraFees += 40;
+        if (options.mountingAddOns?.includes('audio')) extraFees += 15;
+        if (options.mountingAddOns?.includes('setup')) extraFees += 20;
+
+    } else if (subServiceId === 'tv_mounting' && !subSvc) {
+        // Fallback for missing subSvc
         quantity = options.tvCount || 1;
         unit = 'TV';
         basePrice = providerRate * 1.5;
-
-        // Mount Multiplier
-        let mountMultiplier = 1.0;
-        if (options.mountTypes?.some(t => t.includes('Articulating'))) mountMultiplier = 1.3;
-        else if (options.mountTypes?.some(t => t.includes('Tilting'))) mountMultiplier = 1.1;
-        basePrice *= mountMultiplier;
-
-        // Wall Multiplier
-        let wallMultiplier = 1.0;
-        if (options.wallMaterial?.includes('Brick') || options.wallMaterial?.includes('concrete')) wallMultiplier = 1.2;
-        else if (options.wallMaterial?.includes('Metal')) wallMultiplier = 1.4;
-        basePrice *= wallMultiplier;
-
-        // Lifting Help Fee
-        if (options.liftingHelp === 'no_60') {
-            extraFees += 50; // Extra MAD for heavy handling alone or requiring complexity
-        }
-
-        // Add-ons
-        if (options.mountingAddOns?.includes('wires')) extraFees += 40;
-        if (options.mountingAddOns?.includes('audio')) extraFees += 30;
-        if (options.mountingAddOns?.includes('setup')) extraFees += 20;
-
-    } else if (subServiceId === 'local_move' || subServiceId === 'moving' || subServiceId === 'packing' || subServiceId === 'furniture_move' || subServiceId.includes('moving') || subServiceId === 'errands' || subServiceId.includes('delivery') || subServiceId.includes('shopping') || subServiceId.includes('pickup')) {
-        // Specialized Moving & Delivery Pricing
+    } else if (isMovingOrErrands) {
         const isErrands = subServiceId === 'errands' || subServiceId.includes('delivery') || subServiceId.includes('shopping') || subServiceId.includes('pickup') || subServiceId.includes('pharmacy');
         const hours = options.hours || 1;
-        
-        // Travel cost between points (10 MAD per minute)
         const deliveryTravelCost = (options.deliveryDurationMinutes || 0) * 10;
-        
-        // Distance overage (5 MAD per km beyond 10km)
+
         let distanceOverage = 0;
         if (options.deliveryDistanceKm && options.deliveryDistanceKm > 10) {
             distanceOverage = Math.round((options.deliveryDistanceKm - 10) * 5);
         }
-        
+
         if (isErrands) {
-            // New Errands Pricing: 11 MAD Base + Size Fee + Distance
             basePrice = 11;
             const sizeFees = { small: 0, medium: 9, large: 19 };
             const sizeFee = sizeFees[options.taskSize || 'small'];
-            const distanceFee = (options.deliveryDistanceKm || 0) * 2.5; // 2.5 MAD per Km
-            
+            const distanceFee = (options.deliveryDistanceKm || 0) * 2.5;
+
             quantity = options.hours || 1;
             unit = 'errand';
             extraFees = sizeFee + distanceFee;
@@ -163,45 +193,41 @@ export const calculateOrderPrice = (
             unit = 'hr';
         }
     } else if (subServiceId === 'office_cleaning') {
-        // Office Cleaning Specialized Pricing: Base + Supplements
         basePrice = providerRate;
         quantity = 1;
         unit = 'office';
-        
-        // Desk fee (19 MAD each)
+
         const deskCount = options.officeDesks || 1;
         const deskFee = deskCount * 19;
         details.push({ label: { en: `Bureaus (${deskCount})`, fr: `Bureaux (${deskCount})`, ar: `المكاتب (${deskCount})` }, amount: deskFee });
-        
-        // Meeting Room fee (20 MAD each)
+
         if (options.officeMeetingRooms && options.officeMeetingRooms > 0) {
             const roomFee = options.officeMeetingRooms * 20;
             details.push({ label: { en: `Meeting Rooms (${options.officeMeetingRooms})`, fr: `Salles de réunion (${options.officeMeetingRooms})`, ar: `غرف الاجتماعات (${options.officeMeetingRooms})` }, amount: roomFee });
         }
-        
-        // Bathroom fee (20 MAD each)
+
         if (options.officeBathrooms && options.officeBathrooms > 0) {
             const bathFee = options.officeBathrooms * 20;
             details.push({ label: { en: `Bathrooms (${options.officeBathrooms})`, fr: `Salles de bain (${options.officeBathrooms})`, ar: `الحمامات (${options.officeBathrooms})` }, amount: bathFee });
         }
-        
-        // Extra Cleaning (20 MAD per selected add-on)
+
         if (options.officeAddOns && options.officeAddOns.length > 0) {
             const addonFee = options.officeAddOns.length * 20;
             details.push({ label: { en: 'Extra Cleaning Add-ons', fr: 'Extras nettoyage', ar: 'إضافات تنظيف' }, amount: addonFee });
         }
-        
-        // Include Kitchenette/Reception if not in add-ons but selected
-        if (options.hasKitchenette) {
-            details.push({ label: { en: 'Kitchenette', fr: 'Kitchenette', ar: 'مطبخ صغير' }, amount: 20 });
-        }
-        if (options.hasReception) {
-            details.push({ label: { en: 'Reception Area', fr: 'Zone de réception', ar: 'منطقة الاستقبال' }, amount: 20 });
-        }
+
+        if (options.hasKitchenette) details.push({ label: { en: 'Kitchenette', fr: 'Kitchenette', ar: 'مطبخ صغير' }, amount: 20 });
+        if (options.hasReception) details.push({ label: { en: 'Reception Area', fr: 'Zone de réception', ar: 'منطقة الاستقبال' }, amount: 20 });
 
         extraFees = details.reduce((sum: number, item) => sum + item.amount, 0);
     } else {
-        // Standard Archetype Logic
+        // Fallback Strategy
+        if (options.propertyType) {
+            const coefMap: Record<string, number> = { studio: 0.9, apartment: 1.0, villa: 1.2, guesthouse: 1.3, riad: 1.4, hotel: 1.5 };
+            const coefficient = coefMap[options.propertyType.toLowerCase()];
+            if (coefficient !== undefined) basePrice *= coefficient;
+        }
+
         switch (archetype) {
             case 'unit':
                 quantity = options.rooms || options.quantity || 1;
@@ -215,7 +241,6 @@ export const calculateOrderPrice = (
                 quantity = options.days || options.quantity || 1;
                 unit = 'day';
                 break;
-            case 'fixed':
             default:
                 quantity = 1;
                 unit = 'fixed';
@@ -223,13 +248,13 @@ export const calculateOrderPrice = (
         }
     }
 
+    // --- General Add-ons (Apply to ALL) ---
+    if (options.mountingAddOns?.includes('supplies')) extraFees += 15;
+
+    // --- Calculations ---
     const subtotal = Math.round(((basePrice * quantity) + extraFees) * 10) / 10;
-    const serviceFee = Math.round((subtotal * 0.10) * 10) / 10; // 10% Platform fee
-    
-    // Unified Travel Fee logic
-    const isMovingOrErrands = subServiceId === 'local_move' || subServiceId === 'moving' || subServiceId.includes('moving') || subServiceId === 'errands' || subServiceId.includes('delivery');
+    const serviceFee = Math.round((subtotal * 0.10) * 10) / 10;
     const travelFee = (isMovingOrErrands && extraFees > 0) ? 0 : Math.round((options.distanceKm || 0) * 3 * 10) / 10;
-    
     const total = Math.round((subtotal + serviceFee + travelFee) * 100) / 100;
 
     return {

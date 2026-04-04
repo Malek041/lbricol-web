@@ -915,7 +915,7 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
                                     <h3 className="text-[25px] font-medium text-black mb-2 flex items-center gap-3">
                                         Payment <span className="text-2xl">💳</span>
                                     </h3>
-                                    <p className="text-[15px] font-medium text-neutral-400 mb-6 uppercase tracking-wider">
+                                    <p className="text-[15px] font-medium text-neutral-400 mb-6">
                                         {t({ en: 'Method of payment', fr: 'Mode de paiement', ar: 'طريقة الدفع' })}
                                     </p>
 
@@ -948,11 +948,17 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
                                     <h3 className="text-[25px] font-medium text-black mb-6">
                                         Setup Summary <span className="text-2xl">📋</span>
                                     </h3>
-                                    <div className="bg-[#F9FAFB] rounded-[32px] p-8 border border-neutral-100 space-y-6">
+                                    <div className=" bg-[#F9FAFB]rounded-[20px] p-4 space-y-6">
                                         {(() => {
+                                            const subId = (selectedOrder.subService || (selectedOrder as any).subServiceId || (selectedOrder as any).serviceType || selectedOrder.service || 'car_rental');
+                                            const details = selectedOrder.details?.serviceDetails || selectedOrder.details || {};
+                                            const isHouseCleaning = ['standard_small', 'standard_large', 'family_home', 'deep_cleaning', 'hospitality_turnover'].includes(subId);
+                                            const isOfficeCleaning = subId === 'office_cleaning';
+                                            const isTvMounting = subId === 'tv_mounting';
+
                                             const breakdown = calculateOrderPrice(
-                                                (selectedOrder.subService || (selectedOrder as any).subServiceId || (selectedOrder as any).serviceType || selectedOrder.service || 'car_rental'),
-                                                parseFloat(String(selectedOrder.details?.basePrice || (selectedOrder as any).providerRate || selectedOrder.price || '80')),
+                                                subId,
+                                                parseFloat(String(selectedOrder.price || '80')),
                                                 {
                                                     rooms: parseInt(String((selectedOrder.details?.serviceDetails as any)?.rooms || 1)),
                                                     hours: parseFloat(String((selectedOrder.details?.serviceDetails as any)?.taskDuration || 1)),
@@ -971,72 +977,161 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
                                             );
 
                                             return (
-                                                <>
-                                                    <div className="flex justify-between items-center">
-                                                        <div className="flex items-center gap-2">
-                                                            <span className="text-[17px] font-medium text-neutral-500">{t({ en: 'Base price', fr: 'Prix de base', ar: 'السعر الأساسي' })}</span>
-                                                            <div className="w-5 h-5 rounded-full border border-neutral-200 flex items-center justify-center text-[10px] text-neutral-400 font-medium">i</div>
-                                                        </div>
-                                                        <span className="text-[17px] font-medium text-black">
-                                                            {breakdown.basePrice} MAD/{breakdown.unit === 'room' ? t({ en: 'room', fr: 'pièce', ar: 'غرفة' }) : breakdown.unit === 'hr' ? t({ en: 'hr', fr: 'h', ar: 'س' }) : breakdown.unit === 'day' ? t({ en: 'day', fr: 'jour', ar: 'يوم' }) : t({ en: 'unit', fr: 'unité', ar: 'وحدة' })}
+                                                <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+                                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #e4e4e4ff', paddingBottom: 16 }}>
+                                                        <span style={{ fontSize: 17, fontWeight: 350, color: '#6B7280' }}>{t({ en: 'Type', fr: 'Type', ar: 'النوع' })}</span>
+                                                        <span style={{ fontSize: 17, fontWeight: 350, color: '#111827', textAlign: 'right' }}>
+                                                            {(() => {
+                                                                const { getSubServiceName } = require('@/config/services_config');
+                                                                const subName = getSubServiceName(selectedOrder.service, subId);
+                                                                return subName ? t({ en: subName, fr: subName, ar: subName }) : (selectedOrder.serviceName || selectedOrder.service);
+                                                            })()}
                                                         </span>
                                                     </div>
 
-                                                    <div className="flex justify-between items-center">
-                                                        <div className="flex items-center gap-2">
-                                                            <span className="text-[17px] font-medium text-neutral-500">{t({ en: 'Services', fr: 'Services', ar: 'الخدمات' })}</span>
-                                                            <div className="w-5 h-5 rounded-full border border-neutral-200 flex items-center justify-center text-[10px] text-neutral-400 font-medium">i</div>
+                                                    {isHouseCleaning && (
+                                                        <div style={{ display: 'flex', flexDirection: 'column', gap: 16, borderBottom: '1px solid #e4e4e4ff', paddingBottom: 16 }}>
+                                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                                <span style={{ fontSize: 17, fontWeight: 350, color: '#6B7280' }}>{t({ en: 'Place', fr: 'Lieu' })}</span>
+                                                                <span style={{ fontSize: 17, fontWeight: 350, color: '#111827' }}>{details.propertyType || 'Studio'}</span>
+                                                            </div>
+                                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                                <span style={{ fontSize: 17, fontWeight: 350, color: '#6B7280' }}>{t({ en: 'Rooms', fr: 'Pièces' })}</span>
+                                                                <span style={{ fontSize: 17, fontWeight: 350, color: '#111827' }}>{details.rooms || 1}</span>
+                                                            </div>
                                                         </div>
-                                                        <div className="flex flex-col items-end">
-                                                            <span className="text-[17px] font-medium text-black">{breakdown.subtotal.toFixed(2)} MAD</span>
-                                                            <span className="text-[12px] font-medium text-neutral-400">
-                                                                {breakdown.quantity} {breakdown.unit === 'room' ? (breakdown.quantity > 1 ? t({ en: 'Rooms', fr: 'Pièces', ar: 'غرف' }) : t({ en: 'Room', fr: 'Pièce', ar: 'غرفة' })) : breakdown.unit}
-                                                            </span>
+                                                    )}
+
+                                                    {isOfficeCleaning && (
+                                                        <div style={{ display: 'flex', flexDirection: 'column', gap: 16, borderBottom: '1px solid #e4e4e4ff', paddingBottom: 16 }}>
+                                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                                <span style={{ fontSize: 17, fontWeight: 350, color: '#6B7280' }}>{t({ en: 'Desks', fr: 'Bureaux' })}</span>
+                                                                <span style={{ fontSize: 17, fontWeight: 350, color: '#111827' }}>{details.officeDesks || 1}</span>
+                                                            </div>
+                                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                                <span style={{ fontSize: 17, fontWeight: 350, color: '#6B7280' }}>{t({ en: 'Meeting Rooms', fr: 'Salles de réunion' })}</span>
+                                                                <span style={{ fontSize: 17, fontWeight: 350, color: '#111827' }}>{details.officeMeetingRooms || 0}</span>
+                                                            </div>
+                                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                                <span style={{ fontSize: 17, fontWeight: 350, color: '#6B7280' }}>{t({ en: 'Bathrooms', fr: 'Salles de bain' })}</span>
+                                                                <span style={{ fontSize: 17, fontWeight: 350, color: '#111827' }}>{details.officeBathrooms || 0}</span>
+                                                            </div>
                                                         </div>
+                                                    )}
+
+                                                    {isTvMounting && (
+                                                        <div style={{ display: 'flex', flexDirection: 'column', gap: 16, borderBottom: '1px solid #e4e4e4ff', paddingBottom: 16 }}>
+                                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                                <span style={{ fontSize: 17, fontWeight: 350, color: '#6B7280' }}>{t({ en: 'TV count', fr: 'Nombre de TV' })}</span>
+                                                                <span style={{ fontSize: 17, fontWeight: 350, color: '#111827' }}>{details.tvCount || 1}</span>
+                                                            </div>
+                                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                                <span style={{ fontSize: 17, fontWeight: 350, color: '#6B7280' }}>{t({ en: 'Wall', fr: 'Mur' })}</span>
+                                                                <span style={{ fontSize: 17, fontWeight: 350, color: '#111827' }}>{details.wallMaterial}</span>
+                                                            </div>
+                                                        </div>
+                                                    )}
+
+                                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                                            <span style={{ fontSize: 17, fontWeight: 350, color: '#6B7280' }}>{t({ en: 'Base price', fr: 'Prix de base', ar: 'السعر الأساسي' })}</span>
+                                                            <div style={{ width: 20, height: 20, borderRadius: '50%', border: '1px solid #E5E7EB', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, color: '#9CA3AF', fontWeight: 350 }}>i</div>
+                                                        </div>
+                                                        <span style={{ fontSize: 17, fontWeight: 450, color: '#111827' }}>
+                                                            {Math.round(breakdown.basePrice)} MAD/{breakdown.unit === 'unit' ? (t({ en: 'unit', fr: 'unité', ar: 'وحدة' })) : breakdown.unit === 'day' ? (t({ en: 'day', fr: 'jour', ar: 'يوم' })) : breakdown.unit === 'office' ? (t({ en: 'office', fr: 'bureau', ar: 'مكتب' })) : (t({ en: 'hr', fr: 'h', ar: 'ساعة' }))}
+                                                        </span>
                                                     </div>
 
-                                                    <div className="flex justify-between items-center">
-                                                        <div className="flex items-center gap-2">
-                                                            <span className="text-[17px] font-medium text-neutral-500">{t({ en: 'Lbricol Fee', fr: 'Frais Lbricol', ar: 'رسوم لبريكول' })}</span>
-                                                            <div className="w-5 h-5 rounded-full border border-neutral-200 flex items-center justify-center text-[10px] text-neutral-400 font-medium">i</div>
+                                                    {breakdown.details && breakdown.details.map((detail, idx) => (
+                                                        <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingLeft: 16, borderLeft: '2px solid rgba(1, 160, 131, 0.2)' }}>
+                                                            <span style={{ fontSize: 17, fontWeight: 350, color: '#6B7280' }}>{t(detail.label)}</span>
+                                                            <span style={{ fontSize: 17, fontWeight: 350, color: '#111827' }}>{detail.amount.toFixed(0)} MAD</span>
                                                         </div>
-                                                        <span className="text-[17px] font-medium text-black">{breakdown.serviceFee.toFixed(2)} MAD</span>
+                                                    ))}
+
+                                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                                            <span style={{ fontSize: 17, fontWeight: 350, color: '#6B7280' }}>{t({ en: 'Services', fr: 'Services', ar: 'الخدمات' })}</span>
+                                                            <div style={{ width: 20, height: 20, borderRadius: '50%', border: '1px solid #E5E7EB', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, color: '#9CA3AF', fontWeight: 350 }}>i</div>
+                                                        </div>
+                                                        <span style={{ fontSize: 17, fontWeight: 350, color: '#111827' }}>{breakdown.subtotal.toFixed(2)} MAD</span>
+                                                    </div>
+
+                                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                                            <span style={{ fontSize: 17, fontWeight: 350, color: '#6B7280' }}>{t({ en: 'Lbricol Fee', fr: 'Frais Lbricol', ar: 'رسوم Lbricol' })}</span>
+                                                            <div style={{ width: 20, height: 20, borderRadius: '50%', border: '1px solid #E5E7EB', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, color: '#9CA3AF', fontWeight: 350 }}>i</div>
+                                                        </div>
+                                                        <span style={{ fontSize: 17, fontWeight: 350, color: '#111827' }}>{breakdown.serviceFee.toFixed(2)} MAD</span>
                                                     </div>
 
                                                     {breakdown.travelFee > 0 && (
-                                                        <div className="flex justify-between items-center">
-                                                            <div className="flex flex-col">
-                                                                <div className="flex items-center gap-2">
-                                                                    <span className="text-[17px] font-medium text-neutral-500">{t({ en: 'Travel Fee', fr: 'Frais de déplacement', ar: 'رسوم التنقل' })}</span>
-                                                                    <div className="w-5 h-5 rounded-full border border-neutral-200 flex items-center justify-center text-[10px] text-neutral-400 font-medium">i</div>
+                                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                            <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                                                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                                                    <span style={{ fontSize: 17, fontWeight: 350, color: '#6B7280' }}>{t({ en: 'Travel Fee', fr: 'Frais de déplacement', ar: 'رسوم التنقل' })}</span>
+                                                                    <div style={{ width: 20, height: 20, borderRadius: '50%', border: '1px solid #E5E7EB', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, color: '#9CA3AF', fontWeight: 350 }}>i</div>
                                                                 </div>
-                                                                <span className="text-[11px] font-medium text-neutral-400">
+                                                                <span style={{ fontSize: 17, fontWeight: 350, color: '#9CA3AF', marginTop: 4 }}>
                                                                     {breakdown.distanceKm?.toFixed(1)} km · ~{breakdown.duration} min
                                                                 </span>
                                                             </div>
-                                                            <span className="text-[17px] font-medium text-black">{breakdown.travelFee.toFixed(2)} MAD</span>
+                                                            <span style={{ fontSize: 17, fontWeight: 350, color: '#111827' }}>{breakdown.travelFee.toFixed(2)} MAD</span>
                                                         </div>
                                                     )}
-                                                </>
+                                                </div>
                                             );
                                         })()}
+                                    </div>
+                                </section>
 
-                                        {/* Location Section */}
-                                        <div className="pt-6 border-t border-dotted border-neutral-200">
-                                            <div className="flex items-center gap-4">
-                                                <div className="w-12 h-12 rounded-2xl bg-white flex items-center justify-center flex-shrink-0">
-                                                    <MapPin size={24} className="text-[#01A083]" />
+                                {/* Location Summaries */}
+                                <section className="mb-10">
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                                        {/* Pickup Location or User Location */}
+                                        <div style={{ padding: '16px 20px', background: '#F9FAFB', borderRadius: 24, display: 'flex', alignItems: 'center', gap: 16 }}>
+                                            <div style={{ width: 44, height: 44, borderRadius: 12, border: '1px solid #F3F4F6', background: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                                <MapPin size={20} className="text-[#01A083]" />
+                                            </div>
+                                            <div style={{ flex: 1, minWidth: 0 }}>
+                                                <div style={{ fontSize: 11, fontWeight: 700, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 2 }}>
+                                                    {(selectedOrder.service === 'errands' || selectedOrder.service?.includes('delivery')) ? t({ en: 'Pickup Location', fr: 'Lieu d\'enlèvement', ar: 'موقع الاستلام' }) : t({ en: 'Your Location', fr: 'Votre Position', ar: 'موقعك' })}
                                                 </div>
-                                                <div className="min-w-0">
-                                                    <span className="text-[11px] font-medium text-neutral-400 uppercase tracking-widest block mb-1">
-                                                        {t({ en: 'Your Location', fr: 'Votre Position', ar: 'موقعك' })}
-                                                    </span>
-                                                    <p className="text-[15px] font-medium text-black truncate">
-                                                        {typeof selectedOrder.location === 'object' ? (selectedOrder.location as any).address : selectedOrder.location}
-                                                    </p>
+                                                <div style={{ fontSize: 15, fontWeight: 700, color: '#111827', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                                    {typeof selectedOrder.location === 'object' ? (selectedOrder.location as any).address : selectedOrder.location}
                                                 </div>
                                             </div>
                                         </div>
+
+                                        {/* Dropoff Location */}
+                                        {(selectedOrder.service === 'errands' || selectedOrder.service?.includes('delivery')) && selectedOrder.details?.serviceDetails?.dropoffAddress && (
+                                            <div style={{ padding: '16px 20px', background: '#F9FAFB', borderRadius: 24, display: 'flex', alignItems: 'center', gap: 16 }}>
+                                                <div style={{ width: 44, height: 44, borderRadius: 12, border: '1px solid #F3F4F6', background: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                                    <MapPin size={20} className="text-[#01A083]" />
+                                                </div>
+                                                <div style={{ flex: 1, minWidth: 0 }}>
+                                                    <div style={{ fontSize: 11, fontWeight: 900, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 2 }}>{t({ en: 'Dropoff Location', fr: 'Lieu de dépôt', ar: 'موقع التسليم' })}</div>
+                                                    <div style={{ fontSize: 15, fontWeight: 900, color: '#111827', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                                        {selectedOrder.details.serviceDetails.dropoffAddress}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* Bricoler Location */}
+                                        {selectedOrder.providerAddress && (
+                                            <div style={{ padding: '16px 20px', background: '#F9FAFB', borderRadius: 24, display: 'flex', alignItems: 'center', gap: 16 }}>
+                                                <div style={{ width: 44, height: 44, borderRadius: 12, border: '1px solid #F3F4F6', background: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                                    <MapPin size={20} className="text-[#01A083]" />
+                                                </div>
+                                                <div style={{ flex: 1 }}>
+                                                    <div style={{ fontSize: 11, fontWeight: 700, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 2 }}>{t({ en: 'Bricoler Location', fr: 'Position du Bricoleur', ar: 'موقع العامل' })}</div>
+                                                    <div style={{ fontSize: 15, fontWeight: 700, color: '#111827', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 1, WebkitBoxOrient: 'vertical' }}>
+                                                        {selectedOrder.providerAddress || 'Essaouira, Morocco'}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
                                 </section>
 
@@ -1497,11 +1592,18 @@ function ActivityTab({
                     </div>
 
                     <h3 className="text-[17px] font-medium text-black leading-tight">
-                        {order.service === 'cleaning' && order.details?.rooms ? (
-                            `${getSubServiceName(order.service, order.subService || '') || t({ en: 'Cleaning', fr: 'Nettoyage', ar: 'تنظيف' })} • ${order.details.rooms} ${order.details.rooms > 1 ? t({ en: 'Rooms', fr: 'Pièces', ar: 'غرف' }) : t({ en: 'Room', fr: 'Pièce', ar: 'غرفة' })}`
-                        ) : (
-                            `${order.service} ${order.subServiceDisplayName ? `› ${order.subServiceDisplayName}` : ''}`
-                        )}
+                        {(() => {
+                            const { getSubServiceName, getServiceById } = require('@/config/services_config');
+                            const subDisplay = getSubServiceName(order.service, order.subService || (order as any).subServiceId || '') || order.subServiceDisplayName;
+
+                            const baseName = subDisplay ? t({ en: subDisplay, fr: subDisplay, ar: subDisplay }) : (getServiceById(order.service)?.name || order.serviceName || order.service);
+
+                            const roomsCount = order.details?.serviceDetails?.rooms || order.details?.rooms;
+                            if (order.service === 'cleaning' && roomsCount) {
+                                return `${baseName} • ${roomsCount} ${roomsCount > 1 ? t({ en: 'Rooms', fr: 'Pièces', ar: 'غرف' }) : t({ en: 'Room', fr: 'Pièce', ar: 'غرفة' })}`;
+                            }
+                            return baseName;
+                        })()}
                     </h3>
                     <div className="mt-2 text-[14px] font-medium text-black leading-tight">
                         {isCarRental && order.date && order.carReturnDate ? (
@@ -1541,7 +1643,7 @@ function ActivityTab({
                         )}
                     </div>
                     <div className="flex justify-between items-end mt-2">
-                        <p className="text-[13px] font-medium text-neutral-400 truncate pr-2">
+                        <p className="text-[13px] font-medium text-neutral-400 truncate pr-2 flex-1">
                             {order.service === 'cleaning' && order.details?.propertyType ? (
                                 `${t({ en: order.details.propertyType, fr: order.details.propertyType, ar: order.details.propertyType })} • ${order.city || (typeof order.location === 'object' ? (order.location as any).address : order.location)}`
                             ) : (order.service === 'errands' || order.service?.includes('delivery')) && !order.bricolerName ?
@@ -1549,6 +1651,13 @@ function ActivityTab({
                                 `${order.bricolerName || t({ en: 'Matching...', fr: 'Recherche...', ar: 'جاري البحث...' })} • ${order.city || (typeof order.location === 'object' ? (order.location as any).address : order.location)}`
                             }
                         </p>
+                        {!!(order.totalPrice || order.price) && (
+                            <div className="flex-shrink-0 bg-[#F9FAFB] border border-neutral-100 px-2 py-0.5 rounded-md flex items-center justify-center ml-2">
+                                <span className="text-[13px] font-bold text-black">
+                                    {(order.totalPrice || parseFloat(String(order.price || '0'))).toFixed(0)} MAD
+                                </span>
+                            </div>
+                        )}
                     </div>
                     <div className="w-full h-1.5 bg-neutral-100 rounded-full mt-3 overflow-hidden">
                         <motion.div

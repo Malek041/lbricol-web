@@ -31,6 +31,8 @@ export interface SubService {
     desc?: { en: string; fr: string; ar: string };
     pricingArchetype?: 'hourly' | 'fixed' | 'unit' | 'rental';
     estimatedDurationHr?: number;
+    complexityMultiplier?: number; // Scaling factor for effort (e.g., 1.5 for Deep Clean)
+    baseSetupHr?: number; // Fixed prep/setup time (e.g., 0.5h)
 }
 
 export interface ServiceConfig {
@@ -47,13 +49,13 @@ export const SERVICES_HIERARCHY: Record<string, ServiceConfig> = {
         name: 'Cleaning',
         icon: Trash2,
         subServices: [
-            { id: 'standard_small', name: 'Standard Cleaning (Small Home)', pricingArchetype: 'unit', estimatedDurationHr: 2.5 },
-            { id: 'standard_large', name: 'Standard Cleaning (Large Home)', pricingArchetype: 'unit', estimatedDurationHr: 4.5 },
-            { id: 'deep_cleaning', name: 'Deep Home Cleaning (Move-in/Out)', pricingArchetype: 'unit', estimatedDurationHr: 6 },
-            { id: 'hospitality_turnover', name: 'Short-term Rental (Airbnb) Turnover', pricingArchetype: 'unit', estimatedDurationHr: 2.5 },
-            { id: 'office_cleaning', name: 'Office & Workspace Cleaning', pricingArchetype: 'unit', estimatedDurationHr: 4 },
-            { id: 'dish_cleaning', name: 'Dish Washing & Kitchen Tidy', pricingArchetype: 'hourly', estimatedDurationHr: 1.5 },
-            { id: 'car_detailing', name: 'Full Car Detailing (Inside & Out)', pricingArchetype: 'fixed', estimatedDurationHr: 3 }
+            { id: 'standard_small', name: 'Standard Cleaning (Small Home)', pricingArchetype: 'unit', estimatedDurationHr: 2.5, baseSetupHr: 0.5, complexityMultiplier: 1.0 },
+            { id: 'standard_large', name: 'Standard Cleaning (Large Home)', pricingArchetype: 'unit', estimatedDurationHr: 4.5, baseSetupHr: 0.75, complexityMultiplier: 1.1 },
+            { id: 'deep_cleaning', name: 'Deep Home Cleaning (Move-in/Out)', pricingArchetype: 'unit', estimatedDurationHr: 6, baseSetupHr: 1.0, complexityMultiplier: 1.5 },
+            { id: 'hospitality_turnover', name: 'Short-term Rental (Airbnb) Turnover', pricingArchetype: 'unit', estimatedDurationHr: 2.5, baseSetupHr: 0.4, complexityMultiplier: 0.9 },
+            { id: 'office_cleaning', name: 'Office & Workspace Cleaning', pricingArchetype: 'unit', estimatedDurationHr: 4, baseSetupHr: 0.5, complexityMultiplier: 1.0 },
+            { id: 'dish_cleaning', name: 'Dish Washing & Kitchen Tidy', pricingArchetype: 'hourly', estimatedDurationHr: 1.5, baseSetupHr: 0.2, complexityMultiplier: 1.0 },
+            { id: 'car_detailing', name: 'Full Car Detailing (Inside & Out)', pricingArchetype: 'fixed', estimatedDurationHr: 3, baseSetupHr: 0.5, complexityMultiplier: 1.2 }
         ]
     },
 
@@ -170,15 +172,15 @@ export const SERVICES_HIERARCHY: Record<string, ServiceConfig> = {
         name: 'Mounting',
         icon: Monitor,
         subServices: [
-            { id: 'tv_mounting', name: 'TV Mounting', pricingArchetype: 'fixed', estimatedDurationHr: 1.5 },
-            { id: 'install_shelves', name: 'Install Shelves, Rods & Hooks', pricingArchetype: 'fixed', estimatedDurationHr: 1 },
-            { id: 'curtain_rod', name: 'Curtain Rod Installation', pricingArchetype: 'fixed', estimatedDurationHr: 0.5 },
-            { id: 'mirror_hanging', name: 'Mirror Hanging', pricingArchetype: 'fixed', estimatedDurationHr: 0.5 },
-            { id: 'picture_hanging', name: 'Picture Hanging', pricingArchetype: 'fixed', estimatedDurationHr: 0.5 },
-            { id: 'hang_art', name: 'Hang Art, Mirror & Decor', pricingArchetype: 'fixed', estimatedDurationHr: 1 },
-            { id: 'install_blinds', name: 'Install Blinds & Window Treatments', pricingArchetype: 'fixed', estimatedDurationHr: 1 },
-            { id: 'mount_furniture', name: 'Mount & Anchor Furniture', pricingArchetype: 'fixed', estimatedDurationHr: 1 },
-            { id: 'other_mounting', name: 'Other Mounting', pricingArchetype: 'hourly' }
+            { id: 'tv_mounting', name: 'TV Mounting', pricingArchetype: 'fixed', estimatedDurationHr: 1.5, baseSetupHr: 0.6, complexityMultiplier: 1.5 },
+            { id: 'install_shelves', name: 'Install Shelves, Rods & Hooks', pricingArchetype: 'fixed', estimatedDurationHr: 1, baseSetupHr: 0.3, complexityMultiplier: 1.0 },
+            { id: 'curtain_rod', name: 'Curtain Rod Installation', pricingArchetype: 'fixed', estimatedDurationHr: 0.5, baseSetupHr: 0.2, complexityMultiplier: 1.0 },
+            { id: 'mirror_hanging', name: 'Mirror Hanging', pricingArchetype: 'fixed', estimatedDurationHr: 0.5, baseSetupHr: 0.2, complexityMultiplier: 1.0 },
+            { id: 'picture_hanging', name: 'Picture Hanging', pricingArchetype: 'fixed', estimatedDurationHr: 0.5, baseSetupHr: 0.2, complexityMultiplier: 1.0 },
+            { id: 'hang_art', name: 'Hang Art, Mirror & Decor', pricingArchetype: 'fixed', estimatedDurationHr: 1, baseSetupHr: 0.3, complexityMultiplier: 1.0 },
+            { id: 'install_blinds', name: 'Install Blinds & Window Treatments', pricingArchetype: 'fixed', estimatedDurationHr: 1, baseSetupHr: 0.3, complexityMultiplier: 1.0 },
+            { id: 'mount_furniture', name: 'Mount & Anchor Furniture', pricingArchetype: 'fixed', estimatedDurationHr: 1, baseSetupHr: 0.4, complexityMultiplier: 1.1 },
+            { id: 'other_mounting', name: 'Other Mounting', pricingArchetype: 'hourly', baseSetupHr: 0.5, complexityMultiplier: 1.0 }
         ]
     },
 

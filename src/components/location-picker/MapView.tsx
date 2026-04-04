@@ -489,25 +489,27 @@ const MapView: React.FC<MapViewProps> = ({
       const icon = L.divIcon({
         className: '',
         html: `
-          <div style="display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:160px;cursor:pointer;opacity:${opacity};transform:scale(${scale});transition:all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);${bounceStyle}">
-            ${isFocused ? `
-            <div style="position: relative; display: flex; flex-direction: column; align-items: center; margin-bottom: 8px;">
-              <div style="background:#fff;border-radius:12px;padding:10px 16px; 
-                box-shadow:0 8px 18px rgba(0,0,0,0.15);font-family:sans-serif;text-align:center;white-space:nowrap;
-                display: flex; flex-direction: column; align-items: center; border: 1px solid #f3f4f6; position: relative; z-index: 10;">
-                <div style="font-size:16px;font-weight:950;color:#111827">${pin.taskCount || 0} Jobs</div>
-                <div style="font-size:20px;color:#111827;font-weight:950;display:flex;align-items:center;gap:6px;margin-top:2px;">
-                  <span style="color:#FBBF24;font-size:24px;">★</span> ${!pin.taskCount || pin.taskCount === 0 || !pin.rating ? '0.0' : pin.rating.toFixed(1)}
+          <div style="display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:160px;cursor:pointer;opacity:${opacity};transform:scale(${scale});transform-origin:bottom center;transition:all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);">
+            <div style="${bounceStyle} display:flex;flex-direction:column;align-items:center;">
+              ${isFocused ? `
+              <div style="position: relative; display: flex; flex-direction: column; align-items: center; margin-bottom: 8px;">
+                <div style="background:#fff;border-radius:12px;padding:10px 16px; 
+                  box-shadow:0 8px 18px rgba(0,0,0,0.15);font-family:sans-serif;text-align:center;white-space:nowrap;
+                  display: flex; flex-direction: column; align-items: center; border: 1px solid #f3f4f6; position: relative; z-index: 10;">
+                  <div style="font-size:16px;font-weight:950;color:#111827">${pin.taskCount || 0} Jobs</div>
+                  <div style="font-size:20px;color:#111827;font-weight:950;display:flex;align-items:center;gap:6px;margin-top:2px;">
+                    <span style="color:#FBBF24;font-size:24px;">★</span> ${!pin.taskCount || pin.taskCount === 0 || !pin.rating ? '0.0' : pin.rating.toFixed(1)}
+                  </div>
                 </div>
+                <div style="width: 0; height: 0; border-left: 8px solid transparent; border-right: 8px solid transparent; border-top: 8px solid white; margin-top: -1px; z-index: 5; filter: drop-shadow(0 4px 4px rgba(0,0,0,0.05));"></div>
               </div>
-              <div style="width: 0; height: 0; border-left: 8px solid transparent; border-right: 8px solid transparent; border-top: 8px solid white; margin-top: -1px; z-index: 5; filter: drop-shadow(0 4px 4px rgba(0,0,0,0.05));"></div>
-            </div>
-            ` : ''}
-            <div style="position:relative;width:${size}px;height:${size}px;min-width:${size}px;min-height:${size}px;flex-shrink:0;transition: width 0.3s, height 0.3s; margin-bottom: 0px; border-radius: 50%; border: 3px solid #fff; box-shadow: 0 4px 12px rgba(0,0,0,0.15); overflow: hidden; background: #fff;">
-              ${pin.avatarUrl
-                ? `<img src="${pin.avatarUrl}" style="width:100%;height:100%;object-fit:cover" onerror="this.onerror=null; this.src='/Images/Vectors Illu/LbricolFaceOY.webp'; this.parentElement.style.background='#F3F4F6'; this.innerHTML='👤';"/>`
-                : `<div style="width:100%;height:100%;background:#F3F4F6;display:flex;align-items:center;justify-content:center;font-size:24px">👤</div>`
-              }
+              ` : ''}
+              <div style="position:relative;width:${size}px;height:${size}px;min-width:${size}px;min-height:${size}px;flex-shrink:0;transition: all 0.3s; margin-bottom: 0px; border-radius: 50%; border: 3px solid #fff; box-shadow: 0 4px 12px rgba(0,0,0,0.15); overflow: hidden; background: #fff;">
+                ${pin.avatarUrl
+                  ? `<img src="${pin.avatarUrl}" style="width:100%;height:100%;object-fit:cover" onerror="this.onerror=null; this.src='/Images/Vectors Illu/LbricolFaceOY.webp'; this.parentElement.style.background='#F3F4F6'; this.innerHTML='👤';"/>`
+                  : `<div style="width:100%;height:100%;background:#F3F4F6;display:flex;align-items:center;justify-content:center;font-size:24px">👤</div>`
+                }
+              </div>
             </div>
           </div>
         `,

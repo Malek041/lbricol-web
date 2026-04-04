@@ -48,17 +48,26 @@ export const SearchPopup: React.FC<SearchPopupProps> = ({
 
     const allSubServices = useMemo(() => {
         const list: { serviceId: string; serviceLabel: string; subService: any }[] = [];
+        const softBlocklist = ['car_wash', 'car_detailing', 'car_detail'];
+
         SERVICES_CATALOGUE.forEach(svc => {
             svc.subServices.forEach(sub => {
-                list.push({
-                    serviceId: svc.id,
-                    serviceLabel: t({ en: svc.label, fr: svc.labelFr, ar: svc.labelAr || svc.labelFr }),
-                    subService: sub
-                });
+                if (!softBlocklist.includes(sub.id)) {
+                    const translation: Translation = { 
+                        en: svc.label || '', 
+                        fr: svc.labelFr || '', 
+                        ar: svc.labelAr || svc.labelFr || '' 
+                    };
+                    list.push({
+                        serviceId: svc.id,
+                        serviceLabel: t(translation),
+                        subService: sub
+                    });
+                }
             });
         });
         return list;
-    }, [language]);
+    }, [language, t]);
 
     const filteredResults = useMemo(() => {
         if (!query.trim()) return [];

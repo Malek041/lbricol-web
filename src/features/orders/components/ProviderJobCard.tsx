@@ -193,11 +193,14 @@ export default function ProviderJobCard({
                 <h3 className="text-[13px] font-black text-black leading-tight mb-1 tracking-tight">
                     {(() => {
                         const config = getServiceById(order.serviceId || order.service);
-                        const subDisplay = getSubServiceName(order.serviceId || order.service, order.subService || '') || order.subServiceDisplayName;
-                        const translatedSub = subDisplay ? t({ en: subDisplay, fr: subDisplay }) : '';
-
-                        if (translatedSub) return translatedSub;
-                        return config ? config.name : formatServiceName(order.service);
+                        const subDisplay = getSubServiceName(order.serviceId || order.service, order.subService || (order as any).subServiceId || '') || order.subServiceDisplayName;
+                        const baseName = subDisplay ? t({ en: subDisplay, fr: subDisplay, ar: subDisplay }) : (config ? config.name : formatServiceName(order.service));
+                        
+                        const roomsCount = order.details?.serviceDetails?.rooms || order.details?.rooms;
+                        if (order.service === 'cleaning' && roomsCount) {
+                            return `${baseName} • ${roomsCount} ${roomsCount > 1 ? t({ en: 'Rooms', fr: 'Pièces', ar: 'غرف' }) : t({ en: 'Room', fr: 'Pièce', ar: 'غرفة' })}`;
+                        }
+                        return baseName;
                     })()}
                 </h3>
 
@@ -218,14 +221,21 @@ export default function ProviderJobCard({
                  {/* Progress Bar & Actions Row */}
                  <div className="mt-4">
                      <div className="flex justify-between items-end mb-1">
-                          <div className="text-[14px] font-bold text-neutral-300">
+                          <div className="text-[14px] font-bold text-neutral-300 truncate pr-2 flex-1">
                                {order.clientName || t({ en: 'Client', fr: 'Client', ar: 'عميل' })}
                           </div>
-                          {timeLeft && !isDone && (
-                              <span className="text-[12px] font-black text-[#01A083] tracking-tight">
-                                  ({timeLeft})
-                              </span>
-                          )}
+                          <div className="flex items-center gap-2 flex-shrink-0">
+                              {timeLeft && !isDone && (
+                                  <span className="text-[12px] font-black text-[#01A083] tracking-tight">
+                                      ({timeLeft})
+                                  </span>
+                              )}
+                              {!!(order.totalPrice || order.price) && (
+                                  <span className="text-[14px] font-black text-black border-l border-neutral-200 pl-2 ml-1">
+                                      {(order.totalPrice || parseFloat(String(order.price || '0'))).toFixed(0)} MAD
+                                  </span>
+                              )}
+                          </div>
                      </div>
                      <div className="flex items-center justify-between gap-4">
                          <div className="flex-1 h-[4px] bg-neutral-50 rounded-full overflow-hidden">

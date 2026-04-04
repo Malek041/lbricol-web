@@ -678,7 +678,45 @@ export default function ServiceSetupPage() {
     };
 
     if (loading) return null;
-    const subServiceName = SERVICES_HIERARCHY[order.serviceType as keyof typeof SERVICES_HIERARCHY]?.subServices.find(s => s.id === order.subServiceId)?.name;
+    // Robust subservice name lookup: if not found in the current category, search all categories
+    let categoryName = order.serviceName;
+    let resolvedSubServiceName = '';
+
+    // Try to find the subservice name globally if possible
+    if (order.subServiceId) {
+        for (const cat of Object.values(SERVICES_HIERARCHY)) {
+            const found = cat.subServices.find(s =>
+                s.id.toLowerCase() === order.subServiceId.toLowerCase() ||
+                s.name.toLowerCase() === order.subServiceId.toLowerCase()
+            );
+            if (found) {
+                resolvedSubServiceName = found.name;
+                // If we also want to ensure the category name is accurate
+                if (!categoryName || categoryName === 'Order Setup') categoryName = cat.name;
+                break;
+            }
+        }
+    }
+
+    // Fallback search by serviceType if subServiceId didn't yield results
+    if (!resolvedSubServiceName && order.serviceType) {
+        for (const cat of Object.values(SERVICES_HIERARCHY)) {
+            const found = cat.subServices.find(s =>
+                s.id.toLowerCase() === order.serviceType.toLowerCase() ||
+                s.name.toLowerCase() === order.serviceType.toLowerCase()
+            );
+            if (found) {
+                resolvedSubServiceName = found.name;
+                if (!categoryName || categoryName === 'Order Setup') categoryName = cat.name;
+                break;
+            }
+        }
+    }
+
+    // Final fallback: use the context subServiceName if still empty
+    if (!resolvedSubServiceName && order.subServiceName && order.subServiceName !== 'Order Setup') {
+        resolvedSubServiceName = order.subServiceName;
+    }
 
     return (
         <div className="min-h-screen bg-white text-[#111827] flex flex-col font-sans">
@@ -690,10 +728,12 @@ export default function ServiceSetupPage() {
                     <button onClick={() => router.back()} className="w-9 h-9 rounded-full bg-neutral-50 flex items-center justify-center transition-transform active:scale-90">
                         <ChevronLeft size={22} className="text-[#111827]" />
                     </button>
-                    <h1 className="text-[17px] font-black text-[#111827] truncate max-w-[240px]">
-                        {order.serviceName || 'Order Setup'}
-                        {subServiceName && (
-                            <span className="text-neutral-400 font-medium ml-1.5">/ {subServiceName}</span>
+                    <h1 className="text-[17px] font-black text-[#111827] flex items-center justify-center gap-1.5 max-w-[300px]">
+                        <span className="truncate">{categoryName || order.serviceName || 'Order Setup'}</span>
+                        {resolvedSubServiceName && resolvedSubServiceName !== (categoryName || order.serviceName) && (
+                            <span className="text-neutral-400 font-medium whitespace-nowrap shrink-0 overflow-hidden text-ellipsis max-w-[120px]">
+                                / {resolvedSubServiceName}
+                            </span>
                         )}
                     </h1>
                     <button onClick={() => router.push('/')} className="w-9 h-9 rounded-full bg-neutral-50 flex items-center justify-center transition-transform active:scale-90">
@@ -1448,7 +1488,7 @@ export default function ServiceSetupPage() {
                                     <>
                                         {/* Availability Picker */}
                                         <div className="space-y-6">
-                                            <h3 className="text-[25px] text-[#111827] font-bold">{t({ en: 'When do you need the Bricoler?', fr: 'Quand avez-vous besoin du Bricoleur ?' })}</h3>
+                                            <h3 className="text-[20px] text-[#111827] font-bold">{t({ en: 'When do you need the Bricoler?', fr: 'Quand avez-vous besoin du Bricoleur ?' })}</h3>
                                             <OrderAvailabilityPicker
                                                 bricolerId={order.providerId!}
                                                 onSelect={(slots) => {
@@ -1464,7 +1504,7 @@ export default function ServiceSetupPage() {
                                             <div className="space-y-10">
                                                 {/* Task Size */}
                                                 <div className="space-y-6">
-                                                    <h3 className="text-[25px] text-[#111827] font-bold">{t({ en: 'How big is the move?', fr: 'Quelle est la taille du déménagement ?', ar: 'ما هو حجم الانتقال؟' })}</h3>
+                                                    <h3 className="text-[20px] text-[#111827] font-bold">{t({ en: 'How big is the move?', fr: 'Quelle est la taille du déménagement ?', ar: 'ما هو حجم الانتقال؟' })}</h3>
                                                     <div className="grid grid-cols-1 gap-3">
                                                         {[
                                                             { id: 'small', name: t({ en: 'Small', fr: 'Petit', ar: 'صغير' }), desc: t({ en: 'A few items or 1 room', fr: 'Quelques objets ou 1 pièce', ar: 'بضعة أشياء أو غرفة واحدة' }), duration: '1.5h', hours: 1.5 },
@@ -1494,7 +1534,7 @@ export default function ServiceSetupPage() {
                                                 {/* Packing Service: Move items too? */}
                                                 {order.subServiceId === 'packing' && (
                                                     <div className="space-y-4">
-                                                        <h3 className="text-[25px] text-[#111827] font-black">{t({ en: 'Move these items too?', fr: 'Déménager ces objets aussi ?', ar: 'هل تريد نقل هذه الأشياء أيضاً؟' })}</h3>
+                                                        <h3 className="text-[20px] text-[#111827] font-black">{t({ en: 'Move these items too?', fr: 'Déménager ces objets aussi ?', ar: 'هل تريد نقل هذه الأشياء أيضاً؟' })}</h3>
                                                         <p className="text-neutral-500 text-[15px] font-medium leading-relaxed max-w-[90%]">
                                                             {t({ en: 'Do you need the items to be transported to a second location after they are packed?', fr: 'Avez-vous besoin que les objets soient transportés vers un second lieu après l\'emballage ?', ar: 'هل تحتاج لنقل الأشياء إلى موقع ثانٍ بعد تغليفها؟' })}
                                                         </p>
@@ -1518,7 +1558,7 @@ export default function ServiceSetupPage() {
                                                 {/* Route Section (Pic 4 Style) */}
                                                 {needsTransport && (
                                                     <div className="space-y-6">
-                                                        <h3 className="text-[25px] text-[#111827] font-black">Delivery details</h3>
+                                                        <h3 className="text-[20px] text-[#111827] font-black">Delivery details</h3>
 
                                                         {/* Compact Map Card */}
                                                         <div className="h-[180px] bg-[#F3F4F6] rounded-[5px] border border-neutral-100 overflow-hidden relative">
@@ -1589,7 +1629,7 @@ export default function ServiceSetupPage() {
                                         {/* Property Type */}
                                         {order.subServiceId !== 'office_cleaning' && (
                                             <div className="space-y-6">
-                                                <h3 className="text-[25px] text-[#111827] font-bold">{t({ en: 'What kind of place is this?', fr: 'Quel type de lieu est-ce ?' })}</h3>
+                                                <h3 className="text-[20px] text-[#111827] font-bold">{t({ en: 'What kind of place is this?', fr: 'Quel type de lieu est-ce ?' })}</h3>
                                                 <div className="flex flex-wrap gap-2">
                                                     {['Studio', 'Apartment', 'Villa', 'Guesthouse', 'Riad', 'Hotel'].map(type => (
                                                         <button
@@ -1608,7 +1648,7 @@ export default function ServiceSetupPage() {
                                         {((order.serviceType === 'cleaning' || order.serviceType === 'hospitality') && !['car_washing', 'car_detailing', 'dish_cleaning', 'office_cleaning'].includes(order.subServiceId || '')) && (
                                             <div className="space-y-6">
                                                 <div className="flex items-center justify-between px-1">
-                                                    <label className="text-[25px] font-bold text-[#111827] setup-heading">{t({ en: 'How many rooms?', fr: 'Combien de pièces ?', ar: 'كم عدد الغرف؟' })}</label>
+                                                    <label className="text-[20px] font-medium text-[#111827] setup-heading">{t({ en: 'How many rooms?', fr: 'Combien de chambres ?', ar: 'كم عدد الغرف؟' })}</label>
                                                 </div>
                                                 <div className="flex gap-4 overflow-x-auto pb-6 pt-2 no-scrollbar -mx-6 px-6 snap-x snap-mandatory">
                                                     {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((num) => (
@@ -1638,7 +1678,7 @@ export default function ServiceSetupPage() {
                                                 {/* Scale: Desks */}
                                                 <div className="space-y-6">
                                                     <div className="flex flex-col px-1">
-                                                        <label className="text-[25px] font-bold text-[#111827] setup-heading">{t({ en: 'How many desks are there?', fr: 'Combien de bureaux y a-t-il ?', ar: 'كم عدد المكاتب الموجودة؟' })}</label>
+                                                        <label className="text-[20px] font-bold text-[#111827]">{t({ en: 'How many desks are there?', fr: 'Combien de bureaux y a-t-il ?', ar: 'كم عدد المكاتب الموجودة؟' })}</label>
                                                         <p className="text-[13px] font-bold text-black/40 mt-1 italic">{t({ en: 'This helps us know how big the office is.', fr: 'Cela nous aide à connaître la taille du bureau.', ar: 'هذا يساعدنا في معرفة حجم المكتب.' })}</p>
                                                     </div>
                                                     <div className="flex gap-4 overflow-x-auto pb-6 pt-2 no-scrollbar -mx-6 px-6 snap-x snap-mandatory">
@@ -1647,7 +1687,7 @@ export default function ServiceSetupPage() {
                                                                 key={`desk-${num}`}
                                                                 whileTap={{ scale: 0.9 }}
                                                                 onClick={() => setOfficeDesks(num)}
-                                                                className={`flex-shrink-0 w-16 h-16 flex items-center justify-center font-medium text-[22px] transition-all snap-center relative ${officeDesks === num ? 'bg-[#01A083] text-white scale-110 z-10 rounded-[20px]' : 'bg-[#F9FAFB] text-neutral-400 border border-neutral-100 rounded-full'}`}
+                                                                className={`flex-shrink-0 w-16 h-16 flex items-center justify-center font-medium text-[22px] transition-all snap-center relative ${officeDesks === num ? 'bg-[#01A083] text-white scale-110 z-10 rounded-full' : 'bg-[#F9FAFB] text-neutral-400 border border-neutral-100 rounded-full'}`}
                                                             >
                                                                 {num}
                                                             </motion.button>
@@ -1657,7 +1697,7 @@ export default function ServiceSetupPage() {
 
                                                 {/* Rooms */}
                                                 <div className="space-y-6">
-                                                    <label className="text-[25px] font-bold text-[#111827] setup-heading px-1">{t({ en: 'How many meeting or private rooms?', fr: 'Combien de salles de réunion ou bureaux privés ?', ar: 'كم عدد غرف الاجتماعات أو الغرف الخاصة؟' })}</label>
+                                                    <label className="text-[20px] font-bold text-[#111827] ">{t({ en: 'How many meeting or private rooms?', fr: 'Combien de salles de réunion ou bureaux privés ?', ar: 'كم عدد غرف الاجتماعات أو الغرف الخاصة؟' })}</label>
                                                     <div className="flex gap-4 overflow-x-auto pb-4 pt-2 no-scrollbar -mx-6 px-6">
                                                         {[0, 1, 2, 3, 4, 5, 8, 10].map((num) => (
                                                             <motion.button
@@ -1674,7 +1714,7 @@ export default function ServiceSetupPage() {
 
                                                 {/* Restrooms */}
                                                 <div className="space-y-6">
-                                                    <label className="text-[25px] font-bold text-[#111827] setup-heading px-1">{t({ en: 'How many bathrooms?', fr: 'Combien de salles de bain ?', ar: 'كم عدد الحمامات؟' })}</label>
+                                                    <label className="text-[20px] font-bold text-[#111827] setup-heading px-1">{t({ en: 'How many bathrooms?', fr: 'Combien de salles de bain ?', ar: 'كم عدد الحمامات؟' })}</label>
                                                     <div className="flex gap-4 overflow-x-auto pb-4 pt-2 no-scrollbar -mx-6 px-6">
                                                         {[0, 1, 2, 3, 4, 5].map((num) => (
                                                             <motion.button
@@ -1759,7 +1799,7 @@ export default function ServiceSetupPage() {
                                         {order.serviceType === 'furniture_assembly' && (
                                             <div className="space-y-6">
                                                 <div className="flex items-center justify-between">
-                                                    <label className="text-[25px] font-black text-[#111827] setup-heading">{t({ en: 'What are we assembling?', fr: 'Que devons-nous assembler ?', ar: 'ماذا سنقوم بتجميعه؟' })}</label>
+                                                    <label className="text-[20px] font-black text-[#111827] setup-heading">{t({ en: 'What are we assembling?', fr: 'Que devons-nous assembler ?', ar: 'ماذا سنقوم بتجميعه؟' })}</label>
                                                     <div className="px-3 py-1 bg-[#F0FDF9] rounded-[5px]">
                                                         <span className="text-[11px] font-black text-[#01A083] tracking-wider">{t({ en: 'Est.', fr: 'Est.', ar: 'تقدير' })} {Object.values(assemblyItems).reduce((sum, item) => sum + (item.quantity * item.estHours), 0).toFixed(1)} {t({ en: 'hrs', fr: 'h', ar: 'ساعات' })}</span>
                                                     </div>
@@ -1835,7 +1875,7 @@ export default function ServiceSetupPage() {
                                                 {/* 3. Lifting Help */}
                                                 <div className="space-y-6">
                                                     <div>
-                                                        <h3 className="text-[25px] font-bold text-[#111827] setup-heading">{t({ en: 'Lifting assistance*', fr: 'Aide à la manutention*', ar: 'المساعدة في الرفع*' })}</h3>
+                                                        <h3 className="text-[20px] font-bold text-[#111827] setup-heading">{t({ en: 'Lifting assistance*', fr: 'Aide à la manutention*', ar: 'المساعدة في الرفع*' })}</h3>
                                                         <p className="text-[13px] font-bold text-black/40 mt-1 italic">{t({ en: 'Larger TVs (60" +) may require a second person for safe mounting.', fr: 'Les grands téléviseurs (60" +) peuvent nécessiter une deuxième personne pour une installation sécurisée.', ar: 'أجهزة التلفاز الكبيرة (60 بوصة +) قد تتطلب شخصًا ثانيًا للتركيب الآمن.' })}</p>
                                                     </div>
                                                     <div className="grid gap-3">
@@ -1859,7 +1899,7 @@ export default function ServiceSetupPage() {
 
                                                 {/* 4. Mount Type */}
                                                 <div className="space-y-6">
-                                                    <h3 className="text-[25px] font-bold text-[#111827] setup-heading">{t({ en: 'What type of TV mount?*', fr: 'Quel type de support TV ?*', ar: 'ما هو نوع حامل التلفاز؟*' })}</h3>
+                                                    <h3 className="text-[20px] font-bold text-[#111827] setup-heading">{t({ en: 'What type of TV mount?*', fr: 'Quel type de support TV ?*', ar: 'ما هو نوع حامل التلفاز؟*' })}</h3>
                                                     <div className="flex flex-wrap gap-2">
                                                         {[
                                                             t({ en: 'Fixed / low profile', fr: 'Fixe / profil bas', ar: 'ثابت / مظهر جانبي منخفض' }),
@@ -1888,7 +1928,7 @@ export default function ServiceSetupPage() {
                                                 {/* 5. Wall Material */}
                                                 <div className="space-y-6">
                                                     <div>
-                                                        <h3 className="text-[25px] font-bold text-[#111827] setup-heading">{t({ en: 'Wall material?*', fr: 'Matériau du mur ?*', ar: 'مادة الجدار؟*' })}</h3>
+                                                        <h3 className="text-[20px] font-bold text-[#111827] setup-heading">{t({ en: 'Wall material?*', fr: 'Matériau du mur ?*', ar: 'مادة الجدار؟*' })}</h3>
                                                         <p className="text-[13px] font-black text-black/50 mt-1 leading-relaxed">
                                                             {t({ en: 'Test by knocking: Hollow sound = drywall/wood. No echo = brick/concrete.', fr: 'Testez en frappant : Son creux = cloison/bois. Pas d\'écho = brique/béton.', ar: 'اختبر بالنقر: صوت أجوف = جدار جاف/خشب. لا يوجد صدى = طوب/خرسانة.' })}
                                                         </p>
@@ -1919,7 +1959,7 @@ export default function ServiceSetupPage() {
 
                                                 {/* 6. Add-ons */}
                                                 <div className="space-y-6">
-                                                    <h3 className="text-[25px] font-bold text-[#111827] setup-heading">{t({ en: 'Add-on services?', fr: 'Services complémentaires ?', ar: 'خدمات إضافية؟' })}</h3>
+                                                    <h3 className="text-[20px] font-bold text-[#111827] setup-heading">{t({ en: 'Add-on services?', fr: 'Services complémentaires ?', ar: 'خدمات إضافية؟' })}</h3>
                                                     <div className="grid gap-3">
                                                         {[
                                                             { id: 'wires', label: t({ en: 'Hide wires behind the wall', fr: 'Cacher les câbles derrière le mur', ar: 'إخفاء الأسلاك خلف الجدار' }) },
@@ -1952,7 +1992,7 @@ export default function ServiceSetupPage() {
                                         {order.subServiceId === 'dish_cleaning' && (
                                             <div className="space-y-10">
                                                 <div className="flex items-center justify-between">
-                                                    <h3 className="text-[25px] font-black text-[#111827]">{t({ en: 'Dish Cleaning', fr: 'Lavage de vaisselle', ar: 'غسل الصحون' })}</h3>
+                                                    <h3 className="text-[20px] font-black text-[#111827]">{t({ en: 'Dish Cleaning', fr: 'Lavage de vaisselle', ar: 'غسل الصحون' })}</h3>
                                                 </div>
 
                                                 {/* Task Size Selector */}
@@ -2011,7 +2051,7 @@ export default function ServiceSetupPage() {
                                             <div className="space-y-10">
                                                 {/* Header for Sub-service */}
                                                 <div className="flex items-center justify-between">
-                                                    <h3 className="text-[25px] font-black text-[#111827]">
+                                                    <h3 className="text-[20px] font-black text-[#111827]">
                                                         {SERVICES_HIERARCHY[order.serviceType as keyof typeof SERVICES_HIERARCHY]?.subServices.find(s => s.id === order.subServiceId)?.name || 'Task details'}
                                                     </h3>
 
@@ -2046,7 +2086,7 @@ export default function ServiceSetupPage() {
                                         {/* Photo Uploads */}
                                         <div className="space-y-6">
                                             <div className="flex items-center justify-between ">
-                                                <label className="text-[25px]  font-bold text-[#111827] setup-heading">
+                                                <label className="text-[20px]  font-medium text-[#111827] setup-heading">
                                                     {order.subServiceId?.toLowerCase().includes('tv') ? t({ en: 'Wall & Area Photos', fr: 'Photos du mur & zone', ar: 'صور الجدار والمنطقة' }) :
                                                         order.serviceType === 'mounting' ? t({ en: 'Task Area Photos', fr: 'Photos de la zone', ar: 'صور منطقة المهمة' }) :
                                                             order.serviceType === 'moving' ? t({ en: 'Inventory Photos', fr: 'Photos de l\'inventaire', ar: 'صور الجرد' }) :
@@ -2087,7 +2127,7 @@ export default function ServiceSetupPage() {
 
                                         {/* Optional Note */}
                                         <div className="space-y-6 pb-1">
-                                            <label className="text-[25px] font-bold text-[#111827] ">{t({ en: 'Instructions or Notes', fr: 'Instructions ou Notes', ar: 'تعليمات أو ملاحظات' })}</label>
+                                            <label className="text-[20px] font-medium text-[#111827] ">{t({ en: 'Instructions or Notes', fr: 'Instructions ou Notes', ar: 'تعليمات أو ملاحظات' })}</label>
                                             <textarea
                                                 value={note}
                                                 onChange={(e) => setNote(e.target.value)}

@@ -490,37 +490,90 @@ export default function CheckoutPage() {
                                 <span style={{ fontSize: 17, fontWeight: 400, color: '#111827' }}>Category</span>
                                 <span style={{ fontSize: 17, fontWeight: 700, color: '#111827' }}>{order.subServiceName}</span>
                             </div>
-                            {/* Standard Setup Fields */}
-                            {(order.serviceType === 'cleaning' || order.serviceType === 'hospitality') && (
-                                <>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                                        <span style={{ fontSize: 14, fontWeight: 400, color: '#111827' }}>Property Type</span>
-                                        <span style={{ fontSize: 14, fontWeight: 700, color: '#111827' }}>{order.serviceDetails.propertyType}</span>
-                                    </div>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                                        <span style={{ fontSize: 14, fontWeight: 400, color: '#111827' }}>Rooms</span>
-                                        <span style={{ fontSize: 14, fontWeight: 700, color: '#111827' }}>{order.serviceDetails.rooms} Rooms</span>
-                                    </div>
-                                </>
-                            )}
+                            {/* Subservice-Aware Setup Details */}
+                            {(() => {
+                                const subId = order.subServiceId || '';
+                                const isHouseCleaning = ['standard_small', 'standard_large', 'family_home', 'deep_cleaning', 'hospitality_turnover'].includes(subId);
+                                const isOfficeCleaning = subId === 'office_cleaning';
+                                const isTvMounting = subId === 'tv_mounting';
+                                const isDelivery = order.serviceType === 'errands' || order.serviceType?.includes('delivery');
 
-                            {/* Delivery Setup Fields */}
-                            {(order.serviceType === 'errands' || order.serviceType?.includes('delivery')) && (
-                                <>
-                                    {(order.serviceDetails as any).recipientName && (
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                                            <span style={{ fontSize: 14, fontWeight: 700, color: '#111827' }}>Recipient</span>
-                                            <span style={{ fontSize: 14, fontWeight: 900, color: '#060708ff' }}>{(order.serviceDetails as any).recipientName}</span>
-                                        </div>
-                                    )}
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                                        <span style={{ fontSize: 14, fontWeight: 700, color: '#111827' }}>Schedule</span>
-                                        <span style={{ fontSize: 14, fontWeight: 900, color: '#111827' }}>
-                                            {(order.serviceDetails as any).deliveryType === 'standard' ? "As soon as possible" : `${(order.serviceDetails as any).deliveryDate} at ${(order.serviceDetails as any).deliveryTime}`}
-                                        </span>
-                                    </div>
-                                </>
-                            )}
+                                return (
+                                    <>
+                                        {/* Cleaning/Hospitality Details */}
+                                        {isHouseCleaning && (
+                                            <>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                                                    <span style={{ fontSize: 14, fontWeight: 400, color: '#111827' }}>{t({ en: 'Property Type', fr: 'Type de propriété' })}</span>
+                                                    <span style={{ fontSize: 14, fontWeight: 700, color: '#111827' }}>{order.serviceDetails.propertyType || 'Studio'}</span>
+                                                </div>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                                                    <span style={{ fontSize: 14, fontWeight: 400, color: '#111827' }}>{t({ en: 'Rooms', fr: 'Pièces' })}</span>
+                                                    <span style={{ fontSize: 14, fontWeight: 700, color: '#111827' }}>{order.serviceDetails.rooms || 1} {t({ en: 'Rooms', fr: 'Pièces' })}</span>
+                                                </div>
+                                            </>
+                                        )}
+
+                                        {/* Office Cleaning Details */}
+                                        {isOfficeCleaning && (
+                                            <>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                                                    <span style={{ fontSize: 14, fontWeight: 400, color: '#111827' }}>{t({ en: 'Desks', fr: 'Bureaux' })}</span>
+                                                    <span style={{ fontSize: 14, fontWeight: 700, color: '#111827' }}>{(order.serviceDetails as any).officeDesks || 1}</span>
+                                                </div>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                                                    <span style={{ fontSize: 14, fontWeight: 400, color: '#111827' }}>{t({ en: 'Meeting Rooms', fr: 'Salles de réunion' })}</span>
+                                                    <span style={{ fontSize: 14, fontWeight: 700, color: '#111827' }}>{(order.serviceDetails as any).officeMeetingRooms || 0}</span>
+                                                </div>
+                                                {(order.serviceDetails as any).officeAddOns?.length > 0 && (
+                                                    <div style={{ marginTop: 8, paddingTop: 8, borderTop: '1px solid #F3F4F6' }}>
+                                                        <span style={{ fontSize: 11, fontWeight: 700, color: '#9CA3AF', textTransform: 'uppercase' }}>Add-ons</span>
+                                                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 4 }}>
+                                                            {(order.serviceDetails as any).officeAddOns.map((a: string) => (
+                                                                <span key={a} style={{ background: '#F3F4F6', padding: '4px 10px', borderRadius: 5, fontSize: 12, fontWeight: 600 }}>
+                                                                    {a.replace(/_/g, ' ')}
+                                                                </span>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </>
+                                        )}
+
+                                        {/* TV Mounting Details */}
+                                        {isTvMounting && (
+                                            <>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                                                    <span style={{ fontSize: 14, fontWeight: 400, color: '#111827' }}>{t({ en: 'TV count', fr: 'Nombre de TV' })}</span>
+                                                    <span style={{ fontSize: 14, fontWeight: 700, color: '#111827' }}>{(order.serviceDetails as any).tvCount || 1}</span>
+                                                </div>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                                                    <span style={{ fontSize: 14, fontWeight: 400, color: '#111827' }}>{t({ en: 'Wall Material', fr: 'Type de mur' })}</span>
+                                                    <span style={{ fontSize: 14, fontWeight: 700, color: '#111827' }}>{(order.serviceDetails as any).wallMaterial}</span>
+                                                </div>
+                                            </>
+                                        )}
+
+                                        {/* Delivery/Errands Details */}
+                                        {isDelivery && (
+                                            <>
+                                                {(order.serviceDetails as any).recipientName && (
+                                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                                                        <span style={{ fontSize: 14, fontWeight: 700, color: '#111827' }}>Recipient</span>
+                                                        <span style={{ fontSize: 14, fontWeight: 900, color: '#060708ff' }}>{(order.serviceDetails as any).recipientName}</span>
+                                                    </div>
+                                                )}
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                                                    <span style={{ fontSize: 14, fontWeight: 700, color: '#111827' }}>Schedule</span>
+                                                    <span style={{ fontSize: 14, fontWeight: 900, color: '#111827' }}>
+                                                        {(order.serviceDetails as any).deliveryType === 'standard' ? "As soon as possible" : `${(order.serviceDetails as any).deliveryDate} at ${(order.serviceDetails as any).deliveryTime}`}
+                                                    </span>
+                                                </div>
+                                            </>
+                                        )}
+                                    </>
+                                );
+                            })()}
 
                             {order.serviceDetails.photoUrls && order.serviceDetails.photoUrls.length > 0 && (
                                 <div style={{ marginTop: 12 }}>

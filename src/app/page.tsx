@@ -698,24 +698,39 @@ const Home = () => {
             p.services.forEach((s: any) => {
               const serviceId = typeof s === 'string' ? s : (s.serviceId || s.categoryId);
               
+              const normalizeSubId = (id: string) => {
+                const map: Record<string, string> = {
+                  'family_home': 'standard_small',
+                  'hospitality': 'hospitality_turnover',
+                  'car_washing': 'car_wash'
+                };
+                return map[id] || id;
+              };
+
               if (serviceId) {
                 // If it's a category ID, add it
                 if (SERVICES_HIERARCHY[serviceId]) {
                   activeIds.add(serviceId);
                 } else {
                   // It might be a sub-service ID, resolve its category
-                  const resolvedCatId = getCategoryForSubService(serviceId);
+                  const resolvedSubId = normalizeSubId(serviceId);
+                  const resolvedCatId = getCategoryForSubService(resolvedSubId);
                   if (resolvedCatId) {
                     activeIds.add(resolvedCatId);
-                    activeSubIds.add(serviceId); // Log it as available sub-service
+                    activeSubIds.add(resolvedSubId); // Log it as available sub-service
                   }
                 }
               }
 
-              const subId = typeof s === 'object' ? (s.subServiceId || (getCategoryForSubService(serviceId) ? serviceId : null)) : null;
-              if (subId) {
-                activeSubIds.add(subId);
-                subFreq[subId] = (subFreq[subId] || 0) + 1;
+              const rawSubId = typeof s === 'object' ? (s.subServiceId || (getCategoryForSubService(serviceId) ? serviceId : null)) : null;
+              if (rawSubId) {
+                const subId = normalizeSubId(rawSubId);
+                const softBlocklist = ['car_wash', 'car_detailing', 'car_detail'];
+                
+                if (!softBlocklist.includes(subId)) {
+                  activeSubIds.add(subId);
+                  subFreq[subId] = (subFreq[subId] || 0) + 1;
+                }
               }
             });
           }

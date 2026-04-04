@@ -167,14 +167,64 @@ function Step2Content() {
         // Filter: must offer the selected service category and potentially sub-service
         const filtered = all.filter(b => {
           if (!Array.isArray(b.services)) return false;
+          
+          const normalizeSubId = (id: string | undefined | null) => {
+            if (!id) return null;
+            const strId = String(id).toLowerCase().trim();
+            const map: Record<string, string> = {
+              'family_home': 'standard_small',
+              'hospitality': 'hospitality_turnover',
+              'car_washing': 'car_wash'
+            };
+            return map[strId] || strId;
+          };
+
+          const targetSubId = normalizeSubId(order.subServiceId);
+          const safeServiceType = String(serviceType).toLowerCase().trim();
+
           return b.services.some((s: any) => {
-            const catMatch = s.categoryId === serviceType || s.serviceId === serviceType;
-            if (!catMatch) return false;
-            if (order.subServiceId) {
-              return s.subServiceId === order.subServiceId ||
-                s.subServiceName === order.subServiceName ||
-                s.id === order.subServiceId;
+            // Case 1: The service is just a string (e.g., "cleaning")
+            if (typeof s === 'string') {
+              const sNorm = normalizeSubId(s);
+              return sNorm === safeServiceType || (targetSubId && sNorm === targetSubId);
             }
+
+            // Case 2: Object format (Standard)
+            const sCatId = typeof s.categoryId === 'string' ? s.categoryId.toLowerCase().trim() : null;
+            const sServId = typeof s.serviceId === 'string' ? s.serviceId.toLowerCase().trim() : null;
+            const sId = typeof s.id === 'string' ? s.id.toLowerCase().trim() : null;
+            
+            const catMatch = (sCatId === safeServiceType) || (sServId === safeServiceType) || (sId === safeServiceType);
+            
+            if (!catMatch) return false;
+            
+            // If they match the category, check sub-service if applicable
+            if (targetSubId) {
+              const sSubServId = typeof s.subServiceId === 'string' ? s.subServiceId.toLowerCase().trim() : null;
+              const bSubId = normalizeSubId(sSubServId || sId);
+              
+              if (bSubId === targetSubId) return true;
+              if (s.subServiceName && order.subServiceName && 
+                  s.subServiceName.toLowerCase().trim() === order.subServiceName.toLowerCase().trim()) return true;
+
+              // Optional structure: array of subservices
+              if (Array.isArray(s.subServices)) {
+                 const hasSubMatch = s.subServices.some((sub: any) => {
+                     const subIdVal = typeof sub === 'string' ? sub : (sub.id || sub.subServiceId);
+                     return normalizeSubId(subIdVal) === targetSubId;
+                 });
+                 if (hasSubMatch) return true;
+              }
+
+              // If the provider obj doesn't specify any sub-service identifiers, 
+              // we can assume they just offer the whole category.
+              if (!sSubServId && !sId && !s.subServices) {
+                return true; 
+              }
+
+              return false;
+            }
+            
             return true;
           });
         });
@@ -268,10 +318,30 @@ function Step2Content() {
   const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
     const container = e.currentTarget;
     const scrollLeft = container.scrollLeft;
-    const cardWidth = container.offsetWidth * 0.75 + 12; // matching wrapper width + gap
-    const index = Math.round(scrollLeft / cardWidth);
-    if (providers[index] && focusedId !== providers[index].id) {
-      setFocusedId(providers[index].id);
+    const containerWidth = container.offsetWidth;
+    const children = Array.from(container.children);
+    
+    if (children.length === 0) return;
+
+    // Use the center of the viewport to determine which card is focused
+    const viewportCenter = scrollLeft + containerWidth / 2;
+    
+    let closestIndex = 0;
+    let minDistance = Infinity;
+
+    children.forEach((child, idx) => {
+      const childRect = (child as HTMLElement);
+      const childCenter = childRect.offsetLeft + childRect.offsetWidth / 2;
+      const distance = Math.abs(viewportCenter - childCenter);
+      
+      if (distance < minDistance) {
+        minDistance = distance;
+        closestIndex = idx;
+      }
+    });
+
+    if (providers[closestIndex] && focusedId !== providers[closestIndex].id) {
+      setFocusedId(providers[closestIndex].id);
     }
   };
 
@@ -280,11 +350,16 @@ function Step2Content() {
     const index = providers.findIndex(p => p.id === id);
     if (index !== -1 && cardsRef.current) {
       const container = cardsRef.current;
-      const cardWidth = container.offsetWidth * 0.75 + 12; // match wrapper width + gap
-      container.scrollTo({
-        left: index * cardWidth,
-        behavior: 'smooth'
-      });
+      const children = Array.from(container.children);
+      const child = children[index] as HTMLElement;
+      if (child) {
+        // Calculate the ideal scroll pos to center this card
+        const scrollLeft = child.offsetLeft - (container.offsetWidth - child.offsetWidth) / 2;
+        container.scrollTo({
+          left: scrollLeft,
+          behavior: 'smooth'
+        });
+      }
     }
   };
 
