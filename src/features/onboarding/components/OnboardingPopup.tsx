@@ -572,9 +572,9 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                 const result = await signInWithPopup(auth, provider);
                 user = result.user;
                 // Wait for the Firebase auth token to propagate to Firestore.
-                // On mobile/slow connections this can take 2-3 seconds.
+                // On mobile/slow connections this can take 1.5-2 seconds.
                 setSubmittingStatus("Setting up your account...");
-                await new Promise(resolve => setTimeout(resolve, 3000));
+                await new Promise(resolve => setTimeout(resolve, 1500));
             }
 
             if (!user) throw new Error("AUTH_FAILED");
@@ -623,7 +623,7 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                     const isPermDenied = readErr?.code === 'permission-denied' || readErr?.message?.includes('permission');
                     console.warn(`Firestore read attempt ${attempt} failed:`, readErr?.code || readErr?.message);
                     if (attempt < 3 && isPermDenied) {
-                        setSubmittingStatus(`Setting up account... (${attempt}/3)`);
+                        setSubmittingStatus(`Finalizing account setup... (${attempt}/3)`);
                         await new Promise(resolve => setTimeout(resolve, 2000));
                     } else {
                         throw readErr; // give up after 3 tries or non-permission errors
@@ -2763,8 +2763,14 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                                                 <div className="flex flex-wrap gap-2">
                                                     {selectedSubServices.map(id => {
                                                         const svc = ALL_SERVICES.find(s => s.subServices.some(ss => ss.id === id) || s.id === id);
-                                                        const entry = categoryEntries[svc?.id || ''];
-                                                        const subServiceName = svc?.subServices?.find(ss => ss.id === id)?.name || id;
+                                                        const catId = svc?.id || '';
+                                                        const entry = categoryEntries[catId];
+                                                        
+                                                        // Ensure we get labels from SERVICES_CATALOGUE for better i18n
+                                                        const catalogueCat = Object.values(SERVICES_CATALOGUE).find(c => c.subServices.some(ss => ss.id === id));
+                                                        const ssMatch = catalogueCat?.subServices.find(ss => ss.id === id);
+                                                        const subServiceLabel = ssMatch ? t({ en: ssMatch.en, fr: ssMatch.fr, ar: ssMatch.ar }) : (svc?.subServices?.find(ss => ss.id === id)?.name || id);
+
                                                         return (
                                                             <span
                                                                 key={id}
@@ -2775,7 +2781,7 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                                                                         : "bg-[#0CB380] text-white"
                                                                 )}
                                                             >
-                                                                {t({ en: subServiceName, fr: subServiceName })} · {entry?.hourlyRate} {t({ en: 'MAD', fr: 'MAD', ar: 'درهم' })}
+                                                                {subServiceLabel} · {entry?.hourlyRate} {t({ en: 'MAD', fr: 'MAD', ar: 'درهم' })}
                                                                 <button
                                                                     onClick={(e) => {
                                                                         e.stopPropagation();
@@ -2816,7 +2822,17 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                                                     <div className="flex flex-col items-center gap-2">
                                                         <div className="w-5 h-5 border-[3px] border-white/40 border-t-white rounded-full animate-spin" />
                                                         <span className="text-[10px] font-black text-white/50 uppercase tracking-widest">
-                                                            {submittingStatus && t({ en: submittingStatus, fr: submittingStatus })}
+                                                             {submittingStatus && (
+                                                                submittingStatus === 'Preparing...' ? t({ en: 'Preparing...', fr: 'Préparation...', ar: 'جاري التحضير...' }) :
+                                                                submittingStatus === 'Authenticating...' ? t({ en: 'Authenticating...', fr: 'Authentification...', ar: 'جاري التحقق...' }) :
+                                                                submittingStatus === 'Setting up your account...' ? t({ en: 'Setting up your account...', fr: 'Configuration du compte...', ar: 'جاري إعداد الحساب...' }) :
+                                                                submittingStatus === 'Saving profile...' ? t({ en: 'Saving profile...', fr: 'Enregistrement...', ar: 'جاري الحفظ...' }) :
+                                                                submittingStatus === 'Uploading media...' ? t({ en: 'Uploading media...', fr: 'Téléversement...', ar: 'جاري رفع الصور...' }) :
+                                                                submittingStatus === 'Finalizing...' ? t({ en: 'Finalizing...', fr: 'Finalisation...', ar: 'جاري الإنهاء...' }) :
+                                                                submittingStatus === 'Complete!' ? t({ en: 'Complete!', fr: 'Terminé !', ar: 'اكتمل بنجاح!' }) :
+                                                                submittingStatus === 'Migrating data...' ? t({ en: 'Migrating data...', fr: 'Migration...', ar: 'نقل البيانات...' }) :
+                                                                t({ en: submittingStatus, fr: submittingStatus })
+                                                             )}
                                                         </span>
                                                     </div>
                                                 ) : (

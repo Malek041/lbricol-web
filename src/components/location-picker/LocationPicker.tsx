@@ -6,6 +6,7 @@ import { X, Loader2, Navigation, Search, ChevronLeft, MapPin, Edit2 } from 'luci
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { LocationPickerProps, LocationPoint, SavedAddress } from './types';
+import { useLanguage } from '@/context/LanguageContext';
 
 // Components
 import AddressCard from './AddressCard';
@@ -38,6 +39,7 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
   pinImage,
 }) => {
   // Views & State
+  const { t } = useLanguage();
   const [activeView, setActiveView] = useState<PickerView>('MAP');
   const [currentPoint, setCurrentPoint] = useState<LocationPoint | null>(null);
   const [selectedForDetails, setSelectedForDetails] = useState<Partial<SavedAddress> & { lat: number, lng: number, address: string } | null>(null);
@@ -210,7 +212,7 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
       <div
         className={cn(
           "relative bg-neutral-100 overflow-hidden transition-all duration-500 ease-in-out z-0 shrink-0",
-          isInteracting ? 'h-[75%]' : (radiusView ? 'h-[58%]' : (isBricolerBase ? 'h-[82%]' : 'h-[48%]'))
+          isInteracting ? 'h-[75%]' : (radiusView ? 'h-[58%]' : (isBricolerBase && !showSearchInput ? 'h-[65%]' : 'h-[48%]'))
         )}
       >
         {/* Full-screen under-layer map -> Now dynamically matches flex height */}
@@ -280,7 +282,7 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
       </div>
 
       {/* 2. Bottom Sheet Area (Resizable) */}
-      <div className="flex-1 bg-white rounded-t-[32px] shadow-[0_-8px_30px_rgba(0,0,0,0.08)] px-5 py-8 flex flex-col relative z-10 -mt-8 overflow-visible min-h-0">
+      <div className="flex-1 bg-white rounded-t-[32px] shadow-[0_-8px_30px_rgba(0,0,0,0.08)] px-5 py-8 pb-12 flex flex-col relative z-10 -mt-8 overflow-y-auto min-h-0">
         {/* New Locator Button relative to sheet */}
         {!sheetLoading && (
           <button
@@ -361,31 +363,31 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
                      <div className="w-12 h-12 bg-neutral-50 rounded-2xl flex items-center justify-center text-neutral-400">
                         <MapPin size={24} />
                      </div>
-                     <div className="flex-1 min-w-0">
+                      <div className="flex-1 min-w-0">
                         <p className="text-[16px] font-bold text-neutral-900 line-clamp-2 leading-tight">
-                          {currentPoint?.address || 'Locating...'}
+                          {currentPoint?.address || t({ en: 'Locating...', fr: 'Localisation...', ar: 'جاري تحديد الموقع...' })}
                         </p>
-                     </div>
-                     <button 
+                      </div>
+                      <button 
                         onClick={() => setShowSearchInput(true)}
                         className="w-10 h-10 rounded-full border border-neutral-100 flex items-center justify-center text-neutral-400 active:bg-neutral-50"
-                     >
+                      >
                         <Edit2 size={18} />
-                     </button>
-                  </div>
-
-                  <button
-                    onClick={handleConfirmPoint}
-                    className="w-full h-15 bg-[#01A083] text-white rounded-full font-black text-[18px] active:scale-95 transition-all shadow-lg"
-                  >
-                    Confirm This Location
-                  </button>
-                  <button
-                    onClick={() => setShowSearchInput(true)}
-                    className="w-full mt-2 text-[#01A083] font-bold text-[18px] transition-all"
-                  >
-                    Set Another address
-                  </button>
+                      </button>
+                   </div>
+ 
+                   <button
+                     onClick={handleConfirmPoint}
+                     className="w-full h-15 bg-[#01A083] text-white rounded-full font-black text-[18px] active:scale-95 transition-all shadow-lg"
+                   >
+                     {t({ en: 'Confirm This Location', fr: 'Confirmer ce lieu', ar: 'تأكيد هذا الموقع' })}
+                   </button>
+                   <button
+                     onClick={() => setShowSearchInput(true)}
+                     className="w-full mt-2 text-[#01A083] font-bold text-[18px] transition-all"
+                   >
+                     {t({ en: 'Set Another address', fr: 'Définir une autre adresse', ar: 'تحديد عنوان آخر' })}
+                   </button>
                 </motion.div>
               ) : (
                 <motion.div
@@ -403,7 +405,16 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
                       <ChevronLeft size={20} />
                     </button>
                     <p className="text-center text-[15px] font-medium text-neutral-600">
-                      Trouble locating your address?<br />Try using search instead
+                      {t({
+                        en: 'Trouble locating your address?',
+                        fr: 'Problème pour localiser votre adresse ?',
+                        ar: 'هل تواجه مشكلة في تحديد موقعك؟'
+                      })}<br />
+                      {t({
+                        en: 'Try using search instead',
+                        fr: 'Essayez d’utiliser la recherche',
+                        ar: 'جرب البحث بدلاً من ذلك'
+                      })}
                     </p>
                   </div>
 
@@ -413,7 +424,11 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
                   >
                     <Search size={22} className="text-neutral-400 group-hover:text-neutral-600 transition-colors" />
                     <span className="text-neutral-400 font-medium text-[16px] group-hover:text-neutral-600 transition-colors">
-                      Search street, city, district...
+                      {t({
+                        en: 'Search street, city, district...',
+                        fr: 'Rechercher rue, ville, quartier...',
+                        ar: 'ابحث عن الشارع، المدينة، الحي...'
+                      })}
                     </span>
                   </div>
                 </motion.div>
@@ -427,7 +442,10 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
               onSelect={handleSavedSelect}
               onEdit={handleEditAddress}
               onAdd={() => setActiveView('SEARCH')}
-              title={mode === 'double' && step === 2 ? "Where are you moving to?" : "Where do you need help?"}
+              title={mode === 'double' && step === 2 
+                ? t({ en: "Where are you moving to?", fr: "Où déménagez-vous ?", ar: "إلى أين ستنتقل؟" })
+                : t({ en: "Where do you need help?", fr: "Où avez-vous besoin d'aide ?", ar: "أيـن تـحـتـاج الـمـسـاعـدة؟" })
+              }
             />
 
           </div>

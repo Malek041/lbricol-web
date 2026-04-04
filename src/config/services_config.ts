@@ -49,13 +49,11 @@ export const SERVICES_HIERARCHY: Record<string, ServiceConfig> = {
         name: 'Cleaning',
         icon: Trash2,
         subServices: [
-            { id: 'standard_small', name: 'Standard Cleaning (Small Home)', pricingArchetype: 'unit', estimatedDurationHr: 2.5, baseSetupHr: 0.5, complexityMultiplier: 1.0 },
-            { id: 'standard_large', name: 'Standard Cleaning (Large Home)', pricingArchetype: 'unit', estimatedDurationHr: 4.5, baseSetupHr: 0.75, complexityMultiplier: 1.1 },
+            { id: 'standard_small', name: 'Family Home Cleaning', pricingArchetype: 'unit', estimatedDurationHr: 2.5, baseSetupHr: 0.5, complexityMultiplier: 1.0 },
             { id: 'deep_cleaning', name: 'Deep Home Cleaning (Move-in/Out)', pricingArchetype: 'unit', estimatedDurationHr: 6, baseSetupHr: 1.0, complexityMultiplier: 1.5 },
             { id: 'hospitality_turnover', name: 'Short-term Rental (Airbnb) Turnover', pricingArchetype: 'unit', estimatedDurationHr: 2.5, baseSetupHr: 0.4, complexityMultiplier: 0.9 },
             { id: 'office_cleaning', name: 'Office & Workspace Cleaning', pricingArchetype: 'unit', estimatedDurationHr: 4, baseSetupHr: 0.5, complexityMultiplier: 1.0 },
-            { id: 'dish_cleaning', name: 'Dish Washing & Kitchen Tidy', pricingArchetype: 'hourly', estimatedDurationHr: 1.5, baseSetupHr: 0.2, complexityMultiplier: 1.0 },
-            { id: 'car_detailing', name: 'Full Car Detailing (Inside & Out)', pricingArchetype: 'fixed', estimatedDurationHr: 3, baseSetupHr: 0.5, complexityMultiplier: 1.2 }
+            { id: 'dish_cleaning', name: 'Dish Washing & Kitchen Tidy', pricingArchetype: 'hourly', estimatedDurationHr: 1.5, baseSetupHr: 0.2, complexityMultiplier: 1.0 }
         ]
     },
 

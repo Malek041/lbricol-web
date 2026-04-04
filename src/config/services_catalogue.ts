@@ -106,10 +106,8 @@ export const SERVICES_CATALOGUE: ServiceEntry[] = [
         labelAr: 'خادمة / تنظيف',
         iconPath: '/Images/Service Category vectors/CleaningVector.webp',
         subServices: [
-            { id: 'standard_small', en: 'Family Home Cleaning', fr: 'Nettoyage de Maison Familiale', ar: 'تنظيف منزل عائلي' },
-            { id: 'hospitality_turnover', en: 'Hospitality Cleaning', fr: 'Nettoyage Hospitality', ar: 'تنظيف الضيافة (Hospitality)' },
+            { id: 'hospitality_turnover', en: 'Hospitality Cleaning', fr: 'Nettoyage Hospitality', ar: 'التنظيف الفندقي' },
             { id: 'car_wash', en: 'Car Washing', fr: 'Lavage de Voiture', ar: 'غسل السيارات' },
-            { id: 'car_detailing', en: 'Car Detailing', fr: 'Nettoyage Détaillé de Voiture', ar: 'تنظيف سيارات دقيق' },
             { id: 'deep_cleaning', en: 'Deep Home Cleaning', fr: 'Nettoyage en Profondeur de Maison', ar: 'تنظيف منزل عميق' },
             { id: 'office_cleaning', en: 'Office Cleaning', fr: 'Nettoyage de Bureau', ar: 'تنظيف مكاتب' },
             { id: 'dish_cleaning', en: 'Dish Cleaning', fr: 'Lavage de vaisselle', ar: 'غسل الصحون' }
