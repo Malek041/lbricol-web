@@ -3031,7 +3031,7 @@ const DetailItem = ({ icon: Icon, label, value, subValue, highlight }: {
                         return (
                             <div className="relative h-full w-full">
                                 {/* The actual orders view — blurred when no routine */}
-                                <div className={hasRoutine ? '' : 'pointer-events-none select-none filter blur-sm brightness-90 saturate-50'}>
+                                <div className={cn("h-full w-full transition-all duration-700", !hasRoutine && 'pointer-events-none select-none filter blur-md brightness-90 saturate-50')}>
                                     <ProviderOrdersView
                                         confirmedOrders={acceptedJobsSorted}
                                         availableJobs={marketJobsOpen}
