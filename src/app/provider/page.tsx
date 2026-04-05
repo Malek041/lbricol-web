@@ -3965,7 +3965,7 @@ const DetailItem = ({ icon: Icon, label, value, subValue, highlight }: {
                     />
 
                     {
-                        isMobileLayout && !selectedChat && !viewingJobDetails && performanceDetail === 'none' && !showLanguagePopup && !showProfileModal && !showAddServiceModal && !showNIDModal && (
+                        isMobileLayout && !selectedChat && !viewingJobDetails && performanceDetail === 'none' && !showLanguagePopup && !showProfileModal && !showAddServiceModal && !showNIDModal && !showRoutineModal && (
                             <div key="mobile-bottom-nav-wrapper">
                                 <MobileBottomNav
                                     activeTab={activeNav}
