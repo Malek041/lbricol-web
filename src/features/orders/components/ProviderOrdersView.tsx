@@ -245,7 +245,8 @@ export default function ProviderOrdersView({
                             lat: (job as any).locationDetails?.lat || 31.5085,
                             lng: (job as any).locationDetails?.lng || -9.7595,
                             price: job.price || 0,
-                            rating: 5.0, 
+                            date: (job as any).date,
+                            time: (job as any).time,
                             serviceIcon: getServiceVector(job.serviceId || job.craft || ''),
                             isSelected: selectedId === job.id,
                             isMarketplace: true
@@ -260,11 +261,16 @@ export default function ProviderOrdersView({
                                 lat: (order as any).locationDetails?.lat || (order.coords?.lat) || 31.5085,
                                 lng: (order as any).locationDetails?.lng || (order.coords?.lng) || -9.7595,
                                 price: order.totalPrice || Number(order.price) || 0,
-                                rating: order.rating || 5.0,
+                                date: order.date,
+                                time: order.time,
                                 serviceIcon: getServiceVector(order.serviceId || order.service || ''),
                                 isSelected: selectedId === order.id,
                                 isConfirmed: true
                             }))
+                    ]}
+                    orderData={[
+                        ...availableJobs,
+                        ...confirmedOrders
                     ]}
                 />
             </div>
@@ -272,11 +278,12 @@ export default function ProviderOrdersView({
             {/* FLOATING GPS BUTTON */}
             <motion.button
                 onClick={() => setTriggerGps(Date.now())}
-                initial={{ bottom: '24px' }}
+                style={{ bottom: 'calc(env(safe-area-inset-bottom, 0px) + 108px)' }}
                 animate={{
-                    bottom: (!isMapDragging && (availableJobs.length > 0 || confirmedOrders.some(o => ['programmed', 'accepted', 'in_progress', 'waiting'].includes(o.status || '')))) ? '320px' : '102px'
+                    y: (!isMapDragging && (availableJobs.length > 0 || confirmedOrders.some(o => ['programmed', 'accepted', 'in_progress', 'waiting'].includes(o.status || '')))) ? -210 : 0
                 }}
-                className="absolute right-6 w-12 h-12 bg-white rounded-full border border-neutral-100 flex items-center justify-center text-[#374151] active:scale-95 transition-all z-[100]"
+                transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+                className="absolute right-6 w-12 h-12 bg-white rounded-full border border-neutral-100 flex items-center justify-center text-[#374151] active:scale-95 transition-colors z-[100] shadow-sm"
             >
                 <Navigation size={22} strokeWidth={2.5} />
             </motion.button>

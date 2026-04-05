@@ -35,7 +35,9 @@ interface MapViewProps {
     lat: number;
     lng: number;
     price: number | string;
-    rating: number;
+    rating?: number;
+    date?: any;
+    time?: string;
     serviceIcon: string;
     isSelected: boolean;
   }>;
@@ -668,9 +670,9 @@ const MapView: React.FC<MapViewProps> = ({
     broadcastPins.forEach(pin => {
       if (!pin) return; // Safety guard
       const isFocused = pin.id === focusedOrderId;
-      const opacity = focusedOrderId && !isFocused ? 0.6 : 1;
-      const scale = focusedOrderId && !isFocused ? 0.8 : (isFocused ? 1.15 : 1);
-      const size = isFocused ? 72 : 56;
+      const opacity = 1;
+      const scale = 1;
+      const size = 50;
       const bounceStyle = isFocused ? "animation: pinBounce 2s ease-in-out infinite;" : "";
 
       const markerLat = Number(pin.lat || (pin as any).locationDetails?.lat || 31.5085);
@@ -680,23 +682,42 @@ const MapView: React.FC<MapViewProps> = ({
 
       const icon = L.divIcon({
         className: '',
-        html: `
+        html: (() => {
+          // Format date/time for display
+          let dateTimeHtml = '';
+          if (pin.date || pin.time) {
+            let dateStr = '';
+            try {
+              const d = pin.date;
+              if (d) {
+                const dt = (typeof d?.toDate === 'function') ? d.toDate() : (typeof d === 'string' ? new Date(d) : d);
+                if (dt && !isNaN(dt.getTime())) {
+                  dateStr = dt.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+                }
+              }
+            } catch(e) {}
+            const timeStr = pin.time ? String(pin.time).split('-')[0].trim() : '';
+            if (dateStr || timeStr) {
+              dateTimeHtml = `<div style="font-size:11px;color:#374151;font-weight:700;display:flex;align-items:center;gap:4px;">
+                ${dateStr ? `<span>📅 ${dateStr}</span>` : ''}
+                ${dateStr && timeStr ? '<span style="color:#d1d5db">|</span>' : ''}
+                ${timeStr ? `<span style="color:#01A083;font-weight:900">${timeStr}</span>` : ''}
+              </div>`;
+            }
+          }
+          return `
           <div style="display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:160px;cursor:pointer;opacity:${opacity};transform:scale(${scale});transition:all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);${bounceStyle}">
-            ${isFocused ? `
             <div style="background:#fff;border-radius:12px;padding:6px 12px;margin-bottom:6px;
               box-shadow:0 4px 15px rgba(0,0,0,0.18);font-family:sans-serif;text-align:center;white-space:nowrap;
-              display: flex; flex-direction: column; align-items: center; border: 1px solid #f3f4f6;">
+              display: flex; flex-direction: column; align-items: center; border: 1px solid #f3f4f6;gap:2px;">
               <div style="font-size:14px;font-weight:900;color:#01A083">${pin.price} MAD</div>
-              <div style="font-size:13px;color:#FBBF24;font-weight:900;display:flex;align-items:center;gap:3px;">
-                ★ <span style="color:#111827">${!pin.rating || pin.rating === 0 ? '0.0' : pin.rating.toFixed(1)}</span>
-              </div>
+              ${dateTimeHtml}
             </div>
-            ` : ''}
             <div style="position:relative;width:${size}px;height:${size}px;transition: width 0.3s, height 0.3s; margin-bottom: 0px; background: #fff; border-radius: 50%; box-shadow: 0 2px 10px rgba(0,0,0,0.1); padding: 8px;">
               <img src="${pin.serviceIcon || '/Images/Vectors Illu/NewOrder.webp'}" style="width:100%;height:100%;object-fit:contain"/>
             </div>
           </div>
-        `,
+        `})(),
         iconSize: [120, 160],
         iconAnchor: [60, 160],
       });

@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, Check, CheckCircle2, Search, ChevronLeft, ChevronRight, FileText, Info, Plus, Minus, MapPin, ArrowRight, TrendingUp, User, Wrench, Save, Star, Key, Sparkles, Image, Globe, Camera, Fingerprint, ScanEye, AlertTriangle, ShieldCheck } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { auth, db, storage } from '@/lib/firebase';
-import { signInWithPopup, GoogleAuthProvider, updateProfile } from 'firebase/auth';
+import { signInWithPopup, signInWithRedirect, GoogleAuthProvider, updateProfile } from 'firebase/auth';
 import { CldUploadWidget, CldImage } from 'next-cloudinary';
 import {
     collection,
@@ -569,16 +569,33 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                 console.log("No user found, starting Google Sign-in...");
                 setSubmittingStatus("Authenticating...");
                 const provider = new GoogleAuthProvider();
-                const result = await signInWithPopup(auth, provider);
-                user = result.user;
+                try {
+                    const result = await signInWithPopup(auth, provider);
+                    user = result.user;
+                } catch (popupError: any) {
+                    console.warn("Popup sign-in failed/blocked, trying redirect...", popupError);
+                    if (popupError.code === 'auth/popup-blocked' || /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
+                        await signInWithRedirect(auth, provider);
+                        return; // Stop here, redirect will happen
+                    }
+                    throw popupError;
+                }
+
                 // Wait for the Firebase auth token to propagate to Firestore.
-                // On mobile/slow connections this can take 1.5-2 seconds.
-                setSubmittingStatus("Setting up your account...");
+                setSubmittingStatus(t({
+                    en: "Setting up your account...",
+                    fr: "Configuration de votre compte...",
+                    ar: "جاري إعداد حسابك..."
+                }));
                 await new Promise(resolve => setTimeout(resolve, 1500));
             }
 
             if (!user) throw new Error("AUTH_FAILED");
-            setSubmittingStatus("Preparing profile...");
+            setSubmittingStatus(t({
+                en: "Preparing profile...",
+                fr: "Préparation du profil...",
+                ar: "جاري تجهيز الملف الشخصي..."
+            }));
 
             const ALL_SVCS = getAllServices();
             const initialEntries = selectedSubServices.map(subId => {
@@ -602,13 +619,16 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
             const hasPendingTourGuideUpload = !!(tourGuideAuthorizationFile && selectedSubServices.some(id => id.includes('tour_guide')));
 
             // 3. Firestore Saves
-            setSubmittingStatus("Saving profile...");
+            setSubmittingStatus(t({
+                en: "Saving profile...",
+                fr: "Enregistrement du profil...",
+                ar: "جاري حفظ الملف الشخصي..."
+            }));
+
             const bricolerRef = doc(db, 'bricolers', user.uid);
             const isClaimingShadow = localUserData && localUserData.id && !localUserData.uid;
 
             // Retry Firestore reads up to 3 times with 2s backoff.
-            // On mobile, the auth token may not yet be accepted by Firestore
-            // immediately after signInWithPopup, causing permission-denied errors.
             let bSnap: any = null;
             let cSnap: any = null;
             for (let attempt = 1; attempt <= 3; attempt++) {
@@ -623,10 +643,14 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                     const isPermDenied = readErr?.code === 'permission-denied' || readErr?.message?.includes('permission');
                     console.warn(`Firestore read attempt ${attempt} failed:`, readErr?.code || readErr?.message);
                     if (attempt < 3 && isPermDenied) {
-                        setSubmittingStatus(`Finalizing account setup... (${attempt}/3)`);
+                        setSubmittingStatus(t({
+                            en: `Finalizing account setup... (${attempt}/3)`,
+                            fr: `Finalisation de la configuration... (${attempt}/3)`,
+                            ar: `إنهاء إعداد الحساب... (${attempt}/3)`
+                        }));
                         await new Promise(resolve => setTimeout(resolve, 2000));
                     } else {
-                        throw readErr; // give up after 3 tries or non-permission errors
+                        throw readErr;
                     }
                 }
             }
@@ -2184,7 +2208,7 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
 
                                         {/* 1. Experience */}
                                         <motion.div variants={itemVariants} initial="hidden" animate="show" className="space-y-4">
-                                            <label className="text-[20px] font-bold text-neutral-900 flex items-center gap-2">
+                                            <label className="text-[20px] font-medium text-neutral-900 flex items-center gap-2">
                                                 {t({
                                                     en: `How much experience do you have in ${currentCatEntry.categoryName}?`,
                                                     fr: `Combien d'expérience avez-vous en ${t({ en: currentCatEntry.categoryName, fr: currentCatEntry.categoryName })} ?`,
@@ -2302,7 +2326,7 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                                                 <motion.div variants={itemVariants} initial="hidden" animate="show" className="space-y-4 pt-2">
                                                     <div className="flex items-center justify-between">
                                                         {currentCatEntry.categoryId !== 'tour_guide' && (
-                                                            <label className="text-[20px] font-bold text-neutral-900 flex items-center gap-2">
+                                                            <label className="text-[20px] font-medium text-neutral-900 flex items-center gap-2">
                                                                 {t({ en: 'Which Equipment do you have?', fr: 'Quel équipement avez-vous ?', ar: 'ما هي المعدات التي تمتلكها؟' })}
                                                             </label>
                                                         )}
@@ -2413,16 +2437,15 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                                             {(currentCatEntry.noEquipment || currentCatEntry.equipments.length > 0 || NO_EQUIPMENT_SERVICES.includes(currentCatEntry.categoryId)) && currentCatEntry.categoryId !== 'car_rental' && (
                                                 <motion.div variants={itemVariants} initial="hidden" animate="show" className="space-y-4 pt-2">
                                                     <div className="flex flex-col gap-1">
-                                                        <label className="text-[17px] font-black text-neutral-900 flex items-center gap-2">
-                                                            <div className="w-6 h-6 rounded-full bg-[#01A083] text-white flex items-center justify-center text-[10px] font-black">3</div>
+                                                        <label className="text-[20px] font-medium text-neutral-900 flex items-center gap-2">
                                                             {(() => {
                                                                 const service = ALL_SERVICES.find(s => s.id === currentCatId);
                                                                 const archetype = service?.subServices?.find(ss => selectedSubServices.includes(ss.id))?.pricingArchetype || 'hourly';
                                                                 if (currentCatId === 'private_driver' || archetype === 'rental') return t({ en: "What's the daily rate you'd like to charge?", fr: "Quel tarif journalier souhaitez-vous ?", ar: "ما هو السعر اليومي؟" });
-                                                                if (archetype === 'unit') return t({ 
-                                                                    en: "What's the minimum price you accept for this service?", 
-                                                                    fr: "Quel est le prix minimum que vous acceptez pour ce service ?", 
-                                                                    ar: "ما هو أقل ثمن تقبله مقابل هذه الخدمة؟" 
+                                                                if (archetype === 'unit') return t({
+                                                                    en: "What's the minimum price you accept for this service?",
+                                                                    fr: "Quel est le prix minimum que vous acceptez pour ce service ?",
+                                                                    ar: "ما هو أقل ثمن تقبله مقابل هذه الخدمة؟"
                                                                 });
                                                                 if (currentCatId === 'errands') return t({ en: "What's the minimum price you accept for a simple delivery task?", fr: "Quel est le prix minimum que vous acceptez pour une simple mission de livraison ?", ar: "ما هو أقل ثمن تقبله مقابل مهمة توصيل بسيطة؟" });
                                                                 return t({ en: "What's the minimum price you accept for this service?", fr: "Quel est le prix minimum que vous acceptez pour ce service ?", ar: "ما هو أقل ثمن تقبله مقابل هذه الخدمة؟" });
@@ -2450,7 +2473,7 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                                                                     <span className="text-[14px] font-bold text-neutral-400 uppercase tracking-widest">
                                                                         {(() => {
                                                                             const service = ALL_SERVICES.find(s => s.id === currentCatId);
-                                                                            return t({ en: 'MIN PRICE (MAD)', fr: 'PRIX MIN (MAD)', ar: 'أقل ثمن (درهم)' });
+                                                                            return t({ en: '(MAD)', fr: '(MAD)', ar: '(درهم)' });
                                                                         })()}
                                                                     </span>
                                                                 </div>
@@ -2469,24 +2492,7 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                                                             </button>
                                                         </div>
 
-                                                        {/* Helping context only */}
-                                                        {tierInfo && (
-                                                            <div className="w-full space-y-5">
-                                                                <div className="bg-white/40 rounded-2xl p-6 border border-neutral-100 flex items-center gap-4">
-                                                                    <div className="w-10 h-10 rounded-full bg-[#01A083]/10 flex items-center justify-center flex-shrink-0">
-                                                                        <Info size={20} className="text-[#01A083]" />
-                                                                    </div>
-                                                                    <p className="text-[14px] font-bold text-neutral-500 leading-tight text-left">
-                                                                        {(() => {
-                                                                            const rate = currentCatEntry?.hourlyRate || 75;
-                                                                            if (rate < tierInfo.suggestedMin) return t({ en: "Your rate is below market average. You might get more jobs, but earn less per task.", fr: "Votre tarif est sous la moyenne. Vous aurez plus de missions mais gagnerez moins par tâche.", ar: "سعرك أقل من متوسط السوق. قد تحصل على مهام أكثر لكن بربح أقل." });
-                                                                            if (rate > tierInfo.suggestedMax) return t({ en: "This is a premium rate. Clients usually expect extensive experience and top-tier equipment.", fr: "C'est un tarif premium. Les clients attendent une grande expérience et du matériel pro.", ar: "هذا سعر ممتاز. يتوقع العملاء خبرة واسعة ومعدات عالية الجودة." });
-                                                                            return t({ en: "Most professional Bricolers in your city set their rate within this range.", fr: "La plupart des professionnels de votre ville fixent leur prix dans cette fourchette.", ar: "معظم المحترفين في مدينتك يحددون أسعارهم في هذا النطاق." });
-                                                                        })()}
-                                                                    </p>
-                                                                </div>
-                                                            </div>
-                                                        )}
+
                                                     </motion.div>
                                                 </motion.div>
                                             )}
@@ -2497,8 +2503,7 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                                             {(currentCatEntry.noEquipment || currentCatEntry.equipments.length > 0 || NO_EQUIPMENT_SERVICES.includes(currentCatEntry.categoryId)) && (
                                                 <motion.div variants={itemVariants} initial="hidden" animate="show" className="space-y-4 pt-4 border-t border-neutral-50 mt-4">
                                                     <div className="flex items-center justify-between">
-                                                        <label className="text-[17px] font-black text-neutral-900 flex items-center gap-2">
-                                                            <div className="w-6 h-6 rounded-full bg-[#01A083] text-white flex items-center justify-center text-[10px] font-black">{currentCatId === 'car_rental' ? '3' : '4'}</div>
+                                                        <label className="text-[20px] font-medium text-neutral-900 flex items-center gap-2">
                                                             {t({ en: 'Portfolio: Images of your past work', fr: 'Portfolio : Images de vos travaux passés', ar: 'معرض الأعمال: صور لأعمالك السابقة' })}
                                                         </label>
                                                     </div>
@@ -2536,8 +2541,7 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                                             {(currentCatEntry.noEquipment || currentCatEntry.equipments.length > 0 || NO_EQUIPMENT_SERVICES.includes(currentCatEntry.categoryId)) && (
                                                 <motion.div variants={itemVariants} initial="hidden" animate="show" className="space-y-4 pt-2">
                                                     <div className="flex items-center justify-between">
-                                                        <label className="text-[16px] font-black text-neutral-900 flex items-center gap-2">
-                                                            <div className="w-6 h-6 rounded-full bg-[#01A083] text-white flex items-center justify-center text-[10px] font-black">{currentCatId === 'car_rental' ? '3' : '4'}</div>
+                                                        <label className="text-[20px] font-medium text-neutral-900 flex items-center gap-2">
                                                             {t({ en: 'Why the client would choose you and not others?', fr: 'Pourquoi le client vous choisirait-il vous et pas les autres ?', ar: 'لماذا قد يختارك العميل دون غيرك؟' })}
                                                         </label>
                                                     </div>
@@ -2765,7 +2769,7 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                                                         const svc = ALL_SERVICES.find(s => s.subServices.some(ss => ss.id === id) || s.id === id);
                                                         const catId = svc?.id || '';
                                                         const entry = categoryEntries[catId];
-                                                        
+
                                                         // Ensure we get labels from SERVICES_CATALOGUE for better i18n
                                                         const catalogueCat = Object.values(SERVICES_CATALOGUE).find(c => c.subServices.some(ss => ss.id === id));
                                                         const ssMatch = catalogueCat?.subServices.find(ss => ss.id === id);
@@ -2822,17 +2826,17 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                                                     <div className="flex flex-col items-center gap-2">
                                                         <div className="w-5 h-5 border-[3px] border-white/40 border-t-white rounded-full animate-spin" />
                                                         <span className="text-[10px] font-black text-white/50 uppercase tracking-widest">
-                                                             {submittingStatus && (
+                                                            {submittingStatus && (
                                                                 submittingStatus === 'Preparing...' ? t({ en: 'Preparing...', fr: 'Préparation...', ar: 'جاري التحضير...' }) :
-                                                                submittingStatus === 'Authenticating...' ? t({ en: 'Authenticating...', fr: 'Authentification...', ar: 'جاري التحقق...' }) :
-                                                                submittingStatus === 'Setting up your account...' ? t({ en: 'Setting up your account...', fr: 'Configuration du compte...', ar: 'جاري إعداد الحساب...' }) :
-                                                                submittingStatus === 'Saving profile...' ? t({ en: 'Saving profile...', fr: 'Enregistrement...', ar: 'جاري الحفظ...' }) :
-                                                                submittingStatus === 'Uploading media...' ? t({ en: 'Uploading media...', fr: 'Téléversement...', ar: 'جاري رفع الصور...' }) :
-                                                                submittingStatus === 'Finalizing...' ? t({ en: 'Finalizing...', fr: 'Finalisation...', ar: 'جاري الإنهاء...' }) :
-                                                                submittingStatus === 'Complete!' ? t({ en: 'Complete!', fr: 'Terminé !', ar: 'اكتمل بنجاح!' }) :
-                                                                submittingStatus === 'Migrating data...' ? t({ en: 'Migrating data...', fr: 'Migration...', ar: 'نقل البيانات...' }) :
-                                                                t({ en: submittingStatus, fr: submittingStatus })
-                                                             )}
+                                                                    submittingStatus === 'Authenticating...' ? t({ en: 'Authenticating...', fr: 'Authentification...', ar: 'جاري التحقق...' }) :
+                                                                        submittingStatus === 'Setting up your account...' ? t({ en: 'Setting up your account...', fr: 'Configuration du compte...', ar: 'جاري إعداد الحساب...' }) :
+                                                                            submittingStatus === 'Saving profile...' ? t({ en: 'Saving profile...', fr: 'Enregistrement...', ar: 'جاري الحفظ...' }) :
+                                                                                submittingStatus === 'Uploading media...' ? t({ en: 'Uploading media...', fr: 'Téléversement...', ar: 'جاري رفع الصور...' }) :
+                                                                                    submittingStatus === 'Finalizing...' ? t({ en: 'Finalizing...', fr: 'Finalisation...', ar: 'جاري الإنهاء...' }) :
+                                                                                        submittingStatus === 'Complete!' ? t({ en: 'Complete!', fr: 'Terminé !', ar: 'اكتمل بنجاح!' }) :
+                                                                                            submittingStatus === 'Migrating data...' ? t({ en: 'Migrating data...', fr: 'Migration...', ar: 'نقل البيانات...' }) :
+                                                                                                t({ en: submittingStatus, fr: submittingStatus })
+                                                            )}
                                                         </span>
                                                     </div>
                                                 ) : (

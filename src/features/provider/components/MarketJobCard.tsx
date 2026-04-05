@@ -75,90 +75,95 @@ export const JobCard = ({ job, isWaiting, isSubmitting, onAccept, onCounter, for
     const { t } = useLanguage();
     const cardPrice = formatPrice(job.basePrice || job.price);
     const { dateLabel, timeLabel } = getJobDateTime(job.date);
-    const dotColors = isWaiting
-        ? ['#4ADE80', '#86EFAC', '#DCFCE7']
-        : ['#AFAFAF', '#D1D1D1', '#E7E7E7'];
 
     return (
         <motion.div
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
-            className={`bg-white rounded-[36px] border p-6 md:p-7 transition-all duration-300 ${isWaiting ? 'border-[3px] border-[#4ADE80]' : 'border-neutral-200'}`}
+            className={`bg-white rounded-[30px_18px_35px_22px] p-4 flex flex-col gap-4 transition-all mb-4 border-2 border-black/5 ${isWaiting ? 'border-[#4ADE80]' : ''}`}
         >
-            <div className="flex items-start justify-between gap-6">
-                <h3
-                    className="text-[32px] md:text-[56px] font-black text-neutral-900 leading-[0.95] tracking-tight max-w-[340px]"
-                    style={{ fontFamily: 'Uber Move, var(--font-sans)' }}
-                >
-                    {job.title}
-                </h3>
-                <div className="flex items-center gap-3 pt-2">
-                    {dotColors.map((color, idx) => (
-                        <span key={`${color}-${idx}`} className="w-5 h-5 rounded-full" style={{ backgroundColor: color }} />
-                    ))}
-                </div>
-            </div>
-
-            <div className="mt-4 flex flex-col items-start gap-1">
-                <span className="text-[32px] md:text-[54px] font-black tracking-tight text-[#BDBDBD] leading-none uppercase">{t({ en: 'MAD', fr: 'MAD', ar: 'درهم' })} {cardPrice}</span>
-                <span className="text-[13px] font-bold text-neutral-400 uppercase tracking-widest">{t({ en: 'Estimated Payout', fr: 'Paiement estimé', ar: 'المبلغ المقدر' })}</span>
-            </div>
-
-            <div className="mt-4 flex items-center gap-3">
-                <div className="h-11 w-11 rounded-2xl overflow-hidden border border-neutral-200 bg-neutral-100 flex-shrink-0">
-                    {job.clientAvatar ? (
-                        <img src={job.clientAvatar || undefined} alt={job.clientName} className="h-full w-full object-cover" />
+            <div className="flex items-center gap-4 w-full">
+                <div className="w-28 h-28 bg-white rounded-[22px_15px_28px_18px] flex items-center justify-center flex-shrink-0 p-0 overflow-hidden border border-neutral-100">
+                    {job.image || (job as any).rawAccepted?.images?.[0] ? (
+                        <img src={job.image || (job as any).rawAccepted?.images?.[0]} className="w-full h-full object-cover" />
                     ) : (
-                        <div className="h-full w-full flex items-center justify-center text-neutral-500 font-bold">
-                            {(job.clientName || 'C').slice(0, 1)}
-                        </div>
+                        <img src={"/Images/Vectors Illu/Tools.webp"} className="w-full h-full object-contain p-2 opacity-50" />
                     )}
                 </div>
-                <div className="min-w-0">
-                    <div className="text-sm font-extrabold text-neutral-900 truncate">{job.clientName || 'Client'}</div>
-                    <div className="flex items-center gap-1.5 text-[12px] font-semibold text-neutral-500">
-                        <Star size={13} className="fill-black text-black" />
-                        <span>{job.rating || 'N/A'}</span>
-                        <span className="text-neutral-300">•</span>
-                        <span className="truncate">{job.timestamp}</span>
+                <div className="flex-1 min-w-0 pr-2">
+                    <div className="flex items-center gap-2 mb-1">
+                        <span className="px-2 py-0.5 text-[11px] font-medium rounded-md uppercase tracking-wider bg-[#E6F7F4] text-[#01A083]">
+                            {t({ en: 'New', fr: 'Nouveau', ar: 'جديد' })}
+                        </span>
+                    </div>
+
+                    <h3 className="text-[17px] font-medium text-black leading-tight truncate">
+                        {job.title || job.craft || (job as any).service || job.serviceId}
+                    </h3>
+                    <div className="mt-2 text-[14px] font-medium text-black leading-tight">
+                        <div className="flex flex-wrap items-center gap-2 mt-1">
+                            <div className="flex items-center gap-1 text-neutral-400 whitespace-nowrap">
+                                <Calendar size={14} className="opacity-70" />
+                                <span className="text-[14px] font-medium">
+                                    {dateLabel}
+                                </span>
+                            </div>
+                            <span className="text-neutral-200">|</span>
+                            <p className="text-[18px] font-medium">
+                                {timeLabel || '09:00'}
+                            </p>
+                        </div>
+                    </div>
+                    <div className="flex justify-between items-end mt-2">
+                        <p className="text-[13px] font-medium text-neutral-400 flex items-center gap-1 truncate pr-2 flex-1">
+                            <MapPin size={12} /> {job.city || 'Essaouira'}
+                        </p>
+                        <div className="text-right flex-shrink-0">
+                            <p className="text-[11px] font-bold text-neutral-400 uppercase tracking-wider mb-0.5">{t({ en: 'Offer', fr: 'Offre' })}</p>
+                            <p className="text-[19px] font-bold text-black leading-none">
+                                {cardPrice} <span className="text-[14px] font-medium text-neutral-500">MAD</span>
+                            </p>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <div className="mt-4 space-y-2">
-                <div className="flex items-center gap-3 text-[15px] md:text-[18px] text-neutral-500 font-semibold">
-                    <Calendar size={20} className="text-neutral-400 md:w-[26px] md:h-[26px]" />
-                    <span>{dateLabel}</span>
-                    {timeLabel ? <span className="text-neutral-300">•</span> : null}
-                    {timeLabel ? <Clock size={20} className="text-neutral-400 md:w-[26px] md:h-[26px]" /> : null}
-                    {timeLabel ? <span>{timeLabel}</span> : null}
+            <div className="flex items-center justify-between mt-2 pt-4 border-t border-dashed border-neutral-100 w-full gap-3">
+                <div className="flex items-center gap-2 overflow-hidden flex-1">
+                    <div className="h-8 w-8 rounded-full overflow-hidden border border-neutral-200 flex-shrink-0">
+                        {job.clientAvatar ? (
+                            <img src={job.clientAvatar} alt={job.clientName} className="h-full w-full object-cover" />
+                        ) : (
+                            <div className="h-full w-full bg-neutral-100 flex items-center justify-center text-neutral-500 font-bold text-xs">
+                                {(job.clientName || 'C').slice(0, 1)}
+                            </div>
+                        )}
+                    </div>
+                    <div className="truncate min-w-0">
+                        <div className="text-sm font-bold text-neutral-900 truncate">{job.clientName || 'Client'}</div>
+                        <div className="flex items-center gap-1 text-[11px] font-semibold text-neutral-500 truncate">
+                            <Star size={10} className="fill-yellow-400 text-yellow-400 flex-shrink-0" />
+                            <span className="flex-shrink-0">{job.rating || 'N/A'}</span>
+                        </div>
+                    </div>
                 </div>
-                <div className="flex items-center gap-3 text-[15px] md:text-[17px] text-neutral-500 font-semibold">
-                    <MapPin size={20} className="text-neutral-400 md:w-[26px] md:h-[26px]" />
-                    <span>{job.city}</span>
+
+                <div className="flex items-center gap-2">
+                    <button
+                        onClick={() => onCounter(job)}
+                        disabled={isWaiting}
+                        className="px-4 py-2 bg-neutral-100 text-neutral-900 text-[13px] font-bold rounded-xl transition-all disabled:opacity-50"
+                    >
+                        {t({ en: 'Counter', fr: 'Négocier', ar: 'عروض' })}
+                    </button>
+                    <button
+                        onClick={() => onAccept(job)}
+                        disabled={isSubmitting || isWaiting}
+                        className="px-6 py-2 bg-[#01A083] text-white text-[14px] font-bold rounded-xl transition-all disabled:opacity-50"
+                    >
+                        {isSubmitting ? '...' : t({ en: 'Accept', fr: 'Accepter', ar: 'قبول' })}
+                    </button>
                 </div>
-            </div>
-
-            <div className="mt-4">
-                <p className="text-[14px] md:text-[15px] leading-relaxed text-neutral-700 line-clamp-3">{job.description || t({ en: 'No description provided.', fr: 'Aucune description fournie.', ar: 'لا يوجد وصف متاح.' })}</p>
-                <div className="mt-2 text-[11px] font-bold uppercase tracking-[0.08em] text-neutral-500">{job.craft}</div>
-            </div>
-
-            <div className="mt-8 flex items-center gap-3">
-                <button
-                    onClick={() => onAccept(job)}
-                    disabled={isSubmitting || isWaiting}
-                    className="px-7 md:px-9 py-3 md:py-3.5 bg-[#01A083] text-white text-[15px] md:text-[17px] font-bold rounded-full transition-all disabled:opacity-50"
-                >
-                    {isSubmitting ? '...' : t({ en: 'Accept', fr: 'Accepter', ar: 'قبول' })}
-                </button>
-                <button
-                    onClick={() => onCounter(job)}
-                    disabled={isWaiting}
-                    className="px-7 md:px-9 py-3 md:py-3.5 bg-neutral-100 text-neutral-900 text-[15px] md:text-[17px] font-bold rounded-full transition-all disabled:opacity-50"
-                >
-                    {t({ en: 'Counter Offer', fr: 'Contre-offre', ar: 'عرض مقابل' })}
-                </button>
             </div>
         </motion.div>
     );

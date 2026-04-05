@@ -49,9 +49,8 @@ export const SERVICES_HIERARCHY: Record<string, ServiceConfig> = {
         name: 'Cleaning',
         icon: Trash2,
         subServices: [
-            { id: 'standard_small', name: 'Family Home Cleaning', pricingArchetype: 'unit', estimatedDurationHr: 2.5, baseSetupHr: 0.5, complexityMultiplier: 1.0 },
             { id: 'deep_cleaning', name: 'Deep Home Cleaning (Move-in/Out)', pricingArchetype: 'unit', estimatedDurationHr: 6, baseSetupHr: 1.0, complexityMultiplier: 1.5 },
-            { id: 'hospitality_turnover', name: 'Short-term Rental (Airbnb) Turnover', pricingArchetype: 'unit', estimatedDurationHr: 2.5, baseSetupHr: 0.4, complexityMultiplier: 0.9 },
+            { id: 'hospitality_turnover', name: 'التنظيف الفندقي', pricingArchetype: 'unit', estimatedDurationHr: 2.5, baseSetupHr: 0.4, complexityMultiplier: 0.9 },
             { id: 'office_cleaning', name: 'Office & Workspace Cleaning', pricingArchetype: 'unit', estimatedDurationHr: 4, baseSetupHr: 0.5, complexityMultiplier: 1.0 },
             { id: 'dish_cleaning', name: 'Dish Washing & Kitchen Tidy', pricingArchetype: 'hourly', estimatedDurationHr: 1.5, baseSetupHr: 0.2, complexityMultiplier: 1.0 }
         ]
@@ -249,13 +248,6 @@ export const SERVICES_HIERARCHY: Record<string, ServiceConfig> = {
                 pricingArchetype: 'fixed',
                 estimatedDurationHr: 1,
                 desc: { en: 'Professional car washing and cleaning.', fr: 'Lavage et nettoyage professionnel de voiture.', ar: 'غسيل وتنظيف السيارات بشكل احترافي.' }
-            },
-            {
-                id: 'car_detail',
-                name: 'Car Detailing',
-                pricingArchetype: 'fixed',
-                estimatedDurationHr: 3,
-                desc: { en: 'Deep cleaning and restoration for your car.', fr: 'Nettoyage en profondeur et restauration de votre voiture.', ar: 'تنظيف عميق واستعادة لسيارتك.' }
             },
             {
                 id: 'automotive_glass',

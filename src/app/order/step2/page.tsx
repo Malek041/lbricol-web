@@ -346,37 +346,11 @@ function Step2Content() {
   };
 
   const handleProviderClick = (id: string) => {
-    setFocusedId(id);
-    const index = providers.findIndex(p => p.id === id);
-    if (index !== -1 && cardsRef.current) {
-      const container = cardsRef.current;
-      const children = Array.from(container.children);
-      const child = children[index] as HTMLElement;
-      if (child) {
-        // Calculate the ideal scroll pos to center this card
-        const scrollLeft = child.offsetLeft - (container.offsetWidth - child.offsetWidth) / 2;
-        container.scrollTo({
-          left: scrollLeft,
-          behavior: 'smooth'
-        });
-      }
+    const provider = providers.find(p => p.id === id);
+    if (provider) {
+      handleSelect(provider);
     }
   };
-
-  // ── Provider pin data for MapView ────────────────────────────────────
-  const providerPins = providers.map(p => ({
-    id: p.id,
-    lat: (p.isLive && p.current_lat) ? p.current_lat : (p.base_lat || clientLat + (Math.random() - 0.5) * 0.015),
-    lng: (p.isLive && p.current_lng) ? p.current_lng : (p.base_lng || clientLng + (Math.random() - 0.5) * 0.015),
-    rate: p.minRate || 80,
-    rating: p.rating || 0.0,
-    taskCount: p.taskCount || 0,
-    avatarUrl: p.avatarUrl || p.avatar || p.photoURL,
-    isSelected: p.id === focusedId,
-    badge: ((p.taskCount || 0) < 10 || p.isNew) ? 'NEW' : (p.badge || 'CLASSIC'),
-  }));
-
-  const [viewedBricoler, setViewedBricoler] = useState<any>(null);
 
   const calculateRate = (provider: any) => {
     const isCarRental = order.serviceType === 'car_rental';
@@ -399,6 +373,21 @@ function Step2Content() {
 
     return Number(provider.minRate || 80);
   };
+
+  // ── Provider pin data for MapView ────────────────────────────────────
+  const providerPins = providers.map(p => ({
+    id: p.id,
+    lat: (p.isLive && p.current_lat) ? p.current_lat : (p.base_lat || clientLat + (Math.random() - 0.5) * 0.015),
+    lng: (p.isLive && p.current_lng) ? p.current_lng : (p.base_lng || clientLng + (Math.random() - 0.5) * 0.015),
+    rate: calculateRate(p),
+    rating: p.rating || 0.0,
+    taskCount: p.taskCount || 0,
+    avatarUrl: p.avatarUrl || p.avatar || p.photoURL,
+    isSelected: p.id === focusedId,
+    badge: ((p.taskCount || 0) < 10 || p.isNew) ? 'NEW' : (p.badge || 'CLASSIC'),
+  }));
+
+  const [viewedBricoler, setViewedBricoler] = useState<any>(null);
 
   const handleSelect = (provider: any) => {
     setFocusedId(provider.id);
@@ -747,8 +736,8 @@ function ProviderCard({
         </div>
 
         {/* Center/Main Info Stack */}
-        <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 4 }}>
-          <div style={{ fontSize: 15, fontWeight: 500, color: '#111827', lineHeight: 1.2 }}>
+        <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 4, overflow: 'hidden' }}>
+          <div style={{ fontSize: 15, fontWeight: 500, color: '#111827', lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
             {provider.name}
           </div>
 
@@ -757,7 +746,8 @@ function ProviderCard({
             fontSize: 9, fontWeight: 950,
             padding: '2px 8px', borderRadius: 4,
             display: 'inline-flex', alignItems: 'center', gap: 2,
-            alignSelf: 'flex-start'
+            alignSelf: 'flex-start',
+            whiteSpace: 'nowrap'
           }}>
             <span>{rank.icon}</span> {rank.text}
           </span>

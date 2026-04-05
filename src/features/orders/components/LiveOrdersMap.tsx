@@ -26,6 +26,7 @@ interface LiveOrdersMapProps {
     avatarUrl?: string | null;
   };
   broadcastPins?: any[];
+  orderData?: any[]; // Raw order/job objects to lookup on pin click
 }
 
 export default function LiveOrdersMap({
@@ -38,7 +39,8 @@ export default function LiveOrdersMap({
   onInteractionEnd,
   triggerGps,
   currentUserPin,
-  broadcastPins: externalPins
+  broadcastPins: externalPins,
+  orderData,
 }: LiveOrdersMapProps) {
   const { t } = useLanguage();
   const [orders, setOrders] = useState<any[]>([]);
@@ -71,7 +73,8 @@ export default function LiveOrdersMap({
     lat: order.locationDetails?.lat || 31.5085,
     lng: order.locationDetails?.lng || -9.7595,
     price: order.totalPrice || order.basePrice || 0,
-    rating: order.clientRating || 5.0,
+    date: order.date,
+    time: order.time,
     serviceIcon: getServiceVector(order.serviceType || order.service),
     isSelected: order.id === focusedOrderId
   })), [orders, focusedOrderId]);
@@ -91,7 +94,11 @@ export default function LiveOrdersMap({
         onLocationChange={() => { }}
         broadcastPins={finalPins}
         focusedOrderId={focusedOrderId}
-        onOrderClick={(id) => setFocusedOrderId(id)}
+        onOrderClick={(id) => {
+          // Search internal orders first, then fallback to passed-in orderData
+          const order = orders.find(o => o.id === id) || (orderData || []).find((o: any) => o.id === id);
+          if (order) onSelectOrder(order);
+        }}
         onInteractionStart={() => {
           setIsInteracting(true);
           setFocusedOrderId(null);
@@ -103,7 +110,7 @@ export default function LiveOrdersMap({
         }}
         interactive={true}
         pinY={25}
-        zoom={17}
+        zoom={13}
         showCenterPin={false}
         centerAddress={undefined}
         userPosition={null}
@@ -114,12 +121,7 @@ export default function LiveOrdersMap({
 
       {/* Floating Header - Adjusted for no global header */}
       <div className="absolute top-[60px] left-6 right-6 z-10 flex justify-between items-start pointer-events-none">
-        <div className="bg-white/90 backdrop-blur-md px-4 py-2.5 rounded-full border border-neutral-100 flex items-center gap-2 pointer-events-auto">
-          <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-          <span className="text-[13px] font-black text-neutral-800">
-            {orders.length} {t({ en: 'Live Missions', fr: 'Missions en direct', ar: 'مهام مباشرة' })}
-          </span>
-        </div>
+
 
         <button
           onClick={onShowNotifications}
@@ -131,56 +133,6 @@ export default function LiveOrdersMap({
           )}
         </button>
       </div>
-
-      {/* Order Mini-Card */}
-      <AnimatePresence>
-        {focusedOrder && !isInteracting && (
-          <motion.div
-            initial={{ y: 100, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            exit={{ y: 100, opacity: 0 }}
-            className="absolute bottom-4 left-4 right-4 z-20"
-          >
-            <div
-              onClick={() => onSelectOrder(focusedOrder)}
-              className="bg-white rounded-[20px] p-4 border border-neutral-200 flex items-center gap-4 cursor-pointer active:scale-[0.98] transition-all"
-            >
-              <div className="w-16 h-16 bg-neutral-50 rounded-2xl flex items-center justify-center flex-shrink-0">
-                <img src={getServiceVector(focusedOrder.serviceType || focusedOrder.service)} className="w-10 h-10 object-contain" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <h4 className="text-[16px] font-black text-neutral-900 truncate uppercase tracking-tight">
-                  {focusedOrder.serviceName || focusedOrder.service}
-                </h4>
-                <div className="flex items-center gap-3 mt-1">
-                  <div className="flex items-center gap-1 text-neutral-500">
-                    <MapPin size={12} className="text-emerald-500" />
-                    <span className="text-[12px] font-bold truncate max-w-[120px]">{focusedOrder.location}</span>
-                  </div>
-                  <div className="flex items-center gap-1 text-neutral-500">
-                    <Banknote size={12} className="text-emerald-500" />
-                    <span className="text-[12px] font-black text-neutral-900">{focusedOrder.totalPrice || focusedOrder.basePrice} MAD</span>
-                  </div>
-                </div>
-              </div>
-              <div className="w-10 h-10 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-600">
-                <ChevronRight size={20} strokeWidth={3} />
-              </div>
-
-              {/* Close Button */}
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setFocusedOrderId(null);
-                }}
-                className="absolute -top-2 -right-2 w-8 h-8 bg-white rounded-full border border-neutral-100 flex items-center justify-center text-neutral-400 hover:text-neutral-600"
-              >
-                <X size={16} strokeWidth={3} />
-              </button>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
     </div>
   );
 }

@@ -709,7 +709,7 @@
   "Light Carpentry": "نجارة خفيفة",
   "Window Winterization": "عزل النوافذ",
   "Family Home Cleaning": "تنظيف المنازل",
-  "Hospitality Cleaning": "تنظيف الضيافة (Hospitality)",
+  "Hospitality Cleaning": "التنظيف الفندقي",
   "Car washing": "غسل السيارات",
   "Car Detailing": "تنظيف عميق للسيارات",
   "Deep Home Cleaning": "تنظيف عميق للمنازل",
@@ -818,5 +818,9 @@
   "Mobility aids (walker/cane)": "وسائل مساعدة على المشي (مشاية/عصا)",
   "Medication organizer": "منظم أدوية",
   "Emergency alert device": "جهاز تنبيه للطوارئ",
-  "Comfortable footwear": "أحذية مريحة"
+  "Comfortable footwear": "أحذية مريحة",
+  "Sign Up": "إنشاء حساب",
+  "Final Step": "الخطوة الأخيرة",
+  "Complete & Continue": "إكمال ومتابعة",
+  "Setting up your account...": "جاري إعداد حسابك..."
 }

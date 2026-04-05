@@ -212,7 +212,7 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
       <div
         className={cn(
           "relative bg-neutral-100 overflow-hidden transition-all duration-500 ease-in-out z-0 shrink-0",
-          isInteracting ? 'h-[75%]' : (radiusView ? 'h-[58%]' : (isBricolerBase && !showSearchInput ? 'h-[65%]' : 'h-[48%]'))
+          isInteracting ? 'h-[65%]' : (radiusView ? 'h-[45%]' : (isBricolerBase && !showSearchInput ? 'h-[48%]' : 'h-[42%]'))
         )}
       >
         {/* Full-screen under-layer map -> Now dynamically matches flex height */}
@@ -321,9 +321,9 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
                   className="space-y-6"
                 >
                   <div className="space-y-1">
-                    <h3 className="text-xl font-bold text-neutral-900 tracking-tight">Service Radius</h3>
+                    <h3 className="text-xl font-bold text-neutral-900 tracking-tight">{t({ en: 'Service Radius', fr: 'Rayon de service', ar: 'نطاق الخدمة' })}</h3>
                     <p className="text-neutral-500 text-[14px] font-medium leading-relaxed">
-                      How far are you willing to travel for tasks?
+                      {t({ en: 'How far are you willing to travel for tasks?', fr: 'Jusqu\'où êtes-vous prêt à vous déplacer ?', ar: 'إلى أي مدى أنت مستعد للتنقل للقيام بالمهام؟' })}
                     </p>
                   </div>
 

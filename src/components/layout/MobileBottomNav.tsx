@@ -1,12 +1,12 @@
 "use client";
 
 import React from 'react';
-import { ShoppingBag, Star, User, Home, Calendar, TrendingUp, MessageSquare } from 'lucide-react';
+import { ShoppingBag, Star, User, Home, Calendar, TrendingUp, MessageSquare, Search } from 'lucide-react';
 import { useTheme } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { fluidMobilePx, useMobileTier, useViewportWidth } from '@/lib/mobileOnly';
 
-export type TabType = 'home' | 'heroes' | 'orders' | 'profile' | 'jobs' | 'calendar' | 'messages' | 'performance' | 'services' | 'reviews';
+export type TabType = 'home' | 'search' | 'heroes' | 'orders' | 'profile' | 'jobs' | 'calendar' | 'messages' | 'performance' | 'services' | 'reviews';
 
 interface MobileBottomNavProps {
     activeTab: TabType;
@@ -42,6 +42,7 @@ const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
 
     const clientTabs = [
         { id: 'home' as TabType, icon: Home, label: t({ en: 'Home', fr: 'Accueil', ar: 'الرئيسية' }) },
+        { id: 'search' as TabType, icon: Search, label: t({ en: 'Search', fr: 'Recherche', ar: 'بحث' }) },
         { id: 'calendar' as TabType, icon: ShoppingBag, label: t({ en: 'Orders', fr: 'Commandes', ar: 'الطلبات' }) },
         // { id: 'messages' as TabType, icon: MessageSquare, label: t({ en: 'Messages', fr: 'Messages', ar: 'الرسائل' }) },
         // { id: 'heroes' as TabType, icon: Star, label: t({ en: 'My Heroes', fr: 'Mes Héros', ar: 'أبطالي' }) },
@@ -74,6 +75,7 @@ const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
             if (id === 'profile') return 'profile';
         } else {
             if (id === 'home') return 'home';
+            if (id === 'search') return 'search';
             if (id === 'heroes') return 'heroes';
             if (id === 'calendar') return 'calendar';
             if (id === 'profile') return 'profile';

@@ -53,10 +53,10 @@ export const SearchPopup: React.FC<SearchPopupProps> = ({
         SERVICES_CATALOGUE.forEach(svc => {
             svc.subServices.forEach(sub => {
                 if (sub.id && !softBlocklist.includes(sub.id)) {
-                    const translation: any = { 
-                        en: svc.label || '', 
-                        fr: svc.labelFr || '', 
-                        ar: svc.labelAr || svc.labelFr || '' 
+                    const translation: any = {
+                        en: svc.label || '',
+                        fr: svc.labelFr || '',
+                        ar: svc.labelAr || svc.labelFr || ''
                     };
                     list.push({
                         serviceId: svc.id,
@@ -76,17 +76,17 @@ export const SearchPopup: React.FC<SearchPopupProps> = ({
 
         return allSubServices.filter(item => {
             const sub = item.subService;
-            
+
             // Special check for "Ménage" keyword for Cleaning services
             const matchesCleaningSynonym = isSearchingForCleaning && item.serviceId === 'cleaning';
-            
+
             const matchesStandard = (
                 sub.en.toLowerCase().includes(q) ||
                 sub.fr.toLowerCase().includes(q) ||
                 (sub.ar && sub.ar.includes(q)) ||
                 item.serviceLabel.toLowerCase().includes(q)
             );
-            
+
             return matchesCleaningSynonym || matchesStandard;
         }).slice(0, 15);
     }, [query, allSubServices, language]);
@@ -133,7 +133,7 @@ export const SearchPopup: React.FC<SearchPopupProps> = ({
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.95 }}
                     transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-                    className="fixed inset-0 z-[150] bg-white flex flex-col font-jakarta"
+                    className="w-full h-full min-h-[calc(100dvh-80px)] flex flex-col font-jakarta bg-white"
                 >
                     {/* Header */}
                     <div className="pt-[env(safe-area-inset-top)] border-b border-neutral-100">
@@ -145,7 +145,7 @@ export const SearchPopup: React.FC<SearchPopupProps> = ({
                                 <ArrowLeft size={24} className="text-neutral-900" />
                             </button>
 
-                            <div className="flex-1 flex items-center bg-neutral-100 rounded-[25px_15px_30px_18px] border-2 border-black/5 px-4 py-2.5">
+                            <div className="flex-1 flex items-center bg-neutral-100 rounded-full border-2 border-black/5 px-4 py-2.5">
                                 <Search size={18} className="text-neutral-400 mr-2" />
                                 <input
                                     ref={inputRef}
@@ -165,7 +165,7 @@ export const SearchPopup: React.FC<SearchPopupProps> = ({
                     </div>
 
                     {/* Content */}
-                    <div className="flex-1 overflow-y-auto px-6 pb-12">
+                    <div className="flex-1 overflow-y-auto px-6 pb-24">
                         {query.trim() === '' ? (
                             <div className="flex flex-col gap-8 pt-6">
                                 {/* Recent Searches */}
@@ -179,7 +179,7 @@ export const SearchPopup: React.FC<SearchPopupProps> = ({
                                                 <button
                                                     key={i}
                                                     onClick={() => handleRecentClick(term)}
-                                                    className="px-4 py-2 bg-neutral-100 hover:bg-neutral-200 rounded-[15px_10px_18px_12px] border-2 border-black/5 text-[14px] font-bold text-neutral-700 transition-colors flex items-center gap-2"
+                                                    className="px-4 py-2 bg-neutral-100 hover:bg-neutral-200 rounded-full border-2 border-black/5 text-[14px] font-bold text-neutral-700 transition-colors flex items-center gap-2"
                                                 >
                                                     <Clock size={14} className="text-neutral-400" />
                                                     {term}
@@ -200,7 +200,7 @@ export const SearchPopup: React.FC<SearchPopupProps> = ({
                                             <button
                                                 key={i}
                                                 onClick={() => handleRecentClick(t(tag))}
-                                                className="px-4 py-2 border-2 border-black/5 hover:border-neutral-300 rounded-[15px_20px_12px_18px] text-[14px] font-bold text-neutral-700 transition-colors"
+                                                className="px-4 py-2 border-2 border-black/5 hover:border-neutral-300 rounded-full text-[14px] font-bold text-neutral-700 transition-colors"
                                             >
                                                 {t(tag)}
                                             </button>

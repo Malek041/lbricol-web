@@ -26,6 +26,8 @@ import ProfileView from '@/features/provider/components/ProfileView';
 import ComingSoon from '@/components/layout/ComingSoon';
 import ClientHome from '@/features/client/components/ClientHome';
 import OnboardingPopup from '@/features/onboarding/components/OnboardingPopup';
+import { SearchPopup } from '@/features/client/components/SearchPopup';
+import { SERVICES_CATALOGUE } from '@/config/services_catalogue';
 import { useOrder } from '@/context/OrderContext';
 
 import AdminDashboard from '@/features/admin/components/AdminDashboard';
@@ -263,7 +265,7 @@ const Home = () => {
   const router = useRouter();
   const { t, setLanguage } = useLanguage();
   const { theme } = useTheme();
-  const { setOrderState, resetOrder } = useOrder();
+  const { setOrderState, setOrderField, resetOrder } = useOrder();
   const { showToast } = useToast();
 
   const c = {
@@ -355,6 +357,50 @@ const Home = () => {
     }
   };
 
+  const handleServiceSelection = (serviceId: string, sub: any) => {
+    resetOrder();
+    const currentSub = sub as any;
+    const serviceTemplate = SERVICES_CATALOGUE?.find(s => s.id === serviceId);
+    const config = getServiceById(serviceId);
+    const actualSubConfig = config?.subServices?.find(ss =>
+      ss.id === currentSub.id || ss.name === currentSub.en
+    );
+
+    localStorage.setItem('last_service_category', serviceId);
+    setOrderField('serviceType', serviceId);
+    setOrderField('serviceName', serviceTemplate?.label || serviceId);
+    setOrderField('subServiceId', currentSub.id || currentSub.en);
+    setOrderField('subServiceName', t(currentSub));
+
+    const categoryVectors: Record<string, string> = {
+      handyman: '/Images/Service Category vectors/HandymanVector.webp',
+      babysitting: '/Images/Service Category vectors/babysettingnVector.webp',
+      cleaning: '/Images/Service Category vectors/CleaningVector.webp',
+      plumbing: '/Images/Service Category vectors/PlumbingVector.webp',
+      electricity: '/Images/Service Category vectors/ElectricityVector.webp',
+      painting: '/Images/Service Category vectors/Paintingvector.webp',
+      moving: '/Images/Service Category vectors/MovingHelpVector.webp',
+      gardening: '/Images/Service Category vectors/GardeningVector.webp',
+      assembly: '/Images/Service Category vectors/AsssemblyVector.webp',
+      mounting: '/Images/Service Category vectors/MountingVector.webp'
+    };
+
+    const icon = categoryVectors[serviceId] || (actualSubConfig as any)?.image;
+    if (icon) {
+      setOrderField('serviceIcon', icon);
+    }
+
+    const isErrands = serviceId === 'errands' || serviceId?.includes('delivery');
+    if (isErrands) {
+      setOrderField('isPublic', true);
+      setOrderField('providerId', null);
+      setOrderField('providerName', null);
+      router.push('/order/setup');
+    } else {
+      router.push('/order/step1');
+    }
+  };
+
   // Persist Addresses & Location Preference
   useEffect(() => {
     setMounted(true);
@@ -391,6 +437,13 @@ const Home = () => {
     const addr = localStorage.getItem('lastKnownAddress');
     if (lat && lng) setSelectedPoint({ lat: parseFloat(lat), lng: parseFloat(lng), address: addr || '' } as any);
   }, []);
+
+  // Reset view details when changing tabs
+  useEffect(() => {
+    if (mobileNavTab !== 'calendar') {
+      setIsViewingOrderDetails(false);
+    }
+  }, [mobileNavTab]);
 
   useEffect(() => {
     if (mounted) {
@@ -2378,24 +2431,32 @@ const Home = () => {
   const [isLoggingIn, setIsLoggingIn] = useState(false);
 
 
-  const handleGoogleLogin = async () => {
+  const handleGoogleLogin = async (providedResult?: { user: FirebaseUser, userData?: any }) => {
     if (isLoggingIn) return;
     setIsLoggingIn(true);
-    const provider = new GoogleAuthProvider();
-    console.log("[handleGoogleLogin] Starting authentication");
+    console.log("[handleGoogleLogin] Starting authentication flow", providedResult ? "with provided result" : "from scratch");
 
     try {
-      const result = await signInWithPopup(auth, provider);
-      const user = result.user;
-
-      // Fetch existing user data first to get WhatsApp number if it exists
-      const userRef = doc(db, 'users', user.uid);
-      const userSnap = await getDoc(userRef);
-
+      let user: FirebaseUser;
       let existingData: any = {};
-      if (userSnap.exists()) {
-        existingData = userSnap.data();
-        setUserData(existingData);
+
+      if (providedResult) {
+        user = providedResult.user;
+        existingData = providedResult.userData || {};
+      } else {
+        const provider = new GoogleAuthProvider();
+        const result = await signInWithPopup(auth, provider);
+        user = result.user;
+      }
+
+      // Fetch existing user data if not provided
+      const userRef = doc(db, 'users', user.uid);
+      if (!providedResult || !providedResult.userData) {
+        const userSnap = await getDoc(userRef);
+        if (userSnap.exists()) {
+          existingData = userSnap.data();
+          setUserData(existingData);
+        }
       }
 
       // Create/update user profile globally
@@ -2407,13 +2468,11 @@ const Home = () => {
         ...existingData
       }, { merge: true });
 
-      // If we just read it, userData is set. If it was new, existingData is empty.
-
       // Update local state
       setCurrentUser(user);
       setShowAuthPopup(false);
 
-      console.log("[handleGoogleLogin] Success");
+      console.log("[handleGoogleLogin] Success for user:", user.uid);
       return { user, userData: existingData };
 
     } catch (error: any) {
@@ -2431,9 +2490,9 @@ const Home = () => {
           })
         });
       } else if (error.code === 'auth/cancelled-popup-request') {
-        console.log("Popup request was cancelled by a new request - this is usually harmless.");
+        console.log("Popup request was cancelled by a new request.");
       } else if (error.code === 'auth/popup-closed-by-user') {
-        // Silent
+        // User closed the popup, silent
       } else {
         showToast({
           variant: 'error',
@@ -2549,7 +2608,7 @@ const Home = () => {
       <main style={{
         backgroundColor: isFullscreenMobileTab ? 'transparent' : c.bg,
         paddingBottom: isMobile ? (['home', 'calendar', 'messages', 'share', 'promocodes', 'heroes'].includes(mobileNavTab) ? '0' : '80px') : '0',
-        overflow: isMobile && (mobileNavTab === 'calendar' || mobileNavTab === 'messages' || mobileNavTab === 'share' || mobileNavTab === 'promocodes') ? 'hidden' : 'visible',
+        overflow: isMobile && (mobileNavTab === 'calendar' || mobileNavTab === 'messages' || mobileNavTab === 'share' || mobileNavTab === 'promocodes' || mobileNavTab === 'search') ? 'hidden' : 'visible',
         height: isFullscreenMobileTab ? '100dvh' : 'auto'
       }}>
         {/* Show mobile tab views only on mobile */}
@@ -2705,6 +2764,14 @@ const Home = () => {
                 onBack={() => setMobileNavTab('profile')}
               />
             )}
+
+            {mobileNavTab === 'search' && (
+              <SearchPopup
+                isOpen={true}
+                onClose={() => setMobileNavTab('home')}
+                onSelectSubService={(serviceId, sub) => handleServiceSelection(serviceId, sub)}
+              />
+            )}
           </>
         )}
 
@@ -2747,7 +2814,7 @@ const Home = () => {
         </AnimatePresence>
 
         {/* Show home content when on home tab (mobile) or always (desktop) */}
-        {(!isMobile || mobileNavTab === 'home' || mobileNavTab === 'search') && !showSplash && (
+        {(!isMobile || mobileNavTab === 'home') && !showSplash && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -3372,8 +3439,8 @@ const Home = () => {
             setShowAuthPopup(false);
             setAuthIntent(null);
           }}
-          onSuccess={async () => {
-            const result = await handleGoogleLogin();
+          onSuccess={async (user) => {
+            const result = await handleGoogleLogin(user ? { user } : undefined);
             if (result && result.user) {
               setShowAuthPopup(false);
               // Small timeout to allow popups to close
@@ -3382,13 +3449,13 @@ const Home = () => {
                   setAuthIntent(null);
                   return;
                 }
-
+ 
                 if (authIntent === 'bricoler') {
                   setAuthIntent(null);
                   setShowMobileOnboarding(true);
                   return;
                 }
-
+ 
                  if (authIntent === 'program_order' || !authIntent) {
                   handleProgramOrder(result.user, result.userData?.whatsappNumber);
                   setAuthIntent(null);
@@ -3656,7 +3723,7 @@ const Home = () => {
       </main>
 
       {/* Mobile Bottom Navigation - OUTSIDE main to avoid overflow/stacking issues */}
-      {isMobile && !showSplash && !showClientOnboarding && !showMobileOnboarding && !showLanguagePopup && !isViewingOrderDetails && !showMessagesModal && <MobileBottomNav
+      {isMobile && !showSplash && !showAuthPopup && !isProgramming && !showClientOnboarding && !showMobileOnboarding && !showLanguagePopup && !isViewingOrderDetails && !showMessagesModal && ['home', 'calendar', 'orders', 'profile', 'performance', 'services', 'reviews', 'search'].includes(mobileNavTab) && <MobileBottomNav
         activeTab={mobileNavTab as any}
         onTabChange={(tab: any) => {
           if (tab === 'calendar' && mobileNavTab === 'calendar') {
