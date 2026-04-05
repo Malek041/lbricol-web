@@ -23,6 +23,7 @@ export interface UserData {
     avatar?: string;
     profilePhotoURL?: string;
     googlePhotoURL?: string;
+    routine?: Record<string, { active: boolean; from: string; to: string }>;
 }
 
 export interface Job {

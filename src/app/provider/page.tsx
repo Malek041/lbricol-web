@@ -3026,12 +3026,11 @@ const DetailItem = ({ icon: Icon, label, value, subValue, highlight }: {
                     )}
 
                     {activeNav === 'calendar' && (() => {
-                        const _ud = userData as any;
-                        const hasRoutine = _ud?.routine && typeof _ud.routine === 'object' && Object.keys(_ud.routine).length > 0;
+                        const hasRoutine = userData?.routine && typeof userData.routine === 'object' && Object.keys(userData.routine).length > 0;
                         return (
                             <div className="relative h-full w-full">
                                 {/* The actual orders view — blurred when no routine */}
-                                <div className={cn("h-full w-full transition-all duration-700", !hasRoutine && 'pointer-events-none select-none filter blur-md brightness-90 saturate-50')}>
+                                <div className={cn("flex-1 flex flex-col h-full min-h-0 w-full transition-all duration-700", !hasRoutine && 'pointer-events-none select-none filter blur-[6px] brightness-90 saturate-50')}>
                                     <ProviderOrdersView
                                         confirmedOrders={acceptedJobsSorted}
                                         availableJobs={marketJobsOpen}
@@ -3966,7 +3965,7 @@ const DetailItem = ({ icon: Icon, label, value, subValue, highlight }: {
                     />
 
                     {
-                        isMobileLayout && !selectedChat && !viewingJobDetails && performanceDetail === 'none' && !showLanguagePopup && !showProfileModal && !showAddServiceModal && !showNIDModal && !(activeNav === 'performance' && performanceTab === 'availability') && (
+                        isMobileLayout && !selectedChat && !viewingJobDetails && performanceDetail === 'none' && !showLanguagePopup && !showProfileModal && !showAddServiceModal && !showNIDModal && (
                             <div key="mobile-bottom-nav-wrapper">
                                 <MobileBottomNav
                                     activeTab={activeNav}
