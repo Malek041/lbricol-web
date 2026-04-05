@@ -379,6 +379,7 @@ function Step2Content() {
     id: p.id,
     lat: (p.isLive && p.current_lat) ? p.current_lat : (p.base_lat || clientLat + (Math.random() - 0.5) * 0.015),
     lng: (p.isLive && p.current_lng) ? p.current_lng : (p.base_lng || clientLng + (Math.random() - 0.5) * 0.015),
+    isLive: !!(p.isLive && p.current_lat), // explicitly track if this is a live pin
     rate: calculateRate(p),
     rating: p.rating || 0.0,
     taskCount: p.taskCount || 0,
@@ -405,7 +406,9 @@ function Step2Content() {
     setOrderField('providerBio', provider.bio || provider.aboutMe || '');
     setOrderField('providerBioTranslations', provider.bio_translations || {});
     setOrderField('providerExperience', provider.yearsOfExperience || '1 Year');
-    setOrderField('providerCoords', provider.base_lat ? { lat: provider.base_lat, lng: provider.base_lng } : null);
+    const lat = (provider.isLive && provider.current_lat) ? provider.current_lat : provider.base_lat;
+    const lng = (provider.isLive && provider.current_lng) ? provider.current_lng : provider.base_lng;
+    setOrderField('providerCoords', lat ? { lat, lng } : null);
 
     if (order.serviceType === 'car_rental') {
       setViewedBricoler(provider);
@@ -694,10 +697,12 @@ function ProviderCard({
   const rank = getRankBadge();
 
   useEffect(() => {
-    if (!provider.base_lat || !provider.base_lng) return;
-    getRoadDistance(clientLat, clientLng, provider.base_lat, provider.base_lng)
+    const lat = (provider.isLive && provider.current_lat) ? provider.current_lat : provider.base_lat;
+    const lng = (provider.isLive && provider.current_lng) ? provider.current_lng : provider.base_lng;
+    if (!lat || !lng) return;
+    getRoadDistance(clientLat, clientLng, lat, lng)
       .then(setRoadInfo);
-  }, [provider.id, clientLat, clientLng]);
+  }, [provider.id, clientLat, clientLng, provider.isLive, provider.current_lat, provider.current_lng]);
 
   const isCarRental = order.serviceType === 'car_rental';
   const avatar = provider.avatarUrl || provider.avatar || provider.photoURL;
@@ -737,8 +742,20 @@ function ProviderCard({
 
         {/* Center/Main Info Stack */}
         <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 4, overflow: 'hidden' }}>
-          <div style={{ fontSize: 15, fontWeight: 500, color: '#111827', lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-            {provider.name}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <div style={{ fontSize: 15, fontWeight: 500, color: '#111827', lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              {provider.name}
+            </div>
+            {provider.isLive && provider.current_lat && (
+              <div style={{ 
+                background: '#F0FDF4', color: '#16A34A', fontSize: 9, fontWeight: 950, 
+                padding: '2px 6px', borderRadius: 4, display: 'flex', alignItems: 'center', gap: 3,
+                border: '1px solid #DCFCE7'
+              }}>
+                <div style={{ width: 4, height: 4, background: '#16A34A', borderRadius: '50%', animation: 'pulse 1.5s infinite' }} />
+                LIVE
+              </div>
+            )}
           </div>
 
           <span style={{

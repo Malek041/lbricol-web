@@ -29,6 +29,7 @@ interface MapViewProps {
     avatarUrl?: string | null;
     isSelected: boolean;
     badge?: string | null; // 'NEW' | 'PRO' | 'ELITE' | 'CLASSIC'
+    isLive?: boolean;
   }>;
   broadcastPins?: Array<{
     id: string;
@@ -556,6 +557,10 @@ const MapView: React.FC<MapViewProps> = ({
             ? `<img src="${pin.avatarUrl}" style="width:100%;height:100%;object-fit:cover" onerror="this.onerror=null; this.src='/Images/Vectors Illu/LbricolFaceOY.webp'; this.parentElement.style.background='#F3F4F6'; this.innerHTML='👤';"/>`
             : `<div style="width:100%;height:100%;background:#F3F4F6;display:flex;align-items:center;justify-content:center;font-size:24px">👤</div>`
           }
+                ${pin.isLive ? `
+                  <div style="position:absolute; bottom:2px; right:2px; width:10px; height:10px; background:#22c55e; border:2px solid #fff; border-radius:50%; box-shadow:0 0 0 2px rgba(34,197,94,0.4); animation: pulse 1.5s infinite;"></div>
+                  <div style="position:absolute; top:2px; left:2px; background:#22c55e; color:white; font-size:7px; font-weight:900; padding:1px 4px; border-radius:3px; text-transform:uppercase; letter-spacing:0.02em; border:1px solid #fff;">LIVE</div>
+                ` : ''}
               </div>
             </div>
           </div>

@@ -56,8 +56,8 @@ export function matchScore(
   clientLng: number,
   serviceType: string
 ): number {
-  const lat = bricoler.base_lat;
-  const lng = bricoler.base_lng;
+  const lat = (bricoler.isLive && bricoler.current_lat) ? bricoler.current_lat : bricoler.base_lat;
+  const lng = (bricoler.isLive && bricoler.current_lng) ? bricoler.current_lng : bricoler.base_lng;
 
   if (!lat || !lng) return 15;
 
