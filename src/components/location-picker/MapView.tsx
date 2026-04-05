@@ -290,10 +290,20 @@ const MapView: React.FC<MapViewProps> = ({
         map.getSize().y * (pinY / 100)
       );
       const center = map.containerPointToLatLng(pinPoint);
+
+      // Immediately signal that coordinates changed (for accurate pin data)
+      // but keep the current address to avoid flicker until geocode finishes
+      onLoadingChange?.(true);
+      onLocationChange({
+        lat: center.lat,
+        lng: center.lng,
+        address: address || "Locating..."
+      });
+
       if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
       debounceTimerRef.current = setTimeout(() => {
         reverseGeocode(center.lat, center.lng);
-      }, 800);
+      }, 400);
     });
 
     const resizeObserver = new ResizeObserver(() => {

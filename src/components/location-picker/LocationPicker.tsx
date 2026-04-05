@@ -42,6 +42,7 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
   const { t } = useLanguage();
   const [activeView, setActiveView] = useState<PickerView>('MAP');
   const [currentPoint, setCurrentPoint] = useState<LocationPoint | null>(null);
+  const [isGeocoding, setIsGeocoding] = useState(false);
   const [selectedForDetails, setSelectedForDetails] = useState<Partial<SavedAddress> & { lat: number, lng: number, address: string } | null>(null);
   const [savedAddresses, setSavedAddresses] = useState<SavedAddress[]>(initialSavedAddresses);
 
@@ -220,6 +221,7 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
           <MapView
             onLocationChange={handleLocationChange}
             onLocationError={() => setIsLocating(false)}
+            onLoadingChange={setIsGeocoding}
             triggerGps={isManualSelection ? 0 : triggerGps}
             flyToPoint={flyToPoint || undefined}
             onInteractionStart={() => setIsInteracting(true)}
@@ -247,6 +249,7 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
                     address={currentPoint.address}
                     icon={serviceIcon}
                     onConfirm={handleConfirmPoint}
+                    loading={isGeocoding}
                   />
                 </div>
               )}
@@ -378,9 +381,20 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
  
                    <button
                      onClick={handleConfirmPoint}
-                     className="w-full h-15 bg-[#01A083] text-white rounded-full font-black text-[18px] active:scale-95 transition-all shadow-lg"
+                     disabled={isGeocoding}
+                     className={cn(
+                       "w-full h-15 text-white rounded-full font-black text-[18px] active:scale-95 transition-all shadow-lg flex items-center justify-center gap-3",
+                       isGeocoding ? 'bg-neutral-300 cursor-not-allowed shadow-none' : 'bg-[#01A083]'
+                     )}
                    >
-                     {t({ en: 'Confirm This Location', fr: 'Confirmer ce lieu', ar: 'تأكيد هذا الموقع' })}
+                     {isGeocoding ? (
+                       <>
+                         <Loader2 className="animate-spin" size={20} />
+                         {t({ en: 'Loading...', fr: 'Chargement...', ar: 'جاري التحميل...' })}
+                       </>
+                     ) : (
+                       t({ en: 'Confirm This Location', fr: 'Confirmer ce lieu', ar: 'تأكيد هذا الموقع' })
+                     )}
                    </button>
                    <button
                      onClick={() => setShowSearchInput(true)}
