@@ -3723,7 +3723,7 @@ const Home = () => {
       </main>
 
       {/* Mobile Bottom Navigation - OUTSIDE main to avoid overflow/stacking issues */}
-      {isMobile && !showSplash && !showAuthPopup && !isProgramming && !showClientOnboarding && !showMobileOnboarding && !showLanguagePopup && !isViewingOrderDetails && !showMessagesModal && ['home', 'calendar', 'orders', 'profile', 'performance', 'services', 'reviews', 'search'].includes(mobileNavTab) && <MobileBottomNav
+      {isMobile && !showSplash && !showAuthPopup && !isProgramming && !showClientOnboarding && !showMobileOnboarding && !showLanguagePopup && !isViewingOrderDetails && !showMessagesModal && !showLocationPicker && ['home', 'calendar', 'orders', 'profile', 'performance', 'services', 'reviews', 'search'].includes(mobileNavTab) && <MobileBottomNav
         activeTab={mobileNavTab as any}
         onTabChange={(tab: any) => {
           if (tab === 'calendar' && mobileNavTab === 'calendar') {
