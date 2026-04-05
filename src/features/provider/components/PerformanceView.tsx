@@ -231,12 +231,11 @@ export const PerformanceView = ({
                                                     initial={{ opacity: 0 }}
                                                     animate={{ opacity: 1 }}
                                                     exit={{ opacity: 0 }}
-                                                    className="space-y-2  bg-[#F6F7F6] min-h-screen -mx-6"
                                                 >
                                                     <div className="h-0.5 w-full bg-[#F6F7F6]" />
                                                     {/* Welcome banner for new bricolers */}
                                                     {monthTotal === 0 && (
-                                                        <div className="bg-white px-6 py-4 pb-0">
+                                                        <div className="bg-white px-6 py-4 pb-4">
                                                             <div className="bg-[#F0FBF8] border border-[#01A083]/20 rounded-2xl px-5 py-4 flex items-start gap-3">
                                                                 <Sparkles size={20} className="text-[#01A083] flex-shrink-0 mt-0.5" />
                                                                 <p className="text-[13px] text-[#01A083] font-semibold leading-snug">

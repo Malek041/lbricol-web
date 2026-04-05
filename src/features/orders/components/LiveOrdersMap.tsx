@@ -110,7 +110,7 @@ export default function LiveOrdersMap({
         }}
         interactive={true}
         pinY={25}
-        zoom={13}
+        zoom={14.5}
         showCenterPin={false}
         centerAddress={undefined}
         userPosition={null}

@@ -299,31 +299,7 @@ export default function ProviderOrdersView({
                             exit={{ y: 100, opacity: 0 }}
                             className="flex gap-4 overflow-x-auto px-6 pb-6 no-scrollbar snap-x snap-mandatory"
                         >
-                            {/* Confirmed Active Orders First */}
-                            {confirmedOrders
-                                .filter(o => {
-                                    const status = getDynamicStatus(o);
-                                    return ['programmed', 'accepted', 'in_progress', 'waiting', 'on_time'].includes(status || '');
-                                })
-                                .map((order: any) => (
-                                     <div key={order.id} id={`job-card-${order.id}`} className="flex-none w-[350px] snap-center">
-                                          <ProviderJobCard
-                                              order={{
-                                                  ...order,
-                                                  id: order.id,
-                                                  service: order.serviceId || order.service || '',
-                                                  subService: order.subService || order.subServiceId,
-                                                  totalPrice: order.totalPrice || Number(order.price) || 0
-                                              } as any}
-                                             onSelect={() => onSelectOrder(order)}
-                                             onConfirm={onConfirmJob}
-                                             onRedistribute={onRedistributeJob}
-                                             currentTime={currentTime}
-                                         />
-                                     </div>
-                                ))}
-
-                            {/* Available Marketplace Jobs */}
+                            {/* Available Marketplace Jobs ONLY */}
                             {availableJobs.map((job) => (
                                 <div key={job.id} id={`job-card-${job.id}`} className="flex-none w-[350px] snap-center">
                                     <ProviderJobCard

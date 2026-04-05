@@ -3025,40 +3025,88 @@ const DetailItem = ({ icon: Icon, label, value, subValue, highlight }: {
                         </motion.div>
                     )}
 
-                    {activeNav === 'calendar' && (
-                        <ProviderOrdersView
-                            confirmedOrders={acceptedJobsSorted}
-                            availableJobs={marketJobsOpen}
-                            userData={userData}
-                            setUserData={setUserData as any}
-                            onConfirmJob={handleConfirmJob}
-                            onRedistributeJob={(order) => {
-                                const job = acceptedJobs.find(j => j.id === order.id);
-                                if (job) {
-                                    setRedistributeJob(job);
-                                    setShowRedistributeModal(true);
-                                }
-                            }}
-                            onViewMessages={(jobId) => {
-                                const job = availableJobs.find(j => j.id === jobId);
-                                if (job) {
-                                    setSelectedChat(job as any);
-                                    setActiveNav('messages');
-                                }
-                            }}
-                            onSelectOrder={(order) => {
-                                const job = availableJobs.find(j => j.id === order.id);
-                                if (job) {
-                                    setViewingJobDetails(toMobileItem(job, 'market'));
-                                    return;
-                                }
-                                const accepted = acceptedJobs.find(j => j.id === order.id);
-                                if (accepted) {
-                                    setViewingJobDetails(toMobileItem(accepted, 'accepted'));
-                                }
-                            }}
-                        />
-                    )}
+                    {activeNav === 'calendar' && (() => {
+                        const _ud = userData as any;
+                        const hasRoutine = _ud?.routine && typeof _ud.routine === 'object' && Object.keys(_ud.routine).length > 0;
+                        return (
+                            <div className="relative h-full w-full">
+                                {/* The actual orders view — blurred when no routine */}
+                                <div className={hasRoutine ? '' : 'pointer-events-none select-none filter blur-sm brightness-90 saturate-50'}>
+                                    <ProviderOrdersView
+                                        confirmedOrders={acceptedJobsSorted}
+                                        availableJobs={marketJobsOpen}
+                                        userData={userData}
+                                        setUserData={setUserData as any}
+                                        onConfirmJob={handleConfirmJob}
+                                        onRedistributeJob={(order) => {
+                                            const job = acceptedJobs.find(j => j.id === order.id);
+                                            if (job) {
+                                                setRedistributeJob(job);
+                                                setShowRedistributeModal(true);
+                                            }
+                                        }}
+                                        onViewMessages={(jobId) => {
+                                            const job = availableJobs.find(j => j.id === jobId);
+                                            if (job) {
+                                                setSelectedChat(job as any);
+                                                setActiveNav('messages');
+                                            }
+                                        }}
+                                        onSelectOrder={(order) => {
+                                            const job = availableJobs.find(j => j.id === order.id);
+                                            if (job) {
+                                                setViewingJobDetails(toMobileItem(job, 'market'));
+                                                return;
+                                            }
+                                            const accepted = acceptedJobs.find(j => j.id === order.id);
+                                            if (accepted) {
+                                                setViewingJobDetails(toMobileItem(accepted, 'accepted'));
+                                            }
+                                        }}
+                                    />
+                                </div>
+
+                                {/* Routine-required overlay — shown only to new bricolers */}
+                                {!hasRoutine && (
+                                    <div className="absolute inset-0 z-[50] flex flex-col items-center justify-end pb-28 px-6">
+                                        <motion.div
+                                            initial={{ opacity: 0, y: 40, scale: 0.95 }}
+                                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                                            transition={{ type: 'spring', damping: 24, stiffness: 260, delay: 0.1 }}
+                                            className="w-full max-w-sm bg-white rounded-[32px] p-7 shadow-2xl border border-neutral-100 flex flex-col items-center text-center"
+                                        >
+                                            {/* Icon */}
+                                            <div className="w-16 h-16 bg-[#E6F7F4] rounded-2xl flex items-center justify-center mb-5">
+                                                <Calendar size={30} className="text-[#01A083]" />
+                                            </div>
+
+                                            <h2 className="text-[20px] font-black text-black mb-2 leading-tight" style={{ fontFamily: 'Uber Move, var(--font-sans)' }}>
+                                                {t({ en: 'Set your weekly routine first', fr: 'Définissez votre routine d\'abord', ar: 'حدد روتينك الأسبوعي أولاً' })}
+                                            </h2>
+                                            <p className="text-[13px] font-medium text-neutral-500 mb-6 leading-relaxed">
+                                                {t({
+                                                    en: 'Clients can only book you when they know your availability. Set your weekly hours to start receiving orders.',
+                                                    fr: 'Les clients peuvent vous réserver uniquement quand ils connaissent vos disponibilités. Définissez vos horaires pour commencer à recevoir des commandes.',
+                                                    ar: 'لا يمكن للعملاء حجزك إلا عند معرفة مواعيدك. حدد ساعات عملك الأسبوعية لبدء استقبال الطلبات.'
+                                                })}
+                                            </p>
+
+                                            <button
+                                                onClick={() => {
+                                                    setActiveNav('performance');
+                                                    setPerformanceTab('availability');
+                                                }}
+                                                className="w-full h-14 bg-[#01A083] text-white font-black text-[15px] rounded-2xl flex items-center justify-center gap-2 active:scale-[0.98] transition-all border border-[#008f75]"
+                                            >
+                                                <Calendar size={18} />
+                                                {t({ en: 'Set weekly routine', fr: 'Définir ma routine', ar: 'تحديد الروتين الأسبوعي' })}
+                                            </button>
+                                        </motion.div>
+                                    </div>
+                                )}
+                            </div>
+                        );
+                    })()}
 
                     {activeNav === 'performance' && (
                         <PerformanceView
@@ -3918,7 +3966,7 @@ const DetailItem = ({ icon: Icon, label, value, subValue, highlight }: {
                     />
 
                     {
-                        isMobileLayout && !selectedChat && !viewingJobDetails && performanceDetail === 'none' && !showLanguagePopup && !showProfileModal && !showAddServiceModal && !showNIDModal && (
+                        isMobileLayout && !selectedChat && !viewingJobDetails && performanceDetail === 'none' && !showLanguagePopup && !showProfileModal && !showAddServiceModal && !showNIDModal && !(activeNav === 'performance' && performanceTab === 'availability') && (
                             <div key="mobile-bottom-nav-wrapper">
                                 <MobileBottomNav
                                     activeTab={activeNav}

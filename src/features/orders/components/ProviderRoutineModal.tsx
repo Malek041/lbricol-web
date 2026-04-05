@@ -144,10 +144,10 @@ export default function ProviderRoutineModal({
                     animate={{ x: 0 }}
                     exit={{ x: '100%' }}
                     transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-                    className="fixed inset-0 z-[5000] bg-[#FAFAFA] flex flex-col"
+                    className="fixed inset-0 z-[5000] bg-[#FFFFFF] flex flex-col"
                 >
                     {/* Header */}
-                    <div className="bg-white px-6 py-6 border-b border-[#F0F0F0] flex items-center justify-between shadow-sm z-10">
+                    <div className="bg-white px-6 py-6 border-b border-[#F0F0F0] flex items-center justify-between z-10">
                         <div>
                             <h1 className="text-[24px] font-[1000] text-black leading-tight">
                                 {t({ en: 'Weekly Routine', fr: 'Routine hebdomadaire', ar: 'الروتين الأسبوعي' })}
@@ -172,7 +172,7 @@ export default function ProviderRoutineModal({
                             return (
                                 <div key={day} className={cn(
                                     "bg-white rounded-[20px] p-5 border-2 transition-all",
-                                    active ? "border-[#01A083]/20 shadow-sm" : "border-transparent shadow-sm opacity-60"
+                                    active ? "border-[#01A083]/10 " : "border-transparent  opacity-60"
                                 )}>
                                     <div className="flex items-center justify-between mb-4">
                                         <h3 className="text-[17px] font-black text-black capitalize">

@@ -717,6 +717,14 @@ export default function CheckoutPage() {
                                     mountingAddOns: (order.serviceDetails as any)?.mountingAddOns,
                                     deliveryDistanceKm: (order.serviceDetails as any)?.deliveryDistanceKm,
                                     deliveryDurationMinutes: (order.serviceDetails as any)?.deliveryDurationMinutes,
+                                    // Office Cleaning specific
+                                    officeDesks: (order.serviceDetails as any)?.officeDesks,
+                                    officeMeetingRooms: (order.serviceDetails as any)?.officeMeetingRooms,
+                                    officeBathrooms: (order.serviceDetails as any)?.officeBathrooms,
+                                    hasKitchenette: (order.serviceDetails as any)?.hasKitchenette,
+                                    hasReception: (order.serviceDetails as any)?.hasReception,
+                                    officeAddOns: (order.serviceDetails as any)?.officeAddOns,
+                                    taskSize: (order.serviceDetails as any)?.taskSize,
                                 }
                             );
 

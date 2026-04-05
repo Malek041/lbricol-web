@@ -49,10 +49,15 @@ export const SERVICES_HIERARCHY: Record<string, ServiceConfig> = {
         name: 'Cleaning',
         icon: Trash2,
         subServices: [
-            { id: 'deep_cleaning', name: 'Deep Home Cleaning (Move-in/Out)', pricingArchetype: 'unit', estimatedDurationHr: 6, baseSetupHr: 1.0, complexityMultiplier: 1.5 },
-            { id: 'hospitality_turnover', name: 'التنظيف الفندقي', pricingArchetype: 'unit', estimatedDurationHr: 2.5, baseSetupHr: 0.4, complexityMultiplier: 0.9 },
-            { id: 'office_cleaning', name: 'Office & Workspace Cleaning', pricingArchetype: 'unit', estimatedDurationHr: 4, baseSetupHr: 0.5, complexityMultiplier: 1.0 },
-            { id: 'dish_cleaning', name: 'Dish Washing & Kitchen Tidy', pricingArchetype: 'hourly', estimatedDurationHr: 1.5, baseSetupHr: 0.2, complexityMultiplier: 1.0 }
+            { id: 'hospitality_turnover', name: 'Hospitality Cleaning', pricingArchetype: 'unit', estimatedDurationHr: 2.5, baseSetupHr: 0.4, complexityMultiplier: 0.9 },
+            { id: 'car_wash', name: 'Car Wash', pricingArchetype: 'fixed', estimatedDurationHr: 1, baseSetupHr: 0.2, complexityMultiplier: 1.0 },
+            { id: 'deep_cleaning', name: 'Deep Home Cleaning', pricingArchetype: 'unit', estimatedDurationHr: 6, baseSetupHr: 1.0, complexityMultiplier: 1.5 },
+            { id: 'office_cleaning', name: 'Office Cleaning', pricingArchetype: 'unit', estimatedDurationHr: 4, baseSetupHr: 0.5, complexityMultiplier: 1.0 },
+            { id: 'dish_cleaning', name: 'Dish Washing', pricingArchetype: 'hourly', estimatedDurationHr: 1.5, baseSetupHr: 0.2, complexityMultiplier: 1.0 },
+            // Legacy/Internal support for standard sizes found in pricing.ts
+            { id: 'standard_small', name: 'Standard Cleaning (Small)', pricingArchetype: 'unit', estimatedDurationHr: 2, baseSetupHr: 0.5, complexityMultiplier: 1.0 },
+            { id: 'standard_large', name: 'Standard Cleaning (Large)', pricingArchetype: 'unit', estimatedDurationHr: 4, baseSetupHr: 0.5, complexityMultiplier: 1.0 },
+            { id: 'family_home', name: 'Family Home Cleaning', pricingArchetype: 'unit', estimatedDurationHr: 6, baseSetupHr: 1.0, complexityMultiplier: 1.2 }
         ]
     },
 
@@ -243,11 +248,11 @@ export const SERVICES_HIERARCHY: Record<string, ServiceConfig> = {
         subServices: [
 
             {
-                id: 'car_wash',
-                name: 'Car Wash',
+                id: 'automotive_glass',
+                name: 'Automotive Glass',
                 pricingArchetype: 'fixed',
-                estimatedDurationHr: 1,
-                desc: { en: 'Professional car washing and cleaning.', fr: 'Lavage et nettoyage professionnel de voiture.', ar: 'غسيل وتنظيف السيارات بشكل احترافي.' }
+                estimatedDurationHr: 1.5,
+                desc: { en: 'Windshield and glass repair.', fr: 'Réparation de pare-brise et de vitres.', ar: 'إصلاح الزجاج والزجاج الأمامي.' }
             },
             {
                 id: 'automotive_glass',

@@ -949,6 +949,26 @@ const MapView: React.FC<MapViewProps> = ({
     map.fitBounds(bounds, { padding: [100, 100], animate: true });
   }, [providerPins?.length, mapReady, disableFitBounds]); // Dependency on length/exists, not focus
 
+  // ── Auto-fit bounds for broadcast pins (Marketplace) ────────────────
+  useEffect(() => {
+    if (disableFitBounds) return;
+    if (!mapRef.current || !mapReady || !broadcastPins || broadcastPins.length === 0) return;
+    const map = mapRef.current;
+
+    const allPoints: L.LatLngTuple[] = broadcastPins.map(p => [
+      Number(p.lat || (p as any).locationDetails?.lat || 31.5085),
+      Number(p.lng || (p as any).locationDetails?.lng || -9.7595)
+    ]);
+    
+    if (allPoints.length > 1) {
+      const bounds = L.latLngBounds(allPoints);
+      map.fitBounds(bounds, { padding: [80, 80], maxZoom: 15, animate: true });
+    } else if (allPoints.length === 1 && !initialLocation) {
+      // If only one pin and no initial location was set, center on it
+      map.flyTo(allPoints[0], 15, { animate: true });
+    }
+  }, [broadcastPins?.length, mapReady, disableFitBounds]);
+
   return (
     <div className="relative w-full h-full overflow-hidden">
       <div ref={mapContainerRef} className="w-full h-full z-0" />

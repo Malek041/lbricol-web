@@ -42,12 +42,10 @@ export default function AvailabilityTab({
     }, [userData?.routine]);
 
     return (
-        <div className="flex flex-col bg-[#FFFFFF] h-full p-4 md:p-6">
-            <h2 className="text-[28px] font-black text-black mb-6">
-                {t({ en: 'My Availability', fr: 'Ma Disponibilité', ar: 'توفري' })}
-            </h2>
+        <div className="flex flex-col bg-[#FFFFFF] h-full p-1 md:p-6">
 
-            <div className="bg-white rounded-[12px] p-4 md:p-6 border border-neutral-100 shadow-sm max-w-[600px] mx-auto w-full">
+
+            <div className="bg-white rounded-[12px] p-4 md:p-6 max-w-[600px] mx-auto w-full">
                 <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-8 gap-4 w-full">
                     <div>
                         <h3 className="text-[20px] font-black text-black mb-1">
@@ -77,7 +75,7 @@ export default function AvailabilityTab({
                         return (
                             <div
                                 key={day}
-                                className={`flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-[20px] border transition-colors gap-3 ${isActive ? 'border-[#01A083]/20 bg-[#E6F7F4]/30' : 'border-neutral-100 bg-neutral-50/50'
+                                className={`flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-[10px] border transition-colors gap-3 ${isActive ? 'border-[#01A083]/20 bg-[#FFFFFF]' : 'border-neutral-100 bg-neutral-50/50'
                                     }`}
                             >
                                 <div className="flex items-center gap-4">
