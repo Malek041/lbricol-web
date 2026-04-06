@@ -195,6 +195,7 @@ export const DesktopOrderModal: React.FC<DesktopOrderModalProps> = ({
                         initialLocation={{ lat: currentLat, lng: currentLng }}
                         zoom={16}
                         triggerGps={triggerGps}
+                        pinY={50}
                         onLocationChange={(point) => {
                            setCurrentLat(point.lat);
                            setCurrentLng(point.lng);
@@ -273,6 +274,8 @@ export const DesktopOrderModal: React.FC<DesktopOrderModalProps> = ({
                      <MapView
                         initialLocation={{ lat: currentLat, lng: currentLng }}
                         zoom={14}
+                        pinY={50}
+                        onLocationChange={() => {}}
                         providerPins={providers.map(p => ({
                            ...p,
                            isSelected: focusedProviderId === p.id
