@@ -16,7 +16,7 @@ const EggyServiceIcon = ({ id, title, image, onOrder }: { id: string; title: str
   const [imgSrc, setImgSrc] = React.useState(image);
   const [fallbackIndex, setFallbackIndex] = React.useState(0);
   const filename = image.split('/').pop();
-  
+
   const fallbacks = [
     `/Images/Desktop hero section images/${filename}`,
     `/Images/clientHomeHeroSection/${filename}`,
@@ -77,7 +77,6 @@ const EggyServiceIcon = ({ id, title, image, onOrder }: { id: string; title: str
             justifyContent: 'center',
             padding: '12px', // Reduced padding so image is bigger
             zIndex: 1,
-            boxShadow: '0 8px 20px rgba(0,0,0,0.05)',
             borderRadius: staticEggyBorder
           }}
         >
@@ -102,7 +101,6 @@ const EggyServiceIcon = ({ id, title, image, onOrder }: { id: string; title: str
           backgroundColor: '#FFFFFF',
           padding: '6px 14px',
           borderRadius: '100px',
-          boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
           zIndex: 2,
           minWidth: '100px',
           textAlign: 'center',

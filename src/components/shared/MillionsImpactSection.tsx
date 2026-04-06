@@ -20,27 +20,24 @@ const MillionsImpactSection = () => {
         card: theme === 'light' ? '#FFFFFF' : '#1A1A1A'
     };
 
-    const bubbleData = [
-        // Top Left
-        { x: '-35vw', y: '-25vh', delay: 0.2, content: t({ en: "Looking for a plumber", fr: "Je cherche un plombier", ar: "أبحث عن سباك" }), avatar: "/Images/Service Category vectors/HandymanVector.webp" },
-        { x: '-42vw', y: '-12vh', delay: 0.5, avatar: "/Images/Service Category vectors/CleaningVector.webp" },
-        // Top Right
-        { x: '35vw', y: '-28vh', content: t({ en: "Thank you so much!", fr: "Merci beaucoup !", ar: "شكرا جزيلا!" }), delay: 0.3, avatar: "/Images/Vectors Illu/CarWithDriver.png" },
-        { x: '42vw', y: '-15vh', delay: 0.6, avatar: "/Images/Vectors Illu/babysetting.webp" },
-        // Bottom Left
-        { x: '-38vw', y: '10vh', content: t({ en: "Arrived safely", fr: "Arrivé en toute sécurité", ar: "وصلت بأمان" }), delay: 0.4, avatar: "/Images/Vectors Illu/Groceriedbag.png" },
-        { x: '-28vw', y: '15vh', delay: 0.7, avatar: "/Images/Service Category vectors/MovingHelpVector.webp" },
-        // Bottom Right
-        { x: '38vw', y: '8vh', content: t({ en: "Great pricing!", fr: "Excellent prix !", ar: "أسعار ممتازة!" }), delay: 0.2, avatar: "/Images/Service Category vectors/AsssemblyVector.webp" },
-        { x: '32vw', y: '18vh', delay: 0.8, avatar: "/Images/Vectors Illu/shoppingbag.webp" },
+    const heroImages = [
+        '/Images/clientHomeHeroSection/Cleaning.png',
+        '/Images/clientHomeHeroSection/groceries.png',
+        '/Images/clientHomeHeroSection/money.png',
+        '/Images/clientHomeHeroSection/movingHelp.png',
+        '/Images/clientHomeHeroSection/onlineStore.png',
+        '/Images/clientHomeHeroSection/petsCare.png',
     ];
+
+    // Multiply images for a smooth infinite scroll loop
+    const marqueeImages = [...heroImages, ...heroImages, ...heroImages, ...heroImages];
 
     return (
         <section style={{
-            padding: isMobile ? '4rem 0' : '6rem 0',
+            padding: isMobile ? '4rem 0' : '8rem 0 4rem 0',
             backgroundColor: c.bg,
             position: 'relative',
-            minHeight: isMobile ? '600px' : '800px',
+            minHeight: isMobile ? '500px' : '650px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -69,111 +66,63 @@ const MillionsImpactSection = () => {
                         color: c.text,
                         lineHeight: '1.1',
                         letterSpacing: '-0.04em',
-                        fontFamily: 'Uber Move, var(--font-sans)'
+                        fontFamily: 'Uber Move, var(--font-sans)',
+                        marginBottom: '60px'
                     }}>
                         {t({
-                            en: "Facilitating the lives of people in the city, Lbricol connects you to nearby expert help in 10 seconds.",
+                            en: "Lbricol connects you to nearby expert help in 10 seconds.",
                             fr: "Facilitant la vie des citadins, Lbricol vous connecte à une aide experte et à une mobilité fluide.",
                             ar: "نسهل حياة سكان المدينة، ونوصلك بمساعدة الخبراء وتسهيل التنقل."
                         })}
                     </h2>
-                </motion.div>
-            </div>
 
-            {/* Floating Elements Area */}
-            <div style={{
-                position: 'absolute',
-                inset: 0,
-                pointerEvents: 'none',
-                zIndex: 10,
-                overflow: 'hidden'
-            }}>
-                <div style={{
-                    position: 'relative',
-                    width: '100%',
-                    height: '100%',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center'
-                }}>
-                    {bubbleData.map((bubble, index) => (
+                    {/* Infinite Marquee of Icons */}
+                    <div style={{
+                        width: '100%',
+                        overflow: 'hidden',
+                        position: 'relative',
+                        padding: '40px 0',
+                        maskImage: 'linear-gradient(to right, transparent, black 10%, black 90%, transparent)',
+                        WebkitMaskImage: 'linear-gradient(to right, transparent, black 10%, black 90%, transparent)'
+                    }}>
                         <motion.div
-                            key={index}
-                            initial={{ opacity: 0, scale: 0.5, x: 0, y: 0 }}
-                            whileInView={{
-                                opacity: 1,
-                                scale: 1,
-                                x: isMobile ? `calc(${bubble.x} / 2)` : bubble.x,
-                                y: isMobile ? `calc(${bubble.y} / 1.5)` : bubble.y
+                            animate={{
+                                x: [0, -heroImages.length * 200]
                             }}
-                            viewport={{ once: true, margin: "-50px" }}
                             transition={{
-                                type: "spring",
-                                damping: 25,
-                                stiffness: 80,
-                                delay: bubble.delay,
-                            }}
-                            style={{ position: 'absolute', display: 'flex', alignItems: 'center', gap: '12px' }}
-                        >
-                            <motion.div
-                                animate={{ y: [0, -15, 0] }}
-                                transition={{
-                                    duration: 4 + Math.random() * 2,
+                                x: {
+                                    duration: 30,
                                     repeat: Infinity,
-                                    ease: "easeInOut"
-                                }}
-                                style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
-                            >
-                                {bubble.content && index % 2 === 0 && (
-                                    <div style={{
-                                        backgroundColor: c.card,
-                                        padding: '12px 20px',
-                                        borderRadius: '16px',
-                                        boxShadow: theme === 'light' ? '0 8px 30px rgba(0,0,0,0.08)' : '0 8px 30px rgba(0,0,0,0.4)',
-                                        border: `1px solid ${c.border}`,
-                                        fontSize: '12px',
-                                        fontWeight: 800,
-                                        color: c.text,
-                                        whiteSpace: 'nowrap'
-                                    }}>
-                                        {bubble.content}
-                                    </div>
-                                )}
-
-                                <div style={{ position: 'relative' }}>
-                                    <img
-                                        src={bubble.avatar}
-                                        alt="User"
-                                        style={{
-                                            width: isMobile ? '48px' : '64px',
-                                            height: isMobile ? '48px' : '64px',
-                                            borderRadius: '50%',
-                                            border: `3px solid ${c.bg}`,
-                                            boxShadow: '0 10px 25px rgba(0,0,0,0.1)',
-                                            objectFit: 'cover'
-                                        }}
+                                    ease: "linear"
+                                }
+                            }}
+                            style={{
+                                display: 'flex',
+                                width: 'fit-content',
+                                gap: isMobile ? '60px' : '100px',
+                                alignItems: 'center'
+                            }}
+                        >
+                            {marqueeImages.map((img, idx) => (
+                                <div key={idx} style={{ 
+                                    flexShrink: 0,
+                                    padding: '10px'
+                                }}>
+                                    <img 
+                                        src={img} 
+                                        alt="" 
+                                        style={{ 
+                                            height: isMobile ? '80px' : '150px', 
+                                            width: 'auto',
+                                            objectFit: 'contain',
+                                            filter: 'drop-shadow(0 10px 20px rgba(0,0,0,0.05))'
+                                        }} 
                                     />
                                 </div>
-
-                                {bubble.content && index % 2 !== 0 && (
-                                    <div style={{
-                                        backgroundColor: c.card,
-                                        padding: '12px 20px',
-                                        borderRadius: '16px',
-                                        boxShadow: theme === 'light' ? '0 8px 30px rgba(0,0,0,0.08)' : '0 8px 30px rgba(0,0,0,0.4)',
-                                        border: `1px solid ${c.border}`,
-                                        fontSize: '12px',
-                                        fontWeight: 800,
-                                        color: c.text,
-                                        whiteSpace: 'nowrap'
-                                    }}>
-                                        {bubble.content}
-                                    </div>
-                                )}
-                            </motion.div>
+                            ))}
                         </motion.div>
-                    ))}
-                </div>
+                    </div>
+                </motion.div>
             </div>
         </section>
     );
