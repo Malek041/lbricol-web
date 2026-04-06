@@ -501,15 +501,15 @@ const MapView: React.FC<MapViewProps> = ({
 
     if (!providerPins || providerPins.length === 0) return;
 
-    const zoomScale = Math.max(0.6, Math.min(2.5, Math.pow(1.15, currentZoom - 17)));
+    const zoomScale = Math.max(0.9, Math.min(3.0, Math.pow(1.18, currentZoom - 16)));
 
     providerPins.forEach(pin => {
       const isFocused = pin.id === focusedProviderId;
       const hasFocus = !!focusedProviderId;
-      const opacity = hasFocus && !isFocused ? 0.6 : 1;
-      const baseScale = hasFocus && !isFocused ? 0.8 : (isFocused ? 1.15 : 1);
+      const opacity = 1;
+      const baseScale = hasFocus && !isFocused ? 0.9 : (isFocused ? 1.2 : 1);
       const scale = baseScale * zoomScale;
-      const size = (isFocused ? 62 : 44) * zoomScale;
+      const size = (isFocused ? 68 : 50) * zoomScale;
 
       const bounceStyle = "";
 
