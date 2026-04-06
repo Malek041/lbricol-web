@@ -63,7 +63,7 @@ const EntrancePicker: React.FC<EntrancePickerProps> = ({ initialLocation, onConf
                   <span className="text-[12px] font-bold text-[#6B7280]">?</span>
                 </div>
                 {/* Courier Head/Helmet */}
-                <div className="w-10 h-10 bg-[#FFD600] rounded-xl border-[1.5px] border-black flex flex-col items-center overflow-hidden">
+                <div className="w-10 h-10 bg-[#FFCC02] rounded-xl border-[1.5px] border-black flex flex-col items-center overflow-hidden">
                     <div className="w-full h-1/2 bg-black opacity-80 mt-1"></div>
                 </div>
                 {/* Courier Bag */}
@@ -83,7 +83,7 @@ const EntrancePicker: React.FC<EntrancePickerProps> = ({ initialLocation, onConf
           </div>
         </div>
 
-        {/* Fixed Lbricol Yellow Pin — CSS centered, does not move */}
+        {/* Fixed Lbricol Blue Pin — CSS centered, does not move */}
         <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-[calc(100%-4px)] z-20 pointer-events-none flex flex-col items-center">
           <img 
             src="/Images/map Assets/locationPinYellowOnly.png" 

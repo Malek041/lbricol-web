@@ -288,7 +288,7 @@ const BricolerCard = ({ b, t, expandedId, setExpandedId, toggleStatus, handleDel
                 {isClaimed ? 'Claimed' : 'Shadow'}
               </div>
               <div className="flex items-center gap-1 text-[11px] text-neutral-600">
-                <Star size={11} className="text-[#FFC244] fill-[#FFC244]" />
+                <Star size={11} className="text-[#FFCC02] fill-[#FFCC02]" />
                 <span className="font-bold">{rating.toFixed(1)}</span>
                 <span className="text-neutral-400">({jobs} jobs)</span>
               </div>
@@ -516,7 +516,7 @@ const BricolerProfileBottomSheet = ({ bricoler, isOpen, onClose, t }: any) => {
                           }
                         });
                         return chips.map((chip) => (
-                          <span key={chip} className="px-3 py-1.5 bg-[#FFC244]/20 text-neutral-800 text-xs font-bold rounded-xl border border-[#FFC244]/30 capitalize">
+                          <span key={chip} className="px-3 py-1.5 bg-[#FFCC02]/20 text-neutral-800 text-xs font-bold rounded-xl border border-[#FFCC02]/30 capitalize">
                             {chip}
                           </span>
                         ));
@@ -580,12 +580,12 @@ const BricolerProfileBottomSheet = ({ bricoler, isOpen, onClose, t }: any) => {
                     <KpiCard
                       label="Score"
                       value={bricoler.score || 0}
-                      icon={<Star size={16} className="text-[#FFC244] fill-[#FFC244]" />}
+                      icon={<Star size={16} className="text-[#FFCC02] fill-[#FFCC02]" />}
                     />
                     <KpiCard
                       label="Stars"
                       value={((bricoler.numReviews || bricoler.completedJobs || 0) === 0 ? 0.0 : (bricoler.rating || 0.0)).toFixed(1)}
-                      icon={<Star size={16} className="text-[#FFC244] fill-[#FFC244]" />}
+                      icon={<Star size={16} className="text-[#FFCC02] fill-[#FFCC02]" />}
                     />
                     <KpiCard
                       label="Total Jobs"
@@ -625,7 +625,7 @@ const BricolerProfileBottomSheet = ({ bricoler, isOpen, onClose, t }: any) => {
                             <div className="flex justify-between items-center mb-1">
                               <span className="text-xs font-black text-neutral-900">{r.clientName}</span>
                               <div className="flex items-center gap-0.5">
-                                <Star size={10} className="text-[#FFC244] fill-[#FFC244]" />
+                                <Star size={10} className="text-[#FFCC02] fill-[#FFCC02]" />
                                 <span className="text-xs font-bold">{r.rating}</span>
                               </div>
                             </div>

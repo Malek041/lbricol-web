@@ -132,14 +132,14 @@ const OrderHistoryCarousel = ({ orders, onSelectOrder }: OrderHistoryCarouselPro
                                         <div style={{ display: 'flex', flexDirection: 'column' }}>
                                             <span style={{ fontSize: '13px', fontWeight: 800, color: c.text }}>{order.bricolerName}</span>
                                             <div style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
-                                                <Star size={10} fill="#FFC244" color="#FFC244" />
+                                                <Star size={10} fill="#FFCC02" color="#FFCC02" />
                                                 <span style={{ fontSize: '11px', fontWeight: 700, color: c.textMuted }}>{order.bricolerRating || '5.0'}</span>
                                             </div>
                                         </div>
                                     </div>
                                 ) : (
                                     <div style={{ fontSize: '12px', fontWeight: 700, color: c.textMuted, display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                        <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#FFC244', animation: 'pulse 2s infinite' }} />
+                                        <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#FFCC02', animation: 'pulse 2s infinite' }} />
                                         {t({ en: 'Matching...', fr: 'Recherche...' })}
                                     </div>
                                 )}

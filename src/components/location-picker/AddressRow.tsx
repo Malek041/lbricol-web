@@ -45,7 +45,7 @@ const AddressRow: React.FC<AddressRowProps> = ({ address, onSelect, onEdit }) =>
             
             {isMissingDetails && (
               <div className="mt-1">
-                <span className="inline-block bg-[#FEF3C7] text-[#92400E] text-[11px] font-semibold px-2 py-0.5 rounded-[6px]">
+                <span className="inline-block bg-[#CCF1FF] text-[#92400E] text-[11px] font-semibold px-2 py-0.5 rounded-[6px]">
                   Missing address details
                 </span>
               </div>

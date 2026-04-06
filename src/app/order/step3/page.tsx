@@ -797,10 +797,10 @@ export default function CheckoutPage() {
             </main>
 
             {/* Bottom Footer */}
-            <div style={{ position: 'relative', background: '#FFC244', padding: '24px 24px calc(24px + env(safe-area-inset-bottom))', zIndex: 100, flexShrink: 0 }}>
+            <div style={{ position: 'relative', background: '#FFCC02', padding: '24px 24px calc(24px + env(safe-area-inset-bottom))', zIndex: 100, flexShrink: 0 }}>
                 {/* Wave Top Effect Overlap */}
                 <div style={{ position: 'absolute', top: -30, left: 0, right: 0, height: 30, zIndex: 10, pointerEvents: 'none' }}>
-                    <svg viewBox="0 0 1440 320" preserveAspectRatio="none" style={{ width: '100%', height: '100%', fill: '#FFC244' }}>
+                    <svg viewBox="0 0 1440 320" preserveAspectRatio="none" style={{ width: '100%', height: '100%', fill: '#FFCC02' }}>
                         <path d="M0,160L48,176C96,192,192,224,288,224C384,224,480,192,576,165.3C672,139,768,117,864,128C960,139,1056,181,1152,192C1248,203,1344,181,1392,170.7L1440,160L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path>
                     </svg>
                 </div>

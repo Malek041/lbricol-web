@@ -178,7 +178,7 @@ export default function AdminReviewsView() {
                             >
                                 <div className="flex items-start justify-between">
                                     <div className="flex items-center gap-3">
-                                        <div className="w-12 h-12 rounded-2xl bg-[#FFC244]/10 flex items-center justify-center text-[#FFC244] font-black border border-[#FFC244]/20 overflow-hidden">
+                                        <div className="w-12 h-12 rounded-2xl bg-[#FFCC02]/10 flex items-center justify-center text-[#FFCC02] font-black border border-[#FFCC02]/20 overflow-hidden">
                                             {review.clientAvatar ? (
                                                 <img src={review.clientAvatar} className="w-full h-full object-cover" alt={review.clientName} />
                                             ) : (
@@ -193,8 +193,8 @@ export default function AdminReviewsView() {
                                             </div>
                                         </div>
                                     </div>
-                                    <div className="flex items-center gap-1.5 bg-[#FFC244]/10 px-3 py-1.5 rounded-full border border-[#FFC244]/20">
-                                        <Star size={14} className="text-[#FFC244] fill-[#FFC244]" strokeWidth={2.5} />
+                                    <div className="flex items-center gap-1.5 bg-[#FFCC02]/10 px-3 py-1.5 rounded-full border border-[#FFCC02]/20">
+                                        <Star size={14} className="text-[#FFCC02] fill-[#FFCC02]" strokeWidth={2.5} />
                                         <span className="text-[14px] font-black text-black">
                                             {(review.clientRating || review.rating || 0).toFixed(1)}
                                         </span>

@@ -2134,6 +2134,7 @@ const DetailItem = ({ icon: Icon, label, value, subValue, highlight }: {
                                     key={tab.id}
                                     onClick={() => {
                                         setPerformanceTab(tab.id as any);
+                                        setPerformanceDetail('none');
                                         if ((activeNav as string) !== 'performance') setActiveNav('performance');
                                     }}
                                     className={cn(
@@ -2247,7 +2248,7 @@ const DetailItem = ({ icon: Icon, label, value, subValue, highlight }: {
                                             {/* Top row: 2 pills */}
                                             <div className="flex items-center justify-center gap-2">
                                                 <div className="h-[34px] px-[18px] bg-[#F9F9F9] rounded-full flex items-center justify-center gap-1.5 border border-neutral-100">
-                                                    <Star size={15} className="fill-[#FFC244] text-[#FFC244] -ml-1" />
+                                                    <Star size={15} className="fill-[#FFCC02] text-[#FFCC02] -ml-1" />
                                                     <span className="text-[15px] font-medium text-black mt-0.5" style={{ fontFamily: 'Uber Move, var(--font-sans)' }}>{monthAvgRating}</span>
                                                 </div>
                                                 <div className="h-[34px] px-8 flex-1 bg-[#F9F9F9] rounded-full flex items-center justify-center border border-neutral-100">
@@ -2260,7 +2261,7 @@ const DetailItem = ({ icon: Icon, label, value, subValue, highlight }: {
                                             {/* Occupancy bar */}
                                             <div className="h-[34px] bg-[#F9F9F9] rounded-full overflow-hidden relative border border-neutral-100 flex items-center mx-0.5">
                                                 <motion.div
-                                                    className="absolute left-0 top-0 bottom-0 bg-[#FFC244] min-w-[16px]"
+                                                    className="absolute left-0 top-0 bottom-0 bg-[#FFCC02] min-w-[16px]"
                                                     initial={{ width: '0%' }}
                                                     animate={{ width: `${Math.max(12, monthOccupancyRate)}%` }}
                                                     transition={{ duration: 0.8, ease: 'easeOut' }}
@@ -2373,7 +2374,7 @@ const DetailItem = ({ icon: Icon, label, value, subValue, highlight }: {
                                                                 </div>
                                                                 <div className="absolute bottom-4 left-4 right-4">
                                                                     <div className="flex items-center gap-1.5 text-white/90 text-[11px] font-bold mb-1">
-                                                                        <MapPin size={12} className="text-[#FFC244]" />
+                                                                        <MapPin size={12} className="text-[#FFCC02]" />
                                                                         <span>{job.city}</span>
                                                                     </div>
                                                                     <h4 className="text-[22px] font-black text-white leading-tight" style={{ fontFamily: 'Uber Move, var(--font-sans)' }}>{job.service}</h4>
@@ -3037,6 +3038,7 @@ const DetailItem = ({ icon: Icon, label, value, subValue, highlight }: {
                                         userData={userData}
                                         setUserData={setUserData as any}
                                         onConfirmJob={handleConfirmJob}
+                                        onStatusUpdate={handleStatusUpdate}
                                         onRedistributeJob={(order) => {
                                             const job = acceptedJobs.find(j => j.id === order.id);
                                             if (job) {

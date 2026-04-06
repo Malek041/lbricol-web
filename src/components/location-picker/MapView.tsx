@@ -539,7 +539,7 @@ const MapView: React.FC<MapViewProps> = ({
                     <div style="width:1px;height:24px;background:#F3F4F6;"></div>
                     <div style="display:flex;flex-direction:column;align-items:center;line-height:1.1;">
                       <span style="font-size:15px;font-weight:950;color:#111827;display:flex;align-items:center;gap:2px;">
-                        <span style="color:#FBBF24;font-size:13px;">★</span>${ratingStr}
+                        <span style="color:#33D5FF;font-size:13px;">★</span>${ratingStr}
                       </span>
                     </div>
                     <div style="width:1px;height:24px;background:#F3F4F6;"></div>

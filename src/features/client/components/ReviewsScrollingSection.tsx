@@ -62,7 +62,7 @@ export const ReviewsScrollingSection = () => {
         <div className="w-full overflow-hidden py-10 bg-neutral-50/30">
             <div className="px-6 mb-6">
                 <h3 className="text-[20px] font-black text-neutral-900 flex items-center gap-2">
-                    <Star size={20} className="text-[#FFC244] fill-[#FFC244]" />
+                    <Star size={20} className="text-[#FFCC02] fill-[#FFCC02]" />
                     {t({ en: 'What our clients say', fr: 'Ce que disent nos clients' })}
                 </h3>
                 <p className="text-[14px] font-medium text-neutral-400 mt-0.5">
@@ -95,8 +95,8 @@ export const ReviewsScrollingSection = () => {
                                     <span className="text-[15px] font-black text-neutral-900">{review.name}</span>
                                     <span className="text-[12px] font-bold text-neutral-400">{review.city}</span>
                                 </div>
-                                <div className="flex items-center gap-1 bg-[#FFF8E7] px-2 py-1 rounded-full">
-                                    <Star size={10} className="text-[#FFC244] fill-[#FFC244]" />
+                                <div className="flex items-center gap-1 bg-[#FFF9E5] px-2 py-1 rounded-full">
+                                    <Star size={10} className="text-[#FFCC02] fill-[#FFCC02]" />
                                     <span className="text-[12px] font-black text-neutral-900">{review.rating}</span>
                                 </div>
                             </div>

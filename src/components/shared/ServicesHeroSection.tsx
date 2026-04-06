@@ -5,20 +5,44 @@ import { motion } from 'framer-motion';
 import { useLanguage } from '@/context/LanguageContext';
 
 interface ServiceCardProps {
+  id: string;
   title: string;
   description: string;
   image: string;
-  onOrder: () => void;
+  onOrder: (id: string) => void;
 }
 
-const ServiceCard = ({ title, description, image, onOrder }: ServiceCardProps) => {
+const ServiceCard = ({ id, title, description, image, onOrder }: ServiceCardProps) => {
+  const brandYellow = '#FFCC02';
+  const [imgSrc, setImgSrc] = React.useState(image);
+  const [fallbackIndex, setFallbackIndex] = React.useState(0);
+
+  // Extract the filename from the initial path
+  const filename = image.split('/').pop();
+
+  const fallbacks = [
+    `/Images/Desktop hero section images/${filename}`,
+    `/Images/clientHomeHeroSection/${filename}`,
+    `/Images/Service Category vectors/${filename?.replace(/\.[^/.]+$/, "")}.webp`, // Try webp in vectors
+    `/Images/Service Category vectors/${filename?.replace(/\.[^/.]+$/, "")}.png`,  // Try png in vectors
+    image // Original as last resort
+  ];
+
+  const handleImgError = () => {
+    if (fallbackIndex < fallbacks.length - 1) {
+      const nextIndex = fallbackIndex + 1;
+      setFallbackIndex(nextIndex);
+      setImgSrc(fallbacks[nextIndex]);
+    }
+  };
+
   return (
     <motion.div
       whileHover={{ y: -10 }}
       style={{
         flex: '0 0 450px',
         height: '450px',
-        backgroundColor: '#FFD700',
+        backgroundColor: brandYellow,
         borderRadius: '20px',
         overflow: 'hidden',
         display: 'flex',
@@ -27,13 +51,14 @@ const ServiceCard = ({ title, description, image, onOrder }: ServiceCardProps) =
         marginRight: '20px',
         position: 'relative'
       }}
-      onClick={onOrder}
+      onClick={() => onOrder(id)}
     >
       {/* Top Image Section */}
       <div style={{ height: '60%', width: '100%', backgroundColor: '#fff', position: 'relative', overflow: 'hidden' }}>
         <img
-          src={image}
+          src={imgSrc}
           alt={title}
+          onError={handleImgError}
           style={{
             width: '100%',
             height: '100%',
@@ -46,7 +71,7 @@ const ServiceCard = ({ title, description, image, onOrder }: ServiceCardProps) =
       <div style={{
         height: '40%',
         padding: '24px',
-        backgroundColor: '#FFD700',
+        backgroundColor: brandYellow,
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'space-between',
@@ -63,7 +88,7 @@ const ServiceCard = ({ title, description, image, onOrder }: ServiceCardProps) =
           zIndex: 1
         }}>
           <svg viewBox="0 0 500 50" preserveAspectRatio="none" style={{ width: '100%', height: '100%' }}>
-            <path d="M0,50 Q250,5 500,50 L500,50 L0,50 Z" fill="#FFD700" />
+            <path d="M0,50 Q250,5 500,50 L500,50 L0,50 Z" fill={brandYellow} />
           </svg>
         </div>
 
@@ -71,7 +96,7 @@ const ServiceCard = ({ title, description, image, onOrder }: ServiceCardProps) =
           <h3 style={{
             fontSize: '48px',
             fontWeight: 900,
-            color: '#000',
+            color: '#fff',
             margin: 0,
             letterSpacing: '-2px',
             fontFamily: 'Uber Move, var(--font-sans)',
@@ -82,22 +107,22 @@ const ServiceCard = ({ title, description, image, onOrder }: ServiceCardProps) =
           <p style={{
             fontSize: '14px',
             fontWeight: 500,
-            color: '#000',
+            color: '#fff',
             maxWidth: '280px',
             lineHeight: '1.2',
             margin: 0,
-            opacity: 0.9
+            opacity: 0.95
           }}>
             {description}
           </p>
         </div>
 
-        {/* Order Button - Pill shape green */}
+        {/* Order Button */}
         <div style={{
           position: 'absolute',
           right: '24px',
           bottom: '24px',
-          backgroundColor: '#027963',
+          backgroundColor: '#000',
           color: '#fff',
           padding: '10px 24px',
           borderRadius: '24px',
@@ -113,10 +138,15 @@ const ServiceCard = ({ title, description, image, onOrder }: ServiceCardProps) =
   );
 };
 
-const ServicesHeroSection = () => {
+interface ServicesHeroSectionProps {
+  availableServiceIds?: string[] | null;
+  onSelectService?: (serviceId: string) => void;
+}
+
+const ServicesHeroSection = ({ availableServiceIds, onSelectService }: ServicesHeroSectionProps) => {
   const { t } = useLanguage();
 
-  const services = [
+  const allServices = [
     {
       id: 'errands',
       title: t({ en: 'Errands', fr: 'Coursier', ar: 'توصيل' }),
@@ -148,12 +178,24 @@ const ServicesHeroSection = () => {
       image: '/Images/Desktop hero section images/petsCare.webp'
     },
     {
-      id: 'and_more',
-      title: t({ en: 'And More', fr: 'Et Plus', ar: 'والمزيد' }),
-      description: 'You can Order from 50+ other specialized services from your place in few steps.',
-      image: '/Images/Desktop hero section images/andMore.webp'
+       id: 'cleaning',
+       title: t({ en: 'Cleaning', fr: 'Ménage', ar: 'تنظيف' }),
+       description: 'You can Order professional home cleaning and housekeeping services.',
+       image: '/Images/Job Cards Images/cleaning_bg_card.webp'
+    },
+    {
+      id: 'handyman',
+      title: t({ en: 'Handyman', fr: 'Bricolage', ar: 'إصلاحات' }),
+      description: 'You can Order expert help for repairs, assembly, and home maintenance.',
+      image: '/Images/Job Cards Images/handyman_bg_card.webp'
     }
   ];
+
+  const services = availableServiceIds 
+    ? allServices.filter(s => availableServiceIds.includes(s.id))
+    : allServices;
+
+  if (services.length === 0) return null;
 
   return (
     <section className="desktop-only-hero" style={{
@@ -192,20 +234,20 @@ const ServicesHeroSection = () => {
           <span style={{ fontSize: '24px', fontWeight: 900, color: '#000' }}>Lbricol</span>
         </div>
         <button style={{
-          backgroundColor: '#027963',
+          backgroundColor: '#FFCC02',
           color: '#fff',
           padding: '12px 24px',
           borderRadius: '24px',
           border: 'none',
           fontSize: '14px',
           fontWeight: 700,
-          cursor: 'pointer'
+          cursor: 'pointer',
+          boxShadow: '0 4px 14px rgba(255, 204, 2, 0.4)'
         }}>
           Become a Bricoler
         </button>
       </div>
 
-      {/* Cards Scrollable Container */}
       <div
         className="services-scroll-container"
         style={{
@@ -216,17 +258,26 @@ const ServicesHeroSection = () => {
           scrollBehavior: 'smooth'
         }}
       >
-        {services.map((service, index) => (
+        {services.map((service) => (
           <ServiceCard
             key={service.id}
+            id={service.id}
             title={service.title}
             description={service.description}
             image={service.image}
-            onOrder={() => {
-              window.scrollTo({ top: 0, behavior: 'smooth' });
-            }}
+            onOrder={(id) => onSelectService?.(id)}
           />
         ))}
+
+        {allServices.length > services.length && (
+           <ServiceCard
+             id="more"
+             title={t({ en: 'And More', fr: 'Et Plus', ar: 'والمزيد' })}
+             description="Discover all our other specialized services available in other locations."
+             image="/Images/Desktop hero section images/andMore.webp"
+             onOrder={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+           />
+        )}
       </div>
     </section>
   );

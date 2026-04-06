@@ -176,13 +176,13 @@ const PromoteYourselfView: React.FC<PromoteYourselfViewProps> = ({
                 {/* Bricolers Card */}
                 <div id="refer-bricolers-card" className="bg-white rounded-[24px] px-6 py-6 border border-neutral-100 relative overflow-hidden">
                     <div className="absolute top-0 right-0 p-4">
-                        <div className="px-3 py-1 bg-[#FFF9E5] text-[#FFC244] text-[11px] font-black rounded-full uppercase tracking-wider">
+                        <div className="px-3 py-1 bg-[#FFF9E5] text-[#FFCC02] text-[11px] font-black rounded-full uppercase tracking-wider">
                             {t({ en: '50 MAD Reward', fr: '50 MAD Bonus', ar: 'مكافأة 50 درهم' })}
                         </div>
                     </div>
 
                     <div className="w-12 h-12 rounded-full bg-[#FFF9E5] flex items-center justify-center mb-4">
-                        <Wrench size={24} className="text-[#FFC244]" />
+                        <Wrench size={24} className="text-[#FFCC02]" />
                     </div>
 
                     <h2 className="text-[22px] font-black text-black mb-1">
@@ -214,7 +214,7 @@ const PromoteYourselfView: React.FC<PromoteYourselfViewProps> = ({
                             onClick={handleCopyBricoler}
                             className={cn(
                                 "px-5 py-3 font-bold text-[15px] flex items-center gap-2 transition-all active:scale-95",
-                                copiedBricoler ? 'bg-[#FFC244] text-white' : 'bg-[#FFF9E5] text-[#FFBA33] hover:bg-[#FFC244]/20'
+                                copiedBricoler ? 'bg-[#FFCC02] text-white' : 'bg-[#FFF9E5] text-[#FFBA33] hover:bg-[#FFCC02]/20'
                             )}
                         >
                             {copiedBricoler ? (

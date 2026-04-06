@@ -37,6 +37,7 @@ interface ProviderOrdersViewProps {
     setUserData: React.Dispatch<React.SetStateAction<any>>;
     onConfirmJob?: (jobId: string) => void;
     onRedistributeJob?: (order: OrderDetails) => void;
+    onStatusUpdate?: (jobId: string, status: string, subStatus?: string) => void;
     notificationsCount?: number;
     onShowNotifications?: () => void;
 }
@@ -59,6 +60,7 @@ export default function ProviderOrdersView({
     setUserData,
     onConfirmJob,
     onRedistributeJob,
+    onStatusUpdate,
     notificationsCount,
     onShowNotifications
 }: ProviderOrdersViewProps) {
@@ -275,15 +277,12 @@ export default function ProviderOrdersView({
                 />
             </div>
 
-            {/* FLOATING GPS BUTTON */}
+            {/* FLOATING GPS BUTTON (Top Right) */}
             <motion.button
                 onClick={() => setTriggerGps(Date.now())}
-                style={{ bottom: 'calc(env(safe-area-inset-bottom, 0px) + 108px)' }}
-                animate={{
-                    y: (!isMapDragging && (availableJobs.length > 0 || confirmedOrders.some(o => ['programmed', 'accepted', 'in_progress', 'waiting'].includes(o.status || '')))) ? -210 : 0
-                }}
-                transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-                className="absolute right-6 w-12 h-12 bg-white rounded-full border border-neutral-100 flex items-center justify-center text-[#374151] active:scale-95 transition-colors z-[100] shadow-sm"
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="absolute top-[60px] right-6 w-12 h-12 bg-white/90 backdrop-blur-md rounded-full border border-neutral-100 flex items-center justify-center text-black active:scale-95 transition-all z-[100] shadow-sm"
             >
                 <Navigation size={22} strokeWidth={2.5} />
             </motion.button>
@@ -291,7 +290,11 @@ export default function ProviderOrdersView({
             {/* HORIZONTAL ORDERS LIST (At the bottom of the map) */}
             <div className="absolute bottom-[92px] left-0 right-0 z-10">
                 <AnimatePresence>
-                    {(!isMapDragging && (availableJobs.length > 0 || confirmedOrders.some(o => ['programmed', 'accepted', 'in_progress', 'waiting'].includes(o.status || '')))) && (
+                    {(!isMapDragging && (availableJobs.length > 0 || confirmedOrders.some(o => {
+                        const s = getDynamicStatus(o);
+                        // Only show in the bottom list if NOT confirmed yet
+                        return ['programmed', 'accepted', 'waiting', 'new', 'on_time'].includes(s || '') && !o.providerConfirmed;
+                    }))) && (
                         <motion.div
                             ref={scrollRef}
                             initial={{ y: 100, opacity: 0 }}
@@ -299,19 +302,35 @@ export default function ProviderOrdersView({
                             exit={{ y: 100, opacity: 0 }}
                             className="flex gap-4 overflow-x-auto px-6 pb-6 no-scrollbar snap-x snap-mandatory"
                         >
-                            {/* Available Marketplace Jobs ONLY */}
-                            {availableJobs.map((job) => (
-                                <div key={job.id} id={`job-card-${job.id}`} className="flex-none w-[350px] snap-center">
+                            {/* Combined Marketplace and UNCONFIRMED Jobs */}
+                            {[
+                                ...availableJobs.map(job => ({
+                                    ...job,
+                                    service: job.serviceId || job.craft || '',
+                                    totalPrice: Number(job.price),
+                                    isMarket: true
+                                })),
+                                ...confirmedOrders.filter(o => {
+                                    const s = getDynamicStatus(o);
+                                    // Filter for UNCONFIRMED missions only
+                                    const takesAction = ['programmed', 'accepted', 'waiting', 'new', 'on_time'].includes(s || '');
+                                    return takesAction && !o.providerConfirmed;
+                                })
+                            ]
+                            .sort((a, b) => {
+                                const dA = normalizeDate(a.date).getTime();
+                                const dB = normalizeDate(b.date).getTime();
+                                if (dA !== dB) return dA - dB;
+                                return (a.time || '').localeCompare(b.time || '');
+                            })
+                            .map((order) => (
+                                <div key={order.id} id={`job-card-${order.id}`} className="flex-none w-[350px] snap-center">
                                     <ProviderJobCard
-                                        order={{
-                                            ...job,
-                                            id: job.id,
-                                            service: job.serviceId || job.craft || '',
-                                            totalPrice: Number(job.price)
-                                        } as any}
-                                        onSelect={() => onSelectOrder(job as any)}
+                                        order={order as any}
+                                        onSelect={() => onSelectOrder(order as any)}
                                         onConfirm={onConfirmJob}
                                         onRedistribute={onRedistributeJob}
+                                        onStatusUpdate={onStatusUpdate}
                                         currentTime={currentTime}
                                     />
                                 </div>

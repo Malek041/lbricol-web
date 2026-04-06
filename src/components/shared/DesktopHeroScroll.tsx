@@ -15,7 +15,7 @@ const CATEGORIES = [
         id: 'home_repairs',
         label: { en: 'Handyman', fr: 'Bricolage', ar: 'إصلاحات' },
         icon: '/Images/Service Category vectors/HandymanVector.webp',
-        bgColor: '#FFF3CD'
+        bgColor: '#FFF9E5'
     },
     {
         id: 'cleaning',
@@ -39,7 +39,7 @@ const CATEGORIES = [
         id: 'delivery',
         label: { en: 'Delivery', fr: 'Livraison', ar: 'توصيل' },
         icon: '/Images/Vectors Illu/Groceriedbag.png',
-        bgColor: '#FEF3C7'
+        bgColor: '#CCF1FF'
     }
 ];
 
@@ -92,8 +92,8 @@ export const DesktopHeroScroll = ({ onOrderClick, onBecomeBricolerClick }: Props
 
     return (
         <div className="hidden md:block bg-white pb-20">
-            {/* ── Hero Splash (Yellow) ── */}
-            <section className="relative bg-[#FFC244] w-full overflow-hidden" style={{ height: '640px' }}>
+            {/* ── Hero Splash (Blue) ── */}
+            <section className="relative bg-[#FFCC02] w-full overflow-hidden" style={{ height: '640px' }}>
                 {/* Header */}
                 <div className="absolute top-0 left-0 right-0 z-40 px-12 py-8 flex items-center justify-between">
                     <div className="flex items-center gap-8">

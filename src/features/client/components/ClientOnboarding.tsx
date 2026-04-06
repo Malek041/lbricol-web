@@ -8,7 +8,7 @@ interface ClientOnboardingProps {
     onComplete: () => void;
 }
 
-const BRAND_YELLOW = "#FFC244";
+const BRAND_BLUE = "#FFCC02";
 const BRAND_GREEN = "#01A083";
 
 const HERO_IMAGES = [

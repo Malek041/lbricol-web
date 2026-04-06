@@ -66,10 +66,10 @@ export default function AdminPage() {
 
     if (checking) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-[#FFC244]">
+            <div className="min-h-screen flex items-center justify-center bg-[#FFCC02]">
                 <div className="flex flex-col items-center gap-4">
                     <div className="w-16 h-16 bg-black rounded-3xl flex items-center justify-center">
-                        <Shield size={32} className="text-[#FFC244]" />
+                        <Shield size={32} className="text-[#FFCC02]" />
                     </div>
                     <p className="text-black font-bold text-lg">Checking access...</p>
                 </div>
@@ -82,11 +82,11 @@ export default function AdminPage() {
     return (
         <div className="min-h-screen bg-[#FAFAFA] flex flex-col">
             {/* Top bar */}
-            <div className="fixed top-0 left-0 right-0 z-50 bg-[#FFC244] px-5 pt-safe-top">
+            <div className="fixed top-0 left-0 right-0 z-50 bg-[#FFCC02] px-5 pt-safe-top">
                 <div className="flex items-center justify-between h-14">
                     <div className="flex items-center gap-3">
                         <div className="w-8 h-8 bg-black rounded-xl flex items-center justify-center">
-                            <Shield size={16} className="text-[#FFC244]" />
+                            <Shield size={16} className="text-[#FFCC02]" />
                         </div>
                         <span className="font-black text-black text-lg">Admin</span>
                     </div>
@@ -96,7 +96,7 @@ export default function AdminPage() {
                             className="w-10 h-10 bg-black/10 rounded-2xl flex items-center justify-center relative"
                         >
                             <Bell size={20} className="text-black" />
-                            <div className="absolute top-1.5 right-1.5 w-3 h-3 bg-red-500 rounded-full border-2 border-[#FFC244]" />
+                            <div className="absolute top-1.5 right-1.5 w-3 h-3 bg-red-500 rounded-full border-2 border-[#FFCC02]" />
                         </button>
                         <button
                             onClick={() => {
@@ -122,7 +122,7 @@ export default function AdminPage() {
                             <button
                                 key={tab.id}
                                 onClick={() => setActiveTab(tab.id as AdminTab)}
-                                className={`px-4 py-1.5 rounded-full text-sm font-bold transition-colors ${activeTab === tab.id ? 'bg-black text-[#FFC244]' : 'bg-black/10 text-black hover:bg-black/20'}`}
+                                className={`px-4 py-1.5 rounded-full text-sm font-bold transition-colors ${activeTab === tab.id ? 'bg-black text-[#FFCC02]' : 'bg-black/10 text-black hover:bg-black/20'}`}
                             >
                                 {tab.label}
                             </button>

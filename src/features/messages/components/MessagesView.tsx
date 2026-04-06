@@ -644,7 +644,7 @@ const MessagesView: React.FC<MessagesViewProps> = ({
                                 borderRadius: '22px 22px 4px 22px',
                             };
                             const bubbleOther = {
-                                background: '#FFC244',
+                                background: '#FFCC02',
                                 color: '#1a1a1a',
                                 borderRadius: '22px 22px 22px 4px',
                             };

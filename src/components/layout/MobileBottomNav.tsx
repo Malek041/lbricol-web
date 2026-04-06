@@ -34,7 +34,6 @@ const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
 
     const providerTabs = [
         { id: 'calendar' as TabType, icon: ShoppingBag, label: t({ en: 'Orders', fr: 'Commandes', ar: 'الطلبات' }) },
-        // { id: 'messages' as TabType, icon: MessageSquare, label: t({ en: 'Messages', fr: 'Messages', ar: 'الرسائل' }) },
         { id: 'performance' as TabType, icon: TrendingUp, label: t({ en: 'Activity', fr: 'Activité', ar: 'النشاط' }) },
         { id: 'services' as TabType, icon: Star, label: t({ en: 'Services', fr: 'Services', ar: 'الخدمات' }) },
         { id: 'profile' as TabType, icon: User, label: t({ en: 'Profile', fr: 'Profil', ar: 'الملف الشخصي' }) },
@@ -44,15 +43,12 @@ const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
         { id: 'home' as TabType, icon: Home, label: t({ en: 'Home', fr: 'Accueil', ar: 'الرئيسية' }) },
         { id: 'search' as TabType, icon: Search, label: t({ en: 'Search', fr: 'Recherche', ar: 'بحث' }) },
         { id: 'calendar' as TabType, icon: ShoppingBag, label: t({ en: 'Orders', fr: 'Commandes', ar: 'الطلبات' }) },
-        // { id: 'messages' as TabType, icon: MessageSquare, label: t({ en: 'Messages', fr: 'Messages', ar: 'الرسائل' }) },
-        // { id: 'heroes' as TabType, icon: Star, label: t({ en: 'My Heroes', fr: 'Mes Héros', ar: 'أبطالي' }) },
         { id: 'profile' as TabType, icon: User, label: t({ en: 'Profile', fr: 'Profil', ar: 'الملف الشخصي' }) },
     ];
 
     const adminTabs = [
         { id: 'performance' as TabType, icon: TrendingUp, label: t({ en: 'Dashboard', fr: 'Tableau de bord', ar: 'لوحة التحكم' }) },
         { id: 'calendar' as TabType, icon: ShoppingBag, label: t({ en: 'All Orders', fr: 'Toutes les commandes', ar: 'كل الطلبات' }) },
-        // { id: 'messages' as TabType, icon: MessageSquare, label: t({ en: 'Messages', fr: 'Messages', ar: 'الرسائل' }) },
         { id: 'reviews' as TabType, icon: MessageSquare, label: t({ en: 'Reviews', fr: 'Avis', ar: 'التقييمات' }) },
         { id: 'services' as TabType, icon: Star, label: t({ en: 'Bricolers', fr: 'Bricoleurs', ar: 'المحترفون' }) },
         { id: 'profile' as TabType, icon: User, label: t({ en: 'Profile', fr: 'Profil', ar: 'الملف الشخصي' }) },
@@ -85,9 +81,14 @@ const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
 
     const effectiveActiveTab = getEffectiveActiveId(activeTab);
 
+    // BRAND COLORS
     const activeColor = '#000000';
     const inactiveColor = theme === 'light' ? '#717171' : '#B0B0B0';
-    const activeBgColor = '#FFC244'; // Glovo-style yellow circular background
+    const brandYellow = '#FFCC02';
+    const softYellowBg = '#FFF9E5';
+
+    // Circle sizing for the background
+    const circleSize = Math.round(fluidMobilePx(viewportWidth, 38, 42));
 
     return (
         <nav
@@ -129,26 +130,49 @@ const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
                     >
                         <div
                             style={{
-                                width: iconChipWidth,
-                                height: iconChipHeight,
-                                borderRadius: '20px',
-                                backgroundColor: isActive ? activeBgColor : 'transparent',
+                                width: circleSize,
+                                height: circleSize,
+                                borderRadius: '50%',
+                                backgroundColor: isActive ? softYellowBg : 'transparent',
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',
                                 transition: 'all 0.2s ease',
+                                marginBottom: '2px',
+                                position: 'relative'
                             }}
                         >
-                            <Icon
-                                size={iconSize}
-                                strokeWidth={isActive ? 2.5 : 2}
-                                color={isActive ? activeColor : inactiveColor}
-                            />
+                            {isActive ? (
+                                <>
+                                    {/* Sub-layer for the solid yellow fill */}
+                                    <Icon
+                                        size={iconSize}
+                                        strokeWidth={0}
+                                        fill={brandYellow}
+                                        style={{ position: 'absolute' }}
+                                    />
+                                    {/* Top layer for the black outline and internal details */}
+                                    <Icon
+                                        size={iconSize}
+                                        strokeWidth={2}
+                                        color="#000000"
+                                        fill="none"
+                                        style={{ position: 'relative', zIndex: 1 }}
+                                    />
+                                </>
+                            ) : (
+                                <Icon
+                                    size={iconSize}
+                                    strokeWidth={2}
+                                    color={inactiveColor}
+                                    fill="none"
+                                />
+                            )}
                         </div>
                         <span
                             style={{
                                 fontSize: labelSize,
-                                fontWeight: isActive ? 700 : 500,
+                                fontWeight: isActive ? 500 : 500,
                                 color: isActive ? activeColor : inactiveColor,
                                 transition: 'all 0.2s ease',
                             }}

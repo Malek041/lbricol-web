@@ -105,6 +105,7 @@ import { MOROCCAN_CITIES, MOROCCAN_CITIES_AREAS } from '@/config/moroccan_areas'
 import { useTheme } from '@/context/ThemeContext';
 import { useToast } from '@/context/ToastContext';
 import MillionsImpactSection from '@/components/shared/MillionsImpactSection';
+import { DesktopOrderModal } from '@/features/client/components/DesktopOrderModal';
 import ServicesHeroSection from '@/components/shared/ServicesHeroSection';
 import { auth, db, storage } from '@/lib/firebase';
 import {
@@ -296,6 +297,8 @@ const Home = () => {
   const [availableSubServices, setAvailableSubServices] = useState<string[] | null>(null);
   const [isBricoler, setIsBricoler] = useState(false);
   const [isAdminMode, setIsAdminMode] = useState(false);
+  const [selectedDesktopServiceId, setSelectedDesktopServiceId] = useState<string | null>(null);
+  const [showDesktopSubServicePopup, setShowDesktopSubServicePopup] = useState(false);
   const [isProgramming, setIsProgramming] = useState(false);
   const [trendingSubServices, setTrendingSubServices] = useState<string[]>([]);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -2859,6 +2862,7 @@ const Home = () => {
 
             {isMobile ? (
               <ClientHome
+                // ... same mobile props as before
                 isSearchOpen={isSearchOpen}
                 setIsSearchOpen={setIsSearchOpen}
                 userName={currentUser?.displayName || undefined}
@@ -2945,7 +2949,21 @@ const Home = () => {
             ) : (
 
               <>
-                <ServicesHeroSection />
+                <ServicesHeroSection 
+                  availableServiceIds={availableServices}
+                  onSelectService={(serviceId) => {
+                    setSelectedDesktopServiceId(serviceId);
+                    setShowDesktopSubServicePopup(true);
+                  }}
+                />
+
+                <DesktopOrderModal
+                  isOpen={showDesktopSubServicePopup}
+                  onClose={() => setShowDesktopSubServicePopup(false)}
+                  serviceId={selectedDesktopServiceId}
+                  availableSubServices={availableSubServices}
+                />
+
                 <MillionsImpactSection />
                 <MoroccoServiceMap />
 
@@ -3613,7 +3631,7 @@ const Home = () => {
                                   <div style={{ width: '64px', height: '64px', borderRadius: '20px', backgroundColor: c.surface, overflow: 'hidden', border: `1px solid ${c.border}` }}>
                                     {offer.avatar ? <img src={offer.avatar} alt={offer.bricolerName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: c.textMuted }}><UserIcon size={28} /></div>}
                                   </div>
-                                  {offer.jobsCount > 0 && <div style={{ position: 'absolute', bottom: -4, right: -4, backgroundColor: '#FFC244', color: '#000', padding: '2px 6px', borderRadius: '8px', fontSize: '10px', fontWeight: 900, display: 'flex', alignItems: 'center', gap: '2px', boxShadow: '0 2px 6px rgba(0,0,0,0.1)', border: '1.5px solid #FFF' }}><Star size={9} fill="#000" strokeWidth={0} /><span>{offer.rating ? Number(offer.rating).toFixed(1) : '5.0'}</span></div>}
+                                  {offer.jobsCount > 0 && <div style={{ position: 'absolute', bottom: -4, right: -4, backgroundColor: '#FFCC02', color: '#000', padding: '2px 6px', borderRadius: '8px', fontSize: '10px', fontWeight: 900, display: 'flex', alignItems: 'center', gap: '2px', boxShadow: '0 2px 6px rgba(0,0,0,0.1)', border: '1.5px solid #FFF' }}><Star size={9} fill="#000" strokeWidth={0} /><span>{offer.rating ? Number(offer.rating).toFixed(1) : '5.0'}</span></div>}
                                 </div>
                                 <div style={{ flex: 1, minWidth: 0 }}><div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}><h4 style={{ margin: 0, fontSize: '18px', fontWeight: 950, color: c.text }}>{offer.bricolerName}</h4><div style={{ fontSize: '20px', fontWeight: 950, color: accentColor }}>{offer.price} <span style={{ fontSize: '11px', opacity: 0.6 }}>MAD</span></div></div></div>
                               </motion.div>

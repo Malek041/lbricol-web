@@ -348,7 +348,7 @@ export default function HeroesView({ orders }: HeroesViewProps) {
             {/* Header */}
             <div id="heroes-header" className="pt-8 pb-6 px-6 bg-white sticky top-0 z-10 border-b border-neutral-100">
                 <h1 className="text-[32px] font-black text-[#1D1D1D] tracking-tight flex items-center gap-3">
-                    <Star size={32} className="text-[#FFC244] fill-[#FFC244]" />
+                    <Star size={32} className="text-[#FFCC02] fill-[#FFCC02]" />
                     {t({ en: 'My Heroes', fr: 'Mes Héros', ar: 'أبطالي' })}
                 </h1>
                 <p className="text-[#6B6B6B] font-light text-[16px] mt-1">{t({ en: 'Re-book Bricolers you love', fr: 'Réservez à nouveau vos Bricolers préférés', ar: 'أعد حجز مقدمي الخدمة الذين تفضلهم' })}</p>
@@ -404,9 +404,9 @@ export default function HeroesView({ orders }: HeroesViewProps) {
                                             return (
                                                 <>
                                                     <div className={cn(
-                                                        "flex items-center gap-1 text-[13px] font-bold px-2 py-0.5 rounded-md bg-[#FFFBEB] text-[#92400E] border border-[#FEF3C7]",
+                                                        "flex items-center gap-1 text-[13px] font-bold px-2 py-0.5 rounded-md bg-[#FFF9E5] text-[#92400E] border border-[#CCF1FF]",
                                                     )}>
-                                                        <Star size={12} className="fill-current text-[#FBBF24]" />
+                                                        <Star size={12} className="fill-current text-[#33D5FF]" />
                                                         {stats.jobsCount === 0 ? "0.0" : (stats.rating || 0).toFixed(1)}
                                                     </div>
                                                     <span className="text-[#6B6B6B] text-[13px] font-medium">• {stats.jobsCount || 0} {t({ en: 'jobs', fr: 'missions', ar: 'مهام' })}</span>
@@ -636,7 +636,7 @@ export default function HeroesView({ orders }: HeroesViewProps) {
                                                                     onClick={() => setSelectedTime(timeStr)}
                                                                     className={cn(
                                                                         "py-4 rounded-[18px] border-2 font-bold text-[15px] transition-all",
-                                                                        isSelected ? "bg-[#FFF8E7] border-[#FFC244] text-[#1D1D1D]" : "bg-white border-[#F0F0F0] text-[#1D1D1D] hover:border-[#FFC244]/50"
+                                                                        isSelected ? "bg-[#FFF9E5] border-[#FFCC02] text-[#1D1D1D]" : "bg-white border-[#F0F0F0] text-[#1D1D1D] hover:border-[#FFCC02]/50"
                                                                     )}
                                                                 >
                                                                     {displayTime}
@@ -733,12 +733,12 @@ export default function HeroesView({ orders }: HeroesViewProps) {
                                                                 onClick={() => setTaskSize(ts.id)}
                                                                 className={cn(
                                                                     "flex items-center gap-4 p-5 rounded-[20px] border-2 text-left transition-all",
-                                                                    taskSize === ts.id ? "bg-[#FFF8E7] border-[#FFC244]" : "bg-white border-[#F0F0F0] hover:border-[#FFC244]/50"
+                                                                    taskSize === ts.id ? "bg-[#FFF9E5] border-[#FFCC02]" : "bg-white border-[#F0F0F0] hover:border-[#FFCC02]/50"
                                                                 )}
                                                             >
                                                                 <div className={cn(
                                                                     "w-12 h-12 rounded-2xl flex items-center justify-center font-black text-[20px] shrink-0",
-                                                                    taskSize === ts.id ? "bg-[#FFC244] text-white" : "bg-neutral-100 text-[#6B6B6B]"
+                                                                    taskSize === ts.id ? "bg-[#FFCC02] text-white" : "bg-neutral-100 text-[#6B6B6B]"
                                                                 )}>
                                                                     {ts.id === 'small' ? 'S' : ts.id === 'medium' ? 'M' : 'L'}
                                                                 </div>
@@ -828,7 +828,7 @@ export default function HeroesView({ orders }: HeroesViewProps) {
                                                             onClick={() => setPaymentMethod('cash')}
                                                             className={cn(
                                                                 "flex-1 flex flex-col items-center gap-4 p-6 rounded-[24px] border-2 transition-all",
-                                                                paymentMethod === 'cash' ? "bg-[#FFF8E7] border-[#FFC244]" : "bg-white border-[#F0F0F0]"
+                                                                paymentMethod === 'cash' ? "bg-[#FFF9E5] border-[#FFCC02]" : "bg-white border-[#F0F0F0]"
                                                             )}
                                                         >
                                                             <span className="text-3xl">💵</span>

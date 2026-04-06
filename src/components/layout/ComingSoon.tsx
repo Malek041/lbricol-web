@@ -14,7 +14,7 @@ const ComingSoon: React.FC = () => {
   const doubledImages = [...images, ...images];
 
   return (
-    <div className="fixed inset-0 z-[99999] bg-[#FFB700] flex flex-col items-center justify-center p-6 overflow-hidden">
+    <div className="fixed inset-0 z-[99999] bg-[#FFCC02] flex flex-col items-center justify-center p-6 overflow-hidden">
       {/* Upper Spacing */}
       <div className="flex-1" />
 

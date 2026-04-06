@@ -159,7 +159,7 @@ const AdminBricolerCreator: React.FC<AdminBricolerCreatorProps> = ({ t, onBack }
                         type="text"
                         value={formData.name}
                         onChange={e => setFormData({ ...formData, name: e.target.value })}
-                        className="w-full h-14 bg-neutral-50 rounded-2xl px-5 font-medium border-2 border-transparent focus:border-[#FFC244] focus:bg-white transition-all outline-none"
+                        className="w-full h-14 bg-neutral-50 rounded-2xl px-5 font-medium border-2 border-transparent focus:border-[#FFCC02] focus:bg-white transition-all outline-none"
                         placeholder={t({ en: 'e.g. Samir El Fassi', fr: 'ex. Samir El Fassi' })}
                     />
                 </div>
@@ -181,7 +181,7 @@ const AdminBricolerCreator: React.FC<AdminBricolerCreatorProps> = ({ t, onBack }
                             type="tel"
                             value={formData.phone}
                             onChange={e => setFormData({ ...formData, phone: e.target.value })}
-                            className="w-full h-14 bg-neutral-50 rounded-2xl px-5 font-medium border-2 border-transparent focus:border-[#FFC244] focus:bg-white transition-all outline-none"
+                            className="w-full h-14 bg-neutral-50 rounded-2xl px-5 font-medium border-2 border-transparent focus:border-[#FFCC02] focus:bg-white transition-all outline-none"
                             placeholder={t({ en: '+212...', fr: '+212...' })}
                         />
                     </div>
@@ -196,7 +196,7 @@ const AdminBricolerCreator: React.FC<AdminBricolerCreatorProps> = ({ t, onBack }
                                 type="button"
                                 onClick={() => toggleService(cat)}
                                 className={`px-4 py-2 rounded-full text-xs font-bold transition-all ${formData.services.includes(cat)
-                                    ? 'bg-[#FFC244] text-black ring-2 ring-[#FFC244] ring-offset-2'
+                                    ? 'bg-[#FFCC02] text-black ring-2 ring-[#FFCC02] ring-offset-2'
                                     : 'bg-neutral-100 text-neutral-500 hover:bg-neutral-200'
                                     }`}
                             >
@@ -243,7 +243,7 @@ const AdminBricolerCreator: React.FC<AdminBricolerCreatorProps> = ({ t, onBack }
                     <textarea
                         value={formData.bio}
                         onChange={e => setFormData({ ...formData, bio: e.target.value })}
-                        className="w-full h-32 bg-neutral-50 rounded-2xl p-5 font-medium border-2 border-transparent focus:border-[#FFC244] focus:bg-white transition-all outline-none resize-none"
+                        className="w-full h-32 bg-neutral-50 rounded-2xl p-5 font-medium border-2 border-transparent focus:border-[#FFCC02] focus:bg-white transition-all outline-none resize-none"
                         placeholder={t({ en: 'Write a short pitch...', fr: 'Écrivez une courte présentation...' })}
                     />
                 </div>

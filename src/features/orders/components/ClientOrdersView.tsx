@@ -287,7 +287,7 @@ function CalendarTab({
                                 </span>
                                 {hasJobs && !isSelected && (
                                     <div className="absolute top-1.5 right-1.5">
-                                        <div className="w-1.5 h-1.5 bg-[#FFC244] rounded-full" />
+                                        <div className="w-1.5 h-1.5 bg-[#FFCC02] rounded-full" />
                                     </div>
                                 )}
                             </button>
@@ -343,7 +343,7 @@ function CalendarTab({
                                             <span className="text-[16px] font-medium text-black truncate uppercase tracking-tight">
                                                 {order.subServiceDisplayName || order.service}
                                             </span>
-                                            <div className="w-6 h-6 rounded-full bg-[#FFC244] flex items-center justify-center">
+                                            <div className="w-6 h-6 rounded-full bg-[#FFCC02] flex items-center justify-center">
                                                 <Check size={12} className="text-white" />
                                             </div>
                                         </div>
@@ -888,7 +888,7 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
                                                 <h4 className="text-[20px] font-medium text-black mb-1 leading-tight">{selectedOrder.bricolerName}</h4>
                                                 <div className="flex flex-wrap items-center gap-2 mt-1">
                                                     <div className="flex items-center gap-1 flex-shrink-0">
-                                                        <Star size={14} className="fill-yellow-400 text-yellow-400" />
+                                                        <Star size={14} className="fill-sky-400 text-sky-400" />
                                                         <span className="text-[14px] font-medium text-black">{selectedOrder.bricolerRating || '4.9'}</span>
                                                     </div>
                                                     <span className="text-neutral-300 flex-shrink-0">|</span>
@@ -1191,12 +1191,12 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
                             </div>
                         </div>
 
-                        {/* Fixed Bottom Total Footer (Yellow Signature) */}
+                        {/* Fixed Bottom Total Footer (Blue Signature) */}
                         {!activeChatOrderId && (
-                            <div className="fixed bottom-0 left-0 right-0 bg-[#FFC244] z-[4005] px-8 pt-10 pb-[calc(24px+env(safe-area-inset-bottom))]">
+                            <div className="fixed bottom-0 left-0 right-0 bg-[#FFCC02] z-[4005] px-8 pt-10 pb-[calc(24px+env(safe-area-inset-bottom))]">
                                 {/* Wave Top Effect */}
                                 <div className="absolute top-[-30px] left-0 right-0 h-[30px] pointer-events-none">
-                                    <svg viewBox="0 0 1440 320" preserveAspectRatio="none" className="w-full h-full fill-[#FFC244]">
+                                    <svg viewBox="0 0 1440 320" preserveAspectRatio="none" className="w-full h-full fill-[#FFCC02]">
                                         <path d="M0,160L48,176C96,192,192,224,288,224C384,224,480,192,576,165.3C672,139,768,117,864,128C960,139,1056,181,1152,192C1248,203,1344,181,1392,170.7L1440,160L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path>
                                     </svg>
                                 </div>
@@ -1498,10 +1498,10 @@ function ActivityTab({
                 key={draft.id}
                 whileTap={{ scale: 0.98 }}
                 onClick={() => onResumeDraft?.(draft)}
-                className="bg-white rounded-[35px_22px_45px_28px] p-5 flex items-center gap-5 cursor-pointer transition-all mb-4 border-2 border-black/5 relative overflow-hidden group hover:border-[#FFC244]/30"
+                className="bg-white rounded-[35px_22px_45px_28px] p-5 flex items-center gap-5 cursor-pointer transition-all mb-4 border-2 border-black/5 relative overflow-hidden group hover:border-[#FFCC02]/30"
             >
                 {/* Draft Badge */}
-                <div className="absolute top-0 right-0 px-4 py-1.5 bg-[#FFC244] text-black text-[11px] font-medium rounded-bl-xl uppercase tracking-wider">
+                <div className="absolute top-0 right-0 px-4 py-1.5 bg-[#FFCC02] text-black text-[11px] font-medium rounded-bl-xl uppercase tracking-wider">
                     {t({ en: 'Resume', fr: 'Reprendre', ar: 'متابعة' })}
                 </div>
 
@@ -1518,7 +1518,7 @@ function ActivityTab({
                     </p>
                     <div className="flex items-center gap-2 mt-2">
                         <div className="w-full h-1 bg-neutral-100 rounded-full overflow-hidden">
-                            <div className="h-full bg-[#FFC244] rounded-full" style={{ width: `${(draft.step / 4) * 100}%` }} />
+                            <div className="h-full bg-[#FFCC02] rounded-full" style={{ width: `${(draft.step / 4) * 100}%` }} />
                         </div>
                     </div>
                 </div>

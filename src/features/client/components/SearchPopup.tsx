@@ -218,7 +218,7 @@ export const SearchPopup: React.FC<SearchPopupProps> = ({
                                             onClick={() => handleSelect(item)}
                                             className="w-full py-4 flex items-center gap-4 border-b border-neutral-50 active:bg-neutral-50 transition-colors text-left"
                                         >
-                                            <div className="w-12 h-12 rounded-[18px_22px_15px_25px] bg-[#FFB700] flex items-center justify-center shrink-0">
+                                            <div className="w-12 h-12 rounded-[18px_22px_15px_25px] bg-[#FFCC02] flex items-center justify-center shrink-0">
                                                 <img src={SERVICES_CATALOGUE.find(s => s.id === item.serviceId)?.iconPath} className="w-8 h-8 object-contain" alt="" />
                                             </div>
                                             <div className={cn("flex-1 flex flex-col", item.serviceId !== 'cleaning' && "opacity-40 grayscale")}>

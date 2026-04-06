@@ -38,12 +38,12 @@ interface ClientNotificationsViewProps {
 const TYPE_CONFIG: Record<ClientNotification['type'], { icon: React.ElementType; color: string; bg: string }> = {
     order_programmed: { icon: Package, color: '#01A083', bg: '#E6F7F4' },
     order_confirmed: { icon: CheckCircle2, color: '#01A083', bg: '#E6F7F4' },
-    order_delivered: { icon: CheckCircle2, color: '#FFC244', bg: '#FFF9ED' },
+    order_delivered: { icon: CheckCircle2, color: '#FFCC02', bg: '#FFF9ED' },
     // new_message type removed - using WhatsApp only
     referral_reward: { icon: Gift, color: '#E91E8C', bg: '#FCE4F1' },
     job_status_update: { icon: Clock, color: '#01A083', bg: '#E6F7F4' },
     bricoler_offer: { icon: CheckCircle2, color: '#01A083', bg: '#E6F7F4' },
-    bricoler_counter_offer: { icon: CheckCircle2, color: '#FFC244', bg: '#FFF9ED' },
+    bricoler_counter_offer: { icon: CheckCircle2, color: '#FFCC02', bg: '#FFF9ED' },
 };
 
 const ClientNotificationsView: React.FC<ClientNotificationsViewProps> = ({

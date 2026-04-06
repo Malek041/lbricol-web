@@ -117,9 +117,9 @@ const ShareAndEarnView: React.FC<ShareAndEarnViewProps> = ({
                         animate={{ scale: 1, opacity: 1 }}
                         transition={{ type: 'spring', stiffness: 300, damping: 22 }}
                     >
-                        <span className="absolute -top-3 left-0 text-[#FFC244] text-[18px] select-none">✦</span>
-                        <span className="absolute top-1 -right-5 text-[#FFC244] text-[22px] select-none">✦</span>
-                        <span className="absolute -bottom-2 right-2 text-[#FFC244] text-[13px] select-none">✦</span>
+                        <span className="absolute -top-3 left-0 text-[#FFCC02] text-[18px] select-none">✦</span>
+                        <span className="absolute top-1 -right-5 text-[#FFCC02] text-[22px] select-none">✦</span>
+                        <span className="absolute -bottom-2 right-2 text-[#FFCC02] text-[13px] select-none">✦</span>
                         <div className="w-[200px] h-[200px] rounded-full flex items-center justify-center">
                             <Image
                                 src="/Images/Share & Earn Pics/Share&earnJar.webp"

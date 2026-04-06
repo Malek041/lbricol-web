@@ -188,8 +188,8 @@ const ProfileView: React.FC<ProfileViewProps> = ({
                 animate={{ opacity: 1, x: 0 }}
                 className="flex flex-col h-full overflow-y-auto no-scrollbar bg-white relative w-full"
             >
-                {/* Yellow Header (Glovo Style) - Fixed/Sticky Behind */}
-                <div className="bg-[#FFB700] pt-14 pb-20 px-6 sticky top-0 z-0 flex flex-col items-center overflow-hidden shrink-0 transition-all duration-300">
+                {/* Blue Header (Glovo Style) - Fixed/Sticky Behind */}
+                <div className="bg-[#FFCC02] pt-14 pb-20 px-6 sticky top-0 z-0 flex flex-col items-center overflow-hidden shrink-0 transition-all duration-300">
                     <div className="w-full flex justify-end mb-4 relative z-10">
                         {/* Help Button */}
                         <button
@@ -828,10 +828,10 @@ const ProfileView: React.FC<ProfileViewProps> = ({
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.95 }}
-                className="flex flex-col min-h-[100dvh] bg-[#FFC244] p-5 justify-center items-center"
+                className="flex flex-col min-h-[100dvh] bg-[#FFCC02] p-5 justify-center items-center"
             >
                 <div className="bg-white w-full max-w-sm rounded-[10px] p-8 ">
-                    <div className="w-16 h-16 bg-[#FFC244]/20 rounded-2xl flex items-center justify-center mb-6 mx-auto">
+                    <div className="w-16 h-16 bg-[#FFCC02]/20 rounded-2xl flex items-center justify-center mb-6 mx-auto">
                         <Shield size={32} className="text-black" />
                     </div>
 
@@ -851,7 +851,7 @@ const ProfileView: React.FC<ProfileViewProps> = ({
                         value={adminCode}
                         onChange={(e) => setAdminCode(e.target.value)}
                         placeholder="••••••"
-                        className="w-full h-14 bg-neutral-100 rounded-1xl px-5 text-center text-2xl tracking-[0.5em] font-bold focus:bg-white focus:ring-2 focus:ring-[#FFC244] transition-all outline-none mb-6"
+                        className="w-full h-14 bg-neutral-100 rounded-1xl px-5 text-center text-2xl tracking-[0.5em] font-bold focus:bg-white focus:ring-2 focus:ring-[#FFCC02] transition-all outline-none mb-6"
                         autoFocus
                     />
 
@@ -908,9 +908,11 @@ const ProfileView: React.FC<ProfileViewProps> = ({
                     mode={onboardingMode}
                     initialCategory={onboardingInitialCat}
                     userData={userData}
-                    onComplete={() => {
-                        // The popup already updates Firestore, but maybe we need to refresh local state?
-                        // If userData follows Firebase, it might update automatically via a listener in the parent.
+                    onComplete={(data) => {
+                        // Refresh local state with all updated data from onboarding
+                        if (setUserData) {
+                            setUserData({ ...userData, ...data });
+                        }
                         setIsOnboardingOpen(false);
                     }}
                 />

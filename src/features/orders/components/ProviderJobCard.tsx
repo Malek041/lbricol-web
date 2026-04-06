@@ -8,6 +8,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { cn } from '@/lib/utils';
 import { getServiceById, getSubServiceName, getServiceVector, getSubService } from '@/config/services_config';
 import { OrderDetails } from './OrderCard';
+import { calculateOrderPrice } from '@/lib/pricing';
 
 interface ProviderJobCardProps {
     order: OrderDetails;
@@ -138,6 +139,27 @@ export default function ProviderJobCard({
         }
     };
 
+    // --- STRATEGIC PRICING DATA EXTRACTION ---
+    // We prioritize stored data (The 'True' values saved in orders) over re-calculation to avoid mismatches
+    const hasStoredPricing = order.totalPrice !== undefined;
+    const clientPay = hasStoredPricing ? (order.totalPrice || 0) : 0;
+    const fee = hasStoredPricing ? (order.details?.fee || order.fee || (clientPay * 0.1)) : 0;
+    const providerEarnings = hasStoredPricing ? (order.details?.basePrice || (clientPay - fee)) : 0;
+
+    // Use calculateOrderPrice ONLY as a fallback for legacy items
+    const breakdownFallback = calculateOrderPrice(
+        order.service,
+        parseFloat(String(order.price || '80')),
+        {
+            ...(order.details?.serviceDetails || order.details || {}),
+            distanceKm: order.distanceKm || (order as any).travelDistanceKm || 0,
+        }
+    );
+
+    const finalClientPay = hasStoredPricing ? clientPay : breakdownFallback.total;
+    const finalEarnings = hasStoredPricing ? providerEarnings : (breakdownFallback.total - breakdownFallback.serviceFee);
+    const finalDuration = order.estimatedDuration || (order.details?.serviceDetails as any)?.taskDuration || breakdownFallback.duration || 1;
+
     return (
         <motion.div
             key={order.id}
@@ -151,14 +173,14 @@ export default function ProviderJobCard({
                         <motion.div 
                             animate={{ scale: [1, 1.2, 1], opacity: [0.3, 1, 0.3] }}
                             transition={{ repeat: Infinity, duration: 1.5 }}
-                            className="w-2 h-2 rounded-full bg-[#FFC244]"
+                            className="w-2 h-2 rounded-full bg-[#FFCC02]"
                         />
                         <span className="text-[10px] font-black uppercase text-amber-600 tracking-wider font-sans">{t({ en: 'Urgent', fr: 'Urgent', ar: 'عاجل' })}</span>
                     </div>
                 </div>
             )}
-            <div className="flex items-center gap-4 relative z-0">
-                <div className="w-28 h-28 bg-white rounded-[22px_15px_28px_18px] flex items-center justify-center flex-shrink-0 p-0 overflow-hidden border border-neutral-100">
+            <div className="flex items-start gap-4 relative z-0">
+                <div className="w-20 h-20 bg-white rounded-2xl flex items-center justify-center flex-shrink-0 p-0 overflow-hidden border border-neutral-100">
                     {order.images && order.images.length > 0 ? (
                         <img src={order.images[0]} className="w-full h-full object-cover" />
                     ) : (order.selectedCar || order.details?.car) ? (
@@ -171,21 +193,40 @@ export default function ProviderJobCard({
                     )}
                 </div>
                 <div className="flex-1 min-w-0 pr-2">
-                    <div className="flex items-center gap-2 mb-1">
+                    <div className="flex items-center justify-between mb-1">
                         <span className={cn(
-                            "px-2 py-0.5 text-[11px] font-medium rounded-md uppercase tracking-wider",
-                            isOffer ? "bg-amber-50 text-amber-600" : (isInProgress ? "bg-[#E6F7F4] text-[#01A083]" : (isDone ? "bg-emerald-50 text-emerald-600" : (isUrgent ? 'bg-amber-50 text-amber-600' : "bg-blue-50 text-blue-600")))
+                            "px-2 py-0.5 text-[10px] font-bold rounded-md uppercase tracking-wider",
+                            isOffer ? "bg-amber-50 text-amber-600" : (isInProgress ? "bg-[#01A083]/10 text-[#01A083]" : (isDone ? "bg-emerald-50 text-emerald-600" : (isUrgent ? 'bg-amber-50 text-amber-600' : "bg-blue-50 text-blue-600")))
                         )}>
-                             {isOffer ? t({ en: 'Active Offer', fr: 'Offre active', ar: 'عرض نشط' }) : (isDone ? t({ en: 'Delivered', fr: 'Livrée', ar: 'تم التسليم' }) : (isInProgress ? t({ en: 'In Progress', fr: 'En cours', ar: 'قيد التنفيذ' }) : t({ en: 'On time', fr: 'À l’heure', ar: 'في الموعد' })))}
+                             {isOffer ? t({ en: 'Offer', fr: 'Offre', ar: 'عرض' }) : (isDone ? t({ en: 'Done', fr: 'Terminée', ar: 'تم' }) : (isInProgress ? t({ en: 'In progress', fr: 'En cours', ar: 'قيد التنفيذ' }) : t({ en: 'Programmed', fr: 'Programmé', ar: 'مبرمج' })))}
                         </span>
+                        {timeLeft && !isDone && (
+                            <span className="text-[12px] font-bold text-[#01A083] whitespace-nowrap">
+                                {timeLeft}
+                            </span>
+                        )}
                     </div>
 
-                    <h3 className="text-[17px] font-medium text-black leading-tight">
+                    <h3 className="text-[17px] font-bold text-black leading-tight truncate">
                         {(() => {
                             const config = getServiceById(order.serviceId || order.service);
                             const subDisplay = getSubServiceName(order.serviceId || order.service, order.subService || (order as any).subServiceId || '') || order.subServiceDisplayName;
                             const baseName = subDisplay ? t({ en: subDisplay, fr: subDisplay, ar: subDisplay }) : (config ? config.name : formatServiceName(order.service));
                             
+                            const subId = order.subService || (order as any).subServiceId || '';
+                            const isOffice = subId === 'office_cleaning' || order.service === 'office_cleaning';
+                            const desksCount = order.details?.serviceDetails?.officeDesks || order.details?.officeDesks;
+                            if (isOffice && desksCount) {
+                                return `${baseName} • ${desksCount} ${desksCount > 1 ? t({ en: 'Desks', fr: 'Bureaux', ar: 'مكاتب' }) : t({ en: 'Desk', fr: 'Bureau', ar: 'مكتب' })}`;
+                            }
+
+                            const isDish = subId === 'dish_cleaning';
+                            const dishHours = order.details?.serviceDetails?.hours || order.details?.hours || (order.duration ? order.duration.toString().replace('h', '') : null);
+                            if (isDish && dishHours) {
+                                const label = dishHours <= 1 ? t({ en: 'Quick', fr: 'Rapide' }) : (dishHours <= 2 ? t({ en: 'Dinner', fr: 'Dîner' }) : t({ en: 'Event', fr: 'Événement' }));
+                                return `${baseName} • ${label} (${dishHours}h)`;
+                            }
+
                             const roomsCount = order.details?.serviceDetails?.rooms || order.details?.rooms;
                             if (order.service === 'cleaning' && roomsCount) {
                                 return `${baseName} • ${roomsCount} ${roomsCount > 1 ? t({ en: 'Rooms', fr: 'Pièces', ar: 'غرف' }) : t({ en: 'Room', fr: 'Pièce', ar: 'غرفة' })}`;
@@ -193,87 +234,88 @@ export default function ProviderJobCard({
                             return baseName;
                         })()}
                     </h3>
-                    <div className="mt-2 text-[14px] font-medium text-black leading-tight">
-                            <div className="flex flex-wrap items-center gap-2 mt-1">
-                                <div className="flex items-center gap-1 text-neutral-400 whitespace-nowrap">
-                                    <Calendar size={14} className="opacity-70" />
-                                    <span className="text-[14px] font-medium">
-                                        {normalizeToDate(order.date) ? format(normalizeToDate(order.date)!, 'MMM d') : ''}
-                                    </span>
-                                </div>
-                                <span className="text-neutral-200">|</span>
-                                <p className="text-[18px] font-medium">
-                                    {order.time?.split('-')[0] || '12:00'}
-                                </p>
-                                {timeLeft && (
-                                    <span className={cn(
-                                        "text-[14px] font-medium whitespace-nowrap pt-1",
-                                        "text-[#01A083]"
-                                    )}>
-                                        {timeLeft}
-                                    </span>
-                                )}
-                            </div>
-                    </div>
-                    <div className="flex justify-between items-end mt-2">
-                        <p className="text-[13px] font-medium text-neutral-400 truncate pr-2 flex-1">
-                            {order.clientName || t({ en: 'Client', fr: 'Client', ar: 'عميل' })}
-                        </p>
-                        {!!(order.totalPrice || order.price) && (
-                            <div className="flex-shrink-0 bg-[#F9FAFB] border border-neutral-100 px-2 py-0.5 rounded-md flex items-center justify-center ml-2">
-                                <span className="text-[13px] font-bold text-black">
-                                    {(order.totalPrice || parseFloat(String(order.price || '0'))).toFixed(0)} MAD
-                                </span>
+
+                    <div className="flex items-center gap-2 mt-2">
+                        <div className="flex items-center gap-1.5 bg-[#F9FAFB] px-2 py-1 rounded-lg border border-neutral-100">
+                            <Calendar size={13} className="text-neutral-400" />
+                            <span className="text-[13px] font-medium text-black">
+                                {normalizeToDate(order.date) ? format(normalizeToDate(order.date)!, 'MMM d') : ''}
+                            </span>
+                            <span className="text-neutral-300 mx-0.5">•</span>
+                            <span className="text-[13px] font-bold text-black">
+                                {order.time?.split('-')[0] || '12:00'}
+                            </span>
+                        </div>
+                        {finalDuration && (
+                            <div className="flex items-center gap-1 text-neutral-400">
+                                <Clock size={13} />
+                                <span className="text-[12px] font-medium">~{finalDuration}h</span>
                             </div>
                         )}
                     </div>
-                    <div className="w-full h-1.5 bg-neutral-100 rounded-full mt-3 overflow-hidden">
-                        <motion.div
-                            initial={{ width: 0 }}
-                            animate={{
-                                width: (() => {
-                                    if (isDone) return '100%';
-                                    // Calculate progress based on real timestamps
-                                    try {
-                                        const normDate = normalizeToDate(order.date);
-                                        if (!normDate || !order.time) return isInProgress ? '50%' : '0%';
-                                        const timeStr = order.time.split('-')[0].trim();
-                                        const dateStr = format(normDate, 'yyyy-MM-dd');
-                                        const startTime = parseISO(`${dateStr}T${timeStr}:00`).getTime();
-                                        const now = currentTime.getTime();
-
-                                        let durationHr = 2;
-                                        const subService = getSubService(order.service || '', order.subService || '');
-                                        if (subService?.estimatedDurationHr) durationHr = subService.estimatedDurationHr;
-                                        const endTime = startTime + durationHr * 3600000;
-
-                                        if (now >= endTime) return '100%';
-                                        if (now >= startTime) {
-                                            // In progress: % through the job
-                                            const pct = Math.min(100, ((now - startTime) / (endTime - startTime)) * 100);
-                                            return `${pct.toFixed(1)}%`;
-                                        }
-                                        // Upcoming: % of wait time elapsed from createdAt → startTime
-                                        const createdAt = order.createdAt ? (typeof order.createdAt?.toDate === 'function' ? order.createdAt.toDate().getTime() : new Date(order.createdAt).getTime()) : null;
-                                        if (createdAt && createdAt < startTime) {
-                                            const pct = Math.min(95, Math.max(5, ((now - createdAt) / (startTime - createdAt)) * 100));
-                                            return `${pct.toFixed(1)}%`;
-                                        }
-                                        return '5%';
-                                    } catch(e) {
-                                        return isInProgress ? '50%' : '5%';
-                                    }
-                                })(),
-                                filter: isInProgress ? ['brightness(1)', 'brightness(1.5)', 'brightness(1)'] : 'brightness(1)'
-                            }}
-                            transition={{
-                                width: { duration: 1, ease: "easeOut" },
-                                filter: { repeat: Infinity, duration: 2, ease: "easeInOut" }
-                            }}
-                            className="h-full rounded-full bg-[#01A083]"
-                        />
-                    </div>
                 </div>
+            </div>
+
+            <div className="flex items-center justify-between mt-3 bg-[#F9FAFB] rounded-2xl p-3 border border-neutral-100/50">
+                <div className="flex-1">
+                    <p className="text-[11px] font-bold text-neutral-400 uppercase tracking-widest leading-none mb-1">
+                        {t({ en: 'You Earn', fr: 'Vous Gagnez', ar: 'ستربح' })}
+                    </p>
+                    <p className="text-[20px] font-black text-[#01A083] leading-none">
+                        {finalEarnings.toFixed(0)} <span className="text-[12px]">MAD</span>
+                    </p>
+                </div>
+                <div className="text-right">
+                    <p className="text-[11px] font-bold text-neutral-400 uppercase tracking-widest leading-none mb-1">
+                        {t({ en: 'Client Pays', fr: 'Le Client Paye', ar: 'العميل يدفع' })}
+                    </p>
+                    <p className="text-[15px] font-bold text-black leading-none opacity-60">
+                        {finalClientPay.toFixed(0)} <span className="text-[10px]">MAD</span>
+                    </p>
+                </div>
+            </div>
+
+            <div className="w-full h-1 bg-neutral-50 rounded-full mt-1 overflow-hidden relative">
+                <motion.div
+                    initial={{ width: 0 }}
+                    animate={{
+                        width: (() => {
+                            if (isDone) return '100%';
+                            try {
+                                const normDate = normalizeToDate(order.date);
+                                if (!normDate || !order.time) return isInProgress ? '50%' : '0%';
+                                const timeStr = order.time.split('-')[0].trim();
+                                const dateStr = format(normDate, 'yyyy-MM-dd');
+                                const startTime = parseISO(`${dateStr}T${timeStr}:00`).getTime();
+                                const now = currentTime.getTime();
+
+                                let durationHr = 2;
+                                const subService = getSubService(order.service || '', order.subService || '');
+                                if (subService?.estimatedDurationHr) durationHr = subService.estimatedDurationHr;
+                                const endTime = startTime + durationHr * 3600000;
+
+                                if (now >= endTime) return '100%';
+                                if (now >= startTime) {
+                                    const pct = Math.min(100, ((now - startTime) / (endTime - startTime)) * 100);
+                                    return `${pct.toFixed(1)}%`;
+                                }
+                                const createdAt = order.createdAt ? (typeof order.createdAt?.toDate === 'function' ? order.createdAt.toDate().getTime() : new Date(order.createdAt).getTime()) : null;
+                                if (createdAt && createdAt < startTime) {
+                                    const pct = Math.min(95, Math.max(5, ((now - createdAt) / (startTime - createdAt)) * 100));
+                                    return `${pct.toFixed(1)}%`;
+                                }
+                                return '5%';
+                            } catch(e) {
+                                return isInProgress ? '50%' : '5%';
+                            }
+                        })(),
+                    }}
+                    transition={{ duration: 1, ease: "easeOut" }}
+                    className={cn(
+                        "h-full rounded-full",
+                        isInProgress ? "bg-[#01A083]" : "bg-neutral-200"
+                    )}
+                />
             </div>
 
             {/* ACTION BUTTONS (Bricoler specific) */}

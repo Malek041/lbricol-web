@@ -156,6 +156,9 @@ export default function ServiceSetupPage() {
     // Errands/Delivery Specialized States
     const [errandCategory, setErrandCategory] = useState<string>('package');
 
+    const [isTranslating, setIsTranslating] = useState(false);
+    const [translationError, setTranslationError] = useState(false);
+
     // Synchronize errand category with subservice selection from Home
     useEffect(() => {
         if (order.serviceType === 'errands' || order.serviceType?.includes('delivery')) {
@@ -200,6 +203,33 @@ export default function ServiceSetupPage() {
     const memoizedDestinationPin = React.useMemo(() =>
         dropoffLocation.lat ? { lat: dropoffLocation.lat, lng: dropoffLocation.lng! } : undefined
         , [dropoffLocation.lat, dropoffLocation.lng]);
+
+    const isArabic = (text: string) => /[\u0600-\u06FF]/.test(text);
+
+    const handleTranslateBio = async () => {
+        if (!provider.bio || isTranslating) return;
+        setIsTranslating(true);
+        setTranslationError(false);
+        try {
+            const { translateBio } = await import('@/lib/translateBio');
+            const translations = await translateBio(provider.bio);
+            
+            if (Object.keys(translations).length === 0) {
+                setTranslationError(true);
+                return;
+            }
+
+            setProvider(prev => ({
+                ...prev,
+                bio_translations: { ...prev.bio_translations, ...translations }
+            }));
+        } catch (err) {
+            console.error("[handleTranslateBio] Failed:", err);
+            setTranslationError(true);
+        } finally {
+            setIsTranslating(false);
+        }
+    };
 
     // Bricoler Stats
     const [provider, setProvider] = useState({
@@ -939,7 +969,7 @@ export default function ServiceSetupPage() {
                                             {/* Rating Stat */}
                                             <div className="flex flex-col items-center gap-2 text-center">
                                                 <div
-                                                    className="w-[68px] h-[68px] flex items-center justify-center bg-[#FFFBEB] border border-[#FEF3C7]"
+                                                    className="w-[68px] h-[68px] flex items-center justify-center bg-[#FFF9E5] border border-[#CCF1FF]"
                                                     style={{ borderRadius: '40% 60% 70% 30% / 40% 50% 60% 50%' }}
                                                 >
                                                     <Star size={40} className="text-[#D97706] fill-[#D97706]/20" />
@@ -986,7 +1016,34 @@ export default function ServiceSetupPage() {
                                                 {provider.bio_translations?.[language as keyof typeof provider.bio_translations] ? (
                                                     provider.bio_translations[language as keyof typeof provider.bio_translations]
                                                 ) : provider.bio && provider.bio.trim() ? (
-                                                    `${provider.bio}`
+                                                    <div className="flex flex-col gap-2">
+                                                        <span>{provider.bio}</span>
+                                                        {((isArabic(provider.bio) && language !== 'ar') || (!isArabic(provider.bio) && language === 'ar')) && (
+                                                            <button 
+                                                                onClick={handleTranslateBio}
+                                                                disabled={isTranslating}
+                                                                className="flex items-center gap-1.5 text-[12px] font-bold text-[#01A083] hover:opacity-80 transition-opacity w-fit"
+                                                            >
+                                                                {isTranslating ? (
+                                                                    <Loader2 size={13} className="animate-spin" />
+                                                                ) : (
+                                                                    <Sparkles size={13} />
+                                                                )}
+                                                                {t({ en: 'See translation', fr: 'Voir la traduction', ar: 'مشاهدة الترجمة' })}
+                                                            </button>
+                                                        )}
+                                                        {translationError && (
+                                                            <a 
+                                                                href={`https://translate.google.com/?sl=auto&tl=${language}&text=${encodeURIComponent(provider.bio)}&op=translate`}
+                                                                target="_blank"
+                                                                rel="noopener noreferrer"
+                                                                className="text-[12px] font-medium text-neutral-400 hover:text-[#01A083] underline underline-offset-2 flex items-center gap-1"
+                                                            >
+                                                                {t({ en: 'Try Google Translate instead', fr: 'Essayer Google Traduction', ar: 'جرب ترجمة جوجل' })}
+                                                                <ChevronRight size={10} />
+                                                            </a>
+                                                        )}
+                                                    </div>
                                                 ) : (
                                                     <span className="text-neutral-400 italic">{t({ en: 'No bio provided by the Bricoler yet.', fr: 'Aucune biographie fournie par le Bricoleur.' })}</span>
                                                 )}
@@ -1096,8 +1153,8 @@ export default function ServiceSetupPage() {
                                                                     {rev.date ? new Date(rev.date).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }) : (t({ en: 'Recently', fr: 'Récemment', ar: 'مؤخراً' }))}
                                                                 </p>
                                                             </div>
-                                                            <div className="flex items-center gap-1 bg-[#FFFBEB] px-2.5 py-1 rounded-[5px] border border-[#FEF3C7] flex-shrink-0">
-                                                                <Star size={10} className="text-[#FBBF24] fill-[#FBBF24]" />
+                                                            <div className="flex items-center gap-1 bg-[#FFF9E5] px-2.5 py-1 rounded-[5px] border border-[#CCF1FF] flex-shrink-0">
+                                                                <Star size={10} className="text-[#33D5FF] fill-[#33D5FF]" />
                                                                 <span className="text-[11px] font-black text-[#92400E]">{rev.rating ?? 0}</span>
                                                             </div>
                                                         </div>
@@ -2272,11 +2329,11 @@ export default function ServiceSetupPage() {
                             className="fixed bottom-0 left-0 right-0 z-[100] bg-transparent pointer-events-none"
                         >
                             <div className="absolute top-[-44px] left-0 right-0 h-[45px] z-20 pointer-events-none">
-                                <svg viewBox="0 0 1440 120" preserveAspectRatio="none" className="w-full h-full fill-[#FFB700]">
+                                <svg viewBox="0 0 1440 120" preserveAspectRatio="none" className="w-full h-full fill-[#FFCC02]">
                                     <path d="M0,64L48,64C96,64,192,64,288,64C384,64,480,64,576,53.3C672,43,768,21,864,16C960,10.7,1056,21.3,1152,42.7C1248,64,1344,96,1392,112L1440,128L1440,120L1392,120C1344,120,1248,120,1152,120C1056,120,960,120,864,120C768,120,672,120,576,120C480,120,384,120,288,120C192,120,96,120,48,120L0,120Z"></path>
                                 </svg>
                             </div>
-                            <div className="bg-[#FFB700] p-6 pb-12 pointer-events-auto">
+                            <div className="bg-[#FFCC02] p-6 pb-12 pointer-events-auto">
                                 <motion.button
                                     whileTap={{ scale: 0.98 }}
                                     onClick={handleContinue}

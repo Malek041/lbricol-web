@@ -18,7 +18,7 @@ const StatCard = memo(({ title, value, icon: Icon, growth, suffix = '', loading 
         className="bg-white p-6 rounded-[32px] shadow-sm border border-neutral-100"
     >
         <div className="flex justify-between items-start mb-4">
-            <div className="w-12 h-12 bg-[#FFC244]/10 rounded-2xl flex items-center justify-center">
+            <div className="w-12 h-12 bg-[#FFCC02]/10 rounded-2xl flex items-center justify-center">
                 <Icon size={24} className="text-black" />
             </div>
             <div className={`flex items-center gap-1 text-sm font-bold ${growth >= 0 ? 'text-[#01A083]' : 'text-red-500'}`}>
@@ -69,7 +69,7 @@ const AdminDashboard = memo(({ t }: AdminDashboardProps) => {
     return (
         <div className="flex flex-col min-h-screen bg-[#FAFAFA] pb-24">
             {/* Header */}
-            <div className="bg-[#FFC244] pt-12 pb-24 px-5 rounded-b-[40px]">
+            <div className="bg-[#FFCC02] pt-12 pb-24 px-5 rounded-b-[40px]">
                 <div className="flex justify-between items-center mb-8">
                     <h1 className="text-[32px] font-black text-black">
                         {t({ en: 'Dashboard', fr: 'Tableau de bord', ar: 'لوحة التحكم' })}

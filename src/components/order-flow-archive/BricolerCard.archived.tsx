@@ -69,7 +69,7 @@ const BricolerCard = ({
                                 <span className="bg-[#EEF2FF] text-[#6366F1] text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider">✦ NEW</span>
                             )}
                             <div className="flex items-center gap-1">
-                                <Star size={12} className="text-[#FFC244]" fill="#FFC244" />
+                                <Star size={12} className="text-[#FFCC02]" fill="#FFCC02" />
                                 <span className="text-[14px] font-black text-neutral-950">{effectiveRating.toFixed(1)}</span>
                             </div>
                         </div>

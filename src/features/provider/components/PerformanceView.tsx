@@ -358,7 +358,7 @@ export const PerformanceView = ({
                                                         <p className="text-[11px] font-black text-neutral-400 mb-5">{t({ en: 'GROW YOUR BUSINESS', fr: 'DÉVELOPPEZ VOTRE ACTIVITÉ', ar: 'نمِّ عملك' })}</p>
                                                         <div className="grid grid-cols-2 gap-4">
                                                             {[
-                                                                { id: 'tips-profile', title: t({ en: 'Profile tips', fr: 'Profil', ar: 'نصائح الملف الشخصي' }), desc: t({ en: 'Get more clicks', fr: 'Plus de clics', ar: 'احصل على المزيد من النقرات' }), icon: User, color: 'bg-[#FFC244]/10 text-black' },
+                                                                { id: 'tips-profile', title: t({ en: 'Profile tips', fr: 'Profil', ar: 'نصائح الملف الشخصي' }), desc: t({ en: 'Get more clicks', fr: 'Plus de clics', ar: 'احصل على المزيد من النقرات' }), icon: User, color: 'bg-[#FFCC02]/10 text-black' },
                                                                 { id: 'tips-pricing', title: t({ en: 'Pricing', fr: 'Tarifs', ar: 'الأسعار' }), desc: t({ en: 'Earn more', fr: 'Gagnez plus', ar: 'اربح أكثر' }), icon: Tag, color: 'bg-[#01A083]/10 text-[#01A083]' },
                                                             ].map((tip) => (
                                                                 <motion.button
@@ -599,7 +599,7 @@ export const PerformanceView = ({
                                                                         <span className="text-[42px] font-black text-black leading-none">{Number(avgRating) > 0 ? avgRating : '–'}</span>
                                                                         <div className="flex gap-1">
                                                                             {Array.from({ length: 5 }).map((_, i) => (
-                                                                                <Star key={i} size={22} className={i < Math.round(Number(avgRating)) ? 'text-[#FFC244] fill-[#FFC244]' : 'text-neutral-200 fill-neutral-200'} />
+                                                                                <Star key={i} size={22} className={i < Math.round(Number(avgRating)) ? 'text-[#FFCC02] fill-[#FFCC02]' : 'text-neutral-200 fill-neutral-200'} />
                                                                             ))}
                                                                         </div>
                                                                     </div>

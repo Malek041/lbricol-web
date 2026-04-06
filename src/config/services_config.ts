@@ -54,9 +54,6 @@ export const SERVICES_HIERARCHY: Record<string, ServiceConfig> = {
             { id: 'deep_cleaning', name: 'Deep Home Cleaning', pricingArchetype: 'unit', estimatedDurationHr: 6, baseSetupHr: 1.0, complexityMultiplier: 1.5 },
             { id: 'office_cleaning', name: 'Office Cleaning', pricingArchetype: 'unit', estimatedDurationHr: 4, baseSetupHr: 0.5, complexityMultiplier: 1.0 },
             { id: 'dish_cleaning', name: 'Dish Washing', pricingArchetype: 'hourly', estimatedDurationHr: 1.5, baseSetupHr: 0.2, complexityMultiplier: 1.0 },
-            // Legacy/Internal support for standard sizes found in pricing.ts
-            { id: 'standard_small', name: 'Standard Cleaning (Small)', pricingArchetype: 'unit', estimatedDurationHr: 2, baseSetupHr: 0.5, complexityMultiplier: 1.0 },
-            { id: 'standard_large', name: 'Standard Cleaning (Large)', pricingArchetype: 'unit', estimatedDurationHr: 4, baseSetupHr: 0.5, complexityMultiplier: 1.0 },
             { id: 'family_home', name: 'Family Home Cleaning', pricingArchetype: 'unit', estimatedDurationHr: 6, baseSetupHr: 1.0, complexityMultiplier: 1.2 }
         ]
     },

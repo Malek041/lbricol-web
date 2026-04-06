@@ -85,6 +85,9 @@ export interface OrderDetails {
     details?: any;
     providerStatus?: 'heading' | 'arrived' | 'working' | null;
     expectedEndTime?: any;
+    distanceKm?: number;
+    fee?: number;
+    estimatedDuration?: number;
 }
 
 interface OrderCardProps {
@@ -234,8 +237,8 @@ const OrderCard = ({ order, onCancel }: OrderCardProps) => {
                         );
                     })()}
                     {order.rating && (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px', backgroundColor: '#FFC24422', padding: '4px 10px', borderRadius: '100px', fontSize: badgeSize, color: '#FFC244' }}>
-                            <Star size={14} fill="#FFC244" />
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px', backgroundColor: '#FFCC0222', padding: '4px 10px', borderRadius: '100px', fontSize: badgeSize, color: '#FFCC02' }}>
+                            <Star size={14} fill="#FFCC02" />
                             {order.rating}
                         </div>
                     )}

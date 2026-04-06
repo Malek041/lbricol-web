@@ -77,7 +77,7 @@ export const SERVICES_CATALOGUE: ServiceEntry[] = [
             { en: 'Securely mount your TV, shelves, art, mirrors, dressers, and more.', fr: 'Montez en toute sécurité votre TV, vos étagères, vos tableaux, vos miroirs, vos commodes et bien plus.', ar: 'تعليق التلفزيون، الرفوف، اللوحات، المرايا والمزيد بأمان.' },
             { en: 'Now Trending: Gallery walls, art TVs & wraparound bookcases.', fr: 'Tendance actuelle : Murs de galerie, TV artistiques et bibliothèques d\'angle.', ar: 'رائج الآن: جدران المعارض، أجهزة تلفزيون فنية ومكتبات زاوية.' },
         ],
-        heroImage: '/Images/Job Cards Images/Handyman_job_card.webp', 
+        heroImage: '/Images/Job Cards Images/Handyman_job_card.webp',
     },
     {
         id: 'moving',
@@ -134,7 +134,7 @@ export const SERVICES_CATALOGUE: ServiceEntry[] = [
             { en: 'Streak-free cleaning for windows, mirrors and specialty glass.', fr: 'Nettoyage sans traces pour les fenêtres, les miroirs et les vitres spéciales.', ar: 'تنظيف بدون أثر للنوافذ والمرايا والزجاج الخاص.' },
             { en: 'Now Trending: Eco-friendly streak-free formulas.', fr: 'Tendance actuelle : Formules écologiques sans traces.', ar: 'رائج الآن: تركيبات صديقة للبيئة بدون أثر.' },
         ],
-        heroImage: '/Images/Job Cards Images/Cleaning_job_card.webp', 
+        heroImage: '/Images/Job Cards Images/Cleaning_job_card.webp',
     },
     {
         id: 'gardening',

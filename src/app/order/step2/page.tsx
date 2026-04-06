@@ -770,7 +770,7 @@ function ProviderCard({
           </span>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
-            <Star size={12} fill="#FBBF24" color="#FBBF24" />
+            <Star size={12} fill="#33D5FF" color="#33D5FF" />
             <span style={{ fontSize: 14, fontWeight: 500, color: '#111827' }}>
               {provider.rating && Number(provider.rating) > 0 ? Number(provider.rating).toFixed(1) : '0.0'}
             </span>

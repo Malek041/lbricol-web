@@ -4,7 +4,7 @@
 Inspired by the Glovo Yellow System.
 
 ### Primary Colors
-- **Primary:** `#FFC244` (Action / CTA)
+- **Primary:** `#02C7FF` (Action / CTA)
 - **Dark:** `#1E1E1E` (Text Primary)
 - **Neutral 900:** `#2B2B2B`
 - **Neutral 500:** `#9E9E9E`
@@ -13,8 +13,8 @@ Inspired by the Glovo Yellow System.
 - **Error Soft:** `#FDECEA`
 - **Error Text:** `#C62828`
 
-**Yellow Usage Guidelines:**
-Do not oversaturate yellow. Use only for:
+**Blue Usage Guidelines:**
+Do not oversaturate blue. Use only for:
 - Primary buttons
 - Price tags
 - Active states
@@ -41,7 +41,7 @@ Each order state must have a clear visual representation.
 | State | Icon | Background | Text Color |
 | :--- | :--- | :--- | :--- |
 | **Confirmed** | Check | Light Green | Dark |
-| **Preparing** | Clock | Light Yellow | Dark |
+| **Preparing** | Clock | Light Blue | Dark |
 | **Delivered** | Box | Light Green | Dark |
 | **Cancelled** | Cross | Soft Red | Dark |
 

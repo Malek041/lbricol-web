@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import SplashScreen from '@/components/layout/SplashScreen';
-import { ChevronLeft, ChevronRight, Star, Clock, MapPin, Calendar, CheckCircle2, Car, Check, ChevronDown, RefreshCw, Trophy } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Star, Clock, MapPin, Calendar, CheckCircle2, Car, Check, ChevronDown, RefreshCw, Trophy, Sparkles, Loader2 } from 'lucide-react';
+import { useLanguage } from '@/context/LanguageContext';
 import { CAR_BRANDS } from '@/config/cars_config';
 import { DayPicker } from 'react-day-picker';
 import 'react-day-picker/style.css';
@@ -32,6 +33,44 @@ export function CarRentalProfileModal({
     const [isSplashing, setIsSplashing] = useState(false);
 
     const [activeTab, setActiveTab] = useState<'setup' | 'details'>('setup');
+    const { t, language } = useLanguage();
+    const [isTranslating, setIsTranslating] = useState(false);
+    const [translationError, setTranslationError] = useState(false);
+    const [localBioTranslations, setLocalBioTranslations] = useState<any>(provider?.bio_translations || {});
+
+    const isArabic = (text: string) => /[\u0600-\u06FF]/.test(text);
+
+    useEffect(() => {
+        if (provider?.bio_translations) {
+            setLocalBioTranslations(provider.bio_translations);
+        } else {
+            setLocalBioTranslations({});
+        }
+    }, [provider?.id]);
+
+    const handleTranslateBio = async () => {
+        const bioText = provider.bio || provider.aboutMe;
+        if (!bioText || isTranslating) return;
+        setIsTranslating(true);
+        setTranslationError(false);
+        try {
+            const { translateBio } = await import('@/lib/translateBio');
+            const translations = await translateBio(bioText);
+            
+            if (Object.keys(translations).length === 0) {
+                setTranslationError(true);
+                return;
+            }
+
+            const newTranslations = { ...localBioTranslations, ...translations };
+            setLocalBioTranslations(newTranslations);
+        } catch (err) {
+            console.error("[handleTranslateBio] Failed:", err);
+            setTranslationError(true);
+        } finally {
+            setIsTranslating(false);
+        }
+    };
 
     // Formatting helper for Pic 3 style
     const formatDateLabel = (dateStr: string) => {
@@ -323,7 +362,7 @@ export function CarRentalProfileModal({
                                             {/* Rating Stat */}
                                             <div className="flex flex-col items-center gap-2 text-center">
                                                 <div 
-                                                    className="w-[68px] h-[68px] flex items-center justify-center bg-[#FFFBEB] border border-[#FEF3C7]"
+                                                    className="w-[68px] h-[68px] flex items-center justify-center bg-[#FFF9E5] border border-[#CCF1FF]"
                                                     style={{ borderRadius: '40% 60% 70% 30% / 40% 50% 60% 50%' }}
                                                 >
                                                     <Star size={40} className="text-[#D97706] fill-[#D97706]/20" />
@@ -383,7 +422,40 @@ export function CarRentalProfileModal({
                                         <div style={{ marginBottom: 32 }}>
                                             <h4 style={{ fontSize: 18, fontWeight: 700, color: '#111827', marginBottom: 16, marginTop: 0 }}>About Me</h4>
                                             <div style={{ fontSize: 15, color: '#4B5563', lineHeight: 1.6, fontWeight: 500, padding: 16, background: '#F9FAFB', borderRadius: 5, border: '1px solid #F3F4F6' }}>
-                                                {provider.bio || provider.aboutMe || 'No bio provided yet.'}
+                                                {localBioTranslations?.[language] ? (
+                                                    localBioTranslations[language]
+                                                ) : (provider.bio || provider.aboutMe) ? (
+                                                    <div className="flex flex-col gap-2">
+                                                        <span>{provider.bio || provider.aboutMe}</span>
+                                                        {((isArabic(provider.bio || provider.aboutMe) && language !== 'ar') || (!isArabic(provider.bio || provider.aboutMe) && language === 'ar')) && (
+                                                            <button 
+                                                                onClick={handleTranslateBio}
+                                                                disabled={isTranslating}
+                                                                className="flex items-center gap-1.5 text-[12px] font-bold text-[#01A083] hover:opacity-80 transition-opacity w-fit bg-transparent border-none p-0 cursor-pointer"
+                                                            >
+                                                                {isTranslating ? (
+                                                                    <Loader2 size={13} className="animate-spin" />
+                                                                ) : (
+                                                                    <Sparkles size={13} />
+                                                                )}
+                                                                {t({ en: 'See translation', fr: 'Voir la traduction', ar: 'مشاهدة الترجمة' })}
+                                                            </button>
+                                                        )}
+                                                        {translationError && (
+                                                            <a 
+                                                                href={`https://translate.google.com/?sl=auto&tl=${language}&text=${encodeURIComponent(provider.bio || provider.aboutMe)}&op=translate`}
+                                                                target="_blank"
+                                                                rel="noopener noreferrer"
+                                                                className="text-[12px] font-medium text-neutral-400 hover:text-[#01A083] underline underline-offset-2 flex items-center gap-1 mt-1 bg-transparent border-none p-0 cursor-pointer w-fit"
+                                                            >
+                                                                {t({ en: 'Try Google Translate instead', fr: 'Essayer Google Traduction', ar: 'جرب ترجمة جوجل' })}
+                                                                <ChevronRight size={10} />
+                                                            </a>
+                                                        )}
+                                                    </div>
+                                                ) : (
+                                                    <span className="text-neutral-400 italic">No bio provided yet.</span>
+                                                )}
                                             </div>
                                         </div>
 
@@ -401,7 +473,7 @@ export function CarRentalProfileModal({
                                                             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
                                                                 <span style={{ fontSize: 13, fontWeight: 900, color: '#111827' }}>{rev.userName || 'User'}</span>
                                                                 <div style={{ display: 'flex', gap: 2 }}>
-                                                                    {[...Array(5)].map((_, i) => <Star key={i} size={10} fill={i < (rev.rating || 5) ? "#FBBF24" : "none"} color="#FBBF24" />)}
+                                                                    {[...Array(5)].map((_, i) => <Star key={i} size={10} fill={i < (rev.rating || 5) ? "#33D5FF" : "none"} color="#33D5FF" />)}
                                                                 </div>
                                                             </div>
                                                             <p style={{ fontSize: 13, color: '#4B5563', lineHeight: 1.5, margin: 0, fontWeight: 500 }}>{rev.content || rev.comment}</p>
@@ -565,7 +637,7 @@ export function CarRentalProfileModal({
                         </div>
                         <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '24px 24px 44px', borderTop: 'none', background: 'transparent', zIndex: 10, overflow: 'hidden' }}>
                             {/* Brand Wave Accent */}
-                            <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 160, background: '#FFB700', borderRadius: '40% 40% 0 0', transform: 'scaleX(1.5) translateY(40px)', zIndex: -1 }}></div>
+                            <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 160, background: '#FFCC02', borderRadius: '40% 40% 0 0', transform: 'scaleX(1.5) translateY(40px)', zIndex: -1 }}></div>
 
                             <button
                                 onClick={() => {

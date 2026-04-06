@@ -105,7 +105,7 @@ const AdminOrdersView: React.FC<AdminOrdersViewProps> = ({ t, onChat, onViewMess
                 return { bg: 'bg-green-100', text: 'text-green-700', icon: CheckCircle2 };
             case 'pending':
             case 'waiting':
-                return { bg: 'bg-yellow-100', text: 'text-yellow-700', icon: Clock };
+                return { bg: 'bg-sky-100', text: 'text-sky-700', icon: Clock };
             case 'cancelled':
                 return { bg: 'bg-red-100', text: 'text-red-700', icon: XCircle };
             case 'negotiating':
@@ -296,7 +296,7 @@ const AdminOrdersView: React.FC<AdminOrdersViewProps> = ({ t, onChat, onViewMess
                                         </div>
 
                                         <div className="flex items-center gap-4 mb-5">
-                                            <div className="w-14 h-14 bg-neutral-50 rounded-2xl flex items-center justify-center p-2 group-hover:bg-[#FFC244]/10 transition-colors">
+                                            <div className="w-14 h-14 bg-neutral-50 rounded-2xl flex items-center justify-center p-2 group-hover:bg-[#FFCC02]/10 transition-colors">
                                                 <img 
                                                     src="/Images/Vectors Illu/LbricolFaceOY.webp" 
                                                     className="w-full h-full object-contain" 
@@ -324,7 +324,7 @@ const AdminOrdersView: React.FC<AdminOrdersViewProps> = ({ t, onChat, onViewMess
                                                 <div className="flex flex-col">
                                                     <p className="text-[11px] font-black text-black">{order.clientName || 'Client'}</p>
                                                     <div className="flex items-center gap-1">
-                                                        <Star size={10} className="text-[#FFC244] fill-[#FFC244]" />
+                                                        <Star size={10} className="text-[#FFCC02] fill-[#FFCC02]" />
                                                         <span className="text-[10px] font-bold text-neutral-500">{(order.clientRating || 5.0).toFixed(1)}</span>
                                                     </div>
                                                 </div>

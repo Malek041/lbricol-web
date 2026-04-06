@@ -1207,10 +1207,91 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                 }).catch(console.warn);
             }
 
-            // Note: Media uploads are now disabled. The initial setDoc already saved all information.
+            // --- FIXED: Portfolio Image Uploads for Service Editing ---
+            // Previously disabled, causing data-url (base64) images to be stripped without being uploaded.
+            const hasPendingProfileUpload = isImageDataUrl(profilePhotoUrl);
+            const hasPendingServiceUploads = currentEntries.some((entry) => entryHasPendingImageUploads(entry));
+            const hasPendingTourGuideUpload = !!(tourGuideAuthorizationFile && selectedSubServices.some(id => id.includes('tour_guide')));
+
+            let finalAvatarUrl = finalProfilePhotoUrl;
+            let finalPortfolioFull = allPortfolioUrls;
+            let finalizedServices = finalCategoryEntries;
+
+            if (hasPendingProfileUpload || hasPendingServiceUploads || hasPendingTourGuideUpload) {
+                setSubmittingStatus("Uploading media...");
+                try {
+                    const uploadProfileTask = resolveProfilePhoto(user.uid, profilePhotoUrl);
+                    const uploadEntriesTask = attachUploadedImagesToEntries(user.uid, currentEntries);
+
+                    let uploadTourGuideTask = Promise.resolve(finalTourGuideAuthUrl);
+                    if (hasPendingTourGuideUpload && tourGuideAuthorizationFile) {
+                        uploadTourGuideTask = (async () => {
+                            const arrayBuffer = await tourGuideAuthorizationFile.arrayBuffer();
+                            const res = await uploadBytes(ref(storage, `verifications/${user.uid}/${Date.now()}_tour_guide`), arrayBuffer);
+                            return await getDownloadURL(res.ref);
+                        })();
+                    }
+
+                    const [newProfileUrl, newEntries, newTourGuideUrl] = await Promise.all([
+                        uploadProfileTask,
+                        uploadEntriesTask,
+                        uploadTourGuideTask
+                    ]);
+
+                    finalAvatarUrl = newProfileUrl || finalProfilePhotoUrl;
+
+                    // Re-merge with uploaded entries to preserve other services
+                    if (bSnap.exists()) {
+                        const existing = existingData.services || [];
+                        const currentCategoryIds = Array.from(new Set(newEntries.map((e: any) => e.categoryId)));
+                        const others = existing.filter((s: any) => !currentCategoryIds.includes(s.categoryId));
+                        finalizedServices = [...others, ...newEntries];
+                    } else {
+                        finalizedServices = newEntries;
+                    }
+
+                    finalPortfolioFull = Array.from(new Set(
+                        finalizedServices.flatMap((e: any) => normalizeImageList(e.portfolioImages || e.portfolio || e.images || []))
+                    ));
+
+                    setSubmittingStatus("Finalizing...");
+                    const mediaUpdates = {
+                        avatar: finalAvatarUrl,
+                        profilePhotoURL: finalAvatarUrl,
+                        photoURL: newProfileUrl ? finalAvatarUrl : updateData.photoURL,
+                        services: finalizedServices,
+                        portfolio: finalPortfolioFull,
+                        images: finalPortfolioFull,
+                        tourGuideAuthorizationUrl: newTourGuideUrl || finalTourGuideAuthUrl || existingData.tourGuideAuthorizationUrl
+                    };
+                    await updateDoc(bricolerRef, mediaUpdates);
+
+                    // Update city_index with final data
+                    if (selectedCity) {
+                        await writeCityIndex(user.uid, selectedCity, {
+                            ...updateData,
+                            ...mediaUpdates
+                        }).catch(console.warn);
+                    }
+                } catch (mediaError) {
+                    console.error("Media upload failed during update:", mediaError);
+                    showToast({
+                        variant: 'info',
+                        title: t({ en: 'Photo upload issue', fr: 'Problème de photos' }),
+                        description: t({ en: 'Your information was saved but some photos failed to upload.', fr: 'Vos informations ont été enregistrées mais certaines photos n\'ont pas pu être téléversées.' })
+                    });
+                }
+            }
 
             showToast({ title: t({ en: 'Successfully updated!', fr: 'Mis à jour avec succès !' }), variant: 'success' });
-            onComplete({ services: finalCategoryEntries });
+            onComplete({
+                ...updateData,
+                services: finalizedServices,
+                portfolio: finalPortfolioFull,
+                images: finalPortfolioFull,
+                avatar: finalAvatarUrl,
+                profilePhotoURL: finalAvatarUrl
+            });
             onClose();
         } catch (error: any) {
             console.error("Update error:", error);
@@ -1832,7 +1913,7 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                                                         onClick={() => setActiveCategoryId(cat.id)}
                                                         className="flex flex-col items-center gap-3 px-1 pt-4 pb-3 flex-shrink-0 relative transition-all"
                                                     >
-                                                        {/* Icon organic loop (yellow behind when active) */}
+                                                        {/* Icon organic loop (blue behind when active) */}
                                                         <motion.div
                                                             animate={isActive ? {
                                                                 borderRadius: [
@@ -1857,7 +1938,7 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                                                             style={{
                                                                 width: 90,
                                                                 height: 90,
-                                                                backgroundColor: isActive ? '#FFC244' : hasSelected ? '#E6F6F2' : '#FFFFFF',
+                                                                backgroundColor: isActive ? '#FFF9E5' : hasSelected ? '#ffffffff' : '#FFFFFF',
                                                                 display: 'flex',
                                                                 alignItems: 'center',
                                                                 justifyContent: 'center',
@@ -1880,7 +1961,7 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                                                         <span
                                                             className="text-[14px] font-black whitespace-nowrap mt-1"
                                                             style={{
-                                                                color: isActive || hasSelected ? '#01A083' : '#666',
+                                                                color: isActive || hasSelected ? '#FFCC02' : '#666',
                                                             }}
                                                         >
                                                             {t({ en: cat.name, fr: cat.name })}
@@ -1889,7 +1970,7 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                                                         {isActive && (
                                                             <motion.div
                                                                 layoutId="category-indicator"
-                                                                className="absolute bottom-0 left-0 right-0 h-[3px] bg-[#01A083] rounded-full"
+                                                                className="absolute bottom-0 left-0 right-0 h-[3px] bg-[#FFCC02] rounded-full"
                                                                 transition={{ type: 'spring', stiffness: 500, damping: 40 }}
                                                             />
                                                         )}
@@ -2753,7 +2834,7 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                                                 <div className="flex-1">
                                                     <div className="flex items-center gap-2">
                                                         <h3 className="text-[12px] font-bold uppercase tracking-wider text-[#01A083]">{t({ en: 'Verified Pro', fr: 'Pro vérifié', ar: 'محترف موثق' })}</h3>
-                                                        <div className="w-4 h-4 bg-[#FFC244] rounded-full flex items-center justify-center"><Check size={10} className="text-white" strokeWidth={5} /></div>
+                                                        <div className="w-4 h-4 bg-[#FFCC02] rounded-full flex items-center justify-center"><Check size={10} className="text-white" strokeWidth={5} /></div>
                                                     </div>
                                                     <p className="text-[24px] font-black text-neutral-900 tracking-tight leading-tight">{fullName}</p>
                                                 </div>

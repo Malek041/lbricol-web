@@ -17,7 +17,7 @@ import WaveTop from '@/components/shared/WaveTop';
 
 
 // ── Palette ────────────────────────────────────────────────────────────────
-const G_GREEN = '#01A083';
+const BRAND_YELLOW = '#FFCC02';
 
 // ── Service catalogue ─────────────────────────────────────────────────────
 interface ServiceEntry {
@@ -460,11 +460,11 @@ const ClientHome: React.FC<ClientHomeProps> = ({
 
     return (
         <div className={cn(
-            "fixed inset-0 bg-[#FFC244] overflow-y-auto no-scrollbar h-[100dvh] w-screen font-jakarta",
+            "fixed inset-0 bg-[#FFCC02] overflow-y-auto no-scrollbar h-[100dvh] w-screen font-jakarta",
             "z-0"
         )}>
             {/* 1. New yellow Hero Section */}
-            <div className="w-full sticky top-0 z-0 bg-[#FFC244] overflow-hidden flex-shrink-0 pt-[env(safe-area-inset-top)] pb-5">
+            <div className="w-full sticky top-0 z-0 bg-[#FFCC02] overflow-hidden flex-shrink-0 pt-[env(safe-area-inset-top)] pb-5">
                 {/* Location Pill */}
                 <div className="flex justify-center pt-8 mb-6">
                     <motion.button
@@ -600,8 +600,8 @@ const ClientHome: React.FC<ClientHomeProps> = ({
                                     visibleServices.map((svc: any, idx: number) => {
                                         const isActive = svc.id === activeId;
                                         const isTrending = svc.id === '__trending__';
-                                        const activeColor = isTrending ? '#B8860B' : G_GREEN;
-                                        const activeBg = isTrending ? '#FFF3CD' : '#FFC244';
+                                        const activeColor = isTrending ? '#B8860B' : '#01A083';
+                                        const activeBg = isTrending ? '#ffffffff' : '#FFCC02';
                                         return (
                                             <motion.button
                                                 key={svc.id}
@@ -779,7 +779,7 @@ const ClientHome: React.FC<ClientHomeProps> = ({
                                                         animate={{
                                                             opacity: 1,
                                                             scale: 1,
-                                                            borderColor: ['#000000ff', '#F2F2F3', '#F2F2F3', '#000000ff'],
+                                                            borderColor: ['#a4a4a4ff', '#F2F2F3', '#F2F2F3', '#a4a4a4ff'],
                                                             borderWidth: [0.5, 1, 1, 0.5]
                                                         }}
                                                         transition={{

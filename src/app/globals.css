@@ -121,7 +121,7 @@ html[lang="ar"] h6 {
   content: '';
   position: absolute;
   inset: -3px;
-  background: linear-gradient(90deg, #FF3B3B, #FF9500, #FF3B3B);
+  background: linear-gradient(90deg, #FFCC02, #FFB800, #FFCC02);
   background-size: 200% 100%;
   animation: border-pulsate 2s linear infinite;
   z-index: -1;

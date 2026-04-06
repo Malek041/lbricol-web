@@ -161,7 +161,7 @@ const PromocodesView: React.FC<PromocodesViewProps> = ({
 
                 {/* Bricoler Balance Card */}
                 {isBricoler && (
-                    <div className="bg-[#FFC244] rounded-[20px] p-6 text-black mb-6 shadow-md relative overflow-hidden">
+                    <div className="bg-[#FFCC02] rounded-[20px] p-6 text-black mb-6 shadow-md relative overflow-hidden">
                         <div className="relative z-10">
                             <p className="text-black/70 font-bold text-[15px] mb-1 uppercase tracking-wide">
                                 {t({ en: 'Bricoler Earnings', fr: 'Gains Pro', ar: 'أرباح المحترف' })}
@@ -198,7 +198,7 @@ const PromocodesView: React.FC<PromocodesViewProps> = ({
                         <button
                             onClick={handleApplyCode}
                             disabled={!code.trim() || isLoading}
-                            className="bg-[#FFC244] text-[#1D1D1D] px-3 py-3.5 rounded-xl font-bold text-[14px] disabled:opacity-50 transition-colors flex-shrink-0 whitespace-nowrap"
+                            className="bg-[#FFCC02] text-[#1D1D1D] px-3 py-3.5 rounded-xl font-bold text-[14px] disabled:opacity-50 transition-colors flex-shrink-0 whitespace-nowrap"
                         >
                             {isLoading ? '...' : t({ en: 'Apply', fr: 'Appliquer', ar: 'تطبيق' })}
                         </button>

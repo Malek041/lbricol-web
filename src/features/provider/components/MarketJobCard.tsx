@@ -142,7 +142,7 @@ export const JobCard = ({ job, isWaiting, isSubmitting, onAccept, onCounter, for
                     <div className="truncate min-w-0">
                         <div className="text-sm font-bold text-neutral-900 truncate">{job.clientName || 'Client'}</div>
                         <div className="flex items-center gap-1 text-[11px] font-semibold text-neutral-500 truncate">
-                            <Star size={10} className="fill-yellow-400 text-yellow-400 flex-shrink-0" />
+                            <Star size={10} className="fill-sky-400 text-sky-400 flex-shrink-0" />
                             <span className="flex-shrink-0">{job.rating || 'N/A'}</span>
                         </div>
                     </div>

@@ -1003,7 +1003,7 @@ const WeekCalendar = ({
                                                     : (statusStyle.color === '#5856D6'
                                                         ? 'linear-gradient(135deg, #5856D6, #FF2D55)'
                                                         : (statusStyle.color === '#9A6A00'
-                                                            ? 'linear-gradient(135deg, #FFC244, #FF9500)'
+                                                            ? 'linear-gradient(135deg, #FFCC02, #FF9500)'
                                                             : statusStyle.color)),
                                                 borderRadius: '100px',
                                                 border: 'none',
@@ -1488,8 +1488,8 @@ const WeekCalendar = ({
                                 </div>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                                     {userType === 'client' ? (
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px', backgroundColor: '#FFC24415', padding: '3px 10px', borderRadius: '100px', border: '1px solid #FFC24420' }}>
-                                            <Star size={12} fill="#FFC244" color="#FFC244" />
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px', backgroundColor: '#FFCC0215', padding: '3px 10px', borderRadius: '100px', border: '1px solid #FFCC0220' }}>
+                                            <Star size={12} fill="#FFCC02" color="#FFCC02" />
                                             <span style={{ fontSize: '13px', fontWeight: 950, color: '#000' }}>{selectedOrder.bricolerRating || '5.0'}</span>
                                         </div>
                                     ) : (
@@ -1523,7 +1523,7 @@ const WeekCalendar = ({
                             width: '100%',
                             height: '70px',
                             borderRadius: '24px',
-                            backgroundColor: '#FFC244',
+                            backgroundColor: '#FFCC02',
                             border: 'none',
                             display: 'flex',
                             alignItems: 'center',
