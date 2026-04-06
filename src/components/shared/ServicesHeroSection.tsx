@@ -33,20 +33,7 @@ const EggyServiceIcon = ({ id, title, image, onOrder }: { id: string; title: str
     }
   };
 
-  const blobVariants: any = {
-    animate: {
-      borderRadius: [
-        '60% 40% 30% 70% / 60% 30% 70% 40%',
-        '30% 60% 70% 40% / 50% 60% 30% 60%',
-        '60% 40% 30% 70% / 60% 30% 70% 40%'
-      ],
-      transition: {
-        duration: 8,
-        repeat: Infinity,
-        ease: "easeInOut"
-      }
-    }
-  };
+  const staticEggyBorder = '50% 50% 50% 50% / 60% 60% 40% 40%';
 
   return (
     <motion.div
@@ -56,45 +43,42 @@ const EggyServiceIcon = ({ id, title, image, onOrder }: { id: string; title: str
         hover: { scale: 1.05 }
       }}
       style={{
-        flex: '0 0 220px',
+        flex: '0 0 160px',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
         cursor: 'pointer',
-        marginRight: '60px',
         position: 'relative',
         zIndex: 10
       }}
       onClick={() => onOrder(id)}
     >
-      <div style={{ position: 'relative', width: '200px', height: '200px' }}>
+      <div style={{ position: 'relative', width: '120px', height: '120px' }}>
         {/* Outer Soft Layer */}
-        <motion.div
-          variants={blobVariants}
-          animate="animate"
+        <div
           style={{
             position: 'absolute',
-            inset: '-12px',
+            inset: '-10px',
             backgroundColor: 'rgba(255, 255, 255, 0.2)',
-            zIndex: 0
+            zIndex: 0,
+            borderRadius: staticEggyBorder
           }}
         />
 
         {/* Inner Layer with Stroke */}
-        <motion.div
-          variants={blobVariants}
-          animate="animate"
+        <div
           style={{
             position: 'absolute',
             inset: 0,
             backgroundColor: '#FFFFFF',
-            border: '4px solid #E67E22', // Distinct stroke like Globos
+            border: '3px solid #E67E22',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            padding: '30px',
+            padding: '24px',
             zIndex: 1,
-            boxShadow: '0 10px 25px rgba(0,0,0,0.05)'
+            boxShadow: '0 8px 20px rgba(0,0,0,0.05)',
+            borderRadius: staticEggyBorder
           }}
         >
           <img
@@ -107,25 +91,25 @@ const EggyServiceIcon = ({ id, title, image, onOrder }: { id: string; title: str
               objectFit: 'contain'
             }}
           />
-        </motion.div>
+        </div>
 
         {/* Pill Label */}
         <div style={{
           position: 'absolute',
-          bottom: '-15px',
+          bottom: '-12px',
           left: '50%',
           transform: 'translateX(-50%)',
           backgroundColor: '#FFFFFF',
-          padding: '10px 24px',
+          padding: '6px 14px',
           borderRadius: '100px',
-          boxShadow: '0 8px 20px rgba(0,0,0,0.08)',
+          boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
           zIndex: 2,
-          minWidth: '140px',
+          minWidth: '100px',
           textAlign: 'center',
-          border: '2px solid #E67E22'
+          border: '1.5px solid #E67E22'
         }}>
           <span style={{
-            fontSize: '18px',
+            fontSize: '14px',
             fontWeight: 800,
             color: '#111827',
             fontFamily: 'Uber Move, var(--font-sans)',
@@ -255,6 +239,8 @@ const ServicesHeroSection = ({ availableServiceIds, onSelectService }: ServicesH
         className="services-scroll-container"
         style={{
           display: 'flex',
+          justifyContent: 'center',
+          gap: '40px',
           overflowX: 'auto',
           padding: '60px 40px 80px 40px',
           scrollSnapType: 'x mandatory',
