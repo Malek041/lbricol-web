@@ -262,21 +262,39 @@ export default function ProviderPage() {
     }, []);
 
     const parseDateTime = useCallback((rawDate?: string, rawTime?: string, createdAt?: any) => {
-        // Priority 1: Appointment Date & Time
-        if (rawDate && rawDate !== '') {
-            let datePart = rawDate;
-            let timePart = rawTime || '';
-            if (rawDate.includes(' at ')) {
-                const [d, t] = rawDate.split(' at ');
-                datePart = d;
-                timePart = timePart || t || '';
+        // Safe parsing helper that works with Firestore timestamps, ISO strings, and formatted strings
+        const normalizeToDateObj = (d: any): Date | null => {
+            if (!d) return null;
+            if (d instanceof Date) return d;
+            if (typeof d?.toDate === 'function') return d.toDate();
+            if (typeof d === 'string') {
+                const parsed = parseISO(d);
+                if (!isNaN(parsed.getTime())) return parsed;
+                const native = new Date(d);
+                if (!isNaN(native.getTime())) return native;
+                
+                // Handle "DD MMM." or similar formats that might be in French
+                // "06 avr." -> "April 6 current_year"
+                if (d.includes(' avr')) return new Date(`April ${d.split(' ')[0]} ${new Date().getFullYear()}`);
+                if (d.includes(' mai')) return new Date(`May ${d.split(' ')[0]} ${new Date().getFullYear()}`);
+                if (d.includes(' juin')) return new Date(`June ${d.split(' ')[0]} ${new Date().getFullYear()}`);
+                // Add more as needed, but better to fix storage.
+                // For now, let's try a generic split if it's "Date at Time"
+                if (d.includes(' at ')) return normalizeToDateObj(d.split(' at ')[0]);
             }
+            return null;
+        };
 
-            const isoCandidate = /^\d{4}-\d{2}-\d{2}$/.test(datePart)
-                ? `${datePart}T${timePart || '00:00'}`
-                : `${datePart}${timePart ? ` ${timePart}` : ''}`;
-            const parsed = Date.parse(isoCandidate);
-            if (!Number.isNaN(parsed)) return parsed;
+        const d = normalizeToDateObj(rawDate);
+        if (d) {
+            if (rawTime && rawTime !== '') {
+                const timeStr = rawTime.split('-')[0].trim();
+                const [h, m] = timeStr.split(':').map(Number);
+                if (!isNaN(h)) {
+                    d.setHours(h, m || 0, 0, 0);
+                }
+            }
+            return d.getTime();
         }
 
         // Priority 2: Creation Timestamp (fallback for sorting/legacy)
@@ -765,8 +783,6 @@ export default function ProviderPage() {
                         timestamp: data.createdAt ? new Date(data.createdAt.seconds * 1000).toLocaleString() : t({ en: 'Just now', fr: 'À l’instant', ar: 'الآن' }),
                         date: data.date,
                         time: data.time || '',
-                        subService: data.subService || '',
-                        subServiceDisplayName: data.subServiceDisplayName || '',
                         area: data.area || '',
                         offers: data.offers || [],
                         status: data.status,
@@ -782,7 +798,10 @@ export default function ProviderPage() {
                         locationDetails: data.locationDetails || null,
                         address: data.address || '',
                         city: data.city || '',
-                        coords: data.coords || null
+                        coords: data.coords || null,
+                        details: data.details || data.serviceDetails || {},
+                        subService: data.subService || data.subServiceId || data.serviceType || '',
+                        subServiceDisplayName: data.subServiceDisplayName || ''
                     } as any);
                 });
 
@@ -832,7 +851,6 @@ export default function ProviderPage() {
                     myJobs.push({
                         id: doc.id,
                         service: data.service,
-                        subServiceDisplayName: data.subServiceDisplayName || data.subService || '',
                         location: data.city,
                         city: data.city,
                         area: data.area || '',
@@ -859,7 +877,10 @@ export default function ProviderPage() {
                         basePrice: data.basePrice,
                         locationDetails: data.locationDetails || null,
                         address: data.address || '',
-                        coords: data.coords || null
+                        coords: data.coords || null,
+                        details: data.details || data.serviceDetails || {},
+                        subService: data.subService || data.subServiceId || data.serviceType || '',
+                        subServiceDisplayName: data.subServiceDisplayName || ''
                     } as any);
                 });
                 setAcceptedJobs(myJobs);
@@ -1795,30 +1816,21 @@ export default function ProviderPage() {
         : 'xP';
 
 
-    const monthNow = new Date();
-    const monthLabel = selectedMonthDt.toLocaleDateString('en-US', { month: 'long' });
-    const monthJobs = acceptedJobsSorted.filter((job) => {
-        const ts = parseDateTime(job.date, job.time);
-        if (!ts) return false;
-        const d = new Date(ts);
-        return d.getMonth() === selectedMonthDt.getMonth() && d.getFullYear() === selectedMonthDt.getFullYear();
-    });
-    const monthDoneJobs = monthJobs.filter((job) => job.status === 'done' || job.status === 'delivered');
+    const careerJobs = acceptedJobsSorted;
+    const careerDoneJobs = careerJobs.filter((job) => job.status === 'done' || job.status === 'delivered');
 
-    // ── Calculate month-scoped worked hours ──
-    const monthWorkedHours = monthDoneJobs.reduce((sum, job) => sum + (Number((job as any).duration) || 0), 0);
+    // ── Calculate career-scoped worked hours ──
+    const careerWorkedHours = careerDoneJobs.reduce((sum, job) => sum + (Number((job as any).duration) || 0), 0);
+    const careerProgrammedJobs = careerJobs.filter((job) => programmedStatuses.has(job.status || ''));
 
-    // ── Calculate month-scoped availability hours declared ──
-    const monthAvailabilityHours = (() => {
+    // ── Calculate career-scoped availability hours declared ──
+    const careerAvailabilityHours = (() => {
         if (!(userData as any)?.calendarSlots) return 0;
         let totalMinutes = 0;
-        const year = selectedMonthDt.getFullYear();
-        const month = selectedMonthDt.getMonth();
 
         Object.entries((userData as any).calendarSlots).forEach(([dateKey, slots]: [string, any]) => {
             try {
-                const d = new Date(dateKey);
-                if (d.getFullYear() === year && d.getMonth() === month && Array.isArray(slots)) {
+                if (Array.isArray(slots)) {
                     slots.forEach(slot => {
                         if (slot.from && slot.to) {
                             const [h1, m1] = slot.from.split(':').map(Number);
@@ -1832,12 +1844,12 @@ export default function ProviderPage() {
         });
         return Math.round(totalMinutes / 60);
     })();
-    const monthProgrammedJobs = monthJobs.filter((job) => programmedStatuses.has(job.status || ''));
+    // Removed monthProgrammedJobs as we use career-wide stats now
 
     // ── Per-service breakdown (for Service Breakdown strip) ──
     const serviceBreakdown = useMemo(() => {
         return [...new Set(selectedServices)].map(serviceId => {
-            const myJobs = monthDoneJobs.filter(j => normalizeServiceId((j as any).craft || j.service || '') === serviceId);
+            const myJobs = careerDoneJobs.filter(j => normalizeServiceId((j as any).craft || j.service || '') === serviceId);
             const allTimeJobsForService = doneAcceptedJobs.filter(j => normalizeServiceId((j as any).craft || j.service || '') === serviceId);
             const earnings = myJobs.reduce((acc, j) => {
                 const p = String(j.price || '0').replace(/[^\d.]/g, '');
@@ -1854,57 +1866,100 @@ export default function ProviderPage() {
             const demandScore = cityTotal > 0 ? Math.round((myJobs.length / cityTotal) * 100) : null;
             return { serviceId, earnings, avgRating, demandScore, jobCount: myJobs.length };
         });
-    }, [selectedServices, monthDoneJobs, doneAcceptedJobs, cityDoneJobs]);
-    const monthRevenue = monthDoneJobs.reduce((acc, job) => acc + (parseInt(String(job.price || '').replace(/[^\d]/g, ''), 10) || 0), 0);
-    // Month-scoped rating: AVG of client ratings on DONE jobs in the selected month
-    const monthRatings = monthDoneJobs
-        .map((job) => Number(job.rating))
-        .filter((r) => Number.isFinite(r) && r > 0);
-    const allTimeRatings = doneAcceptedJobs
-        .map((job) => Number(job.rating))
-        .filter((r) => Number.isFinite(r) && r > 0);
-    const monthAvgRating = monthRatings.length > 0
-        ? (monthRatings.reduce((s, r) => s + r, 0) / monthRatings.length).toFixed(1)
+    }, [selectedServices, careerDoneJobs, doneAcceptedJobs, cityDoneJobs]);
+    const totalRevenue = careerDoneJobs.reduce((acc, job) => acc + (parseInt(String(job.price || '').replace(/[^\d]/g, ''), 10) || 0), 0);
+    // ── Ratings & Reputation Sync ──
+    const allReviewsFromProfile = (userData as any)?.reviews || [];
+    
+    // Merge ratings from jobs and from profile (ensuring no duplicates by jobId/id)
+    const getMergedRatings = (jobsList: any[]) => {
+        const ratingsMap = new Map<string, number>();
+
+        // 1. Add ratings found directly on jobs
+        jobsList.forEach(j => {
+            const r = Number(j.rating || j.clientRating);
+            if (r > 0) ratingsMap.set(j.id || '', r);
+        });
+
+        // 2. Add ratings from profile reviews that belong to these jobs or this period
+        allReviewsFromProfile.forEach((rev: any) => {
+            if (rev.rating > 0) {
+                // If we are looking for a specific list of jobs, only add if it's one of them
+                // Otherwise (for all-time), we add everything.
+                if (jobsList.length === 0 || jobsList.some(j => j.id === rev.id)) {
+                    ratingsMap.set(rev.id, rev.rating);
+                }
+            }
+        });
+
+        return Array.from(ratingsMap.values());
+    };
+
+    const careerRatings = getMergedRatings(careerDoneJobs);
+    
+    // For all-time, we can include everything in profile and everything in all jobs
+    const allTimeRatings = useMemo(() => {
+        const ratingsMap = new Map<string, number>();
+        doneAcceptedJobs.forEach(j => {
+            const r = Number((j as any).rating || (j as any).clientRating);
+            if (r > 0) ratingsMap.set(j.id || '', r);
+        });
+        allReviewsFromProfile.forEach((rev: any) => {
+            if (rev.rating > 0) ratingsMap.set(rev.id || Math.random().toString(), rev.rating);
+        });
+        return Array.from(ratingsMap.values());
+    }, [doneAcceptedJobs, allReviewsFromProfile]);
+
+    const careerAvgRating = careerRatings.length > 0
+        ? (careerRatings.reduce((s, r) => s + r, 0) / careerRatings.length).toFixed(1)
         : allTimeRatings.length > 0
             ? (allTimeRatings.reduce((s, r) => s + r, 0) / allTimeRatings.length).toFixed(1)
-            : '0.0';
+            : (userData as any)?.rating?.toFixed(1) || '0.0';
 
     // Total revenue: sum of prices for done jobs in the selected month
     const COMMISSION_RATE = 0.15;
-    const monthRevenueNum = (monthDoneJobs.reduce((acc, job: any) => {
+    // Total Net Career Earnings (What the Bricoler actually gained)
+    const netEarningsNum = (careerDoneJobs.reduce((acc, job: any) => {
+        // Priority 1: Stored bricolerEarnings (Net)
+        if (job.bricolerEarnings && !isNaN(Number(job.bricolerEarnings))) {
+            return acc + Number(job.bricolerEarnings);
+        }
+        
+        // Priority 2: Stored basePrice (usually the Net)
+        if (job.basePrice && !isNaN(Number(job.basePrice))) {
+            return acc + Number(job.basePrice);
+        }
+
+        // Fallback: Use totalPrice - fee
+        if (job.totalPrice && !isNaN(Number(job.totalPrice))) {
+            const fee = Number(job.fee || job.commission || (Number(job.totalPrice) * 0.15));
+            return acc + (Number(job.totalPrice) - fee);
+        }
+
         const cleanVal = (val: any) => {
             if (typeof val === 'number') return val;
-            // Handle Moroccan numbers: "250,50" -> "250.50", strip thousand separators if they match common patterns
             let s = String(val || '0').replace(',', '.');
-            // If there's more than one dot, the earlier ones are likely thousand separators
             const dots = s.split('.');
             if (dots.length > 2) {
-                // Keep only the last one as decimal
                 s = dots.slice(0, -1).join('') + '.' + dots.slice(-1);
             }
             return parseFloat(s.replace(/[^0-9.]/g, '')) || 0;
         };
 
-        const baseVal = job.basePrice ? Number(job.basePrice) : undefined;
-        if (baseVal !== undefined && !isNaN(baseVal)) return acc + baseVal;
-
         const priceNum = cleanVal(job.price);
         return acc + priceNum;
     }, 0));
 
-    const monthReferralBonus = (userData as any)?.bricolerReferralBalance || 0;
-    // Note: monthNetEarnings here is a helper, but the final display in Performance view 
-    // calculates it as (totalEarnings * 0.85) + monthReferralBonus or similar.
-    // For consistency with line 3160, we set monthRevenueNum as the Gross.
-    const monthNetEarnings = Math.round(monthRevenueNum * 0.85 + monthReferralBonus);
+    const careerReferralBonus = (userData as any)?.bricolerReferralBalance || 0;
+    const careerNetEarnings = Math.round(netEarningsNum + careerReferralBonus);
 
     // Capacity of 2 jobs per day x Number of Days in that month
     const daysInMonth = new Date(selectedMonthDt.getFullYear(), selectedMonthDt.getMonth() + 1, 0).getDate();
     const monthlyCapacity = daysInMonth * 2;
     // Occupancy = (programmed + done) / capacity
-    const totalMonthActiveJobs = monthProgrammedJobs.length + monthDoneJobs.length;
-    const monthOccupancyRate = Math.max(0, Math.min(100, Math.round((totalMonthActiveJobs / Math.max(1, monthlyCapacity)) * 100)));
-    const completionRate = monthJobs.length > 0 ? Math.round((monthDoneJobs.length / monthJobs.length) * 100) : 0;
+    const totalMonthActiveJobs = careerProgrammedJobs.length + careerDoneJobs.length;
+    const monthOccupancyRate = Math.max(0, Math.min(100, Math.round((totalMonthActiveJobs / Math.max(1, monthlyCapacity || 1)) * 100)));
+    const completionRate = careerJobs.length > 0 ? Math.round((careerDoneJobs.length / careerJobs.length) * 100) : 0;
 
     // Notifications badge count: new market jobs + awaiting client decision + unread firestore notifications
     const mobileNotificationsCount = newMarketJobs.length + waitingMarketJobs.length + bricolerNotifications.filter((n: any) => !n.read).length;
@@ -2165,15 +2220,11 @@ const DetailItem = ({ icon: Icon, label, value, subValue, highlight }: {
                                         {/* ── Month Header ── */}
                                         <div className="relative mb-6 flex items-center justify-start mt-3">
                                             <div
-                                                className="relative inline-flex items-center gap-2 cursor-pointer"
-                                                onClick={() => setShowMonthPicker(!showMonthPicker)}
+                                                className="relative inline-flex items-center gap-2"
                                             >
                                                 <span className="text-[20px] font-bold text-black leading-none tracking-tight" style={{ fontFamily: 'Uber Move, var(--font-sans)' }}>
-                                                    {monthLabel}
+                                                    {t({ en: 'Career performance', fr: 'Performance de carrière', ar: 'أداء المسيرة' })}
                                                 </span>
-                                                <motion.div animate={{ rotate: showMonthPicker ? 180 : 0 }} transition={{ duration: 0.2 }}>
-                                                    <ChevronDown size={18} className="text-black stroke-[2.5px] mt-0.5" />
-                                                </motion.div>
                                             </div>
                                         </div>
 
@@ -2249,11 +2300,11 @@ const DetailItem = ({ icon: Icon, label, value, subValue, highlight }: {
                                             <div className="flex items-center justify-center gap-2">
                                                 <div className="h-[34px] px-[18px] bg-[#F9F9F9] rounded-full flex items-center justify-center gap-1.5 border border-neutral-100">
                                                     <Star size={15} className="fill-[#FFCC02] text-[#FFCC02] -ml-1" />
-                                                    <span className="text-[15px] font-medium text-black mt-0.5" style={{ fontFamily: 'Uber Move, var(--font-sans)' }}>{monthAvgRating}</span>
+                                                    <span className="text-[15px] font-medium text-black mt-0.5" style={{ fontFamily: 'Uber Move, var(--font-sans)' }}>{careerAvgRating}</span>
                                                 </div>
                                                 <div className="h-[34px] px-8 flex-1 bg-[#F9F9F9] rounded-full flex items-center justify-center border border-neutral-100">
                                                     <span className="text-[13px] font-bold text-black mt-0.5 tracking-wide" style={{ fontFamily: 'Uber Move, var(--font-sans)' }}>
-                                                        {t({ en: 'MAD', fr: 'MAD' })} {monthRevenueNum >= 1000 ? `${(monthRevenueNum / 1000).toFixed(0)}K` : monthRevenueNum}
+                                                        {t({ en: 'MAD', fr: 'MAD' })} {netEarningsNum >= 1000 ? `${(netEarningsNum / 1000).toFixed(0)}K` : netEarningsNum}
                                                     </span>
                                                 </div>
                                             </div>
@@ -3119,16 +3170,11 @@ const DetailItem = ({ icon: Icon, label, value, subValue, highlight }: {
                             acceptedJobsSorted={acceptedJobsSorted}
                             availableJobs={availableJobs}
                             acceptedJobs={acceptedJobs}
-                            monthLabel={monthLabel}
-                            showMonthPicker={showMonthPicker}
-                            setShowMonthPicker={setShowMonthPicker}
-                            selectedMonthDt={selectedMonthDt}
-                            setSelectedMonthDt={setSelectedMonthDt}
-                            monthAvgRating={monthAvgRating}
-                            monthRatings={monthRatings}
-                            monthJobs={monthJobs}
-                            monthDoneJobs={monthDoneJobs}
-                            monthRevenueNum={monthRevenueNum}
+                            careerAvgRating={careerAvgRating}
+                            careerRatings={careerRatings}
+                            careerJobs={careerJobs}
+                            careerDoneJobs={careerDoneJobs}
+                            netEarningsNum={netEarningsNum}
                             completionRate={completionRate}
                             mobileNotificationsCount={mobileNotificationsCount}
                             setShowNotificationsPage={setShowNotificationsPage}
@@ -3144,6 +3190,7 @@ const DetailItem = ({ icon: Icon, label, value, subValue, highlight }: {
                             setShowRoutineModal={setShowRoutineModal}
                             setUserData={setUserData}
                             TIME_SLOTS={TIME_SLOTS}
+                            doneAcceptedJobs={doneAcceptedJobs}
                         />
                     )}
                     {

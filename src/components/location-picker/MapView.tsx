@@ -464,7 +464,8 @@ const MapView: React.FC<MapViewProps> = ({
       const locStr = `${initialLocation.lat},${initialLocation.lng}`;
       // If the location changed AFTER we already initialized with a default
       if (lastAssignedInitial !== null && lastAssignedInitial !== locStr) {
-        flyToWithOffset(initialLocation.lat, initialLocation.lng, targetZoom, pinY === 50);
+        // Use undefined for zoom to preserve current map zoom on re-renders
+        flyToWithOffset(initialLocation.lat, initialLocation.lng, undefined, pinY === 50);
       }
       setLastAssignedInitial(locStr);
     }
@@ -472,7 +473,8 @@ const MapView: React.FC<MapViewProps> = ({
 
   useEffect(() => {
     if (flyToPoint && mapRef.current && mapReady) {
-      flyToWithOffset(flyToPoint.lat, flyToPoint.lng, targetZoom, flyToPoint.skipOffset ?? false);
+      // Use undefined for zoom to preserve current map zoom on re-renders
+      flyToWithOffset(flyToPoint.lat, flyToPoint.lng, undefined, flyToPoint.skipOffset ?? false);
     }
   }, [flyToPoint, mapReady]);
 

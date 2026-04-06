@@ -140,7 +140,14 @@ const RatingPopup: React.FC<RatingPopupProps> = ({
             }
 
             const jobRef = doc(db, 'jobs', jobId);
-            await updateDoc(jobRef, { rated: true });
+            await updateDoc(jobRef, { 
+                rated: true,
+                rating: rating,
+                feedback: isSkip ? "" : review, // backward compatibility
+                clientRating: rating,
+                clientReviewComment: isSkip ? "" : review,
+                reviewedAt: new Date().toISOString()
+            });
             localStorage.setItem(`lbricol_rated_${jobId}`, '1');
             onClose();
         } catch (err) {
@@ -190,7 +197,7 @@ const RatingPopup: React.FC<RatingPopupProps> = ({
     return (
         <AnimatePresence>
             {isOpen && !alreadySeen && (
-                <div className="fixed inset-0 z-[5000] flex items-end md:items-center justify-center">
+                <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4">
                     {/* Backdrop */}
                     <motion.div
                         initial={{ opacity: 0 }}
@@ -202,14 +209,13 @@ const RatingPopup: React.FC<RatingPopupProps> = ({
 
                     {/* Bottom Sheet Container */}
                     <motion.div
-                        initial={{ y: '100%' }}
-                        animate={{ y: 0 }}
-                        exit={{ y: '100%' }}
+                        initial={{ scale: 0.9, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        exit={{ scale: 0.9, opacity: 0 }}
                         transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-                        className="relative bg-white w-full max-w-[450px] rounded-t-[24px] md:rounded-[24px] overflow-hidden pb-8 shadow-2xl"
+                        className="relative bg-white w-full max-w-[420px] rounded-[32px] overflow-hidden pb-8 shadow-2xl"
                     >
-                        {/* Drag indicator (mobile feel) */}
-                        <div className="w-10 h-1 bg-neutral-200 rounded-full mx-auto mt-3 mb-1 md:hidden" />
+
 
                         {/* Close button */}
                         <button

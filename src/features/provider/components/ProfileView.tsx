@@ -189,7 +189,7 @@ const ProfileView: React.FC<ProfileViewProps> = ({
                 className="flex flex-col h-full overflow-y-auto no-scrollbar bg-white relative w-full"
             >
                 {/* Blue Header (Glovo Style) - Fixed/Sticky Behind */}
-                <div className="bg-[#FFCC02] pt-14 pb-20 px-6 sticky top-0 z-0 flex flex-col items-center overflow-hidden shrink-0 transition-all duration-300">
+                <div className="bg-[#FFB700] pt-14 pb-20 px-6 sticky top-0 z-0 flex flex-col items-center overflow-hidden shrink-0 transition-all duration-300">
                     <div className="w-full flex justify-end mb-4 relative z-10">
                         {/* Help Button */}
                         <button

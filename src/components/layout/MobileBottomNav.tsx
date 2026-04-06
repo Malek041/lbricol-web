@@ -84,7 +84,7 @@ const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
     // BRAND COLORS
     const activeColor = '#000000';
     const inactiveColor = theme === 'light' ? '#717171' : '#B0B0B0';
-    const brandYellow = '#FFCC02';
+    const brandYellow = '#FFB700';
     const softYellowBg = '#FFF9E5';
 
     // Circle sizing for the background

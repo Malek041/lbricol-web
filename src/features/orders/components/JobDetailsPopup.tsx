@@ -97,15 +97,15 @@ const JobDetailsPopup: React.FC<JobDetailsPopupProps> = ({ job, onClose, onAccep
     if (!job) return null;
 
     const subId = ((job as any).subService || (job as any).subServiceId || (job as any).serviceType || job.service || 'car_rental');
-    
+
     // Attempt localized name from catalog
     const catalogService = SERVICES_CATALOGUE.find(s => s.id === job.service);
     const catalogSub = catalogService?.subServices.find(ss => ss.id === subId);
-    const subServiceName = catalogSub ? t({ en: catalogSub.en, fr: catalogSub.fr, ar: catalogSub.ar }) : 
-                          (() => {
-                            const n = getSubServiceName(job.service, subId);
-                            return n ? t({ en: n, fr: n, ar: n }) : (job.serviceName || job.service);
-                          })();
+    const subServiceName = catalogSub ? t({ en: catalogSub.en, fr: catalogSub.fr, ar: catalogSub.ar }) :
+        (() => {
+            const n = getSubServiceName(job.service, subId);
+            return n ? t({ en: n, fr: n, ar: n }) : (job.serviceName || job.service);
+        })();
 
     // --- STRATEGIC PRICING DATA EXTRACTION ---
     // We prioritize stored data (The 'True' values saved in orders) over re-calculation to avoid mismatches
@@ -116,7 +116,7 @@ const JobDetailsPopup: React.FC<JobDetailsPopupProps> = ({ job, onClose, onAccep
 
     // Use calculateOrderPrice ONLY as a fallback for legacy items or purely UI estimations
     const breakdownFallback = calculateOrderPrice(job.service, job.price || 80, job.details?.serviceDetails || job.details || {});
-    
+
     const finalClientPay = hasStoredPricing ? clientPay : breakdownFallback.total;
     const finalFee = hasStoredPricing ? fee : breakdownFallback.serviceFee;
     const finalEarnings = hasStoredPricing ? bricolerEarnings : (breakdownFallback.total - breakdownFallback.serviceFee);
@@ -163,18 +163,24 @@ const JobDetailsPopup: React.FC<JobDetailsPopupProps> = ({ job, onClose, onAccep
                                         <div className="px-3 py-1 bg-[#01A083] text-white text-[10px] font-black uppercase rounded-full tracking-wider">
                                             {job.status}
                                         </div>
-                                        <div className="px-3 py-1 bg-white border border-[#01A083]/20 text-[#01A083] text-[10px] font-black uppercase rounded-full tracking-wider">
-                                            {subId.replace(/_/g, ' ')}
+                                        <div className="flex flex-col">
+                                        <div className="px-3 py-1 w-fit bg-[#01A083]/10 border border-[#01A083]/20 text-[#01A083] text-[10px] font-black uppercase rounded-full tracking-wider mb-1">
+                                            {t({ 
+                                                en: subId.replace(/_/g, ' '), 
+                                                fr: subId.replace(/_/g, ' '),
+                                                ar: subId.replace(/_/g, ' ') 
+                                            })}
                                         </div>
+                                        <h2 className="text-[32px] font-black text-black leading-[1.1]">
+                                            {subServiceName || t({ en: 'General Support', fr: 'Support Général', ar: 'دعم عام' })}
+                                        </h2>
                                     </div>
-                                    <h2 className="text-[32px] font-black text-black leading-tight mb-2">
-                                        {subServiceName}
-                                    </h2>
+                                    </div>
                                     <div className="flex items-center gap-4">
                                         <div className="flex items-center gap-2 text-neutral-500">
                                             <Calendar size={18} className="text-[#01A083]" />
                                             <span className="text-[16px] font-bold">
-                                                {(() => { try { return format(parseISO(job.date), 'MMM d, yyyy'); } catch(e) { return job.date; } })()}
+                                                {(() => { try { return format(parseISO(job.date), 'MMM d, yyyy'); } catch (e) { return job.date; } })()}
                                             </span>
                                         </div>
                                         <div className="w-1.5 h-1.5 rounded-full bg-neutral-200" />
@@ -192,11 +198,11 @@ const JobDetailsPopup: React.FC<JobDetailsPopupProps> = ({ job, onClose, onAccep
                                 <div className="flex items-center justify-between mb-8 relative z-10">
                                     <div>
                                         <p className="text-[#01A083] text-[13px] font-black uppercase tracking-widest mb-1">
-                                            {t({ en: 'Your Net Earnings', fr: 'Vos Gains Nets', ar: 'أرباحك الصافية' })}
+                                            {t({ en: 'Client Pays', fr: 'Le Client Paye', ar: 'العميل يدفع' })}
                                         </p>
                                         <div className="flex items-baseline gap-2">
                                             <span className="text-[54px] font-black tracking-tighter leading-none">
-                                                {finalEarnings.toFixed(0)}
+                                                {finalClientPay.toFixed(0)}
                                             </span>
                                             <span className="text-[20px] font-bold opacity-60">MAD</span>
                                         </div>
@@ -208,9 +214,9 @@ const JobDetailsPopup: React.FC<JobDetailsPopupProps> = ({ job, onClose, onAccep
                                 <div className="flex items-center justify-between pt-6 border-t border-white/10 relative z-10">
                                     <div>
                                         <p className="text-[11px] font-bold text-neutral-500 uppercase tracking-widest mb-1">
-                                            {t({ en: 'Client Pays', fr: 'Le Client Paye', ar: 'العميل يدفع' })}
+                                            {t({ en: 'Your Net earnings', fr: 'Vos Gains Nets', ar: 'أرباحك الصافية' })}
                                         </p>
-                                        <p className="text-[18px] font-bold opacity-80">{finalClientPay.toFixed(0)} MAD</p>
+                                        <p className="text-[18px] font-bold opacity-80">{finalEarnings.toFixed(0)} MAD</p>
                                     </div>
                                     <ArrowRight className="text-neutral-700" size={24} />
                                     <div className="text-right">
@@ -227,15 +233,15 @@ const JobDetailsPopup: React.FC<JobDetailsPopupProps> = ({ job, onClose, onAccep
                                 <h3 className="text-[20px] font-black text-black px-1">
                                     {t({ en: 'Logistics', fr: 'Logistique', ar: 'اللوجستيات' })}
                                 </h3>
-                                
+
                                 {/* Client & Chat Card */}
                                 <div className="bg-[#F9FAFB] rounded-[28px] p-5 border border-neutral-100 flex items-center justify-between">
                                     <div className="flex items-center gap-4">
                                         <div className="w-14 h-14 rounded-2xl bg-white border border-neutral-100 p-0.5 relative">
-                                            <img 
-                                                src={job.clientAvatar || "/Images/Vectors Illu/Avatar.png"} 
+                                            <img
+                                                src={job.clientAvatar || "/Images/Vectors Illu/Avatar.png"}
                                                 className="w-full h-full object-cover rounded-[14px]"
-                                                alt="Client" 
+                                                alt="Client"
                                             />
                                             <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-[#01A083] rounded-full border-2 border-white flex items-center justify-center">
                                                 <Star size={10} className="text-white fill-white" />
@@ -297,7 +303,7 @@ const JobDetailsPopup: React.FC<JobDetailsPopupProps> = ({ job, onClose, onAccep
                                 <h3 className="text-[20px] font-black text-black px-1">
                                     {t({ en: 'Job Details', fr: 'Détails du Job', ar: 'تفاصيل العمل' })}
                                 </h3>
-                                
+
                                 {(() => {
                                     const details = job.details?.serviceDetails || job.details || {};
                                     const isOffice = subId === 'office_cleaning' || job.service === 'office_cleaning';
@@ -429,8 +435,8 @@ const JobDetailsPopup: React.FC<JobDetailsPopupProps> = ({ job, onClose, onAccep
                                 </h2>
                                 <div className="text-[17px] font-medium text-neutral-500 flex items-center justify-center gap-2">
                                     <span>{(() => {
-                                        try { return format(parseISO(job.date), 'MMMM d, yyyy'); } 
-                                        catch(e) { return job.date; }
+                                        try { return format(parseISO(job.date), 'MMMM d, yyyy'); }
+                                        catch (e) { return job.date; }
                                     })()}</span>
                                     <span>•</span>
                                     <span>{job.time || '09:00'}</span>
@@ -447,7 +453,7 @@ const JobDetailsPopup: React.FC<JobDetailsPopupProps> = ({ job, onClose, onAccep
                             {/* Customer / Provider Details */}
                             <section className="mb-10">
                                 <h3 className="text-[25px] font-medium text-black mb-6 flex items-center gap-3">
-                                    {t({ en: 'Provider', fr: 'Prestataire', ar: 'المزود' })} 
+                                    {t({ en: 'Provider', fr: 'Prestataire', ar: 'المزود' })}
                                     <span className="text-2xl">👨‍🔧</span>
                                 </h3>
                                 <div className="bg-[#F9FAFB] rounded-[32px] p-4 sm:p-6 border border-neutral-100 flex flex-wrap items-center gap-4 sm:gap-6">
@@ -497,7 +503,7 @@ const JobDetailsPopup: React.FC<JobDetailsPopupProps> = ({ job, onClose, onAccep
                                     </div>
                                     <div className="flex-1">
                                         <h4 className="text-[17px] font-medium text-black">
-                                            {(job as any).paymentMethod === 'bank_transfer' 
+                                            {(job as any).paymentMethod === 'bank_transfer'
                                                 ? t({ en: 'Bank Transfer', fr: 'Virement bancaire', ar: 'تحويل بنكي' })
                                                 : t({ en: 'Cash', fr: 'Espèces', ar: 'نقدًا' })}
                                         </h4>
@@ -522,7 +528,7 @@ const JobDetailsPopup: React.FC<JobDetailsPopupProps> = ({ job, onClose, onAccep
                                     </div>
                                     <div className="flex justify-between items-center pb-4 border-b border-neutral-100">
                                         <span className="text-neutral-500">{t({ en: 'Date', fr: 'Date', ar: 'التاريخ' })}</span>
-                                        <span className="font-bold">{(() => { try { return format(parseISO(job.date), 'MMM d, yyyy'); } catch(e) { return job.date; } })()}</span>
+                                        <span className="font-bold">{(() => { try { return format(parseISO(job.date), 'MMM d, yyyy'); } catch (e) { return job.date; } })()}</span>
                                     </div>
                                     <div className="flex justify-between items-center pb-4 border-b border-neutral-100">
                                         <span className="text-neutral-500">{t({ en: 'Time', fr: 'Heure', ar: 'الوقت' })}</span>

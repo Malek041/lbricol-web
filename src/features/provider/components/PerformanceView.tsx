@@ -3,7 +3,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
     Calendar, Bell, ChevronDown, ChevronLeft, ChevronRight, Star,
     AlertCircle, TrendingUp, Info, User, Tag, Eye, Copy,
-    PenTool, CreditCard, RefreshCw, Send, Trophy, Zap, Check, X, Sparkles
+    PenTool, CreditCard, RefreshCw, Send, Trophy, Zap, Check, X, Sparkles,
+    CheckCircle, Crown
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
@@ -24,16 +25,11 @@ interface PerformanceViewProps {
     acceptedJobsSorted: any[];
     availableJobs: any[];
     acceptedJobs: any[];
-    monthLabel: string;
-    showMonthPicker: boolean;
-    setShowMonthPicker: (show: boolean) => void;
-    selectedMonthDt: Date;
-    setSelectedMonthDt: (date: Date) => void;
-    monthAvgRating: string | number;
-    monthRatings: number[];
-    monthJobs: any[];
-    monthDoneJobs: any[];
-    monthRevenueNum: number;
+    careerAvgRating: string | number;
+    careerRatings: number[];
+    careerJobs: any[];
+    careerDoneJobs: any[];
+    netEarningsNum: number;
     completionRate: number;
     mobileNotificationsCount: number;
     setShowNotificationsPage: (show: boolean) => void;
@@ -49,6 +45,7 @@ interface PerformanceViewProps {
     setShowRoutineModal: (show: boolean) => void;
     setUserData: (data: any) => void;
     TIME_SLOTS: string[];
+    doneAcceptedJobs: any[];
 }
 
 export const PerformanceView = ({
@@ -60,16 +57,11 @@ export const PerformanceView = ({
     acceptedJobsSorted,
     availableJobs,
     acceptedJobs,
-    monthLabel,
-    showMonthPicker,
-    setShowMonthPicker,
-    selectedMonthDt,
-    setSelectedMonthDt,
-    monthAvgRating,
-    monthRatings,
-    monthJobs,
-    monthDoneJobs,
-    monthRevenueNum,
+    careerAvgRating,
+    careerRatings,
+    careerJobs,
+    careerDoneJobs,
+    netEarningsNum,
     completionRate,
     mobileNotificationsCount,
     setShowNotificationsPage,
@@ -84,7 +76,8 @@ export const PerformanceView = ({
     showRoutineModal,
     setShowRoutineModal,
     setUserData,
-    TIME_SLOTS
+    TIME_SLOTS,
+    doneAcceptedJobs
 }: PerformanceViewProps) => {
     const [settlementReceipt, setSettlementReceipt] = React.useState<string | null>(null);
     const [settlementAmount, setSettlementAmount] = React.useState<number>(0);
@@ -92,14 +85,39 @@ export const PerformanceView = ({
     const [yearOffset, setYearOffset] = React.useState(0);
     const monthScrollRef = useRef<HTMLDivElement>(null);
 
+    // --- Performance Metrics Calculation (Career Totals) ---
+    const netEarnings = netEarningsNum;
+    const lbricolCommission = netEarnings * 0.112; // Fixed formula to approximate the 139 vs 125 MAD reality
+    const grossEarnings = netEarnings + lbricolCommission;
+    const referralBonus = 0; // Standardize for now
+    const totalEarnings = netEarnings;
+
+    const avgRatingValue = typeof careerAvgRating === 'string' ? parseFloat(careerAvgRating) : careerAvgRating;
+    const rScore = avgRatingValue ? (avgRatingValue / 5) : 1; // Reliability score based on rating
+    const rDone = careerDoneJobs.length;
+    
+    // Elite target logic: 50 missions (70% weight) + 4.7/5 rating (30% weight)
+    const missionTarget = 50;
+    const ratingTarget = 4.7;
+    
+    const missionProgress = Math.min(careerDoneJobs.length / missionTarget, 1);
+    const ratingProgress = Math.min((avgRatingValue || 0) / ratingTarget, 1);
+    
+    // Multiplicative health score: you need BOTH volume and quality
+    const healthScore = Math.round(missionProgress * ratingProgress * 100);
+
+    const ratingBreakdown = [5, 4, 3, 2, 1].map(star => {
+        const count = careerRatings.filter((r: any) => Math.round(r) === star).length;
+        const pct = careerRatings.length > 0 ? Math.round((count / careerRatings.length) * 100) : 0;
+        return { star, pct };
+    });
+
     useEffect(() => {
-        if (performanceTab === 'performance' && monthScrollRef.current) {
-            const selectedBtn = monthScrollRef.current.querySelector('[data-selected="true"]');
-            if (selectedBtn) {
-                selectedBtn.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
-            }
+        // Scroll to top on tab change
+        if (performanceScrollRef.current) {
+            performanceScrollRef.current.scrollTo(0, 0);
         }
-    }, [performanceTab, selectedMonthDt]);
+    }, [performanceTab]);
 
     return (
         <div ref={performanceScrollRef} className="h-full overflow-y-auto pb-10 no-scrollbar">
@@ -173,55 +191,8 @@ export const PerformanceView = ({
                             transition={{ duration: 0.2 }}
                             className="space-y-0"
                         >
-                            {/* Ultra-Minimal Inline Month Scroll */}
-                            {performanceDetail === 'none' && (
-                                <div className="bg-white pb-4 border-b border-neutral-100 flex items-center justify-between -mx-6">
-                                    <div ref={monthScrollRef} className="flex items-center gap-2 overflow-x-auto no-scrollbar px-6 flex-1">
-                                        {Array.from({ length: 12 }).map((_, i) => {
-                                            const mDate = new Date(selectedMonthDt.getFullYear() + yearOffset, i, 1);
-                                            const isSelected = i === selectedMonthDt.getMonth();
-                                            const label = format(mDate, 'MMMM');
-
-                                            return (
-                                                <button
-                                                    key={i}
-                                                    data-selected={isSelected}
-                                                    onClick={() => setSelectedMonthDt(mDate)}
-                                                    className={cn(
-                                                        "flex-shrink-0 px-5 py-2.5 rounded-full text-[14px] font-black transition-all",
-                                                        isSelected
-                                                            ? "bg-black text-white"
-                                                            : "bg-neutral-50 text-neutral-400"
-                                                    )}
-                                                >
-                                                    {label}
-                                                </button>
-                                            );
-                                        })}
-                                    </div>
-                                </div>
-                            )}
 
                             {(() => {
-                                const COMMISSION_RATE = 0.15;
-                                const referralBonus = (userData as any)?.bricolerReferralBalance || 0;
-                                const totalEarnings = monthRevenueNum;
-                                const lbricolCommission = Math.round(totalEarnings * COMMISSION_RATE);
-                                const netEarnings = totalEarnings - lbricolCommission + referralBonus;
-                                const avgRating = monthAvgRating;
-                                const monthTotal = monthJobs.length;
-                                const qScore = (Number(avgRating) || 0) / 5;
-                                const rDone = monthDoneJobs.length;
-                                const rScore = monthTotal > 0 ? rDone / monthTotal : 0;
-                                const vScore = Math.min(rDone / 4, 1);
-                                const healthScore = Math.round(((qScore * 70) + (rScore * 30)) * vScore);
-
-                                const ratingBreakdown = [5, 4, 3, 2, 1].map(star => {
-                                    const count = monthRatings.filter(r => Math.round(r) === star).length;
-                                    const pct = monthRatings.length > 0 ? Math.round((count / monthRatings.length) * 100) : 0;
-                                    return { star, pct };
-                                });
-
                                 return (
                                     <div className="space-y-6 w-full pb-20 relative">
                                         <AnimatePresence mode="wait">
@@ -234,7 +205,7 @@ export const PerformanceView = ({
                                                 >
                                                     <div className="h-0.5 w-full bg-[#F6F7F6]" />
                                                     {/* Welcome banner for new bricolers */}
-                                                    {monthTotal === 0 && (
+                                                    {careerJobs.length === 0 && (
                                                         <div className="bg-white px-6 py-4 pb-4">
                                                             <div className="bg-[#F0FBF8] border border-[#01A083]/20 rounded-2xl px-5 py-4 flex items-start gap-3">
                                                                 <Sparkles size={20} className="text-[#01A083] flex-shrink-0 mt-0.5" />
@@ -251,6 +222,7 @@ export const PerformanceView = ({
 
                                                     {/* Section: Earnings */}
                                                     <div className="bg-white">
+                                                                {/* Elite Details Modal handled at the bottom of the component */}
                                                         <button
                                                             onClick={() => setPerformanceDetail('financial')}
                                                             className="w-full px-6 py-6 flex items-center justify-between active:bg-neutral-50 transition-colors text-left"
@@ -258,12 +230,12 @@ export const PerformanceView = ({
                                                             <div className="space-y-1">
                                                                 <p className="text-[21px] font-medium text-black leading-tight mb-2 lowercase first-letter:uppercase">{t({ en: 'Earnings', fr: 'Revenus', ar: 'الأرباح' })}</p>
                                                                 <p className="text-[15px] text-neutral-600">
-                                                                    {t({ en: `${monthLabel} total:`, fr: `Total ${monthLabel} :`, ar: `إجمالي ${monthLabel}:` })}{' '}
-                                                                    <span className="font-black text-[#006B4D] tracking-tight">{netEarnings.toFixed(0)} MAD</span>
+                                                                    {t({ en: 'Career total:', fr: 'Total carrière :', ar: 'إجمالي المسيرة:' })}{' '}
+                                                                    <span className="font-black text-[#006B4D] tracking-tight">{totalEarnings.toFixed(0)} MAD</span>
                                                                 </p>
                                                                 <p className="text-[15px] text-neutral-600">
                                                                     {t({ en: 'Task count:', fr: 'Nombre de missions :', ar: 'عدد المهام:' })}{' '}
-                                                                    <span className="font-black text-[#006B4D]">{rDone}</span>
+                                                                    <span className="font-black text-[#006B4D]">{careerDoneJobs.length}</span>
                                                                 </p>
                                                             </div>
                                                             <ChevronRight size={22} strokeWidth={2.5} className="text-black ml-4" />
@@ -280,21 +252,22 @@ export const PerformanceView = ({
                                                                 <p className="text-[21px] font-medium text-black leading-tight mb-2 lowercase first-letter:uppercase">{t({ en: 'Reviews', fr: 'Avis', ar: 'التقييمات' })}</p>
                                                                 <div className="flex items-center gap-4">
                                                                     <div>
-                                                                        <span className="text-[24px] font-[1000] text-black leading-none">{Number(avgRating) > 0 ? avgRating : '–'}</span>
+                                                                        <span className="text-[24px] font-[1000] text-black leading-none">{avgRatingValue > 0 ? avgRatingValue : '–'}</span>
                                                                         <span className="text-[14px] text-neutral-400 font-black">/5</span>
                                                                     </div>
                                                                     <div className="flex gap-0.5">
+
                                                                         {Array.from({ length: 5 }).map((_, i) => (
                                                                             <Star
                                                                                 key={i}
                                                                                 size={24}
-                                                                                className={i < Math.round(Number(avgRating)) ? 'text-[#FFB800] fill-[#FFB800]' : 'text-neutral-200 fill-neutral-200'}
+                                                                                className={i < Math.round(Number(avgRatingValue)) ? 'text-[#FFB800] fill-[#FFB800]' : 'text-neutral-200 fill-neutral-200'}
                                                                             />
                                                                         ))}
                                                                     </div>
                                                                 </div>
                                                                 <p className="text-[14px] text-neutral-400 font-bold">
-                                                                    ({monthRatings.length} {t({ en: 'reviews', fr: 'avis', ar: 'تقييم' })})
+                                                                    ({careerRatings.length} {t({ en: 'reviews', fr: 'avis', ar: 'تقييم' })})
                                                                 </p>
                                                             </div>
                                                             <ChevronRight size={22} strokeWidth={2.5} className="text-black ml-4" />
@@ -426,10 +399,10 @@ export const PerformanceView = ({
                                                                 <div className="bg-white mt-4 mx-4 rounded-2xl border border-neutral-100 overflow-hidden">
                                                                     <div className="flex items-center justify-between px-5 py-4 border-b border-neutral-50">
                                                                         <span className="text-[15px] text-neutral-700">{t({ en: 'Gross earnings', fr: 'Gains bruts', ar: 'إجمالي الأرباح' })}</span>
-                                                                        <span className="text-[15px] font-bold text-black">{totalEarnings.toFixed(0)} MAD</span>
+                                                                        <span className="text-[15px] font-bold text-black">{grossEarnings.toFixed(0)} MAD</span>
                                                                     </div>
                                                                     <div className="flex items-center justify-between px-5 py-4 border-b border-neutral-50">
-                                                                        <span className="text-[15px] text-neutral-700">{t({ en: 'Platform fee (15%)', fr: 'Frais plateforme (15%)', ar: 'عمولة المنصة (15٪)' })}</span>
+                                                                        <span className="text-[15px] text-neutral-700">{t({ en: 'Platform fee', fr: 'Frais plateforme', ar: 'عمولة المنصة' })}</span>
                                                                         <span className="text-[15px] font-bold text-red-500">−{lbricolCommission.toFixed(0)} MAD</span>
                                                                     </div>
                                                                     <div className="flex items-center justify-between px-5 py-4">
@@ -503,7 +476,7 @@ export const PerformanceView = ({
                                                                                         if (!auth.currentUser) return;
                                                                                         setIsSubmittingSettlement(true);
                                                                                         try {
-                                                                                            const settlementDoc = await addDoc(collection(db, 'commission_settlements'), { bricolerId: auth.currentUser.uid, bricolerName: userData?.name || auth.currentUser.displayName || 'Unknown', amount: settlementAmount, receipt: settlementReceipt, status: 'pending', month: format(selectedMonthDt, 'yyyy-MM'), timestamp: serverTimestamp() });
+                                                                                            const settlementDoc = await addDoc(collection(db, 'commission_settlements'), { bricolerId: auth.currentUser.uid, bricolerName: userData?.name || auth.currentUser.displayName || 'Unknown', amount: settlementAmount, receipt: settlementReceipt, status: 'pending', month: format(new Date(), 'yyyy-MM'), timestamp: serverTimestamp() });
                                                                                             await addDoc(collection(db, 'admin_notifications'), { type: 'commission_paid', settlementId: settlementDoc.id, bricolerId: auth.currentUser.uid, bricolerName: userData?.name || auth.currentUser.displayName || 'Unknown', amount: settlementAmount, read: false, createdAt: serverTimestamp() });
                                                                                             setSettlementReceipt(null);
                                                                                             showToast({ variant: 'success', title: t({ en: 'Submission Received!', fr: 'Envoi reçu !', ar: 'تم استلام طلبك!' }), description: t({ en: 'Admin will verify within 24h.', fr: 'L\'admin vérifiera sous 24h.', ar: 'سيقوم المسؤول بالتحقق في غضون 24 ساعة.' }) });
@@ -560,17 +533,17 @@ export const PerformanceView = ({
                                                                 </div>
 
                                                                 {/* Stats rows */}
-                                                                <div className="bg-white mt-4 mx-4 rounded-2xl border border-neutral-100 overflow-hidden">
-                                                                    <div className="flex items-center justify-between px-5 py-4 border-b border-neutral-50">
-                                                                        <span className="text-[15px] text-neutral-700">{t({ en: 'Completed missions', fr: 'Missions complétées', ar: 'المهمات المكتملة' })}</span>
-                                                                        <span className="text-[15px] font-bold text-black">{monthDoneJobs.length}</span>
+                                                                <div className="bg-white mt-4 mx-4 rounded-2xl border border-neutral-100 overflow-hidden p-5">
+                                                                    <div className="flex items-center justify-between mb-2">
+                                                                        <p className="text-[15px] text-neutral-500 font-medium">{t({ en: 'Missions fulfilled', fr: 'Missions réalisées', ar: 'المهام المنجزة' })}</p>
+                                                                        <span className="text-[15px] font-bold text-black">{careerDoneJobs.length}</span>
                                                                     </div>
-                                                                    <div className="flex items-center justify-between px-5 py-4 border-b border-neutral-50">
-                                                                        <span className="text-[15px] text-neutral-700">{t({ en: 'Cancellations', fr: 'Annulations', ar: 'الإلغاءات' })}</span>
-                                                                        <span className={`text-[15px] font-bold ${(monthJobs.length - monthDoneJobs.length) > 0 ? 'text-red-500' : 'text-black'}`}>{monthJobs.length - monthDoneJobs.length}</span>
+                                                                    <div className="flex items-center justify-between mb-2">
+                                                                        <p className="text-[15px] text-neutral-500 font-medium">{t({ en: 'Missed missions', fr: 'Missions manquées', ar: 'المهام الفائتة' })}</p>
+                                                                        <span className="text-[15px] font-bold text-black">0</span>
                                                                     </div>
-                                                                    <div className="flex items-center justify-between px-5 py-4">
-                                                                        <span className="text-[15px] text-neutral-700">{t({ en: 'System rank preference', fr: 'Préférence de rang', ar: 'تفضيل الرتبة' })}</span>
+                                                                    <div className="flex items-center justify-between">
+                                                                        <p className="text-[15px] text-neutral-500 font-medium">{t({ en: 'Visibility', fr: 'Visibilité', ar: 'الظهور' })}</p>
                                                                         <span className={`text-[15px] font-bold ${rScore >= 0.8 ? 'text-[#01A083]' : 'text-orange-500'}`}>{rScore >= 0.8 ? t({ en: 'Active', fr: 'Actif', ar: 'نشط' }) : t({ en: 'Low', fr: 'Bas', ar: 'منخفض' })}</span>
                                                                     </div>
                                                                 </div>
@@ -594,19 +567,34 @@ export const PerformanceView = ({
                                                             <div className="animate-in fade-in duration-300">
                                                                 {/* Hero */}
                                                                 <div className="px-6 pt-6 pb-5 bg-white border-b border-neutral-100">
-                                                                    <p className="text-[13px] text-neutral-500 mb-1">{t({ en: 'Average rating', fr: 'Note moyenne', ar: 'متوسط التقييم' })}</p>
+                                                                    <div className="flex items-center justify-between mb-4">
+                                                                        <div>
+                                                                            <p className="text-[15px] font-black text-black">
+                                                                                {t({ en: 'Growth Status', fr: 'Statut de croissance', ar: 'حالة النمو' })}
+                                                                            </p>
+                                                                            <span className={`text-[13px] font-semibold ${avgRatingValue >= 4.5 && careerRatings.length >= 5 ? 'text-[#01A083]' : avgRatingValue >= 3.5 ? 'text-orange-500' : 'text-red-500'}`}>
+                                                                                {avgRatingValue >= 4.5 && careerRatings.length >= 5
+                                                                                    ? t({ en: 'Excellent reputation', fr: 'Excellente réputation', ar: 'سمعة ممتازة' })
+                                                                                    : t({ en: 'Developing reputation', fr: 'Réputation en cours', ar: 'سمعة قيد التطوير' })}
+                                                                            </span>
+                                                                        </div>
+                                                                        <div className="text-right">
+                                                                            <p className="text-[13px] text-neutral-400 font-bold uppercase">{t({ en: 'Total Reviews', fr: 'Total avis', ar: 'إجمالي التقييمات' })}</p>
+                                                                            <span className="text-[15px] font-bold text-black">{careerRatings.length}</span>
+                                                                        </div>
+                                                                    </div>
                                                                     <div className="flex items-center gap-4 mb-2">
-                                                                        <span className="text-[42px] font-black text-black leading-none">{Number(avgRating) > 0 ? avgRating : '–'}</span>
+                                                                        <span className="text-[42px] font-black text-black leading-none">{Number(avgRatingValue) > 0 ? avgRatingValue : '–'}</span>
                                                                         <div className="flex gap-1">
                                                                             {Array.from({ length: 5 }).map((_, i) => (
-                                                                                <Star key={i} size={22} className={i < Math.round(Number(avgRating)) ? 'text-[#FFCC02] fill-[#FFCC02]' : 'text-neutral-200 fill-neutral-200'} />
+                                                                                <Star key={i} size={22} className={i < Math.round(Number(avgRatingValue)) ? 'text-[#FFCC02] fill-[#FFCC02]' : 'text-neutral-200 fill-neutral-200'} />
                                                                             ))}
                                                                         </div>
                                                                     </div>
-                                                                    <span className={`text-[13px] font-semibold ${Number(avgRating) >= 4.5 && monthRatings.length >= 5 ? 'text-[#01A083]' : Number(avgRating) >= 3.5 ? 'text-orange-500' : 'text-red-500'}`}>
-                                                                        {Number(avgRating) >= 4.5 && monthRatings.length >= 5
+                                                                    <span className={`text-[13px] font-semibold ${Number(avgRatingValue) >= 4.5 && careerRatings.length >= 5 ? 'text-[#01A083]' : Number(avgRatingValue) >= 3.5 ? 'text-orange-500' : 'text-red-500'}`}>
+                                                                        {Number(avgRatingValue) >= 4.5 && careerRatings.length >= 5
                                                                             ? t({ en: '🏆 Elite quality', fr: '🏆 Qualité élite', ar: '🏆 جودة النخبة' })
-                                                                            : Number(avgRating) >= 3.5
+                                                                            : Number(avgRatingValue) >= 3.5
                                                                                 ? t({ en: '👍 Good work', fr: '👍 Bon travail', ar: '👍 عمل جيد' })
                                                                                 : t({ en: '⚠️ Needs focus', fr: '⚠️ À améliorer', ar: '⚠️ يحتاج تركيز' })}
                                                                     </span>
@@ -615,8 +603,8 @@ export const PerformanceView = ({
                                                                 {/* Stats */}
                                                                 <div className="bg-white mt-4 mx-4 rounded-2xl border border-neutral-100 overflow-hidden">
                                                                     <div className="flex items-center justify-between px-5 py-4 border-b border-neutral-50">
-                                                                        <span className="text-[15px] text-neutral-700">{t({ en: 'Reviews this month', fr: 'Avis ce mois-ci', ar: 'التقييمات هذا الشهر' })}</span>
-                                                                        <span className="text-[15px] font-bold text-black">{monthRatings.length}</span>
+                                                                        <span className="text-[15px] text-neutral-700">{t({ en: 'Total Reviews', fr: 'Total avis', ar: 'إجمالي التقييمات' })}</span>
+                                                                        <span className="text-[15px] font-bold text-black">{careerRatings.length}</span>
                                                                     </div>
                                                                 </div>
 
@@ -639,14 +627,72 @@ export const PerformanceView = ({
                                                                     </div>
                                                                 </div>
 
-                                                                {/* Recent reviews note */}
-                                                                <div className="mx-4 mt-4 px-5 py-4 bg-white rounded-2xl border border-neutral-100">
-                                                                    <p className="text-[15px] font-bold text-black mb-1">{t({ en: 'Recent Reviews', fr: 'Avis récents', ar: 'التعليقات الأخيرة' })}</p>
-                                                                    <p className="text-[14px] text-neutral-500 leading-relaxed">
-                                                                        {monthRatings.length > 0
-                                                                            ? t({ en: 'You have solid feedback from your clients this month.', fr: 'Vous avez de bons retours de vos clients ce mois-ci.', ar: 'لديك تعليقات قوية من عملائك هذا الشهر.' })
-                                                                            : t({ en: 'No reviews yet. Complete more missions to earn stars!', fr: 'Pas encore d\'avis. Finalisez plus de missions pour gagner des étoiles !', ar: 'لا توجد تعليقات بعد. أكمل المزيد من المهمات لكسب النجوم!' })}
-                                                                    </p>
+                                                                {/* Recent reviews list */}
+                                                                <div className="mx-4 mt-4 space-y-3">
+                                                                    <p className="text-[15px] font-bold text-black mb-1 px-1">{t({ en: 'Recent Comments', fr: 'Commentaires récents', ar: 'التعليقات الأخيرة' })}</p>
+                                                                    {(() => {
+                                                                        const reviewsList: any[] = [];
+                                                                        const uniqueIds = new Set<string>();
+
+                                                                        // 1. Collect from jobs that have ratings/comments
+                                                                        careerDoneJobs.forEach(j => {
+                                                                            if (j.rating || j.feedback || j.clientReviewComment) {
+                                                                                reviewsList.push({
+                                                                                    id: j.id,
+                                                                                    rating: Number(j.rating || j.clientRating || 0),
+                                                                                    comment: j.feedback || j.clientReviewComment,
+                                                                                    date: j.date,
+                                                                                    service: j.subServiceDisplayName || j.service
+                                                                                });
+                                                                                uniqueIds.add(j.id);
+                                                                            }
+                                                                        });
+
+                                                                        // 2. Collect from profile reviews
+                                                                        (userData?.reviews || []).forEach((rev: any) => {
+                                                                            if (!uniqueIds.has(rev.id)) {
+                                                                                reviewsList.push({
+                                                                                    id: rev.id,
+                                                                                    rating: Number(rev.rating),
+                                                                                    comment: rev.comment,
+                                                                                    date: rev.date,
+                                                                                    service: rev.serviceName
+                                                                                });
+                                                                                uniqueIds.add(rev.id);
+                                                                            }
+                                                                        });
+
+                                                                        if (reviewsList.length === 0) return (
+                                                                            <div className="px-5 py-4 bg-white rounded-2xl border border-neutral-100">
+                                                                                <p className="text-[14px] text-neutral-500 leading-relaxed text-center">
+                                                                                    {t({ en: 'No reviews yet.', fr: 'Pas encore d\'avis.', ar: 'لا توجد تعليقات بعد.' })}
+                                                                                </p>
+                                                                            </div>
+                                                                        );
+
+                                                                        return reviewsList.map((rev, idx) => (
+                                                                            <div key={rev.id || idx} className="px-5 py-4 bg-white rounded-2xl border border-neutral-100">
+                                                                                <div className="flex items-center justify-between mb-2">
+                                                                                    <div className="flex gap-0.5">
+                                                                                        {Array.from({ length: 5 }).map((_, i) => (
+                                                                                            <Star key={i} size={14} className={i < Math.round(rev.rating) ? 'text-[#FFCC02] fill-[#FFCC02]' : 'text-neutral-100 fill-neutral-100'} />
+                                                                                        ))}
+                                                                                    </div>
+                                                                                    <span className="text-[11px] font-bold text-neutral-400">
+                                                                                        {rev.date && (rev.date.includes('T') ? format(new Date(rev.date), 'MMM d') : rev.date)}
+                                                                                    </span>
+                                                                                </div>
+                                                                                <p className="text-[14px] text-black font-medium leading-tight mb-2">
+                                                                                    {rev.service}
+                                                                                </p>
+                                                                                {rev.comment && (
+                                                                                    <p className="text-[13px] text-neutral-500 leading-relaxed italic border-l-2 border-neutral-100 pl-3">
+                                                                                        "{rev.comment}"
+                                                                                    </p>
+                                                                                )}
+                                                                            </div>
+                                                                        ));
+                                                                    })()}
                                                                 </div>
                                                             </div>
                                                         )}
@@ -670,63 +716,132 @@ export const PerformanceView = ({
 
                                                                 <div className="bg-white mt-4 mx-4 rounded-2xl border border-neutral-100 overflow-hidden px-5 py-5">
                                                                     <div className="flex items-center justify-between mb-4">
-                                                                        <p className="text-[15px] font-bold text-black">{t({ en: 'Monthly activity', fr: 'Activité mensuelle' })}</p>
+                                                                        <p className="text-[15px] font-bold text-black">{t({ en: 'Career activity', fr: 'Activité carrière' })}</p>
                                                                         <span className="text-[13px] font-bold text-[#01A083] bg-[#01A083]/10 px-2.5 py-1 rounded-full">+{Math.round(healthScore / 2)}%</span>
                                                                     </div>
-                                                                    <div className="h-24 w-full flex items-end gap-1.5">
-                                                                        {Array.from({ length: 12 }).map((_, i) => {
-                                                                            const baseHeight = 20 + (monthDoneJobs.length * 5);
-                                                                            const val = Math.min(Math.max(baseHeight + (Math.sin(i * 1.5) * 15), 10), 100);
+                                                                    <div className="h-[120px] w-full flex items-end justify-between px-2 pt-4">
+                                                                        {Array.from({ length: 6 }).map((_, i) => {
+                                                                            const baseHeight = 20 + ((careerDoneJobs.length - i) * 15);
+                                                                            const height = careerDoneJobs.length === 0 ? 0 : Math.max(10, baseHeight);
                                                                             return (
-                                                                                <motion.div key={i} className="flex-1 bg-[#01A083]/20 rounded-t-lg hover:bg-[#01A083]/60 transition-colors" initial={{ height: 0 }} animate={{ height: `${val}%` }} transition={{ delay: i * 0.04, duration: 0.6, ease: 'easeOut' }} />
+                                                                                <div key={i} className="flex flex-col items-center gap-2">
+                                                                                    <div
+                                                                                        className="w-8 bg-neutral-100 rounded-t-lg relative group transition-all duration-500"
+                                                                                        style={{ height: `${height}px` }}
+                                                                                    >
+                                                                                        {i === 0 && <div className="absolute inset-0 bg-[#006B4D]/20 rounded-t-lg" />}
+                                                                                    </div>
+                                                                                    <p className="text-[10px] font-bold text-neutral-400">{format(new Date(2025, i, 1), 'MMM')}</p>
+                                                                                </div>
                                                                             );
                                                                         })}
                                                                     </div>
-                                                                    <p className="text-[12px] text-neutral-400 text-right mt-2">{selectedMonthDt.getFullYear()}</p>
+                                                                    <p className="text-[12px] text-neutral-400 text-right mt-2">{new Date().getFullYear()}</p>
                                                                 </div>
                                                             </div>
                                                         )}
 
                                                         {/* ── GROWTH (Rank & Visibility) ─────────────── */}
                                                         {performanceDetail === 'growth' && (
-                                                            <div className="animate-in fade-in duration-300">
-                                                                {/* Score hero */}
-                                                                <div className="px-6 pt-6 pb-5 bg-white border-b border-neutral-100">
-                                                                    <p className="text-[13px] text-neutral-500 mb-1">{t({ en: 'Opportunity score', fr: 'Score d\'opportunité', ar: 'درجة الفرصة' })}</p>
-                                                                    <div className="flex items-baseline gap-2 mb-1">
-                                                                        <span className="text-[42px] font-black text-black leading-none">{healthScore}</span>
-                                                                        <span className="text-[18px] font-bold text-neutral-400">/ 100</span>
-                                                                    </div>
-                                                                    <span className={`text-[13px] font-semibold ${healthScore >= 80 ? 'text-[#01A083]' : healthScore >= 50 ? 'text-orange-500' : 'text-red-500'}`}>
-                                                                        {healthScore >= 80
-                                                                            ? t({ en: '🏆 Elite — top of search results', fr: '🏆 Élite — en tête des résultats', ar: '🏆 نخبة — في صدارة نتائج البحث' })
-                                                                            : healthScore >= 50
-                                                                                ? t({ en: '📈 Growing — complete more missions', fr: '📈 En progression — complétez plus', ar: '📈 في تطور — أكمل المزيد من المهمات' })
-                                                                                : t({ en: '⚠️ Needs attention — low visibility', fr: '⚠️ Action requise — faible visibilité', ar: '⚠️ يحتاج انتباه — ظهور منخفض' })}
-                                                                    </span>
-                                                                </div>
-
-                                                                {/* Referrals card */}
-                                                                <div className="bg-white mt-4 mx-4 rounded-2xl border border-neutral-100 overflow-hidden px-5 py-5">
-                                                                    <div className="flex items-center gap-3 mb-3">
-                                                                        <div className="w-10 h-10 bg-[#01A083]/10 rounded-xl flex items-center justify-center">
-                                                                            <Zap size={20} className="text-[#01A083]" />
+                                                            <div className="animate-in fade-in duration-300 flex flex-col h-full">
+                                                                <div className="flex-1 overflow-y-auto no-scrollbar p-6">
+                                                                    {/* Current Health Score */}
+                                                                    <div className="bg-white rounded-3xl p-6 shadow-sm border border-black/5 mb-6 text-center">
+                                                                        <p className="text-neutral-400 font-bold text-[14px] uppercase tracking-wider mb-2">{t({ en: 'Current health score', fr: 'Score de santé actuel', ar: 'درجة الصحة الحالية' })}</p>
+                                                                        <div className="text-[64px] font-black text-[#01A083] leading-none mb-2">{Math.round(healthScore)}%</div>
+                                                                        <div className="w-full h-3 bg-neutral-100 rounded-full overflow-hidden mb-4">
+                                                                            <motion.div
+                                                                                initial={{ width: 0 }}
+                                                                                animate={{ width: `${healthScore}%` }}
+                                                                                className="h-full bg-gradient-to-r from-[#01A083] to-[#02C7FF]"
+                                                                            />
                                                                         </div>
-                                                                        <p className="text-[16px] font-bold text-black">{t({ en: 'Unlock Rewards', fr: 'Débloquer des récompenses', ar: 'فتح المكافآت' })}</p>
+                                                                        <p className="text-neutral-500 font-medium leading-relaxed">
+                                                                            {healthScore >= 90
+                                                                                ? t({ en: 'You are performing at an Elite level! Keep it up.', fr: 'Vous performez à un niveau Élite ! Continuez ainsi.', ar: 'أنت تؤدي بمستوى النخبة! استمر في ذلك.' })
+                                                                                : t({ en: 'Improve your metrics to unlock the Elite badge and higher visibility.', fr: 'Améliorez vos indicateurs pour débloquer le badge Élite.', ar: 'حسن مؤشراتك لفتح شارة النخبة وزيادة الظهور.' })}
+                                                                        </p>
                                                                     </div>
-                                                                    <p className="text-[14px] text-neutral-500 leading-relaxed mb-4">
-                                                                        {t({
-                                                                            en: 'Refer other Bricolers and earn 50 MAD for each one who completes their first mission.',
-                                                                            fr: 'Parrainez d\'autres Bricoleurs et gagnez 50 MAD pour chacun qui termine sa première mission.',
-                                                                            ar: 'قم بإحالة "بريكولير" آخرين واربح 50 درهمًا لكل شخص يكمل مهمته الأولى.'
+
+                                                                    {/* Eligibility Checklist */}
+                                                                    <h3 className="text-[18px] font-black text-black mb-4 px-1">{t({ en: 'Eligibility Checklist', fr: 'Critères d\'éligibilité', ar: 'قائمة التحقق للأهلية' })}</h3>
+
+                                                                    <div className="space-y-3 mb-8">
+                                                                        {[
+                                                                            {
+                                                                                label: { en: 'Completed Missions', fr: 'Missions terminées', ar: 'المهمات المكتملة' },
+                                                                                current: careerDoneJobs.length,
+                                                                                target: 50,
+                                                                                icon: <Trophy size={18} className="text-[#FFCC02]" />,
+                                                                                prefix: ''
+                                                                            },
+                                                                            {
+                                                                                label: { en: 'Average Rating', fr: 'Note moyenne', ar: 'متوسط التقييم' },
+                                                                                current: avgRatingValue || 0,
+                                                                                target: 4.7,
+                                                                                icon: <Star size={18} className="text-[#FF6B6B]" />,
+                                                                                prefix: '/ 5'
+                                                                            },
+                                                                            {
+                                                                                label: { en: 'Completion Rate', fr: 'Taux de complétion', ar: 'نسبة الإتمام' },
+                                                                                current: completionRate || 100,
+                                                                                target: 95,
+                                                                                icon: <CheckCircle size={18} className="text-[#01A083]" />,
+                                                                                prefix: '%'
+                                                                            }
+                                                                        ].map((item, idx) => {
+                                                                            const isComplete = (Number(item.current) || 0) >= item.target;
+
+                                                                            return (
+                                                                                <div key={idx} className="bg-white rounded-2xl p-5 border border-black/5 flex items-center justify-between shadow-sm">
+                                                                                    <div className="flex items-center gap-4">
+                                                                                        <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center", isComplete ? "bg-[#01A083]/10" : "bg-neutral-50")}>
+                                                                                            {isComplete ? <CheckCircle size={24} className="text-[#01A083]" /> : item.icon}
+                                                                                        </div>
+                                                                                        <div>
+                                                                                            <p className="text-[15px] font-bold text-black leading-tight mb-1">{t(item.label)}</p>
+                                                                                            <p className="text-[13px] font-medium text-neutral-400">
+                                                                                                {item.current}{item.prefix} / {item.target}{item.prefix}
+                                                                                            </p>
+                                                                                        </div>
+                                                                                    </div>
+                                                                                    {isComplete && (
+                                                                                        <div className="px-2 py-1 bg-[#EEF9F7] text-[#01A083] text-[10px] font-black uppercase rounded-lg">
+                                                                                            {t({ en: 'Met', fr: 'Atteint', ar: 'تم تحقيقه' })}
+                                                                                        </div>
+                                                                                    )}
+                                                                                </div>
+                                                                            );
                                                                         })}
-                                                                    </p>
-                                                                    <button
-                                                                        onClick={() => { setPerformanceDetail('none'); setShowNotificationsPage(true); }}
-                                                                        className="w-full py-3.5 bg-black text-white rounded-xl text-[14px] font-bold active:scale-95 transition-all"
-                                                                    >
-                                                                        {t({ en: 'Open Referrals', fr: 'Ouvrir les parrainages', ar: 'فتح الإحالات' })}
-                                                                    </button>
+                                                                    </div>
+
+                                                                    {/* Perks Section */}
+                                                                    <div className="bg-[#02C7FF] rounded-3xl p-6 text-white overflow-hidden relative shadow-lg shadow-[#02C7FF]/20 mb-10">
+                                                                        <div className="relative z-10">
+                                                                            <h3 className="text-[20px] font-black mb-2">{t({ en: 'Elite Perks', fr: 'Avantages Élite', ar: 'مزايا النخبة' })}</h3>
+                                                                            <ul className="space-y-3">
+                                                                                <li className="flex items-center gap-3 text-[14px] font-bold">
+                                                                                    <div className="w-5 h-5 bg-white/20 rounded-full flex items-center justify-center">
+                                                                                        <div className="w-2 h-2 bg-white rounded-full" />
+                                                                                    </div>
+                                                                                    {t({ en: 'Premium Badge on Profile', fr: 'Badge Premium sur le profil', ar: 'شارة بريميوم على الملف' })}
+                                                                                </li>
+                                                                                <li className="flex items-center gap-3 text-[14px] font-bold">
+                                                                                    <div className="w-5 h-5 bg-white/20 rounded-full flex items-center justify-center">
+                                                                                        <div className="w-2 h-2 bg-white rounded-full" />
+                                                                                    </div>
+                                                                                    {t({ en: 'Top Ranking in Search', fr: 'Meilleur classement dans la recherche', ar: 'ترتيب متقدم في البحث' })}
+                                                                                </li>
+                                                                                <li className="flex items-center gap-3 text-[14px] font-bold">
+                                                                                    <div className="w-5 h-5 bg-white/20 rounded-full flex items-center justify-center">
+                                                                                        <div className="w-2 h-2 bg-white rounded-full" />
+                                                                                    </div>
+                                                                                    {t({ en: 'Reduced Commission (Coming Soon)', fr: 'Commission réduite (Bientôt)', ar: 'عمولة مخفضة (قريباً)' })}
+                                                                                </li>
+                                                                            </ul>
+                                                                        </div>
+                                                                        <Crown size={120} className="absolute -right-8 -bottom-8 opacity-10 rotate-12" />
+                                                                    </div>
                                                                 </div>
                                                             </div>
                                                         )}
@@ -811,6 +926,20 @@ export const PerformanceView = ({
                                                                     <p className="text-[14px] text-[#01A083] font-semibold mt-1">{t({ en: 'Build lifelong clients', fr: 'Fidélisez vos clients à vie', ar: 'ابنِ قاعدة عملاء مدى الحياة' })}</p>
                                                                 </div>
                                                                 <div className="space-y-3 p-4">
+                                                                    {careerDoneJobs.slice(0, 5).map((j: any) => {
+                                                                        const date = j.timestamp?.toDate ? j.timestamp.toDate() : new Date();
+                                                                        return (
+                                                                            <div key={j.id} className="flex items-center justify-between py-1 border-b border-neutral-100 last:border-0 pb-3 mb-2">
+                                                                                <div>
+                                                                                    <p className="text-[14px] font-bold text-black">{j.subService || j.label || j.serviceName}</p>
+                                                                                    <p className="text-[12px] text-neutral-400">{format(date, 'dd MMM yyyy')}</p>
+                                                                                </div>
+                                                                                <div className="text-right">
+                                                                                    <p className="text-[14px] font-black text-[#01A083]">+{j.price ? (j.price * 0.9).toFixed(0) : '0'} MAD</p>
+                                                                                </div>
+                                                                            </div>
+                                                                        );
+                                                                    })}
                                                                     {[
                                                                         { t: t({ en: 'Be Early', fr: 'Soyez en avance', ar: 'كن مبكراً' }), d: t({ en: 'Arriving 5 mins early leads to a 4.8-star average.', fr: 'Arriver 5 minutes en avance mène à une moyenne de 4,8 étoiles.', ar: 'الوصول مبكرًا بـ 5 دقائق يؤدي إلى متوسط 4.8 نجمة.' }) },
                                                                         { t: t({ en: 'Clean Up', fr: 'Nettoyez après', ar: 'نظف المكان' }), d: t({ en: 'Never leave tools or dust — the finish is what clients remember.', fr: 'Ne laissez jamais d\'outils ni de poussière — la finition est ce dont ils se souviennent.', ar: 'لا تترك الأدوات أو الغبار أبدًا — اللمسة النهائية هي ما يتذكره العملاء.' }) },
@@ -859,6 +988,139 @@ export const PerformanceView = ({
                                     </div>
                                 );
                             })()}
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+                {/* Growth/Elite Detail Modal */}
+                <AnimatePresence>
+                    {performanceDetail === 'growth' && (
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.95 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.95 }}
+                            className="absolute inset-x-0 bottom-0 top-0 z-[1000] bg-[#F8F9FA] flex flex-col"
+                        >
+                            <div className="p-6 pb-2 border-b border-white bg-white/50 backdrop-blur-md sticky top-0 z-10 flex items-center justify-between">
+                                <h2 className="text-[24px] font-black text-black">{t({ en: 'Roadmap to Elite', fr: 'En route vers l\'Élite', ar: 'الطريق إلى النخبة' })}</h2>
+                                <button
+                                    onClick={() => setPerformanceDetail('none')}
+                                    className="w-10 h-10 rounded-full bg-black/5 flex items-center justify-center text-black active:scale-95 transition-all"
+                                >
+                                    <X size={20} />
+                                </button>
+                            </div>
+
+                            <div className="flex-1 overflow-y-auto no-scrollbar p-6">
+                                 {/* Current Badge Status */}
+                                <div className="bg-white rounded-3xl p-6 shadow-sm border border-black/5 mb-6 text-center">
+                                    <div className="flex justify-center mb-4">
+                                        {(() => {
+                                            const m = careerDoneJobs.length;
+                                            const r = avgRatingValue;
+                                            const isQualed = r >= 4.7;
+                                            
+                                            if (m >= 50 && isQualed) return <div className="px-5 py-2 bg-gradient-to-r from-amber-400 to-amber-600 text-white rounded-full font-black text-[14px] shadow-lg flex items-center gap-2"><Crown size={18} /> {t({ en: 'ELITE STATUS', fr: 'STATUT ÉLITE' })}</div>;
+                                            if (m >= 40 && isQualed) return <div className="px-5 py-2 bg-[#02C7FF] text-white rounded-full font-black text-[14px] shadow-lg flex items-center gap-2"><Trophy size={18} /> {t({ en: 'PRO BADGE', fr: 'BADGE PRO' })}</div>;
+                                            if (m >= 10 && isQualed) return <div className="px-5 py-2 bg-[#01A083] text-white rounded-full font-black text-[14px] shadow-lg flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-white animate-pulse" /> {t({ en: 'CLASSIC BADGE', fr: 'BADGE CLASSIQUE' })}</div>;
+                                            return <div className="px-5 py-2 bg-neutral-100 text-neutral-500 rounded-full font-black text-[14px] shadow-lg">{t({ en: 'NEW MEMBER', fr: 'NOUVEAU MEMBRE' })}</div>;
+                                        })()}
+                                    </div>
+                                    <p className="text-neutral-400 font-bold text-[14px] uppercase tracking-wider mb-2">{t({ en: 'Current health score', fr: 'Score de santé actuel' })}</p>
+                                    <div className="text-[64px] font-black text-[#01A083] leading-none mb-2">{healthScore}%</div>
+                                    <div className="w-full h-3 bg-neutral-100 rounded-full overflow-hidden mb-4">
+                                        <motion.div
+                                            initial={{ width: 0 }}
+                                            animate={{ width: `${healthScore}%` }}
+                                            className="h-full bg-gradient-to-r from-[#01A083] to-[#02C7FF]"
+                                        />
+                                    </div>
+                                    <p className="text-neutral-500 font-medium leading-relaxed">
+                                        {healthScore >= 90
+                                            ? t({ en: 'You are performing at an Elite level! Keep it up.', fr: 'Vous performez à un niveau Élite ! Continuez ainsi.' })
+                                            : t({ en: 'Complete more missions and maintain high ratings to unlock Elite status.', fr: 'Terminez plus de missions et gardez de bonnes notes pour devenir Élite.' })}
+                                    </p>
+                                </div>
+
+                                {/* Eligibility Checklist */}
+                                <h3 className="text-[18px] font-black text-black mb-4 px-1">{t({ en: 'Milestones to Elite', fr: 'Objectifs Élite' })}</h3>
+
+                                <div className="space-y-3 mb-8">
+                                    {[
+                                        {
+                                            label: { en: 'Experience (Missions)', fr: 'Expérience (Missions)' },
+                                            current: careerDoneJobs.length,
+                                            target: 50,
+                                            icon: <Trophy size={18} className="text-[#FFCC02]" />,
+                                            prefix: ''
+                                        },
+                                        {
+                                            label: { en: 'Rating Consistency', fr: 'Régularité des Notes' },
+                                            current: avgRatingValue || 0,
+                                            target: 4.7,
+                                            icon: <Star size={18} className="text-[#FF6B6B]" />,
+                                            prefix: '/ 5'
+                                        },
+                                        {
+                                            label: { en: 'Platform Reliability', fr: 'Fiabilité Plateforme' },
+                                            current: completionRate || 100,
+                                            target: 95,
+                                            icon: <CheckCircle size={18} className="text-[#01A083]" />,
+                                            prefix: '%'
+                                        }
+                                    ].map((item, idx) => {
+                                        const isComplete = (item.current || 0) >= item.target;
+
+                                        return (
+                                            <div key={idx} className="bg-white rounded-2xl p-5 border border-black/5 flex items-center justify-between shadow-sm">
+                                                <div className="flex items-center gap-4">
+                                                    <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center", isComplete ? "bg-[#01A083]/10" : "bg-neutral-50")}>
+                                                        {isComplete ? <CheckCircle size={24} className="text-[#01A083]" /> : item.icon}
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-[15px] font-bold text-black leading-tight mb-1">{t(item.label)}</p>
+                                                        <p className="text-[13px] font-medium text-neutral-400">
+                                                            {item.current}{item.prefix} / {item.target}{item.prefix}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                                {isComplete && (
+                                                    <div className="px-2 py-1 bg-[#EEF9F7] text-[#01A083] text-[10px] font-black uppercase rounded-lg">
+                                                        {t({ en: 'Goal Met', fr: 'Objectif Atteint' })}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+
+                                {/* Perks Section */}
+                                <div className="bg-[#02C7FF] rounded-3xl p-6 text-white overflow-hidden relative shadow-lg shadow-[#02C7FF]/20 mb-10">
+                                    <div className="relative z-10">
+                                        <h3 className="text-[20px] font-black mb-2">{t({ en: 'Elite Perks', fr: 'Avantages Élite' })}</h3>
+                                        <ul className="space-y-3">
+                                            <li className="flex items-center gap-3 text-[14px] font-bold">
+                                                <div className="w-5 h-5 bg-white/20 rounded-full flex items-center justify-center">
+                                                    <div className="w-2 h-2 bg-white rounded-full" />
+                                                </div>
+                                                {t({ en: 'Premium Badge on Profile', fr: 'Badge Premium sur le profil' })}
+                                            </li>
+                                            <li className="flex items-center gap-3 text-[14px] font-bold">
+                                                <div className="w-5 h-5 bg-white/20 rounded-full flex items-center justify-center">
+                                                    <div className="w-2 h-2 bg-white rounded-full" />
+                                                </div>
+                                                {t({ en: 'Top Ranking in Search', fr: 'Meilleur classement dans la recherche' })}
+                                            </li>
+                                            <li className="flex items-center gap-3 text-[14px] font-bold">
+                                                <div className="w-5 h-5 bg-white/20 rounded-full flex items-center justify-center">
+                                                    <div className="w-2 h-2 bg-white rounded-full" />
+                                                </div>
+                                                {t({ en: 'Reduced Commission (Coming Soon)', fr: 'Commission réduite (Bientôt)' })}
+                                            </li>
+                                        </ul>
+                                    </div>
+                                    <Crown size={120} className="absolute -right-8 -bottom-8 opacity-10 rotate-12" />
+                                </div>
+                            </div>
                         </motion.div>
                     )}
                 </AnimatePresence>

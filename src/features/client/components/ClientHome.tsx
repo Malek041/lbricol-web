@@ -460,11 +460,11 @@ const ClientHome: React.FC<ClientHomeProps> = ({
 
     return (
         <div className={cn(
-            "fixed inset-0 bg-[#FFCC02] overflow-y-auto no-scrollbar h-[100dvh] w-screen font-jakarta",
+            "fixed inset-0 bg-[#FFB700] overflow-y-auto no-scrollbar h-[100dvh] w-screen font-jakarta",
             "z-0"
         )}>
             {/* 1. New yellow Hero Section */}
-            <div className="w-full sticky top-0 z-0 bg-[#FFCC02] overflow-hidden flex-shrink-0 pt-[env(safe-area-inset-top)] pb-5">
+            <div className="w-full sticky top-0 z-0 bg-[#FFB700] overflow-hidden flex-shrink-0 pt-[env(safe-area-inset-top)] pb-5">
                 {/* Location Pill */}
                 <div className="flex justify-center pt-8 mb-6">
                     <motion.button
@@ -601,7 +601,7 @@ const ClientHome: React.FC<ClientHomeProps> = ({
                                         const isActive = svc.id === activeId;
                                         const isTrending = svc.id === '__trending__';
                                         const activeColor = isTrending ? '#B8860B' : '#01A083';
-                                        const activeBg = isTrending ? '#ffffffff' : '#FFCC02';
+                                        const activeBg = isTrending ? '#ffffffff' : '#FFB700';
                                         return (
                                             <motion.button
                                                 key={svc.id}
