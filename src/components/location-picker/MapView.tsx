@@ -511,13 +511,15 @@ const MapView: React.FC<MapViewProps> = ({
       const scale = baseScale * zoomScale;
       const size = (isFocused ? 68 : 50) * zoomScale;
 
-      const bounceStyle = "";
+      // Smart positioning: if client is significantly above provider, show card BELOW pin
+      const isClientAbove = clientPin && (clientPin.lat > pin.lat + 0.001);
+      const shouldPlaceAbove = !isClientAbove;
 
       const icon = L.divIcon({
         className: '',
         html: `
-          <div style="display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:${160 * zoomScale}px;cursor:pointer;opacity:${opacity};transform:scale(${scale});transform-origin:bottom center;transition:all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);">
-            <div style="${bounceStyle} display:flex;flex-direction:column;align-items:center;">
+          <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;width:${size}px;height:${size}px;cursor:pointer;opacity:${opacity};transform:scale(${scale});transition:all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);position:relative;">
+            <div style="display:flex;flex-direction:column;align-items:center;position:relative;">
               ${isFocused ? (() => {
             const b = (pin.badge || '').toUpperCase();
             const isNew = (pin.taskCount || 0) < 10 || b === 'NEW';
@@ -527,7 +529,7 @@ const MapView: React.FC<MapViewProps> = ({
             const badgeIcon = isNew ? '✦' : (b === 'ELITE' ? '🏆' : b === 'PRO' ? '💎' : '🛡️');
             const ratingStr = (!pin.taskCount || pin.taskCount === 0 || !pin.rating) ? '0.0' : pin.rating.toFixed(1);
             return `
-              <div style="position: relative; display: flex; flex-direction: column; align-items: center; margin-bottom: 8px;">
+              <div style="position: absolute; ${shouldPlaceAbove ? 'bottom:calc(100% + 12px)' : 'top:calc(100% + 12px)'}; left: 50%; transform: translateX(-50%); display: flex; flex-direction: ${shouldPlaceAbove ? 'column' : 'column-reverse'}; align-items: center; z-index: 1000;">
                 <div style="background:#fff;border-radius:14px;padding:10px 14px;
                   box-shadow:0 8px 24px rgba(0,0,0,0.13);font-family:sans-serif;
                   display:flex;flex-direction:column;align-items:center;gap:6px;
@@ -559,7 +561,7 @@ const MapView: React.FC<MapViewProps> = ({
                     </div>
                   </div>
                 </div>
-                <div style="width:0;height:0;border-left:8px solid transparent;border-right:8px solid transparent;border-top:8px solid white;margin-top:-1px;z-index:5;filter:drop-shadow(0 4px 4px rgba(0,0,0,0.05));"></div>
+                <div style="width:0;height:0;border-left:8px solid transparent;border-right:8px solid transparent;${shouldPlaceAbove ? 'border-top:8px solid white;margin-top:-1px;' : 'border-bottom:8px solid white;margin-bottom:-1px;'} z-index:5;filter:drop-shadow(0 4px 4px rgba(0,0,0,0.05));"></div>
               </div>`;
           })() : ''}
               <div style="position:relative;width:${size}px;height:${size}px;min-width:${size}px;min-height:${size}px;flex-shrink:0;transition: all 0.3s; margin-bottom: 0px; border-radius: 50%; border: 3px solid #fff; box-shadow: 0 4px 12px rgba(0,0,0,0.15); overflow: hidden; background: #fff;">
@@ -574,8 +576,8 @@ const MapView: React.FC<MapViewProps> = ({
             </div>
           </div>
         `,
-        iconSize: [120 * zoomScale, 160 * zoomScale],
-        iconAnchor: [60 * zoomScale, 160 * zoomScale],
+        iconSize: [size, size],
+        iconAnchor: [size / 2, size / 2],
       });
 
       const marker = L.marker([pin.lat, pin.lng], { icon, zIndexOffset: isFocused ? 2000 : 0 })
