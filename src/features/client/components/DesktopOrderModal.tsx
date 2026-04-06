@@ -290,7 +290,7 @@ export const DesktopOrderModal: React.FC<DesktopOrderModalProps> = ({
                   <motion.div
                      initial={{ y: '100%' }}
                      animate={{ y: 0 }}
-                     className="absolute bottom-0 left-0 right-0 z-20 bg-white/95 backdrop-blur-xl border-t border-neutral-100 p-8 rounded-t-[48px] shadow-3xl overflow-hidden"
+                     className="absolute bottom-0 left-0 right-0 z-20 bg-white border-t border-neutral-100 p-8 rounded-t-[48px] shadow-3xl overflow-hidden"
                   >
                      <div className="flex items-center justify-between mb-8 max-w-[1000px] mx-auto px-4">
                         <h3 className="text-3xl font-black text-black tracking-tight">{t({ en: 'Ideal Bricolers', fr: 'Bricoleurs Idéaux' })}</h3>
@@ -562,7 +562,7 @@ export const DesktopOrderModal: React.FC<DesktopOrderModalProps> = ({
                         alert('Order broadcasted! (Integration with firebase call coming next)');
                         onClose();
                      }}
-                     className="mt-10 w-full py-6 bg-black text-white rounded-[48px] font-black text-2xl hover:shadow-2xl transition-all relative overflow-hidden group"
+                     className="mt-10 w-full py-3 bg-[#01A083] text-white rounded-[48px] font-medium text-2xl hover:shadow-2xl transition-all relative overflow-hidden group"
                   >
                      <span className="relative z-10">{t({ en: 'Broadcast Order', fr: 'Diffuser la demande' })}</span>
                      <div className="absolute inset-0 bg-[#FFCC02] translate-y-full group-hover:translate-y-0 transition-transform duration-500" />
@@ -581,7 +581,7 @@ export const DesktopOrderModal: React.FC<DesktopOrderModalProps> = ({
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
                   onClick={onClose}
-                  className="absolute inset-0 bg-black/40 backdrop-blur-md"
+                  className="absolute inset-0 bg-black/60"
                />
                <motion.div
                   initial={{ opacity: 0, scale: 0.9, y: 40 }}
@@ -604,7 +604,7 @@ export const DesktopOrderModal: React.FC<DesktopOrderModalProps> = ({
 
                      <div className="mt-8 flex flex-col items-center text-center">
                         <div className="w-48 h-48 mb-8 relative">
-                           <div className="absolute inset-0 bg-[#FFCC02]/10 rounded-full blur-3xl" />
+                           <div className="absolute inset-0 bg-[#FFCC02]/5 rounded-full" />
                            <img
                               src={serviceIcon}
                               alt={config.name}
