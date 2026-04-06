@@ -299,7 +299,6 @@ const Home = () => {
   const [isBricoler, setIsBricoler] = useState(false);
   const [isAdminMode, setIsAdminMode] = useState(false);
   const [selectedDesktopServiceId, setSelectedDesktopServiceId] = useState<string | null>(null);
-  const [selectedDesktopSubServiceId, setSelectedDesktopSubServiceId] = useState<string | null>(null);
   const [showDesktopSubServicePopup, setShowDesktopSubServicePopup] = useState(false);
   const [isProgramming, setIsProgramming] = useState(false);
   const [trendingSubServices, setTrendingSubServices] = useState<string[]>([]);
@@ -2953,9 +2952,8 @@ const Home = () => {
               <>
                 <ServicesHeroSection 
                   availableServiceIds={availableServices}
-                  onSelectService={(serviceId, subServiceId) => {
+                  onSelectService={(serviceId) => {
                     setSelectedDesktopServiceId(serviceId);
-                    setSelectedDesktopSubServiceId(subServiceId || null);
                     setShowDesktopSubServicePopup(true);
                   }}
                 />
@@ -2964,7 +2962,6 @@ const Home = () => {
                   isOpen={showDesktopSubServicePopup}
                   onClose={() => setShowDesktopSubServicePopup(false)}
                   serviceId={selectedDesktopServiceId}
-                  subServiceId={selectedDesktopSubServiceId}
                   availableSubServices={availableSubServices}
                 />
 
