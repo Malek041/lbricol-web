@@ -753,7 +753,6 @@ function ProviderCard({
                 border: '1px solid #DCFCE7'
               }}>
                 <div style={{ width: 4, height: 4, background: '#16A34A', borderRadius: '50%', animation: 'pulse 1.5s infinite' }} />
-                LIVE
               </div>
             )}
           </div>
