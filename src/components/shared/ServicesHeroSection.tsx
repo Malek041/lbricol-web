@@ -1,275 +1,242 @@
 "use client";
 
-import React from 'react';
-import { motion } from 'framer-motion';
+import React, { useState, useEffect, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useLanguage } from '@/context/LanguageContext';
-
-interface ServiceCardProps {
-  id: string;
-  title: string;
-  description: string;
-  image: string;
-  onOrder: (id: string) => void;
-}
-
-const EggyServiceIcon = ({ id, title, image, onOrder }: { id: string; title: string; image: string; onOrder: (id: string) => void }) => {
-  const [imgSrc, setImgSrc] = React.useState(image);
-  const [fallbackIndex, setFallbackIndex] = React.useState(0);
-  const filename = image.split('/').pop();
-  
-  const fallbacks = [
-    `/Images/Desktop hero section images/${filename}`,
-    `/Images/clientHomeHeroSection/${filename}`,
-    `/Images/Service Category vectors/${filename?.replace(/\.[^/.]+$/, "")}.webp`,
-    `/Images/Service Category vectors/${filename?.replace(/\.[^/.]+$/, "")}.png`,
-    image
-  ];
-
-  const handleImgError = () => {
-    if (fallbackIndex < fallbacks.length - 1) {
-      const nextIndex = fallbackIndex + 1;
-      setFallbackIndex(nextIndex);
-      setImgSrc(fallbacks[nextIndex]);
-    }
-  };
-
-  return (
-    <motion.div
-      whileHover={{ scale: 1.1, rotate: 2 }}
-      whileTap={{ scale: 0.95 }}
-      style={{
-        flex: '0 0 200px',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        gap: '20px',
-        cursor: 'pointer',
-        marginRight: '40px',
-        textAlign: 'center'
-      }}
-      onClick={() => onOrder(id)}
-    >
-      <motion.div
-        animate={{
-          borderRadius: [
-            '60% 40% 30% 70% / 60% 30% 70% 40%',
-            '30% 60% 70% 40% / 50% 60% 30% 60%',
-            '60% 40% 30% 70% / 60% 30% 70% 40%'
-          ],
-          rotate: [-5, 5, -5]
-        }}
-        transition={{
-          duration: 6,
-          repeat: Infinity,
-          ease: "easeInOut"
-        }}
-        style={{
-          width: '180px',
-          height: '180px',
-          backgroundColor: '#FFFFFF',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          boxShadow: '0 20px 40px rgba(0,0,0,0.05)',
-          padding: '35px'
-        }}
-      >
-        <img
-          src={imgSrc}
-          alt={title}
-          onError={handleImgError}
-          style={{
-            width: '100%',
-            height: '100%',
-            objectFit: 'contain'
-          }}
-        />
-      </motion.div>
-      <h3 style={{
-        fontSize: '22px',
-        fontWeight: 900,
-        color: '#037B3E',
-        margin: 0,
-        letterSpacing: '-0.02em',
-        fontFamily: 'Uber Move, var(--font-sans)',
-      }}>
-        {title}
-      </h3>
-    </motion.div>
-  );
-};
+import { cn } from '@/lib/utils';
+import { SERVICES_CATALOGUE, ServiceEntry } from '@/config/services_catalogue';
+import { getServiceById } from '@/config/services_config';
+import { Star, CheckCircle2, ChevronRight, MapPin } from 'lucide-react';
+import { ReviewsScrollingSection } from '@/features/client/components/ReviewsScrollingSection';
 
 interface ServicesHeroSectionProps {
   availableServiceIds?: string[] | null;
-  onSelectService?: (serviceId: string) => void;
+  onSelectService?: (serviceId: string, subServiceId?: string) => void;
 }
 
-const ServicesHeroSection = ({ availableServiceIds, onSelectService }: ServicesHeroSectionProps) => {
-  const { t } = useLanguage();
+const ServiceCategoryTab = ({ id, label, labelFr, iconPath, isActive, onClick, disabled }: any) => {
+    const { language } = useLanguage();
+    const displayLabel = language === 'fr' ? labelFr : label;
 
-  const allServices = [
-    {
-      id: 'errands',
-      title: t({ en: 'Errands', fr: 'Coursier', ar: 'توصيل' }),
-      description: 'You can Order delivery of anything in the city from your place in few steps.',
-      image: '/Images/Desktop hero section images/Errands.webp'
-    },
-    {
-      id: 'babysitting',
-      title: t({ en: 'Babysitting', fr: 'Nounou', ar: 'جليسة أطفال' }),
-      description: 'You can Order reliable child care and expert sitters from your place in few steps.',
-      image: '/Images/Desktop hero section images/baybsetting.webp'
-    },
-    {
-      id: 'gardening',
-      title: t({ en: 'Gardening', fr: 'Jardinage', ar: 'بستنة' }),
-      description: 'You can Order professional landscaping and lawn care from your place in few steps.',
-      image: '/Images/Desktop hero section images/Gardening.webp'
-    },
-    {
-      id: 'driver',
-      title: t({ en: 'Driver', fr: 'Chauffeur', ar: 'سائق' }),
-      description: 'You can Order personal drivers and intercity trips from your place in few steps.',
-      image: '/Images/Desktop hero section images/Driver.gif'
-    },
-    {
-      id: 'pets_care',
-      title: t({ en: 'Pets Care', fr: 'Animaux', ar: 'حيوانات أليفة' }),
-      description: 'You can Order dedicated pet walking and grooming from your place in few steps.',
-      image: '/Images/Desktop hero section images/petsCare.webp'
-    },
-    {
-      id: 'cleaning',
-      title: t({ en: 'Cleaning', fr: 'Ménage', ar: 'تنظيف' }),
-      description: 'You can Order professional home cleaning and housekeeping services.',
-      image: '/Images/clientHomeHeroSection/Cleaning.png'
-    },
-    {
-      id: 'handyman',
-      title: t({ en: 'Handyman', fr: 'Bricolage', ar: 'إصلاحات' }),
-      description: 'You can Order expert help for repairs, assembly, and home maintenance.',
-      image: '/Images/Job Cards Images/handyman_bg_card.webp'
-    }
-  ];
-
-  const services = availableServiceIds
-    ? allServices.filter(s => availableServiceIds.includes(s.id))
-    : allServices;
-
-  if (services.length === 0) return null;
-
-  return (
-    <section className="desktop-only-hero" style={{
-      backgroundColor: '#FFB700',
-      padding: '40px 0 100px 0',
-      overflow: 'hidden',
-      display: 'none',
-      position: 'relative'
-    }}>
-      <style jsx>{`
-        @media (min-width: 969px) {
-          .desktop-only-hero {
-            display: block !important;
-          }
-        }
-        
-        .services-scroll-container::-webkit-scrollbar {
-          display: none;
-        }
-        .services-scroll-container {
-          -ms-overflow-style: none;
-          scrollbar-width: none;
-        }
-      `}</style>
-
-      {/* Header for Desktop */}
-      <div style={{
-        maxWidth: '1280px',
-        margin: '0 auto 30px auto',
-        padding: '0 40px',
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        position: 'relative',
-        zIndex: 2
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <img src="/Images/map Assets/LocationPin.png" alt="Logo" style={{ height: '32px' }} />
-          <span style={{ fontSize: '24px', fontWeight: 700, color: '#037B3E' }}>Lbricol</span>
-        </div>
-        <button style={{
-          backgroundColor: '#037B3E',
-          color: '#FFF',
-          padding: '6px 20px',
-          borderRadius: '24px',
-          border: 'none',
-          fontSize: '14px',
-          fontWeight: 900,
-          cursor: 'pointer',
-        }}>
-          Become a Bricoler
-        </button>
-      </div>
-
-      <div
-        className="services-scroll-container"
-        style={{
-          display: 'flex',
-          overflowX: 'auto',
-          padding: '60px 40px 80px 40px',
-          scrollSnapType: 'x mandatory',
-          scrollBehavior: 'smooth',
-          position: 'relative',
-          zIndex: 2
-        }}
-      >
-        {services.map((service) => (
-          <EggyServiceIcon
-            key={service.id}
-            id={service.id}
-            title={service.title}
-            image={service.image}
-            onOrder={(id) => onSelectService?.(id)}
-          />
-        ))}
-
-        {allServices.length > services.length && (
-          <EggyServiceIcon
-            id="more"
-            title={t({ en: 'And More', fr: 'Et Plus', ar: 'والمزيد' })}
-            image="/Images/Desktop hero section images/andMore.webp"
-            onOrder={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-          />
-        )}
-      </div>
-
-      {/* Hero Bottom Curve */}
-      <div style={{
-        position: 'absolute',
-        bottom: -1,
-        left: 0,
-        width: '100%',
-        lineHeight: 0,
-        zIndex: 1,
-        pointerEvents: 'none'
-      }}>
-        <svg
-          viewBox="0 0 1440 120"
-          preserveAspectRatio="none"
-          style={{
-            width: '100%',
-            height: '120px', // Increased height for more pronounced curve
-            display: 'block'
-          }}
+    return (
+        <motion.div
+            whileHover={!disabled ? { scale: 1.05 } : {}}
+            whileTap={!disabled ? { scale: 0.95 } : {}}
+            onClick={onClick}
+            className={cn(
+                "relative flex-shrink-0 flex flex-col items-center justify-center gap-3 p-4 rounded-[100px] transition-all duration-300 cursor-pointer",
+                isActive ? "bg-[#01A083] text-white shadow-lg shadow-[#01A083]/20" : "bg-neutral-50/80 text-neutral-600 hover:bg-neutral-100",
+                disabled && "opacity-50 grayscale cursor-not-allowed pointer-events-none"
+            )}
+            style={{ width: '130px', height: '170px' }}
         >
-          <path
-            d="M0,0 C480,100 960,100 1440,0 L1440,120 L0,120 Z"
-            fill="#ffffff"
-          />
-        </svg>
-      </div>
-    </section>
-  );
+            <div className={cn(
+                "w-20 h-20 rounded-full flex items-center justify-center transition-transform duration-500",
+                isActive ? "scale-110" : ""
+            )}>
+                <img src={iconPath} alt={displayLabel} className="w-16 h-16 object-contain" />
+            </div>
+            
+            <span className={cn(
+                "text-[14px] font-black text-center leading-tight uppercase tracking-tight",
+                isActive ? "text-white" : "text-neutral-500"
+            )}>
+                {displayLabel}
+            </span>
+
+            {/* Selection Dot */}
+            {isActive && (
+                <motion.div
+                    layoutId="active-dot"
+                    className="absolute -bottom-1 w-2 h-2 rounded-full bg-[#01A083]"
+                />
+            )}
+        </motion.div>
+    );
+};
+
+const SubServicePill = ({ id, en, fr, isActive, onClick, disabled }: any) => {
+    const { language } = useLanguage();
+    const label = language === 'fr' ? fr : en;
+
+    return (
+        <motion.button
+            whileHover={!disabled ? { scale: 1.02, y: -2 } : {}}
+            whileTap={!disabled ? { scale: 0.98 } : {}}
+            onClick={onClick}
+            disabled={disabled}
+            className={cn(
+                "px-5 py-4 rounded-[20px] text-left transition-all duration-300 flex items-center justify-between group",
+                isActive
+                    ? "bg-[#01A083] text-white shadow-xl shadow-[#01A083]/20"
+                    : "bg-white border-2 border-neutral-100 text-neutral-700 hover:border-[#01A083]/30 hover:bg-neutral-50/50",
+                disabled && "opacity-40 grayscale cursor-not-allowed"
+            )}
+        >
+            <span className="text-[15px] font-black tracking-tight">{label}</span>
+            <div className={cn(
+                "w-8 h-8 rounded-xl flex items-center justify-center transition-all duration-300",
+                isActive ? "bg-white/20" : "bg-neutral-50 group-hover:bg-[#01A083]/10"
+            )}>
+                <ChevronRight size={18} className={isActive ? "text-white" : "text-neutral-400 group-hover:text-[#01A083]"} />
+            </div>
+        </motion.button>
+    );
+};
+
+const ServicesHeroSection = ({ availableServiceIds, onSelectService }: ServicesHeroSectionProps) => {
+    const { t, language } = useLanguage();
+    const [activeId, setActiveId] = useState<string>('cleaning');
+    const [hasManuallySelected, setHasManuallySelected] = useState(false);
+    const tabsRef = useRef<HTMLDivElement>(null);
+
+    const activeService = getServiceById(activeId) || SERVICES_CATALOGUE.find(s => s.id === 'cleaning');
+
+    // Auto-scroll logic for tabs (sync with mobile)
+    useEffect(() => {
+        if (!hasManuallySelected && tabsRef.current) {
+            const activeTab = tabsRef.current.querySelector('[data-active="true"]');
+            if (activeTab) {
+                activeTab.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+            }
+        }
+    }, [activeId, hasManuallySelected]);
+
+    return (
+        <section className="hidden lg:block relative py-20 overflow-hidden" style={{ backgroundColor: '#FFB700' }}>
+            {/* Header for Desktop */}
+            <div className="max-w-[1400px] mx-auto px-10 mb-12 flex justify-between items-center relative z-20">
+                <div className="flex items-center gap-3">
+                    <img src="/Images/map Assets/LocationPin.png" alt="Logo" className="h-10" />
+                    <span className="text-[32px] font-black text-[#037B3E] tracking-tighter">Lbricol</span>
+                </div>
+                <button className="bg-[#037B3E] hover:bg-[#026935] text-white px-8 py-3 rounded-full text-[15px] font-black transition-all shadow-lg shadow-[#037B3E]/20">
+                    Become a Bricoler
+                </button>
+            </div>
+
+            <div className="max-w-[1400px] mx-auto px-6 relative z-10">
+                <motion.div
+                    initial={{ opacity: 0, y: 30 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="bg-white rounded-[40px] shadow-2xl shadow-black/10 overflow-hidden min-h-[700px] flex flex-col"
+                >
+                    {/* Category Tabs Section */}
+                    <div className="bg-neutral-50/50 border-b border-neutral-100/50 p-8">
+                        <div 
+                            ref={tabsRef}
+                            className="flex gap-4 overflow-x-auto pb-4 scroll-smooth no-scrollbar justify-center"
+                        >
+                            {SERVICES_CATALOGUE.map((svc) => (
+                                <ServiceCategoryTab
+                                    key={svc.id}
+                                    {...svc}
+                                    isActive={activeId === svc.id}
+                                    data-active={activeId === svc.id}
+                                    onClick={() => {
+                                        setActiveId(svc.id);
+                                        setHasManuallySelected(true);
+                                    }}
+                                    disabled={svc.id !== 'cleaning'} // Parity with mobile unclickable
+                                />
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Main Content Area */}
+                    <div className="flex flex-1 p-12 gap-12">
+                        {/* Left: Info & Bullets */}
+                        <div className="w-1/3 flex flex-col gap-8">
+                            <AnimatePresence mode="wait">
+                                <motion.div
+                                    key={activeId}
+                                    initial={{ opacity: 0, x: -20 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    exit={{ opacity: 0, x: -20 }}
+                                    className="flex flex-col gap-6"
+                                >
+                                    <div className="flex items-center gap-4">
+                                        <div className="w-20 h-20 bg-neutral-50 rounded-[30px] flex items-center justify-center p-4">
+                                            <img src={(activeService as any)?.iconPath} alt="" className="w-full h-full object-contain" />
+                                        </div>
+                                        <div>
+                                            <h2 className="text-[32px] font-black text-neutral-900 tracking-tight leading-tight">
+                                                {language === 'fr' ? (activeService as any)?.labelFr : (activeService as any)?.label}
+                                            </h2>
+                                            <div className="flex items-center gap-2 mt-1">
+                                                <div className="flex gap-0.5">
+                                                    {[1, 2, 3, 4, 5].map(i => <Star key={i} size={12} className="text-[#FFCC02] fill-[#FFCC02]" />)}
+                                                </div>
+                                                <span className="text-[13px] font-bold text-neutral-400 lowercase">
+                                                    {t({ en: 'Top rated service', fr: 'Service le mieux noté' })}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex flex-col gap-4 mt-4">
+                                        {(activeService as any)?.bullets?.map((bullet: any, idx: number) => (
+                                            <div key={idx} className="flex gap-4 group">
+                                                <div className="mt-1 w-6 h-6 rounded-lg bg-[#01A083]/10 flex-shrink-0 flex items-center justify-center text-[#01A083] transition-colors group-hover:bg-[#01A083] group-hover:text-white">
+                                                    <CheckCircle2 size={14} />
+                                                </div>
+                                                <p className="text-[15px] font-bold text-neutral-500 leading-relaxed group-hover:text-neutral-700 transition-colors">
+                                                    {language === 'fr' ? bullet.fr : bullet.en}
+                                                </p>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </motion.div>
+                            </AnimatePresence>
+
+                            <div className="mt-auto">
+                                <ReviewsScrollingSection />
+                            </div>
+                        </div>
+
+                        {/* Right: Sub-services Grid */}
+                        <div className="flex-1">
+                            <div className="grid grid-cols-2 gap-4">
+                                <AnimatePresence mode="popLayout">
+                                    {(activeService as any)?.subServices.map((sub: any, idx: number) => (
+                                        <motion.div
+                                            key={sub.en}
+                                            initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                                            transition={{ delay: idx * 0.05 }}
+                                        >
+                                            <SubServicePill
+                                                {...sub}
+                                                onClick={() => onSelectService?.(activeId, (sub as any).id)}
+                                            />
+                                        </motion.div>
+                                    ))}
+                                </AnimatePresence>
+                            </div>
+                        </div>
+                    </div>
+                </motion.div>
+            </div>
+
+            {/* Decorative Blobs (Eggy Style) */}
+            <motion.div
+                animate={{
+                    scale: [1, 1.2, 1],
+                    rotate: [0, 90, 0],
+                }}
+                transition={{ duration: 20, repeat: Infinity }}
+                className="absolute top-[-200px] left-[-200px] w-[600px] h-[600px] bg-[#FFF2CC] rounded-full blur-[100px] opacity-50 z-0"
+            />
+            <motion.div
+                animate={{
+                    scale: [1.2, 1, 1.2],
+                    rotate: [0, -90, 0],
+                }}
+                transition={{ duration: 25, repeat: Infinity }}
+                className="absolute bottom-[-200px] right-[-200px] w-[700px] h-[700px] bg-[#E3F1EF] rounded-full blur-[100px] opacity-50 z-0"
+            />
+        </section>
+    );
 };
 
 export default ServicesHeroSection;
