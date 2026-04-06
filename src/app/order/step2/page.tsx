@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState, Suspense, useRef } from 'react';
+import { useEffect, useState, Suspense, useRef, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useOrder } from '@/context/OrderContext';
 import { useLanguage } from '@/context/LanguageContext';
@@ -357,7 +357,7 @@ function Step2Content() {
     }
   };
 
-  const calculateRate = (provider: any) => {
+  const calculateRate = useCallback((provider: any) => {
     const isCarRental = order.serviceType === 'car_rental';
     const cars = provider.carRentalDetails?.cars || [];
     if (isCarRental && cars.length > 0) {
@@ -368,19 +368,25 @@ function Step2Content() {
 
     // 1. Try to find specific subservice rate
     if (order.subServiceId) {
-      const subSvcInfo = services.find((s: any) => s.subServiceId === order.subServiceId || s.id === order.subServiceId);
+      const subSvcId = String(order.subServiceId).toLowerCase();
+      const subSvcInfo = services.find((s: any) => 
+        String(s.subServiceId || s.id).toLowerCase() === subSvcId
+      );
       if (subSvcInfo) return Number(subSvcInfo.hourlyRate || subSvcInfo.price || provider.minRate || 80);
     }
 
     // 2. Fallback to category rate
-    const catInfo = services.find((s: any) => s.categoryId === order.serviceType || s.id === order.serviceType);
+    const catId = String(order.serviceType).toLowerCase();
+    const catInfo = services.find((s: any) => 
+      String(s.categoryId || s.id).toLowerCase() === catId
+    );
     if (catInfo) return Number(catInfo.hourlyRate || catInfo.price || provider.minRate || 80);
 
     return Number(provider.minRate || 80);
-  };
+  }, [order.serviceType, order.subServiceId]);
 
   // ── Provider pin data for MapView ────────────────────────────────────
-  const providerPins = providers.map(p => ({
+  const providerPins = useMemo(() => providers.map(p => ({
     id: p.id,
     lat: (p.isLive && p.current_lat) ? p.current_lat : (p.base_lat || clientLat + (Math.random() - 0.5) * 0.015),
     lng: (p.isLive && p.current_lng) ? p.current_lng : (p.base_lng || clientLng + (Math.random() - 0.5) * 0.015),
@@ -391,7 +397,7 @@ function Step2Content() {
     avatarUrl: p.avatarUrl || p.avatar || p.photoURL,
     isSelected: p.id === focusedId,
     badge: ((p.taskCount || 0) < 10 || p.isNew) ? 'NEW' : (p.badge || 'CLASSIC'),
-  }));
+  })), [providers, focusedId, clientLat, clientLng, calculateRate]);
 
   const [viewedBricoler, setViewedBricoler] = useState<any>(null);
 

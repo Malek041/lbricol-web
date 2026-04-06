@@ -649,7 +649,7 @@ const MapView: React.FC<MapViewProps> = ({
     if (pin) {
       flyToWithOffset(pin.lat, pin.lng, 17, pinY === 50);
     }
-  }, [focusedProviderId, mapReady]);
+  }, [focusedProviderId, mapReady, providerPins, pinY]);
 
   // ── Render destination pin marker ───────────────────────────────────
   useEffect(() => {
