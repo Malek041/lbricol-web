@@ -752,7 +752,7 @@ function ProviderCard({
                 padding: '2px 6px', borderRadius: 4, display: 'flex', alignItems: 'center', gap: 3,
                 border: '1px solid #DCFCE7'
               }}>
-                <div style={{ width: 4, height: 4, background: '#16A34A', borderRadius: '50%', animation: 'pulse 1.5s infinite' }} />
+                <div style={{ width: 4, height: 4, background: '#16A34A', borderRadius: '50%' }} />
               </div>
             )}
           </div>

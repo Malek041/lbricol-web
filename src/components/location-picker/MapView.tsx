@@ -502,7 +502,7 @@ const MapView: React.FC<MapViewProps> = ({
       const scale = hasFocus && !isFocused ? 0.8 : (isFocused ? 1.15 : 1);
       const size = isFocused ? 62 : 44;
 
-      const bounceStyle = isFocused ? "animation: pinBounce 2s ease-in-out infinite;" : "";
+      const bounceStyle = "";
 
       const icon = L.divIcon({
         className: '',
@@ -559,7 +559,7 @@ const MapView: React.FC<MapViewProps> = ({
             : `<div style="width:100%;height:100%;background:#F3F4F6;display:flex;align-items:center;justify-content:center;font-size:24px">👤</div>`
           }
                 ${pin.isLive ? `
-                  <div style="position:absolute; bottom:2px; right:2px; width:10px; height:10px; background:#22c55e; border:2px solid #fff; border-radius:50%; box-shadow:0 0 0 2px rgba(34,197,94,0.4); animation: pulse 1.5s infinite;"></div>
+                  <div style="position:absolute; bottom:2px; right:2px; width:10px; height:10px; background:#22c55e; border:2px solid #fff; border-radius:50%; box-shadow:0 0 0 2px rgba(34,197,94,0.4);"></div>
                 ` : ''}
               </div>
             </div>

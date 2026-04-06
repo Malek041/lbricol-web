@@ -55,7 +55,7 @@ export const DesktopOrderModal: React.FC<DesktopOrderModalProps> = ({
    // Errands Specific States
    const [errandCategory, setErrandCategory] = useState('package');
    const [itemDescription, setItemDescription] = useState('');
-   
+
    // Matching & UI States
    const [focusedProviderId, setFocusedProviderId] = useState<string | null>(null);
    const [triggerGps, setTriggerGps] = useState(0);
@@ -275,7 +275,7 @@ export const DesktopOrderModal: React.FC<DesktopOrderModalProps> = ({
                         initialLocation={{ lat: currentLat, lng: currentLng }}
                         zoom={14}
                         pinY={50}
-                        onLocationChange={() => {}}
+                        onLocationChange={() => { }}
                         providerPins={providers.map(p => ({
                            ...p,
                            isSelected: focusedProviderId === p.id
@@ -295,7 +295,7 @@ export const DesktopOrderModal: React.FC<DesktopOrderModalProps> = ({
                      <div className="flex items-center justify-between mb-8 max-w-[1000px] mx-auto px-4">
                         <h3 className="text-3xl font-black text-black tracking-tight">{t({ en: 'Ideal Bricolers', fr: 'Bricoleurs Idéaux' })}</h3>
                         <div className="flex items-center gap-2 bg-[#E7F9F0] px-4 py-1.5 rounded-full">
-                           <div className="w-2 h-2 rounded-full bg-[#01C167] animate-pulse" />
+                           <div className="w-2 h-2 rounded-full bg-[#01C167]" />
                            <span className="text-[12px] font-black text-[#01C167] uppercase tracking-widest">{t({ en: 'Best Price', fr: 'Meilleur Prix' })}</span>
                         </div>
                      </div>
@@ -421,13 +421,13 @@ export const DesktopOrderModal: React.FC<DesktopOrderModalProps> = ({
 
                            {serviceId === 'cleaning' && (
                               <div className="p-6 rounded-[32px] border-2 border-neutral-100 space-y-4">
-                                 <label className="text-sm font-black text-black uppercase tracking-widest">{t({ en: 'Number of Rooms', fr: 'Nombre de pièces' })}</label>
+                                 <label className="text-sm font-black text-black uppercase tracking-widest">{t({ en: 'Number of Rooms', fr: 'Nombre de chambres' })}</label>
                                  <div className="flex gap-2">
                                     {[1, 2, 3, 4, 5, 6].map(n => (
                                        <button
                                           key={n}
                                           onClick={() => setRooms(n)}
-                                          className={`w-12 h-12 rounded-xl font-black transition-all ${rooms === n ? 'bg-[#FFCC02] text-white shadow-lg' : 'bg-neutral-50 text-black hover:bg-neutral-100'}`}
+                                          className={`w-12 h-12 rounded-full font-black transition-all ${rooms === n ? 'bg-[#01A083] text-white' : 'bg-neutral-50 text-black hover:bg-neutral-100'}`}
                                        >
                                           {n}
                                        </button>
@@ -481,7 +481,7 @@ export const DesktopOrderModal: React.FC<DesktopOrderModalProps> = ({
                            whileHover={{ scale: 1.02 }}
                            whileTap={{ scale: 0.98 }}
                            onClick={handleConfirmSetup}
-                           className="w-full py-6 bg-[#FFCC02] text-white rounded-[32px] font-black text-2xl hover:shadow-2xl transition-all flex items-center justify-center gap-3"
+                           className="w-full py-3 bg-[#01A083] text-white rounded-[42px] font-medium text-2xl transition-all flex items-center justify-center gap-3"
                         >
                            {t({ en: 'View Summary', fr: 'Voir le résumé' })}
                            <ArrowRight size={28} />
