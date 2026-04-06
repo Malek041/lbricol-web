@@ -507,9 +507,9 @@ const MapView: React.FC<MapViewProps> = ({
       const isFocused = pin.id === focusedProviderId;
       const hasFocus = !!focusedProviderId;
       const opacity = 1;
-      const baseScale = hasFocus && !isFocused ? 0.9 : (isFocused ? 1.2 : 1);
+      const baseScale = hasFocus && !isFocused ? 0.9 : 1;
       const scale = baseScale * zoomScale;
-      const size = (isFocused ? 68 : 50) * zoomScale;
+      const size = 52 * zoomScale;
 
       // Smart positioning: if client is significantly above provider, show card BELOW pin
       const isClientAbove = clientPin && (clientPin.lat > pin.lat + 0.001);
@@ -641,6 +641,15 @@ const MapView: React.FC<MapViewProps> = ({
       }
     };
   }, [clientPin?.lat, clientPin?.lng, mapReady, centerAddress]);
+
+  // ── Zoom/Fly to focused provider ──
+  useEffect(() => {
+    if (!focusedProviderId || !mapRef.current || !mapReady || !providerPins) return;
+    const pin = providerPins.find(p => p.id === focusedProviderId);
+    if (pin) {
+      flyToWithOffset(pin.lat, pin.lng, 17, pinY === 50);
+    }
+  }, [focusedProviderId, mapReady]);
 
   // ── Render destination pin marker ───────────────────────────────────
   useEffect(() => {
