@@ -346,9 +346,14 @@ function Step2Content() {
   };
 
   const handleProviderClick = (id: string) => {
-    const provider = providers.find(p => p.id === id);
-    if (provider) {
-      handleSelect(provider);
+    setFocusedId(id);
+    const cardElement = document.getElementById(`provider-card-${id}`);
+    if (cardElement) {
+      cardElement.scrollIntoView({
+        behavior: 'smooth',
+        block: 'nearest',
+        inline: 'center'
+      });
     }
   };
 
@@ -630,7 +635,7 @@ function Step2Content() {
               </div>
             ) : (
               providers.map(provider => (
-                <div key={provider.id} className="provider-card-wrapper">
+                <div key={provider.id} id={`provider-card-${provider.id}`} className="provider-card-wrapper">
                   <ProviderCard
                     provider={provider}
                     clientLat={clientLat}
@@ -747,8 +752,8 @@ function ProviderCard({
               {provider.name}
             </div>
             {provider.isLive && provider.current_lat && (
-              <div style={{ 
-                background: '#F0FDF4', color: '#16A34A', fontSize: 9, fontWeight: 950, 
+              <div style={{
+                background: '#F0FDF4', color: '#16A34A', fontSize: 9, fontWeight: 950,
                 padding: '2px 6px', borderRadius: 4, display: 'flex', alignItems: 'center', gap: 3,
                 border: '1px solid #DCFCE7'
               }}>
