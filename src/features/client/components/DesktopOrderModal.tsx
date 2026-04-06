@@ -182,20 +182,66 @@ export const DesktopOrderModal: React.FC<DesktopOrderModalProps> = ({
                   setCurrentAddress(point.address);
                 }}
               />
-              {/* Address Overlay */}
-              <div className="absolute top-6 left-6 right-6 z-10 bg-white p-4 rounded-2xl shadow-xl border border-neutral-100 flex items-center gap-4">
-                 <div className="w-10 h-10 rounded-full bg-[#FFF9E5] flex items-center justify-center text-[#FFCC02]">
-                    <MapPin size={20} />
-                 </div>
-                 <div className="flex-1 min-w-0">
-                    <div className="text-sm font-bold text-neutral-400 uppercase tracking-wider">{t({ en: 'Service Address', fr: 'Adresse du service' })}</div>
-                    <div className="text-md font-bold text-black truncate">{currentAddress || t({ en: 'Locating...', fr: 'Localisation...' })}</div>
-                 </div>
-                 <button 
-                  onClick={handleConfirmLocation}
-                  className="bg-[#FFCC02] text-white px-6 py-3 rounded-xl font-bold hover:shadow-lg transition-all"
+
+              {/* Centered Pin & Floating Address Card (Pic 2 style) */}
+              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-full mb-10 z-[1000] pointer-events-none flex flex-col items-center">
+                 {/* Floating Address Label */}
+                 <motion.div 
+                   initial={{ opacity: 0, y: 10 }}
+                   animate={{ opacity: 1, y: 0 }}
+                   className="bg-white px-5 py-3 rounded-[24px] shadow-2xl border border-black/5 flex items-center gap-3 min-w-[280px] mb-4"
                  >
-                    {t({ en: 'Confirm', fr: 'Confirmer' })}
+                    <div className="w-10 h-10 rounded-full bg-[#E7F9F0] text-[#01A083] flex items-center justify-center shrink-0">
+                       <MapPin size={22} />
+                    </div>
+                    <div className="min-w-0">
+                       <div className="text-[14px] font-black text-black leading-tight truncate">{currentAddress || t({ en: 'Locating...', fr: 'Localisation...' })}</div>
+                       <div className="text-[11px] font-bold text-[#01A083] uppercase tracking-wider">{t({ en: 'Use this point', fr: 'Utiliser ce point' })}</div>
+                    </div>
+                 </motion.div>
+                 
+                 {/* Pin Image */}
+                 <div className="relative">
+                    <img 
+                      src="/Images/Vectors Illu/MapPin.png" 
+                      alt="Pin"
+                      className="w-14 h-14 object-contain"
+                      onError={(e) => {
+                         // Fallback if image not found
+                         (e.target as any).src = 'https://cdn-icons-png.flaticon.com/512/2776/2776067.png';
+                      }}
+                    />
+                    <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-2 h-2 bg-black/20 rounded-full blur-sm" />
+                 </div>
+              </div>
+
+              {/* GPS Button */}
+              <div className="absolute bottom-[160px] right-6 z-10">
+                 <button 
+                  className="w-14 h-14 bg-white rounded-full shadow-2xl flex items-center justify-center text-black hover:scale-110 active:scale-95 transition-all border border-neutral-100"
+                  onClick={() => {
+                     if (navigator.geolocation) {
+                        navigator.geolocation.getCurrentPosition((pos) => {
+                           setCurrentLat(pos.coords.latitude);
+                           setCurrentLng(pos.coords.longitude);
+                        });
+                     }
+                  }}
+                 >
+                    <Navigation size={24} className="fill-current" />
+                 </button>
+              </div>
+
+              {/* Bottom Action Footer */}
+              <div className="absolute bottom-0 left-0 right-0 bg-white p-8 border-t border-neutral-100 z-10 flex flex-col items-center gap-3">
+                 <button 
+                   onClick={handleConfirmLocation}
+                   className="w-full max-w-[500px] py-5 bg-[#01A083] text-white rounded-[24px] font-black text-xl hover:shadow-xl active:scale-[0.98] transition-all"
+                 >
+                    {t({ en: 'Confirm This Location', fr: 'Confirmer cet emplacement' })}
+                 </button>
+                 <button className="text-[#01A083] font-extrabold text-[15px] hover:underline transition-all">
+                    {t({ en: 'Set Another address', fr: 'Indiquer une autre adresse' })}
                  </button>
               </div>
             </div>
