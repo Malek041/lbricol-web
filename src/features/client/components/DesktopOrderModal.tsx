@@ -374,20 +374,20 @@ export const DesktopOrderModal: React.FC<DesktopOrderModalProps> = ({
 
                         {/* Location Display */}
                         <div className="p-6 bg-[#F8F9FA] rounded-[32px] flex items-center gap-4">
-                           <div className="w-12 h-12 rounded-full bg-[#FFCC02]/10 text-[#FFCC02] flex items-center justify-center">
+                           <div className="w-12 h-12 rounded-full bg-[#01A083]/10 text-[#01A083] flex items-center justify-center">
                               <MapPin size={24} />
                            </div>
                            <div className="flex-1 min-w-0">
                               <p className="text-[10px] font-black text-neutral-400 uppercase tracking-widest mb-0.5">{t({ en: 'Service Location', fr: 'Lieu du service' })}</p>
                               <p className="text-black font-extrabold truncate text-lg">{order.location?.address}</p>
                            </div>
-                           <button onClick={() => setStep('location')} className="text-[#FFCC02] font-black text-sm uppercase tracking-widest">{t({ en: 'Edit', fr: 'Modifier' })}</button>
+                           <button onClick={() => setStep('location')} className="text-[#01A083] font-black text-sm uppercase tracking-widest">{t({ en: 'Edit', fr: 'Modifier' })}</button>
                         </div>
 
                         {/* Date & Time */}
                         <div className="space-y-6">
                            <h3 className="text-xl font-black text-black flex items-center gap-3">
-                              <Calendar className="text-[#FFCC02]" /> {t({ en: 'When do you need it?', fr: 'Quand en avez-vous besoin ?' })}
+                              <Calendar className="text-[#01A083]" /> {t({ en: 'When do you need it?', fr: 'Quand en avez-vous besoin ?' })}
                            </h3>
                            <div className="grid grid-cols-2 gap-4">
                               <div className="p-5 rounded-[24px] bg-neutral-50 border border-neutral-100 flex flex-col gap-1">
@@ -416,7 +416,7 @@ export const DesktopOrderModal: React.FC<DesktopOrderModalProps> = ({
                         {/* Service Specifics */}
                         <div className="space-y-6">
                            <h3 className="text-xl font-black text-black flex items-center gap-3">
-                              <Sparkles className="text-[#FFCC02]" /> {t({ en: 'Service Details', fr: 'Détails du service' })}
+                              <Sparkles className="text-[#01A083]" /> {t({ en: 'Service Details', fr: 'Détails du service' })}
                            </h3>
 
                            {serviceId === 'cleaning' && (
@@ -562,7 +562,7 @@ export const DesktopOrderModal: React.FC<DesktopOrderModalProps> = ({
                         alert('Order broadcasted! (Integration with firebase call coming next)');
                         onClose();
                      }}
-                     className="mt-10 w-full py-6 bg-black text-white rounded-[28px] font-black text-2xl hover:shadow-2xl transition-all relative overflow-hidden group"
+                     className="mt-10 w-full py-6 bg-black text-white rounded-[48px] font-black text-2xl hover:shadow-2xl transition-all relative overflow-hidden group"
                   >
                      <span className="relative z-10">{t({ en: 'Broadcast Order', fr: 'Diffuser la demande' })}</span>
                      <div className="absolute inset-0 bg-[#FFCC02] translate-y-full group-hover:translate-y-0 transition-transform duration-500" />
