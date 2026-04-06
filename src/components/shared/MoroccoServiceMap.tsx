@@ -88,40 +88,13 @@ export const MoroccoServiceMap: React.FC<MoroccoServiceMapProps> = ({ className 
         <section
             className={`hidden md:block ${className ?? ''}`}
             style={{ 
-                padding: '160px 0 100px', 
+                padding: '60px 0 100px', 
                 backgroundColor: '#E3F1EF',
                 position: 'relative',
                 overflow: 'hidden' 
             }}
             dir="ltr"
         >
-            {/* Curved Top Border */}
-            <div style={{
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                width: '100%',
-                height: '100px',
-                overflow: 'hidden',
-                lineHeight: 0
-            }}>
-                <svg
-                    viewBox="0 0 1440 120"
-                    preserveAspectRatio="none"
-                    style={{
-                        position: 'relative',
-                        display: 'block',
-                        width: 'calc(100% + 1.3px)',
-                        height: '100px',
-                        transform: 'rotate(180deg)'
-                    }}
-                >
-                    <path
-                        d="M0,0 C480,100 960,100 1440,0 L1440,120 L0,120 Z"
-                        fill="#FFFFFF"
-                    />
-                </svg>
-            </div>
             <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '0 24px', textAlign: 'center' }}>
                 {/* Heading */}
                 <div style={{ marginBottom: '60px' }}>

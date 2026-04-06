@@ -107,6 +107,7 @@ import { useToast } from '@/context/ToastContext';
 import MillionsImpactSection from '@/components/shared/MillionsImpactSection';
 import { DesktopOrderModal } from '@/features/client/components/DesktopOrderModal';
 import ServicesHeroSection from '@/components/shared/ServicesHeroSection';
+import OpportunitySection from '@/components/shared/OpportunitySection';
 import { auth, db, storage } from '@/lib/firebase';
 import {
   onAuthStateChanged,
@@ -2965,6 +2966,7 @@ const Home = () => {
                 />
 
                 <MillionsImpactSection />
+                <OpportunitySection />
                 <MoroccoServiceMap />
 
                 {false && (
