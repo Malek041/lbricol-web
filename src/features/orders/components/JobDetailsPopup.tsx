@@ -63,6 +63,7 @@ export interface JobDetails {
     dropoffAddress?: string;
     details?: any;
     city?: string;
+    locationDetails?: any;
     providerAddress?: string;
     estimatedDuration?: number;
     fee?: number;
@@ -240,9 +241,12 @@ const JobDetailsPopup: React.FC<JobDetailsPopupProps> = ({ job, onClose, onAccep
                                     <div className="flex items-center gap-4">
                                         <div className="w-14 h-14 rounded-2xl bg-white border border-neutral-100 p-0.5 relative">
                                             <img
-                                                src={job.clientAvatar || "/Images/Vectors Illu/Avatar.png"}
+                                                src={(job.clientAvatar && job.clientAvatar.length > 5) ? job.clientAvatar : "/Images/Vectors Illu/Avatar.png"}
                                                 className="w-full h-full object-cover rounded-[14px]"
                                                 alt="Client"
+                                                onError={(e) => {
+                                                    (e.target as HTMLImageElement).src = "/Images/Vectors Illu/Avatar.png";
+                                                }}
                                             />
                                             <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-[#01A083] rounded-full border-2 border-white flex items-center justify-center">
                                                 <Star size={10} className="text-white fill-white" />
@@ -283,12 +287,13 @@ const JobDetailsPopup: React.FC<JobDetailsPopupProps> = ({ job, onClose, onAccep
                                     </div>
                                     <button
                                         onClick={() => {
-                                            const lat = (job as any).locationDetails?.lat || (typeof job.location === 'object' ? (job.location as any).lat : null);
-                                            const lng = (job as any).locationDetails?.lng || (typeof job.location === 'object' ? (job.location as any).lng : null);
+                                            const loc = job.locationDetails || (typeof job.location === 'object' ? job.location : null);
+                                            const lat = loc?.lat;
+                                            const lng = loc?.lng;
                                             if (lat && lng) {
                                                 window.open(`https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`, '_blank');
                                             } else {
-                                                alert(t({ en: "Coordinates not available.", fr: "Coordonnées non disponibles.", ar: "الإحداثيات غير متوفرة." }));
+                                                alert(t({ en: "Coordinates not available for navigation.", fr: "Coordonnées de navigation non disponibles.", ar: "الإحداثيات غير متوفرة." }));
                                             }
                                         }}
                                         className="w-full py-4 rounded-[20px] bg-black text-white font-black text-[15px] flex items-center justify-center gap-3 active:scale-95 transition-all"
@@ -402,9 +407,15 @@ const JobDetailsPopup: React.FC<JobDetailsPopupProps> = ({ job, onClose, onAccep
                                             {t({ en: 'Visual Notes', fr: 'Notes Visuelles', ar: 'صور مساعدة' })}
                                         </h3>
                                         <div className="grid grid-cols-2 gap-3 pb-8">
-                                            {allPhotos.map((url, i) => (
+                                            {allPhotos.filter(u => typeof u === 'string' && u.startsWith('http')).map((url, i) => (
                                                 <div key={i} className="aspect-[4/3] bg-neutral-100 rounded-[24px] overflow-hidden border border-neutral-100/50 group relative">
-                                                    <img src={url} className="w-full h-full object-cover transition-transform group-hover:scale-105" />
+                                                    <img 
+                                                        src={url} 
+                                                        className="w-full h-full object-cover transition-transform group-hover:scale-105" 
+                                                        onError={(e) => {
+                                                            (e.target as HTMLImageElement).parentElement?.style.setProperty('display', 'none');
+                                                        }}
+                                                    />
                                                 </div>
                                             ))}
                                         </div>
