@@ -876,9 +876,12 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
                                         <div className="bg-[#F9FAFB] rounded-[32px] p-4 sm:p-6 border border-neutral-100 flex flex-wrap items-center gap-4 sm:gap-6">
                                             <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-[24px] bg-white flex-shrink-0 overflow-hidden relative border-2 border-white">
                                                 <img
-                                                    src={selectedOrder.bricolerAvatar || "/Images/Vectors Illu/Avatar.png"}
+                                                    src={(selectedOrder.bricolerAvatar && selectedOrder.bricolerAvatar.length > 5) ? selectedOrder.bricolerAvatar : "/Images/Vectors Illu/Avatar.png"}
                                                     className="w-full h-full object-cover"
                                                     alt="Pro"
+                                                    onError={(e) => {
+                                                        (e.target as HTMLImageElement).src = "/Images/Vectors Illu/Avatar.png";
+                                                    }}
                                                 />
                                                 <div className="absolute bottom-1 right-1 w-5 h-5 bg-[#01A083] rounded-full border-2 border-white flex items-center justify-center">
                                                     <Check size={10} className="text-white" />
@@ -1155,12 +1158,20 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
                                         {t({ en: 'Attached Photos', fr: 'Photos Jointes', ar: 'الصور المرفقة' })} <span className="text-2xl">📸</span>
                                     </h3>
                                     <div className="grid grid-cols-2 gap-4">
-                                        {(selectedOrder.details?.serviceDetails?.photoUrls || (selectedOrder as any)?.images || [])?.map((url: string, i: number) => (
-                                            <div key={i} className="aspect-square bg-neutral-100 rounded-[12px] overflow-hidden border border-neutral-100/50 group relative">
-                                                <img src={url} className="w-full h-full object-cover transition-transform group-hover:scale-105" />
-                                                <div className="absolute inset-0 bg-black/5 opacity-0 group-hover:opacity-100 transition-opacity" />
-                                            </div>
-                                        ))}
+                                        {(selectedOrder.details?.serviceDetails?.photoUrls || (selectedOrder as any)?.images || (selectedOrder.details as any)?.photos || [])
+                                            .filter((u: any) => typeof u === 'string' && u.startsWith('http'))
+                                            .map((url: string, i: number) => (
+                                                <div key={i} className="aspect-square bg-neutral-100 rounded-[12px] overflow-hidden border border-neutral-100/50 group relative">
+                                                    <img 
+                                                        src={url} 
+                                                        className="w-full h-full object-cover transition-transform group-hover:scale-105" 
+                                                        onError={(e) => {
+                                                            (e.target as HTMLImageElement).parentElement?.style.setProperty('display', 'none');
+                                                        }}
+                                                    />
+                                                    <div className="absolute inset-0 bg-black/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                                                </div>
+                                            ))}
                                     </div>
                                 </section>
 
