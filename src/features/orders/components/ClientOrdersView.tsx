@@ -835,30 +835,30 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
 
                             <div className="px-6">
                                 {/* Hero Image & Title Section */}
-                                <div className="text-center mt-8 mb-10">
-                                    <motion.div
-                                        initial={{ scale: 0.8, opacity: 0 }}
-                                        animate={{ scale: 1, opacity: 1 }}
-                                        className="flex justify-center mb-6"
-                                    >
-                                        <img
-                                            src={selectedOrder.service === 'car_rental' ?
-                                                (selectedOrder.selectedCar?.modelImage || selectedOrder.selectedCar?.image || "/Images/Vectors Illu/carKey.png") :
-                                                getServiceVector(selectedOrder.service || '')
-                                            }
-                                            className="w-40 h-40 object-contain"
-                                            alt="Service"
-                                        />
-                                    </motion.div>
-                                    <h2 className="text-[28px] font-medium text-black mb-2 tracking-tight">
-                                        {t({ en: 'Order Details', fr: 'Détails de la mission', ar: 'تفاصيل المهمة' })}
-                                    </h2>
-                                    <div className="text-[17px] font-medium text-neutral-500 flex items-center justify-center gap-2">
-                                        <span>{selectedOrder.date ? format(parseISO(selectedOrder.date), 'MMMM d, yyyy') : ''}</span>
-                                        <span>•</span>
-                                        <span>{selectedOrder.time || '09:00'}</span>
+                                    <div className="text-center mt-8 mb-10">
+                                        <motion.div
+                                            initial={{ scale: 0.8, opacity: 0 }}
+                                            animate={{ scale: 1, opacity: 1 }}
+                                            className="flex justify-center mb-6"
+                                        >
+                                            <img
+                                                src={selectedOrder.service === 'car_rental' ?
+                                                    (selectedOrder.selectedCar?.modelImage || selectedOrder.selectedCar?.image || "/Images/Vectors Illu/carKey.png") :
+                                                    getServiceVector(selectedOrder.service || '')
+                                                }
+                                                className="w-40 h-40 object-contain"
+                                                alt="Service"
+                                            />
+                                        </motion.div>
+                                        <h2 className="text-[28px] font-black text-black leading-tight tracking-tight px-4">
+                                            {selectedOrder.subServiceDisplayName || (selectedOrder as any).title || selectedOrder.serviceName || selectedOrder.service}
+                                        </h2>
+                                        <div className="text-[17px] font-medium text-neutral-500 flex items-center justify-center gap-2 mt-2">
+                                            <span>{selectedOrder.date ? format(parseISO(selectedOrder.date), 'MMMM d, yyyy') : ''}</span>
+                                            <span>•</span>
+                                            <span>{selectedOrder.time || '09:00'}</span>
+                                        </div>
                                     </div>
-                                </div>
 
                                 {/* Decorative Separator */}
                                 <div className="mx-[-24px] mb-8 relative h-5 overflow-hidden">
@@ -951,7 +951,7 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
                                     <h3 className="text-[25px] font-medium text-black mb-6">
                                         Setup Summary <span className="text-2xl">📋</span>
                                     </h3>
-                                    <div className=" bg-[#F9FAFB]rounded-[20px] p-4 space-y-6">
+                                    <div className="bg-[#F9FAFB] rounded-[20px] p-6 space-y-6">
                                         {(() => {
                                             const subId = (selectedOrder.subService || (selectedOrder as any).subServiceId || (selectedOrder as any).serviceType || selectedOrder.service || 'car_rental');
                                             const details = selectedOrder.details?.serviceDetails || selectedOrder.details || {};
@@ -984,13 +984,23 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
                                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #e4e4e4ff', paddingBottom: 16 }}>
                                                         <span style={{ fontSize: 17, fontWeight: 350, color: '#6B7280' }}>{t({ en: 'Type', fr: 'Type', ar: 'النوع' })}</span>
                                                         <span style={{ fontSize: 17, fontWeight: 350, color: '#111827', textAlign: 'right' }}>
-                                                            {(() => {
-                                                                 const { SERVICES_CATALOGUE, getSubServiceName } = require("@/config/services_config");
-                                                                 const catalogService = SERVICES_CATALOGUE.find((s: any) => s.id === selectedOrder.service);
-                                                                 const catalogSub = catalogService?.subServices.find((ss: any) => ss.id === subId);
-                                                                 if (catalogSub) return t({ en: catalogSub.en, fr: catalogSub.fr, ar: catalogSub.ar || catalogSub.en });
-                                                                 const subName = getSubServiceName(selectedOrder.service, subId);
-                                                                 return subName ? t({ en: subName, fr: subName, ar: subName }) : (selectedOrder.serviceName || selectedOrder.service);                                                            })()}
+                                                             {(() => {
+                                                                 try {
+                                                                     const { SERVICES_CATALOGUE, getSubServiceName } = require("@/config/services_config");
+                                                                     const catalogService = SERVICES_CATALOGUE.find((s: any) => s.id === (selectedOrder.serviceId || selectedOrder.service));
+                                                                     const catalogSub = catalogService?.subServices?.find((ss: any) => ss.id === subId);
+                                                                     
+                                                                     if (selectedOrder.subServiceDisplayName && selectedOrder.subServiceDisplayName !== selectedOrder.serviceId) {
+                                                                         return selectedOrder.subServiceDisplayName;
+                                                                     }
+                                                                     
+                                                                     if (catalogSub) return t({ en: catalogSub.en, fr: catalogSub.fr, ar: catalogSub.ar || catalogSub.en });
+                                                                     const subName = getSubServiceName(selectedOrder.service, subId);
+                                                                     return subName ? t({ en: subName, fr: subName, ar: subName }) : (selectedOrder.serviceName || selectedOrder.service);
+                                                                 } catch (e) {
+                                                                     return selectedOrder.subServiceDisplayName || selectedOrder.serviceName || selectedOrder.service;
+                                                                 }
+                                                             })()}
                                                         </span>
                                                     </div>
 
@@ -1140,19 +1150,31 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
                                     </div>
                                 </section>
 
-                                {/* Description Card */}
-                                {selectedOrder.details?.note && (
-                                    <section className="mb-10">
-                                        <h3 className="text-[25px] font-medium text-black mb-6">
-                                            Description <span className="text-2xl">📝</span>
-                                        </h3>
-                                        <div className="bg-[#F9FAFB] rounded-[32px] p-8 border border-neutral-100">
-                                            <p className="text-[16px] font-medium text-neutral-600 leading-relaxed italic">
-                                                "{selectedOrder.details.note}"
-                                            </p>
-                                        </div>
-                                    </section>
-                                )}
+                                {(() => {
+                                    const raw = (selectedOrder as any)?.raw || {};
+                                    const details = selectedOrder.details || {};
+                                    const note = 
+                                        raw.notes || 
+                                        details.note || 
+                                        details.serviceDetails?.note || 
+                                        (selectedOrder as any).description ||
+                                        (selectedOrder as any).notes;
+                                    
+                                    if (!note) return null;
+
+                                    return (
+                                        <section className="mb-10">
+                                            <h3 className="text-[25px] font-medium text-black mb-6">
+                                                {t({ en: 'Instructions', fr: 'Instructions', ar: 'تعليمات' })} <span className="text-2xl">📝</span>
+                                            </h3>
+                                            <div className="bg-[#F9FAFB] rounded-[32px] p-8 border border-neutral-100">
+                                                <p className="text-[16px] font-medium text-neutral-600 leading-relaxed italic">
+                                                    "{note}"
+                                                </p>
+                                            </div>
+                                        </section>
+                                    );
+                                })()}
 
                                 {/* Attached Photos */}
                                 <section className="mb-10">
@@ -1160,9 +1182,38 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
                                         {t({ en: 'Attached Photos', fr: 'Photos Jointes', ar: 'الصور المرفقة' })} <span className="text-2xl">📸</span>
                                     </h3>
                                     <div className="grid grid-cols-2 gap-4">
-                                        {(selectedOrder.details?.serviceDetails?.photoUrls || (selectedOrder as any)?.images || (selectedOrder.details as any)?.photos || [])
-                                            .filter((u: any) => typeof u === 'string' && u.startsWith('http'))
-                                            .map((url: string, i: number) => (
+                                        {(() => {
+                                            const photosSet = new Set<string>();
+                                            // Collect all possible photo sources
+                                            const sources = [
+                                                selectedOrder.details?.serviceDetails?.photoUrls,
+                                                (selectedOrder as any)?.images,
+                                                (selectedOrder.details as any)?.photos,
+                                                (selectedOrder as any)?.raw?.serviceDetails?.photoUrls,
+                                                (selectedOrder as any)?.raw?.images
+                                            ];
+
+                                            sources.forEach(source => {
+                                                if (Array.isArray(source)) {
+                                                    source.forEach(item => {
+                                                        if (typeof item === 'string' && item.startsWith('http')) {
+                                                            photosSet.add(item);
+                                                        }
+                                                    });
+                                                }
+                                            });
+
+                                            const allPhotos = Array.from(photosSet);
+                                            
+                                            if (allPhotos.length === 0) {
+                                                return (
+                                                    <div className="col-span-2 py-8 text-center bg-neutral-50 rounded-3xl border border-dashed border-neutral-200">
+                                                        <span className="text-neutral-400 font-medium">{t({ en: 'No photos provided', fr: 'Aucune photo fournie', ar: 'لا توجد صور' })}</span>
+                                                    </div>
+                                                );
+                                            }
+
+                                            return allPhotos.map((url, i) => (
                                                 <div key={i} className="aspect-square bg-neutral-100 rounded-[12px] overflow-hidden border border-neutral-100/50 group relative">
                                                     <img 
                                                         src={url} 
@@ -1173,7 +1224,8 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
                                                     />
                                                     <div className="absolute inset-0 bg-black/5 opacity-0 group-hover:opacity-100 transition-opacity" />
                                                 </div>
-                                            ))}
+                                            ));
+                                        })()}
                                     </div>
                                 </section>
 

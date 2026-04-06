@@ -372,14 +372,20 @@ export default function ProviderPage() {
             status: isMarket ? (raw.offers?.some((o: any) => o.bricolerId === user?.uid) ? 'waiting' : 'new') : (['done', 'delivered'].includes(raw.status) ? raw.status as MobileJobsStatus : 'programmed'),
             statusLabel: isMarket ? (raw.offers?.some((o: any) => o.bricolerId === user?.uid) ? t({ en: 'Waiting Client', fr: 'En attente du client', ar: 'في انتظار العميل' }) : t({ en: 'New Mission', fr: 'Nouvelle mission', ar: 'مهمة جديدة' })) : (['done', 'delivered'].includes(raw.status) ? t({ en: 'Completed', fr: 'Terminé', ar: 'مكتمل' }) : t({ en: 'Scheduled', fr: 'Programmé', ar: 'مبرمج' })),
             clientName: raw.clientName || 'Client',
-            clientAvatar: raw.clientAvatar,
+            clientAvatar: raw.clientAvatar || (raw.raw || raw).clientPhoto || (raw.raw || raw).clientAvatar || "/Images/Vectors Illu/Avatar.png",
             city: isMarket ? raw.city : (raw.city || raw.location || ''),
             service: isMarket ? (raw.craft || raw.serviceId || 'general') : (raw.service || ''),
-            subService: isMarket ? (raw.subService || raw.subServiceId || raw.serviceType || '') : (raw.subService || raw.subServiceId || raw.serviceType || raw.subServiceDisplayName || ''),
-            subServiceDisplayName: raw.subServiceDisplayName || raw.title || raw.service || '',
+            subService: isMarket ? (raw.subService || raw.subServiceId || raw.serviceType || '') : (raw.subServiceId || raw.subService || raw.serviceType || ''),
+            subServiceDisplayName: raw.subServiceDisplayName || (raw.raw || raw).subServiceDisplayName || raw.title || (raw.service === 'cleaning' ? 'Cleaning' : (raw.serviceName || raw.service || '')),
             dateLabel: dateInfo.dateLabel,
             timeLabel: dateInfo.timeLabel,
-            description: isMarket ? (raw.description || raw.comment || (raw.details as any)?.note || '') : (raw.description || raw.comment || (raw.details as any)?.note || ''),
+            description: 
+                raw.description || 
+                (raw.raw || raw).notes || 
+                (raw.details as any)?.note || 
+                (raw.details as any)?.serviceDetails?.note || 
+                raw.comment || 
+                '',
             clientRating: isMarket ? (raw.clientRating || raw.rating || 5.0) : (raw.clientRating || raw.rating || 5.0),
             clientReviewCount: isMarket ? (raw.clientReviewCount || 0) : (raw.clientReviewCount || 0),
             priceLabel: isMarket

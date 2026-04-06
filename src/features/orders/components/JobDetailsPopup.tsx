@@ -171,13 +171,15 @@ const JobDetailsPopup: React.FC<JobDetailsPopupProps> = ({ job, onClose, onAccep
                                             {job.status}
                                         </div>
                                         <div className="flex flex-col">
-                                        <div className="px-3 py-1 w-fit bg-[#01A083]/10 border border-[#01A083]/20 text-[#01A083] text-[10px] font-black uppercase rounded-full tracking-wider mb-1">
-                                            {serviceCategoryName}
+                                            {serviceCategoryName.toLowerCase() !== subServiceName.toLowerCase() && (
+                                                <div className="px-3 py-1 w-fit bg-[#01A083]/10 border border-[#01A083]/20 text-[#01A083] text-[10px] font-black uppercase rounded-full tracking-wider mb-1">
+                                                    {serviceCategoryName}
+                                                </div>
+                                            )}
+                                            <h2 className="text-[32px] font-black text-black leading-[1.1]">
+                                                {subServiceName || t({ en: 'General Support', fr: 'Support Général', ar: 'دعم عام' })}
+                                            </h2>
                                         </div>
-                                        <h2 className="text-[32px] font-black text-black leading-[1.1]">
-                                            {subServiceName || t({ en: 'General Support', fr: 'Support Général', ar: 'دعم عام' })}
-                                        </h2>
-                                    </div>
                                     </div>
                                     <div className="flex items-center gap-4">
                                         <div className="flex items-center gap-2 text-neutral-500">

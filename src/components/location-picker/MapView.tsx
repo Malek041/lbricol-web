@@ -121,21 +121,20 @@ const MapView: React.FC<MapViewProps> = ({
     const map = mapRef.current;
 
     // Safety check for Leaflet initialization
-    // Leaflet requires setView to be called once before flyTo or getZoom
     if (!(map as any)._loaded) {
       map.setView([lat, lng], zoom || targetZoom);
       return;
     }
 
-    // If zoom is not provided, use current map zoom to prevent resets
-    const effectiveZoom = zoom !== undefined ? zoom : map.getZoom();
+    // Get the MOST current zoom to prevent resetting to targetZoom (e.g. 17) during interaction
+    const currentZoom = map.getZoom();
+    const effectiveZoom = zoom !== undefined ? zoom : currentZoom;
 
     if (skipOffset) {
       map.flyTo([lat, lng], effectiveZoom, { duration: 1.5 });
     } else {
       const mapSize = map.getSize();
       if (mapSize.x === 0 || mapSize.y === 0) {
-        // Fallback to basic flyTo if size is not yet detected
         map.flyTo([lat, lng], effectiveZoom, { duration: 1.5 });
       } else {
         const centerPoint = L.point(mapSize.x / 2, mapSize.y / 2);
@@ -154,7 +153,7 @@ const MapView: React.FC<MapViewProps> = ({
       if (mapRef.current && mapRef.current.getContainer()) {
         mapRef.current.invalidateSize();
       }
-    }, 450); // Slightly longer to allow fly animation start
+    }, 450);
   };
 
   const reverseGeocode = async (lat: number, lng: number) => {

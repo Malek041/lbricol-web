@@ -41,7 +41,7 @@ const ServiceCard = ({ id, title, description, image, onOrder }: ServiceCardProp
       whileHover={{ y: -10 }}
       style={{
         flex: '0 0 450px',
-        height: '300px',
+        height: '450px',
         backgroundColor: brandYellow,
         borderRadius: '40px',
         overflow: 'hidden',
@@ -54,7 +54,7 @@ const ServiceCard = ({ id, title, description, image, onOrder }: ServiceCardProp
       onClick={() => onOrder(id)}
     >
       {/* Top Image Section */}
-      <div style={{ height: '40%', width: '100%', backgroundColor: '#fff', position: 'relative', overflow: 'hidden' }}>
+      <div style={{ height: '60%', width: '100%', backgroundColor: '#fff', position: 'relative', overflow: 'hidden' }}>
         <img
           src={imgSrc}
           alt={title}
@@ -199,9 +199,10 @@ const ServicesHeroSection = ({ availableServiceIds, onSelectService }: ServicesH
   return (
     <section className="desktop-only-hero" style={{
       backgroundColor: '#FFB700',
-      padding: '40px 0 0px 0',
+      padding: '40px 0 100px 0',
       overflow: 'hidden',
-      display: 'none'
+      display: 'none',
+      position: 'relative'
     }}>
       <style jsx>{`
         @media (min-width: 969px) {
@@ -226,7 +227,9 @@ const ServicesHeroSection = ({ availableServiceIds, onSelectService }: ServicesH
         padding: '0 40px',
         display: 'flex',
         justifyContent: 'space-between',
-        alignItems: 'center'
+        alignItems: 'center',
+        position: 'relative',
+        zIndex: 2
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <img src="/Images/map Assets/LocationPin.png" alt="Logo" style={{ height: '32px' }} />
@@ -251,9 +254,11 @@ const ServicesHeroSection = ({ availableServiceIds, onSelectService }: ServicesH
         style={{
           display: 'flex',
           overflowX: 'auto',
-          padding: '60px 40px 60px 40px',
+          padding: '60px 40px 80px 40px',
           scrollSnapType: 'x mandatory',
-          scrollBehavior: 'smooth'
+          scrollBehavior: 'smooth',
+          position: 'relative',
+          zIndex: 2
         }}
       >
         {services.map((service) => (
@@ -276,6 +281,32 @@ const ServicesHeroSection = ({ availableServiceIds, onSelectService }: ServicesH
             onOrder={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
           />
         )}
+      </div>
+
+      {/* Hero Bottom Curve */}
+      <div style={{
+        position: 'absolute',
+        bottom: -1,
+        left: 0,
+        width: '100%',
+        lineHeight: 0,
+        zIndex: 1,
+        pointerEvents: 'none'
+      }}>
+        <svg
+          viewBox="0 0 1440 120"
+          preserveAspectRatio="none"
+          style={{
+            width: '100%',
+            height: '120px', // Increased height for more pronounced curve
+            display: 'block'
+          }}
+        >
+          <path
+            d="M0,0 C480,100 960,100 1440,0 L1440,120 L0,120 Z"
+            fill="#ffffff"
+          />
+        </svg>
       </div>
     </section>
   );
