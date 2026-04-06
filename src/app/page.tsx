@@ -3279,7 +3279,7 @@ const Home = () => {
 
 
                 {/* Info Section */}
-                <section style={{ padding: '6rem 0', backgroundColor: c.bg }}>
+                <section style={{ padding: '6rem 0', backgroundColor: '#E3F1EF' }}>
                   <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '0 1.5rem' }}>
                     <h2 style={{
                       fontSize: isMobile ? '1.75rem' : '2.5rem',
