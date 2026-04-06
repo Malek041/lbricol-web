@@ -75,7 +75,7 @@ const EggyServiceIcon = ({ id, title, image, onOrder }: { id: string; title: str
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            padding: '24px',
+            padding: '12px', // Reduced padding so image is bigger
             zIndex: 1,
             boxShadow: '0 8px 20px rgba(0,0,0,0.05)',
             borderRadius: staticEggyBorder
