@@ -110,7 +110,8 @@ const JobDetailsPopup: React.FC<JobDetailsPopupProps> = ({ job, onClose, onAccep
     const subServiceName = catalogSub ? t({ en: catalogSub.en, fr: catalogSub.fr, ar: catalogSub.ar || catalogSub.en }) :
         (() => {
             const n = getSubServiceName(job.service, subId);
-            return n ? t({ en: n, fr: n, ar: n }) : (job.serviceName || job.service);
+            if (n) return t({ en: n, fr: n, ar: n });
+            return (job as any).subServiceDisplayName || job.serviceName || job.service;
         })();
 
     // --- STRATEGIC PRICING DATA EXTRACTION ---

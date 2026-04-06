@@ -374,8 +374,9 @@ export default function ProviderPage() {
             clientName: raw.clientName || 'Client',
             clientAvatar: raw.clientAvatar,
             city: isMarket ? raw.city : (raw.city || raw.location || ''),
-            service: isMarket ? raw.title : (raw.service || ''),
-            subService: isMarket ? (raw.subService || '') : (raw.subServiceDisplayName || ''),
+            service: isMarket ? (raw.craft || raw.serviceId || 'general') : (raw.service || ''),
+            subService: isMarket ? (raw.subService || raw.subServiceId || raw.serviceType || '') : (raw.subService || raw.subServiceId || raw.serviceType || raw.subServiceDisplayName || ''),
+            subServiceDisplayName: raw.subServiceDisplayName || raw.title || raw.service || '',
             dateLabel: dateInfo.dateLabel,
             timeLabel: dateInfo.timeLabel,
             description: isMarket ? (raw.description || raw.comment || (raw.details as any)?.note || '') : (raw.description || raw.comment || (raw.details as any)?.note || ''),
@@ -2118,6 +2119,8 @@ const DetailItem = ({ icon: Icon, label, value, subValue, highlight }: {
             dropoffAddress: raw.dropoffAddress,
             details: raw.details,
             city: job.city || raw.city || raw.area,
+            subService: job.subService || raw.subService || raw.subServiceId || raw.serviceType || '',
+            subServiceDisplayName: job.subServiceDisplayName || raw.subServiceDisplayName || '',
         } as any;
 
         return (

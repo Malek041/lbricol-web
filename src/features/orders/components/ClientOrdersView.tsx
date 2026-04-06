@@ -985,10 +985,12 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
                                                         <span style={{ fontSize: 17, fontWeight: 350, color: '#6B7280' }}>{t({ en: 'Type', fr: 'Type', ar: 'النوع' })}</span>
                                                         <span style={{ fontSize: 17, fontWeight: 350, color: '#111827', textAlign: 'right' }}>
                                                             {(() => {
-                                                                const { getSubServiceName } = require('@/config/services_config');
-                                                                const subName = getSubServiceName(selectedOrder.service, subId);
-                                                                return subName ? t({ en: subName, fr: subName, ar: subName }) : (selectedOrder.serviceName || selectedOrder.service);
-                                                            })()}
+                                                                 const { SERVICES_CATALOGUE, getSubServiceName } = require("@/config/services_config");
+                                                                 const catalogService = SERVICES_CATALOGUE.find((s: any) => s.id === selectedOrder.service);
+                                                                 const catalogSub = catalogService?.subServices.find((ss: any) => ss.id === subId);
+                                                                 if (catalogSub) return t({ en: catalogSub.en, fr: catalogSub.fr, ar: catalogSub.ar || catalogSub.en });
+                                                                 const subName = getSubServiceName(selectedOrder.service, subId);
+                                                                 return subName ? t({ en: subName, fr: subName, ar: subName }) : (selectedOrder.serviceName || selectedOrder.service);                                                            })()}
                                                         </span>
                                                     </div>
 

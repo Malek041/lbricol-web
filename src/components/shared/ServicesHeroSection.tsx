@@ -41,9 +41,9 @@ const ServiceCard = ({ id, title, description, image, onOrder }: ServiceCardProp
       whileHover={{ y: -10 }}
       style={{
         flex: '0 0 450px',
-        height: '450px',
+        height: '300px',
         backgroundColor: brandYellow,
-        borderRadius: '20px',
+        borderRadius: '40px',
         overflow: 'hidden',
         display: 'flex',
         flexDirection: 'column',
@@ -54,7 +54,7 @@ const ServiceCard = ({ id, title, description, image, onOrder }: ServiceCardProp
       onClick={() => onOrder(id)}
     >
       {/* Top Image Section */}
-      <div style={{ height: '60%', width: '100%', backgroundColor: '#fff', position: 'relative', overflow: 'hidden' }}>
+      <div style={{ height: '40%', width: '100%', backgroundColor: '#fff', position: 'relative', overflow: 'hidden' }}>
         <img
           src={imgSrc}
           alt={title}
@@ -96,18 +96,17 @@ const ServiceCard = ({ id, title, description, image, onOrder }: ServiceCardProp
           <h3 style={{
             fontSize: '48px',
             fontWeight: 900,
-            color: '#fff',
+            color: '#000000ff',
             margin: 0,
             letterSpacing: '-2px',
             fontFamily: 'Uber Move, var(--font-sans)',
-            textTransform: 'uppercase'
           }}>
             {title}
           </h3>
           <p style={{
             fontSize: '14px',
             fontWeight: 500,
-            color: '#fff',
+            color: '#000000ff',
             maxWidth: '280px',
             lineHeight: '1.2',
             margin: 0,
@@ -122,7 +121,7 @@ const ServiceCard = ({ id, title, description, image, onOrder }: ServiceCardProp
           position: 'absolute',
           right: '24px',
           bottom: '24px',
-          backgroundColor: '#000',
+          backgroundColor: '#01A083',
           color: '#fff',
           padding: '10px 24px',
           borderRadius: '24px',
@@ -178,10 +177,10 @@ const ServicesHeroSection = ({ availableServiceIds, onSelectService }: ServicesH
       image: '/Images/Desktop hero section images/petsCare.webp'
     },
     {
-       id: 'cleaning',
-       title: t({ en: 'Cleaning', fr: 'Ménage', ar: 'تنظيف' }),
-       description: 'You can Order professional home cleaning and housekeeping services.',
-       image: '/Images/Job Cards Images/cleaning_bg_card.webp'
+      id: 'cleaning',
+      title: t({ en: 'Cleaning', fr: 'Ménage', ar: 'تنظيف' }),
+      description: 'You can Order professional home cleaning and housekeeping services.',
+      image: '/Images/clientHomeHeroSection/Cleaning.png'
     },
     {
       id: 'handyman',
@@ -191,7 +190,7 @@ const ServicesHeroSection = ({ availableServiceIds, onSelectService }: ServicesH
     }
   ];
 
-  const services = availableServiceIds 
+  const services = availableServiceIds
     ? allServices.filter(s => availableServiceIds.includes(s.id))
     : allServices;
 
@@ -199,7 +198,7 @@ const ServicesHeroSection = ({ availableServiceIds, onSelectService }: ServicesH
 
   return (
     <section className="desktop-only-hero" style={{
-      backgroundColor: '#fff',
+      backgroundColor: '#FFB700',
       padding: '40px 0 0px 0',
       overflow: 'hidden',
       display: 'none'
@@ -230,19 +229,18 @@ const ServicesHeroSection = ({ availableServiceIds, onSelectService }: ServicesH
         alignItems: 'center'
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <img src="/Images/App Icons/transparent_logo.png" alt="Logo" style={{ height: '32px' }} />
-          <span style={{ fontSize: '24px', fontWeight: 900, color: '#000' }}>Lbricol</span>
+          <img src="/Images/map Assets/LocationPin.png" alt="Logo" style={{ height: '32px' }} />
+          <span style={{ fontSize: '24px', fontWeight: 700, color: '#037B3E' }}>Lbricol</span>
         </div>
         <button style={{
-          backgroundColor: '#FFCC02',
-          color: '#fff',
-          padding: '12px 24px',
+          backgroundColor: '#037B3E',
+          color: '#FFF',
+          padding: '6px 20px',
           borderRadius: '24px',
           border: 'none',
           fontSize: '14px',
-          fontWeight: 700,
+          fontWeight: 900,
           cursor: 'pointer',
-          boxShadow: '0 4px 14px rgba(255, 204, 2, 0.4)'
         }}>
           Become a Bricoler
         </button>
@@ -270,13 +268,13 @@ const ServicesHeroSection = ({ availableServiceIds, onSelectService }: ServicesH
         ))}
 
         {allServices.length > services.length && (
-           <ServiceCard
-             id="more"
-             title={t({ en: 'And More', fr: 'Et Plus', ar: 'والمزيد' })}
-             description="Discover all our other specialized services available in other locations."
-             image="/Images/Desktop hero section images/andMore.webp"
-             onOrder={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-           />
+          <ServiceCard
+            id="more"
+            title={t({ en: 'And More', fr: 'Et Plus', ar: 'والمزيد' })}
+            description="Discover all our other specialized services available in other locations."
+            image="/Images/Desktop hero section images/andMore.webp"
+            onOrder={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+          />
         )}
       </div>
     </section>
