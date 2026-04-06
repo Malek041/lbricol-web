@@ -108,6 +108,7 @@ const MapView: React.FC<MapViewProps> = ({
   const destinationPinMarkerRef = useRef<L.Marker | null>(null);
   const [address, setAddress] = useState<string>('Loading address...');
   const [mapReady, setMapReady] = useState(false);
+  const [currentZoom, setCurrentZoom] = useState(requestedZoom || 17);
   const [internalUserPos, setInternalUserPos] = useState<{ lat: number, lng: number } | null>(null);
 
   const targetZoom = requestedZoom || 17;
@@ -282,6 +283,11 @@ const MapView: React.FC<MapViewProps> = ({
     map.on('dragend', () => { onInteractionEnd?.(); });
     map.on('touchstart', () => { onInteractionStart?.(); });
     map.on('touchend', () => { onInteractionEnd?.(); });
+    map.on('zoomend', () => {
+      if (mapRef.current) {
+        setCurrentZoom(mapRef.current.getZoom());
+      }
+    });
 
     map.on('moveend', () => {
       if (!interactive) return;
@@ -495,19 +501,22 @@ const MapView: React.FC<MapViewProps> = ({
 
     if (!providerPins || providerPins.length === 0) return;
 
+    const zoomScale = Math.max(0.6, Math.min(2.5, Math.pow(1.15, currentZoom - 17)));
+
     providerPins.forEach(pin => {
       const isFocused = pin.id === focusedProviderId;
       const hasFocus = !!focusedProviderId;
       const opacity = hasFocus && !isFocused ? 0.6 : 1;
-      const scale = hasFocus && !isFocused ? 0.8 : (isFocused ? 1.15 : 1);
-      const size = isFocused ? 62 : 44;
+      const baseScale = hasFocus && !isFocused ? 0.8 : (isFocused ? 1.15 : 1);
+      const scale = baseScale * zoomScale;
+      const size = (isFocused ? 62 : 44) * zoomScale;
 
       const bounceStyle = "";
 
       const icon = L.divIcon({
         className: '',
         html: `
-          <div style="display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:160px;cursor:pointer;opacity:${opacity};transform:scale(${scale});transform-origin:bottom center;transition:all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);">
+          <div style="display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:${160 * zoomScale}px;cursor:pointer;opacity:${opacity};transform:scale(${scale});transform-origin:bottom center;transition:all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);">
             <div style="${bounceStyle} display:flex;flex-direction:column;align-items:center;">
               ${isFocused ? (() => {
             const b = (pin.badge || '').toUpperCase();
@@ -565,8 +574,8 @@ const MapView: React.FC<MapViewProps> = ({
             </div>
           </div>
         `,
-        iconSize: [120, 160],
-        iconAnchor: [60, 160],
+        iconSize: [120 * zoomScale, 160 * zoomScale],
+        iconAnchor: [60 * zoomScale, 160 * zoomScale],
       });
 
       const marker = L.marker([pin.lat, pin.lng], { icon, zIndexOffset: isFocused ? 2000 : 0 })
@@ -580,7 +589,7 @@ const MapView: React.FC<MapViewProps> = ({
     });
 
     // Removed fitBounds from here to prevent zoom resets on focus changes
-  }, [providerPins, mapReady, focusedProviderId, serviceIconUrl, onProviderClick]);
+  }, [providerPins, mapReady, focusedProviderId, serviceIconUrl, onProviderClick, currentZoom]);
 
   // ── Fixed client pin marker for Step 2 (moves with map, always over GPS dot) ──
   useEffect(() => {

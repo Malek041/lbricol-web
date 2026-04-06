@@ -743,7 +743,7 @@ function ProviderCard({
         {/* Center/Main Info Stack */}
         <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 4, overflow: 'hidden' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <div style={{ fontSize: 15, fontWeight: 500, color: '#111827', lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            <div style={{ fontSize: 15, fontWeight: 500, color: '#111827', lineHeight: 1.2 }}>
               {provider.name}
             </div>
             {provider.isLive && provider.current_lat && (
@@ -755,6 +755,13 @@ function ProviderCard({
                 <div style={{ width: 4, height: 4, background: '#16A34A', borderRadius: '50%' }} />
               </div>
             )}
+          </div>
+
+          <div style={{ fontSize: 12, fontWeight: 500, color: '#111827', display: 'flex', alignItems: 'center', gap: 4 }}>
+            MAD {displayRate} <span style={{ color: '#9CA3AF', fontWeight: 500, fontSize: 10 }}>(min)</span>
+            <div style={{ width: 14, height: 14, background: '#027963', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <CheckCircle2 size={8} color="#fff" strokeWidth={4} />
+            </div>
           </div>
 
           <span style={{
@@ -778,14 +785,7 @@ function ProviderCard({
 
         {/* Right side Stack (Price & Availability) */}
         <div style={{ textAlign: 'right', flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', justifyContent: 'space-between', minHeight: 75 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-            <div style={{ fontSize: 12, fontWeight: 500, color: '#111827', display: 'flex', alignItems: 'center', gap: 4 }}>
-              MAD {displayRate} <span style={{ color: '#9CA3AF', fontWeight: 500, fontSize: 10 }}>(min)</span>
-              <div style={{ width: 14, height: 14, background: '#027963', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <CheckCircle2 size={8} color="#fff" strokeWidth={4} />
-              </div>
-            </div>
-          </div>
+          <div style={{ height: 20 }}></div>
 
           {available && (
             <span style={{
