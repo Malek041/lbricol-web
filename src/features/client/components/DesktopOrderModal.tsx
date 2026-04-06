@@ -135,28 +135,24 @@ export const DesktopOrderModal: React.FC<DesktopOrderModalProps> = ({
               </p>
             </div>
 
-            <div className="grid grid-cols-1 gap-4">
+            <div className="grid grid-cols-2 gap-4">
               {filteredSubServices.map((sub) => (
                 <button
                   key={sub.id}
                   onClick={() => handleSelectSubService(sub)}
-                  className="w-full flex items-center justify-between p-6 rounded-[24px] border-2 border-neutral-100 hover:border-[#FFCC02] hover:bg-[#FFF9E5] transition-all group text-left"
+                  className="w-full flex flex-col items-start p-6 rounded-[32px] border-2 border-neutral-100 hover:border-[#FFCC02] hover:bg-[#FFF9E5] transition-all group text-left"
                 >
-                  <div className="flex items-center gap-5">
-                    <div className="w-14 h-14 rounded-2xl flex items-center justify-center bg-[#FFF9E5] group-hover:bg-white transition-colors">
-                       <img src={serviceIcon} alt="" className="w-10 h-10 object-contain" />
-                    </div>
-                    <div>
-                      <div className="font-bold text-xl text-black">
-                        {t({ en: sub.name, fr: sub.desc?.fr || sub.name })}
-                      </div>
-                      <div className="text-sm font-semibold text-neutral-400 mt-1">
-                         {t({ en: sub.pricingArchetype === 'hourly' ? 'Hourly rate' : 'Fixed price', fr: sub.pricingArchetype === 'hourly' ? 'Taux horaire' : 'Prix fixe' })}
-                      </div>
-                    </div>
+                  <div className="w-16 h-16 rounded-[20px] flex items-center justify-center bg-[#FFF9E5] group-hover:bg-white transition-colors mb-4">
+                     <img src={serviceIcon} alt="" className="w-10 h-10 object-contain" />
                   </div>
-                  <div className="w-10 h-10 rounded-full bg-neutral-50 flex items-center justify-center group-hover:bg-[#FFCC02] group-hover:text-white transition-all">
-                    <ChevronRight size={24} />
+                  <div>
+                    <div className="font-bold text-xl text-black leading-tight">
+                      {t({ en: sub.name, fr: sub.desc?.fr || sub.name })}
+                    </div>
+                    <div className="text-sm font-semibold text-neutral-400 mt-2 flex items-center gap-2">
+                       <span className="w-2 h-2 rounded-full bg-[#01A083]" />
+                       {t({ en: sub.pricingArchetype === 'hourly' ? 'Hourly' : 'Fixed Price', fr: sub.pricingArchetype === 'hourly' ? 'Taux horaire' : 'Prix fixe' })}
+                    </div>
                   </div>
                 </button>
               ))}
@@ -208,109 +204,137 @@ export const DesktopOrderModal: React.FC<DesktopOrderModalProps> = ({
 
       case 'setup':
         return (
-          <div className="flex-1 p-10 overflow-y-auto no-scrollbar">
-            <button onClick={() => setStep('location')} className="flex items-center gap-2 text-neutral-400 font-bold mb-6 hover:text-black transition-colors">
-               <ChevronLeft size={20} /> {t({ en: 'Back', fr: 'Retour' })}
-            </button>
-            
-            <h2 className="text-3xl font-black text-black mb-8 tracking-tight">
-              {t({ en: 'Final Details', fr: 'Détails Finals' })}
-            </h2>
-
-            <div className="space-y-8">
-               {/* Time Selection Mockup */}
-               <div className="grid grid-cols-2 gap-6">
-                  <div className="space-y-3">
-                     <label className="text-sm font-black text-neutral-400 uppercase tracking-widest flex items-center gap-2">
-                        <Calendar size={16} /> {t({ en: 'Date', fr: 'Date' })}
-                     </label>
-                     <div className="p-4 rounded-2xl bg-neutral-50 border border-neutral-100 font-bold text-black flex items-center justify-between">
-                        {scheduledDate ? format(scheduledDate, 'MMMM dd, yyyy') : t({ en: 'Choose a date', fr: 'Choisir une date' })}
-                        <ChevronRight size={20} className="text-neutral-300" />
-                     </div>
-                  </div>
-                  <div className="space-y-3">
-                     <label className="text-sm font-black text-neutral-400 uppercase tracking-widest flex items-center gap-2">
-                        <Clock size={16} /> {t({ en: 'Start Time', fr: 'Heure de début' })}
-                     </label>
-                     <select 
-                      value={scheduledTime}
-                      onChange={(e) => setScheduledTime(e.target.value)}
-                      className="w-full p-4 rounded-2xl bg-neutral-50 border border-neutral-100 font-bold text-black outline-none appearance-none cursor-pointer"
-                     >
-                        {['08:00','09:00','10:00','11:00','12:00','13:00','14:00','15:00','16:00','17:00','18:00'].map(t => (
-                           <option key={t} value={t}>{t}</option>
-                        ))}
-                     </select>
-                  </div>
-               </div>
-
-               {/* Errands Specific */}
-               {serviceId === 'errands' && (
-                 <div className="space-y-6">
-                    <div className="space-y-3">
-                       <label className="text-sm font-black text-neutral-400 uppercase tracking-widest">{t({ en: 'What are we delivering?', fr: 'Que livrons-nous ?' })}</label>
-                       <div className="flex gap-3 flex-wrap">
-                          {['package', 'grocery', 'pharmacy', 'food', 'documents'].map(cat => (
-                            <button 
-                             key={cat}
-                             onClick={() => setErrandCategory(cat)}
-                             className={`px-6 py-3 rounded-full font-bold transition-all border-2 ${errandCategory === cat ? 'bg-black text-white border-black' : 'bg-white text-neutral-400 border-neutral-100'}`}
-                            >
-                               {cat.charAt(0).toUpperCase() + cat.slice(1)}
-                            </button>
-                          ))}
-                       </div>
-                    </div>
-                    <div className="space-y-3">
-                       <label className="text-sm font-black text-neutral-400 uppercase tracking-widest">{t({ en: 'Item Description', fr: 'Description de l\'objet' })}</label>
-                       <input 
-                         value={itemDescription}
-                         onChange={(e) => setItemDescription(e.target.value)}
-                         placeholder={t({ en: 'e.g. Blue bag from Zara', fr: 'ex: Sac bleu de chez Zara' })}
-                         className="w-full p-4 rounded-2xl bg-neutral-50 border border-neutral-100 font-bold text-black outline-none focus:border-[#FFCC02]"
-                       />
-                    </div>
+          <div className="flex-1 flex flex-col h-full bg-white">
+            <div className="p-8 border-b border-neutral-100 flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                 <button onClick={() => setStep('location')} className="w-10 h-10 rounded-full bg-neutral-50 flex items-center justify-center text-neutral-400 hover:text-black transition-all">
+                    <ChevronLeft size={20} />
+                 </button>
+                 <div>
+                    <h2 className="text-2xl font-black text-black tracking-tight">{t({ en: 'Order Setup', fr: 'Configuration' })}</h2>
+                    <p className="text-sm font-bold text-neutral-400">{order.subServiceName}</p>
                  </div>
-               )}
+              </div>
+            </div>
 
-               {/* Cleaning Specific */}
-               {serviceId === 'cleaning' && (
-                 <div className="space-y-3">
-                    <label className="text-sm font-black text-neutral-400 uppercase tracking-widest">{t({ en: 'Number of Rooms', fr: 'Nombre de pièces' })}</label>
-                    <div className="flex gap-3">
-                       {[1, 2, 3, 4, 5, 6].map(n => (
-                         <button 
-                          key={n}
-                          onClick={() => setRooms(n)}
-                          className={`w-12 h-12 rounded-xl font-bold transition-all ${rooms === n ? 'bg-[#FFCC02] text-white' : 'bg-neutral-50 text-black hover:bg-neutral-100'}`}
+            <div className="flex-1 overflow-y-auto p-10 no-scrollbar">
+              <div className="max-w-[700px] mx-auto space-y-12 pb-10">
+                
+                {/* Location Display */}
+                <div className="p-6 bg-[#F8F9FA] rounded-[32px] flex items-center gap-4">
+                   <div className="w-12 h-12 rounded-full bg-[#FFCC02]/10 text-[#FFCC02] flex items-center justify-center">
+                      <MapPin size={24} />
+                   </div>
+                   <div className="flex-1 min-w-0">
+                      <p className="text-[10px] font-black text-neutral-400 uppercase tracking-widest mb-0.5">{t({ en: 'Service Location', fr: 'Lieu du service' })}</p>
+                      <p className="text-black font-extrabold truncate text-lg">{order.location?.address}</p>
+                   </div>
+                   <button onClick={() => setStep('location')} className="text-[#FFCC02] font-black text-sm uppercase tracking-widest">{t({ en: 'Edit', fr: 'Modifier' })}</button>
+                </div>
+
+                {/* Date & Time */}
+                <div className="space-y-6">
+                   <h3 className="text-xl font-black text-black flex items-center gap-3">
+                      <Calendar className="text-[#FFCC02]" /> {t({ en: 'When do you need it?', fr: 'Quand en avez-vous besoin ?' })}
+                   </h3>
+                   <div className="grid grid-cols-2 gap-4">
+                      <div className="p-5 rounded-[24px] bg-neutral-50 border border-neutral-100 flex flex-col gap-1">
+                         <span className="text-[10px] font-black text-neutral-400 uppercase">{t({ en: 'Select Date', fr: 'Date' })}</span>
+                         <input 
+                            type="date" 
+                            className="bg-transparent font-bold text-black outline-none w-full"
+                            onChange={(e) => setScheduledDate(new Date(e.target.value))}
+                         />
+                      </div>
+                      <div className="p-5 rounded-[24px] bg-neutral-50 border border-neutral-100 flex flex-col gap-1">
+                         <span className="text-[10px] font-black text-neutral-400 uppercase">{t({ en: 'Start Time', fr: 'Heure' })}</span>
+                         <select 
+                            value={scheduledTime}
+                            onChange={(e) => setScheduledTime(e.target.value)}
+                            className="bg-transparent font-bold text-black outline-none w-full appearance-none cursor-pointer"
                          >
-                            {n}
-                         </button>
-                       ))}
-                    </div>
-                 </div>
-               )}
+                            {['08:00','09:00','10:00','11:00','12:00','13:00','14:00','15:00','16:00','17:00','18:00'].map(t => (
+                               <option key={t} value={t}>{t}</option>
+                            ))}
+                         </select>
+                      </div>
+                   </div>
+                </div>
 
-               <div className="space-y-3">
-                  <label className="text-sm font-black text-neutral-400 uppercase tracking-widest flex items-center gap-2">
-                    <FileText size={16} /> {t({ en: 'Additional Instructions', fr: 'Instructions supplémentaires' })}
-                  </label>
-                  <textarea 
-                    value={note}
-                    onChange={(e) => setNote(e.target.value)}
-                    placeholder={t({ en: 'Access codes, entrance details, or special requests...', fr: 'Codes d\'accès, détails de l\'entrée, ou demandes spéciales...' })}
-                    className="w-full h-32 p-4 rounded-2xl bg-neutral-50 border border-neutral-100 font-medium text-black outline-none focus:border-[#FFCC02] transition-colors resize-none"
-                  />
-               </div>
+                {/* Service Specifics */}
+                <div className="space-y-6">
+                   <h3 className="text-xl font-black text-black flex items-center gap-3">
+                      <Sparkles className="text-[#FFCC02]" /> {t({ en: 'Service Details', fr: 'Détails du service' })}
+                   </h3>
+                   
+                   {serviceId === 'cleaning' && (
+                     <div className="p-6 rounded-[32px] border-2 border-neutral-100 space-y-4">
+                        <label className="text-sm font-black text-black uppercase tracking-widest">{t({ en: 'Number of Rooms', fr: 'Nombre de pièces' })}</label>
+                        <div className="flex gap-2">
+                           {[1, 2, 3, 4, 5, 6].map(n => (
+                             <button 
+                              key={n}
+                              onClick={() => setRooms(n)}
+                              className={`w-12 h-12 rounded-xl font-black transition-all ${rooms === n ? 'bg-[#FFCC02] text-white shadow-lg' : 'bg-neutral-50 text-black hover:bg-neutral-100'}`}
+                             >
+                                {n}
+                             </button>
+                           ))}
+                        </div>
+                     </div>
+                   )}
 
-               <button 
-                onClick={handleConfirmSetup}
-                className="w-full py-5 bg-[#FFCC02] text-white rounded-[24px] font-black text-xl hover:shadow-2xl hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-3"
-               >
-                 {t({ en: 'Review Order', fr: 'Vérifier la commande' })}
-                 <ArrowRight size={24} />
-               </button>
+                   {serviceId === 'errands' && (
+                     <div className="space-y-4">
+                        <div className="p-6 rounded-[32px] border-2 border-neutral-100 space-y-4">
+                            <label className="text-sm font-black text-black uppercase tracking-widest">{t({ en: 'Category', fr: 'Catégorie' })}</label>
+                            <div className="flex gap-2 flex-wrap">
+                               {['package', 'grocery', 'pharmacy', 'food', 'keys'].map(cat => (
+                                 <button 
+                                  key={cat}
+                                  onClick={() => setErrandCategory(cat)}
+                                  className={`px-5 py-2.5 rounded-full font-bold text-sm transition-all border-2 ${errandCategory === cat ? 'bg-black text-white border-black shadow-lg' : 'bg-white text-neutral-400 border-neutral-100'}`}
+                                 >
+                                    {cat.charAt(0).toUpperCase() + cat.slice(1)}
+                                 </button>
+                               ))}
+                            </div>
+                        </div>
+                        <div className="p-6 rounded-[32px] border-2 border-neutral-100 space-y-2">
+                           <label className="text-sm font-black text-black uppercase tracking-widest">{t({ en: 'What are we delivering?', fr: 'Que livrons-nous ?' })}</label>
+                           <input 
+                              value={itemDescription}
+                              onChange={(e) => setItemDescription(e.target.value)}
+                              placeholder="ex: Apple Store package"
+                              className="w-full bg-transparent font-bold text-lg text-black outline-none placeholder:text-neutral-300"
+                           />
+                        </div>
+                     </div>
+                   )}
+
+                   <div className="p-6 rounded-[32px] border-2 border-neutral-100 space-y-2">
+                      <label className="text-sm font-black text-black uppercase tracking-widest flex items-center gap-2">
+                         <FileText size={16} /> {t({ en: 'Instructions', fr: 'Instructions' })}
+                      </label>
+                      <textarea 
+                        value={note}
+                        onChange={(e) => setNote(e.target.value)}
+                        placeholder="Access codes, specialized tools needed..."
+                        className="w-full h-24 bg-transparent font-medium text-black outline-none placeholder:text-neutral-300 resize-none"
+                      />
+                   </div>
+                </div>
+
+                <motion.button 
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={handleConfirmSetup}
+                  className="w-full py-6 bg-[#FFCC02] text-white rounded-[32px] font-black text-2xl hover:shadow-2xl transition-all flex items-center justify-center gap-3"
+                >
+                  {t({ en: 'View Summary', fr: 'Voir le résumé' })}
+                  <ArrowRight size={28} />
+                </motion.button>
+              </div>
             </div>
           </div>
         );

@@ -12,20 +12,17 @@ interface ServiceCardProps {
   onOrder: (id: string) => void;
 }
 
-const ServiceCard = ({ id, title, description, image, onOrder }: ServiceCardProps) => {
-  const brandYellow = '#FFCC02';
+const EggyServiceIcon = ({ id, title, image, onOrder }: { id: string; title: string; image: string; onOrder: (id: string) => void }) => {
   const [imgSrc, setImgSrc] = React.useState(image);
   const [fallbackIndex, setFallbackIndex] = React.useState(0);
-
-  // Extract the filename from the initial path
   const filename = image.split('/').pop();
-
+  
   const fallbacks = [
     `/Images/Desktop hero section images/${filename}`,
     `/Images/clientHomeHeroSection/${filename}`,
-    `/Images/Service Category vectors/${filename?.replace(/\.[^/.]+$/, "")}.webp`, // Try webp in vectors
-    `/Images/Service Category vectors/${filename?.replace(/\.[^/.]+$/, "")}.png`,  // Try png in vectors
-    image // Original as last resort
+    `/Images/Service Category vectors/${filename?.replace(/\.[^/.]+$/, "")}.webp`,
+    `/Images/Service Category vectors/${filename?.replace(/\.[^/.]+$/, "")}.png`,
+    image
   ];
 
   const handleImgError = () => {
@@ -38,23 +35,45 @@ const ServiceCard = ({ id, title, description, image, onOrder }: ServiceCardProp
 
   return (
     <motion.div
-      whileHover={{ y: -10 }}
+      whileHover={{ scale: 1.1, rotate: 2 }}
+      whileTap={{ scale: 0.95 }}
       style={{
-        flex: '0 0 450px',
-        height: '450px',
-        backgroundColor: brandYellow,
-        borderRadius: '40px',
-        overflow: 'hidden',
+        flex: '0 0 200px',
         display: 'flex',
         flexDirection: 'column',
+        alignItems: 'center',
+        gap: '20px',
         cursor: 'pointer',
-        marginRight: '20px',
-        position: 'relative'
+        marginRight: '40px',
+        textAlign: 'center'
       }}
       onClick={() => onOrder(id)}
     >
-      {/* Top Image Section */}
-      <div style={{ height: '60%', width: '100%', backgroundColor: '#fff', position: 'relative', overflow: 'hidden' }}>
+      <motion.div
+        animate={{
+          borderRadius: [
+            '60% 40% 30% 70% / 60% 30% 70% 40%',
+            '30% 60% 70% 40% / 50% 60% 30% 60%',
+            '60% 40% 30% 70% / 60% 30% 70% 40%'
+          ],
+          rotate: [-5, 5, -5]
+        }}
+        transition={{
+          duration: 6,
+          repeat: Infinity,
+          ease: "easeInOut"
+        }}
+        style={{
+          width: '180px',
+          height: '180px',
+          backgroundColor: '#FFFFFF',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          boxShadow: '0 20px 40px rgba(0,0,0,0.05)',
+          padding: '35px'
+        }}
+      >
         <img
           src={imgSrc}
           alt={title}
@@ -62,77 +81,20 @@ const ServiceCard = ({ id, title, description, image, onOrder }: ServiceCardProp
           style={{
             width: '100%',
             height: '100%',
-            objectFit: 'cover'
+            objectFit: 'contain'
           }}
         />
-      </div>
-
-      {/* Bottom Yellow Section with Waved Edge */}
-      <div style={{
-        height: '40%',
-        padding: '24px',
-        backgroundColor: brandYellow,
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'space-between',
-        position: 'relative'
+      </motion.div>
+      <h3 style={{
+        fontSize: '22px',
+        fontWeight: 900,
+        color: '#037B3E',
+        margin: 0,
+        letterSpacing: '-0.02em',
+        fontFamily: 'Uber Move, var(--font-sans)',
       }}>
-        {/* SVG Wave at the top of the yellow section */}
-        <div style={{
-          position: 'absolute',
-          top: '-45px',
-          left: 0,
-          right: 0,
-          height: '50px',
-          overflow: 'hidden',
-          zIndex: 1
-        }}>
-          <svg viewBox="0 0 500 50" preserveAspectRatio="none" style={{ width: '100%', height: '100%' }}>
-            <path d="M0,50 Q250,5 500,50 L500,50 L0,50 Z" fill={brandYellow} />
-          </svg>
-        </div>
-
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', position: 'relative', zIndex: 2 }}>
-          <h3 style={{
-            fontSize: '48px',
-            fontWeight: 900,
-            color: '#000000ff',
-            margin: 0,
-            letterSpacing: '-2px',
-            fontFamily: 'Uber Move, var(--font-sans)',
-          }}>
-            {title}
-          </h3>
-          <p style={{
-            fontSize: '14px',
-            fontWeight: 500,
-            color: '#000000ff',
-            maxWidth: '280px',
-            lineHeight: '1.2',
-            margin: 0,
-            opacity: 0.95
-          }}>
-            {description}
-          </p>
-        </div>
-
-        {/* Order Button */}
-        <div style={{
-          position: 'absolute',
-          right: '24px',
-          bottom: '24px',
-          backgroundColor: '#01A083',
-          color: '#fff',
-          padding: '10px 24px',
-          borderRadius: '24px',
-          fontSize: '13px',
-          fontWeight: 800,
-          textTransform: 'none',
-          zIndex: 2
-        }}>
-          Order
-        </div>
-      </div>
+        {title}
+      </h3>
     </motion.div>
   );
 };
@@ -262,21 +224,19 @@ const ServicesHeroSection = ({ availableServiceIds, onSelectService }: ServicesH
         }}
       >
         {services.map((service) => (
-          <ServiceCard
+          <EggyServiceIcon
             key={service.id}
             id={service.id}
             title={service.title}
-            description={service.description}
             image={service.image}
             onOrder={(id) => onSelectService?.(id)}
           />
         ))}
 
         {allServices.length > services.length && (
-          <ServiceCard
+          <EggyServiceIcon
             id="more"
             title={t({ en: 'And More', fr: 'Et Plus', ar: 'والمزيد' })}
-            description="Discover all our other specialized services available in other locations."
             image="/Images/Desktop hero section images/andMore.webp"
             onOrder={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
           />

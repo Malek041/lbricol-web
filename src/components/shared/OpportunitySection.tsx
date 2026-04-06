@@ -27,7 +27,7 @@ const OpportunitySection = () => {
                 fr: "Gérez votre emploi du temps et travaillez quand vous voulez. Vous êtes le seul maître.",
                 ar: "أدر جدولك الزمني واعمل وقتما تشاء. أنت المسؤول بالكامل."
             }),
-            img: "/Users/xProject/.gemini/antigravity/brain/9d27a721-944b-4e8c-9f5a-8e84c67c10e0/bricoler_opportunity_1_1775504636713.png",
+            img: "/Images/Vectors Illu/OrdersHistory.png",
             eggColor: "#B6DED8"
         },
         {
@@ -37,7 +37,7 @@ const OpportunitySection = () => {
                 fr: "Des revenus compétitifs versés pour chaque mission accomplie. Paiements rapides.",
                 ar: "احصل على أجر تنافسي مقابل كل مهمة تكملها. دفعات سريعة وموثوقة."
             }),
-            img: "/Users/xProject/.gemini/antigravity/brain/9d27a721-944b-4e8c-9f5a-8e84c67c10e0/bricoler_opportunity_2_1775504673345.png",
+            img: "/Images/clientHomeHeroSection/money.png",
             eggColor: "#A3D1C9"
         },
         {
@@ -47,7 +47,7 @@ const OpportunitySection = () => {
                 fr: "Rejoignez la plateforme n°1 au Maroc et accédez à des milliers de clients chaque jour.",
                 ar: "انضم إلى المنصة رقم 1 في المغرب واحصل على وصول فوري لآلاف العملاء يوميًا."
             }),
-            img: "/Users/xProject/.gemini/antigravity/brain/9d27a721-944b-4e8c-9f5a-8e84c67c10e0/bricoler_opportunity_3_1775504730345.png",
+            img: "/Images/Vectors Illu/tourGuide.png",
             eggColor: "#8FC4BB"
         }
     ];
@@ -106,9 +106,9 @@ const OpportunitySection = () => {
                     transition={{ duration: 0.6 }}
                     style={{ marginBottom: '80px' }}
                 >
-                     {/* Handshake Icon Placeholder */}
-                     <div style={{ 
-                        margin: '0 auto 24px', 
+                    {/* Handshake Icon Placeholder */}
+                    <div style={{
+                        margin: '0 auto 24px',
                         fontSize: '3rem',
                         display: 'flex',
                         justifyContent: 'center'
@@ -209,13 +209,12 @@ const OpportunitySection = () => {
                                     style={{
                                         backgroundColor: c.accent,
                                         color: 'white',
-                                        padding: '12px 32px',
+                                        padding: '6px 22px',
                                         borderRadius: '100px',
                                         border: 'none',
                                         fontWeight: 900,
                                         fontSize: '15px',
                                         cursor: 'pointer',
-                                        boxShadow: '0 8px 20px rgba(1, 160, 131, 0.2)'
                                     }}
                                 >
                                     {t({ en: "Sign up", fr: "Inscription", ar: "سجل الآن" })}
