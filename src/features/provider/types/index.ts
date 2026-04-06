@@ -72,6 +72,8 @@ export interface MobileJobsViewItem {
     service: string;
     subService: string;
     subServiceDisplayName?: string;
+    serviceDisplayName?: string;
+    title?: string;
     dateLabel: string;
     timeLabel: string;
     priceLabel: string;

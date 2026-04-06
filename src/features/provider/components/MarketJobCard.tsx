@@ -28,7 +28,7 @@ export const NewJobCard = ({ job, onClick, onChat }: NewJobCardProps) => {
             </div>
             <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between mb-0.5">
-                    <h4 className="text-[17px] font-black text-neutral-900 truncate tracking-tight">{job.service}</h4>
+                    <h4 className="text-[17px] font-black text-neutral-900 truncate tracking-tight">{job.subServiceDisplayName || job.service}</h4>
                     <span className="text-[15px] font-black text-[#01A083] uppercase">{t({ en: 'MAD', fr: 'MAD' })} {job.priceLabel}</span>
                 </div>
                 <div className="flex items-center gap-2 text-neutral-400 text-[12px] font-bold">
@@ -98,7 +98,7 @@ export const JobCard = ({ job, isWaiting, isSubmitting, onAccept, onCounter, for
                     </div>
 
                     <h3 className="text-[17px] font-medium text-black leading-tight truncate">
-                        {job.title || job.craft || (job as any).service || job.serviceId}
+                        {job.subServiceDisplayName || job.title || job.craft || (job as any).service || job.serviceId}
                     </h3>
                     <div className="mt-2 text-[14px] font-medium text-black leading-tight">
                         <div className="flex flex-wrap items-center gap-2 mt-1">

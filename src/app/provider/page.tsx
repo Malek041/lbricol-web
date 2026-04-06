@@ -376,7 +376,31 @@ export default function ProviderPage() {
             city: isMarket ? raw.city : (raw.city || raw.location || ''),
             service: isMarket ? (raw.craft || raw.serviceId || 'general') : (raw.service || ''),
             subService: isMarket ? (raw.subService || raw.subServiceId || raw.serviceType || '') : (raw.subServiceId || raw.subService || raw.serviceType || ''),
-            subServiceDisplayName: raw.subServiceDisplayName || (raw.raw || raw).subServiceDisplayName || raw.title || (raw.service === 'cleaning' ? 'Cleaning' : (raw.serviceName || raw.service || '')),
+            subServiceDisplayName: (() => {
+                const subId = isMarket ? (raw.subService || raw.subServiceId || raw.serviceType || '') : (raw.subServiceId || raw.subService || raw.serviceType || '');
+                const sId = isMarket ? (raw.craft || raw.serviceId || 'general') : (raw.service || '');
+                
+                try {
+                    const { SERVICES_CATALOGUE } = require("@/config/services_catalogue");
+                    const cat = SERVICES_CATALOGUE.find((c: any) => c.id === sId);
+                    const sub = cat?.subServices?.find((ss: any) => ss.id === subId);
+                    if (sub) return t({ en: sub.en, fr: sub.fr, ar: sub.ar || sub.en });
+                } catch (e) {
+                    console.warn("Catalog lookup failed in toMobileItem", e);
+                }
+
+                return raw.subServiceDisplayName || (raw.raw || raw).subServiceDisplayName || raw.title || (raw.service === 'cleaning' ? 'Cleaning' : (raw.serviceName || raw.service || ''));
+            })(),
+            serviceDisplayName: (() => {
+                const sId = isMarket ? (raw.craft || raw.serviceId || 'general') : (raw.service || '');
+                try {
+                    const { SERVICES_CATALOGUE } = require("@/config/services_catalogue");
+                    const cat = SERVICES_CATALOGUE.find((c: any) => c.id === sId);
+                    if (cat) return t({ en: cat.label, fr: cat.labelFr, ar: cat.labelAr || cat.label });
+                } catch (e) {}
+                return raw.serviceName || raw.service || '';
+            })(),
+            title: raw.title || '',
             dateLabel: dateInfo.dateLabel,
             timeLabel: dateInfo.timeLabel,
             description: 
@@ -2831,8 +2855,8 @@ const DetailItem = ({ icon: Icon, label, value, subValue, highlight }: {
                                                     <div className="px-4 py-3">
                                                         <div className="flex items-start justify-between">
                                                             <div>
-                                                                <h4 className="text-[18px] font-black text-black leading-tight" style={{ fontFamily: 'Uber Move, var(--font-sans)' }}>{job.service}</h4>
-                                                                <p className="text-[12px] text-neutral-500 font-medium">{job.subService}</p>
+                                                                <h4 className="text-[18px] font-black text-black leading-tight" style={{ fontFamily: 'Uber Move, var(--font-sans)' }}>{job.subServiceDisplayName || job.title || job.service}</h4>
+                                                                <p className="text-[12px] text-neutral-500 font-medium">{job.serviceDisplayName}</p>
                                                             </div>
                                                             <span className="text-[16px] font-black text-black uppercase">{t({ en: 'MAD', fr: 'MAD' })} {job.priceLabel}</span>
                                                         </div>

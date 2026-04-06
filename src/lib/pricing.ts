@@ -197,27 +197,67 @@ export const calculateOrderPrice = (
         quantity = 1;
         unit = 'office';
 
+        // Office cleaning logic: Base price covers 1 office/desk. 
+        // Additional desks are extra.
         const deskCount = options.officeDesks || 1;
-        const deskFee = deskCount * 19;
-        details.push({ label: { en: `Bureaus (${deskCount})`, fr: `Bureaux (${deskCount})`, ar: `المكاتب (${deskCount})` }, amount: deskFee });
+        if (deskCount > 1) {
+            const extraDesks = deskCount - 1;
+            const deskFee = extraDesks * 20;
+            details.push({ 
+                label: { 
+                    en: `Extra Desks (${extraDesks})`, 
+                    fr: `Bureaux supplémentaires (${extraDesks})`, 
+                    ar: `مكاتب إضافية (${extraDesks})` 
+                }, 
+                amount: deskFee 
+            });
+        }
 
         if (options.officeMeetingRooms && options.officeMeetingRooms > 0) {
-            const roomFee = options.officeMeetingRooms * 20;
-            details.push({ label: { en: `Meeting Rooms (${options.officeMeetingRooms})`, fr: `Salles de réunion (${options.officeMeetingRooms})`, ar: `غرف الاجتماعات (${options.officeMeetingRooms})` }, amount: roomFee });
+            const roomFee = options.officeMeetingRooms * 25;
+            details.push({ 
+                label: { 
+                    en: `Meeting Rooms (${options.officeMeetingRooms})`, 
+                    fr: `Salles de réunion (${options.officeMeetingRooms})`, 
+                    ar: `غرف الاجتماعات (${options.officeMeetingRooms})` 
+                }, 
+                amount: roomFee 
+            });
         }
 
         if (options.officeBathrooms && options.officeBathrooms > 0) {
             const bathFee = options.officeBathrooms * 20;
-            details.push({ label: { en: `Bathrooms (${options.officeBathrooms})`, fr: `Salles de bain (${options.officeBathrooms})`, ar: `الحمامات (${options.officeBathrooms})` }, amount: bathFee });
+            details.push({ 
+                label: { 
+                    en: `Bathrooms (${options.officeBathrooms})`, 
+                    fr: `Salles de bain (${options.officeBathrooms})`, 
+                    ar: `الحمامات (${options.officeBathrooms})` 
+                }, 
+                amount: bathFee 
+            });
+        }
+
+        if (options.hasKitchenette) {
+            details.push({ 
+                label: { en: 'Kitchenette', fr: 'Kitchenette', ar: 'مطبخ صغير' }, 
+                amount: 25 
+            });
+        }
+        
+        if (options.hasReception) {
+            details.push({ 
+                label: { en: 'Reception Area', fr: 'Zone de réception', ar: 'منطقة الاستقبال' }, 
+                amount: 30 
+            });
         }
 
         if (options.officeAddOns && options.officeAddOns.length > 0) {
             const addonFee = options.officeAddOns.length * 20;
-            details.push({ label: { en: 'Extra Cleaning Add-ons', fr: 'Extras nettoyage', ar: 'إضافات تنظيف' }, amount: addonFee });
+            details.push({ 
+                label: { en: 'Extras', fr: 'Extras', ar: 'إضافات' }, 
+                amount: addonFee 
+            });
         }
-
-        if (options.hasKitchenette) details.push({ label: { en: 'Kitchenette', fr: 'Kitchenette', ar: 'مطبخ صغير' }, amount: 20 });
-        if (options.hasReception) details.push({ label: { en: 'Reception Area', fr: 'Zone de réception', ar: 'منطقة الاستقبال' }, amount: 20 });
 
         extraFees = details.reduce((sum: number, item) => sum + item.amount, 0);
     } else {
