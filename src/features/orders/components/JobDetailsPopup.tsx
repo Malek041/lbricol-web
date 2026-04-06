@@ -101,7 +101,12 @@ const JobDetailsPopup: React.FC<JobDetailsPopupProps> = ({ job, onClose, onAccep
     // Attempt localized name from catalog
     const catalogService = SERVICES_CATALOGUE.find(s => s.id === job.service);
     const catalogSub = catalogService?.subServices.find(ss => ss.id === subId);
-    const subServiceName = catalogSub ? t({ en: catalogSub.en, fr: catalogSub.fr, ar: catalogSub.ar }) :
+    
+    const serviceCategoryName = catalogService 
+        ? t({ en: catalogService.label, fr: catalogService.labelFr, ar: catalogService.labelAr || catalogService.label }) 
+        : (job.serviceName || job.service);
+
+    const subServiceName = catalogSub ? t({ en: catalogSub.en, fr: catalogSub.fr, ar: catalogSub.ar || catalogSub.en }) :
         (() => {
             const n = getSubServiceName(job.service, subId);
             return n ? t({ en: n, fr: n, ar: n }) : (job.serviceName || job.service);
@@ -165,11 +170,7 @@ const JobDetailsPopup: React.FC<JobDetailsPopupProps> = ({ job, onClose, onAccep
                                         </div>
                                         <div className="flex flex-col">
                                         <div className="px-3 py-1 w-fit bg-[#01A083]/10 border border-[#01A083]/20 text-[#01A083] text-[10px] font-black uppercase rounded-full tracking-wider mb-1">
-                                            {t({ 
-                                                en: subId.replace(/_/g, ' '), 
-                                                fr: subId.replace(/_/g, ' '),
-                                                ar: subId.replace(/_/g, ' ') 
-                                            })}
+                                            {serviceCategoryName}
                                         </div>
                                         <h2 className="text-[32px] font-black text-black leading-[1.1]">
                                             {subServiceName || t({ en: 'General Support', fr: 'Support Général', ar: 'دعم عام' })}
