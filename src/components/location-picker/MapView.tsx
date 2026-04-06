@@ -560,7 +560,6 @@ const MapView: React.FC<MapViewProps> = ({
           }
                 ${pin.isLive ? `
                   <div style="position:absolute; bottom:2px; right:2px; width:10px; height:10px; background:#22c55e; border:2px solid #fff; border-radius:50%; box-shadow:0 0 0 2px rgba(34,197,94,0.4); animation: pulse 1.5s infinite;"></div>
-                  <div style="position:absolute; top:2px; left:2px; background:#22c55e; color:white; font-size:7px; font-weight:900; padding:1px 4px; border-radius:3px; text-transform:uppercase; letter-spacing:0.02em; border:1px solid #fff;">LIVE</div>
                 ` : ''}
               </div>
             </div>
