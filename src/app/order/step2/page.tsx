@@ -133,6 +133,7 @@ function Step2Content() {
 
   const clientLat = order.location?.lat || 31.5085;
   const clientLng = order.location?.lng || -9.7595;
+  const memoizedClientLoc = useMemo(() => ({ lat: Number(clientLat), lng: Number(clientLng) }), [clientLat, clientLng]);
   const serviceType = order.serviceType || '';
 
   // ── Show vehicle popup for moving ──────────────────────────────────
@@ -155,12 +156,14 @@ function Step2Content() {
       try {
         const all = snap.docs.map(d => {
           const data = d.data();
+          const tasks = Number(data.completedJobs || data.numReviews || data.jobsDone || data.taskCount || 0);
           return {
             id: d.id,
             ...data,
-            taskCount: data.completedJobs || data.taskCount || data.numReviews || data.jobsDone || 0,
-            rating: data.rating || 0,
-            numReviews: data.numReviews || 0
+            taskCount: tasks,
+            rating: Number(data.rating || 0),
+            numReviews: Number(data.numReviews || 0),
+            experience: data.yearsOfExperience || data.experience || data.experienceYears || '1 Year'
           };
         }) as any[];
 
@@ -283,8 +286,6 @@ function Step2Content() {
       if (obj === null || typeof obj !== 'object') return obj;
       if (Array.isArray(obj)) return obj.map(cleanObject);
       if (obj instanceof Date) return obj;
-
-      // Preserve Firestore FieldValues/Sentinels and other complex instances
       if (obj.constructor && obj.constructor.name !== 'Object') return obj;
 
       const clean: any = {};
@@ -323,7 +324,6 @@ function Step2Content() {
 
     if (children.length === 0) return;
 
-    // Use the center of the viewport to determine which card is focused
     const viewportCenter = scrollLeft + containerWidth / 2;
 
     let closestIndex = 0;
@@ -366,7 +366,6 @@ function Step2Content() {
 
     const services = Array.isArray(provider.services) ? provider.services : [];
 
-    // 1. Try to find specific subservice rate
     if (order.subServiceId) {
       const subSvcId = String(order.subServiceId).toLowerCase();
       const subSvcInfo = services.find((s: any) =>
@@ -375,7 +374,6 @@ function Step2Content() {
       if (subSvcInfo) return Number(subSvcInfo.hourlyRate || subSvcInfo.price || provider.minRate || 80);
     }
 
-    // 2. Fallback to category rate
     const catId = String(order.serviceType).toLowerCase();
     const catInfo = services.find((s: any) =>
       String(s.categoryId || s.id).toLowerCase() === catId
@@ -385,12 +383,11 @@ function Step2Content() {
     return Number(provider.minRate || 80);
   }, [order.serviceType, order.subServiceId]);
 
-  // ── Provider pin data for MapView ────────────────────────────────────
   const providerPins = useMemo(() => providers.map(p => ({
     id: p.id,
     lat: (p.isLive && p.current_lat) ? p.current_lat : (p.base_lat || clientLat + (Math.random() - 0.5) * 0.015),
     lng: (p.isLive && p.current_lng) ? p.current_lng : (p.base_lng || clientLng + (Math.random() - 0.5) * 0.015),
-    isLive: !!(p.isLive && p.current_lat), // explicitly track if this is a live pin
+    isLive: !!(p.isLive && p.current_lat),
     rate: calculateRate(p),
     rating: p.rating || 0.0,
     taskCount: p.taskCount || 0,
@@ -400,13 +397,12 @@ function Step2Content() {
     badge: ((p.taskCount || 0) < 10 || p.isNew) ? 'NEW' : (p.badge || 'CLASSIC'),
   })), [providers, focusedId, clientLat, clientLng, calculateRate]);
 
-  const [viewedBricoler, setViewedBricoler] = useState<any>(null);
+  const [viewedBricoler] = useState<any>(null);
 
   const handleSelect = (provider: any) => {
     setFocusedId(provider.id);
     const rate = calculateRate(provider);
 
-    // Save provider info to order context for Checkout
     setOrderField('providerId', provider.id);
     setOrderField('providerName', provider.name);
     setOrderField('providerAvatar', provider.avatarUrl || provider.avatar || provider.photoURL || null);
@@ -422,9 +418,7 @@ function Step2Content() {
     const lng = (provider.isLive && provider.current_lng) ? provider.current_lng : provider.base_lng;
     setOrderField('providerCoords', lat ? { lat, lng } : null);
 
-    if (order.serviceType === 'car_rental') {
-      setViewedBricoler(provider);
-    } else if (order.serviceType === 'errands' || SERVICES_REQUIRING_SETUP.includes(order.serviceType || '')) {
+    if (order.serviceType === 'errands' || SERVICES_REQUIRING_SETUP.includes(order.serviceType || '')) {
       setIsSplashing(true);
       setTimeout(() => {
         router.push('/order/setup');
@@ -438,7 +432,6 @@ function Step2Content() {
   };
 
   const handleModalSelect = (car: any, note: string, dates: any) => {
-    // Note: Provider info already saved in handleSelect when opening modal
     setOrderField('providerRate', car.pricePerDay || car.price || calculateRate(viewedBricoler));
     setOrderField('selectedCar', car);
     setOrderField('carRentalNote', note);
@@ -519,43 +512,20 @@ function Step2Content() {
             flex: 0 0 90%;
           }
         }
-        .provider-info-row {
-          display: flex;
-          gap: 12px;
-          margin-bottom: 4px;
-          flex-shrink: 0;
-        }
-        @media (max-width: 480px) {
-          .provider-info-row {
-            flex-direction: column;
-            align-items: center;
-            text-align: center;
-          }
-          .provider-info-row .info-content {
-            align-items: center !important;
-          }
-          .provider-info-row .info-header {
-            justify-content: center !important;
-          }
-           .provider-info-row .bio-text {
-            text-align: center !important;
-          }
-        }
       `}</style>
 
       <div className="step2-container">
         {isSplashing && <SplashScreen subStatus={null} />}
-        {/* ── MAP HEADER (FULL BACKGROUND) ── */}
         <div className="step2-map">
           <MapView
-            initialLocation={{ lat: clientLat, lng: clientLng }}
+            initialLocation={memoizedClientLoc}
             interactive={true}
             onLocationChange={() => { }}
             providerPins={providerPins}
             focusedProviderId={focusedId}
             lockCenterOnFocus={false}
             disableFitBounds={false}
-            clientPin={{ lat: clientLat, lng: clientLng }}
+            clientPin={memoizedClientLoc}
             serviceIconUrl={serviceType === 'car_rental' ? '/Images/Vectors Illu/carKey.png' : (order.serviceIcon || undefined)}
             showCenterPin={false}
             pinY={38}
@@ -565,9 +535,7 @@ function Step2Content() {
             onInteractionEnd={() => setIsInteracting(false)}
           />
 
-          {/* TOP NAV BUTTONS */}
           <div style={{ position: 'absolute', top: 16, left: 16, right: 16, zIndex: 1000, display: 'flex', justifyContent: 'space-between' }}>
-            {/* Back Button */}
             <button
               onClick={() => router.back()}
               style={{
@@ -580,7 +548,6 @@ function Step2Content() {
               <ChevronLeft size={22} color="#111827" />
             </button>
 
-            {/* Close Button */}
             <button
               onClick={saveDraftAndExit}
               style={{
@@ -593,10 +560,8 @@ function Step2Content() {
               <X size={20} color="#111827" />
             </button>
           </div>
-
         </div>
 
-        {/* ── BOTTOM SHEET ── */}
         <motion.div
           className="step2-sheet"
           initial={false}
@@ -610,45 +575,39 @@ function Step2Content() {
             stiffness: 300,
             mass: 0.5
           }}
-          style={{ pointerEvents: isInteracting ? 'none' : 'auto' }}
+          style={{ pointerEvents: (!focusedId || isInteracting) ? 'none' : 'auto' }}
         >
-          {/* SHEET HEADER */}
           <div style={{ padding: '16px 20px 8px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
             <div style={{ width: 36, height: 4, background: '#E5E7EB', borderRadius: 10, marginBottom: 16 }}></div>
             <div style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div>
-                <h3 style={{ fontSize: 25, fontWeight: 350, color: '#111827', letterSpacing: '-0.3px', margin: 0, lineHeight: 1 }}>
+                <h3 style={{ fontSize: 25, fontWeight: 750, color: '#111827', letterSpacing: '-0.3px', margin: 0, lineHeight: 1 }}>
                   {focusedId ? t({ en: 'Bricoler Details', fr: 'Détails du Bricoleur', ar: 'تفاصيل بريكولير' }) : t({ en: 'Ideal Bricolers', fr: 'Bricoleurs Idéaux', ar: 'بريكولير مثالي' })}
                 </h3>
               </div>
-              
-              {focusedId ? (
-                <button 
+
+              {focusedId && (
+                <button
                   onClick={() => setFocusedId(null)}
-                  style={{ 
-                    width: 32, height: 32, borderRadius: '50%', background: '#F3F4F6', 
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none' 
+                  style={{
+                    width: 32, height: 32, borderRadius: '50%', background: '#F3F4F6',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none'
                   }}
                 >
                   <X size={20} color="#6B7280" />
                 </button>
-              ) : (
-                <div style={{ fontSize: 12, fontWeight: 900, color: '#027963', background: '#F0FDF4', padding: '4px 10px', borderRadius: 8 }}>
-                  {t({ en: 'BEST PRICE', fr: 'MEILLEUR PRIX', ar: 'أفضل سعر' })}
-                </div>
               )}
             </div>
           </div>
 
-          {/* Content: Either horizontal list OR single provider details */}
           <div style={{ flex: 1, overflowY: 'auto' }} className="no-scrollbar">
             {focusedId ? (() => {
               const provider = providers.find(p => p.id === focusedId);
               if (!provider) return null;
               return (
                 <div style={{ padding: '20px' }}>
-                  <BricolerDetails 
-                    provider={provider} 
+                  <BricolerDetails
+                    provider={provider}
                     order={order}
                     displayRate={calculateRate(provider)}
                     onBook={() => handleSelect(provider)}
@@ -687,10 +646,9 @@ function Step2Content() {
           </div>
         </motion.div>
 
-        {/* Profile Modal for Car Rental */}
         <CarRentalProfileModal
           isOpen={!!viewedBricoler}
-          onClose={() => setViewedBricoler(null)}
+          onClose={() => { }}
           provider={viewedBricoler}
           onSelect={handleModalSelect}
           order={order}
@@ -713,12 +671,17 @@ function BricolerDetails({
   const avatar = provider.avatarUrl || provider.avatar || provider.photoURL;
   const ratingStr = (!provider.taskCount || provider.taskCount === 0 || !provider.rating) ? '0.0' : provider.rating.toFixed(1);
 
+  // Experience calculation
+  const getExperience = () => {
+    return provider.experience || '1 Year';
+  };
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24, paddingBottom: 20 }}>
-      {/* Top Section: Avatar + Name/Price */}
+      {/* Profil Section */}
       <div style={{ display: 'flex', gap: 20, alignItems: 'center' }}>
         <div style={{
-          width: 120, height: 120, borderRadius: '50%',
+          width: 130, height: 130, borderRadius: '50%',
           border: '4px solid #fff',
           boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
           overflow: 'hidden', flexShrink: 0,
@@ -732,31 +695,110 @@ function BricolerDetails({
           )}
         </div>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-          <h2 style={{ fontSize: 32, fontWeight: 900, color: '#111827', margin: 0, lineHeight: 1 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+          <h2 style={{ fontSize: 34, fontWeight: 900, color: '#111827', margin: 0, lineHeight: 1 }}>
             {provider.name}
           </h2>
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
-            <span style={{ fontSize: 24, fontWeight: 950, color: '#01A083' }}>MAD {displayRate}</span>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginTop: 4 }}>
+            <span style={{ fontSize: 28, fontWeight: 950, color: '#01A083' }}>MAD {displayRate}</span>
             <span style={{ fontSize: 14, fontWeight: 700, color: '#6B7280' }}>minimum</span>
           </div>
-          
-          <div style={{ 
-            marginTop: 4,
+
+          <div style={{
+            marginTop: 8,
             width: 'fit-content',
-            background: '#F0FDF4', color: '#16A34A', fontSize: 12, fontWeight: 900,
-            padding: '6px 14px', borderRadius: 20, display: 'flex', alignItems: 'center', gap: 6,
-            border: '1px solid #DCFCE7'
+            background: 'rgba(1, 160, 131, 0.05)', color: '#01A083', fontSize: 13, fontWeight: 900,
+            padding: '8px 16px', borderRadius: 20, display: 'flex', alignItems: 'center', gap: 8,
+            border: '1px solid rgba(1, 160, 131, 0.15)'
           }}>
-            <div style={{ width: 14, height: 14, background: '#16A34A', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-               <Check size={8} color="#fff" strokeWidth={4} />
+            <div style={{ width: 18, height: 18, background: '#01A083', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Check size={10} color="#fff" strokeWidth={4} />
             </div>
             {t({ en: 'Verified Identity', fr: 'Identité vérifiée', ar: 'هوية مفعلة' })}
           </div>
         </div>
       </div>
 
-      {/* Main Action Button */}
+
+
+      {/* 4-Item Stats Grid matching Pic 2 */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginTop: 10 }}>
+        {/* LEVL / NIVEAU */}
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }}>
+          <div style={{
+            width: 64, height: 64, borderRadius: '40% 60% 70% 30% / 40% 50% 60% 50%',
+            background: '#F0FDF4', display: 'flex', alignItems: 'center', justifyContent: 'center'
+          }}>
+            <Trophy size={32} color="#16A34A" />
+          </div>
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: 16, fontWeight: 950, color: '#111827' }}>
+              {(() => {
+                const tasks = provider.taskCount || 0;
+                if (tasks < 10 || provider.isNew) return t({ en: 'New', fr: 'Nouveau', ar: 'جديد' });
+                if (tasks > 50) return 'Elite';
+                if (tasks > 20) return 'Expert';
+                return 'Pro';
+              })()}
+            </div>
+            <div style={{ fontSize: 11, fontWeight: 800, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.2px' }}>
+              {t({ en: 'LEVEL', fr: 'NIVEAU', ar: 'المستوى' })}
+            </div>
+          </div>
+        </div>
+
+        {/* RATING / NOTE */}
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }}>
+          <div style={{
+            width: 64, height: 64, borderRadius: '60% 40% 30% 70% / 50% 30% 70% 50%',
+            background: '#FFF7ED', display: 'flex', alignItems: 'center', justifyContent: 'center'
+          }}>
+            <Star size={32} color="#EA580C" fill="#EA580C" />
+          </div>
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: 16, fontWeight: 950, color: '#111827' }}>{ratingStr}</div>
+            <div style={{ fontSize: 11, fontWeight: 800, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.2px' }}>
+              {t({ en: 'RATING', fr: 'NOTE', ar: 'التقييم' })}
+            </div>
+          </div>
+        </div>
+
+        {/* TASKS / COMMANDES */}
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }}>
+          <div style={{
+            width: 64, height: 64, borderRadius: '50% 50% 40% 60% / 40% 60% 50% 50%',
+            background: '#EFF6FF', display: 'flex', alignItems: 'center', justifyContent: 'center'
+          }}>
+            <CheckCircle2 size={32} color="#2563EB" />
+          </div>
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: 16, fontWeight: 950, color: '#111827' }}>{provider.taskCount || 0}</div>
+            <div style={{ fontSize: 11, fontWeight: 800, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.2px' }}>
+              {t({ en: 'TASKS', fr: 'COMMANDES', ar: 'الطلبات' })}
+            </div>
+          </div>
+        </div>
+
+        {/* EXPERIENCE / EXPÉRIENCE */}
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }}>
+          <div style={{
+            width: 64, height: 64, borderRadius: '40% 60% 50% 50% / 60% 40% 60% 40%',
+            background: '#F5F3FF', display: 'flex', alignItems: 'center', justifyContent: 'center'
+          }}>
+            <Calendar size={32} color="#7C3AED" />
+          </div>
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: 16, fontWeight: 950, color: '#111827' }}>
+              {getExperience()}
+            </div>
+            <div style={{ fontSize: 11, fontWeight: 800, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.2px' }}>
+              {t({ en: 'EXPERIENCE', fr: 'EXPÉRIENCE', ar: 'الخبرة' })}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Book Me button repositioned ABOVE info grid per Pic 2 */}
       <motion.button
         whileTap={{ scale: 0.98 }}
         onClick={onBook}
@@ -765,82 +807,19 @@ function BricolerDetails({
           background: '#01A083',
           color: '#fff',
           border: 'none',
-          borderRadius: 30,
-          padding: '18px',
-          fontSize: 18,
-          fontWeight: 900,
-          boxShadow: '0 8px 24px rgba(1, 160, 131, 0.25)',
-          cursor: 'pointer'
+          borderRadius: 50,
+          padding: '10px 24px',
+          fontSize: 20,
+          fontWeight: 650,
+          cursor: 'pointer',
         }}
       >
         {t({ en: 'Book Me', fr: 'Réservez-moi', ar: 'احجز الآن' })}
       </motion.button>
-
-      {/* Info Grid (4 circles) */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
-        {/* Niveau */}
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
-          <div style={{ 
-            width: 60, height: 60, borderRadius: '40% 60% 70% 30% / 40% 50% 60% 50%',
-            background: '#F0FDF4', display: 'flex', alignItems: 'center', justifyContent: 'center'
-          }}>
-            <Trophy size={28} color="#16A34A" />
-          </div>
-          <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: 14, fontWeight: 900, color: '#111827' }}>
-              {((provider.taskCount || 0) < 10 || provider.isNew) ? 'Nouveau' : (provider.badge || 'Classic')}
-            </div>
-            <div style={{ fontSize: 10, fontWeight: 700, color: '#9CA3AF', textTransform: 'uppercase' }}>NIVEAU</div>
-          </div>
-        </div>
-
-        {/* Note */}
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
-          <div style={{ 
-            width: 60, height: 60, borderRadius: '60% 40% 30% 70% / 50% 30% 70% 50%',
-            background: '#FFF7ED', display: 'flex', alignItems: 'center', justifyContent: 'center'
-          }}>
-            <Star size={28} color="#EA580C" fill="#EA580C" />
-          </div>
-          <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: 14, fontWeight: 900, color: '#111827' }}>{ratingStr}</div>
-            <div style={{ fontSize: 10, fontWeight: 700, color: '#9CA3AF', textTransform: 'uppercase' }}>NOTE</div>
-          </div>
-        </div>
-
-        {/* Commandes */}
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
-          <div style={{ 
-            width: 60, height: 60, borderRadius: '50% 50% 40% 60% / 40% 60% 50% 50%',
-            background: '#EFF6FF', display: 'flex', alignItems: 'center', justifyContent: 'center'
-          }}>
-            <CheckCircle2 size={28} color="#2563EB" />
-          </div>
-          <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: 14, fontWeight: 900, color: '#111827' }}>{provider.taskCount || 0}</div>
-            <div style={{ fontSize: 10, fontWeight: 700, color: '#9CA3AF', textTransform: 'uppercase' }}>COMMANDES</div>
-          </div>
-        </div>
-
-        {/* Expérience */}
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
-          <div style={{ 
-            width: 60, height: 60, borderRadius: '40% 60% 50% 50% / 60% 40% 60% 40%',
-            background: '#F5F3FF', display: 'flex', alignItems: 'center', justifyContent: 'center'
-          }}>
-            <Calendar size={28} color="#7C3AED" />
-          </div>
-          <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: 14, fontWeight: 900, color: '#111827' }}>
-              {provider.experienceYears || '2 Years'}
-            </div>
-            <div style={{ fontSize: 10, fontWeight: 700, color: '#9CA3AF', textTransform: 'uppercase' }}>EXPÉRIENCE</div>
-          </div>
-        </div>
-      </div>
     </div>
   );
 }
+
 
 function ProviderCard({
   provider, clientLat, clientLng, isSelected, onSelect, order, displayRate
@@ -893,7 +872,7 @@ function ProviderCard({
     <div
       onClick={onSelect}
       style={{
-        border: isSelected ? '1px solid #027963' : '1px solid #F3F4F6',
+        border: isSelected ? '1px solid #01A083' : '1px solid #F3F4F6',
         borderRadius: 15,
         padding: '12px 14px',
         background: '#fff',
@@ -907,7 +886,6 @@ function ProviderCard({
       }}>
 
       <div style={{ display: 'flex', gap: 14, alignItems: 'flex-start' }}>
-        {/* Left: Avatar */}
         <div style={{
           width: 44, height: 44, borderRadius: '50%',
           background: avatar ? 'transparent' : '#F3F4F6',
@@ -922,7 +900,6 @@ function ProviderCard({
           }
         </div>
 
-        {/* Center/Main Info Stack */}
         <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 4, overflow: 'hidden' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <div style={{ fontSize: 15, fontWeight: 500, color: '#111827', lineHeight: 1.2 }}>
@@ -941,8 +918,8 @@ function ProviderCard({
 
           <div style={{ fontSize: 12, fontWeight: 500, color: '#111827', display: 'flex', alignItems: 'center', gap: 4 }}>
             MAD {displayRate} <span style={{ color: '#9CA3AF', fontWeight: 500, fontSize: 10 }}>(min)</span>
-            <div style={{ width: 14, height: 14, background: '#027963', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <CheckCircle2 size={8} color="#fff" strokeWidth={4} />
+            <div style={{ width: 14, height: 14, background: '#01A083', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Check size={8} color="#fff" strokeWidth={4} />
             </div>
           </div>
 
@@ -958,21 +935,20 @@ function ProviderCard({
           </span>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
-            <Star size={12} fill="#33D5FF" color="#33D5FF" />
+            <Star size={12} fill="#EA580C" color="#EA580C" />
             <span style={{ fontSize: 14, fontWeight: 500, color: '#111827' }}>
               {provider.rating && Number(provider.rating) > 0 ? Number(provider.rating).toFixed(1) : '0.0'}
             </span>
           </div>
         </div>
 
-        {/* Right side Stack (Price & Availability) */}
         <div style={{ textAlign: 'right', flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', justifyContent: 'space-between', minHeight: 75 }}>
           <div style={{ height: 20 }}></div>
 
           {available && (
             <span style={{
               background: 'rgba(1, 160, 131, 0.05)',
-              color: '#01A082',
+              color: '#01A083',
               fontSize: 9, fontWeight: 950,
               padding: '4px 10px', borderRadius: 50,
               border: '1px solid rgba(1, 160, 131, 0.15)',
@@ -986,7 +962,6 @@ function ProviderCard({
         </div>
       </div>
 
-      {/* Bottom Row: Tasks List (Pic 3 style) */}
       <div style={{ marginTop: 'auto', paddingTop: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #F9FAFB' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
           <div style={{ width: 15, height: 15, borderRadius: '50%', border: '1.5px solid #9CA3AF', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -1004,7 +979,6 @@ function ProviderCard({
         )}
       </div>
 
-      {/* Brand Logo Strip for Car Rentals */}
       {isCarRental && provider.carRentalDetails?.cars && provider.carRentalDetails.cars.length > 0 && (
         <div style={{ marginTop: 14, display: 'flex', gap: 10, overflowX: 'auto', paddingBottom: 2 }} className="no-scrollbar">
           {(() => {
@@ -1022,7 +996,6 @@ function ProviderCard({
         </div>
       )}
 
-      {/* Book Me Button - only when selected */}
       {isSelected && (
         <motion.button
           initial={{ opacity: 0, y: 10 }}

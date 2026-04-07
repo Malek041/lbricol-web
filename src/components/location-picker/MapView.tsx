@@ -749,6 +749,24 @@ const MapView: React.FC<MapViewProps> = ({
     });
   }, [broadcastPins, mapReady, focusedOrderId, onOrderClick]);
 
+  // ── Holistic view when unselecting ──────────────────────────────────────
+  useEffect(() => {
+    if (!mapRef.current || !mapReady || focusedProviderId || !providerPins || providerPins.length === 0) return;
+    const map = mapRef.current;
+    
+    // Create bounds for all providers + client
+    const points: L.LatLngExpression[] = providerPins.map(p => [p.lat, p.lng] as L.LatLngExpression);
+    const startPt = clientPin || initialLocation;
+    if (startPt) points.push([startPt.lat, startPt.lng]);
+    
+    const bounds = L.latLngBounds(points);
+    map.flyToBounds(bounds, {
+      padding: [40, 40],
+      maxZoom: 16,
+      duration: 1.5
+    });
+  }, [focusedProviderId, providerPins, mapReady, clientPin, initialLocation]);
+
   // ── Auto-zoom to focused provider (disabled when lockCenterOnFocus=true) ────
   useEffect(() => {
     if (lockCenterOnFocus) return; // Step 2: keep map centred on client address
@@ -835,6 +853,14 @@ const MapView: React.FC<MapViewProps> = ({
             }).addTo(map);
           }
 
+          // Center the path nicely
+          map.fitBounds(routeLayerRef.current.getBounds(), {
+            paddingTopLeft: [50, 50],
+            paddingBottomRight: [50, 480], // Massive padding to account for bottom sheet detail card
+            animate: true,
+            duration: 1.5
+          });
+
         } else {
           // Fallback to straight line if OSRM fails
           const startPt = clientPin || initialLocation;
@@ -842,6 +868,11 @@ const MapView: React.FC<MapViewProps> = ({
             routeLayerRef.current = L.polyline([[startPt.lat, startPt.lng], [focusPin.lat, focusPin.lng]], {
               color: '#3B82F6', weight: 4, opacity: 0.6, dashArray: '8, 8'
             }).addTo(map);
+
+            map.fitBounds(routeLayerRef.current.getBounds(), {
+              paddingTopLeft: [50, 50],
+              paddingBottomRight: [50, 480]
+            });
           }
         }
       } catch (e) {
