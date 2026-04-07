@@ -1681,7 +1681,7 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                         animate={{ y: 0, opacity: 1 }}
                         exit={{ y: 20, opacity: 0 }}
                         className={cn(
-                            "flex-1 flex flex-col h-full w-full mx-auto overflow-hidden bg-white",
+                            "flex-1 flex flex-col w-full mx-auto overflow-hidden bg-white",
                             step !== 'base_location' && "max-w-[600px]"
                         )}
                         onClick={e => e.stopPropagation()}
@@ -1737,7 +1737,7 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                         )}
 
                         {/* Content */}
-                        <div ref={scrollContainerRef} className="flex-1 overflow-y-auto w-full relative z-[1]" style={{ paddingBottom: step === 'base_location' ? '0' : '70px', scrollbarWidth: 'none' }}>
+                        <div ref={scrollContainerRef} className="flex-1 min-h-0 overflow-y-auto w-full relative z-[1]" style={{ paddingBottom: step === 'base_location' ? '0' : '70px', scrollbarWidth: 'none' }}>
                             <AnimatePresence mode="wait" custom={direction}>
                                 {/* ── STEP: Language Selection ── */}
                                 {step === 'language' && (
