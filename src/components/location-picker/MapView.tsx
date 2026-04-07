@@ -4,8 +4,9 @@ import React, { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MapPin } from 'lucide-react';
+import { MapPin, ArrowRight } from 'lucide-react';
 import { LocationPoint } from './types';
+import { useLanguage } from '@/context/LanguageContext';
 
 interface MapViewProps {
   onLocationChange: (point: LocationPoint) => void;
@@ -88,7 +89,7 @@ const MapView: React.FC<MapViewProps> = ({
   focusedOrderId,
   onOrderClick,
   onLocationError,
-  onLoadingChange,
+  onLoadingChange: onLoadingChangeProp,
   lockCenterOnFocus = false,
   disableFitBounds = false,
   clientPin,
@@ -96,6 +97,7 @@ const MapView: React.FC<MapViewProps> = ({
   destinationPin,
   centerOnUser = false,
 }) => {
+  const { t } = useLanguage();
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
   const gpsMarkerRef = useRef<L.Marker | null>(null);
@@ -181,7 +183,7 @@ const MapView: React.FC<MapViewProps> = ({
 
   const reverseGeocode = async (lat: number, lng: number) => {
     latestGeocodeRef.current = { lat, lng };
-    onLoadingChange?.(true);
+    onLoadingChangeProp?.(true);
     let finalAddress = "";
     let city = "";
     let area = "";
@@ -221,7 +223,7 @@ const MapView: React.FC<MapViewProps> = ({
         city: city || undefined,
         area: area || undefined
       });
-      onLoadingChange?.(false);
+      onLoadingChangeProp?.(false);
       try {
         localStorage.setItem('lastKnownLat', lat.toString());
         localStorage.setItem('lastKnownLng', lng.toString());
@@ -321,7 +323,7 @@ const MapView: React.FC<MapViewProps> = ({
 
       // Immediately signal that coordinates changed (for accurate pin data)
       // but keep the current address to avoid flicker until geocode finishes
-      onLoadingChange?.(true);
+      onLoadingChangeProp?.(true);
       onLocationChange({
         lat: center.lat,
         lng: center.lng,
@@ -426,7 +428,7 @@ const MapView: React.FC<MapViewProps> = ({
   // ── Handle GPS Trigger ──────────────────────────────────────────────
   useEffect(() => {
     if (triggerGps && triggerGps > 0 && mapRef.current && mapReady) {
-      onLoadingChange?.(true);
+      onLoadingChangeProp?.(true);
 
       const requestGps = (highAccuracy: boolean) => {
         navigator.geolocation.getCurrentPosition(
@@ -460,7 +462,7 @@ const MapView: React.FC<MapViewProps> = ({
               });
               gpsMarkerRef.current = L.marker([latitude, longitude], { icon: gpsIcon }).addTo(mapRef.current);
             }
-            onLoadingChange?.(false);
+            onLoadingChangeProp?.(false);
           },
           (error) => {
             console.warn(`Geolocation error (highAccuracy: ${highAccuracy}):`, error);
@@ -469,7 +471,7 @@ const MapView: React.FC<MapViewProps> = ({
               requestGps(false);
             } else {
               onLocationError?.(error);
-              onLoadingChange?.(false);
+              onLoadingChangeProp?.(false);
             }
           },
           {
@@ -1082,48 +1084,50 @@ const MapView: React.FC<MapViewProps> = ({
         </div>
       )}
 
-      {/* Permission Denied Overlay (Forced GPS) */}
+      {/* InDrive-style Location Banner (Non-obstructive) */}
       <AnimatePresence>
         {permissionDenied && (
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="absolute inset-0 z-[5000] bg-white/95 backdrop-blur-sm flex flex-col items-center justify-center px-8 text-center"
+            initial={{ y: -100, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: -100, opacity: 0 }}
+            onClick={() => {
+              // Try to trigger GPS again
+              const requestGps = (highAccuracy: boolean) => {
+                navigator.geolocation.getCurrentPosition(
+                  (position) => {
+                    setPermissionDenied(false);
+                    const { latitude, longitude } = position.coords;
+                    setInternalUserPos({ lat: latitude, lng: longitude });
+                    if (mapRef.current) {
+                      flyToWithOffset(latitude, longitude, targetZoom, pinY === 50);
+                    }
+                    reverseGeocode(latitude, longitude);
+                  },
+                  (error) => {
+                    console.warn("Manual GPS request failed:", error);
+                  },
+                  { enableHighAccuracy: highAccuracy, timeout: 5000 }
+                );
+              };
+              requestGps(true);
+            }}
+            className="absolute top-4 left-4 right-4 z-[2000] bg-[#FFCC02] border border-[#EAB308] rounded-2xl p-4 shadow-xl flex items-center gap-4 cursor-pointer active:scale-[0.98] transition-transform"
           >
-            <div className="w-24 h-24 bg-emerald-50 rounded-full flex items-center justify-center mb-6 relative">
-              <div className="absolute inset-0 rounded-full border-4 border-emerald-500/20 animate-ping" />
-              <MapPin size={48} className="text-[#01A083]" />
+            <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center flex-shrink-0">
+               <MapPin size={22} className="text-[#111827]" />
             </div>
             
-            <h2 className="text-[24px] font-black text-neutral-900 mb-3 tracking-tight leading-tight">
-              {language === 'ar' ? 'مطلوب إذن الموقع' : language === 'fr' ? 'Accès GPS Requis' : 'Location Required'}
-            </h2>
-            
-            <p className="text-[15px] font-medium text-neutral-500 mb-8 leading-relaxed max-w-[280px]">
-              {language === 'ar' 
-                ? 'يرجى تفعيل نظام تحديد المواقع (GPS) للمتابعة. نحتاج لموقعك لضمان تقديم الخدمة بدقة وسرعة.' 
-                : language === 'fr' 
-                  ? 'Veuillez activer votre GPS pour continuer. Nous avons besoin de votre position pour assurer un service précis.' 
-                  : 'Please enable GPS to continue. We need your exact location to provide accurate and fast service.'}
-            </p>
-
-            <div className="space-y-4 w-full max-w-[280px]">
-              <button
-                onClick={() => window.location.reload()}
-                className="w-full h-14 bg-[#01A083] text-white rounded-2xl font-bold text-[16px] shadow-lg shadow-emerald-500/20 active:scale-95 transition-transform"
-              >
-                {language === 'ar' ? 'إعادة المحاولة' : language === 'fr' ? 'Réessayer' : 'Try Again'}
-              </button>
-
-              <div className="bg-neutral-50 rounded-2xl p-4 border border-neutral-100">
-                <p className="text-[12px] font-bold text-neutral-400 uppercase tracking-widest mb-2">
-                  {language === 'ar' ? 'كيفية التفعيل على iPhone' : language === 'fr' ? 'Comment activer sur iPhone' : 'How to enable on iPhone'}
-                </p>
-                <p className="text-[13px] font-medium text-neutral-600 text-left leading-snug">
-                  Settings {"->"} Privacy {"->"} Location Services {"->"} Safari {"->"} <span className="font-bold text-[#01A083]">While Using the App</span>
-                </p>
-              </div>
+            <div className="flex-1 min-w-0">
+              <h3 className="text-[15px] font-black text-[#111827] leading-tight">
+                {t({ en: 'Unable to locate you', fr: 'Impossible de vous localiser', ar: 'تعذر تحديد موقعك' })}
+              </h3>
+              <p className="text-[12px] font-bold text-[#111827]/70 mt-0.5 whitespace-nowrap overflow-hidden text-overflow-ellipsis">
+                {t({ en: 'Tap here to enable location', fr: 'Appuyez ici pour activer la localisation', ar: 'اضغط هنا لتفعيل تحديد المواقع' })}
+              </p>
+            </div>
+            <div className="text-[#111827]/40">
+              <ArrowRight size={20} />
             </div>
           </motion.div>
         )}
