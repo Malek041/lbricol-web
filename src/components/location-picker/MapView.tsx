@@ -30,6 +30,7 @@ interface MapViewProps {
     isSelected: boolean;
     badge?: string | null; // 'NEW' | 'PRO' | 'ELITE' | 'CLASSIC'
     isLive?: boolean;
+    name?: string;
   }>;
   broadcastPins?: Array<{
     id: string;
@@ -520,50 +521,25 @@ const MapView: React.FC<MapViewProps> = ({
         html: `
           <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;width:${size}px;height:${size}px;cursor:pointer;opacity:${opacity};transform:scale(${scale});transition:all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);position:relative;">
             <div style="display:flex;flex-direction:column;align-items:center;position:relative;">
-              ${isFocused ? (() => {
-            const b = (pin.badge || '').toUpperCase();
-            const isNew = (pin.taskCount || 0) < 10 || b === 'NEW';
-            const badgeText = isNew ? 'NEW' : (b === 'ELITE' ? 'ELITE' : b === 'PRO' ? 'PRO' : 'CLASSIC');
-            const badgeBg = isNew ? '#F5F3FF' : (b === 'ELITE' ? '#FFF7ED' : b === 'PRO' ? '#F0FDF4' : '#F3F4F6');
-            const badgeColor = isNew ? '#7C3AED' : (b === 'ELITE' ? '#EA580C' : b === 'PRO' ? '#16A34A' : '#4B5563');
-            const badgeIcon = isNew ? '✦' : (b === 'ELITE' ? '🏆' : b === 'PRO' ? '💎' : '🛡️');
-            const ratingStr = (!pin.taskCount || pin.taskCount === 0 || !pin.rating) ? '0.0' : pin.rating.toFixed(1);
-            return `
-              <div style="position: absolute; ${shouldPlaceAbove ? 'bottom:calc(100% + 12px)' : 'top:calc(100% + 12px)'}; left: 50%; transform: translateX(-50%); display: flex; flex-direction: ${shouldPlaceAbove ? 'column' : 'column-reverse'}; align-items: center; z-index: 1000;">
-                <div style="background:#fff;border-radius:14px;padding:10px 14px;
-                  box-shadow:0 8px 24px rgba(0,0,0,0.13);font-family:sans-serif;
-                  display:flex;flex-direction:column;align-items:center;gap:6px;
-                  border:1px solid #f3f4f6;position:relative;z-index:10;min-width:110px;">
-                  
-                  <!-- Badge row -->
-                  <div style="background:${badgeBg};color:${badgeColor};font-size:9px;font-weight:900;
-                    padding:2px 8px;border-radius:4px;display:inline-flex;align-items:center;gap:3px;
-                    letter-spacing:0.05em;">
-                    <span>${badgeIcon}</span><span>${badgeText}</span>
-                  </div>
-
-                  <!-- Jobs + Stars row -->
-                  <div style="display:flex;align-items:center;gap:8px;">
-                    <div style="display:flex;flex-direction:column;align-items:center;line-height:1.1;">
-                      <span style="font-size:15px;font-weight:950;color:#111827;">${pin.taskCount || 0}</span>
-                      <span style="font-size:9px;font-weight:700;color:#9CA3AF;text-transform:uppercase;letter-spacing:0.05em;">Jobs</span>
+              <div style="position: absolute; left: calc(100% + 8px); top: 50%; transform: translateY(-50%); white-space: nowrap; transition: all 0.3s; pointer-events: none;">
+                <div style="background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(4px); 
+                  padding: 4px 10px; border-radius: 20px; 
+                  border: 1px solid ${isFocused ? '#027963' : '#F3F4F6'};
+                  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+                  display: flex; align-items: center; gap: 6px;">
+                  <span style="font-size: ${isFocused ? '13px' : '11px'}; font-weight: ${isFocused ? '900' : '700'}; 
+                    color: ${isFocused ? '#027963' : '#374151'}; font-family: sans-serif;
+                    letter-spacing: -0.2px;">
+                    ${pin.name || 'Bricoler'}
+                  </span>
+                  ${isFocused ? `
+                    <div style="display: flex; align-items: center; gap: 2px; border-left: 1px solid #E5E7EB; padding-left: 6px;">
+                      <span style="color: #33D5FF; font-size: 11px;">★</span>
+                      <span style="font-size: 11px; font-weight: 800; color: #111827;">${pin.rating ? Number(pin.rating).toFixed(1) : '0.0'}</span>
                     </div>
-                    <div style="width:1px;height:24px;background:#F3F4F6;"></div>
-                    <div style="display:flex;flex-direction:column;align-items:center;line-height:1.1;">
-                      <span style="font-size:15px;font-weight:950;color:#111827;display:flex;align-items:center;gap:2px;">
-                        <span style="color:#33D5FF;font-size:13px;">★</span>${ratingStr}
-                      </span>
-                    </div>
-                    <div style="width:1px;height:24px;background:#F3F4F6;"></div>
-                    <div style="display:flex;flex-direction:column;align-items:center;line-height:1.1;">
-                      <span style="font-size:14px;font-weight:950;color:#01A083;">${pin.rate || 80}</span>
-                      <span style="font-size:9px;font-weight:700;color:#9CA3AF;text-transform:uppercase;letter-spacing:0.05em;">MAD/hr</span>
-                    </div>
-                  </div>
+                  ` : ''}
                 </div>
-                <div style="width:0;height:0;border-left:8px solid transparent;border-right:8px solid transparent;${shouldPlaceAbove ? 'border-top:8px solid white;margin-top:-1px;' : 'border-bottom:8px solid white;margin-bottom:-1px;'} z-index:5;filter:drop-shadow(0 4px 4px rgba(0,0,0,0.05));"></div>
-              </div>`;
-          })() : ''}
+              </div>
               <div style="position:relative;width:${size}px;height:${size}px;min-width:${size}px;min-height:${size}px;flex-shrink:0;transition: all 0.3s; margin-bottom: 0px; border-radius: 50%; border: 3px solid #fff; box-shadow: 0 4px 12px rgba(0,0,0,0.15); overflow: hidden; background: #fff;">
                 ${pin.avatarUrl
             ? `<img src="${pin.avatarUrl}" style="width:100%;height:100%;object-fit:cover" onerror="this.onerror=null; this.src='/Images/Vectors Illu/LbricolFaceOY.webp'; this.parentElement.style.background='#F3F4F6'; this.innerHTML='👤';"/>`

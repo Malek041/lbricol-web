@@ -254,7 +254,7 @@ function Step2Content() {
         });
 
         setProviders(sorted);
-        if (sorted.length > 0 && !focusedId) setFocusedId(sorted[0].id);
+        // Don't select any provider by default - let the user see the whole map first
 
       } catch (e) {
         console.error('Failed to process providers snapshot:', e);
@@ -394,6 +394,7 @@ function Step2Content() {
     rate: calculateRate(p),
     rating: p.rating || 0.0,
     taskCount: p.taskCount || 0,
+    name: p.name,
     avatarUrl: p.avatarUrl || p.avatar || p.photoURL,
     isSelected: p.id === focusedId,
     badge: ((p.taskCount || 0) < 10 || p.isNew) ? 'NEW' : (p.badge || 'CLASSIC'),
@@ -600,8 +601,8 @@ function Step2Content() {
           className="step2-sheet"
           initial={false}
           animate={{
-            y: isInteracting ? 500 : 0,
-            opacity: isInteracting ? 0 : 1
+            y: (!focusedId || isInteracting) ? 800 : 0,
+            opacity: (!focusedId || isInteracting) ? 0.3 : 1
           }}
           transition={{
             type: 'spring',
@@ -849,6 +850,41 @@ function ProviderCard({
             });
           })()}
         </div>
+      )}
+
+      {/* Book Me Button - only when selected */}
+      {isSelected && (
+        <motion.button
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          whileTap={{ scale: 0.95 }}
+          onClick={(e) => {
+            e.stopPropagation();
+            onSelect();
+          }}
+          style={{
+            marginTop: 18,
+            width: '100%',
+            background: '#01A083',
+            color: '#fff',
+            border: 'none',
+            borderRadius: 12,
+            padding: '14px',
+            fontSize: 14,
+            fontWeight: 800,
+            boxShadow: '0 4px 12px rgba(1, 160, 131, 0.2)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 8,
+            zIndex: 50
+          }}
+        >
+          {t({ en: 'Book Me', fr: 'Réserver', ar: 'احجز الآن' })}
+          <div style={{ background: 'rgba(255,255,255,0.2)', borderRadius: '50%', padding: 4, display: 'flex' }}>
+             <ChevronLeft size={16} style={{ transform: 'rotate(180deg)' }} />
+          </div>
+        </motion.button>
       )}
     </div>
   );
