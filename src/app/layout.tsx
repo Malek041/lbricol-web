@@ -36,6 +36,7 @@ export const metadata: Metadata = {
 };
 
 import { Providers } from "@/components/shared/Providers";
+import PWAPrompt from "@/components/shared/PWAPrompt";
 
 export default function RootLayout({
   children,
@@ -47,6 +48,7 @@ export default function RootLayout({
       <body suppressHydrationWarning={true} className={`${inter.variable} ${plusJakartaSans.variable} ${inclusiveSans.variable} ${notoSansArabic.variable} font-sans antialiased bg-white text-gray-900`}>
         <Providers>
           {children}
+          <PWAPrompt />
         </Providers>
       </body>
     </html>
