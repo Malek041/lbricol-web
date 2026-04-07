@@ -530,7 +530,11 @@ const MapView: React.FC<MapViewProps> = ({
                   <span style="font-size: ${isFocused ? '13px' : '11px'}; font-weight: ${isFocused ? '900' : '700'}; 
                     color: ${isFocused ? '#027963' : '#374151'}; font-family: sans-serif;
                     letter-spacing: -0.2px;">
-                    ${pin.name || 'Bricoler'}
+                    ${(() => {
+                const emojis = ['✨', '💎', '⭐', '🔨', '🏠', '🧹', '🚚', '🔧', '🌱', '🛡️'];
+                const index = pin.id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) % emojis.length;
+                return emojis[index];
+              })()} ${pin.name || 'Bricoler'}
                   </span>
                   ${isFocused ? `
                     <div style="display: flex; align-items: center; gap: 2px; border-left: 1px solid #E5E7EB; padding-left: 6px;">
