@@ -34,7 +34,7 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ subStatus }) => {
                 <div style={{ width: '100%', height: 'auto', maxHeight: '105dvh' }}>
                     <Lottie
                         animationData={jumpingAnimation}
-                        loop={true}
+                        loop={false}
                         style={{ width: '100%', height: '100%' }}
                     />
                 </div>
