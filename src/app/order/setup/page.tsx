@@ -1708,7 +1708,7 @@ export default function ServiceSetupPage() {
                                                     <label className="text-[20px] font-medium text-[#111827] setup-heading">{t({ en: 'How many rooms?', fr: 'Combien de chambres ?', ar: 'كم عدد الغرف؟' })}</label>
                                                 </div>
                                                 <div className="flex gap-4 overflow-x-auto pb-6 pt-2 no-scrollbar -mx-6 px-6 snap-x snap-mandatory">
-                                                    {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((num) => (
+                                                    {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].filter(num => (order.subServiceId === 'hospitality_turnover' || order.serviceType === 'hospitality') ? num >= 2 : true).map((num) => (
                                                         <motion.button
                                                             key={num}
                                                             whileTap={{ scale: 0.9 }}

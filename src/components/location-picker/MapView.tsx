@@ -4,6 +4,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { motion, AnimatePresence } from 'framer-motion';
+import { MapPin } from 'lucide-react';
 import { LocationPoint } from './types';
 
 interface MapViewProps {
@@ -98,6 +99,26 @@ const MapView: React.FC<MapViewProps> = ({
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
   const gpsMarkerRef = useRef<L.Marker | null>(null);
+  const [permissionDenied, setPermissionDenied] = useState(false);
+  const [isLocating, setIsLocating] = useState(false);
+
+  // ── Permission Check ──
+  useEffect(() => {
+    if ("permissions" in navigator) {
+      navigator.permissions.query({ name: 'geolocation' }).then((result) => {
+        if (result.state === 'denied') {
+          setPermissionDenied(true);
+        }
+        result.onchange = () => {
+          if (result.state === 'granted') {
+            setPermissionDenied(false);
+          } else if (result.state === 'denied') {
+            setPermissionDenied(true);
+          }
+        };
+      });
+    }
+  }, []);
   const gpsDotRef = useRef<L.CircleMarker | null>(null);
   const gpsPulseRef = useRef<L.CircleMarker | null>(null);
   const centerMarkerRef = useRef<L.Marker | null>(null);
@@ -1060,6 +1081,53 @@ const MapView: React.FC<MapViewProps> = ({
           </div>
         </div>
       )}
+
+      {/* Permission Denied Overlay (Forced GPS) */}
+      <AnimatePresence>
+        {permissionDenied && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute inset-0 z-[5000] bg-white/95 backdrop-blur-sm flex flex-col items-center justify-center px-8 text-center"
+          >
+            <div className="w-24 h-24 bg-emerald-50 rounded-full flex items-center justify-center mb-6 relative">
+              <div className="absolute inset-0 rounded-full border-4 border-emerald-500/20 animate-ping" />
+              <MapPin size={48} className="text-[#01A083]" />
+            </div>
+            
+            <h2 className="text-[24px] font-black text-neutral-900 mb-3 tracking-tight leading-tight">
+              {language === 'ar' ? 'مطلوب إذن الموقع' : language === 'fr' ? 'Accès GPS Requis' : 'Location Required'}
+            </h2>
+            
+            <p className="text-[15px] font-medium text-neutral-500 mb-8 leading-relaxed max-w-[280px]">
+              {language === 'ar' 
+                ? 'يرجى تفعيل نظام تحديد المواقع (GPS) للمتابعة. نحتاج لموقعك لضمان تقديم الخدمة بدقة وسرعة.' 
+                : language === 'fr' 
+                  ? 'Veuillez activer votre GPS pour continuer. Nous avons besoin de votre position pour assurer un service précis.' 
+                  : 'Please enable GPS to continue. We need your exact location to provide accurate and fast service.'}
+            </p>
+
+            <div className="space-y-4 w-full max-w-[280px]">
+              <button
+                onClick={() => window.location.reload()}
+                className="w-full h-14 bg-[#01A083] text-white rounded-2xl font-bold text-[16px] shadow-lg shadow-emerald-500/20 active:scale-95 transition-transform"
+              >
+                {language === 'ar' ? 'إعادة المحاولة' : language === 'fr' ? 'Réessayer' : 'Try Again'}
+              </button>
+
+              <div className="bg-neutral-50 rounded-2xl p-4 border border-neutral-100">
+                <p className="text-[12px] font-bold text-neutral-400 uppercase tracking-widest mb-2">
+                  {language === 'ar' ? 'كيفية التفعيل على iPhone' : language === 'fr' ? 'Comment activer sur iPhone' : 'How to enable on iPhone'}
+                </p>
+                <p className="text-[13px] font-medium text-neutral-600 text-left leading-snug">
+                  Settings {"->"} Privacy {"->"} Location Services {"->"} Safari {"->"} <span className="font-bold text-[#01A083]">While Using the App</span>
+                </p>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <style jsx global>{`
         @keyframes radarPulse {
