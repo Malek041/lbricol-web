@@ -167,7 +167,7 @@ const AddressDetailsForm: React.FC<AddressDetailsFormProps> = ({ initialData, on
             <div className={`flex items-center gap-1.5 mt-0.5 ${isMarked ? 'text-[#111827]' : 'text-[#111827]'}`}>
               <CheckCircle2 size={16} fill={isMarked ? "#000000ff" : "none"} className={isMarked ? "text-white" : ""} />
               <p className="text-[13px] font-medium">
-                {isMarked 
+                {isMarked
                   ? t({ en: "Done! Thanks for helping the bricoler", fr: "C'est fait ! Merci d'aider le bricoleur", ar: "تم! شكراً لمساعدة العامل" })
                   : t({ en: "Help the courier find the right spot", fr: "Aidez le livreur à trouver l'endroit exact", ar: "ساعد العامل في العثور على المكان الصحيح" })
                 }
@@ -207,12 +207,12 @@ const AddressDetailsForm: React.FC<AddressDetailsFormProps> = ({ initialData, on
                 key={l}
                 onClick={() => setFormData({ ...formData, label: l })}
                 className={`h-11 px-6 rounded-full text-[14px] font-bold transition-all border ${formData.label === l
-                  ? 'bg-[#F2C94C] border-[#F2C94C] text-[#111827]'
+                  ? 'bg-[#FFB700] border-[#FFB700] text-[#037B3E]'
                   : 'bg-white border-[#E5E7EB] text-[#6B7280]'
                   }`}
               >
-                {t({ 
-                  en: l, 
+                {t({
+                  en: l,
                   fr: l === 'Home' ? 'Maison' : l === 'Flat' ? 'Appartement' : l === 'Garden' ? 'Jardin' : 'Autre',
                   ar: l === 'Home' ? 'المنزل' : l === 'Flat' ? 'شقة' : l === 'Garden' ? 'حديقة' : 'مخصص'
                 })}
@@ -227,7 +227,7 @@ const AddressDetailsForm: React.FC<AddressDetailsFormProps> = ({ initialData, on
         <button
           onClick={handleSave}
           disabled={!formData.floorNumber || !formData.doorNumber || !isMarked}
-          className="w-full h-14 rounded-full bg-[#10B981] text-white font-bold text-[17px] shadow-lg active:scale-[0.98] transition-all disabled:opacity-50 disabled:scale-100"
+          className="w-full h-14 rounded-full bg-[#037B3E] text-white font-bold text-[17px] active:scale-[0.98] transition-all disabled:opacity-50 disabled:scale-100"
         >
           {t({ en: 'Save address', fr: "Enregistrer l'adresse", ar: "حفظ العنوان" })}
         </button>
