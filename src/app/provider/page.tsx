@@ -250,6 +250,7 @@ export default function ProviderPage() {
     const [settlementAmount, setSettlementAmount] = useState<number>(0);
     const [cityDoneJobs, setCityDoneJobs] = useState<{ craft: string }[]>([]);
     const [showRoutineModal, setShowRoutineModal] = useState(false);
+    const [isProfileOnboardingOpen, setIsProfileOnboardingOpen] = useState(false);
 
     // --- Helpers ---
     const getJobDateTime = useCallback((rawDate: string) => {
@@ -272,7 +273,7 @@ export default function ProviderPage() {
                 if (!isNaN(parsed.getTime())) return parsed;
                 const native = new Date(d);
                 if (!isNaN(native.getTime())) return native;
-                
+
                 // Handle "DD MMM." or similar formats that might be in French
                 // "06 avr." -> "April 6 current_year"
                 if (d.includes(' avr')) return new Date(`April ${d.split(' ')[0]} ${new Date().getFullYear()}`);
@@ -299,7 +300,7 @@ export default function ProviderPage() {
 
         // Priority 2: Creation Timestamp (fallback for sorting/legacy)
         if (createdAt?.seconds) return createdAt.seconds * 1000;
-        
+
         return 0;
     }, []);
 
@@ -379,7 +380,7 @@ export default function ProviderPage() {
             subServiceDisplayName: (() => {
                 const subId = isMarket ? (raw.subService || raw.subServiceId || raw.serviceType || '') : (raw.subServiceId || raw.subService || raw.serviceType || '');
                 const sId = isMarket ? (raw.craft || raw.serviceId || 'general') : (raw.service || '');
-                
+
                 try {
                     const { SERVICES_CATALOGUE } = require("@/config/services_catalogue");
                     const cat = SERVICES_CATALOGUE.find((c: any) => c.id === sId);
@@ -397,18 +398,18 @@ export default function ProviderPage() {
                     const { SERVICES_CATALOGUE } = require("@/config/services_catalogue");
                     const cat = SERVICES_CATALOGUE.find((c: any) => c.id === sId);
                     if (cat) return t({ en: cat.label, fr: cat.labelFr, ar: cat.labelAr || cat.label });
-                } catch (e) {}
+                } catch (e) { }
                 return raw.serviceName || raw.service || '';
             })(),
             title: raw.title || '',
             dateLabel: dateInfo.dateLabel,
             timeLabel: dateInfo.timeLabel,
-            description: 
-                raw.description || 
-                (raw.raw || raw).notes || 
-                (raw.details as any)?.note || 
-                (raw.details as any)?.serviceDetails?.note || 
-                raw.comment || 
+            description:
+                raw.description ||
+                (raw.raw || raw).notes ||
+                (raw.details as any)?.note ||
+                (raw.details as any)?.serviceDetails?.note ||
+                raw.comment ||
                 '',
             clientRating: isMarket ? (raw.clientRating || raw.rating || 5.0) : (raw.clientRating || raw.rating || 5.0),
             clientReviewCount: isMarket ? (raw.clientReviewCount || 0) : (raw.clientReviewCount || 0),
@@ -702,7 +703,7 @@ export default function ProviderPage() {
                             setActiveBubble({
                                 id: change.doc.id,
                                 avatar: noti.senderAvatar,
-                                count: 1, 
+                                count: 1,
                                 jobId: noti.jobId
                             });
                             // Skip toast for messages as bubble is shown
@@ -1385,9 +1386,9 @@ export default function ProviderPage() {
             if (subStatus === 'heading') {
                 const senderId = user?.uid;
                 const senderName = userData?.name || user?.displayName || 'Bricoler';
-                
-                const messageText = t({ 
-                    en: "I'm on my way! 🚀", 
+
+                const messageText = t({
+                    en: "I'm on my way! 🚀",
                     fr: "Je suis en chemin ! 🚀",
                     ar: "أنا في الطريق! 🚀"
                 });
@@ -1901,7 +1902,7 @@ export default function ProviderPage() {
     const totalRevenue = careerDoneJobs.reduce((acc, job) => acc + (parseInt(String(job.price || '').replace(/[^\d]/g, ''), 10) || 0), 0);
     // ── Ratings & Reputation Sync ──
     const allReviewsFromProfile = (userData as any)?.reviews || [];
-    
+
     // Merge ratings from jobs and from profile (ensuring no duplicates by jobId/id)
     const getMergedRatings = (jobsList: any[]) => {
         const ratingsMap = new Map<string, number>();
@@ -1927,7 +1928,7 @@ export default function ProviderPage() {
     };
 
     const careerRatings = getMergedRatings(careerDoneJobs);
-    
+
     // For all-time, we can include everything in profile and everything in all jobs
     const allTimeRatings = useMemo(() => {
         const ratingsMap = new Map<string, number>();
@@ -1955,7 +1956,7 @@ export default function ProviderPage() {
         if (job.bricolerEarnings && !isNaN(Number(job.bricolerEarnings))) {
             return acc + Number(job.bricolerEarnings);
         }
-        
+
         // Priority 2: Stored basePrice (usually the Net)
         if (job.basePrice && !isNaN(Number(job.basePrice))) {
             return acc + Number(job.basePrice);
@@ -2075,36 +2076,36 @@ export default function ProviderPage() {
     };
 
 
-// ── Shared Sub-component for Job Details ────────────────────────────────
-const DetailItem = ({ icon: Icon, label, value, subValue, highlight }: { 
-    icon: any, 
-    label: string, 
-    value: string | number, 
-    subValue?: string,
-    highlight?: boolean
-}) => (
-    <div className="flex items-start gap-5 p-6 border-b border-neutral-50 last:border-0 hover:bg-neutral-50/50 transition-colors group">
-        <div className={cn(
-            "w-12 h-12 rounded-2xl flex items-center justify-center transition-all group-hover:scale-110",
-            highlight ? "bg-[#01A083] text-white border border-[#008f75]" : "bg-neutral-50 text-neutral-400 border border-neutral-100"
-        )}>
-            <Icon size={24} strokeWidth={highlight ? 2.5 : 2} className={cn(!highlight && "group-hover:text-[#01A083]")} />
+    // ── Shared Sub-component for Job Details ────────────────────────────────
+    const DetailItem = ({ icon: Icon, label, value, subValue, highlight }: {
+        icon: any,
+        label: string,
+        value: string | number,
+        subValue?: string,
+        highlight?: boolean
+    }) => (
+        <div className="flex items-start gap-5 p-6 border-b border-neutral-50 last:border-0 hover:bg-neutral-50/50 transition-colors group">
+            <div className={cn(
+                "w-12 h-12 rounded-2xl flex items-center justify-center transition-all group-hover:scale-110",
+                highlight ? "bg-[#01A083] text-white border border-[#008f75]" : "bg-neutral-50 text-neutral-400 border border-neutral-100"
+            )}>
+                <Icon size={24} strokeWidth={highlight ? 2.5 : 2} className={cn(!highlight && "group-hover:text-[#01A083]")} />
+            </div>
+            <div className="flex-1 min-w-0">
+                <p className="text-[11px] font-black text-neutral-300 uppercase tracking-widest leading-none mb-2">{label}</p>
+                <p className="text-[16px] font-black text-black leading-tight truncate">{value}</p>
+                {subValue && <p className="text-[13px] font-bold text-neutral-400 mt-1 line-clamp-1">{subValue}</p>}
+            </div>
         </div>
-        <div className="flex-1 min-w-0">
-            <p className="text-[11px] font-black text-neutral-300 uppercase tracking-widest leading-none mb-2">{label}</p>
-            <p className="text-[16px] font-black text-black leading-tight truncate">{value}</p>
-            {subValue && <p className="text-[13px] font-bold text-neutral-400 mt-1 line-clamp-1">{subValue}</p>}
-        </div>
-    </div>
-);
+    );
 
     const renderJobDetailsModal = () => {
         if (!viewingJobDetails) return null;
-        
+
         const job = viewingJobDetails as any;
         const raw = (job.rawAccepted || job.rawJob || {}) as any;
         const user = userData as any;
-        
+
         let mappedStatus: JobDetails['status'] = 'new';
         if (job.status === 'done' || raw.status === 'completed') {
             mappedStatus = 'completed';
@@ -2193,54 +2194,54 @@ const DetailItem = ({ icon: Icon, label, value, subValue, highlight }: {
             </AnimatePresence>
             {renderJobDetailsModal()}
             <AnimatePresence key="main-app-presence">
-            {isMobileLayout && (activeNav === 'jobs' || (activeNav === 'performance' && performanceDetail === 'none')) && (
-                <header key="bricoler-mobile-header" className="pt-10 pb-3 px-6 flex flex-col flex-none sticky top-0 z-[100] transition-colors duration-300 bg-white border-b border-neutral-100">
-                    {(activeNav as string) === 'jobs' && (
-                        <div className="flex items-center justify-between mb-4">
-                            <h2 className="text-black text-[22px] font-black tracking-tight" style={{ fontFamily: 'Uber Move, var(--font-sans)' }}>
-                                {t({ en: 'Market', fr: 'Missions' })}
-                            </h2>
-                            <button
-                                onClick={() => setShowNotificationsPage(true)}
-                                className="w-10 h-10 flex items-center justify-center text-black relative active:scale-90 transition-transform bg-neutral-50 rounded-full"
-                            >
-                                <Bell size={22} strokeWidth={2.5} />
-                                {mobileNotificationsCount > 0 && (
-                                    <span className="absolute top-[10px] right-[10px] h-2.5 w-2.5 rounded-full bg-[#E51B24] border-2 border-white" />
-                                )}
-                            </button>
-                        </div>
-                    )}
-
-                    {(activeNav as string) === 'performance' && performanceDetail === 'none' && (
-                        <div className="flex items-center gap-6 overflow-x-auto no-scrollbar">
-                            {[
-                                { id: 'activity' as const, label: t({ en: 'Orders', fr: 'Commandes' }) },
-                                { id: 'performance' as const, label: t({ en: 'Performance', fr: 'Performance' }) },
-                                { id: 'availability' as const, label: t({ en: 'Availability', fr: 'Dispo' }) }
-                            ].map((tab) => (
+                {isMobileLayout && (activeNav === 'jobs' || (activeNav === 'performance' && performanceDetail === 'none')) && (
+                    <header key="bricoler-mobile-header" className="pt-10 pb-3 px-6 flex flex-col flex-none sticky top-0 z-[100] transition-colors duration-300 bg-white border-b border-neutral-100">
+                        {(activeNav as string) === 'jobs' && (
+                            <div className="flex items-center justify-between mb-4">
+                                <h2 className="text-black text-[22px] font-black tracking-tight" style={{ fontFamily: 'Uber Move, var(--font-sans)' }}>
+                                    {t({ en: 'Market', fr: 'Missions' })}
+                                </h2>
                                 <button
-                                    key={tab.id}
-                                    onClick={() => {
-                                        setPerformanceTab(tab.id as any);
-                                        setPerformanceDetail('none');
-                                        if ((activeNav as string) !== 'performance') setActiveNav('performance');
-                                    }}
-                                    className={cn(
-                                        "pb-2 text-[15px] transition-all relative shrink-0",
-                                        performanceTab === tab.id ? "font-black text-black" : "font-bold text-neutral-400"
-                                    )}
+                                    onClick={() => setShowNotificationsPage(true)}
+                                    className="w-10 h-10 flex items-center justify-center text-black relative active:scale-90 transition-transform bg-neutral-50 rounded-full"
                                 >
-                                    {tab.label}
-                                    {performanceTab === tab.id && (
-                                        <motion.div layoutId="performance-header-tab" className="absolute bottom-0 left-0 right-0 h-[3px] bg-[#01A083] rounded-t-full" />
+                                    <Bell size={22} strokeWidth={2.5} />
+                                    {mobileNotificationsCount > 0 && (
+                                        <span className="absolute top-[10px] right-[10px] h-2.5 w-2.5 rounded-full bg-[#E51B24] border-2 border-white" />
                                     )}
                                 </button>
-                            ))}
-                        </div>
-                    )}
-                </header>
-            )}
+                            </div>
+                        )}
+
+                        {(activeNav as string) === 'performance' && performanceDetail === 'none' && (
+                            <div className="flex items-center gap-6 overflow-x-auto no-scrollbar">
+                                {[
+                                    { id: 'activity' as const, label: t({ en: 'Orders', fr: 'Commandes' }) },
+                                    { id: 'performance' as const, label: t({ en: 'Performance', fr: 'Performance' }) },
+                                    { id: 'availability' as const, label: t({ en: 'Availability', fr: 'Dispo' }) }
+                                ].map((tab) => (
+                                    <button
+                                        key={tab.id}
+                                        onClick={() => {
+                                            setPerformanceTab(tab.id as any);
+                                            setPerformanceDetail('none');
+                                            if ((activeNav as string) !== 'performance') setActiveNav('performance');
+                                        }}
+                                        className={cn(
+                                            "pb-2 text-[15px] transition-all relative shrink-0",
+                                            performanceTab === tab.id ? "font-black text-black" : "font-bold text-neutral-400"
+                                        )}
+                                    >
+                                        {tab.label}
+                                        {performanceTab === tab.id && (
+                                            <motion.div layoutId="performance-header-tab" className="absolute bottom-0 left-0 right-0 h-[3px] bg-[#01A083] rounded-t-full" />
+                                        )}
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+                    </header>
+                )}
 
                 <main key="provider-main" className={cn(
                     "flex-1 min-h-0 overflow-hidden bg-white",
@@ -3236,6 +3237,7 @@ const DetailItem = ({ icon: Icon, label, value, subValue, highlight }: {
                                     isMobileLayout ? "pb-24" : ""
                                 )}>
                                 <ProfileView
+                                    onToggleOnboarding={setIsProfileOnboardingOpen}
                                     userData={userData}
                                     setUserData={setUserData}
                                     userName={userData?.name || user?.displayName || 'Bricoler'}
@@ -3294,6 +3296,7 @@ const DetailItem = ({ icon: Icon, label, value, subValue, highlight }: {
                                     isMobileLayout ? "pb-24" : ""
                                 )}>
                                 <ProfileView
+                                    onToggleOnboarding={setIsProfileOnboardingOpen}
                                     userData={userData}
                                     setUserData={setUserData}
                                     userName={userData?.name || user?.displayName || 'Bricoler'}
@@ -4048,7 +4051,7 @@ const DetailItem = ({ icon: Icon, label, value, subValue, highlight }: {
                     />
 
                     {
-                        isMobileLayout && !selectedChat && !viewingJobDetails && performanceDetail === 'none' && !showLanguagePopup && !showProfileModal && !showAddServiceModal && !showNIDModal && !showRoutineModal && (
+                        isMobileLayout && !selectedChat && !viewingJobDetails && performanceDetail === 'none' && !showLanguagePopup && !showProfileModal && !showAddServiceModal && !showNIDModal && !showRoutineModal && !isProfileOnboardingOpen && (
                             <div key="mobile-bottom-nav-wrapper">
                                 <MobileBottomNav
                                     activeTab={activeNav}

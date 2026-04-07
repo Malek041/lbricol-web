@@ -1673,7 +1673,7 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
-                    className="fixed inset-0 bg-white z-[2000] flex flex-col"
+                    className="fixed inset-0 bg-white z-[10001] flex flex-col"
                     onClick={onClose}
                 >
                     <motion.div

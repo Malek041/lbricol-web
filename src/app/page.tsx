@@ -319,6 +319,7 @@ const Home = () => {
   const [userSavedAddresses, setUserSavedAddresses] = useState<SavedAddress[]>([]);
   const [selectedPoint, setSelectedPoint] = useState<{ lat: number; lng: number, address?: string } | null>(null);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [isProfileOnboardingOpen, setIsProfileOnboardingOpen] = useState(false);
 
   const handleAddressUpdate = (address: string) => {
     if (!address) return;
@@ -2695,6 +2696,7 @@ const Home = () => {
 
             {mobileNavTab === 'profile' && (
               <ProfileView
+                onToggleOnboarding={setIsProfileOnboardingOpen}
                 userAvatar={userData?.profilePhotoURL || userData?.photoURL || currentUser?.photoURL || undefined}
                 userName={userData?.name || currentUser?.displayName || undefined}
                 userEmail={currentUser?.email || undefined}
@@ -3584,7 +3586,7 @@ const Home = () => {
       </main>
 
       {/* Mobile Bottom Navigation - OUTSIDE main to avoid overflow/stacking issues */}
-      {isMobile && !showSplash && !showAuthPopup && !isProgramming && !showClientOnboarding && !showMobileOnboarding && !showLanguagePopup && !isViewingOrderDetails && !showMessagesModal && !showLocationPicker && ['home', 'calendar', 'orders', 'profile', 'performance', 'services', 'reviews', 'search'].includes(mobileNavTab) && <MobileBottomNav
+      {isMobile && !showSplash && !showAuthPopup && !isProgramming && !showClientOnboarding && !showMobileOnboarding && !showLanguagePopup && !isViewingOrderDetails && !showMessagesModal && !showLocationPicker && !isProfileOnboardingOpen && ['home', 'calendar', 'orders', 'profile', 'performance', 'services', 'reviews', 'search'].includes(mobileNavTab) && <MobileBottomNav
         activeTab={mobileNavTab as any}
         onTabChange={(tab: any) => {
           if (tab === 'calendar' && mobileNavTab === 'calendar') {

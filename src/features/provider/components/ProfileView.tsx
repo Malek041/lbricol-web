@@ -32,6 +32,7 @@ interface ProfileViewProps {
     userData?: any;
     setUserData?: (data: any) => void;
     initialView?: 'main' | 'info' | 'admin-code' | 'portfolio';
+    onToggleOnboarding?: (isOpen: boolean) => void;
 }
 
 const ProfileView: React.FC<ProfileViewProps> = ({
@@ -51,6 +52,7 @@ const ProfileView: React.FC<ProfileViewProps> = ({
     userData,
     setUserData,
     initialView = 'main',
+    onToggleOnboarding,
 }) => {
     const { t } = useLanguage();
     const [view, setView] = useState<'main' | 'info' | 'admin-code' | 'portfolio'>(initialView);
@@ -64,6 +66,11 @@ const ProfileView: React.FC<ProfileViewProps> = ({
 
     // Onboarding Mode Popup state
     const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
+    const toggleOnboarding = (open: boolean) => {
+        setIsOnboardingOpen(open);
+        onToggleOnboarding?.(open);
+    };
+
     const [onboardingMode, setOnboardingMode] = useState<'edit' | 'add'>('edit');
     const [onboardingInitialCat, setOnboardingInitialCat] = useState<any>(null);
 
@@ -676,7 +683,7 @@ const ProfileView: React.FC<ProfileViewProps> = ({
                                     onClick={() => {
                                         setOnboardingMode('edit');
                                         setOnboardingInitialCat(group);
-                                        setIsOnboardingOpen(true);
+                                        toggleOnboarding(true);
                                     }}
                                     className="w-full text-left py-12 space-y-6 cursor-pointer"
                                 >
@@ -809,9 +816,9 @@ const ProfileView: React.FC<ProfileViewProps> = ({
                         onClick={() => {
                             setOnboardingMode('add');
                             setOnboardingInitialCat(null);
-                            setIsOnboardingOpen(true);
+                            toggleOnboarding(true);
                         }}
-                        className="w-full h-[52px] bg-[#0CB380] text-white rounded-full text-[20px] font-black active:scale-[0.98] transition-all"
+                        className="w-full h-[52px] bg-[#037B3E] text-white rounded-full text-[20px] font-black active:scale-[0.98] transition-all"
                     >
                         {t({ en: 'Add Service', fr: 'Ajouter un service', ar: 'إضافة خدمة' })}
                     </button>
@@ -904,7 +911,7 @@ const ProfileView: React.FC<ProfileViewProps> = ({
             {isOnboardingOpen && (
                 <OnboardingPopup
                     isOpen={isOnboardingOpen}
-                    onClose={() => setIsOnboardingOpen(false)}
+                    onClose={() => toggleOnboarding(false)}
                     mode={onboardingMode}
                     initialCategory={onboardingInitialCat}
                     userData={userData}
@@ -913,7 +920,7 @@ const ProfileView: React.FC<ProfileViewProps> = ({
                         if (setUserData) {
                             setUserData({ ...userData, ...data });
                         }
-                        setIsOnboardingOpen(false);
+                        toggleOnboarding(false);
                     }}
                 />
             )}
