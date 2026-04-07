@@ -527,7 +527,7 @@ const MapView: React.FC<MapViewProps> = ({
 
     const zoomScale = Math.max(0.9, Math.min(3.0, Math.pow(1.18, currentZoom - 16)));
 
-    providerPins.forEach(pin => {
+    providerPins.forEach((pin, index) => {
       const isFocused = pin.id === focusedProviderId;
       const hasFocus = !!focusedProviderId;
       const opacity = 1;
@@ -540,11 +540,11 @@ const MapView: React.FC<MapViewProps> = ({
       const shouldPlaceAbove = !isClientAbove;
 
       const icon = L.divIcon({
-        className: '',
+        className: 'bricoler-pin-container',
         html: `
-          <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;width:${size}px;height:${size}px;cursor:pointer;opacity:${opacity};transform:scale(${scale});transition:all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);position:relative;">
+          <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;width:${size}px;height:${size}px;cursor:pointer;opacity:${opacity};transform:scale(${scale});position:relative; animation: pinDropIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) both; animation-delay: ${index * 0.08}s;">
             <div style="display:flex;flex-direction:column;align-items:center;position:relative;">
-              <div style="position: absolute; left: calc(100% + 8px); top: 50%; transform: translateY(-50%); white-space: nowrap; transition: all 0.3s; pointer-events: none;">
+              <div style="position: absolute; left: calc(100% + 8px); top: 50%; transform: translateY(-50%); white-space: nowrap; transition: all 0.3s; pointer-events: none; animation: providerCardFadeIn 0.5s both; animation-delay: ${index * 0.08 + 0.3}s;">
                 <div style="background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(4px); 
                   padding: 4px 10px; border-radius: 20px; 
                   border: 1px solid ${isFocused ? '#027963' : '#F3F4F6'};
@@ -1141,6 +1141,19 @@ const MapView: React.FC<MapViewProps> = ({
         @keyframes pinBounce {
           0%, 100% { transform: translateY(0); }
           50% { transform: translateY(-8px); }
+        }
+        @keyframes pinDropIn {
+          0% { transform: translateY(-30px) scale(0); opacity: 0; }
+          70% { transform: translateY(5px) scale(1.1); }
+          100% { transform: translateY(0) scale(1); opacity: 1; }
+        }
+        @keyframes providerCardFadeIn {
+          0% { transform: translate(-10px, -50%) scale(0.8); opacity: 0; }
+          100% { transform: translate(0, -50%) scale(1); opacity: 1; }
+        }
+        .bricoler-pin-container {
+          background: transparent !important;
+          border: none !important;
         }
         .animate-radar-pulse {
           animation: radarPulse 2s cubic-bezier(0, 0, 0.2, 1) infinite;
