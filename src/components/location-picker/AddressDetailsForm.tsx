@@ -6,6 +6,8 @@ import dynamic from 'next/dynamic';
 import { LocationPoint, SavedAddress, AddressLabel } from './types';
 import EntrancePicker from './EntrancePicker';
 
+import { useLanguage } from '@/context/LanguageContext';
+
 // Dynamically import MapView to avoid SSR issues for the thumbnail
 const MapView = dynamic(() => import('./MapView'), {
   ssr: false,
@@ -19,6 +21,7 @@ interface AddressDetailsFormProps {
 }
 
 const AddressDetailsForm: React.FC<AddressDetailsFormProps> = ({ initialData, onSave, onBack }) => {
+  const { t } = useLanguage();
   const [formData, setFormData] = useState({
     buildingName: initialData.buildingName || '',
     floorNumber: initialData.floorNumber || '',
@@ -52,7 +55,7 @@ const AddressDetailsForm: React.FC<AddressDetailsFormProps> = ({ initialData, on
           <ArrowLeft size={24} />
         </button>
         <h2 className="flex-1 text-left pl-5 font-bold text-[17px] mr-8">
-          Address details
+          {t({ en: 'Address details', fr: "Détails de l'adresse", ar: "تفاصيل العنوان" })}
         </h2>
       </div>
 
@@ -67,7 +70,7 @@ const AddressDetailsForm: React.FC<AddressDetailsFormProps> = ({ initialData, on
               {initialData.address}
             </p>
             <p className="text-[14px] text-[#6B7280] mt-1">
-              {[formData.buildingName, formData.floorNumber, formData.doorNumber].filter(Boolean).join(', ') || 'No details yet'}
+              {[formData.buildingName, formData.floorNumber, formData.doorNumber].filter(Boolean).join(', ') || t({ en: 'No details yet', fr: 'Aucun détail', ar: 'لا توجد تفاصيل بعد' })}
             </p>
           </div>
         </div>
@@ -84,7 +87,7 @@ const AddressDetailsForm: React.FC<AddressDetailsFormProps> = ({ initialData, on
                 className="w-full h-full px-4 pt-5 pb-1 bg-transparent outline-none text-[15px] font-medium"
               />
               <label className={`absolute left-4 transition-all pointer-events-none text-[#6B7280] ${formData.buildingName ? 'top-1.5 text-[11px] font-bold' : 'top-4 text-[15px]'}`}>
-                Building name
+                {t({ en: 'Building name', fr: 'Nom du bâtiment', ar: 'اسم المبنى' })}
               </label>
               {formData.buildingName && (
                 <button
@@ -108,7 +111,7 @@ const AddressDetailsForm: React.FC<AddressDetailsFormProps> = ({ initialData, on
                   className="w-full h-full px-4 pt-5 pb-1 bg-transparent outline-none text-[15px] font-medium"
                 />
                 <label className={`absolute left-4 transition-all pointer-events-none text-[#6B7280] ${formData.floorNumber ? 'top-1.5 text-[11px] font-bold' : 'top-4 text-[15px]'}`}>
-                  Floor number
+                  {t({ en: 'Floor number', fr: 'Étage', ar: 'رقم الطابق' })}
                 </label>
                 {formData.floorNumber && (
                   <button
@@ -131,7 +134,7 @@ const AddressDetailsForm: React.FC<AddressDetailsFormProps> = ({ initialData, on
                   className="w-full h-full px-4 pt-5 pb-1 bg-transparent outline-none text-[15px] font-medium"
                 />
                 <label className={`absolute left-4 transition-all pointer-events-none text-[#6B7280] ${formData.doorNumber ? 'top-1.5 text-[11px] font-bold' : 'top-4 text-[15px]'}`}>
-                  Door number
+                  {t({ en: 'Door number', fr: 'Numéro de porte', ar: 'رقم الباب' })}
                 </label>
                 {formData.doorNumber && (
                   <button
@@ -151,7 +154,7 @@ const AddressDetailsForm: React.FC<AddressDetailsFormProps> = ({ initialData, on
             <textarea
               value={formData.additionalInfo}
               onChange={(e) => setFormData({ ...formData, additionalInfo: e.target.value })}
-              placeholder="Additional information"
+              placeholder={t({ en: 'Additional information', fr: 'Informations complémentaires', ar: 'معلومات إضافية' })}
               className="w-full h-full p-4 bg-transparent outline-none text-[15px] font-medium resize-none placeholder:text-[#9CA3AF] placeholder:font-normal"
             />
           </div>
@@ -160,11 +163,14 @@ const AddressDetailsForm: React.FC<AddressDetailsFormProps> = ({ initialData, on
         {/* Mark Entrance */}
         <div className="space-y-3">
           <div className="flex flex-col">
-            <h3 className="text-[17px] font-bold text-[#111827]">Mark your entrance</h3>
+            <h3 className="text-[17px] font-bold text-[#111827]">{t({ en: 'Mark your entrance', fr: 'Marquez votre entrée', ar: 'حدد المدخل' })}</h3>
             <div className={`flex items-center gap-1.5 mt-0.5 ${isMarked ? 'text-[#111827]' : 'text-[#111827]'}`}>
               <CheckCircle2 size={16} fill={isMarked ? "#000000ff" : "none"} className={isMarked ? "text-white" : ""} />
               <p className="text-[13px] font-medium">
-                {isMarked ? "Done! Thanks for helping the courier" : "Help the courier find the right spot"}
+                {isMarked 
+                  ? t({ en: "Done! Thanks for helping the bricoler", fr: "C'est fait ! Merci d'aider le bricoleur", ar: "تم! شكراً لمساعدة العامل" })
+                  : t({ en: "Help the courier find the right spot", fr: "Aidez le livreur à trouver l'endroit exact", ar: "ساعد العامل في العثور على المكان الصحيح" })
+                }
               </p>
             </div>
           </div>
@@ -192,8 +198,8 @@ const AddressDetailsForm: React.FC<AddressDetailsFormProps> = ({ initialData, on
         {/* Add Label */}
         <div className="space-y-3">
           <div>
-            <h3 className="text-[17px] font-bold text-[#111827]">Add a label</h3>
-            <p className="text-[13px] text-[#6B7280]">Identify this address more easily next time</p>
+            <h3 className="text-[17px] font-bold text-[#111827]">{t({ en: 'Add a label', fr: 'Ajouter un libellé', ar: 'أضف تسمية' })}</h3>
+            <p className="text-[13px] text-[#6B7280]">{t({ en: 'Identify this address more easily next time', fr: 'Identifiez cette adresse plus facilement la prochaine fois', ar: 'حدد هذا العنوان بسهولة أكبر في المرة القادمة' })}</p>
           </div>
           <div className="flex gap-2.5 overflow-x-auto pb-2 scrollbar-hide">
             {labelOptions.map(l => (
@@ -205,7 +211,11 @@ const AddressDetailsForm: React.FC<AddressDetailsFormProps> = ({ initialData, on
                   : 'bg-white border-[#E5E7EB] text-[#6B7280]'
                   }`}
               >
-                {l}
+                {t({ 
+                  en: l, 
+                  fr: l === 'Home' ? 'Maison' : l === 'Flat' ? 'Appartement' : l === 'Garden' ? 'Jardin' : 'Autre',
+                  ar: l === 'Home' ? 'المنزل' : l === 'Flat' ? 'شقة' : l === 'Garden' ? 'حديقة' : 'مخصص'
+                })}
               </button>
             ))}
           </div>
@@ -219,7 +229,7 @@ const AddressDetailsForm: React.FC<AddressDetailsFormProps> = ({ initialData, on
           disabled={!formData.floorNumber || !formData.doorNumber || !isMarked}
           className="w-full h-14 rounded-full bg-[#10B981] text-white font-bold text-[17px] shadow-lg active:scale-[0.98] transition-all disabled:opacity-50 disabled:scale-100"
         >
-          Save address
+          {t({ en: 'Save address', fr: "Enregistrer l'adresse", ar: "حفظ العنوان" })}
         </button>
       </div>
 
