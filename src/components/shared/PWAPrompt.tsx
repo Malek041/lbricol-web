@@ -90,28 +90,13 @@ export default function PWAPrompt() {
                     </button>
 
                     <div className="flex flex-col items-center text-center">
-                        <div className="w-50 h-50 bg-white rounded-2xl shadow-lg border border-neutral-50 p-2 mb-4 flex items-center justify-center overflow-hidden">
+                        <div className="w-50 h-50 bg-white rounded-2xl p-2 mb-4 flex items-center justify-center overflow-hidden">
                             <img
                                 src="/Images/Logo/image-Photoroom (2) copy 5.png"
                                 alt="Lbricol Logo"
                                 className="w-full h-full object-contain"
                             />
                         </div>
-
-                        <h3 className="text-[22px] font-black text-black leading-tight tracking-tight mb-2">
-                            {t({
-                                en: 'Install Lbricol App',
-                                fr: 'Installez l\'app Lbricol',
-                                ar: 'ثبت تطبيق لبريكول'
-                            })}
-                        </h3>
-                        <p className="text-[15px] text-neutral-500 font-medium px-4 mb-6">
-                            {t({
-                                en: 'Get the best experience with faster loading and offline access right from your home screen.',
-                                fr: 'Profitez d\'une meilleure expérience avec un accès rapide depuis votre écran d\'accueil.',
-                                ar: 'احصل على أفضل تجربة مع وصول سريع من شاشتك الرئيسية.'
-                            })}
-                        </p>
 
 
                         <button
