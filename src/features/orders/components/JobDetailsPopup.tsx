@@ -427,183 +427,206 @@ const JobDetailsPopup: React.FC<JobDetailsPopupProps> = ({ job, onClose, onAccep
                             })()}
                         </div>
                     ) : (
-                        /* CLIENT VIEW (Simplified current layout) */
-                        <div className="px-6">
-                            {/* Hero Image & Title Section */}
-                            <div className="text-center mt-8 mb-10">
-                                <motion.div
-                                    initial={{ scale: 0.8, opacity: 0 }}
-                                    animate={{ scale: 1, opacity: 1 }}
-                                    className="flex justify-center mb-6"
-                                >
-                                    <img
-                                        src={job.service === 'car_rental' ?
-                                            (job.selectedCar?.modelImage || job.selectedCar?.image || "/Images/Vectors Illu/carKey.png") :
-                                            getServiceVector(job.service || '')
-                                        }
-                                        className="w-40 h-40 object-contain"
-                                        alt="Service"
-                                    />
-                                </motion.div>
-                                <h2 className="text-[28px] font-medium text-black mb-2 tracking-tight">
-                                    {subServiceName || job.serviceName || t({ en: 'Mission Details', fr: 'Détails de la mission', ar: 'تفاصيل المهمة' })}
-                                </h2>
-                                <div className="text-[17px] font-medium text-neutral-500 flex items-center justify-center gap-2">
-                                    <span>{(() => {
-                                        try { return format(parseISO(job.date), 'MMMM d, yyyy'); }
-                                        catch (e) { return job.date; }
-                                    })()}</span>
-                                    <span>•</span>
-                                    <span>{job.time || '09:00'}</span>
+                        /* CLIENT VIEW (Airbnb Redesign) */
+                        <div className="flex flex-col bg-white min-h-screen">
+                            {/* Sticky Header with Close Button on Right */}
+                            <div className="pt-12 px-6 flex items-center justify-between bg-white">
+                                <div className="text-[12px] font-bold text-neutral-400 uppercase tracking-widest leading-none">
+                                    {t({ en: 'Job Details', fr: 'Détails de la mission', ar: 'تفاصيل المهمة' })}
                                 </div>
+                                <button
+                                    onClick={onClose}
+                                    className="w-10 h-10 rounded-full hover:bg-neutral-100 flex items-center justify-center transition-colors shadow-sm active:scale-95 border border-neutral-100"
+                                >
+                                    <XCircle size={22} className="text-black" strokeWidth={1.5} />
+                                </button>
                             </div>
 
-                            {/* Decorative Separator */}
-                            <div className="mx-[-24px] mb-8 relative h-5 overflow-hidden">
-                                <svg width="100%" height="20" viewBox="0 0 400 20" preserveAspectRatio="none">
-                                    <path d="M0 10 Q 5 0, 10 10 T 20 10 T 30 10 T 40 10 T 50 10 T 60 10 T 70 10 T 80 10 T 90 10 T 100 10 T 110 10 T 120 10 T 130 10 T 140 10 T 150 10 T 160 10 T 170 10 T 180 10 T 190 10 T 200 10 T 210 10 T 220 10 T 230 10 T 240 10 T 250 10 T 260 10 T 270 10 T 280 10 T 290 10 T 300 10 T 310 10 T 320 10 T 330 10 T 340 10 T 350 10 T 360 10 T 370 10 T 380 10 T 390 10 T 400 10 V 20 H 0 Z" fill="#F9FAFB" />
-                                </svg>
-                            </div>
-
-                            {/* Customer / Provider Details */}
-                            <section className="mb-10">
-                                <h3 className="text-[25px] font-medium text-black mb-6 flex items-center gap-3">
-                                    {t({ en: 'Provider', fr: 'Prestataire', ar: 'المزود' })}
-                                    <span className="text-2xl">👨‍🔧</span>
-                                </h3>
-                                <div className="bg-[#F9FAFB] rounded-[32px] p-4 sm:p-6 border border-neutral-100 flex flex-wrap items-center gap-4 sm:gap-6">
-                                    <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-[24px] bg-white flex-shrink-0 overflow-hidden relative border-2 border-white">
-                                        <img
-                                            src={job.bricolerAvatar || "/Images/Vectors Illu/Avatar.png"}
-                                            className="w-full h-full object-cover"
-                                            alt="User"
-                                        />
-                                        <div className="absolute bottom-1 right-1 w-5 h-5 bg-[#01A083] rounded-full border-2 border-white flex items-center justify-center">
-                                            <CheckCircle2 size={10} className="text-white fill-white" />
+                            <div className="flex-1 space-y-2 bg-[#F7F7F7] mt-4">
+                                {/* Section 1: Hero Context */}
+                                <div className="bg-white px-6 py-10 flex justify-between items-start">
+                                    <div className="flex-1 pr-6">
+                                        <div className="flex items-center gap-2 mb-2">
+                                            <span className="text-[13px] font-black text-[#01A083] uppercase tracking-wider">
+                                                {job.status === 'programmed' ? t({ en: 'Confirmed', fr: 'Confirmée', ar: 'مؤكد' }) : job.status}
+                                            </span>
+                                            <span className="w-1 h-1 rounded-full bg-neutral-300" />
+                                            <span className="text-[13px] font-medium text-neutral-500 uppercase tracking-wider">
+                                                {(() => { try { return format(parseISO(job.date), 'MMM d'); } catch (e) { return job.date; } })()}
+                                            </span>
                                         </div>
-                                    </div>
-                                    <div className="flex-1 min-w-[120px]">
-                                        <h4 className="text-[20px] font-medium text-black mb-1 leading-tight">
-                                            {job.bricolerName}
-                                        </h4>
-                                        <div className="flex flex-wrap items-center gap-2 mt-1">
-                                            <div className="flex items-center gap-1 flex-shrink-0">
-                                                <Star size={14} className="fill-sky-400 text-sky-400" />
-                                                <span className="text-[14px] font-medium text-black">
-                                                    {job.bricolerRating?.toFixed(1) || '5.0'}
-                                                </span>
+                                        <h1 className="text-[34px] font-black text-black leading-[1.05] tracking-tight mb-4">
+                                            {job.bricolerName || t({ en: 'Your Bricoler', fr: 'Votre Bricoler', ar: 'مزود الخدمة' })}
+                                        </h1>
+                                        <div className="text-[16px] font-medium text-neutral-600 leading-snug">
+                                            {subServiceName} • {job.city || t({ en: 'Service Location', fr: 'Localisation' })}
+                                            <div className="mt-1 opacity-70">
+                                                {job.time} ({finalDuration}{t({ en: 'h duration', fr: 'h de mission', ar: 'ساعات' })})
                                             </div>
                                         </div>
                                     </div>
-                                    <button
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            onChat?.(job.id, job.bricolerId || '', job.bricolerName || job.clientName);
-                                        }}
-                                        className="w-14 h-14 rounded-[20px] bg-[#01A083] flex flex-shrink-0 items-center justify-center active:scale-90 transition-all "
-                                    >
-                                        <MessageCircle size={28} className="text-white" />
+                                    <div className="w-20 h-20 rounded-full overflow-hidden bg-neutral-100 border border-neutral-100 shrink-0 shadow-lg shadow-black/5">
+                                        <img
+                                            src={job.bricolerAvatar || "/Images/Vectors Illu/Avatar.png"}
+                                            className="w-full h-full object-cover"
+                                            alt="Provider"
+                                            onError={(e) => {
+                                                (e.target as HTMLImageElement).src = "/Images/Vectors Illu/Avatar.png";
+                                            }}
+                                        />
+                                    </div>
+                                </div>
+
+                                {/* Section 2: About Bricoler */}
+                                <div className="bg-white px-6 py-10">
+                                    <h2 className="text-[24px] font-black text-black mb-6">
+                                        {t({ en: `About ${job.bricolerName?.split(' ')[0]}`, fr: `Tout sur ${job.bricolerName?.split(' ')[0]}`, ar: `عن ${job.bricolerName?.split(' ')[0]}` })}
+                                    </h2>
+                                    <div className="flex items-center gap-4 mb-6">
+                                        <div className="flex items-center gap-1.5 px-3 py-1 bg-neutral-50 border border-neutral-100 rounded-full">
+                                            <Star size={14} className="fill-black text-black" />
+                                            <span className="text-[14px] font-black text-black">{job.bricolerRating?.toFixed(1) || '5.0'}</span>
+                                        </div>
+                                        <div className="text-[14px] font-medium text-neutral-400">
+                                            Bricoler Verifié • +50 Mission
+                                        </div>
+                                    </div>
+                                    <button className="text-[17px] font-black text-black underline underline-offset-4 decoration-2 active:opacity-60">
+                                        {t({ en: 'View full profile', fr: 'Afficher le profil complet', ar: 'عرض الملف الشخصي' })}
                                     </button>
                                 </div>
-                            </section>
 
-                            {/* Payment Method Section */}
-                            <section className="mb-10">
-                                <h3 className="text-[25px] font-medium text-black mb-6 flex items-center gap-3">
-                                    {t({ en: 'Payment', fr: 'Paiement', ar: 'الدفع' })} <span className="text-2xl">💳</span>
-                                </h3>
-                                <div className="bg-[#F9FAFB] rounded-[24px] p-5 border border-neutral-100 flex items-center gap-5">
-                                    <div className="w-14 h-14 rounded-2xl bg-white border border-neutral-100 flex items-center justify-center text-3xl shadow-sm">
-                                        {(job as any).paymentMethod === 'bank_transfer' ? '🏦' : '💵'}
-                                    </div>
-                                    <div className="flex-1">
-                                        <h4 className="text-[17px] font-medium text-black">
-                                            {(job as any).paymentMethod === 'bank_transfer'
-                                                ? t({ en: 'Bank Transfer', fr: 'Virement bancaire', ar: 'تحويل بنكي' })
-                                                : t({ en: 'Cash', fr: 'Espèces', ar: 'نقدًا' })}
-                                        </h4>
-                                        <p className="text-[14px] font-medium text-neutral-400">
-                                            {(job as any).paymentMethod === 'bank_transfer'
-                                                ? t({ en: 'Direct to Lbricol', fr: 'Directement à Lbricol', ar: 'مباشرة إلى Lbricol' })
-                                                : t({ en: 'On delivery', fr: 'À la livraison', ar: 'عند التسليم' })}
-                                        </p>
+                                {/* Section 3: Detailed Info Grid */}
+                                <div className="bg-white px-6 py-10 space-y-10">
+                                    <div>
+                                        <h2 className="text-[24px] font-black text-black mb-8">
+                                            {t({ en: 'Booking details', fr: 'Détails de la réservation', ar: 'تفاصيل الحجز' })}
+                                        </h2>
+
+                                        <div className="space-y-10">
+                                            <div className="flex justify-between items-start">
+                                                <div className="flex-1 pr-4">
+                                                    <p className="text-[16px] font-black text-black mb-1">{t({ en: 'Arrival', fr: 'Arrivée', ar: 'الوصول' })}</p>
+                                                    <p className="text-[15px] font-medium text-neutral-500 leading-tight">
+                                                        {(() => {
+                                                            try { return format(parseISO(job.date), 'EEEE d MMMM yyyy'); }
+                                                            catch (e) { return job.date; }
+                                                        })()} • {job.time}
+                                                    </p>
+                                                </div>
+                                                <button className="text-[15px] font-black text-black underline underline-offset-2 shrink-0">{t({ en: 'Modify', fr: 'Modifier', ar: 'تعديل' })}</button>
+                                            </div>
+
+                                            <div className="flex justify-between items-start">
+                                                <div className="flex-1 pr-4">
+                                                    <p className="text-[16px] font-black text-black mb-1">{t({ en: 'Scope', fr: 'Étendue', ar: 'النطاق' })}</p>
+                                                    <p className="text-[15px] font-medium text-neutral-500 leading-tight">
+                                                        {finalDuration} {t({ en: 'hours booked for', fr: 'heures réservées pour', ar: 'ساعات ل' })} {subServiceName}
+                                                    </p>
+                                                </div>
+                                                <button className="text-[15px] font-black text-black underline underline-offset-2 shrink-0">{t({ en: 'Modify', fr: 'Modifier', ar: 'تعديل' })}</button>
+                                            </div>
+
+                                            <div>
+                                                <p className="text-[16px] font-black text-black mb-1">{t({ en: 'Payment type', fr: 'Type de paiement', ar: 'نوع الدفع' })}</p>
+                                                <p className="text-[15px] font-medium text-neutral-500 leading-tight">
+                                                    {(job as any).paymentMethod === 'bank_transfer'
+                                                        ? t({ en: 'Bank Transfer (Direct)', fr: 'Virement bancaire (Direct)', ar: 'تحويل بنكي' })
+                                                        : t({ en: 'Cash (On Site)', fr: 'Espèces (Sur place)', ar: 'نقدًا' })}
+                                                </p>
+                                            </div>
+
+                                            <div>
+                                                <p className="text-[16px] font-black text-black mb-1">{t({ en: 'Confirmation id', fr: 'N° de confirmation', ar: 'رمز التأكيد' })}</p>
+                                                <p className="text-[15px] font-medium text-neutral-500 uppercase tracking-[2px]">{job.id?.slice(-8).toUpperCase()}</p>
+                                            </div>
+
+                                            <button className="text-[17px] font-black text-black underline underline-offset-4 decoration-2 active:opacity-60 flex items-center gap-2">
+                                                <Calendar size={18} />
+                                                {t({ en: 'Sync to calendar', fr: 'Afficher dans le calendrier', ar: 'عرض في التقويم' })}
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
-                            </section>
 
-                            {/* Client Setup Summary */}
-                            <section className="mb-10">
-                                <h3 className="text-[25px] font-medium text-black mb-6">
-                                    {t({ en: 'Setup Summary', fr: 'Résumé', ar: 'ملخص' })} <span className="text-2xl">📋</span>
-                                </h3>
-                                <div className=" bg-[#F9FAFB] rounded-[32px] p-6 space-y-4">
-                                    <div className="flex justify-between items-center pb-4 border-b border-neutral-100">
-                                        <span className="text-neutral-500">{t({ en: 'Service', fr: 'Service', ar: 'الخدمة' })}</span>
-                                        <span className="font-bold">{subServiceName}</span>
-                                    </div>
-                                    <div className="flex justify-between items-center pb-4 border-b border-neutral-100">
-                                        <span className="text-neutral-500">{t({ en: 'Date', fr: 'Date', ar: 'التاريخ' })}</span>
-                                        <span className="font-bold">{(() => { try { return format(parseISO(job.date), 'MMM d, yyyy'); } catch (e) { return job.date; } })()}</span>
-                                    </div>
-                                    <div className="flex justify-between items-center pb-4 border-b border-neutral-100">
-                                        <span className="text-neutral-500">{t({ en: 'Time', fr: 'Heure', ar: 'الوقت' })}</span>
-                                        <span className="font-bold">{job.time}</span>
+                                {/* Section 4: Support & Assistance */}
+                                <div className="bg-white px-6 py-10 space-y-8">
+                                    <h2 className="text-[24px] font-black text-black mb-4">
+                                        {t({ en: 'Assistance', fr: 'Assistance', ar: 'المساعدة' })}
+                                    </h2>
+
+                                    <div className="space-y-2">
+                                        <button className="w-full h-16 flex items-center justify-between border-b border-neutral-50 group hover:px-2 transition-all">
+                                            <div className="flex items-center gap-4">
+                                                <div className="w-10 h-10 rounded-full flex items-center justify-center text-neutral-900">
+                                                    <Ban size={22} />
+                                                </div>
+                                                <span className="text-[17px] font-medium text-neutral-900">{t({ en: 'Problem with the Bricoler?', fr: 'Problème avec le Bricoler ?', ar: 'مشكلة مع المزود؟' })}</span>
+                                            </div>
+                                            <ArrowRight size={20} className="text-neutral-400 group-active:translate-x-1 transition-transform" />
+                                        </button>
+
+                                        <button className="w-full h-16 flex items-center justify-between border-b border-neutral-50 group hover:px-2 transition-all">
+                                            <div className="flex items-center gap-4">
+                                                <div className="w-10 h-10 rounded-full flex items-center justify-center text-neutral-900">
+                                                    <HelpCircle size={22} />
+                                                </div>
+                                                <span className="text-[17px] font-medium text-neutral-900">{t({ en: 'Read help articles', fr: 'Consulter l\'aide', ar: 'قراءة المساعدة' })}</span>
+                                            </div>
+                                            <ArrowRight size={20} className="text-neutral-400 group-active:translate-x-1 transition-transform" />
+                                        </button>
                                     </div>
                                 </div>
-                            </section>
+                                <div className="h-40" /> {/* Extra space for scrollability before footer */}
+                            </div>
                         </div>
                     )}
+
                 </div>
 
-                {/* Fixed Bottom Total Footer (Blue Signature) */}
-                <div className="fixed bottom-0 left-0 right-0 bg-[#FFCC02] z-[4005] px-8 pt-10 pb-[calc(24px+env(safe-area-inset-bottom))]">
-                    {/* Wave Top Effect */}
-                    <div className="absolute top-[-30px] left-0 right-0 h-[30px] pointer-events-none">
-                        <svg viewBox="0 0 1440 320" preserveAspectRatio="none" className="w-full h-full fill-[#FFCC02]">
-                            <path d="M0,160L48,176C96,192,192,224,288,224C384,224,480,192,576,165.3C672,139,768,117,864,128C960,139,1056,181,1152,192C1248,203,1344,181,1392,170.7L1440,160L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path>
-                        </svg>
-                    </div>
-
-                    <div className="flex items-center justify-between mb-6">
-                        <span className="text-[22px] font-medium text-black">
-                            {mode === 'provider' ? t({ en: 'Your Net Earnings', fr: 'Gains Nets', ar: 'أرباحك الصافية' }) : t({ en: 'Total Price', fr: 'Prix Total', ar: 'الإجمالي' })}
-                        </span>
-                        <div className="flex items-baseline gap-1.5">
-                            <span className="text-[36px] font-[1000] text-black tracking-tighter">
+                {/* Fixed Bottom Footer (Airbnb Redesign) */}
+                <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-neutral-100 z-[6005] px-6 py-6 pb-[calc(24px+env(safe-area-inset-bottom))] flex items-center justify-between gap-4">
+                    <div className="flex-1">
+                        <div className="flex items-baseline gap-1">
+                            <span className="text-[20px] font-black text-black">
                                 {(mode === 'provider' ? finalEarnings : finalClientPay).toFixed(0)}
                             </span>
-                            <span className="text-[18px] font-medium text-black">MAD</span>
+                            <span className="text-[14px] font-bold text-black uppercase opacity-60 tracking-tight">MAD</span>
                         </div>
+                        <p className="text-[14px] font-black text-black underline underline-offset-2">
+                            {mode === 'provider' ? t({ en: 'Your earnings', fr: 'Vos gains', ar: 'أرباحك' }) : t({ en: 'Total price', fr: 'Prix total', ar: 'الإجمالي' })}
+                        </p>
                     </div>
 
-                    {/* Single CTA — Chat with Bricoler or Accept Job */}
-                    {job.status === 'new' && mode === 'provider' ? (
-                        <div className="flex gap-4">
+                    <div className="flex-[1.5]">
+                        {job.status === 'new' && mode === 'provider' ? (
+                            <div className="flex gap-2">
+                                <button
+                                    onClick={onClose}
+                                    style={{ background: '#F7F7F7' }}
+                                    className="px-5 h-[56px] text-black rounded-[14px] font-black text-[15px] flex items-center justify-center active:scale-95 transition-transform"
+                                >
+                                    <XCircle size={22} />
+                                </button>
+                                <button
+                                    onClick={() => onAccept?.(job.id)}
+                                    style={{ background: '#01A083' }}
+                                    className="flex-1 text-white h-[56px] rounded-[14px] font-black text-[15px] flex items-center justify-center gap-2 active:scale-95 transition-transform shadow-lg shadow-[#01A083]/20"
+                                >
+                                    {t({ en: 'Accept', fr: 'Accepter', ar: 'قبول' })}
+                                </button>
+                            </div>
+                        ) : (
                             <button
-                                onClick={onClose}
-                                className="w-[80px] h-[56px] text-black bg-black/5 hover:bg-black/10 rounded-[20px] font-bold text-[16px] flex items-center justify-center active:scale-95 transition-transform"
+                                onClick={() => onChat?.(job.id, job.bricolerId || '', job.bricolerName || job.clientName)}
+                                style={{ background: '#212121' }}
+                                className="w-full text-white h-[56px] rounded-[14px] font-black text-[15px] flex items-center justify-center gap-3 active:scale-95 transition-transform shadow-lg shadow-black/10"
                             >
-                                <XCircle size={24} />
+                                <MessageCircle size={20} />
+                                {t({ en: mode === 'provider' ? 'Message Client' : 'Message Bricoler', fr: mode === 'provider' ? 'Discuter' : 'Discuter', ar: 'الدردشة' })}
                             </button>
-                            <button
-                                onClick={() => onAccept?.(job.id)}
-                                style={{ background: '#01A083' }}
-                                className="flex-1 text-white h-[56px] rounded-[20px] font-bold text-[16px] flex items-center justify-center gap-2 active:scale-95 transition-transform border border-[#008f75]"
-                            >
-                                <CheckCircle2 size={20} />
-                                {t({ en: 'Accept Job', fr: 'Accepter', ar: 'قبول' })}
-                            </button>
-                        </div>
-                    ) : (
-                        <button
-                            onClick={() => onChat?.(job.id, job.bricolerId || '', job.bricolerName || job.clientName)}
-                            style={{ background: '#01A083' }}
-                            className="w-full text-white h-[56px] rounded-[20px] font-bold text-[16px] flex items-center justify-center gap-2 active:scale-95 transition-transform border border-[#008f75]"
-                        >
-                            <MessageCircle size={20} />
-                            {t({ en: mode === 'provider' ? 'Chat with Client' : 'Chat with Bricoler', fr: mode === 'provider' ? 'Chatter avec le Client' : 'Chatter avec le Bricoler', ar: 'الدردشة' })}
-                        </button>
-                    )}
+                        )}
+                    </div>
                 </div>
             </motion.div>
         </AnimatePresence>
