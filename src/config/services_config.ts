@@ -295,10 +295,8 @@ export const SERVICES_HIERARCHY: Record<string, ServiceConfig> = {
         name: 'Glass cleaning',
         icon: Droplets,
         subServices: [
-            { id: 'residential_glass', name: 'Residential Glass', pricingArchetype: 'unit' },
-            { id: 'commercial_glass', name: 'Commercial/Office Glass', pricingArchetype: 'unit' },
-            { id: 'specialty_glass', name: 'Specialty/Hard-to-Clean Glass', pricingArchetype: 'hourly' },
-            { id: 'alternative_surfaces', name: 'Alternative Surfaces (Mirrors, Stainless Steel)', pricingArchetype: 'hourly' }
+            { id: 'residential_glass', name: 'Residential Glass Cleaning', pricingArchetype: 'unit' },
+            { id: 'commercial_glass', name: 'Glass Cleaning for Business', pricingArchetype: 'unit' }
         ]
     },
     gardening: {

@@ -47,6 +47,11 @@ export const calculateOrderPrice = (
         hasKitchenette?: boolean;
         hasReception?: boolean;
         officeAddOns?: string[];
+        // Glass Cleaning specific
+        windowCount?: number;
+        glassCleaningType?: 'interior' | 'exterior' | 'both';
+        glassAccessibility?: 'easy' | 'ladder';
+        storeFrontSize?: 'small' | 'medium' | 'large';
     } = {}
 ): PricingBreakdown => {
     // 1. Find the subservice to get its archetype
@@ -260,6 +265,37 @@ export const calculateOrderPrice = (
         }
 
         extraFees = details.reduce((sum: number, item) => sum + item.amount, 0);
+    } else if (subServiceId === 'residential_glass') {
+        basePrice = providerRate; // User confirmed: base price decided by bricoler
+        const winCount = options.windowCount || 1;
+        
+        // Multiplier for cleaning type
+        let typeMultiplier = 1.0;
+        if (options.glassCleaningType === 'both') typeMultiplier = 1.6; // Not quite double, but more effort
+        else if (options.glassCleaningType === 'exterior') typeMultiplier = 1.2; // Exterior is usually harder
+
+        quantity = winCount;
+        unit = 'window';
+        
+        // Per window fee (platform suggestion)
+        const perWindowFee = 15 * typeMultiplier;
+        basePrice = providerRate + perWindowFee;
+        
+        if (options.glassAccessibility === 'ladder') {
+            extraFees += 40;
+            details.push({ en: 'Ladder Surcharge', fr: 'Supplément échelle', ar: 'رسوم إضافية للسلم' } as any);
+        }
+    } else if (subServiceId === 'commercial_glass') {
+        basePrice = providerRate;
+        const sizeMultiplier = options.storeFrontSize === 'large' ? 2.5 : (options.storeFrontSize === 'medium' ? 1.6 : 1.0);
+        
+        quantity = 1;
+        unit = 'storefront';
+        basePrice = providerRate * sizeMultiplier;
+
+        if (options.glassAccessibility === 'ladder') {
+            extraFees += 60; // Pro ladder work is more expensive
+        }
     } else {
         // Fallback Strategy
         if (options.propertyType) {

@@ -125,14 +125,12 @@ export const SERVICES_CATALOGUE: ServiceEntry[] = [
         labelAr: 'تنظيف الزجاج',
         iconPath: '/Images/Service Category vectors/Glass cleaning.webp',
         subServices: [
-            { id: 'residential_glass', en: 'Residential Glass', fr: 'Vitres Résidentielles', ar: 'زجاج سكني' },
-            { id: 'commercial_glass', en: 'Commercial/Office Glass', fr: 'Vitres Commerciales / de Bureau', ar: 'زجاج تجاري / مكاتب' },
-            { id: 'automotive_glass', en: 'Automotive Glass', fr: 'Vitres Automobiles', ar: 'زجاج سيارات' },
-            { id: 'specialty_glass', en: 'Specialty/Hard-to-Clean Glass', fr: 'Vitres Spéciales / Difficiles à Nettoyer', ar: 'زجاج خاص / صعب التنظيف' }
+            { id: 'residential_glass', en: 'Residential Glass Cleaning', fr: 'Vitres Résidentielles', ar: 'تنظيف زجاج سكني' },
+            { id: 'commercial_glass', en: 'Glass Cleaning for Business', fr: 'Nettoyage de vitres Pro', ar: 'تنظيف زجاج للمقاولات' }
         ],
         bullets: [
-            { en: 'Streak-free cleaning for windows, mirrors and specialty glass.', fr: 'Nettoyage sans traces pour les fenêtres, les miroirs et les vitres spéciales.', ar: 'تنظيف بدون أثر للنوافذ والمرايا والزجاج الخاص.' },
-            { en: 'Now Trending: Eco-friendly streak-free formulas.', fr: 'Tendance actuelle : Formules écologiques sans traces.', ar: 'رائج الآن: تركيبات صديقة للبيئة بدون أثر.' },
+            { en: 'Streak-free cleaning for windows, mirrors and storefronts.', fr: 'Nettoyage sans traces pour les fenêtres, les miroirs et les vitrines.', ar: 'تنظيف بدون أثر للنوافذ والمرايا والواجهات.' },
+            { en: 'Professional equipment for hard-to-reach areas.', fr: 'Équipement professionnel pour les zones difficiles d\'accès.', ar: 'معدات احترافية للمناطق التي يصعب الوصول إليها.' },
         ],
         heroImage: '/Images/Job Cards Images/Cleaning_job_card.webp',
     },

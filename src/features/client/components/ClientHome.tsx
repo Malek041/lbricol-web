@@ -460,11 +460,11 @@ const ClientHome: React.FC<ClientHomeProps> = ({
 
     return (
         <div className={cn(
-            "fixed inset-0 bg-[#FFB700] overflow-y-auto no-scrollbar h-[100dvh] w-screen font-jakarta",
+            "fixed inset-0 bg-[#FFC244] overflow-y-auto no-scrollbar h-[100dvh] w-screen font-jakarta",
             "z-0"
         )}>
             {/* 1. New yellow Hero Section */}
-            <div className="w-full sticky top-0 z-0 bg-[#FFB700] overflow-hidden flex-shrink-0 pt-[env(safe-area-inset-top)] pb-5">
+            <div className="w-full sticky top-0 z-0 bg-[#FFC244] overflow-hidden flex-shrink-0 pt-[env(safe-area-inset-top)] pb-5">
                 {/* Location Pill */}
                 <div className="flex justify-center pt-8 mb-6">
                     <motion.button
@@ -491,7 +491,7 @@ const ClientHome: React.FC<ClientHomeProps> = ({
                         animate={{ opacity: 1, scale: 1 }}
                         transition={{ delay: 0.8, duration: 0.6, type: "spring", stiffness: 200 }}
                         className="text-[28px] font-black leading-[1.0] tracking-tight text-black max-w-[340px] mx-auto"
-                        style={{ fontWeight: 900, fontFamily: '"Uber Move", "UberMoveText", sans-serif' }}
+                        style={{ fontWeight: 700, fontFamily: '"Uber Move", "UberMoveText", sans-serif' }}
                     >
                         {t({
                             en: 'Book trusted help for home tasks',
