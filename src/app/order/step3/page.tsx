@@ -171,6 +171,11 @@ export default function CheckoutPage() {
                         hasKitchenette: (order.serviceDetails as any)?.hasKitchenette,
                         hasReception: (order.serviceDetails as any)?.hasReception,
                         officeAddOns: (order.serviceDetails as any)?.officeAddOns,
+                        // Glass Cleaning specific
+                        windowCount: (order.serviceDetails as any)?.windowCount,
+                        glassCleaningType: (order.serviceDetails as any)?.glassCleaningType,
+                        glassAccessibility: (order.serviceDetails as any)?.glassAccessibility,
+                        storeFrontSize: (order.serviceDetails as any)?.storeFrontSize,
                     }
                 );
 
@@ -571,6 +576,34 @@ export default function CheckoutPage() {
                                                 </div>
                                             </>
                                         )}
+
+                                        {/* Glass Cleaning Details */}
+                                        {(subId === 'residential_glass' || subId === 'commercial_glass') && (
+                                            <>
+                                                {subId === 'residential_glass' && (
+                                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                                                        <span style={{ fontSize: 14, fontWeight: 400, color: '#111827' }}>{t({ en: 'Coverage', fr: 'Couverture' })}</span>
+                                                        <span style={{ fontSize: 14, fontWeight: 700, color: '#111827' }}>
+                                                            {(order.serviceDetails as any).windowCount || 5} {t({ en: 'Windows', fr: 'Fenêtres' })} - {((order.serviceDetails as any).glassCleaningType || 'both').toUpperCase()}
+                                                        </span>
+                                                    </div>
+                                                )}
+                                                {subId === 'commercial_glass' && (
+                                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                                                        <span style={{ fontSize: 14, fontWeight: 400, color: '#111827' }}>{t({ en: 'Scale', fr: 'Taille' })}</span>
+                                                        <span style={{ fontSize: 14, fontWeight: 700, color: '#111827' }}>
+                                                            {((order.serviceDetails as any).storeFrontSize || 'small').toUpperCase()}
+                                                        </span>
+                                                    </div>
+                                                )}
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                                                    <span style={{ fontSize: 14, fontWeight: 400, color: '#111827' }}>{t({ en: 'Accessibility', fr: 'Accessibilité' })}</span>
+                                                    <span style={{ fontSize: 14, fontWeight: 700, color: (order.serviceDetails as any).glassAccessibility === 'ladder' ? '#D97706' : '#111827' }}>
+                                                        {(order.serviceDetails as any).glassAccessibility === 'ladder' ? t({ en: 'Ladder Required', fr: 'Échelle Requise' }) : t({ en: 'Ground Level', fr: 'Rez-de-chaussée' })}
+                                                    </span>
+                                                </div>
+                                            </>
+                                        )}
                                     </>
                                 );
                             })()}
@@ -725,6 +758,11 @@ export default function CheckoutPage() {
                                     hasReception: (order.serviceDetails as any)?.hasReception,
                                     officeAddOns: (order.serviceDetails as any)?.officeAddOns,
                                     taskSize: (order.serviceDetails as any)?.taskSize,
+                                    // Glass Cleaning specific
+                                    windowCount: (order.serviceDetails as any)?.windowCount,
+                                    glassCleaningType: (order.serviceDetails as any)?.glassCleaningType,
+                                    glassAccessibility: (order.serviceDetails as any)?.glassAccessibility,
+                                    storeFrontSize: (order.serviceDetails as any)?.storeFrontSize,
                                 }
                             );
 
