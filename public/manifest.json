@@ -1,0 +1,17 @@
+{
+  "name": "Lbricol",
+  "short_name": "Lbricol",
+  "description": "Expert Help, Right Away",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#FFCC02",
+  "icons": [
+    {
+      "src": "/Images/Logo/image-Photoroom%20(2)%20copy%205.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

@@ -28,10 +28,11 @@ const inclusiveSans = Inclusive_Sans({
 export const metadata: Metadata = {
   title: "Lbricol | Expert Help, Right Away | Aide experte, tout de suite",
   description: "Connect with local experts in Morocco | Connectez-vous avec des experts locaux au Maroc",
+  manifest: "/manifest.json",
   icons: {
-    icon: "/Images/Logo/theEggOfLB.png",
-    shortcut: "/Images/Logo/theEggOfLB.png",
-    apple: "/Images/Logo/theEggOfLB.png",
+    icon: "/Images/Logo/image-Photoroom (2) copy 5.png",
+    shortcut: "/Images/Logo/image-Photoroom (2) copy 5.png",
+    apple: "/Images/Logo/image-Photoroom (2) copy 5.png",
   },
 };
 
