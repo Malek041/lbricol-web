@@ -8,6 +8,7 @@ import { useLanguage } from '@/context/LanguageContext';
 export default function PWAPrompt() {
     const [isVisible, setIsVisible] = useState(false);
     const [platform, setPlatform] = useState<'ios' | 'android' | 'other'>('other');
+    const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
     const { t } = useLanguage();
 
     useEffect(() => {
@@ -25,15 +26,46 @@ export default function PWAPrompt() {
 
         if (isIos) setPlatform('ios');
         else if (isAndroid) setPlatform('android');
-        else return; // Don't show on desktop for now unless requested
+        else return; 
+
+        // Listen for browser install prompt (Android/Chrome)
+        const handleBeforeInstallPrompt = (e: any) => {
+            e.preventDefault();
+            setDeferredPrompt(e);
+        };
+
+        window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
 
         // Show after a short delay
-        const timer = setTimeout(() => setIsVisible(true), 3000);
-        return () => clearTimeout(timer);
+        const timer = setTimeout(() => setIsVisible(true), 1500);
+        return () => {
+            clearTimeout(timer);
+            window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+        };
     }, []);
 
     const dismiss = () => {
         setIsVisible(false);
+    };
+
+    const handleInstallClick = async () => {
+        if (!deferredPrompt && platform === 'android') {
+            // If Android but no prompt yet, just dismiss and hope for next time or show fallback
+            dismiss();
+            return;
+        }
+
+        if (platform === 'ios') {
+            // iOS doesn't support automatic install, user must do manual share
+            return;
+        }
+
+        // Trigger the native install prompt
+        deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+        console.log(`User response to install: ${outcome}`);
+        setDeferredPrompt(null);
+        dismiss();
     };
 
     if (!isVisible) return null;
@@ -145,10 +177,17 @@ export default function PWAPrompt() {
                         </div>
 
                         <button 
-                            onClick={dismiss}
-                            className="mt-6 w-full py-4 bg-[#FFCC02] text-black font-bold rounded-2xl hover:bg-[#FFD633] transition-colors active:scale-[0.98]"
+                            onClick={platform === 'android' ? handleInstallClick : dismiss}
+                            className="mt-6 w-full py-4 bg-[#FFCC02] text-black font-bold rounded-2xl hover:bg-[#FFD633] transition-colors active:scale-[0.98] flex items-center justify-center gap-2"
                         >
-                            {t({ en: 'Got it', fr: 'Compris', ar: 'حسناً' })}
+                            {platform === 'android' ? (
+                                <>
+                                    <Download size={20} />
+                                    {t({ en: 'Install Now', fr: 'Installer maintenant', ar: 'تثبيت الآن' })}
+                                </>
+                            ) : (
+                                t({ en: 'Got it', fr: 'Compris', ar: 'حسناً' })
+                            )}
                         </button>
                     </div>
                 </motion.div>
