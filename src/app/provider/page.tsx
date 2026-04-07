@@ -235,7 +235,8 @@ export default function ProviderPage() {
     const [isClientRatedLocally, setIsClientRatedLocally] = useState<string[]>([]);
     const [showMonthPicker, setShowMonthPicker] = useState(false);
     const [viewingJobDetails, setViewingJobDetails] = useState<MobileJobsViewItem | null>(null);
-    const [performanceTab, setPerformanceTab] = useState<'activity' | 'performance' | 'availability'>('activity');
+    const [performanceTab, setPerformanceTab] = useState<'activity' | 'performance' | 'availability' | 'calendar'>('calendar');
+
     const [performanceDetail, setPerformanceDetail] = useState<'none' | 'financial' | 'operational' | 'reputation' | 'marketing' | 'growth' | 'tips-profile' | 'tips-pricing' | 'tips-stars' | 'tips-visibility' | 'availability'>('none');
     const [tempSelectedServices, setTempSelectedServices] = useState<string[]>([]);
     const [dailySlots, setDailySlots] = useState<{ from: string, to: string }[]>([]);
@@ -2216,10 +2217,11 @@ export default function ProviderPage() {
                         {(activeNav as string) === 'performance' && performanceDetail === 'none' && (
                             <div className="flex items-center gap-6 overflow-x-auto no-scrollbar">
                                 {[
-                                    { id: 'activity' as const, label: t({ en: 'Orders', fr: 'Commandes' }) },
-                                    { id: 'performance' as const, label: t({ en: 'Performance', fr: 'Performance' }) },
-                                    { id: 'availability' as const, label: t({ en: 'Availability', fr: 'Dispo' }) }
-                                ].map((tab) => (
+                                    { id: 'calendar' as const, label: t({ en: 'Calendar', fr: 'Calendrier', ar: 'التقويم' }) },
+                                    { id: 'activity' as const, label: t({ en: 'Orders', fr: 'Commandes', ar: 'الطلبات' }) },
+                                    { id: 'performance' as const, label: t({ en: 'Performance', fr: 'Performance', ar: 'الأداء' }) },
+                                    { id: 'availability' as const, label: t({ en: 'Availability', fr: 'Dispo', ar: 'التوفر' }) }
+                                ].map(tab => (
                                     <button
                                         key={tab.id}
                                         onClick={() => {
@@ -3226,6 +3228,8 @@ export default function ProviderPage() {
                             setUserData={setUserData}
                             TIME_SLOTS={TIME_SLOTS}
                             doneAcceptedJobs={doneAcceptedJobs}
+                            horizontalSelectedDate={horizontalSelectedDate}
+                            setHorizontalSelectedDate={setHorizontalSelectedDate}
                         />
                     )}
                     {

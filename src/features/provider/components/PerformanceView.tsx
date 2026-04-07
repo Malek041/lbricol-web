@@ -14,10 +14,13 @@ import ActivityTab from '@/features/orders/components/ActivityTab';
 import AvailabilityTab from '@/features/orders/components/AvailabilityTab';
 import ProviderRoutineModal from '@/features/orders/components/ProviderRoutineModal';
 import { MobileJobsViewItem } from '@/features/provider/types';
-import { useRef, useEffect } from 'react';
+import { BricolerCalendarTab } from './BricolerCalendarTab';
+import { useRef, useEffect, useState } from 'react';
+
 
 interface PerformanceViewProps {
-    performanceTab: 'activity' | 'performance' | 'availability';
+    performanceTab: 'activity' | 'performance' | 'availability' | 'calendar';
+
     performanceDetail: 'none' | 'operational' | 'financial' | 'reputation' | 'marketing' | 'growth' | 'tips-profile' | 'tips-pricing' | 'tips-stars' | 'tips-visibility' | 'availability';
     setPerformanceDetail: (detail: any) => void;
     performanceScrollRef: React.RefObject<HTMLDivElement | null>;
@@ -46,7 +49,10 @@ interface PerformanceViewProps {
     setUserData: (data: any) => void;
     TIME_SLOTS: string[];
     doneAcceptedJobs: any[];
+    horizontalSelectedDate: Date;
+    setHorizontalSelectedDate: (d: Date) => void;
 }
+
 
 export const PerformanceView = ({
     performanceTab,
@@ -77,8 +83,11 @@ export const PerformanceView = ({
     setShowRoutineModal,
     setUserData,
     TIME_SLOTS,
-    doneAcceptedJobs
+    doneAcceptedJobs,
+    horizontalSelectedDate,
+    setHorizontalSelectedDate
 }: PerformanceViewProps) => {
+
     const [settlementReceipt, setSettlementReceipt] = React.useState<string | null>(null);
     const [settlementAmount, setSettlementAmount] = React.useState<number>(0);
     const [isSubmittingSettlement, setIsSubmittingSettlement] = React.useState(false);
@@ -158,6 +167,29 @@ export const PerformanceView = ({
                             />
                         </motion.div>
                     )}
+                    {performanceTab === 'calendar' && (
+                        <motion.div
+                            key="performance-calendar"
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -10 }}
+                            transition={{ duration: 0.2 }}
+                        >
+                            <BricolerCalendarTab
+                                orders={acceptedJobsSorted}
+                                onSelectOrder={(order: any) => {
+                                    const accepted = acceptedJobs.find(j => j.id === order.id);
+                                    if (accepted) {
+                                        setViewingJobDetails(toMobileItem(accepted, 'accepted'));
+                                    }
+                                }}
+                                horizontalSelectedDate={horizontalSelectedDate}
+                                setHorizontalSelectedDate={setHorizontalSelectedDate}
+                            />
+
+                        </motion.div>
+                    )}
+
                     {performanceTab === 'availability' && (
                         <motion.div
                             key="performance-availability"

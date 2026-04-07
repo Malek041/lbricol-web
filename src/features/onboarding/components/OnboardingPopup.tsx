@@ -104,78 +104,149 @@ const itemVariants = {
 
 
 // ── Equipment suggestions per service ───────────────────────────────────────
-const SERVICE_EQUIPMENT_SUGGESTIONS: Record<string, string[]> = {
+const SERVICE_EQUIPMENT_SUGGESTIONS: Record<string, { en: string; fr: string; ar: string }[]> = {
     cleaning: [
-        "Vacuum cleaner", "Steam mop", "Microfiber cloths",
-        "Eco cleaning products", "Pressure washer", "Mop & bucket set"
+        { en: "Vacuum cleaner", fr: "Aspirateur", ar: "مكنسة كهربائية" },
+        { en: "Steam mop", fr: "Balai vapeur", ar: "ممسحة بالبخار" },
+        { en: "Microfiber cloths", fr: "Chiffons microfibres", ar: "أقمشة ميكروفايبر" },
+        { en: "Eco cleaning products", fr: "Produits écologiques", ar: "منتجات تنظيف صديقة للبيئة" },
+        { en: "Pressure washer", fr: "Nettoyeur haute pression", ar: "منظف بالضغط العالي" },
+        { en: "Mop & bucket set", fr: "Serpillère et seau", ar: "مجموعة ممسحة ودلو" }
     ],
     glass_cleaning: [
-        "Squeegee & bucket", "Deionized water-fed pole", "Steam cleaner",
-        "Scrapers (paint/residue)", "Extension poles", "Microfiber towels"
+        { en: "Squeegee & bucket", fr: "Raclette et seau", ar: "ممسحة ودلو" },
+        { en: "Deionized water-fed pole", fr: "Perche à eau déminéralisée", ar: "عمود تزويد بالماء منزوع المعادن" },
+        { en: "Steam cleaner", fr: "Nettoyeur à vapeur", ar: "منظف بالبخار" },
+        { en: "Scrapers (paint/residue)", fr: "Racloirs (peinture/résidus)", ar: "مكشطة (طلاء/رواسب)" },
+        { en: "Extension poles", fr: "Perches télescopiques", ar: "أعمدة تمديد" },
+        { en: "Microfiber towels", fr: "Serviettes microfibres", ar: "مناشف ميكروفايبر" }
     ],
     plumbing: [
-        "Pipe wrench set", "Drain snake / auger", "Pressure gauge",
-        "Soldering kit", "Thread sealant tape", "Plunger"
+        { en: "Pipe wrench set", fr: "Clé à molette", ar: "مجموعة مفاتيح مواسير" },
+        { en: "Drain snake / auger", fr: "Furet de plomberie", ar: "ثعبان المجاري" },
+        { en: "Pressure gauge", fr: "Manomètre", ar: "مقياس الضغط" },
+        { en: "Soldering kit", fr: "Kit de soudure", ar: "عدة لحام" },
+        { en: "Thread sealant tape", fr: "Téflon ruban étanche", ar: "شريط منع التسرب" },
+        { en: "Plunger", fr: "Ventouse", ar: "مكبس" }
     ],
     electricity: [
-        "Digital multimeter", "Wire stripper", "Power drill",
-        "Electrical tape", "Circuit tester", "Cable fish tape"
+        { en: "Digital multimeter", fr: "Multimètre numérique", ar: "ملتيمتر رقمي" },
+        { en: "Wire stripper", fr: "Pince à dénuder", ar: "قاطعة أسلاك" },
+        { en: "Power drill", fr: "Perceuse électrique", ar: "مثقاب كهربائي" },
+        { en: "Electrical tape", fr: "Ruban isolant", ar: "شريط كهربائي" },
+        { en: "Circuit tester", fr: "Testeur de circuit", ar: "مختبر الدارة" },
+        { en: "Cable fish tape", fr: "Tire-fils électrique", ar: "شريط سحب الأسلاك" }
     ],
     painting: [
-        "Paint rollers & trays", "Spray gun", "Brush set",
-        "Masking tape", "Sandpaper set", "Drop cloths", "Ladder"
+        { en: "Paint rollers & trays", fr: "Rouleaux et bacs à peinture", ar: "بكرات وأحواض الطلاء" },
+        { en: "Spray gun", fr: "Pistolet à peinture", ar: "مسدس رش" },
+        { en: "Brush set", fr: "Jeux de pinceaux", ar: "مجموعة فراشي" },
+        { en: "Masking tape", fr: "Ruban de masquage", ar: "شريط لاصق" },
+        { en: "Sandpaper set", fr: "Papier de verre", ar: "مجموعة ورق صنفرة" },
+        { en: "Drop cloths", fr: "Bâches de protection", ar: "أغطية حماية" },
+        { en: "Ladder", fr: "Échelle", ar: "سلم" }
     ],
     home_repairs: [
-        "Power drill", "Screwdriver set", "Level",
-        "Hammer & nails", "Measuring tape", "Jigsaw / circular saw"
+        { en: "Power drill", fr: "Perceuse", ar: "مثقاب يدوي" },
+        { en: "Screwdriver set", fr: "Jeux de tournevis", ar: "مجموعة مفاتيح" },
+        { en: "Level", fr: "Niveau à bulle", ar: "ميزان الماء" },
+        { en: "Hammer & nails", fr: "Marteau et clous", ar: "مطرقة ومسامير" },
+        { en: "Measuring tape", fr: "Mètre ruban", ar: "شريط قياس" },
+        { en: "Jigsaw / circular saw", fr: "Scie sauteuse / circulaire", ar: "منشار آلي" }
     ],
     furniture_assembly: [
-        "Allen key set", "Power drill", "Rubber mallet",
-        "Measuring tape", "Cable ties"
+        { en: "Allen key set", fr: "Clé Allen", ar: "مفتاح ألين" },
+        { en: "Power drill", fr: "Perceuse", ar: "مثقاب" },
+        { en: "Rubber mallet", fr: "Maillet en caoutchouc", ar: "مطرقة مطاطية" },
+        { en: "Measuring tape", fr: "Mètre", ar: "شريط قياس" },
+        { en: "Cable ties", fr: "Colliers de serrage", ar: "أربطة الكابلات" }
     ],
     mounting: [
-        "Stud finder", "Laser level", "Power drill",
-        "Wall anchor kit", "Cable management clips", "VESA mount adapters"
+        { en: "Stud finder", fr: "Détecteur de montants", ar: "كاشف البراغي" },
+        { en: "Laser level", fr: "Niveau laser", ar: "ميزان ليزر" },
+        { en: "Power drill", fr: "Perceuse", ar: "مثقاب كهربائي" },
+        { en: "Wall anchor kit", fr: "Chevilles murales", ar: "عدة مثبتات جدارية" },
+        { en: "Cable management clips", fr: "Clips de gestion des câbles", ar: "مشابك تنظيم الكابلات" },
+        { en: "VESA mount adapters", fr: "Adaptateurs support VESA", ar: "محولات حامل VESA" }
     ],
     appliance_installation: [
-        "Drill & bits", "Pipe wrench", "Voltage tester",
-        "Hosepipe connections", "Teflon tape", "Bubble level"
+        { en: "Drill & bits", fr: "Perceuse et forets", ar: "مثقاب ولقم" },
+        { en: "Pipe wrench", fr: "Clé à tube", ar: "مفتاح أنابيب" },
+        { en: "Voltage tester", fr: "Testeur de tension", ar: "مختبر جهد" },
+        { en: "Hosepipe connections", fr: "Raccords de tuyau", ar: "وصلات خراطيم" },
+        { en: "Teflon tape", fr: "Ruban Téflon", ar: "شريط تيفلون" },
+        { en: "Bubble level", fr: "Niveau à bulle", ar: "ميزان ماء" }
     ],
     moving: [
-        "Moving blankets", "Hand truck / dolly", "Packing tape",
-        "Stretch wrap", "Moving straps", "Furniture sliders"
+        { en: "Moving blankets", fr: "Couvertures de déménagement", ar: "أغطية حماية للأثاث" },
+        { en: "Hand truck / dolly", fr: "Diable / Chariot", ar: "عربة يدوية" },
+        { en: "Packing tape", fr: "Ruban d’emballage", ar: "شريط تغليف" },
+        { en: "Stretch wrap", fr: "Film étirable", ar: "فيلم تغليف" },
+        { en: "Moving straps", fr: "Sangles de levage", ar: "أحزمة حمل" },
+        { en: "Furniture sliders", fr: "Patins de déménagement", ar: "منزلقات الأثاث" }
     ],
     gardening: [
-        "Lawn mower", "Hedge trimmer", "Pruning shears",
-        "Garden hose", "Rake & shovel set", "Wheelbarrow"
+        { en: "Lawn mower", fr: "Tondeuse à gazon", ar: "جزازة عشب" },
+        { en: "Hedge trimmer", fr: "Taille-haie", ar: "مقص سياج" },
+        { en: "Pruning shears", fr: "Sécateurs", ar: "مقص تقليم" },
+        { en: "Garden hose", fr: "Tuyau d’arrosage", ar: "خرطوم حديقة" },
+        { en: "Rake & shovel set", fr: "Râteau et pelle", ar: "مجرفة ومجراف" },
+        { en: "Wheelbarrow", fr: "Brouette", ar: "عربة حديقة" }
     ],
     pool_cleaning: [
-        "Pool skimmer / net", "Telescopic pole", "Pool brush set",
-        "Water testing kit (DPD)", "Vacuum head & hose", "Chemical dispenser"
+        { en: "Pool skimmer / net", fr: "Épuisette / Filet", ar: "شبكة مسبح" },
+        { en: "Telescopic pole", fr: "Perche télescopique", ar: "عمود تمديد" },
+        { en: "Pool brush set", fr: "Jeu de brosses de piscine", ar: "مجموعة فُرش المسبح" },
+        { en: "Water testing kit (DPD)", fr: "Kit de test d’eau (DPD)", ar: "عدة اختبار المياه" },
+        { en: "Vacuum head & hose", fr: "Tête d’aspirateur et tuyau", ar: "رأس مكنسة وخرطوم" },
+        { en: "Chemical dispenser", fr: "Diffuseur de produits chimiques", ar: "موزع كيميائي" }
     ],
     pets_care: [
-        "Leashes & harnesses", "Pet grooming kit", "Portable water bowl",
-        "Pet first aid kit", "Waste bags", "Pet safe treats"
+        { en: "Leashes & harnesses", fr: "Laisses et harnais", ar: "أطواق ومقاود" },
+        { en: "Pet grooming kit", fr: "Kit de toilettage", ar: "عدة تنظيف الحيوانات" },
+        { en: "Portable water bowl", fr: "Bol d’eau portable", ar: "وعاء ماء محمول" },
+        { en: "Pet first aid kit", fr: "Kit premiers secours animaux", ar: "حقيبة إسعافات أولية للحيوانات" },
+        { en: "Waste bags", fr: "Sacs de déchets", ar: "أكياس نفايات" },
+        { en: "Pet safe treats", fr: "Friandises pour animaux", ar: "جوائز للحيوانات" }
     ],
     babysitting: [
-        "First aid kit", "Child safety gear", "Educational toys",
-        "Board games", "Art & craft supplies", "Car seat (for transport)"
+        { en: "First aid kit", fr: "Kit de premiers secours", ar: "حقيبة إسعافات أولية" },
+        { en: "Child safety gear", fr: "Équipement de sécurité enfant", ar: "معدات سلامة الأطفال" },
+        { en: "Educational toys", fr: "Jouets éducatifs", ar: "ألعاب تعليمية" },
+        { en: "Board games", fr: "Jeux de société", ar: "ألعاب لوحية" },
+        { en: "Art & craft supplies", fr: "Fournitures d'art et d'artisanat", ar: "لوازم فنية وأشغال يدوية" },
+        { en: "Car seat (for transport)", fr: "Siège auto (pour le transport)", ar: "مقعد سيارة (للنقل)" }
     ],
     elderly_care: [
-        "First aid kit", "Blood pressure monitor", "Mobility aids (walker/cane)",
-        "Medication organizer", "Emergency alert device", "Comfortable footwear"
+        { en: "First aid kit", fr: "Kit de premiers secours", ar: "حقيبة إسعافات أولية" },
+        { en: "Blood pressure monitor", fr: "Tensiomètre", ar: "جهاز قياس ضغط الدم" },
+        { en: "Mobility aids (walker/cane)", fr: "Aides à la mobilité (déambulateur/canne)", ar: "وسائل مساعدة على المشي (مشاية/عصا)" },
+        { en: "Medication organizer", fr: "Organisateur de médicaments", ar: "منظم أدوية" },
+        { en: "Emergency alert device", fr: "Dispositif d'alerte d'urgence", ar: "جهاز إنذار للطوارئ" },
+        { en: "Comfortable footwear", fr: "Chaussures confortables", ar: "أحذية مريحة" }
     ],
     cooking: [
-        "Professional knife set", "Specialty spices", "Apron & headwear",
-        "Portable induction cooktop", "Kitchen scale", "Pastry tools"
+        { en: "Professional knife set", fr: "Ensemble de couteaux professionnels", ar: "مجموعة سكاكين احترافية" },
+        { en: "Specialty spices", fr: "Épices de spécialité", ar: "توابل مميزة" },
+        { en: "Apron & headwear", fr: "Tablier et toque", ar: "مريلة وغطاء رأس" },
+        { en: "Portable induction cooktop", fr: "Plaque à induction portable", ar: "موقد تحريض محمول" },
+        { en: "Kitchen scale", fr: "Balance de cuisine", ar: "ميزان مطبخ" },
+        { en: "Pastry tools", fr: "Outils de pâtisserie", ar: "أدوات حلويات" }
     ],
     private_driver: [
-        "Smartphone with GPS", "First aid kit", "Car air freshener",
-        "Phone charger for passengers", "Umbrella", "Bottled water holder"
+        { en: "Smartphone with GPS", fr: "Smartphone avec GPS", ar: "هاتف ذكي بنظام GPS" },
+        { en: "First aid kit", fr: "Kit de premiers secours", ar: "حقيبة إسعافات أولية" },
+        { en: "Car air freshener", fr: "Désodorisant de voiture", ar: "معطر جو للسيارة" },
+        { en: "Phone charger for passengers", fr: "Chargeur de téléphone pour passagers", ar: "شاحن هاتف للمسافرين" },
+        { en: "Umbrella", fr: "Parapluie", ar: "مظلة" },
+        { en: "Bottled water holder", fr: "Porte-bouteille d'eau", ar: "حامل زجاجات ماء" }
     ],
     learn_arabic: [
-        "Lesson handouts / textbooks", "Whiteboard & markers", "Audio recordings",
-        "Tablet / Laptop", "Flashcards"
+        { en: "Lesson handouts / textbooks", fr: "Documents de leçon / manuels", ar: "مذكرات تعليمية / كتب مدرسية" },
+        { en: "Whiteboard & markers", fr: "Tableau blanc et marqueurs", ar: "سبورة بيضاء وأقلام" },
+        { en: "Audio recordings", fr: "Enregistrements audio", ar: "تسجيلات صوتية" },
+        { en: "Tablet / Laptop", fr: "Tablette / Ordinateur portable", ar: "تابلت / لابتوب" },
+        { en: "Flashcards", fr: "Cartes mémoires", ar: "بطاقات تعليمية" }
     ],
 };
 
@@ -2413,33 +2484,36 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                                                             <>
                                                                 <div className="flex flex-wrap gap-2.5">
                                                                     {/* "I don't have tools" as first option */}
-                                                                    <button
-                                                                        onClick={() => {
-                                                                            const newValue = !currentCatEntry.noEquipment;
-                                                                            updateCatEntry(currentCatId, 'noEquipment', newValue);
-                                                                            if (newValue) updateCatEntry(currentCatId, 'equipments', []);
-                                                                        }}
-                                                                        className={cn(
-                                                                            "px-5 py-4 rounded-[12px] border-2 text-[14px] font-bold transition-all flex items-center justify-center gap-2 min-w-[120px] lg:min-w-0",
-                                                                            currentCatEntry.noEquipment
-                                                                                ? "bg-[#01A083] border-[#01A083] text-white"
-                                                                                : "bg-white text-neutral-800 border-neutral-200 hover:border-[#008C74]/30"
-                                                                        )}
-                                                                    >
-                                                                        {currentCatEntry.noEquipment && <Check size={16} strokeWidth={3} />}
-                                                                        {t({ en: "I don't have tools", fr: "Je n'ai pas d'outils", ar: 'ليس لدي أدوات' })}
-                                                                    </button>
+                                                                    {currentCatEntry.categoryId !== 'glass_cleaning' && (
+                                                                        <button
+                                                                            onClick={() => {
+                                                                                const newValue = !currentCatEntry.noEquipment;
+                                                                                updateCatEntry(currentCatId, 'noEquipment', newValue);
+                                                                                if (newValue) updateCatEntry(currentCatId, 'equipments', []);
+                                                                            }}
+                                                                            className={cn(
+                                                                                "px-5 py-4 rounded-[12px] border-2 text-[14px] font-bold transition-all flex items-center justify-center gap-2 min-w-[120px] lg:min-w-0",
+                                                                                currentCatEntry.noEquipment
+                                                                                    ? "bg-[#01A083] border-[#01A083] text-white"
+                                                                                    : "bg-white text-neutral-800 border-neutral-200 hover:border-[#008C74]/30"
+                                                                            )}
+                                                                        >
+                                                                            {currentCatEntry.noEquipment && <Check size={16} strokeWidth={3} />}
+                                                                            {t({ en: "I don't have tools", fr: "Je n'ai pas d'outils", ar: 'ليس لدي أدوات' })}
+                                                                        </button>
+                                                                    )}
 
-                                                                    {(SERVICE_EQUIPMENT_SUGGESTIONS[currentCatEntry.categoryId] || []).map(eq => {
-                                                                        const isAdded = currentCatEntry.equipments.includes(eq);
+                                                                    {(SERVICE_EQUIPMENT_SUGGESTIONS[currentCatEntry.categoryId] || []).map(eqObj => {
+                                                                        const eqId = eqObj.en;
+                                                                        const isAdded = currentCatEntry.equipments.includes(eqId);
                                                                         return (
                                                                             <button
-                                                                                key={eq}
+                                                                                key={eqId}
                                                                                 onClick={() => {
                                                                                     if (isAdded) {
-                                                                                        removeEquipment(currentCatId, eq);
+                                                                                        removeEquipment(currentCatId, eqId);
                                                                                     } else {
-                                                                                        addEquipment(currentCatId, eq);
+                                                                                        addEquipment(currentCatId, eqId);
                                                                                         // If adding a tool, turn off "noEquipment"
                                                                                         updateCatEntry(currentCatId, 'noEquipment', false);
                                                                                     }
@@ -2449,7 +2523,7 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                                                                                     isAdded ? "bg-[#E6F6F2] border-[#01A083] text-[#01A083]" : "bg-white text-neutral-800 border-neutral-100 hover:border-neutral-200"
                                                                                 )}
                                                                             >
-                                                                                {isAdded && <Check size={16} strokeWidth={3} />}{t({ en: eq, fr: eq })}
+                                                                                {isAdded && <Check size={16} strokeWidth={3} />}{t(eqObj)}
                                                                             </button>
                                                                         );
                                                                     })}
@@ -2520,9 +2594,9 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                                                                 const archetype = service?.subServices?.find(ss => selectedSubServices.includes(ss.id))?.pricingArchetype || 'hourly';
                                                                 if (currentCatId === 'private_driver' || archetype === 'rental') return t({ en: "What's the daily rate you'd like to charge?", fr: "Quel tarif journalier souhaitez-vous ?", ar: "ما هو السعر اليومي؟" });
                                                                 if (archetype === 'unit') return t({
-                                                                    en: "What's the minimum price you accept for this service?",
-                                                                    fr: "Quel est le prix minimum que vous acceptez pour ce service ?",
-                                                                    ar: "ما هو أقل ثمن تقبله مقابل هذه الخدمة؟"
+                                                                    en: "What's the minimum hourly price you accept for this service?",
+                                                                    fr: "Quel est le prix horaire minimum que vous acceptez pour ce service ?",
+                                                                    ar: "ما هو الحد الأدنى للأجر بالساعة الذي تقبله مقابل هذه الخدمة؟"
                                                                 });
                                                                 if (currentCatId === 'errands') return t({ en: "What's the minimum price you accept for a simple delivery task?", fr: "Quel est le prix minimum que vous acceptez pour une simple mission de livraison ?", ar: "ما هو أقل ثمن تقبله مقابل مهمة توصيل بسيطة؟" });
                                                                 return t({ en: "What's the minimum price you accept for this service?", fr: "Quel est le prix minimum que vous acceptez pour ce service ?", ar: "ما هو أقل ثمن تقبله مقابل هذه الخدمة؟" });

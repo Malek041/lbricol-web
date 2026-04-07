@@ -268,6 +268,7 @@ function CheckoutContent() {
                 value={state.orderDescription}
                 onChange={(v) => setState(prev => ({ ...prev, orderDescription: v }))}
                 errors={state.errors}
+                serviceType={order.serviceType}
               />
 
               <LocationSection

@@ -605,19 +605,19 @@ const ClientHome: React.FC<ClientHomeProps> = ({
                                         return (
                                             <motion.button
                                                 key={svc.id}
-                                                disabled={svc.id !== 'cleaning'}
+                                                disabled={!['cleaning', 'glass_cleaning'].includes(svc.id)}
                                                 onClick={() => {
-                                                    if (svc.id === 'cleaning') {
+                                                    if (['cleaning', 'glass_cleaning'].includes(svc.id)) {
                                                         setActiveId(svc.id);
                                                         setHasManuallySelected(true);
                                                     }
                                                 }}
                                                 initial={{ opacity: 0, y: 20, scale: 0.8 }}
                                                 animate={{
-                                                    opacity: svc.id === 'cleaning' ? 1 : 0.4,
+                                                    opacity: ['cleaning', 'glass_cleaning'].includes(svc.id) ? 1 : 0.4,
                                                     y: 0,
                                                     scale: 1,
-                                                    filter: svc.id === 'cleaning' ? 'grayscale(0)' : 'grayscale(1)'
+                                                    filter: ['cleaning', 'glass_cleaning'].includes(svc.id) ? 'grayscale(0)' : 'grayscale(1)'
                                                 }}
                                                 transition={{
                                                     type: "spring",
@@ -625,7 +625,7 @@ const ClientHome: React.FC<ClientHomeProps> = ({
                                                     stiffness: 200,
                                                     delay: 1.4 + idx * 0.07
                                                 }}
-                                                className={`flex flex-col items-center gap-3 px-1 pt-4 pb-3 flex-shrink-0 relative transition-all ${svc.id !== 'cleaning' ? 'cursor-not-allowed' : ''}`}
+                                                className={`flex flex-col items-center gap-3 px-1 pt-4 pb-3 flex-shrink-0 relative transition-all ${!['cleaning', 'glass_cleaning'].includes(svc.id) ? 'cursor-not-allowed' : ''}`}
                                             >
                                                 <motion.div
                                                     animate={isActive ? {

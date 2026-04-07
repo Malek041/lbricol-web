@@ -5,9 +5,18 @@ interface OrderDescriptionProps {
   value: string;
   onChange: (value: string) => void;
   errors: Record<string, string>;
+  serviceType?: string;
 }
 
-export default function OrderDescription({ value, onChange, errors }: OrderDescriptionProps) {
+export default function OrderDescription({ value, onChange, errors, serviceType }: OrderDescriptionProps) {
+  const isErrand = serviceType === 'errands' || serviceType?.includes('delivery') || serviceType === 'moving';
+  
+  const title = isErrand ? "What do you need transporting?" : "Order details";
+  const subtitle = isErrand ? "Purchases aren't allowed" : "Provide any specific instructions";
+  const placeholder = isErrand 
+    ? "E.g. I need to move a small table from A to B..."
+    : "E.g. I need a deep clean for a 2-bedroom apartment with focus on the kitchen windows...";
+
   return (
     <div style={{ marginBottom: 24 }}>
       <h2 style={{ fontSize: 16, fontWeight: 900, color: '#111827', marginBottom: 16 }}>Your order</h2>
@@ -34,12 +43,12 @@ export default function OrderDescription({ value, onChange, errors }: OrderDescr
           <Package size={20} color="#374151" />
         </div>
         <div style={{ flex: 1 }}>
-          <div style={{ fontSize: 13, fontWeight: 800, color: '#111827', marginBottom: 4 }}>What do you need transporting?</div>
-          <div style={{ fontSize: 11, color: '#9CA3AF', fontWeight: 500, marginBottom: 8 }}>Purchases aren't allowed</div>
+          <div style={{ fontSize: 13, fontWeight: 800, color: '#111827', marginBottom: 4 }}>{title}</div>
+          <div style={{ fontSize: 11, color: '#9CA3AF', fontWeight: 500, marginBottom: 8 }}>{subtitle}</div>
           <textarea
             value={value}
             onChange={(e) => onChange(e.target.value)}
-            placeholder="E.g. I need to move a small table from A to B..."
+            placeholder={placeholder}
             style={{
               width: '100%',
               minHeight: 80,
