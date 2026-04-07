@@ -9,7 +9,7 @@ import { calculateDistance, getRoadDistance } from '@/lib/calculateDistance';
 import { matchScore } from '@/lib/matchBricolers';
 import dynamic from 'next/dynamic';
 import { motion } from 'framer-motion';
-import { X, Star, Clock, MapPin, CheckCircle2, ChevronLeft } from 'lucide-react';
+import { X, Star, Clock, MapPin, CheckCircle2, ChevronLeft, Check, Trophy, Calendar } from 'lucide-react';
 import SplashScreen from '@/components/layout/SplashScreen';
 import { CAR_BRANDS } from '@/config/cars_config';
 import { CarRentalProfileModal } from './CarRentalProfileModal';
@@ -369,7 +369,7 @@ function Step2Content() {
     // 1. Try to find specific subservice rate
     if (order.subServiceId) {
       const subSvcId = String(order.subServiceId).toLowerCase();
-      const subSvcInfo = services.find((s: any) => 
+      const subSvcInfo = services.find((s: any) =>
         String(s.subServiceId || s.id).toLowerCase() === subSvcId
       );
       if (subSvcInfo) return Number(subSvcInfo.hourlyRate || subSvcInfo.price || provider.minRate || 80);
@@ -377,7 +377,7 @@ function Step2Content() {
 
     // 2. Fallback to category rate
     const catId = String(order.serviceType).toLowerCase();
-    const catInfo = services.find((s: any) => 
+    const catInfo = services.find((s: any) =>
       String(s.categoryId || s.id).toLowerCase() === catId
     );
     if (catInfo) return Number(catInfo.hourlyRate || catInfo.price || provider.minRate || 80);
@@ -615,45 +615,74 @@ function Step2Content() {
           {/* SHEET HEADER */}
           <div style={{ padding: '16px 20px 8px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
             <div style={{ width: 36, height: 4, background: '#E5E7EB', borderRadius: 10, marginBottom: 16 }}></div>
-            <div style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+            <div style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div>
                 <h3 style={{ fontSize: 25, fontWeight: 350, color: '#111827', letterSpacing: '-0.3px', margin: 0, lineHeight: 1 }}>
-                  {t({ en: 'Ideal Bricolers', fr: 'Bricoleurs Idéaux', ar: 'بريكولير مثالي' })}
+                  {focusedId ? t({ en: 'Bricoler Details', fr: 'Détails du Bricoleur', ar: 'تفاصيل بريكولير' }) : t({ en: 'Ideal Bricolers', fr: 'Bricoleurs Idéaux', ar: 'بريكولير مثالي' })}
                 </h3>
-
               </div>
-              <div style={{ fontSize: 12, fontWeight: 900, color: '#027963', background: '#F0FDF4', padding: '4px 10px', borderRadius: 8 }}>
-                {t({ en: 'BEST PRICE', fr: 'MEILLEUR PRIX', ar: 'أفضل سعر' })}
-              </div>
+              
+              {focusedId ? (
+                <button 
+                  onClick={() => setFocusedId(null)}
+                  style={{ 
+                    width: 32, height: 32, borderRadius: '50%', background: '#F3F4F6', 
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none' 
+                  }}
+                >
+                  <X size={20} color="#6B7280" />
+                </button>
+              ) : (
+                <div style={{ fontSize: 12, fontWeight: 900, color: '#027963', background: '#F0FDF4', padding: '4px 10px', borderRadius: 8 }}>
+                  {t({ en: 'BEST PRICE', fr: 'MEILLEUR PRIX', ar: 'أفضل سعر' })}
+                </div>
+              )}
             </div>
           </div>
 
-          {/* Provider cards (Horizontal Scroll) */}
-          <div className="step2-cards" ref={cardsRef} onScroll={handleScroll}>
-            {loading ? (
-              <div style={{ textAlign: 'center', padding: 32, flex: 1, color: '#9CA3AF', fontSize: 14 }}>
-                {t({ en: 'Finding Bricolers...', fr: 'Recherche de Bricoleurs...', ar: 'جاري البحث عن "بريكولير"...' })}
-              </div>
-            ) : providers.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: 32, flex: 1 }}>
-                <div style={{ fontSize: 16, fontWeight: 700, color: '#111827' }}>
-                  {t({ en: 'No Bricolers available', fr: 'Aucun Bricoleur disponible', ar: 'لا يوجد "بريكولير" متاحون' })}
-                </div>
-              </div>
-            ) : (
-              providers.map(provider => (
-                <div key={provider.id} id={`provider-card-${provider.id}`} className="provider-card-wrapper">
-                  <ProviderCard
-                    provider={provider}
-                    clientLat={clientLat}
-                    clientLng={clientLng}
-                    isSelected={focusedId === provider.id}
-                    onSelect={() => handleSelect(provider)}
+          {/* Content: Either horizontal list OR single provider details */}
+          <div style={{ flex: 1, overflowY: 'auto' }} className="no-scrollbar">
+            {focusedId ? (() => {
+              const provider = providers.find(p => p.id === focusedId);
+              if (!provider) return null;
+              return (
+                <div style={{ padding: '20px' }}>
+                  <BricolerDetails 
+                    provider={provider} 
                     order={order}
                     displayRate={calculateRate(provider)}
+                    onBook={() => handleSelect(provider)}
                   />
                 </div>
-              ))
+              );
+            })() : (
+              <div className="step2-cards" ref={cardsRef} onScroll={handleScroll}>
+                {loading ? (
+                  <div style={{ textAlign: 'center', padding: 32, flex: 1, color: '#9CA3AF', fontSize: 14 }}>
+                    {t({ en: 'Finding Bricolers...', fr: 'Recherche de Bricoleurs...', ar: 'جاري البحث عن "بريكولير"...' })}
+                  </div>
+                ) : providers.length === 0 ? (
+                  <div style={{ textAlign: 'center', padding: 32, flex: 1 }}>
+                    <div style={{ fontSize: 16, fontWeight: 700, color: '#111827' }}>
+                      {t({ en: 'No Bricolers available', fr: 'Aucun Bricoleur disponible', ar: 'لا يوجد "بريكولير" متاحون' })}
+                    </div>
+                  </div>
+                ) : (
+                  providers.map(provider => (
+                    <div key={provider.id} id={`provider-card-${provider.id}`} className="provider-card-wrapper">
+                      <ProviderCard
+                        provider={provider}
+                        clientLat={clientLat}
+                        clientLng={clientLng}
+                        isSelected={focusedId === provider.id}
+                        onSelect={() => handleSelect(provider)}
+                        order={order}
+                        displayRate={calculateRate(provider)}
+                      />
+                    </div>
+                  ))
+                )}
+              </div>
             )}
           </div>
         </motion.div>
@@ -669,6 +698,147 @@ function Step2Content() {
         />
       </div>
     </>
+  );
+}
+
+function BricolerDetails({
+  provider, order, displayRate, onBook
+}: {
+  provider: any;
+  order: any;
+  displayRate: number;
+  onBook: () => void;
+}) {
+  const { t } = useLanguage();
+  const avatar = provider.avatarUrl || provider.avatar || provider.photoURL;
+  const ratingStr = (!provider.taskCount || provider.taskCount === 0 || !provider.rating) ? '0.0' : provider.rating.toFixed(1);
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 24, paddingBottom: 20 }}>
+      {/* Top Section: Avatar + Name/Price */}
+      <div style={{ display: 'flex', gap: 20, alignItems: 'center' }}>
+        <div style={{
+          width: 120, height: 120, borderRadius: '50%',
+          border: '4px solid #fff',
+          boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
+          overflow: 'hidden', flexShrink: 0,
+          background: '#F3F4F6',
+          display: 'flex', alignItems: 'center', justifyContent: 'center'
+        }}>
+          {avatar ? (
+            <img src={avatar} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+          ) : (
+            <span style={{ fontSize: 40, fontWeight: 900, color: '#374151' }}>{provider.name?.charAt(0).toUpperCase()}</span>
+          )}
+        </div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          <h2 style={{ fontSize: 32, fontWeight: 900, color: '#111827', margin: 0, lineHeight: 1 }}>
+            {provider.name}
+          </h2>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
+            <span style={{ fontSize: 24, fontWeight: 950, color: '#01A083' }}>MAD {displayRate}</span>
+            <span style={{ fontSize: 14, fontWeight: 700, color: '#6B7280' }}>minimum</span>
+          </div>
+          
+          <div style={{ 
+            marginTop: 4,
+            width: 'fit-content',
+            background: '#F0FDF4', color: '#16A34A', fontSize: 12, fontWeight: 900,
+            padding: '6px 14px', borderRadius: 20, display: 'flex', alignItems: 'center', gap: 6,
+            border: '1px solid #DCFCE7'
+          }}>
+            <div style={{ width: 14, height: 14, background: '#16A34A', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+               <Check size={8} color="#fff" strokeWidth={4} />
+            </div>
+            {t({ en: 'Verified Identity', fr: 'Identité vérifiée', ar: 'هوية مفعلة' })}
+          </div>
+        </div>
+      </div>
+
+      {/* Main Action Button */}
+      <motion.button
+        whileTap={{ scale: 0.98 }}
+        onClick={onBook}
+        style={{
+          width: '100%',
+          background: '#01A083',
+          color: '#fff',
+          border: 'none',
+          borderRadius: 30,
+          padding: '18px',
+          fontSize: 18,
+          fontWeight: 900,
+          boxShadow: '0 8px 24px rgba(1, 160, 131, 0.25)',
+          cursor: 'pointer'
+        }}
+      >
+        {t({ en: 'Book Me', fr: 'Réservez-moi', ar: 'احجز الآن' })}
+      </motion.button>
+
+      {/* Info Grid (4 circles) */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
+        {/* Niveau */}
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+          <div style={{ 
+            width: 60, height: 60, borderRadius: '40% 60% 70% 30% / 40% 50% 60% 50%',
+            background: '#F0FDF4', display: 'flex', alignItems: 'center', justifyContent: 'center'
+          }}>
+            <Trophy size={28} color="#16A34A" />
+          </div>
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: 14, fontWeight: 900, color: '#111827' }}>
+              {((provider.taskCount || 0) < 10 || provider.isNew) ? 'Nouveau' : (provider.badge || 'Classic')}
+            </div>
+            <div style={{ fontSize: 10, fontWeight: 700, color: '#9CA3AF', textTransform: 'uppercase' }}>NIVEAU</div>
+          </div>
+        </div>
+
+        {/* Note */}
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+          <div style={{ 
+            width: 60, height: 60, borderRadius: '60% 40% 30% 70% / 50% 30% 70% 50%',
+            background: '#FFF7ED', display: 'flex', alignItems: 'center', justifyContent: 'center'
+          }}>
+            <Star size={28} color="#EA580C" fill="#EA580C" />
+          </div>
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: 14, fontWeight: 900, color: '#111827' }}>{ratingStr}</div>
+            <div style={{ fontSize: 10, fontWeight: 700, color: '#9CA3AF', textTransform: 'uppercase' }}>NOTE</div>
+          </div>
+        </div>
+
+        {/* Commandes */}
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+          <div style={{ 
+            width: 60, height: 60, borderRadius: '50% 50% 40% 60% / 40% 60% 50% 50%',
+            background: '#EFF6FF', display: 'flex', alignItems: 'center', justifyContent: 'center'
+          }}>
+            <CheckCircle2 size={28} color="#2563EB" />
+          </div>
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: 14, fontWeight: 900, color: '#111827' }}>{provider.taskCount || 0}</div>
+            <div style={{ fontSize: 10, fontWeight: 700, color: '#9CA3AF', textTransform: 'uppercase' }}>COMMANDES</div>
+          </div>
+        </div>
+
+        {/* Expérience */}
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+          <div style={{ 
+            width: 60, height: 60, borderRadius: '40% 60% 50% 50% / 60% 40% 60% 40%',
+            background: '#F5F3FF', display: 'flex', alignItems: 'center', justifyContent: 'center'
+          }}>
+            <Calendar size={28} color="#7C3AED" />
+          </div>
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: 14, fontWeight: 900, color: '#111827' }}>
+              {provider.experienceYears || '2 Years'}
+            </div>
+            <div style={{ fontSize: 10, fontWeight: 700, color: '#9CA3AF', textTransform: 'uppercase' }}>EXPÉRIENCE</div>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -882,7 +1052,7 @@ function ProviderCard({
         >
           {t({ en: 'Book Me', fr: 'Réserver', ar: 'احجز الآن' })}
           <div style={{ background: 'rgba(255,255,255,0.2)', borderRadius: '50%', padding: 4, display: 'flex' }}>
-             <ChevronLeft size={16} style={{ transform: 'rotate(180deg)' }} />
+            <ChevronLeft size={16} style={{ transform: 'rotate(180deg)' }} />
           </div>
         </motion.button>
       )}

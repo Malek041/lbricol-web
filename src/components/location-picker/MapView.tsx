@@ -771,7 +771,10 @@ const MapView: React.FC<MapViewProps> = ({
     const focusPin = providerPins?.find(p => p.id === focusedProviderId);
     if (!focusPin) return;
 
-    const start = [initialLocation.lng, initialLocation.lat];
+    const startPoint = clientPin || initialLocation;
+    if (!startPoint) return;
+
+    const start = [startPoint.lng, startPoint.lat];
     const end = [focusPin.lng, focusPin.lat];
 
     const loadRoute = async () => {
@@ -834,9 +837,12 @@ const MapView: React.FC<MapViewProps> = ({
 
         } else {
           // Fallback to straight line if OSRM fails
-          routeLayerRef.current = L.polyline([[initialLocation.lat, initialLocation.lng], [focusPin.lat, focusPin.lng]], {
-            color: '#3B82F6', weight: 4, opacity: 0.6, dashArray: '8, 8'
-          }).addTo(map);
+          const startPt = clientPin || initialLocation;
+          if (startPt) {
+            routeLayerRef.current = L.polyline([[startPt.lat, startPt.lng], [focusPin.lat, focusPin.lng]], {
+              color: '#3B82F6', weight: 4, opacity: 0.6, dashArray: '8, 8'
+            }).addTo(map);
+          }
         }
       } catch (e) {
         console.warn("Routing failed", e);
@@ -849,7 +855,7 @@ const MapView: React.FC<MapViewProps> = ({
       if (routeLayerRef.current) map.removeLayer(routeLayerRef.current);
       if (routeLabelRef.current) map.removeLayer(routeLabelRef.current);
     };
-  }, [focusedProviderId, initialLocation, mapReady, providerPins]);
+  }, [focusedProviderId, initialLocation, mapReady, providerPins, clientPin]);
 
   // ── Render route between clientPin and destinationPin (Moving / Errands) ──
   useEffect(() => {
