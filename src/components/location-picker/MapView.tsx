@@ -1112,7 +1112,7 @@ const MapView: React.FC<MapViewProps> = ({
               };
               requestGps(true);
             }}
-            className="absolute top-4 left-4 right-4 z-[2000] bg-[#FFCC02] border border-[#EAB308] rounded-2xl p-4 shadow-xl flex items-center gap-4 cursor-pointer active:scale-[0.98] transition-transform"
+            className="absolute top-4 left-4 right-4 z-[2000] bg-[#FFB700] border border-[#EAB308] rounded-2xl p-4 shadow-xl flex items-center gap-4 cursor-pointer active:scale-[0.98] transition-transform"
           >
             <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center flex-shrink-0">
                <MapPin size={22} className="text-[#111827]" />

@@ -496,11 +496,11 @@ const Home = () => {
           handleFirstArrivalLocationTrigger();
         }
       }
-    }, 1500);
+    }, 2500); // 2.5 seconds minimum for a premium feel
 
     if (mounted && !loadingOrders && !loadingServices) {
-      // If data is already ready, we still respect the minTimer for branding
-      const finalTimer = setTimeout(() => setShowSplash(false), 500);
+      // Small additional buffer for UX transitions
+      const finalTimer = setTimeout(() => setShowSplash(false), 1000);
       return () => {
         clearTimeout(minTimer);
         clearTimeout(finalTimer);
