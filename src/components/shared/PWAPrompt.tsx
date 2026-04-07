@@ -11,10 +11,6 @@ export default function PWAPrompt() {
     const { t } = useLanguage();
 
     useEffect(() => {
-        // Only show once per session or use localStorage for more persistence
-        const shown = localStorage.getItem('pwa_prompt_dismissed');
-        if (shown) return;
-
         // Detect platform
         const ua = window.navigator.userAgent.toLowerCase();
         const isIos = /iphone|ipad|ipod/.test(ua);
@@ -38,7 +34,6 @@ export default function PWAPrompt() {
 
     const dismiss = () => {
         setIsVisible(false);
-        localStorage.setItem('pwa_prompt_dismissed', 'true');
     };
 
     if (!isVisible) return null;
