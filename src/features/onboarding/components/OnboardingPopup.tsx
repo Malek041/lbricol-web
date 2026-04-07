@@ -1823,9 +1823,7 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                                                         hasCode === true ? "border-[#01A083] bg-[#E6F6F2]" : "border-neutral-100 hover:border-neutral-200"
                                                     )}
                                                 >
-                                                    <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center", hasCode === true ? "bg-[#01A083] text-white" : "bg-neutral-50 text-neutral-400")}>
-                                                        <Key size={24} />
-                                                    </div>
+
                                                     <span className="font-bold text-neutral-900">{t({ en: 'Yes, I have one', fr: 'Oui, j\'en ai un', ar: 'نعم، لدي واحد' })}</span>
                                                 </button>
 
@@ -1839,9 +1837,7 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                                                         hasCode === false ? "border-[#01A083] bg-[#E6F6F2]" : "border-neutral-100 hover:border-neutral-200"
                                                     )}
                                                 >
-                                                    <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center", hasCode === false ? "bg-[#01A083] text-white" : "bg-neutral-50 text-neutral-400")}>
-                                                        <ArrowRight size={24} />
-                                                    </div>
+
                                                     <span className="font-bold text-neutral-900">{t({ en: 'No, skip this', fr: 'Non, passer', ar: 'لا، تجاوز' })}</span>
                                                 </button>
                                             </div>
@@ -1938,7 +1934,7 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                                                             style={{
                                                                 width: 90,
                                                                 height: 90,
-                                                                backgroundColor: isActive ? '#FFF9E5' : hasSelected ? '#ffffffff' : '#FFFFFF',
+                                                                backgroundColor: isActive ? '#FFB700' : hasSelected ? '#ffffffff' : '#FFFFFF',
                                                                 display: 'flex',
                                                                 alignItems: 'center',
                                                                 justifyContent: 'center',
@@ -1959,9 +1955,9 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                                                         </motion.div>
 
                                                         <span
-                                                            className="text-[14px] font-black whitespace-nowrap mt-1"
+                                                            className="text-[14px] font-bold whitespace-nowrap mt-1"
                                                             style={{
-                                                                color: isActive || hasSelected ? '#FFCC02' : '#666',
+                                                                color: isActive || hasSelected ? '#037B3E' : '#666',
                                                             }}
                                                         >
                                                             {t({ en: cat.name, fr: cat.name })}
@@ -1970,7 +1966,7 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                                                         {isActive && (
                                                             <motion.div
                                                                 layoutId="category-indicator"
-                                                                className="absolute bottom-0 left-0 right-0 h-[3px] bg-[#FFCC02] rounded-full"
+                                                                className="absolute bottom-0 left-0 right-0 h-[3px] bg-[#037B3E] rounded-full"
                                                                 transition={{ type: 'spring', stiffness: 500, damping: 40 }}
                                                             />
                                                         )}

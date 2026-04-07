@@ -82,12 +82,7 @@ export default function PWAPrompt() {
                     {/* Background Decorative Gradient */}
                     <div className="absolute top-0 right-0 w-32 h-32 bg-[#FFCC02]/10 rounded-full blur-3xl -mr-16 -mt-16" />
 
-                    <button
-                        onClick={dismiss}
-                        className="absolute top-4 right-4 p-2 hover:bg-neutral-100 rounded-full transition-colors"
-                    >
-                        <X size={20} className="text-neutral-400" />
-                    </button>
+
 
                     <div className="flex flex-col items-center text-center">
                         <div className="w-50 h-50 bg-white rounded-2xl p-2 mb-4 flex items-center justify-center overflow-hidden">
