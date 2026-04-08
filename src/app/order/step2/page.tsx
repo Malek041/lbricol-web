@@ -823,11 +823,11 @@ function BricolerDetails({
   const bioText = relevantService?.pitch || provider.bio || provider.aboutMe;
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 24, paddingBottom: 20 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16, paddingBottom: 10 }}>
       {/* Profil Section */}
-      <div style={{ display: 'flex', gap: 20, alignItems: 'center' }}>
+      <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
         <div style={{
-          width: 130, height: 130, borderRadius: '50%',
+          width: 90, height: 90, borderRadius: '50%',
           border: '4px solid #fff',
           boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
           overflow: 'hidden', flexShrink: 0,
@@ -837,27 +837,27 @@ function BricolerDetails({
           {avatar ? (
             <img src={avatar} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
           ) : (
-            <span style={{ fontSize: 40, fontWeight: 900, color: '#374151' }}>{provider.name?.charAt(0).toUpperCase()}</span>
+            <span style={{ fontSize: 30, fontWeight: 900, color: '#374151' }}>{provider.name?.charAt(0).toUpperCase()}</span>
           )}
         </div>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-          <h2 style={{ fontSize: 34, fontWeight: 900, color: '#111827', margin: 0, lineHeight: 1 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <h2 style={{ fontSize: 24, fontWeight: 900, color: '#111827', margin: 0, lineHeight: 1 }}>
             {provider.name}
           </h2>
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginTop: 4 }}>
-            <span style={{ fontSize: 28, fontWeight: 950, color: '#01A083' }}>MAD {displayRate}</span>
-            <span style={{ fontSize: 14, fontWeight: 700, color: '#6B7280' }}>minimum</span>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 4, marginTop: 2 }}>
+            <span style={{ fontSize: 20, fontWeight: 950, color: '#01A083' }}>MAD {displayRate}</span>
+            <span style={{ fontSize: 13, fontWeight: 700, color: '#6B7280' }}>minimum</span>
           </div>
 
           <div style={{
-            marginTop: 8,
+            marginTop: 6,
             width: 'fit-content',
-            background: 'rgba(1, 160, 131, 0.05)', color: '#01A083', fontSize: 13, fontWeight: 900,
-            padding: '8px 16px', borderRadius: 20, display: 'flex', alignItems: 'center', gap: 8,
+            background: 'rgba(1, 160, 131, 0.05)', color: '#01A083', fontSize: 12, fontWeight: 900,
+            padding: '6px 12px', borderRadius: 20, display: 'flex', alignItems: 'center', gap: 6,
             border: '1px solid rgba(1, 160, 131, 0.15)'
           }}>
-            <div style={{ width: 18, height: 18, background: '#01A083', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div style={{ width: 16, height: 16, background: '#01A083', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <Check size={10} color="#fff" strokeWidth={4} />
             </div>
             {t({ en: 'Verified Identity', fr: 'Identité vérifiée', ar: 'هوية مفعلة' })}
@@ -868,17 +868,17 @@ function BricolerDetails({
 
 
       {/* 4-Item Stats Grid matching Pic 2 */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginTop: 10 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8, marginTop: 4 }}>
         {/* LEVL / NIVEAU */}
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
           <div style={{
-            width: 64, height: 64, borderRadius: '40% 60% 70% 30% / 40% 50% 60% 50%',
+            width: 52, height: 52, borderRadius: '40% 60% 70% 30% / 40% 50% 60% 50%',
             background: '#F0FDF4', display: 'flex', alignItems: 'center', justifyContent: 'center'
           }}>
-            <Trophy size={32} color="#16A34A" />
+            <Trophy size={24} color="#16A34A" />
           </div>
           <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: 16, fontWeight: 950, color: '#111827' }}>
+            <div style={{ fontSize: 14, fontWeight: 950, color: '#111827' }}>
               {(() => {
                 const tasks = provider.taskCount || 0;
                 if (tasks < 10 || provider.isNew) return t({ en: 'New', fr: 'Nouveau', ar: 'جديد' });
@@ -887,57 +887,57 @@ function BricolerDetails({
                 return 'Pro';
               })()}
             </div>
-            <div style={{ fontSize: 11, fontWeight: 800, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.2px' }}>
+            <div style={{ fontSize: 10, fontWeight: 800, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.2px' }}>
               {t({ en: 'LEVEL', fr: 'NIVEAU', ar: 'المستوى' })}
             </div>
           </div>
         </div>
 
         {/* RATING / NOTE */}
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
           <div style={{
-            width: 64, height: 64, borderRadius: '60% 40% 30% 70% / 50% 30% 70% 50%',
+            width: 52, height: 52, borderRadius: '60% 40% 30% 70% / 50% 30% 70% 50%',
             background: '#FFF7ED', display: 'flex', alignItems: 'center', justifyContent: 'center'
           }}>
-            <Star size={32} color="#EA580C" fill="#EA580C" />
+            <Star size={24} color="#EA580C" fill="#EA580C" />
           </div>
           <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: 16, fontWeight: 950, color: '#111827' }}>{ratingStr}</div>
-            <div style={{ fontSize: 11, fontWeight: 800, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.2px' }}>
+            <div style={{ fontSize: 14, fontWeight: 950, color: '#111827' }}>{ratingStr}</div>
+            <div style={{ fontSize: 10, fontWeight: 800, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.2px' }}>
               {t({ en: 'RATING', fr: 'NOTE', ar: 'التقييم' })}
             </div>
           </div>
         </div>
 
         {/* TASKS / COMMANDES */}
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
           <div style={{
-            width: 64, height: 64, borderRadius: '50% 50% 40% 60% / 40% 60% 50% 50%',
+            width: 52, height: 52, borderRadius: '50% 50% 40% 60% / 40% 60% 50% 50%',
             background: '#EFF6FF', display: 'flex', alignItems: 'center', justifyContent: 'center'
           }}>
-            <CheckCircle2 size={32} color="#2563EB" />
+            <CheckCircle2 size={24} color="#2563EB" />
           </div>
           <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: 16, fontWeight: 950, color: '#111827' }}>{provider.taskCount || 0}</div>
-            <div style={{ fontSize: 11, fontWeight: 800, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.2px' }}>
+            <div style={{ fontSize: 14, fontWeight: 950, color: '#111827' }}>{provider.taskCount || 0}</div>
+            <div style={{ fontSize: 10, fontWeight: 800, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.2px' }}>
               {t({ en: 'TASKS', fr: 'COMMANDES', ar: 'الطلبات' })}
             </div>
           </div>
         </div>
 
         {/* EXPERIENCE / EXPÉRIENCE */}
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
           <div style={{
-            width: 64, height: 64, borderRadius: '40% 60% 50% 50% / 60% 40% 60% 40%',
+            width: 52, height: 52, borderRadius: '40% 60% 50% 50% / 60% 40% 60% 40%',
             background: '#F5F3FF', display: 'flex', alignItems: 'center', justifyContent: 'center'
           }}>
-            <Calendar size={32} color="#7C3AED" />
+            <Calendar size={24} color="#7C3AED" />
           </div>
           <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: 16, fontWeight: 950, color: '#111827' }}>
+            <div style={{ fontSize: 14, fontWeight: 950, color: '#111827' }}>
               {getExperience()}
             </div>
-            <div style={{ fontSize: 11, fontWeight: 800, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.2px' }}>
+            <div style={{ fontSize: 10, fontWeight: 800, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.2px' }}>
               {t({ en: 'EXPERIENCE', fr: 'EXPÉRIENCE', ar: 'الخبرة' })}
             </div>
           </div>
@@ -954,8 +954,8 @@ function BricolerDetails({
           color: '#fff',
           border: 'none',
           borderRadius: 50,
-          padding: '10px 24px',
-          fontSize: 20,
+          padding: '8px 24px',
+          fontSize: 18,
           fontWeight: 650,
           cursor: 'pointer',
         }}
@@ -965,17 +965,17 @@ function BricolerDetails({
 
       {/* About Me Section - Truncated for Bottom Sheet */}
       {bioText && (
-        <div style={{ marginTop: 8 }}>
-          <h3 style={{ fontSize: 18, fontWeight: 900, color: '#111827', marginBottom: 12 }}>
+        <div style={{ marginTop: 4 }}>
+          <h3 style={{ fontSize: 16, fontWeight: 900, color: '#111827', marginBottom: 8 }}>
             {t({ en: 'About me', fr: 'À propos de moi', ar: 'عني' })}
           </h3>
           <p style={{
-            fontSize: 15,
+            fontSize: 14,
             color: '#4B5563',
-            lineHeight: 1.6,
+            lineHeight: 1.4,
             margin: 0,
             display: '-webkit-box',
-            WebkitLineClamp: 3,
+            WebkitLineClamp: 2,
             WebkitBoxOrient: 'vertical',
             overflow: 'hidden',
           }}>

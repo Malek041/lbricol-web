@@ -145,7 +145,7 @@ const MapView: React.FC<MapViewProps> = ({
   const hasAnimatedPinsRef = useRef(false);
 
   const flyToWithOffset = (lat: number, lng: number, zoom?: number, skipOffset = false) => {
-    if (!mapRef.current || !mapRef.current.getContainer()) return;
+    if (!mapRef.current || !mapRef.current.getContainer() || isNaN(lat) || isNaN(lng)) return;
     const map = mapRef.current;
 
     // Safety check for Leaflet initialization
@@ -855,10 +855,19 @@ const MapView: React.FC<MapViewProps> = ({
 
           routeLayerRef.current = L.polyline(coords, {
             color: '#01A083',
-            weight: 6,
-            opacity: 0.9,
+            weight: 8,
+            opacity: 1,
+            dashArray: '12, 12',
             lineCap: 'round',
             lineJoin: 'round',
+          }).addTo(map);
+
+          // Add a shadow/glow effect underneath the branded line for depth
+          L.polyline(coords, {
+            color: '#01A083',
+            weight: 12,
+            opacity: 0.15,
+            lineCap: 'round',
           }).addTo(map);
 
           // Find midpoint index for the time bubble
@@ -900,8 +909,8 @@ const MapView: React.FC<MapViewProps> = ({
 
           // Center the path nicely
           map.fitBounds(routeLayerRef.current.getBounds(), {
-            paddingTopLeft: [50, 50],
-            paddingBottomRight: [50, 480], // Massive padding to account for bottom sheet detail card
+            paddingTopLeft: [80, 60],
+            paddingBottomRight: [60, 500], // Increased to ensure line is above condensed sheet
             animate: true,
             duration: 1.5
           });
@@ -911,12 +920,12 @@ const MapView: React.FC<MapViewProps> = ({
           const startPt = clientPin || initialLocation;
           if (startPt) {
             routeLayerRef.current = L.polyline([[startPt.lat, startPt.lng], [focusPin.lat, focusPin.lng]], {
-              color: '#3B82F6', weight: 4, opacity: 0.6, dashArray: '8, 8'
+              color: '#01A083', weight: 6, opacity: 0.8, dashArray: '10, 10'
             }).addTo(map);
 
             map.fitBounds(routeLayerRef.current.getBounds(), {
-              paddingTopLeft: [50, 50],
-              paddingBottomRight: [50, 480]
+              paddingTopLeft: [80, 60],
+              paddingBottomRight: [60, 500]
             });
           }
         }

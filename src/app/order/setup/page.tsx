@@ -1160,36 +1160,59 @@ export default function ServiceSetupPage() {
 
                                         {/* Reviews Section */}
                                         <motion.div variants={staggerItem} className="mb-10">
-                                            <div className="flex items-center justify-between mb-4">
-                                                <h4 className="text-[18px] font-black text-[#111827]">{t({ en: 'Client Reviews', fr: 'Avis clients', ar: 'آراء العملاء' })}</h4>
-                                                <span className="text-[11px] font-black text-[#9CA3AF] tracking-widest">{provider.reviews?.length || 0} {t({ en: 'reviews', fr: 'avis', ar: 'تقييمات' })}</span>
+                                            <div className="flex items-center justify-between mb-6 pb-2 border-b border-neutral-100">
+                                                <h4 className="text-[19px] font-black text-[#111827]">
+                                                    {t({ en: `Reviews for ${order.serviceName || 'Service'}`, fr: `Avis pour ${order.serviceName || 'Service'}`, ar: `تقييمات ${order.serviceName || 'الخدمة'}` })} ({provider.reviews?.length || 0})
+                                                </h4>
                                             </div>
-                                            <div className="grid grid-cols-1 gap-4">
+                                            <div className="flex flex-col gap-10">
                                                 {provider.reviews && provider.reviews.length > 0 ? provider.reviews.map((rev, i) => (
-                                                    <div key={i} className="p-5 bg-white rounded-[20px] border border-neutral-100">
-                                                        <div className="flex items-center gap-3 mb-3">
-                                                            <div className="w-10 h-10 rounded-full bg-[#01A083]/10 overflow-hidden flex items-center justify-center font-black text-[#01A083] text-sm border border-[#01A083]/10 flex-shrink-0">
+                                                    <div key={i} className="flex flex-col gap-3">
+                                                        <div className="flex items-start gap-4">
+                                                            {/* User Icon Placeholder or Avatar */}
+                                                            <div className="w-14 h-14 rounded-full bg-neutral-100 flex items-center justify-center flex-shrink-0 overflow-hidden">
                                                                 {(rev.clientAvatar || rev.userPhotoURL) ? (
                                                                     <img src={rev.clientAvatar || rev.userPhotoURL} className="w-full h-full object-cover" alt="" />
                                                                 ) : (
-                                                                    (rev.clientName || rev.userName || 'C').charAt(0)
+                                                                    <User size={32} className="text-neutral-300" />
                                                                 )}
                                                             </div>
-                                                            <div className="flex-1 min-w-0">
-                                                                <p className="text-[14px] font-black text-[#111827] truncate">{rev.clientName || rev.userName || 'Verified Client'}</p>
-                                                                <p className="text-[11px] font-bold text-[#9CA3AF]">
-                                                                    {rev.date ? new Date(rev.date).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }) : (t({ en: 'Recently', fr: 'Récemment', ar: 'مؤخراً' }))}
-                                                                </p>
-                                                            </div>
-                                                            <div className="flex items-center gap-1 bg-[#FFF9E5] px-2.5 py-1 rounded-[5px] border border-[#CCF1FF] flex-shrink-0">
-                                                                <Star size={10} className="text-[#33D5FF] fill-[#33D5FF]" />
-                                                                <span className="text-[11px] font-black text-[#92400E]">{rev.rating ?? 0}</span>
+
+                                                            <div className="flex-1">
+                                                                {/* Name and Rating */}
+                                                                <div className="flex items-center justify-between mb-1">
+                                                                    <p className="text-[17px] font-black text-[#111827]">{rev.clientName || rev.userName || 'Verified Client'}</p>
+                                                                    <div className="flex items-center gap-1.5">
+                                                                        <Star size={18} className="text-[#111827] fill-[#111827]" />
+                                                                        <span className="text-[17px] font-black text-[#111827]">{rev.rating ? Number(rev.rating).toFixed(1) : '5.0'}</span>
+                                                                    </div>
+                                                                </div>
+
+                                                                {/* Category Badge & Date */}
+                                                                <div className="flex items-center gap-3">
+                                                                    <span 
+                                                                        className="px-2.5 py-1 rounded-[4px] text-[10px] font-black tracking-wider uppercase"
+                                                                        style={{ 
+                                                                            background: (order.serviceType || '').includes('clean') ? '#F5F3FF' : '#F0F9FF',
+                                                                            color: (order.serviceType || '').includes('clean') ? '#7C3AED' : '#0284C7'
+                                                                        }}
+                                                                    >
+                                                                        {order.serviceName || 'SERVICE'}
+                                                                    </span>
+                                                                    <span className="text-[13px] font-medium text-[#6B7280]">
+                                                                        on {rev.date ? new Date(rev.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }) : (t({ en: 'Sun, Apr 5', fr: 'dimanche 5 avr.', ar: 'الأحد 5 أبريل' }))}
+                                                                    </span>
+                                                                </div>
                                                             </div>
                                                         </div>
-                                                        <p className="text-[14px] text-[#4B5563] font-medium leading-[1.6]">{rev.comment}</p>
+                                                        
+                                                        {/* Comment Text */}
+                                                        <div className="pl-0">
+                                                            <p className="text-[15px] text-[#4B5563] font-medium leading-[1.6]">{rev.comment}</p>
+                                                        </div>
                                                     </div>
                                                 )) : (
-                                                    <div className="py-12 text-center bg-white rounded-[20px] border border-dashed border-neutral-200">
+                                                    <div className="py-12 text-center border border-dashed border-neutral-200 rounded-[20px]">
                                                         <p className="text-[#9CA3AF] font-medium text-[15px] ">{t({ en: 'Awaiting first reviews on the app', fr: 'En attente des premiers avis sur l\'application', ar: 'في انتظار المراجعات الأولى على التطبيق' })}</p>
                                                     </div>
                                                 )}
