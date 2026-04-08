@@ -304,7 +304,7 @@ function CalendarTab({
                                 onClick={() => {
                                     setHorizontalSelectedDate(date);
                                     setWeekStart(getMonday(date));
-                                    if (dayOrders.length > 0) setViewMode('day');
+                                    setViewMode('day');
                                 }}
                                 className={cn(
                                     "aspect-[1/1.5] sm:aspect-[1/1.2] border border-neutral-100 rounded-xl p-1.5 sm:p-2 flex flex-col items-start transition-all cursor-pointer relative",
