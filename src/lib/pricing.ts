@@ -117,21 +117,21 @@ export const calculateOrderPrice = (
         // 7. Map back to Output
         let rateMultiplier = 1.0;
         if (subServiceId === 'standard_small' || subServiceId === 'standard_large' || subServiceId === 'family_home') {
-            rateMultiplier = 2.0;
+            rateMultiplier = 1.5; // Adjusted to match standard market
         } else if (subServiceId === 'deep_cleaning') {
-            rateMultiplier = 3.0;
+            rateMultiplier = 2.5;
         }
 
-        basePrice = providerRate * rateMultiplier; 
-        quantity = Math.round(totalEstimatedEffort * 10) / 10;
+        basePrice = providerRate; 
+        quantity = Math.round(totalEstimatedEffort * rateMultiplier * 10) / 10;
         unit = 'hr-equivalent';
         
     } else if (isSpecialCleaning && !subSvc) {
         // Fallback for missing subSvc metadata (using old logic but simplified)
-        let multiplier = subServiceId === 'deep_cleaning' ? 3.0 : 1.5;
-        basePrice = providerRate * multiplier;
+        const multiplier = subServiceId === 'deep_cleaning' ? 2.5 : 1.5;
+        basePrice = providerRate;
         const rooms = options.rooms || 1;
-        quantity = 1 + (rooms * 0.2);
+        quantity = (1 + (rooms * 0.2)) * multiplier;
         unit = 'job';
     } else if (subServiceId === 'tv_mounting' && subSvc) {
         // 1. Base Setup (Preparation of tools, laser leveling)
@@ -172,9 +172,9 @@ export const calculateOrderPrice = (
 
     } else if (subServiceId === 'tv_mounting' && !subSvc) {
         // Fallback for missing subSvc
-        quantity = options.tvCount || 1;
+        basePrice = providerRate;
+        quantity = (options.tvCount || 1) * 1.5;
         unit = 'TV';
-        basePrice = providerRate * 1.5;
     } else if (isMovingOrErrands) {
         const isErrands = subServiceId === 'errands' || subServiceId.includes('delivery') || subServiceId.includes('shopping') || subServiceId.includes('pickup') || subServiceId.includes('pharmacy');
         const hours = options.hours || 1;
@@ -268,14 +268,14 @@ export const calculateOrderPrice = (
 
         extraFees = details.reduce((sum: number, item) => sum + item.amount, 0);
     } else if (subServiceId === 'residential_glass' || subServiceId === 'commercial_glass') {
-        basePrice = providerRate;
+        const displayBasePrice = providerRate;
         
         // Window Size Multiplier
         let sizeMultiplier = 1.0;
         if (options.windowSize === 'medium') sizeMultiplier = 1.4;
         else if (options.windowSize === 'large') sizeMultiplier = 2.0;
         
-        // Property Type Coef (Consolidated logic)
+        // Property Type Coef
         let propertyCoef = 1.0;
         if (options.propertyType) {
             const coefMap: Record<string, number> = { 
@@ -286,42 +286,49 @@ export const calculateOrderPrice = (
         }
 
         const winCount = options.windowCount || 10;
+        const stories = options.buildingStories || 1;
         
         // Multiplier for cleaning type
         let typeMultiplier = 1.0;
         if (options.glassCleaningType === 'both') typeMultiplier = 1.6;
         else if (options.glassCleaningType === 'exterior') typeMultiplier = 1.3;
 
-        quantity = winCount;
+        quantity = winCount; 
         unit = 'window';
         
-        const perWindowFee = 15 * typeMultiplier * sizeMultiplier;
-        basePrice = (providerRate + perWindowFee) * propertyCoef;
+        // Total formula: (BaseRate * Quantity * Multipliers) + FixedFees
+        // We want Subtotal = (displayBasePrice * quantity) + ComplexityFee + extraFees
         
-        if (options.glassAccessibility === 'ladder') {
-            extraFees += (subServiceId === 'commercial_glass' ? 60 : 40);
-            details.push({ 
-                label: { en: 'Height Access Fee', fr: 'Supplément hauteur', ar: 'رسوم العمل في الارتفاع' }, 
-                amount: subServiceId === 'commercial_glass' ? 60 : 40 
+        const totalBaseSubtotal = displayBasePrice * winCount;
+        const complexityMultiplier = typeMultiplier * sizeMultiplier * propertyCoef * stories;
+        const totalCalculatedSubtotal = totalBaseSubtotal * complexityMultiplier;
+        
+        const complexityAdjustment = totalCalculatedSubtotal - totalBaseSubtotal;
+        
+        if (complexityAdjustment !== 0) {
+            details.push({
+                label: { 
+                    en: 'Configuration & Complexity', 
+                    fr: 'Configuration et complexité', 
+                    ar: 'التهيئة والتعقيد' 
+                },
+                amount: Math.round(complexityAdjustment * 10) / 10
             });
         }
+        
+        basePrice = displayBasePrice; // Stick to Bricoler's rate
+        extraFees += complexityAdjustment;
 
-        // --- Multi-Story Multiplier ---
-        const stories = options.buildingStories || 1;
-        if (stories > 1) {
-            // Apply stories multiplier to current basePrice * quantity + extraFees
-            // Actually, we'll just factor it into the quantity or subtotal later
-            // But to keep it clean, let's adjust quantity
-            quantity *= stories;
+        if (options.glassAccessibility === 'ladder') {
+            const ladderFee = subServiceId === 'commercial_glass' ? 60 : 40;
+            extraFees += ladderFee;
+            details.push({ 
+                label: { en: 'Height Access Fee', fr: 'Supplément hauteur', ar: 'رسوم العمل في الارتفاع' }, 
+                amount: ladderFee 
+            });
         }
     } else {
         // Fallback Strategy
-        if (options.propertyType) {
-            const coefMap: Record<string, number> = { studio: 0.9, apartment: 1.0, villa: 1.2, guesthouse: 1.3, riad: 1.4, hotel: 1.5 };
-            const coefficient = coefMap[options.propertyType.toLowerCase()];
-            if (coefficient !== undefined) basePrice *= coefficient;
-        }
-
         switch (archetype) {
             case 'unit':
                 quantity = options.rooms || options.quantity || 1;
@@ -340,19 +347,32 @@ export const calculateOrderPrice = (
                 unit = 'fixed';
                 break;
         }
+
+        if (options.propertyType) {
+            const coefMap: Record<string, number> = { studio: 0.9, apartment: 1.0, villa: 1.2, guesthouse: 1.3, riad: 1.4, hotel: 1.5 };
+            const coefficient = coefMap[options.propertyType.toLowerCase()];
+            if (coefficient && coefficient !== 1.0) {
+                const adjustment = (providerRate * quantity * coefficient) - (providerRate * quantity);
+                extraFees += adjustment;
+                details.push({
+                    label: { en: 'Property Complexity', fr: 'Complexité du lieu', ar: 'تعقيد المكان' },
+                    amount: Math.round(adjustment * 10) / 10
+                });
+            }
+        }
     }
 
     // --- General Add-ons (Apply to ALL) ---
     if (options.mountingAddOns?.includes('supplies')) extraFees += 15;
 
     // --- Calculations ---
-    const subtotal = Math.round(((basePrice * quantity) + extraFees) * 10) / 10;
+    const subtotal = Math.round(((providerRate * quantity) + extraFees) * 10) / 10;
     const serviceFee = Math.round((subtotal * 0.10) * 10) / 10;
     const travelFee = (isMovingOrErrands && extraFees > 0) ? 0 : Math.round((options.distanceKm || 0) * 3 * 10) / 10;
     const total = Math.round((subtotal + serviceFee + travelFee) * 100) / 100;
 
     return {
-        basePrice: Math.round(basePrice * 10) / 10,
+        basePrice: providerRate, // Always that of Bricoler
         quantity,
         unit,
         subtotal,
