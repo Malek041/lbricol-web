@@ -485,16 +485,15 @@ const Home = () => {
   // Handle Splash Dismissal based on data syncing
   useEffect(() => {
     // We wait for initial mount and for the main loading flags to clear
-    // We also add a small minimum delay (e.g. 1.5s) to ensure the splash is actually seen if data loads instantly
     const minTimer = setTimeout(() => {
       if (mounted && !loadingOrders && !loadingServices) {
         setShowSplash(false);
         
-        // Forced location flow if not set
-        const onboardingShown = localStorage.getItem('client_onboarding_shown');
+        // Forced location flow if not set (First Arrival ever)
         const prefCity = localStorage.getItem('lbricol_preferred_city');
-        if (onboardingShown && !prefCity && !showLanguagePopup) {
-          handleFirstArrivalLocationTrigger();
+        if (!prefCity && !showLanguagePopup) {
+          // Immediately show location picker if no city is preferred yet
+          setShowLocationPicker(true);
         }
       }
     }, 2500); // 2.5 seconds minimum for a premium feel
@@ -509,7 +508,7 @@ const Home = () => {
     }
 
     return () => clearTimeout(minTimer);
-  }, [mounted, loadingOrders, loadingServices]);
+  }, [mounted, loadingOrders, loadingServices, showLanguagePopup]);
 
   // Cycle Hero Images
   useEffect(() => {

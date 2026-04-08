@@ -1117,7 +1117,7 @@ const MapView: React.FC<MapViewProps> = ({
         </div>
       )}
 
-      {/* InDrive-style Location Banner (Non-obstructive) */}
+      {/* Location Header (Full Width - Styled to match pic) */}
       <AnimatePresence>
         {permissionDenied && (
           <motion.div
@@ -1125,7 +1125,6 @@ const MapView: React.FC<MapViewProps> = ({
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: -100, opacity: 0 }}
             onClick={async () => {
-              // 1. If we're on a native platform (Capacitor), try to open system settings directly
               if (Capacitor.isNativePlatform()) {
                 try {
                   await NativeSettings.open({
@@ -1138,8 +1137,6 @@ const MapView: React.FC<MapViewProps> = ({
                 }
               }
 
-              // 2. If we're in Safari/Web, and it's blocked, clicking should at least provide a clear hint
-              // We'll retry once, and if it fails again, we can technically only show instructions
               const requestGps = (highAccuracy: boolean) => {
                 navigator.geolocation.getCurrentPosition(
                   (position) => {
@@ -1152,8 +1149,6 @@ const MapView: React.FC<MapViewProps> = ({
                     reverseGeocode(latitude, longitude);
                   },
                   (error) => {
-                    console.warn("Manual GPS request failed:", error);
-                    // On iOS Safari, we can't open settings, so we alert the user with manual steps
                     if (error.code === error.PERMISSION_DENIED && !Capacitor.isNativePlatform()) {
                       alert(t({ 
                         en: "Location is blocked. Please enable it in Settings > Safari > Location.",
@@ -1167,23 +1162,14 @@ const MapView: React.FC<MapViewProps> = ({
               };
               requestGps(true);
             }}
-            className="absolute top-4 left-4 right-4 z-[2000] bg-[#FFB700] border border-[#EAB308] rounded-2xl p-4 shadow-xl flex items-center gap-4 cursor-pointer active:scale-[0.98] transition-transform"
+            className="absolute top-0 left-0 right-0 z-[2000] bg-[#FFCC02] h-[72px] flex flex-col items-center justify-center cursor-pointer shadow-lg active:brightness-95 transition-all px-4"
           >
-            <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center flex-shrink-0">
-               <MapPin size={22} className="text-[#111827]" />
-            </div>
-            
-            <div className="flex-1 min-w-0">
-              <h3 className="text-[15px] font-black text-[#111827] leading-tight">
-                {t({ en: 'Unable to locate you', fr: 'Impossible de vous localiser', ar: 'تعذر تحديد موقعك' })}
-              </h3>
-              <p className="text-[12px] font-bold text-[#111827]/70 mt-0.5 whitespace-nowrap overflow-hidden text-overflow-ellipsis">
-                {t({ en: 'Tap here to enable location', fr: 'Appuyez ici pour activer la localisation', ar: 'اضغط هنا لتفعيل تحديد المواقع' })}
-              </p>
-            </div>
-            <div className="text-[#111827]/40">
-              <ArrowRight size={20} />
-            </div>
+            <h3 className="text-[17px] font-black text-[#111827] text-center leading-none">
+              {t({ en: 'Unable to locate you', fr: 'Impossible de vous localiser', ar: 'تعذر تحديد موقعك' })}
+            </h3>
+            <p className="text-[14px] font-bold text-[#111827]/80 text-center mt-1.5 leading-none">
+              {t({ en: 'Tap here to enable location', fr: 'Appuyez ici pour activer la localisation', ar: 'اضغط هنا لتفعيل تحديد المواقع' })}
+            </p>
           </motion.div>
         )}
       </AnimatePresence>
