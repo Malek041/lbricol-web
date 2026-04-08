@@ -15,6 +15,7 @@ interface OrderState {
   subServiceId: string;
   subServiceName: string;
   location: LocationPoint | null;
+  discoveryLocation: LocationPoint | null;
   providerId: string | null;
   providerName: string | null;
   providerRate: number | null;
@@ -64,6 +65,7 @@ const defaultOrder: OrderState = {
   subServiceId: '',
   subServiceName: '',
   location: null,
+  discoveryLocation: null,
   providerId: null,
   providerName: null,
   providerAvatar: null,

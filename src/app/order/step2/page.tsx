@@ -8,11 +8,14 @@ import { db, auth } from '@/lib/firebase';
 import { calculateDistance, getRoadDistance } from '@/lib/calculateDistance';
 import { matchScore } from '@/lib/matchBricolers';
 import dynamic from 'next/dynamic';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { X, Star, Clock, MapPin, CheckCircle2, ChevronLeft, Check, Trophy, Calendar } from 'lucide-react';
 import SplashScreen from '@/components/layout/SplashScreen';
 import { CAR_BRANDS } from '@/config/cars_config';
 import { CarRentalProfileModal } from './CarRentalProfileModal';
+import DiscoveryFilters from './DiscoveryFilters';
+import LocationPicker from '@/components/location-picker/LocationPicker';
+import { SavedAddress } from '@/components/location-picker/types';
 
 const MapView = dynamic(() => import('@/components/location-picker/MapView'), { ssr: false });
 
@@ -129,11 +132,19 @@ function Step2Content() {
   const [showVehiclePopup, setShowVehiclePopup] = useState(false);
   const [selectedVehicle, setSelectedVehicle] = useState<string | null>(null);
   const [hasAnsweredVehicle, setHasAnsweredVehicle] = useState(false);
+  const [showLocationPicker, setShowLocationPicker] = useState(false);
+  const [selectedFilterDate, setSelectedFilterDate] = useState<Date | null>(null);
+  const [selectedFilterTime, setSelectedFilterTime] = useState<string | null>(null);
+  const [userSavedAddresses, setUserSavedAddresses] = useState<SavedAddress[]>([]);
   const cardsRef = useRef<HTMLDivElement>(null);
 
-  const clientLat = order.location?.lat || 31.5085;
-  const clientLng = order.location?.lng || -9.7595;
-  const memoizedClientLoc = useMemo(() => ({ lat: Number(clientLat), lng: Number(clientLng) }), [clientLat, clientLng]);
+  const finalLat = order.location?.lat || 31.5085;
+  const finalLng = order.location?.lng || -9.7595;
+  
+  const searchLat = order.discoveryLocation?.lat || finalLat;
+  const searchLng = order.discoveryLocation?.lng || finalLng;
+  const memoizedSearchLoc = useMemo(() => ({ lat: Number(searchLat), lng: Number(searchLng) }), [searchLat, searchLng]);
+  const memoizedFinalLoc = useMemo(() => ({ lat: Number(finalLat), lng: Number(finalLng) }), [finalLat, finalLng]);
   const serviceType = order.serviceType || '';
 
   // ── Show vehicle popup for moving ──────────────────────────────────
@@ -232,27 +243,56 @@ function Step2Content() {
           });
         });
 
-        // Filter: vehicle requirement for moving
-        const withVehicle = filtered.filter(b => {
-          if (serviceType === 'moving' && selectedVehicle) {
-            const transports = b.movingTransports || (b.movingTransport ? [b.movingTransport] : []);
-            return transports.includes(selectedVehicle);
-          }
-          return true;
-        });
-
         // Filter: must have GPS and client must be within their radius (Live position prioritized)
-        const inRange = withVehicle.filter(b => {
+        const inRange = filtered.filter(b => {
           const lat = (b.isLive && b.current_lat) ? b.current_lat : b.base_lat;
           const lng = (b.isLive && b.current_lng) ? b.current_lng : b.base_lng;
           if (!lat || !lng) return true;
-          const dist = calculateDistance(clientLat, clientLng, lat, lng);
-          return dist <= (b.service_radius_km || 15);
+          // IMPORTANT: Distance check for radius must be against the FINAL destination (finalLat/Lng)
+          const dist = calculateDistance(finalLat, finalLng, lat, lng);
+          // Standard discovery radius is now 100km to allow cross-city booking
+          return dist <= 100;
         });
 
-        const sorted = inRange.sort((a, b) => {
-          const scoreA = matchScore(a, clientLat, clientLng, serviceType);
-          const scoreB = matchScore(b, clientLat, clientLng, serviceType);
+        // Mark availability by Routine & Vehicle
+        const finalProviders = inRange.map((b: any) => {
+          let matchesTime = true;
+          let matchesVehicle = true;
+
+          // Time Filter
+          if (selectedFilterDate && selectedFilterTime) {
+            const DAYS_NAMES = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+            const dayOfWeekLower = DAYS_NAMES[selectedFilterDate.getDay()];
+            const routineKey = Object.keys(b.routine || {}).find(k => k.toLowerCase() === dayOfWeekLower);
+            const routine = routineKey ? b.routine[routineKey] : null;
+            
+            if (!routine || !routine.active) {
+              matchesTime = false;
+            } else {
+              const startTime = routine.from || routine.start;
+              const endTime = routine.to || routine.end;
+              if (startTime && endTime) {
+                matchesTime = selectedFilterTime >= startTime && selectedFilterTime < endTime;
+              }
+            }
+          }
+
+          // Vehicle Filter for Moving
+          if (serviceType === 'moving' && selectedVehicle) {
+            const transports = b.movingTransports || (b.movingTransport ? [b.movingTransport] : []);
+            matchesVehicle = transports.includes(selectedVehicle);
+          }
+
+          return { ...b, isFilteredOut: !(matchesTime && matchesVehicle) };
+        });
+
+        const sorted = finalProviders.sort((a: any, b: any) => {
+          // If availability differs, show available ones first
+          if (a.isFilteredOut !== b.isFilteredOut) {
+            return a.isFilteredOut ? 1 : -1;
+          }
+          const scoreA = matchScore(a, finalLat, finalLng, serviceType);
+          const scoreB = matchScore(b, finalLat, finalLng, serviceType);
           return scoreB - scoreA;
         });
 
@@ -270,7 +310,29 @@ function Step2Content() {
     });
 
     return () => unsubscribe();
-  }, [clientLat, clientLng, serviceType, selectedVehicle]);
+  }, [finalLat, finalLng, searchLat, searchLng, serviceType, selectedVehicle, selectedFilterDate, selectedFilterTime]);
+
+  const handleLocationConfirm = (result: { pickup: any, savedAddress?: SavedAddress }) => {
+    const loc = {
+      lat: result.pickup.lat,
+      lng: result.pickup.lng,
+      address: result.pickup.address,
+      city: result.pickup.city || '',
+      area: result.pickup.area || '',
+      ...result.savedAddress
+    };
+    setOrderField('discoveryLocation', loc);
+    setShowLocationPicker(false);
+  };
+
+  useEffect(() => {
+    const saved = localStorage.getItem('lbricol_saved_addresses');
+    if (saved) {
+      try {
+        setUserSavedAddresses(JSON.parse(saved));
+      } catch {}
+    }
+  }, []);
 
   const saveDraftAndExit = async () => {
     const user = auth.currentUser;
@@ -387,10 +449,10 @@ function Step2Content() {
     const posCounts: { [key: string]: number } = {};
     
     return providers.map(p => {
-      const baseLat = (p.isLive && p.current_lat) ? p.current_lat : (p.base_lat || clientLat + (Math.random() - 0.5) * 0.01);
-      const baseLng = (p.isLive && p.current_lng) ? p.current_lng : (p.base_lng || clientLng + (Math.random() - 0.5) * 0.01);
+      const baseLat = (p.isLive && p.current_lat) ? p.current_lat : (p.base_lat || searchLat + (Math.random() - 0.5) * 0.01);
+      const baseLng = (p.isLive && p.current_lng) ? p.current_lng : (p.base_lng || searchLng + (Math.random() - 0.5) * 0.01);
       
-      const key = `${baseLat.toFixed(5)}_${baseLng.toFixed(5)}`;
+      const key = `${baseLat.toFixed(4)}_${baseLng.toFixed(4)}`;
       const indexAtPos = posCounts[key] || 0;
       posCounts[key] = indexAtPos + 1;
       
@@ -399,7 +461,7 @@ function Step2Content() {
       let jitterLng = 0;
       if (indexAtPos > 0) {
         const angle = indexAtPos * 137.5 * (Math.PI / 180);
-        const radius = 0.00025 * Math.sqrt(indexAtPos); // Gradual spiral
+        const radius = 0.0006 * Math.sqrt(indexAtPos); // Gradual spiral - increased for better separation
         jitterLat = Math.cos(angle) * radius;
         jitterLng = Math.sin(angle) * radius;
       }
@@ -415,10 +477,12 @@ function Step2Content() {
         name: p.name,
         avatarUrl: p.avatarUrl || p.avatar || p.photoURL,
         isSelected: p.id === focusedId,
+        isFilteredOut: p.isFilteredOut,
+        zIndexOffset: indexAtPos * 5,
         badge: ((p.taskCount || 0) < 10 || p.isNew) ? 'NEW' : (p.badge || 'CLASSIC'),
       };
     });
-  }, [providers, focusedId, clientLat, clientLng, calculateRate]);
+  }, [providers, focusedId, searchLat, searchLng, calculateRate]);
 
   const [viewedBricoler] = useState<any>(null);
 
@@ -550,14 +614,14 @@ function Step2Content() {
         {isSplashing && <SplashScreen subStatus={null} />}
         <div className="step2-map">
           <MapView
-            initialLocation={memoizedClientLoc}
+            initialLocation={memoizedSearchLoc}
             interactive={true}
             onLocationChange={() => { }}
             providerPins={providerPins}
             focusedProviderId={focusedId}
             lockCenterOnFocus={false}
             disableFitBounds={false}
-            clientPin={memoizedClientLoc}
+            clientPin={memoizedFinalLoc}
             serviceIconUrl={serviceType === 'car_rental' ? '/Images/Vectors Illu/carKey.png' : (order.serviceIcon || undefined)}
             showCenterPin={false}
             pinY={38}
@@ -575,10 +639,24 @@ function Step2Content() {
                 background: '#fff', border: 'none',
                 boxShadow: '0 2px 10px rgba(0,0,0,0.12)',
                 cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                flexShrink: 0
               }}
             >
               <ChevronLeft size={22} color="#111827" />
             </button>
+
+            <div className="flex-1 px-3 min-w-0">
+              <DiscoveryFilters
+                discoveryLocation={order.discoveryLocation}
+                selectedDate={selectedFilterDate}
+                selectedTime={selectedFilterTime}
+                onChangeLocation={() => setShowLocationPicker(true)}
+                onSelectTime={(date, time) => {
+                  setSelectedFilterDate(date);
+                  setSelectedFilterTime(time);
+                }}
+              />
+            </div>
 
             <button
               onClick={saveDraftAndExit}
@@ -587,6 +665,7 @@ function Step2Content() {
                 background: '#fff', border: 'none',
                 boxShadow: '0 2px 10px rgba(0,0,0,0.12)',
                 cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                flexShrink: 0
               }}
             >
               <X size={20} color="#111827" />
@@ -659,12 +738,12 @@ function Step2Content() {
                     </div>
                   </div>
                 ) : (
-                  providers.map(provider => (
+                  providers.filter(p => !p.isFilteredOut).map(provider => (
                     <div key={provider.id} id={`provider-card-${provider.id}`} className="provider-card-wrapper">
                       <ProviderCard
                         provider={provider}
-                        clientLat={clientLat}
-                        clientLng={clientLng}
+                        finalLat={finalLat}
+                        finalLng={finalLng}
                         isSelected={focusedId === provider.id}
                         onSelect={() => handleSelect(provider)}
                         order={order}
@@ -686,6 +765,26 @@ function Step2Content() {
           order={order}
           displayRate={viewedBricoler ? calculateRate(viewedBricoler) : 0}
         />
+
+        <AnimatePresence>
+          {showLocationPicker && (
+            <motion.div 
+              initial={{ opacity: 0, y: 50 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 50 }}
+              className="fixed inset-0 z-[10000]"
+            >
+              <LocationPicker
+                mode="single"
+                onConfirm={handleLocationConfirm}
+                onClose={() => setShowLocationPicker(false)}
+                savedAddresses={userSavedAddresses}
+                autoLocate={false}
+                serviceType={serviceType}
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </>
   );
@@ -905,11 +1004,11 @@ function BricolerDetails({
 
 
 function ProviderCard({
-  provider, clientLat, clientLng, isSelected, onSelect, order, displayRate
+  provider, finalLat, finalLng, isSelected, onSelect, order, displayRate
 }: {
   provider: any;
-  clientLat: number;
-  clientLng: number;
+  finalLat: number;
+  finalLng: number;
   isSelected: boolean;
   onSelect: () => void;
   order: any;
@@ -944,9 +1043,9 @@ function ProviderCard({
     const lat = (provider.isLive && provider.current_lat) ? provider.current_lat : provider.base_lat;
     const lng = (provider.isLive && provider.current_lng) ? provider.current_lng : provider.base_lng;
     if (!lat || !lng) return;
-    getRoadDistance(clientLat, clientLng, lat, lng)
+    getRoadDistance(finalLat, finalLng, lat, lng)
       .then(setRoadInfo);
-  }, [provider.id, clientLat, clientLng, provider.isLive, provider.current_lat, provider.current_lng]);
+  }, [provider.id, finalLat, finalLng, provider.isLive, provider.current_lat, provider.current_lng]);
 
   const isCarRental = order.serviceType === 'car_rental';
   const avatar = provider.avatarUrl || provider.avatar || provider.photoURL;

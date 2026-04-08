@@ -601,7 +601,7 @@ const ClientHome: React.FC<ClientHomeProps> = ({
                                         const isActive = svc.id === activeId;
                                         const isTrending = svc.id === '__trending__';
                                         const activeColor = isTrending ? '#B8860B' : '#01A083';
-                                        const activeBg = isTrending ? '#ffffffff' : '#FFB700';
+                                        const activeBg = isTrending ? '#ffffffff' : '#FFC244';
                                         return (
                                             <motion.button
                                                 key={svc.id}

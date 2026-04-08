@@ -42,14 +42,17 @@ function Step1Content() {
     localStorage.setItem('lastKnownAddress', currentAddress);
 
     // Update Order Context
-    setOrderField('location', {
+    const locData = {
       lat: currentLat,
       lng: currentLng,
       address: currentAddress,
       city: currentCity,
       area: currentArea,
-      ...savedAddress // Include building details etc if it's a saved address
-    });
+      ...savedAddress
+    };
+
+    setOrderField('location', locData);
+    setOrderField('discoveryLocation', locData);
 
     // Move to next step
     const isBroadcast = order.serviceType === 'errands' || order.serviceType === 'courier';

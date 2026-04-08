@@ -62,10 +62,9 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
 
   const isBricolerBase = serviceType === 'bricoler-base';
 
-  // Simulate loading for 4 seconds as requested
+  // Simulated loading removed as per user experience needs
   useEffect(() => {
-    const timer = setTimeout(() => setSheetLoading(false), 4000);
-    return () => clearTimeout(timer);
+    setSheetLoading(false);
   }, []);
 
   // Sync local addresses with props
@@ -284,21 +283,23 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
         </div>
       </div>
 
-      {/* 2. Bottom Sheet Area (Resizable) */}
-      <div className="flex-1 bg-white rounded-t-[32px] shadow-[0_-8px_30px_rgba(0,0,0,0.08)] px-5 py-8 pb-12 flex flex-col relative z-10 -mt-8 overflow-y-auto min-h-0">
-        {/* New Locator Button relative to sheet */}
+      {/* 2. Bottom Sheet Area */}
+      <div className="flex-1 flex flex-col relative z-10 -mt-8 min-h-0">
+        {/* New Locator Button above sheet */}
         {!sheetLoading && (
           <button
             onClick={handleLocate}
-            className="absolute -top-14 right-6 w-12 h-12 bg-white rounded-full shadow-xl border border-neutral-100 flex items-center justify-center text-[#01A083] active:scale-90 transition-all z-[100]"
+            className="absolute -top-16 right-6 w-14 h-14 bg-white rounded-full shadow-[0_4px_20px_rgba(0,0,0,0.15)] flex items-center justify-center text-black active:scale-90 transition-all z-[100] border border-neutral-50"
           >
             {isLocating ? (
-              <Loader2 size={22} className="animate-spin text-black" />
+              <Loader2 size={24} className="animate-spin" />
             ) : (
-              <Navigation size={22} className="text-black" />
+              <Navigation size={24} className="fill-black" />
             )}
           </button>
         )}
+
+        <div className="flex-1 bg-white rounded-t-[32px] shadow-[0_-8px_30px_rgba(0,0,0,0.08)] px-5 py-8 pb-12 flex flex-col overflow-y-auto no-scrollbar">
 
         {sheetLoading ? (
           <div className="flex flex-col gap-6 animate-pulse">
@@ -465,6 +466,7 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
           </div>
         )}
       </div>
+    </div>
 
       <style jsx global>{`
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');

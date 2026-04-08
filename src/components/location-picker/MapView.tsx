@@ -33,6 +33,8 @@ interface MapViewProps {
     badge?: string | null; // 'NEW' | 'PRO' | 'ELITE' | 'CLASSIC'
     isLive?: boolean;
     name?: string;
+    isFilteredOut?: boolean;
+    zIndexOffset?: number;
   }>;
   broadcastPins?: Array<{
     id: string;
@@ -533,7 +535,8 @@ const MapView: React.FC<MapViewProps> = ({
     providerPins.forEach((pin, index) => {
       const isFocused = pin.id === focusedProviderId;
       const hasFocus = !!focusedProviderId;
-      const opacity = 1;
+      const isFilteredOut = !!pin.isFilteredOut;
+      const opacity = isFilteredOut ? 0.35 : 1;
       const baseScale = hasFocus && !isFocused ? 0.9 : 1;
       const scale = baseScale * zoomScale;
       const size = 52 * zoomScale;
@@ -593,9 +596,14 @@ const MapView: React.FC<MapViewProps> = ({
         iconAnchor: [size / 2, size / 2],
       });
 
-      const marker = L.marker([pin.lat, pin.lng], { icon, zIndexOffset: isFocused ? 2000 : 0 })
+      const marker = L.marker([pin.lat, pin.lng], { 
+        icon, 
+        zIndexOffset: isFocused ? 2000 : (isFilteredOut ? -1000 : (pin.zIndexOffset || 0)),
+        interactive: !isFilteredOut
+      })
         .addTo(map)
         .on('click', (e) => {
+          if (isFilteredOut) return;
           L.DomEvent.stopPropagation(e);
           onProviderClick?.(pin.id);
         });

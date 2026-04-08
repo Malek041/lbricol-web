@@ -20,7 +20,8 @@ export function distanceScore(km: number): number {
   if (km <= 10) return 65;
   if (km <= 15) return 40;
   if (km <= 20) return 20;
-  return 0;
+  if (km <= 50) return 10;
+  return 5;
 }
 
 export function ratingScore(rating: number, numReviews: number): number {
@@ -62,7 +63,7 @@ export function matchScore(
   if (!lat || !lng) return 15;
 
   const dist = calculateDistance(clientLat, clientLng, lat, lng);
-  if (dist > 20) return -1; // Flag for hard exclusion
+  if (dist > 100) return -1; // Flag for hard exclusion
 
   const service = bricoler.services?.find((s: any) => s.categoryId === serviceType);
   const experienceStr = service?.experience || bricoler.experience || "";
