@@ -383,19 +383,42 @@ function Step2Content() {
     return Number(provider.minRate || 80);
   }, [order.serviceType, order.subServiceId]);
 
-  const providerPins = useMemo(() => providers.map(p => ({
-    id: p.id,
-    lat: (p.isLive && p.current_lat) ? p.current_lat : (p.base_lat || clientLat + (Math.random() - 0.5) * 0.015),
-    lng: (p.isLive && p.current_lng) ? p.current_lng : (p.base_lng || clientLng + (Math.random() - 0.5) * 0.015),
-    isLive: !!(p.isLive && p.current_lat),
-    rate: calculateRate(p),
-    rating: p.rating || 0.0,
-    taskCount: p.taskCount || 0,
-    name: p.name,
-    avatarUrl: p.avatarUrl || p.avatar || p.photoURL,
-    isSelected: p.id === focusedId,
-    badge: ((p.taskCount || 0) < 10 || p.isNew) ? 'NEW' : (p.badge || 'CLASSIC'),
-  })), [providers, focusedId, clientLat, clientLng, calculateRate]);
+  const providerPins = useMemo(() => {
+    const posCounts: { [key: string]: number } = {};
+    
+    return providers.map(p => {
+      const baseLat = (p.isLive && p.current_lat) ? p.current_lat : (p.base_lat || clientLat + (Math.random() - 0.5) * 0.01);
+      const baseLng = (p.isLive && p.current_lng) ? p.current_lng : (p.base_lng || clientLng + (Math.random() - 0.5) * 0.01);
+      
+      const key = `${baseLat.toFixed(5)}_${baseLng.toFixed(5)}`;
+      const indexAtPos = posCounts[key] || 0;
+      posCounts[key] = indexAtPos + 1;
+      
+      // If multiple pins share coordinates, shift them slightly in a spiral pattern
+      let jitterLat = 0;
+      let jitterLng = 0;
+      if (indexAtPos > 0) {
+        const angle = indexAtPos * 137.5 * (Math.PI / 180);
+        const radius = 0.00025 * Math.sqrt(indexAtPos); // Gradual spiral
+        jitterLat = Math.cos(angle) * radius;
+        jitterLng = Math.sin(angle) * radius;
+      }
+
+      return {
+        id: p.id,
+        lat: baseLat + jitterLat,
+        lng: baseLng + jitterLng,
+        isLive: !!(p.isLive && p.current_lat),
+        rate: calculateRate(p),
+        rating: p.rating || 0.0,
+        taskCount: p.taskCount || 0,
+        name: p.name,
+        avatarUrl: p.avatarUrl || p.avatar || p.photoURL,
+        isSelected: p.id === focusedId,
+        badge: ((p.taskCount || 0) < 10 || p.isNew) ? 'NEW' : (p.badge || 'CLASSIC'),
+      };
+    });
+  }, [providers, focusedId, clientLat, clientLng, calculateRate]);
 
   const [viewedBricoler] = useState<any>(null);
 
