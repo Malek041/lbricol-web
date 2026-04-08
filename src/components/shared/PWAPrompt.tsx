@@ -95,8 +95,16 @@ export default function PWAPrompt() {
                     {/* Background Decorative Gradient */}
                     <div className="absolute top-0 right-0 w-32 h-32 bg-[#FFCC02]/10 rounded-full blur-3xl -mr-16 -mt-16" />
 
+                    {/* Close Button */}
+                    <button 
+                        onClick={dismiss}
+                        className="absolute top-5 right-5 w-10 h-10 rounded-full bg-neutral-100 flex items-center justify-center text-neutral-500 hover:bg-neutral-200 active:scale-90 transition-all z-10"
+                    >
+                        <X size={20} />
+                    </button>
+
                     <div className="flex flex-col items-center text-center">
-                        <div className="w-50 h-50 bg-white rounded-2xl p-2 mb-4 flex items-center justify-center overflow-hidden">
+                        <div className="w-40 h-40 bg-white rounded-2xl p-2 mb-4 flex items-center justify-center overflow-hidden">
                             <img
                                 src="/Images/Logo/image-Photoroom (2) copy 5.png"
                                 alt="Lbricol Logo"
@@ -104,12 +112,37 @@ export default function PWAPrompt() {
                             />
                         </div>
 
+                        {platform === 'ios' && (
+                            <div className="flex flex-col gap-4 text-left w-full mt-2 mb-6 bg-neutral-50 p-4 rounded-2xl border border-neutral-100">
+                                <p className="text-[14px] font-black text-[#111827]">
+                                    {t({ en: 'To install Lbricol:', fr: 'Pour installer Lbricol :', ar: 'لتثبيت Lbricol:' })}
+                                </p>
+                                <div className="space-y-3">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-8 h-8 rounded-lg bg-white shadow-sm flex items-center justify-center text-blue-500">
+                                            <Share size={18} />
+                                        </div>
+                                        <p className="text-[13px] font-medium text-neutral-600 leading-tight">
+                                            1. {t({ en: 'Tap the Share button below', fr: 'Appuyez sur le bouton Partager en bas', ar: 'اضغط على زر المشاركة في الأسفل' })}
+                                        </p>
+                                    </div>
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-8 h-8 rounded-lg bg-white shadow-sm flex items-center justify-center text-black">
+                                            <PlusSquare size={18} />
+                                        </div>
+                                        <p className="text-[13px] font-medium text-neutral-600 leading-tight">
+                                            2. {t({ en: 'Select "Add to Home Screen"', fr: 'Sélectionnez "Sur l\'écran d\'accueil"', ar: 'اختر "إضافة إلى الشاشة الرئيسية"' })}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
 
                         <button
                             onClick={handleInstallClick}
-                            className="mt-6 w-full py-3 bg-[#FFB700] text-[#037B3E] font-medium rounded-full hover:bg-[#FFD633] transition-colors active:scale-[0.98] flex items-center justify-center gap-2"
+                            className="w-full py-4 bg-[#FFB700] text-[#037B3E] font-black text-[18px] rounded-full hover:bg-[#FFD633] shadow-lg shadow-[#FFB700]/20 transition-all active:scale-[0.98] flex items-center justify-center gap-2"
                         >
-                            <Download size={20} />
+                            <Download size={22} strokeWidth={2.5} />
                             {t({ en: 'Install Now', fr: 'Installer maintenant', ar: 'تثبيت الآن' })}
                         </button>
                     </div>
