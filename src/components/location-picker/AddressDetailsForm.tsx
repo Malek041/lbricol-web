@@ -70,7 +70,7 @@ const AddressDetailsForm: React.FC<AddressDetailsFormProps> = ({ initialData, on
               {initialData.address}
             </p>
             <p className="text-[14px] text-[#6B7280] mt-1">
-              {[formData.buildingName, formData.floorNumber, formData.doorNumber].filter(Boolean).join(', ') || t({ en: 'No details yet', fr: 'Aucun détail', ar: 'لا توجد تفاصيل بعد' })}
+              {[formData.buildingName].filter(Boolean).join(', ') || t({ en: 'No details yet', fr: 'Aucun détail', ar: 'لا توجد تفاصيل بعد' })}
             </p>
           </div>
         </div>
@@ -84,10 +84,11 @@ const AddressDetailsForm: React.FC<AddressDetailsFormProps> = ({ initialData, on
                 type="text"
                 value={formData.buildingName}
                 onChange={(e) => setFormData({ ...formData, buildingName: e.target.value })}
-                className="w-full h-full px-4 pt-5 pb-1 bg-transparent outline-none text-[15px] font-medium"
+                placeholder="e.g. Jardin des Douars"
+                className="w-full h-full px-4 pt-5 pb-1 bg-transparent outline-none text-[15px] font-medium placeholder:text-neutral-300"
               />
-              <label className={`absolute left-4 transition-all pointer-events-none text-[#6B7280] ${formData.buildingName ? 'top-1.5 text-[11px] font-bold' : 'top-4 text-[15px]'}`}>
-                {t({ en: 'Building name', fr: 'Nom du bâtiment', ar: 'اسم المبنى' })}
+              <label className={`absolute left-4 transition-all pointer-events-none text-[#6B7280] ${formData.buildingName ? 'top-1.5 text-[11px] font-bold' : 'top-4 text-[13px]'}`}>
+                {t({ en: 'Name of your property', fr: 'Nom de votre propriété', ar: 'اسم مكانك' })}
               </label>
               {formData.buildingName && (
                 <button
@@ -100,64 +101,6 @@ const AddressDetailsForm: React.FC<AddressDetailsFormProps> = ({ initialData, on
             </div>
           </div>
 
-          {/* Floor & Door Side-by-Side */}
-          <div className="flex gap-4">
-            <div className="flex-1 flex flex-col gap-1">
-              <div className="border border-[2px] border-[#D9D9D9] focus-within:border-[#D9D9D9] rounded-xl h-14 transition-all relative">
-                <input
-                  type="text"
-                  value={formData.floorNumber}
-                  onChange={(e) => setFormData({ ...formData, floorNumber: e.target.value })}
-                  className="w-full h-full px-4 pt-5 pb-1 bg-transparent outline-none text-[15px] font-medium"
-                />
-                <label className={`absolute left-4 transition-all pointer-events-none text-[#6B7280] ${formData.floorNumber ? 'top-1.5 text-[11px] font-bold' : 'top-4 text-[15px]'}`}>
-                  {t({ en: 'Floor number', fr: 'Étage', ar: 'رقم الطابق' })}
-                </label>
-                {formData.floorNumber && (
-                  <button
-                    onClick={() => setFormData({ ...formData, floorNumber: '' })}
-                    className="absolute right-3 top-4 text-[#9CA3AF]"
-                  >
-                    <X size={18} />
-                  </button>
-                )}
-              </div>
-
-            </div>
-
-            <div className="flex-1 flex flex-col gap-1">
-              <div className="border border-[2px] border-[#D9D9D9] focus-within:border-[#D9D9D9] rounded-xl h-14 transition-all relative">
-                <input
-                  type="text"
-                  value={formData.doorNumber}
-                  onChange={(e) => setFormData({ ...formData, doorNumber: e.target.value })}
-                  className="w-full h-full px-4 pt-5 pb-1 bg-transparent outline-none text-[15px] font-medium"
-                />
-                <label className={`absolute left-4 transition-all pointer-events-none text-[#6B7280] ${formData.doorNumber ? 'top-1.5 text-[11px] font-bold' : 'top-4 text-[15px]'}`}>
-                  {t({ en: 'Door number', fr: 'Numéro de porte', ar: 'رقم الباب' })}
-                </label>
-                {formData.doorNumber && (
-                  <button
-                    onClick={() => setFormData({ ...formData, doorNumber: '' })}
-                    className="absolute right-3 top-4 text-[#9CA3AF]"
-                  >
-                    <X size={18} />
-                  </button>
-                )}
-              </div>
-
-            </div>
-          </div>
-
-          {/* Additional Info */}
-          <div className="border border-[2px] border-[#D9D9D9] focus-within:border-[#D9D9D9] rounded-xl h-24 transition-all overflow-hidden relative">
-            <textarea
-              value={formData.additionalInfo}
-              onChange={(e) => setFormData({ ...formData, additionalInfo: e.target.value })}
-              placeholder={t({ en: 'Additional information', fr: 'Informations complémentaires', ar: 'معلومات إضافية' })}
-              className="w-full h-full p-4 bg-transparent outline-none text-[15px] font-medium resize-none placeholder:text-[#9CA3AF] placeholder:font-normal"
-            />
-          </div>
         </div>
 
         {/* Mark Entrance */}
@@ -201,23 +144,30 @@ const AddressDetailsForm: React.FC<AddressDetailsFormProps> = ({ initialData, on
             <h3 className="text-[17px] font-bold text-[#111827]">{t({ en: 'Add a label', fr: 'Ajouter un libellé', ar: 'أضف تسمية' })}</h3>
             <p className="text-[13px] text-[#6B7280]">{t({ en: 'Identify this address more easily next time', fr: 'Identifiez cette adresse plus facilement la prochaine fois', ar: 'حدد هذا العنوان بسهولة أكبر في المرة القادمة' })}</p>
           </div>
-          <div className="flex gap-2.5 overflow-x-auto pb-2 scrollbar-hide">
-            {labelOptions.map(l => (
-              <button
-                key={l}
-                onClick={() => setFormData({ ...formData, label: l })}
-                className={`h-11 px-6 rounded-full text-[14px] font-bold transition-all border ${formData.label === l
-                  ? 'bg-[#FFB700] border-[#FFB700] text-[#037B3E]'
-                  : 'bg-white border-[#E5E7EB] text-[#6B7280]'
-                  }`}
-              >
-                {t({
-                  en: l,
-                  fr: l === 'Home' ? 'Maison' : l === 'Flat' ? 'Appartement' : l === 'Garden' ? 'Jardin' : 'Autre',
-                  ar: l === 'Home' ? 'المنزل' : l === 'Flat' ? 'شقة' : l === 'Garden' ? 'حديقة' : 'مخصص'
-                })}
-              </button>
-            ))}
+          <div className="flex gap-2.5 overflow-x-auto pb-2 no-scrollbar -mx-5 px-5 snap-x snap-mandatory">
+            {labelOptions.map(l => {
+              const displayLabel = t({
+                en: l,
+                fr: l === 'Home' ? 'Maison' : l === 'Flat' ? 'Appartement' : l === 'Garden' ? 'Jardin' : 'Autre',
+                ar: l === 'Home' ? 'المنزل' : l === 'Flat' ? 'شقة' : l === 'Garden' ? 'حديقة' : 'مخصص'
+              });
+
+              // Hyphenated visual layout as requested
+              const hyphenatedDisplay = l === 'Home' ? 'Mai-\nson' : l === 'Flat' ? 'Ap-\npar-\nte' : l === 'Garden' ? 'Jar-\ndin' : displayLabel;
+
+              return (
+                <button
+                  key={l}
+                  onClick={() => setFormData({ ...formData, label: l })}
+                  className={`flex-shrink-0 w-[85px] h-11 flex items-center justify-center rounded-[10px] text-[13px] font-bold leading-[1.1] text-center transition-all border snap-center whitespace-pre-line ${formData.label === l
+                    ? 'bg-[#FFB700] border-[#FFB700] text-[#111827]'
+                    : 'bg-white border-[#E5E7EB] text-[#6B7280]'
+                    }`}
+                >
+                  {hyphenatedDisplay}
+                </button>
+              );
+            })}
           </div>
         </div>
       </div>
@@ -226,7 +176,7 @@ const AddressDetailsForm: React.FC<AddressDetailsFormProps> = ({ initialData, on
       <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t border-[#F3F4F6] z-20">
         <button
           onClick={handleSave}
-          disabled={!formData.floorNumber || !formData.doorNumber || !isMarked}
+          disabled={!formData.buildingName || !isMarked}
           className="w-full h-14 rounded-full bg-[#037B3E] text-white font-bold text-[17px] active:scale-[0.98] transition-all disabled:opacity-50 disabled:scale-100"
         >
           {t({ en: 'Save address', fr: "Enregistrer l'adresse", ar: "حفظ العنوان" })}
