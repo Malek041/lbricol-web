@@ -308,13 +308,13 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
 
     // Availability state
     const [availability, setAvailability] = useState<Record<string, { from: string; to: string }[]>>({
-        'Mon': [{ from: '09:00', to: '18:00' }],
-        'Tue': [{ from: '09:00', to: '18:00' }],
-        'Wed': [{ from: '09:00', to: '18:00' }],
-        'Thu': [{ from: '09:00', to: '18:00' }],
-        'Fri': [{ from: '09:00', to: '18:00' }],
-        'Sat': [{ from: '09:00', to: '18:00' }],
-        'Sun': [{ from: '09:00', to: '18:00' }],
+        'Mon': [{ from: '10:30', to: '18:00' }],
+        'Tue': [{ from: '10:30', to: '18:00' }],
+        'Wed': [{ from: '10:30', to: '18:00' }],
+        'Thu': [{ from: '10:30', to: '18:00' }],
+        'Fri': [{ from: '10:30', to: '18:00' }],
+        'Sat': [{ from: '10:30', to: '18:00' }],
+        'Sun': [{ from: '10:30', to: '18:00' }],
     });
     const [direction, setDirection] = useState(0);
     const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -1120,6 +1120,10 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                 images: allAdminPortfolioUrls,
                 city: selectedCity,
                 workAreas: selectedAreas,
+                base_lat: baseLat,
+                base_lng: baseLng,
+                base_address: baseAddress,
+                service_radius_km: serviceRadiusKm,
                 isActive: true,
                 isBricoler: true,
                 metaId,
@@ -1132,7 +1136,18 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                 carRentalDetails: selectedSubServices.includes('rent_a_car') ? {
                     cars: selectedCars,
                 } : null,
-                tourGuideAuthorizationUrl: finalTourGuideAuthUrl || null
+                tourGuideAuthorizationUrl: finalTourGuideAuthUrl || null,
+                availability: userData?.availability || {
+                    weekly_routine: {
+                        monday: { start: '10:30', end: '18:00', active: true },
+                        tuesday: { start: '10:30', end: '18:00', active: true },
+                        wednesday: { start: '10:30', end: '18:00', active: true },
+                        thursday: { start: '10:30', end: '18:00', active: true },
+                        friday: { start: '10:30', end: '18:00', active: true },
+                        saturday: { start: '10:30', end: '18:00', active: true },
+                        sunday: { start: '10:30', end: '18:00', active: true },
+                    }
+                }
             });
 
             await setDoc(doc(db, 'bricolers', metaId), bricolerData, { merge: true });
@@ -1248,6 +1263,10 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                 movingTransport: movingTransports[0] || '',
                 tourGuideAuthorizationUrl: finalTourGuideAuthUrl || existingData.tourGuideAuthorizationUrl,
                 city: selectedCity,
+                base_lat: baseLat,
+                base_lng: baseLng,
+                base_address: baseAddress,
+                service_radius_km: serviceRadiusKm,
             };
             await setDoc(bricolerRef, updateData, { merge: true });
             await setDoc(doc(db, 'clients', user.uid), {

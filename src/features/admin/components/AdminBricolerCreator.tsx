@@ -8,6 +8,8 @@ import {
 import { db } from '@/lib/firebase';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { useToast } from '@/context/ToastContext';
+import { translateBio } from '@/lib/translateBio';
+import LocationPicker from '@/components/location-picker/LocationPicker';
 
 interface AdminBricolerCreatorProps {
     t: (vals: { en: string; fr: string }) => string;
@@ -30,6 +32,9 @@ const AdminBricolerCreator: React.FC<AdminBricolerCreatorProps> = ({ t, onBack }
         totalEarned: '0',
         services: [] as string[]
     });
+
+    const [locationData, setLocationData] = useState<{ lat: number; lng: number; address: string } | null>(null);
+    const [showLocationPicker, setShowLocationPicker] = useState(false);
 
     const cities = ['Marrakech', 'Casablanca', 'Essaouira', 'Agadir', 'Rabat', 'Tangier'];
     const serviceCategories = [
@@ -59,11 +64,16 @@ const AdminBricolerCreator: React.FC<AdminBricolerCreatorProps> = ({ t, onBack }
         const { metaId, claimCode } = generateCodes();
 
         try {
+            const bioTranslations = formData.bio ? await translateBio(formData.bio) : {};
             const bricolerData = {
                 name: formData.name,
                 city: formData.city,
                 phone: formData.phone,
                 bio: formData.bio,
+                base_lat: locationData?.lat || null,
+                base_lng: locationData?.lng || null,
+                base_address: locationData?.address || '',
+                service_radius_km: 15,
                 rating: Number(formData.rating),
                 numReviews: Number(formData.jobsDone),
                 completedJobs: Number(formData.jobsDone),
@@ -73,6 +83,16 @@ const AdminBricolerCreator: React.FC<AdminBricolerCreatorProps> = ({ t, onBack }
                 isClaimed: false,
                 claimCode: claimCode,
                 metaId: metaId,
+                availability: {
+                    'Mon': [{ from: '10:30', to: '18:00' }],
+                    'Tue': [{ from: '10:30', to: '18:00' }],
+                    'Wed': [{ from: '10:30', to: '18:00' }],
+                    'Thu': [{ from: '10:30', to: '18:00' }],
+                    'Fri': [{ from: '10:30', to: '18:00' }],
+                    'Sat': [{ from: '10:30', to: '18:00' }],
+                    'Sun': [{ from: '10:30', to: '18:00' }]
+                },
+                bio_translations: bioTranslations,
                 createdAt: serverTimestamp(),
                 uid: null // Not claimed yet
             };
@@ -239,6 +259,22 @@ const AdminBricolerCreator: React.FC<AdminBricolerCreatorProps> = ({ t, onBack }
                 </div>
 
                 <div>
+                    <label className="block text-sm font-bold text-black mb-2 px-1">{t({ en: 'Base Location', fr: 'Position de base' })}</label>
+                    <button
+                        type="button"
+                        onClick={() => setShowLocationPicker(true)}
+                        className={`w-full h-14 rounded-2xl border-2 flex items-center gap-3 px-5 transition-all ${locationData ? 'bg-[#01A083]/5 border-[#01A083] text-[#01A083]' : 'bg-neutral-50 border-transparent text-neutral-500'
+                            }`}
+                    >
+                        <MapPin size={20} />
+                        <span className="font-medium truncate flex-1 text-left">
+                            {locationData ? locationData.address : t({ en: 'Pin location on map', fr: 'Épingler sur la carte' })}
+                        </span>
+                        {locationData && <Check size={18} />}
+                    </button>
+                </div>
+
+                <div>
                     <label className="block text-sm font-bold text-black mb-2 px-1">{t({ en: 'Bio / Pitch', fr: 'Bio / Présentation' })}</label>
                     <textarea
                         value={formData.bio}
@@ -260,6 +296,29 @@ const AdminBricolerCreator: React.FC<AdminBricolerCreatorProps> = ({ t, onBack }
                     </>
                 )}
             </button>
+            {showLocationPicker && (
+                <div className="fixed inset-0 z-[1100] bg-white">
+                    <LocationPicker
+                        mode="single"
+                        serviceType="bricoler-base"
+                        serviceIcon="📍"
+                        autoLocate={true}
+                        onClose={() => setShowLocationPicker(false)}
+                        isInline={true}
+                        onConfirm={({ pickup }) => {
+                            setLocationData({
+                                lat: pickup.lat,
+                                lng: pickup.lng,
+                                address: pickup.address || ''
+                            });
+                            if (pickup.city) {
+                                setFormData(prev => ({ ...prev, city: pickup.city || prev.city }));
+                            }
+                            setShowLocationPicker(false);
+                        }}
+                    />
+                </div>
+            )}
         </form>
     );
 };

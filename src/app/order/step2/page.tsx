@@ -411,9 +411,18 @@ function Step2Content() {
     setOrderField('providerRating', provider.rating || 0);
     setOrderField('providerJobsCount', provider.taskCount || 0);
     setOrderField('providerRank', ((provider.taskCount || 0) < 10 || provider.isNew) ? 'New' : (provider.badge || 'Classic'));
-    setOrderField('providerBio', provider.bio || provider.aboutMe || '');
+    const servicesList = Array.isArray(provider.services) ? provider.services : [];
+    const targetCatIdSelect = String(order.serviceType || '').toLowerCase();
+    const targetSubIdSelect = String(order.subServiceId || '').toLowerCase();
+    const relevantServiceSelect = servicesList.find((s: any) => {
+      const sCatId = String(s.categoryId || s.serviceId || s.id || '').toLowerCase();
+      const sSubId = String(s.subServiceId || s.id || '').toLowerCase();
+      return (targetSubIdSelect && sSubId === targetSubIdSelect) || (targetCatIdSelect && sCatId === targetCatIdSelect);
+    });
+
+    setOrderField('providerBio', relevantServiceSelect?.pitch || provider.bio || provider.aboutMe || '');
     setOrderField('providerBioTranslations', provider.bio_translations || {});
-    setOrderField('providerExperience', provider.yearsOfExperience || '1 Year');
+    setOrderField('providerExperience', relevantServiceSelect?.experience || provider.yearsOfExperience || provider.experience || '1 Year');
     const lat = (provider.isLive && provider.current_lat) ? provider.current_lat : provider.base_lat;
     const lng = (provider.isLive && provider.current_lng) ? provider.current_lng : provider.base_lng;
     setOrderField('providerCoords', lat ? { lat, lng } : null);
@@ -670,11 +679,26 @@ function BricolerDetails({
   const { t } = useLanguage();
   const avatar = provider.avatarUrl || provider.avatar || provider.photoURL;
   const ratingStr = (!provider.taskCount || provider.taskCount === 0 || !provider.rating) ? '0.0' : provider.rating.toFixed(1);
+  
+  // Find relevant service entry for specific pitch/experience
+  const relevantService = useMemo(() => {
+    if (!Array.isArray(provider.services)) return null;
+    const targetCatId = String(order.serviceType || '').toLowerCase();
+    const targetSubId = String(order.subServiceId || '').toLowerCase();
+    
+    return provider.services.find((s: any) => {
+      const sCatId = String(s.categoryId || s.serviceId || s.id || '').toLowerCase();
+      const sSubId = String(s.subServiceId || s.id || '').toLowerCase();
+      return (targetSubId && sSubId === targetSubId) || (targetCatId && sCatId === targetCatId);
+    });
+  }, [provider.services, order.serviceType, order.subServiceId]);
 
   // Experience calculation
   const getExperience = () => {
-    return provider.experience || '1 Year';
+    return relevantService?.experience || provider.experience || provider.yearsOfExperience || '1 Year';
   };
+
+  const bioText = relevantService?.pitch || provider.bio || provider.aboutMe;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24, paddingBottom: 20 }}>
@@ -816,6 +840,24 @@ function BricolerDetails({
       >
         {t({ en: 'Book Me', fr: 'Réservez-moi', ar: 'احجز الآن' })}
       </motion.button>
+
+      {/* About Me Section */}
+      {bioText && (
+        <div style={{ marginTop: 8 }}>
+          <h3 style={{ fontSize: 18, fontWeight: 900, color: '#111827', marginBottom: 12 }}>
+            {t({ en: 'About me', fr: 'À propos de moi', ar: 'عني' })}
+          </h3>
+          <p style={{
+            fontSize: 15,
+            color: '#4B5563',
+            lineHeight: 1.6,
+            margin: 0,
+            whiteSpace: 'pre-wrap'
+          }}>
+            {bioText}
+          </p>
+        </div>
+      )}
     </div>
   );
 }

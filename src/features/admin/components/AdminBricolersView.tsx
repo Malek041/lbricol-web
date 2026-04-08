@@ -525,10 +525,10 @@ const BricolerProfileBottomSheet = ({ bricoler, isOpen, onClose, t }: any) => {
                   </div>
 
                   {/* About/Description */}
-                  {bricoler.description && (
+                  {(bricoler.bio || bricoler.description || bricoler.aboutMe) && (
                     <div>
-                      <h3 className="text-sm font-black text-neutral-900 mb-2 uppercase tracking-wider">{t({ en: 'About', fr: 'À propos' })}</h3>
-                      <p className="text-sm text-neutral-600 leading-relaxed font-medium">{bricoler.description}</p>
+                      <h3 className="text-sm font-black text-neutral-900 mb-2 uppercase tracking-wider">{t({ en: 'About', fr: 'À propos', ar: 'عني' })}</h3>
+                      <p className="text-sm text-neutral-600 leading-relaxed font-medium">{bricoler.bio || bricoler.description || bricoler.aboutMe}</p>
                     </div>
                   )}
 
