@@ -270,17 +270,17 @@ export const calculateOrderPrice = (
     } else if (subServiceId === 'residential_glass' || subServiceId === 'commercial_glass') {
         const displayBasePrice = providerRate;
         
-        // Window Size Multiplier
+        // Window Size Multiplier (Reduced for affordability)
         let sizeMultiplier = 1.0;
-        if (options.windowSize === 'medium') sizeMultiplier = 1.4;
-        else if (options.windowSize === 'large') sizeMultiplier = 2.0;
+        if (options.windowSize === 'medium') sizeMultiplier = 1.2;
+        else if (options.windowSize === 'large') sizeMultiplier = 1.5;
         
-        // Property Type Coef
+        // Property Type Coef (Reduced for affordability)
         let propertyCoef = 1.0;
         if (options.propertyType) {
             const coefMap: Record<string, number> = { 
-                studio: 0.85, apartment: 1.0, villa: 1.4, 
-                guesthouse: 1.5, riad: 1.9, hotel: 1.6, business: 1.8 
+                studio: 0.85, apartment: 1.0, villa: 1.2, 
+                guesthouse: 1.3, riad: 1.5, hotel: 1.4, business: 1.3 
             };
             propertyCoef = coefMap[options.propertyType.toLowerCase()] || 1.0;
         }
@@ -288,19 +288,20 @@ export const calculateOrderPrice = (
         const winCount = options.windowCount || 10;
         const stories = options.buildingStories || 1;
         
-        // Multiplier for cleaning type
+        // Multiplier for cleaning type (Reduced for affordability)
         let typeMultiplier = 1.0;
-        if (options.glassCleaningType === 'both') typeMultiplier = 1.6;
-        else if (options.glassCleaningType === 'exterior') typeMultiplier = 1.3;
+        if (options.glassCleaningType === 'both') typeMultiplier = 1.4;
+        else if (options.glassCleaningType === 'exterior') typeMultiplier = 1.2;
 
         quantity = winCount; 
         unit = 'window';
         
         // Total formula: (BaseRate * Quantity * Multipliers) + FixedFees
-        // We want Subtotal = (displayBasePrice * quantity) + ComplexityFee + extraFees
+        // stories is now non-linear: 100% for 1st floor, 50% for each extra floor
+        const storiesMultiplier = 1 + (Math.max(0, stories - 1) * 0.5);
         
         const totalBaseSubtotal = displayBasePrice * winCount;
-        const complexityMultiplier = typeMultiplier * sizeMultiplier * propertyCoef * stories;
+        const complexityMultiplier = typeMultiplier * sizeMultiplier * propertyCoef * storiesMultiplier;
         const totalCalculatedSubtotal = totalBaseSubtotal * complexityMultiplier;
         
         const complexityAdjustment = totalCalculatedSubtotal - totalBaseSubtotal;
@@ -316,7 +317,7 @@ export const calculateOrderPrice = (
             });
         }
         
-        basePrice = displayBasePrice; // Stick to Bricoler's rate
+        basePrice = displayBasePrice;
         extraFees += complexityAdjustment;
 
         if (options.glassAccessibility === 'ladder') {
