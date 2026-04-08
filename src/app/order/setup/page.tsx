@@ -99,6 +99,7 @@ export default function ServiceSetupPage() {
     const [hasLoaded, setHasLoaded] = useState(false);
     const [taskSize, setTaskSize] = useState<'small' | 'medium' | 'large'>('small');
     const [taskDuration, setTaskDuration] = useState(1);
+    const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
 
     // Office Cleaning State
     const [officeDesks, setOfficeDesks] = useState<number>(order.serviceDetails?.officeDesks || 10);
@@ -1102,9 +1103,14 @@ export default function ServiceSetupPage() {
                                                 </div>
                                                 <div className="flex gap-4 overflow-x-auto no-scrollbar -mx-6 px-6 pb-2">
                                                     {provider.portfolio.map((img, i) => (
-                                                        <div key={i} className="flex-shrink-0">
-                                                            <img src={img} className="w-30 h-30 rounded-[15px] object-cover border border-neutral-100" alt="Work sample" />
-                                                        </div>
+                                                        <motion.div 
+                                                            key={i} 
+                                                            whileTap={{ scale: 0.95 }}
+                                                            onClick={() => setLightboxIndex(i)}
+                                                            className="flex-shrink-0 cursor-pointer"
+                                                        >
+                                                            <img src={img} className="w-32 h-32 rounded-[20px] object-cover border border-neutral-100 shadow-sm" alt="Work sample" />
+                                                        </motion.div>
                                                     ))}
                                                 </div>
                                             </motion.div>
@@ -2870,6 +2876,80 @@ export default function ServiceSetupPage() {
                                 </div>
                             </div>
                         )}
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            {/* Portfolio Lightbox */}
+            <AnimatePresence>
+                {lightboxIndex !== null && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-[1000] bg-black/95 backdrop-blur-xl flex items-center justify-center p-4"
+                        onClick={() => setLightboxIndex(null)}
+                    >
+                        {/* Close Button */}
+                        <button
+                            onClick={() => setLightboxIndex(null)}
+                            className="absolute top-8 right-8 w-12 h-12 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center text-white hover:bg-white/20 transition-all active:scale-90 z-[1001]"
+                        >
+                            <X size={28} />
+                        </button>
+
+                        {/* Navigation Buttons */}
+                        <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 flex justify-between px-6 pointer-events-none z-[1001]">
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    setLightboxIndex(prev => prev !== null ? (prev - 1 + provider.portfolio.length) % provider.portfolio.length : null);
+                                }}
+                                className="w-12 h-12 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center text-white hover:bg-white/20 transition-all active:scale-90 pointer-events-auto disabled:opacity-30"
+                                disabled={provider.portfolio.length <= 1}
+                            >
+                                <ChevronLeft size={28} />
+                            </button>
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    setLightboxIndex(prev => prev !== null ? (prev + 1) % provider.portfolio.length : null);
+                                }}
+                                className="w-12 h-12 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center text-white hover:bg-white/20 transition-all active:scale-90 pointer-events-auto disabled:opacity-30"
+                                disabled={provider.portfolio.length <= 1}
+                            >
+                                <ChevronRight size={28} />
+                            </button>
+                        </div>
+
+                        {/* Counter */}
+                        <div className="absolute top-8 left-1/2 -translate-x-1/2 px-4 py-2 rounded-full bg-white/10 backdrop-blur-md text-white font-black text-sm tracking-widest z-[1001]">
+                            {lightboxIndex + 1} / {provider.portfolio.length}
+                        </div>
+
+                        {/* Image */}
+                        <motion.div
+                            key={lightboxIndex}
+                            initial={{ scale: 0.9, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0.9, opacity: 0 }}
+                            className="relative max-w-full max-h-full flex items-center justify-center"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <img
+                                src={provider.portfolio[lightboxIndex]}
+                                className="max-w-[95vw] max-h-[85vh] object-contain rounded-2xl shadow-2xl border border-white/10"
+                                alt="Full size portfolio"
+                            />
+                        </motion.div>
+
+                        {/* Caption Area (Glassmorphism) */}
+                        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 w-full max-w-md px-6 z-[1001]">
+                            <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/10 text-center">
+                                <p className="text-white/60 text-xs font-black uppercase tracking-[3px] mb-1">{order.serviceName}</p>
+                                <h3 className="text-white text-[17px] font-bold">{provider.name}’s {t({ en: 'Work Sample', fr: 'Exemple de réalisation', ar: 'نموذج عمل' })}</h3>
+                            </div>
+                        </div>
                     </motion.div>
                 )}
             </AnimatePresence>
