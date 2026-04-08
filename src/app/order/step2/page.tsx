@@ -841,7 +841,7 @@ function BricolerDetails({
         {t({ en: 'Book Me', fr: 'Réservez-moi', ar: 'احجز الآن' })}
       </motion.button>
 
-      {/* About Me Section */}
+      {/* About Me Section - Truncated for Bottom Sheet */}
       {bioText && (
         <div style={{ marginTop: 8 }}>
           <h3 style={{ fontSize: 18, fontWeight: 900, color: '#111827', marginBottom: 12 }}>
@@ -852,10 +852,28 @@ function BricolerDetails({
             color: '#4B5563',
             lineHeight: 1.6,
             margin: 0,
-            whiteSpace: 'pre-wrap'
+            display: '-webkit-box',
+            WebkitLineClamp: 3,
+            WebkitBoxOrient: 'vertical',
+            overflow: 'hidden',
           }}>
             {bioText}
           </p>
+          <button 
+            onClick={onBook}
+            style={{ 
+              marginTop: 8, 
+              color: '#01A083', 
+              fontSize: 15, 
+              fontWeight: 700,
+              background: 'none',
+              border: 'none',
+              padding: 0,
+              cursor: 'pointer'
+            }}
+          >
+            {t({ en: 'Read more', fr: 'Lire la suite', ar: 'اقرأ المزيد' })}
+          </button>
         </div>
       )}
     </div>

@@ -105,23 +105,29 @@ export default function OrderAvailabilityPicker({
         if (hasOverrides && Array.isArray(availabilityData.calendarSlots[dateKey]) && availabilityData.calendarSlots[dateKey].length > 0) {
             baseSlots = availabilityData.calendarSlots[dateKey];
         } else {
-            // B. Fallback to Weekly Routine
-            const routine = availabilityData.routine && availabilityData.routine[dayOfWeek];
-            if (routine && routine.active) {
-                const { from, to } = routine;
-                baseSlots = TIME_SLOTS
-                    .filter(slot => slot >= from && slot < to)
-                    .map((slot) => {
-                        const [h, m] = slot.split(':').map(Number);
-                        let nextM = m + 30;
-                        let nextH = h;
-                        if (nextM >= 60) {
-                            nextM = 0;
-                            nextH += 1;
-                        }
-                        const toTime = `${nextH.toString().padStart(2, '0')}:${nextM.toString().padStart(2, '0')}`;
-                        return { from: slot, to: toTime };
-                    });
+            // B. Fallback to Weekly Routine (Handle both "routine" and "availability.weekly_routine")
+            const routine = (availabilityData.routine && availabilityData.routine[dayOfWeek]) || 
+                           (availabilityData.availability?.weekly_routine && availabilityData.availability.weekly_routine[dayOfWeek]);
+                           
+            if (routine && (routine.active || routine.active === undefined)) {
+                const startTime = routine.from || routine.start;
+                const endTime = routine.to || routine.end;
+                
+                if (startTime && endTime) {
+                    baseSlots = TIME_SLOTS
+                        .filter(slot => slot >= startTime && slot < endTime)
+                        .map((slot) => {
+                            const [h, m] = slot.split(':').map(Number);
+                            let nextM = m + 30;
+                            let nextH = h;
+                            if (nextM >= 60) {
+                                nextM = 0;
+                                nextH += 1;
+                            }
+                            const toTime = `${nextH.toString().padStart(2, '0')}:${nextM.toString().padStart(2, '0')}`;
+                            return { from: slot, to: toTime };
+                        });
+                }
             }
         }
 
@@ -161,14 +167,19 @@ export default function OrderAvailabilityPicker({
             // 2. Check if the entire task duration fits within the Bricoler's available hours for that day
             // (Only if we are NOT using calendar overrides which are fixed blocks)
             if (!hasOverrides) {
-                const routine = availabilityData.routine && availabilityData.routine[dayOfWeek];
-                if (routine && routine.active) {
-                    const [rh_to, rm_to] = routine.to.split(':').map(Number);
-                    const routineEndMinutes = rh_to * 60 + rm_to;
-                    
-                    // Task must finish (including cleanup/buffer) before routine ends
-                    if (slotStartMinutes + (currentTaskDuration * 60) > routineEndMinutes) {
-                        return false;
+                const routineFinal = (availabilityData.routine && availabilityData.routine[dayOfWeek]) || 
+                                   (availabilityData.availability?.weekly_routine && availabilityData.availability.weekly_routine[dayOfWeek]);
+                                   
+                if (routineFinal && (routineFinal.active || routineFinal.active === undefined)) {
+                    const routineToTime = routineFinal.to || routineFinal.end;
+                    if (routineToTime) {
+                        const [rh_to, rm_to] = routineToTime.split(':').map(Number);
+                        const routineEndMinutes = rh_to * 60 + rm_to;
+                        
+                        // Task must finish (including cleanup/buffer) before routine ends
+                        if (slotStartMinutes + (currentTaskDuration * 60) > routineEndMinutes) {
+                            return false;
+                        }
                     }
                 }
             }

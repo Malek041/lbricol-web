@@ -83,14 +83,14 @@ const AdminBricolerCreator: React.FC<AdminBricolerCreatorProps> = ({ t, onBack }
                 isClaimed: false,
                 claimCode: claimCode,
                 metaId: metaId,
-                availability: {
-                    'Mon': [{ from: '10:30', to: '18:00' }],
-                    'Tue': [{ from: '10:30', to: '18:00' }],
-                    'Wed': [{ from: '10:30', to: '18:00' }],
-                    'Thu': [{ from: '10:30', to: '18:00' }],
-                    'Fri': [{ from: '10:30', to: '18:00' }],
-                    'Sat': [{ from: '10:30', to: '18:00' }],
-                    'Sun': [{ from: '10:30', to: '18:00' }]
+                routine: {
+                    monday: { from: '08:30', to: '22:00', active: true },
+                    tuesday: { from: '08:30', to: '22:00', active: true },
+                    wednesday: { from: '08:30', to: '22:00', active: true },
+                    thursday: { from: '08:30', to: '22:00', active: true },
+                    friday: { from: '08:30', to: '22:00', active: true },
+                    saturday: { from: '08:30', to: '22:00', active: true },
+                    sunday: { from: '08:30', to: '22:00', active: true },
                 },
                 bio_translations: bioTranslations,
                 createdAt: serverTimestamp(),

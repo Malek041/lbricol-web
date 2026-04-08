@@ -1137,16 +1137,14 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                     cars: selectedCars,
                 } : null,
                 tourGuideAuthorizationUrl: finalTourGuideAuthUrl || null,
-                availability: userData?.availability || {
-                    weekly_routine: {
-                        monday: { start: '10:30', end: '18:00', active: true },
-                        tuesday: { start: '10:30', end: '18:00', active: true },
-                        wednesday: { start: '10:30', end: '18:00', active: true },
-                        thursday: { start: '10:30', end: '18:00', active: true },
-                        friday: { start: '10:30', end: '18:00', active: true },
-                        saturday: { start: '10:30', end: '18:00', active: true },
-                        sunday: { start: '10:30', end: '18:00', active: true },
-                    }
+                routine: userData?.routine || {
+                    monday: { from: '08:30', to: '22:00', active: true },
+                    tuesday: { from: '08:30', to: '22:00', active: true },
+                    wednesday: { from: '08:30', to: '22:00', active: true },
+                    thursday: { from: '08:30', to: '22:00', active: true },
+                    friday: { from: '08:30', to: '22:00', active: true },
+                    saturday: { from: '08:30', to: '22:00', active: true },
+                    sunday: { from: '08:30', to: '22:00', active: true },
                 }
             });
 
