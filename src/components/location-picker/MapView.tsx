@@ -7,6 +7,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { MapPin, ArrowRight } from 'lucide-react';
 import { LocationPoint } from './types';
 import { useLanguage } from '@/context/LanguageContext';
+import { Capacitor } from '@capacitor/core';
+import { NativeSettings } from 'capacitor-native-settings';
 
 interface MapViewProps {
   onLocationChange: (point: LocationPoint) => void;
@@ -1122,8 +1124,22 @@ const MapView: React.FC<MapViewProps> = ({
             initial={{ y: -100, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: -100, opacity: 0 }}
-            onClick={() => {
-              // Try to trigger GPS again
+            onClick={async () => {
+              // 1. If we're on a native platform (Capacitor), try to open system settings directly
+              if (Capacitor.isNativePlatform()) {
+                try {
+                  await NativeSettings.open({
+                    optionAndroid: 'location',
+                    optionIOS: 'location'
+                  } as any);
+                  return;
+                } catch (err) {
+                  console.error("Native settings redirect failed:", err);
+                }
+              }
+
+              // 2. If we're in Safari/Web, and it's blocked, clicking should at least provide a clear hint
+              // We'll retry once, and if it fails again, we can technically only show instructions
               const requestGps = (highAccuracy: boolean) => {
                 navigator.geolocation.getCurrentPosition(
                   (position) => {
@@ -1137,6 +1153,14 @@ const MapView: React.FC<MapViewProps> = ({
                   },
                   (error) => {
                     console.warn("Manual GPS request failed:", error);
+                    // On iOS Safari, we can't open settings, so we alert the user with manual steps
+                    if (error.code === error.PERMISSION_DENIED && !Capacitor.isNativePlatform()) {
+                      alert(t({ 
+                        en: "Location is blocked. Please enable it in Settings > Safari > Location.",
+                        fr: "La localisation est bloquée. Veuillez l'activer dans Réglages > Safari > Localisation.",
+                        ar: "تحديد الموقع محظور. يرجى تفعيله من الإعدادات > Safari > الموقع."
+                      }));
+                    }
                   },
                   { enableHighAccuracy: highAccuracy, timeout: 5000 }
                 );

@@ -28,7 +28,7 @@ import ClientHome from '@/features/client/components/ClientHome';
 import OnboardingPopup from '@/features/onboarding/components/OnboardingPopup';
 import { SearchPopup } from '@/features/client/components/SearchPopup';
 import { SERVICES_CATALOGUE } from '@/config/services_catalogue';
-import { useOrder, defaultOrder } from '@/context/OrderContext';
+import { useOrder } from '@/context/OrderContext';
 
 import AdminDashboard from '@/features/admin/components/AdminDashboard';
 import AdminOrdersView from '@/features/orders/components/AdminOrdersView';
@@ -2644,7 +2644,6 @@ const Home = () => {
                   initialShowHistory={showHistoryInOrders}
                    onResumeDraft={(draft) => {
                     const normalizedDraft = {
-                      ...defaultOrder,
                       serviceType: draft.service || '',
                       serviceName: draft.serviceName || draft.service || '',
                       subServiceId: draft.subService || '',
@@ -2896,7 +2895,6 @@ const Home = () => {
                   const icon = getServiceVector(finalSvc);
                   
                   setOrderState({
-                    ...defaultOrder,
                     serviceType: finalSvc,
                     serviceName: cfg.name,
                     subServiceId: finalSub || '',
