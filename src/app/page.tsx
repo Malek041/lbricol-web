@@ -2649,6 +2649,7 @@ const Home = () => {
                       subServiceId: draft.subService || '',
                       subServiceName: draft.subServiceName || '',
                       location: draft.location || null,
+                      discoveryLocation: draft.discoveryLocation || null,
                       providerId: draft.providerId || null,
                       providerName: draft.providerName || null,
                       providerRate: draft.providerRate || null,
@@ -2904,6 +2905,7 @@ const Home = () => {
                       lng: selectedPoint.lng,
                       address: selectedPoint.address || ''
                     } : null,
+                    discoveryLocation: null,
                     providerId: null,
                     providerName: null,
                     providerRate: null,
