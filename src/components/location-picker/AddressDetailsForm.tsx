@@ -87,7 +87,7 @@ const AddressDetailsForm: React.FC<AddressDetailsFormProps> = ({ initialData, on
                 placeholder="e.g. Jardin des Douars"
                 className="w-full h-full px-4 pt-5 pb-1 bg-transparent outline-none text-[15px] font-medium placeholder:text-neutral-300"
               />
-              <label className={`absolute left-4 transition-all pointer-events-none text-[#6B7280] ${formData.buildingName ? 'top-1.5 text-[11px] font-bold' : 'top-4 text-[13px]'}`}>
+              <label className="absolute left-4 top-1.5 text-[11px] font-bold transition-all pointer-events-none text-[#6B7280]">
                 {t({ en: 'Name of your property', fr: 'Nom de votre propriété', ar: 'اسم مكانك' })}
               </label>
               {formData.buildingName && (
