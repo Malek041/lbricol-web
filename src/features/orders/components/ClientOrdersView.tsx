@@ -3,7 +3,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { OrderDetails } from '@/features/orders/components/OrderCard';
-import { ChevronLeft, Info, MessageCircle, MessageSquare, Image, HelpCircle, X, MapPin, Clock, Calendar as CalendarIcon, Phone, User, Ban, Check, AlertTriangle, RefreshCw, CreditCard, Wrench, Banknote, Star, Home, Layout, Sparkles, AlertCircle, Loader2, Calendar, Camera, Mic, Shield } from 'lucide-react';
+import { ChevronLeft, Info, MessageCircle, MessageSquare, Image, HelpCircle, X, MapPin, Clock, Calendar as CalendarIcon, Phone, User, Ban, Check, AlertTriangle, RefreshCw, CreditCard, Wrench, Banknote, Star, Home, Layout, Sparkles, AlertCircle, Loader2, Calendar, Camera, Mic, Shield, ArrowRight } from 'lucide-react';
 import MessagesView from '@/features/messages/components/MessagesView';
 import { useLanguage } from '@/context/LanguageContext';
 import { useToast } from '@/context/ToastContext';
@@ -908,487 +908,321 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
                         className="fixed inset-0 z-[9100] bg-white"
                         style={{ display: 'flex', flexDirection: 'column', height: '100%' }}
                     >
-                        {/* Scrollable Content */}
-                        <div style={{ flex: 1, overflowY: 'auto', WebkitOverflowScrolling: 'touch', paddingBottom: '200px' }} className="no-scrollbar">
-                            {/* Header (Moved here to be scrollable) */}
-                            <div style={{ flexShrink: 0, width: '100%', paddingTop: '48px', paddingBottom: '16px', paddingLeft: '24px', paddingRight: '24px', backgroundColor: '#fff', borderBottom: '1px solid #F0F0F0' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                                    <button
-                                        onClick={() => setSelectedOrder(null)}
-                                        className="w-12 h-12 flex items-center justify-center rounded-2xl bg-[#01A083] active:scale-95 transition-all"
-                                    >
-                                        <ChevronLeft size={28} className="text-white" />
-                                    </button>
-                                    <div className="text-right">
-                                        <span className="text-[11px] font-medium text-neutral-400 uppercase tracking-widest block">
-                                            {t({ en: 'Order ID', fr: 'ID Commande', ar: 'رقم الطلب' })}
-                                        </span>
-                                        <span className="text-[17px] font-medium text-black">
-                                            #{selectedOrder.id?.slice(-6).toUpperCase()}
-                                        </span>
+                        {(() => {
+                            const order = selectedOrder;
+                            if (!order) return null;
+                            const status = getDynamicStatus(order);
+
+                            return (
+                                <div className="flex flex-col bg-white min-h-screen">
+                                    {/* Sticky Header with Close Button on Right */}
+                                    <div className="pt-12 px-6 pb-4 flex items-center justify-between bg-white border-b border-neutral-50 sticky top-0 z-[9200]">
+                                        <div className="text-[12px] font-bold text-neutral-400 uppercase tracking-widest leading-none">
+                                            {t({ en: 'Order Details', fr: 'Détails de la mission', ar: 'تفاصيل المهمة' })}
+                                        </div>
+                                        <button
+                                            onClick={() => setSelectedOrder(null)}
+                                            className="w-10 h-10 rounded-full hover:bg-neutral-100 flex items-center justify-center transition-colors shadow-sm active:scale-95 border border-neutral-100"
+                                        >
+                                            <X size={22} className="text-black" strokeWidth={1.5} />
+                                        </button>
                                     </div>
-                                </div>
-                            </div>
 
-                            <div className="px-6">
-                                {/* Hero Image & Title Section */}
-                                <div className="text-center mt-8 mb-10">
-                                    <motion.div
-                                        initial={{ scale: 0.8, opacity: 0 }}
-                                        animate={{ scale: 1, opacity: 1 }}
-                                        className="flex justify-center mb-6"
-                                    >
-                                        <img
-                                            src={selectedOrder.service === 'car_rental' ?
-                                                (selectedOrder.selectedCar?.modelImage || selectedOrder.selectedCar?.image || "/Images/Vectors Illu/carKey.png") :
-                                                getServiceVector(selectedOrder.service || '')
-                                            }
-                                            className="w-40 h-40 object-contain"
-                                            alt="Service"
-                                        />
-                                    </motion.div>
-                                    <h2 className="text-[28px] font-black text-black leading-tight tracking-tight px-4">
-                                        {selectedOrder.subServiceDisplayName || (selectedOrder as any).title || selectedOrder.serviceName || selectedOrder.service}
-                                    </h2>
-                                    <div className="text-[17px] font-medium text-neutral-500 flex items-center justify-center gap-2 mt-2">
-                                        <span>{selectedOrder.date ? format(parseISO(selectedOrder.date), 'MMMM d, yyyy') : ''}</span>
-                                        <span>•</span>
-                                        <span>{selectedOrder.time || '09:00'}</span>
-                                    </div>
-                                </div>
-
-                                {/* Decorative Separator */}
-                                <div className="mx-[-24px] mb-8 relative h-5 overflow-hidden">
-                                    <svg width="100%" height="20" viewBox="0 0 400 20" preserveAspectRatio="none">
-                                        <path d="M0 10 Q 5 0, 10 10 T 20 10 T 30 10 T 40 10 T 50 10 T 60 10 T 70 10 T 80 10 T 90 10 T 100 10 T 110 10 T 120 10 T 130 10 T 140 10 T 150 10 T 160 10 T 170 10 T 180 10 T 190 10 T 200 10 T 210 10 T 220 10 T 230 10 T 240 10 T 250 10 T 260 10 T 270 10 T 280 10 T 290 10 T 300 10 T 310 10 T 320 10 T 330 10 T 340 10 T 350 10 T 360 10 T 370 10 T 380 10 T 390 10 T 400 10 V 20 H 0 Z" fill="#F9FAFB" />
-                                    </svg>
-                                </div>
-
-                                {/* Bricoler Details Section (REQUESTED TO KEEP) */}
-                                {selectedOrder.bricolerId && (
-                                    <section className="mb-10">
-                                        <h3 className="text-[25px] font-medium text-black mb-6 flex items-center gap-3">
-                                            Professional <span className="text-2xl">👨‍🔧</span>
-                                        </h3>
-                                        <div className="bg-[#F9FAFB] rounded-[32px] p-4 sm:p-6 border border-neutral-100 flex flex-wrap items-center gap-4 sm:gap-6">
-                                            <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-[24px] bg-white flex-shrink-0 overflow-hidden relative border-2 border-white">
+                                    <div className="flex-1 space-y-2 bg-[#F7F7F7]">
+                                        {/* Section 1: Hero Context */}
+                                        <div className="bg-white px-6 py-10 flex justify-between items-start">
+                                            <div className="flex-1 pr-6">
+                                                <div className="flex items-center gap-2 mb-2">
+                                                    <span className="text-[13px] font-black text-[#01A083] uppercase tracking-wider">
+                                                        {status === 'programmed' ? t({ en: 'Confirmed', fr: 'Confirmée', ar: 'مؤكد' }) : status}
+                                                    </span>
+                                                    <span className="w-1 h-1 rounded-full bg-neutral-300" />
+                                                    <span className="text-[13px] font-medium text-neutral-500 uppercase tracking-wider">
+                                                        {order.date ? format(parseISO(order.date), 'MMM d') : ''}
+                                                    </span>
+                                                </div>
+                                                <h1 className="text-[34px] font-black text-black leading-[1.05] tracking-tight mb-4">
+                                                    {order.bricolerName || (order.subServiceDisplayName || order.serviceName || order.service)}
+                                                </h1>
+                                                <div className="text-[16px] font-medium text-neutral-600 leading-snug">
+                                                    {order.subServiceDisplayName || order.serviceName} • {order.location && (typeof order.location === 'object' ? (order.location as any).city : 'Marrakech')}
+                                                    <div className="mt-1 opacity-70">
+                                                        {order.time || '09:00'}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div className="w-20 h-20 rounded-[20px] overflow-hidden bg-neutral-100 border border-neutral-100 shrink-0 shadow-lg shadow-black/5">
                                                 <img
-                                                    src={(selectedOrder.bricolerAvatar && selectedOrder.bricolerAvatar.length > 5) ? selectedOrder.bricolerAvatar : "/Images/Vectors Illu/Avatar.png"}
+                                                    src={order.service === 'car_rental' ?
+                                                        (order.selectedCar?.modelImage || order.selectedCar?.image || "/Images/Vectors Illu/carKey.png") :
+                                                        (order.bricolerAvatar || getServiceVector(order.service || ''))
+                                                    }
                                                     className="w-full h-full object-cover"
-                                                    alt="Pro"
+                                                    alt="Context"
                                                     onError={(e) => {
                                                         (e.target as HTMLImageElement).src = "/Images/Vectors Illu/Avatar.png";
                                                     }}
                                                 />
-                                                <div className="absolute bottom-1 right-1 w-5 h-5 bg-[#01A083] rounded-full border-2 border-white flex items-center justify-center">
-                                                    <Check size={10} className="text-white" />
-                                                </div>
                                             </div>
-                                            <div className="flex-1 min-w-[120px]">
-                                                <h4 className="text-[20px] font-medium text-black mb-1 leading-tight">{selectedOrder.bricolerName}</h4>
-                                                <div className="flex flex-wrap items-center gap-2 mt-1">
-                                                    <div className="flex items-center gap-1 flex-shrink-0">
-                                                        <Star size={14} className="fill-sky-400 text-sky-400" />
-                                                        <span className="text-[14px] font-medium text-black">{selectedOrder.bricolerRating || '4.9'}</span>
+                                        </div>
+
+                                        {/* Section 2: About Bricoler */}
+                                        {order.bricolerId && (
+                                            <div className="bg-white px-6 py-10">
+                                                <h2 className="text-[22px] font-black text-black mb-6">
+                                                    {t({ en: `Professional Profile`, fr: `Profil Professionnel`, ar: `الملف الشخصي` })}
+                                                </h2>
+                                                <div className="flex items-center gap-4 mb-6">
+                                                    <div className="w-16 h-16 rounded-full overflow-hidden border border-neutral-100 shadow-sm">
+                                                        <img
+                                                            src={order.bricolerAvatar || "/Images/Vectors Illu/Avatar.png"}
+                                                            className="w-full h-full object-cover"
+                                                            alt="Avatar"
+                                                        />
                                                     </div>
-                                                    <span className="text-neutral-300 flex-shrink-0">|</span>
-                                                    <span className="text-[13px] font-medium text-neutral-500 uppercase tracking-wider whitespace-nowrap">
-                                                        {t({ en: 'Verified Pro', fr: 'Pro Vérifié', ar: 'محترف موثق' })}
-                                                    </span>
+                                                    <div>
+                                                        <h4 className="text-[18px] font-black text-black leading-tight mb-1">{order.bricolerName}</h4>
+                                                        <div className="flex items-center gap-1.5 px-2 py-0.5 bg-neutral-50 border border-neutral-100 rounded-full w-fit">
+                                                            <Star size={12} className="fill-black text-black" />
+                                                            <span className="text-[12px] font-black text-black">{order.bricolerRating || '4.9'}</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div className="flex gap-4">
+                                                    <button
+                                                        onClick={() => setActiveChatOrderId(order.id!)}
+                                                        className="flex-1 h-14 bg-black text-white rounded-[14px] font-black text-[15px] flex items-center justify-center gap-2 active:scale-95 transition-all"
+                                                    >
+                                                        <MessageCircle size={18} />
+                                                        {t({ en: 'Chat Now', fr: 'Chatter', ar: 'دردشة' })}
+                                                    </button>
+                                                    <button className="flex-1 h-14 bg-white border border-neutral-200 text-black rounded-[14px] font-black text-[15px] flex items-center justify-center active:scale-95 transition-all">
+                                                        {t({ en: 'View Profile', fr: 'Voir Profil', ar: 'الملف الشخصي' })}
+                                                    </button>
                                                 </div>
                                             </div>
-                                            <button
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    setActiveChatOrderId(selectedOrder.id!);
-                                                }}
-                                                className="w-14 h-14 rounded-[20px] bg-[#01A083] flex flex-shrink-0 items-center justify-center active:scale-90 transition-all "
-                                            >
-                                                <MessageCircle size={28} className="text-white" />
-                                            </button>
-                                        </div>
-                                    </section>
-                                )}
+                                        )}
 
-                                {/* Payment Details Section */}
-                                <section className="mb-10">
-                                    <h3 className="text-[25px] font-medium text-black mb-2 flex items-center gap-3">
-                                        Payment <span className="text-2xl">💳</span>
-                                    </h3>
-                                    <p className="text-[15px] font-medium text-neutral-400 mb-6">
-                                        {t({ en: 'Method of payment', fr: 'Mode de paiement', ar: 'طريقة الدفع' })}
-                                    </p>
+                                        {/* Section 3: Booking details */}
+                                        <div className="bg-white px-6 py-10 space-y-10">
+                                            <div>
+                                                <h2 className="text-[22px] font-black text-black mb-8">
+                                                    {t({ en: 'Booking details', fr: 'Détails de la réservation', ar: 'تفاصيل الحجز' })}
+                                                </h2>
 
-                                    <div className="bg-[#F9FAFB] rounded-[32px] p-6 border border-neutral-100 flex items-center gap-5">
-                                        <div className="w-16 h-16 rounded-[24px] bg-white flex items-center justify-center text-3xl">
-                                            {selectedOrder.paymentMethod === 'bank_transfer' ? '🏦' : '💵'}
-                                        </div>
-                                        <div className="flex-1">
-                                            <h4 className="text-[18px] font-medium text-black mb-1 capitalize">
-                                                {selectedOrder.paymentMethod === 'bank_transfer' ?
-                                                    t({ en: 'Bank Transfer', fr: 'Virement Bancaire', ar: 'تحويل بنكي' }) :
-                                                    t({ en: 'Cash', fr: 'Espèces', ar: 'كاش' })
-                                                }
-                                            </h4>
-                                            <p className="text-[14px] font-medium text-neutral-400">
-                                                {selectedOrder.paymentMethod === 'bank_transfer' ?
-                                                    t({ en: 'Chat verify', fr: 'Vérification par Chat', ar: 'تأكيد عبر الدردشة' }) :
-                                                    t({ en: 'On delivery', fr: 'À la livraison', ar: 'عند الاستلام' })
-                                                }
-                                            </p>
-                                        </div>
-                                        <div className="w-10 h-10 rounded-full bg-[#01A083]/10 flex items-center justify-center">
-                                            <Check size={20} className="text-[#01A083]" />
-                                        </div>
-                                    </div>
-                                </section>
+                                                <div className="space-y-10">
+                                                    <div className="flex justify-between items-start">
+                                                        <div className="flex-1 pr-4">
+                                                            <p className="text-[16px] font-black text-black mb-1">{t({ en: 'Scheduled', fr: 'Programmé', ar: 'مجدول' })}</p>
+                                                            <p className="text-[15px] font-medium text-neutral-500 leading-tight">
+                                                                {order.date ? format(parseISO(order.date), 'EEEE d MMMM yyyy') : ''} • {order.time || '09:00'}
+                                                            </p>
+                                                        </div>
+                                                        <button className="text-[15px] font-black text-black underline underline-offset-2 shrink-0">{t({ en: 'Edit', fr: 'Modifier', ar: 'تعديل' })}</button>
+                                                    </div>
 
-                                {/* Setup Summary Section */}
-                                <section className="mb-10">
-                                    <h3 className="text-[25px] font-medium text-black mb-6">
-                                        Setup Summary <span className="text-2xl">📋</span>
-                                    </h3>
-                                    <div className="bg-[#F9FAFB] rounded-[20px] p-6 space-y-6">
+                                                    <div className="flex justify-between items-start">
+                                                        <div className="flex-1 pr-4">
+                                                            <p className="text-[16px] font-black text-black mb-1">{t({ en: 'Location', fr: 'Adresse', ar: 'العنوان' })}</p>
+                                                            <p className="text-[15px] font-medium text-neutral-500 leading-tight line-clamp-2">
+                                                                {typeof order.location === 'object' ? (order.location as any).address : order.location}
+                                                            </p>
+                                                        </div>
+                                                        <button className="text-[15px] font-black text-black underline underline-offset-2 shrink-0">{t({ en: 'Map', fr: 'Carte', ar: 'الخريطة' })}</button>
+                                                    </div>
+
+                                                    <div>
+                                                        <p className="text-[16px] font-black text-black mb-1">{t({ en: 'Payment type', fr: 'Type de paiement', ar: 'نوع الدفع' })}</p>
+                                                        <p className="text-[15px] font-medium text-neutral-500 leading-tight">
+                                                            {order.paymentMethod === 'bank_transfer'
+                                                                ? t({ en: 'Bank Transfer (Direct)', fr: 'Virement bancaire (Direct)', ar: 'تحويل بنكي' })
+                                                                : t({ en: 'Cash (On Site)', fr: 'Espèces (Sur place)', ar: 'نقدًا' })}
+                                                        </p>
+                                                    </div>
+
+                                                    <div>
+                                                        <p className="text-[16px] font-black text-black mb-1">{t({ en: 'Confirmation id', fr: 'N° de confirmation', ar: 'رمز التأكيد' })}</p>
+                                                        <p className="text-[15px] font-medium text-neutral-500 uppercase tracking-[2px]">{order.id?.slice(-8).toUpperCase()}</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Section 4: Setup Summary (Retain breakdown logic) */}
+                                        <div className="bg-white px-6 py-10">
+                                            <h2 className="text-[22px] font-black text-black mb-8">
+                                                {t({ en: 'Setup summary', fr: 'Détails du service', ar: 'ملخص الخدمة' })} <span className="text-2xl">📋</span>
+                                            </h2>
+
+                                            <div className="space-y-4">
+                                                {(() => {
+                                                    const subId = (order.subService || (order as any).subServiceId || (order as any).serviceType || order.service || 'car_rental');
+                                                    const breakdown = calculateOrderPrice(
+                                                        subId,
+                                                        parseFloat(String(order.price || '80')),
+                                                        {
+                                                            rooms: parseInt(String((order.details?.serviceDetails as any)?.rooms || (order.details as any)?.rooms || 1)),
+                                                            hours: parseFloat(String((order.details?.serviceDetails as any)?.taskDuration || (order.details as any)?.taskDuration || (order.details as any)?.hours || 1)),
+                                                            days: parseInt(String((order.details?.serviceDetails as any)?.days || (order.details as any)?.days || 1)),
+                                                            officeDesks: parseInt(String((order.details?.serviceDetails as any)?.officeDesks || (order.details as any)?.officeDesks || 0)),
+                                                            officeMeetingRooms: parseInt(String((order.details?.serviceDetails as any)?.officeMeetingRooms || (order.details as any)?.officeMeetingRooms || 0)),
+                                                            officeBathrooms: parseInt(String((order.details?.serviceDetails as any)?.officeBathrooms || (order.details as any)?.officeBathrooms || 0)),
+                                                            hasKitchenette: (order.details?.serviceDetails as any)?.hasKitchenette || (order.details as any)?.hasKitchenette,
+                                                            hasReception: (order.details?.serviceDetails as any)?.hasReception || (order.details as any)?.hasReception,
+                                                            distanceKm: (order.details?.serviceDetails as any)?.deliveryDistanceKm || (order.details?.serviceDetails as any)?.distanceKm || 0,
+                                                            deliveryDistanceKm: (order.details?.serviceDetails as any)?.deliveryDistanceKm || 0,
+                                                            deliveryDurationMinutes: (order.details?.serviceDetails as any)?.deliveryDurationMinutes || 0,
+                                                            propertyType: (order.details?.serviceDetails as any)?.propertyType,
+                                                            tvCount: (order.details?.serviceDetails as any)?.tvCount,
+                                                            mountTypes: (order.details?.serviceDetails as any)?.mountTypes,
+                                                            wallMaterial: (order.details?.serviceDetails as any)?.wallMaterial,
+                                                            liftingHelp: (order.details?.serviceDetails as any)?.liftingHelp,
+                                                            mountingAddOns: (order.details?.serviceDetails as any)?.mountingAddOns,
+                                                            taskSize: (order.details?.serviceDetails as any)?.taskSize,
+                                                        }
+                                                    );
+
+                                                    return (
+                                                        <div className="space-y-5">
+                                                            <div className="flex justify-between items-center py-4 border-b border-neutral-50">
+                                                                <span className="text-[17px] font-medium text-neutral-400">{t({ en: 'Service Type', fr: 'Type de service' })}</span>
+                                                                <span className="text-[17px] font-black text-black">{order.subServiceDisplayName || order.serviceName}</span>
+                                                            </div>
+
+                                                            {breakdown.details && breakdown.details.map((detail, idx) => (
+                                                                <div key={idx} className="flex justify-between items-center">
+                                                                    <span className="text-[16px] font-medium text-neutral-400">{t(detail.label)}</span>
+                                                                    <span className="text-[16px] font-bold text-black">{detail.amount.toFixed(0)} MAD</span>
+                                                                </div>
+                                                            ))}
+
+                                                            <div className="flex justify-between items-center pt-2">
+                                                                <span className="text-[16px] font-medium text-neutral-400">{t({ en: 'Base price', fr: 'Prix de base' })}</span>
+                                                                <span className="text-[16px] font-bold text-black">{breakdown.subtotal.toFixed(0)} MAD</span>
+                                                            </div>
+
+                                                            <div className="flex justify-between items-center text-[#01A083]">
+                                                                <span className="text-[16px] font-bold">{t({ en: 'Service Fee', fr: 'Frais de service' })}</span>
+                                                                <span className="text-[16px] font-black">{breakdown.serviceFee.toFixed(0)} MAD</span>
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })()}
+                                            </div>
+                                        </div>
+
+                                        {/* Section 5: Photos & Instructions */}
                                         {(() => {
-                                            const subId = (selectedOrder.subService || (selectedOrder as any).subServiceId || (selectedOrder as any).serviceType || selectedOrder.service || 'car_rental');
-                                            const details = selectedOrder.details?.serviceDetails || selectedOrder.details || {};
-                                            const isHouseCleaning = ['standard_small', 'standard_large', 'family_home', 'deep_cleaning', 'hospitality_turnover'].includes(subId);
-                                            const isOfficeCleaning = subId === 'office_cleaning';
-                                            const isTvMounting = subId === 'tv_mounting';
+                                            const raw = (order as any)?.raw || {};
+                                            const details = order.details || {};
+                                            const note = raw.notes || details.note || details.serviceDetails?.note || (order as any).description;
 
-                                            const breakdown = calculateOrderPrice(
-                                                subId,
-                                                parseFloat(String(selectedOrder.price || '80')),
-                                                {
-                                                    rooms: parseInt(String((selectedOrder.details?.serviceDetails as any)?.rooms || (selectedOrder.details as any)?.rooms || 1)),
-                                                    hours: parseFloat(String((selectedOrder.details?.serviceDetails as any)?.taskDuration || (selectedOrder.details as any)?.taskDuration || (selectedOrder.details as any)?.hours || 1)),
-                                                    days: parseInt(String((selectedOrder.details?.serviceDetails as any)?.days || (selectedOrder.details as any)?.days || 1)),
-                                                    officeDesks: parseInt(String((selectedOrder.details?.serviceDetails as any)?.officeDesks || (selectedOrder.details as any)?.officeDesks || 0)),
-                                                    officeMeetingRooms: parseInt(String((selectedOrder.details?.serviceDetails as any)?.officeMeetingRooms || (selectedOrder.details as any)?.officeMeetingRooms || 0)),
-                                                    officeBathrooms: parseInt(String((selectedOrder.details?.serviceDetails as any)?.officeBathrooms || (selectedOrder.details as any)?.officeBathrooms || 0)),
-                                                    hasKitchenette: (selectedOrder.details?.serviceDetails as any)?.hasKitchenette || (selectedOrder.details as any)?.hasKitchenette,
-                                                    hasReception: (selectedOrder.details?.serviceDetails as any)?.hasReception || (selectedOrder.details as any)?.hasReception,
-                                                    distanceKm: (selectedOrder.details?.serviceDetails as any)?.deliveryDistanceKm || (selectedOrder.details?.serviceDetails as any)?.distanceKm || 0,
-                                                    deliveryDistanceKm: (selectedOrder.details?.serviceDetails as any)?.deliveryDistanceKm || 0,
-                                                    deliveryDurationMinutes: (selectedOrder.details?.serviceDetails as any)?.deliveryDurationMinutes || 0,
-                                                    propertyType: (selectedOrder.details?.serviceDetails as any)?.propertyType,
-                                                    tvCount: (selectedOrder.details?.serviceDetails as any)?.tvCount,
-                                                    mountTypes: (selectedOrder.details?.serviceDetails as any)?.mountTypes,
-                                                    wallMaterial: (selectedOrder.details?.serviceDetails as any)?.wallMaterial,
-                                                    liftingHelp: (selectedOrder.details?.serviceDetails as any)?.liftingHelp,
-                                                    mountingAddOns: (selectedOrder.details?.serviceDetails as any)?.mountingAddOns,
-                                                    taskSize: (selectedOrder.details?.serviceDetails as any)?.taskSize,
-                                                }
-                                            );
+                                            if (!note && !order.details?.serviceDetails?.photoUrls) return null;
 
                                             return (
-                                                <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-                                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #e4e4e4ff', paddingBottom: 16 }}>
-                                                        <span style={{ fontSize: 17, fontWeight: 350, color: '#6B7280' }}>{t({ en: 'Type', fr: 'Type', ar: 'النوع' })}</span>
-                                                        <span style={{ fontSize: 17, fontWeight: 350, color: '#111827', textAlign: 'right' }}>
-                                                            {(() => {
-                                                                try {
-                                                                    const { SERVICES_CATALOGUE, getSubServiceName } = require("@/config/services_config");
-                                                                    const catalogService = SERVICES_CATALOGUE.find((s: any) => s.id === (selectedOrder.serviceId || selectedOrder.service));
-                                                                    const catalogSub = catalogService?.subServices?.find((ss: any) => ss.id === subId);
-
-                                                                    if (selectedOrder.subServiceDisplayName && selectedOrder.subServiceDisplayName !== selectedOrder.serviceId) {
-                                                                        return selectedOrder.subServiceDisplayName;
-                                                                    }
-
-                                                                    if (catalogSub) return t({ en: catalogSub.en, fr: catalogSub.fr, ar: catalogSub.ar || catalogSub.en });
-                                                                    const subName = getSubServiceName(selectedOrder.service, subId);
-                                                                    return subName ? t({ en: subName, fr: subName, ar: subName }) : (selectedOrder.serviceName || selectedOrder.service);
-                                                                } catch (e) {
-                                                                    return selectedOrder.subServiceDisplayName || selectedOrder.serviceName || selectedOrder.service;
-                                                                }
-                                                            })()}
-                                                        </span>
-                                                    </div>
-
-                                                    {isHouseCleaning && (
-                                                        <div style={{ display: 'flex', flexDirection: 'column', gap: 16, borderBottom: '1px solid #e4e4e4ff', paddingBottom: 16 }}>
-                                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                                <span style={{ fontSize: 17, fontWeight: 350, color: '#6B7280' }}>{t({ en: 'Place', fr: 'Lieu' })}</span>
-                                                                <span style={{ fontSize: 17, fontWeight: 350, color: '#111827' }}>{details.propertyType || 'Studio'}</span>
-                                                            </div>
-                                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                                <span style={{ fontSize: 17, fontWeight: 350, color: '#6B7280' }}>{t({ en: 'Rooms', fr: 'Pièces' })}</span>
-                                                                <span style={{ fontSize: 17, fontWeight: 350, color: '#111827' }}>{details.rooms || 1}</span>
-                                                            </div>
+                                                <div className="bg-white px-6 py-10 space-y-8">
+                                                    {note && (
+                                                        <div>
+                                                            <h2 className="text-[22px] font-black text-black mb-4">
+                                                                {t({ en: 'Instructions', fr: 'Instructions', ar: 'تعليمات' })} <span className="text-2xl">📝</span>
+                                                            </h2>
+                                                            <p className="text-[16px] font-medium text-neutral-500 border-l-4 border-[#01A083]/20 pl-4 py-1 italic leading-relaxed">
+                                                                "{note}"
+                                                            </p>
                                                         </div>
                                                     )}
 
-                                                    {isOfficeCleaning && (
-                                                        <div style={{ display: 'flex', flexDirection: 'column', gap: 16, borderBottom: '1px solid #e4e4e4ff', paddingBottom: 16 }}>
-                                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                                <span style={{ fontSize: 17, fontWeight: 350, color: '#6B7280' }}>{t({ en: 'Desks', fr: 'Bureaux' })}</span>
-                                                                <span style={{ fontSize: 17, fontWeight: 350, color: '#111827' }}>{details.officeDesks || 1}</span>
-                                                            </div>
-                                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                                <span style={{ fontSize: 17, fontWeight: 350, color: '#6B7280' }}>{t({ en: 'Meeting Rooms', fr: 'Salles de réunion' })}</span>
-                                                                <span style={{ fontSize: 17, fontWeight: 350, color: '#111827' }}>{details.officeMeetingRooms || 0}</span>
-                                                            </div>
-                                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                                <span style={{ fontSize: 17, fontWeight: 350, color: '#6B7280' }}>{t({ en: 'Bathrooms', fr: 'Salles de bain' })}</span>
-                                                                <span style={{ fontSize: 17, fontWeight: 350, color: '#111827' }}>{details.officeBathrooms || 0}</span>
-                                                            </div>
-                                                        </div>
-                                                    )}
+                                                    {/* Photos */}
+                                                    <div className="grid grid-cols-2 gap-4">
+                                                        {(() => {
+                                                            const sources = [
+                                                                order.details?.serviceDetails?.photoUrls,
+                                                                (order as any)?.images,
+                                                                (order.details as any)?.photos
+                                                            ];
+                                                            const allPhotos = [].concat(...sources.filter(Array.isArray) as any).filter(Boolean);
 
-                                                    {isTvMounting && (
-                                                        <div style={{ display: 'flex', flexDirection: 'column', gap: 16, borderBottom: '1px solid #e4e4e4ff', paddingBottom: 16 }}>
-                                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                                <span style={{ fontSize: 17, fontWeight: 350, color: '#6B7280' }}>{t({ en: 'TV count', fr: 'Nombre de TV' })}</span>
-                                                                <span style={{ fontSize: 17, fontWeight: 350, color: '#111827' }}>{details.tvCount || 1}</span>
-                                                            </div>
-                                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                                <span style={{ fontSize: 17, fontWeight: 350, color: '#6B7280' }}>{t({ en: 'Wall', fr: 'Mur' })}</span>
-                                                                <span style={{ fontSize: 17, fontWeight: 350, color: '#111827' }}>{details.wallMaterial}</span>
-                                                            </div>
-                                                        </div>
-                                                    )}
-
-                                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                                                            <span style={{ fontSize: 17, fontWeight: 350, color: '#6B7280' }}>{t({ en: 'Base price', fr: 'Prix de base', ar: 'السعر الأساسي' })}</span>
-                                                            <div style={{ width: 20, height: 20, borderRadius: '50%', border: '1px solid #E5E7EB', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, color: '#9CA3AF', fontWeight: 350 }}>i</div>
-                                                        </div>
-                                                        <span style={{ fontSize: 17, fontWeight: 450, color: '#111827' }}>
-                                                            {Math.round(breakdown.basePrice)} MAD/{breakdown.unit === 'unit' ? (t({ en: 'unit', fr: 'unité', ar: 'وحدة' })) : breakdown.unit === 'day' ? (t({ en: 'day', fr: 'jour', ar: 'يوم' })) : breakdown.unit === 'office' ? (t({ en: 'office', fr: 'bureau', ar: 'مكتب' })) : (t({ en: 'hr', fr: 'h', ar: 'ساعة' }))}
-                                                        </span>
-                                                    </div>
-
-                                                    {breakdown.details && breakdown.details.map((detail, idx) => (
-                                                        <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingLeft: 16, borderLeft: '2px solid rgba(1, 160, 131, 0.2)' }}>
-                                                            <span style={{ fontSize: 17, fontWeight: 350, color: '#6B7280' }}>{t(detail.label)}</span>
-                                                            <span style={{ fontSize: 17, fontWeight: 350, color: '#111827' }}>{detail.amount.toFixed(0)} MAD</span>
-                                                        </div>
-                                                    ))}
-
-                                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                                                            <span style={{ fontSize: 17, fontWeight: 350, color: '#6B7280' }}>{t({ en: 'Services', fr: 'Services', ar: 'الخدمات' })}</span>
-                                                            <div style={{ width: 20, height: 20, borderRadius: '50%', border: '1px solid #E5E7EB', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, color: '#9CA3AF', fontWeight: 350 }}>i</div>
-                                                        </div>
-                                                        <span style={{ fontSize: 17, fontWeight: 350, color: '#111827' }}>{breakdown.subtotal.toFixed(2)} MAD</span>
-                                                    </div>
-
-                                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                                                            <span style={{ fontSize: 17, fontWeight: 350, color: '#6B7280' }}>{t({ en: 'Lbricol Fee', fr: 'Frais Lbricol', ar: 'رسوم Lbricol' })}</span>
-                                                            <div style={{ width: 20, height: 20, borderRadius: '50%', border: '1px solid #E5E7EB', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, color: '#9CA3AF', fontWeight: 350 }}>i</div>
-                                                        </div>
-                                                        <span style={{ fontSize: 17, fontWeight: 350, color: '#111827' }}>{breakdown.serviceFee.toFixed(2)} MAD</span>
-                                                    </div>
-
-                                                    {breakdown.travelFee > 0 && (
-                                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                            <div style={{ display: 'flex', flexDirection: 'column' }}>
-                                                                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                                                                    <span style={{ fontSize: 17, fontWeight: 350, color: '#6B7280' }}>{t({ en: 'Travel Fee', fr: 'Frais de déplacement', ar: 'رسوم التنقل' })}</span>
-                                                                    <div style={{ width: 20, height: 20, borderRadius: '50%', border: '1px solid #E5E7EB', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, color: '#9CA3AF', fontWeight: 350 }}>i</div>
+                                                            return allPhotos.map((url, i) => (
+                                                                <div key={i} className="aspect-square bg-neutral-100 rounded-[14px] overflow-hidden">
+                                                                    <img src={url as string} className="w-full h-full object-cover" alt="Attached" />
                                                                 </div>
-                                                                <span style={{ fontSize: 17, fontWeight: 350, color: '#9CA3AF', marginTop: 4 }}>
-                                                                    {breakdown.distanceKm?.toFixed(1)} km · ~{breakdown.duration} min
-                                                                </span>
-                                                            </div>
-                                                            <span style={{ fontSize: 17, fontWeight: 350, color: '#111827' }}>{breakdown.travelFee.toFixed(2)} MAD</span>
-                                                        </div>
-                                                    )}
+                                                            ));
+                                                        })()}
+                                                    </div>
                                                 </div>
                                             );
                                         })()}
-                                    </div>
-                                </section>
 
-                                {/* Location Summaries */}
-                                <section className="mb-10">
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                                        {/* Pickup Location or User Location */}
-                                        <div style={{ padding: '16px 20px', background: '#F9FAFB', borderRadius: 24, display: 'flex', alignItems: 'center', gap: 16 }}>
-                                            <div style={{ width: 44, height: 44, borderRadius: 12, border: '1px solid #F3F4F6', background: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                                <MapPin size={20} className="text-[#01A083]" />
-                                            </div>
-                                            <div style={{ flex: 1, minWidth: 0 }}>
-                                                <div style={{ fontSize: 11, fontWeight: 700, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 2 }}>
-                                                    {(selectedOrder.service === 'errands' || selectedOrder.service?.includes('delivery')) ? t({ en: 'Pickup Location', fr: 'Lieu d\'enlèvement', ar: 'موقع الاستلام' }) : t({ en: 'Your Location', fr: 'Votre Position', ar: 'موقعك' })}
-                                                </div>
-                                                <div style={{ fontSize: 15, fontWeight: 700, color: '#111827', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                                                    {typeof selectedOrder.location === 'object' ? (selectedOrder.location as any).address : selectedOrder.location}
-                                                </div>
+                                        {/* Section 6: Support & Assistance (Airbnb Style) */}
+                                        <div className="bg-white px-6 py-10 space-y-6">
+                                            <h2 className="text-[22px] font-black text-black mb-4">
+                                                {t({ en: 'Assistance', fr: 'Assistance', ar: 'المساعدة' })}
+                                            </h2>
+
+                                            <div className="space-y-1">
+                                                <button
+                                                    onClick={() => window.open('https://wa.me/212702814355', '_blank')}
+                                                    className="w-full h-16 flex items-center justify-between group hover:px-2 transition-all border-b border-neutral-50"
+                                                >
+                                                    <div className="flex items-center gap-4">
+                                                        <div className="w-10 h-10 rounded-full flex items-center justify-center text-neutral-900">
+                                                            <HelpCircle size={22} />
+                                                        </div>
+                                                        <span className="text-[17px] font-medium text-neutral-900">{t({ en: 'Read help articles', fr: 'Consulter l\'aide', ar: 'قراءة المساعدة' })}</span>
+                                                    </div>
+                                                    <ArrowRight size={20} className="text-neutral-400 group-active:translate-x-1 transition-transform" />
+                                                </button>
+
+                                                {!['done', 'cancelled', 'delivered'].includes(status || '') && (
+                                                    <button
+                                                        onClick={() => handleCancelOrder(order.id!)}
+                                                        className="w-full h-16 flex items-center justify-between group hover:px-2 transition-all border-b border-neutral-50"
+                                                    >
+                                                        <div className="flex items-center gap-4 text-red-500">
+                                                            <div className="w-10 h-10 rounded-full flex items-center justify-center">
+                                                                <Ban size={22} />
+                                                            </div>
+                                                            <span className="text-[17px] font-bold">{t({ en: 'Cancel my booking', fr: 'Annuler ma réservation', ar: 'إلغاء الحجز' })}</span>
+                                                        </div>
+                                                        <ArrowRight size={20} className="text-neutral-400 group-active:translate-x-1 transition-transform" />
+                                                    </button>
+                                                )}
                                             </div>
                                         </div>
 
-                                        {/* Dropoff Location */}
-                                        {(selectedOrder.service === 'errands' || selectedOrder.service?.includes('delivery')) && selectedOrder.details?.serviceDetails?.dropoffAddress && (
-                                            <div style={{ padding: '16px 20px', background: '#F9FAFB', borderRadius: 24, display: 'flex', alignItems: 'center', gap: 16 }}>
-                                                <div style={{ width: 44, height: 44, borderRadius: 12, border: '1px solid #F3F4F6', background: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                                    <MapPin size={20} className="text-[#01A083]" />
-                                                </div>
-                                                <div style={{ flex: 1, minWidth: 0 }}>
-                                                    <div style={{ fontSize: 11, fontWeight: 900, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 2 }}>{t({ en: 'Dropoff Location', fr: 'Lieu de dépôt', ar: 'موقع التسليم' })}</div>
-                                                    <div style={{ fontSize: 15, fontWeight: 900, color: '#111827', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                                                        {selectedOrder.details.serviceDetails.dropoffAddress}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        )}
-
-                                        {/* Bricoler Location */}
-                                        {selectedOrder.providerAddress && (
-                                            <div style={{ padding: '16px 20px', background: '#F9FAFB', borderRadius: 24, display: 'flex', alignItems: 'center', gap: 16 }}>
-                                                <div style={{ width: 44, height: 44, borderRadius: 12, border: '1px solid #F3F4F6', background: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                                    <MapPin size={20} className="text-[#01A083]" />
-                                                </div>
-                                                <div style={{ flex: 1 }}>
-                                                    <div style={{ fontSize: 11, fontWeight: 700, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 2 }}>{t({ en: 'Bricoler Location', fr: 'Position du Bricoleur', ar: 'موقع العامل' })}</div>
-                                                    <div style={{ fontSize: 15, fontWeight: 700, color: '#111827', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 1, WebkitBoxOrient: 'vertical' }}>
-                                                        {selectedOrder.providerAddress || 'Essaouira, Morocco'}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        )}
+                                        <div className="h-40" />
                                     </div>
-                                </section>
 
-                                {(() => {
-                                    const raw = (selectedOrder as any)?.raw || {};
-                                    const details = selectedOrder.details || {};
-                                    const note =
-                                        raw.notes ||
-                                        details.note ||
-                                        details.serviceDetails?.note ||
-                                        (selectedOrder as any).description ||
-                                        (selectedOrder as any).notes;
-
-                                    if (!note) return null;
-
-                                    return (
-                                        <section className="mb-10">
-                                            <h3 className="text-[25px] font-medium text-black mb-6">
-                                                {t({ en: 'Instructions', fr: 'Instructions', ar: 'تعليمات' })} <span className="text-2xl">📝</span>
-                                            </h3>
-                                            <div className="bg-[#F9FAFB] rounded-[32px] p-8 border border-neutral-100">
-                                                <p className="text-[16px] font-medium text-neutral-600 leading-relaxed italic">
-                                                    "{note}"
+                                    {/* Airbnb Style Floating Footer */}
+                                    {!activeChatOrderId && (
+                                        <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-neutral-100 z-[9205] px-6 py-6 pb-[calc(24px+env(safe-area-inset-bottom))] flex items-center justify-between gap-4">
+                                            <div className="flex-1">
+                                                <div className="flex items-baseline gap-1">
+                                                    <span className="text-[20px] font-black text-black">
+                                                        {(order.totalPrice || parseFloat(String(order.price || '0'))).toFixed(0)}
+                                                    </span>
+                                                    <span className="text-[14px] font-bold text-black uppercase opacity-60 tracking-tight">MAD</span>
+                                                </div>
+                                                <p className="text-[14px] font-black text-black underline underline-offset-2">
+                                                    {t({ en: 'Total price', fr: 'Prix total', ar: 'الإجمالي' })}
                                                 </p>
                                             </div>
-                                        </section>
-                                    );
-                                })()}
 
-                                {/* Attached Photos */}
-                                <section className="mb-10">
-                                    <h3 className="text-[25px] font-medium text-black mb-6">
-                                        {t({ en: 'Attached Photos', fr: 'Photos Jointes', ar: 'الصور المرفقة' })} <span className="text-2xl">📸</span>
-                                    </h3>
-                                    <div className="grid grid-cols-2 gap-4">
-                                        {(() => {
-                                            const photosSet = new Set<string>();
-                                            // Collect all possible photo sources
-                                            const sources = [
-                                                selectedOrder.details?.serviceDetails?.photoUrls,
-                                                (selectedOrder as any)?.images,
-                                                (selectedOrder.details as any)?.photos,
-                                                (selectedOrder as any)?.raw?.serviceDetails?.photoUrls,
-                                                (selectedOrder as any)?.raw?.images
-                                            ];
-
-                                            sources.forEach(source => {
-                                                if (Array.isArray(source)) {
-                                                    source.forEach(item => {
-                                                        if (typeof item === 'string' && item.startsWith('http')) {
-                                                            photosSet.add(item);
-                                                        }
-                                                    });
-                                                }
-                                            });
-
-                                            const allPhotos = Array.from(photosSet);
-
-                                            if (allPhotos.length === 0) {
-                                                return (
-                                                    <div className="col-span-2 py-8 text-center bg-neutral-50 rounded-3xl border border-dashed border-neutral-200">
-                                                        <span className="text-neutral-400 font-medium">{t({ en: 'No photos provided', fr: 'Aucune photo fournie', ar: 'لا توجد صور' })}</span>
-                                                    </div>
-                                                );
-                                            }
-
-                                            return allPhotos.map((url, i) => (
-                                                <div key={i} className="aspect-square bg-neutral-100 rounded-[12px] overflow-hidden border border-neutral-100/50 group relative">
-                                                    <img
-                                                        src={url}
-                                                        className="w-full h-full object-cover transition-transform group-hover:scale-105"
-                                                        onError={(e) => {
-                                                            (e.target as HTMLImageElement).parentElement?.style.setProperty('display', 'none');
-                                                        }}
-                                                    />
-                                                    <div className="absolute inset-0 bg-black/5 opacity-0 group-hover:opacity-100 transition-opacity" />
-                                                </div>
-                                            ));
-                                        })()}
-                                    </div>
-                                </section>
-
-                                {/* Cancel Order — inside scrollable area */}
-                                {!['done', 'cancelled', 'delivered'].includes(selectedOrder.status || '') && (
-                                    <section className="mb-6">
-                                        <button
-                                            onClick={() => handleCancelOrder(selectedOrder.id!)}
-                                            className="w-full py-4 rounded-2xl border-2 border-red-200 text-red-500 font-bold text-[15px] flex items-center justify-center gap-2 hover:bg-red-50 active:scale-[0.98] transition-all"
-                                        >
-                                            <Ban size={18} />
-                                            {t({ en: 'Cancel Order', fr: 'Annuler la commande', ar: 'إلغاء الطلب' })}
-                                        </button>
-                                    </section>
-                                )}
-
-                                {/* Help Link Footer Content */}
-                                <div className="pt-2 pb-[160px] text-center">
-                                    <button
-                                        onClick={() => window.open('https://wa.me/212702814355', '_blank')}
-                                        className="inline-flex items-center gap-2 text-[15px] font-medium text-[#01A083] hover:underline"
-                                    >
-                                        <HelpCircle size={18} />
-                                        {t({ en: 'Need help with this order?', fr: 'Besoin d\'aide pour cette commande ?', ar: 'تحتاج مساعدة؟' })}
-                                    </button>
+                                            <div className="flex-[1.5]">
+                                                <button
+                                                    onClick={() => setActiveChatOrderId(order.id!)}
+                                                    style={{ background: '#212121' }}
+                                                    className="w-full text-white h-[56px] rounded-[14px] font-black text-[15px] flex items-center justify-center gap-3 active:scale-95 transition-transform shadow-lg shadow-black/10"
+                                                >
+                                                    <MessageCircle size={20} />
+                                                    {t({ en: 'Message Bricoler', fr: 'Discuter', ar: 'الدردشة' })}
+                                                </button>
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
-
-                            </div>
-                        </div>
-
-                        {/* Fixed Bottom Total Footer (Blue Signature) */}
-                        {!activeChatOrderId && (
-                            <div className="fixed bottom-0 left-0 right-0 bg-[#FFCC02] z-[4005] px-8 pt-10 pb-[calc(24px+env(safe-area-inset-bottom))]">
-                                {/* Wave Top Effect */}
-                                <div className="absolute top-[-30px] left-0 right-0 h-[30px] pointer-events-none">
-                                    <svg viewBox="0 0 1440 320" preserveAspectRatio="none" className="w-full h-full fill-[#FFCC02]">
-                                        <path d="M0,160L48,176C96,192,192,224,288,224C384,224,480,192,576,165.3C672,139,768,117,864,128C960,139,1056,181,1152,192C1248,203,1344,181,1392,170.7L1440,160L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path>
-                                    </svg>
-                                </div>
-
-                                <div className="flex items-center justify-between mb-6">
-                                    <span className="text-[22px] font-medium text-black">{t({ en: 'Total Price', fr: 'Prix Total', ar: 'الإجمالي' })}</span>
-                                    <div className="flex items-baseline gap-1.5">
-                                        <span className="text-[36px] font-[1000] text-black tracking-tighter">
-                                            {(selectedOrder.totalPrice || parseFloat(String(selectedOrder.price || '0'))).toFixed(0)}
-                                        </span>
-                                        <span className="text-[18px] font-medium text-black">MAD</span>
-                                    </div>
-                                </div>
-
-                                {/* Single CTA — Chat with Bricoler */}
-                                <button
-                                    onClick={() => setActiveChatOrderId(selectedOrder.id!)}
-                                    style={{ background: '#01A083' }}
-                                    className="w-full text-white py-4 rounded-full font-bold text-[16px] flex items-center justify-center gap-2 active:scale-95 transition-transform border border-[#008f75]"
-                                >
-                                    <MessageCircle size={20} />
-                                    {t({ en: 'Chat with Bricoler', fr: 'Chatter avec le Bricoler', ar: 'الدردشة مع الصانع' })}
-                                </button>
-                            </div>
-                        )}
+                            );
+                        })()}
                     </motion.div>
                 )}
             </AnimatePresence>
@@ -1760,7 +1594,6 @@ function ActivityTab({
 
                     <h3 className="text-[17px] font-medium text-black leading-tight">
                         {(() => {
-                            const { getSubServiceName, getServiceById } = require('@/config/services_config');
                             const subDisplay = getSubServiceName(order.service, order.subService || (order as any).subServiceId || '') || order.subServiceDisplayName;
 
                             const baseName = subDisplay ? t({ en: subDisplay, fr: subDisplay, ar: subDisplay }) : (getServiceById(order.service)?.name || order.serviceName || order.service);
