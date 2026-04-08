@@ -140,6 +140,7 @@ const MapView: React.FC<MapViewProps> = ({
   const flyToTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
   const latestGeocodeRef = useRef<{ lat: number, lng: number } | null>(null);
+  const hasAnimatedPinsRef = useRef(false);
 
   const flyToWithOffset = (lat: number, lng: number, zoom?: number, skipOffset = false) => {
     if (!mapRef.current || !mapRef.current.getContainer()) return;
@@ -527,6 +528,8 @@ const MapView: React.FC<MapViewProps> = ({
 
     const zoomScale = Math.max(0.9, Math.min(3.0, Math.pow(1.18, currentZoom - 16)));
 
+    const shouldAnimate = !hasAnimatedPinsRef.current;
+
     providerPins.forEach((pin, index) => {
       const isFocused = pin.id === focusedProviderId;
       const hasFocus = !!focusedProviderId;
@@ -535,16 +538,23 @@ const MapView: React.FC<MapViewProps> = ({
       const scale = baseScale * zoomScale;
       const size = 52 * zoomScale;
 
+      const animation = shouldAnimate 
+        ? `pinDropIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) both; animation-delay: ${index * 0.08}s;` 
+        : 'none';
+        
+      const cardAnimation = shouldAnimate 
+        ? `providerCardFadeIn 0.5s both; animation-delay: ${index * 0.08 + 0.3}s;` 
+        : 'opacity: 1; transform: translate(0, -50%) scale(1);';
+
       // Smart positioning: if client is significantly above provider, show card BELOW pin
       const isClientAbove = clientPin && (clientPin.lat > pin.lat + 0.001);
-      const shouldPlaceAbove = !isClientAbove;
 
       const icon = L.divIcon({
         className: 'bricoler-pin-container',
         html: `
-          <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;width:${size}px;height:${size}px;cursor:pointer;opacity:${opacity};transform:scale(${scale});position:relative; animation: pinDropIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) both; animation-delay: ${index * 0.08}s;">
+          <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;width:${size}px;height:${size}px;cursor:pointer;opacity:${opacity};transform:scale(${scale});position:relative; animation: ${animation}">
             <div style="display:flex;flex-direction:column;align-items:center;position:relative;">
-              <div style="position: absolute; left: calc(100% + 8px); top: 50%; transform: translateY(-50%); white-space: nowrap; transition: all 0.3s; pointer-events: none; animation: providerCardFadeIn 0.5s both; animation-delay: ${index * 0.08 + 0.3}s;">
+              <div style="position: absolute; left: calc(100% + 8px); top: 50%; white-space: nowrap; transition: all 0.3s; pointer-events: none; animation: ${cardAnimation}">
                 <div style="background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(4px); 
                   padding: 4px 10px; border-radius: 20px; 
                   border: 1px solid ${isFocused ? '#027963' : '#F3F4F6'};
@@ -554,7 +564,7 @@ const MapView: React.FC<MapViewProps> = ({
                     color: ${isFocused ? '#027963' : '#374151'}; font-family: sans-serif;
                     letter-spacing: -0.2px;">
                     ${(() => {
-                const emojis = ['✨', '💎', '⭐', '🔨', '🏠', '🧹', '🚚', '🔧', '🌱', '🛡️'];
+                const emojis = ['❤️', '🥰', '🥳', '✨', '💖', '😊', '😇', '😍', '😻', '🧡'];
                 const index = pin.id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) % emojis.length;
                 return emojis[index];
               })()} ${pin.name || 'Bricoler'}
@@ -592,6 +602,10 @@ const MapView: React.FC<MapViewProps> = ({
 
       providerMarkersRef.current[pin.id] = marker;
     });
+
+    if (providerPins.length > 0) {
+      hasAnimatedPinsRef.current = true;
+    }
 
     // Removed fitBounds from here to prevent zoom resets on focus changes
   }, [providerPins, mapReady, focusedProviderId, serviceIconUrl, onProviderClick, currentZoom]);
