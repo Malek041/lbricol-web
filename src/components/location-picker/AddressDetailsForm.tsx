@@ -144,7 +144,7 @@ const AddressDetailsForm: React.FC<AddressDetailsFormProps> = ({ initialData, on
             <h3 className="text-[17px] font-bold text-[#111827]">{t({ en: 'Add a label', fr: 'Ajouter un libellé', ar: 'أضف تسمية' })}</h3>
             <p className="text-[13px] text-[#6B7280]">{t({ en: 'Identify this address more easily next time', fr: 'Identifiez cette adresse plus facilement la prochaine fois', ar: 'حدد هذا العنوان بسهولة أكبر في المرة القادمة' })}</p>
           </div>
-          <div className="flex gap-2.5 overflow-x-auto pb-2 no-scrollbar -mx-5 px-5 snap-x snap-mandatory">
+          <div className="flex gap-2.5 overflow-x-auto pb-4 no-scrollbar -mx-5 px-5 snap-x snap-mandatory">
             {labelOptions.map(l => {
               const displayLabel = t({
                 en: l,
@@ -152,19 +152,18 @@ const AddressDetailsForm: React.FC<AddressDetailsFormProps> = ({ initialData, on
                 ar: l === 'Home' ? 'المنزل' : l === 'Flat' ? 'شقة' : l === 'Garden' ? 'حديقة' : 'مخصص'
               });
 
-              // Hyphenated visual layout as requested
-              const hyphenatedDisplay = l === 'Home' ? 'Mai-\nson' : l === 'Flat' ? 'Ap-\npar-\nte' : l === 'Garden' ? 'Jar-\ndin' : displayLabel;
-
               return (
                 <button
                   key={l}
                   onClick={() => setFormData({ ...formData, label: l })}
-                  className={`flex-shrink-0 w-[115px] h-14 flex items-center justify-center rounded-[12px] text-[14px] font-bold leading-[1.1] text-center transition-all border snap-center whitespace-pre-line ${formData.label === l
+                  className={`flex-shrink-0 min-w-[115px] h-14 flex items-center justify-center rounded-[12px] px-4 text-center transition-all border snap-center ${formData.label === l
                     ? 'bg-[#FFB700] border-[#FFB700] text-[#111827]'
                     : 'bg-white border-[#E5E7EB] text-[#6B7280]'
                     }`}
                 >
-                  {hyphenatedDisplay}
+                  <span className="font-bold text-[15px]">
+                    {displayLabel}
+                  </span>
                 </button>
               );
             })}
