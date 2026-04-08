@@ -6,11 +6,12 @@ export interface LocationPoint {
   area?: string;
 }
 
-export type AddressLabel = 'Home' | 'Flat' | 'Garden' | 'Custom';
+export type AddressLabel = 'Home' | 'Flat' | 'Garden' | 'Riad' | 'Guesthouse' | 'Hotel' | 'Office' | 'Other' | 'Custom';
 
 export interface SavedAddress {
   id: string;
   label: AddressLabel;
+  customLabel?: string;
   address: string;
   lat: number;
   lng: number;

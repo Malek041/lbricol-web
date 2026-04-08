@@ -28,6 +28,7 @@ const AddressDetailsForm: React.FC<AddressDetailsFormProps> = ({ initialData, on
     doorNumber: initialData.doorNumber || '',
     additionalInfo: initialData.additionalInfo || '',
     label: initialData.label || 'Home' as AddressLabel,
+    customLabel: initialData.customLabel || '',
     entranceLat: initialData.entranceLat,
     entranceLng: initialData.entranceLng,
   });
@@ -45,7 +46,7 @@ const AddressDetailsForm: React.FC<AddressDetailsFormProps> = ({ initialData, on
     });
   };
 
-  const labelOptions: AddressLabel[] = ['Home', 'Flat', 'Garden', 'Custom'];
+  const labelOptions: AddressLabel[] = ['Home', 'Flat', 'Garden', 'Riad', 'Guesthouse', 'Hotel', 'Office', 'Other'];
 
   return (
     <div className="fixed inset-0 bg-white z-[10001] flex flex-col font-jakarta overflow-y-auto">
@@ -147,9 +148,9 @@ const AddressDetailsForm: React.FC<AddressDetailsFormProps> = ({ initialData, on
           <div className="flex gap-2.5 overflow-x-auto pb-4 no-scrollbar -mx-5 px-5 snap-x snap-mandatory">
             {labelOptions.map(l => {
               const displayLabel = t({
-                en: l,
-                fr: l === 'Home' ? 'Maison' : l === 'Flat' ? 'Appartement' : l === 'Garden' ? 'Jardin' : 'Autre',
-                ar: l === 'Home' ? 'المنزل' : l === 'Flat' ? 'شقة' : l === 'Garden' ? 'حديقة' : 'مخصص'
+                en: l === 'Office' ? 'Office' : l,
+                fr: l === 'Home' ? 'Maison' : l === 'Flat' ? 'Appartement' : l === 'Garden' ? 'Jardin' : l === 'Office' ? 'Bureau' : l === 'Other' ? 'Autre' : l,
+                ar: l === 'Home' ? 'المنزل' : l === 'Flat' ? 'شقة' : l === 'Garden' ? 'حديقة' : l === 'Office' ? 'مكتب' : l === 'Other' ? 'آخر' : l
               });
 
               return (
@@ -168,6 +169,25 @@ const AddressDetailsForm: React.FC<AddressDetailsFormProps> = ({ initialData, on
               );
             })}
           </div>
+
+          {/* Custom Label Input when 'Other' is selected */}
+          {formData.label === 'Other' && (
+            <div className="mt-4 animate-in slide-in-from-top-2 duration-200">
+              <div className="border border-[2px] border-[#D9D9D9] focus-within:border-[#D9D9D9] rounded-xl h-14 transition-all relative">
+                <input
+                  type="text"
+                  value={formData.customLabel}
+                  onChange={(e) => setFormData({ ...formData, customLabel: e.target.value })}
+                  placeholder={t({ en: 'e.g. Workshop, Shop...', fr: 'ex: Atelier, Boutique...', ar: 'مثلاً: ورشة، متجر...' })}
+                  className="w-full h-full px-4 pt-5 pb-1 bg-transparent outline-none text-[15px] font-medium placeholder:text-neutral-300"
+                  autoFocus
+                />
+                <label className="absolute left-4 top-1.5 text-[11px] font-bold transition-all pointer-events-none text-[#6B7280]">
+                  {t({ en: 'Define your label', fr: 'Définissez votre libellé', ar: 'حدد تسميتك' })}
+                </label>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 

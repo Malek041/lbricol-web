@@ -16,11 +16,14 @@ const AddressRow: React.FC<AddressRowProps> = ({ address, onSelect, onEdit }) =>
       case 'Home': return <Navigation size={18} className="text-[#374151] rotate-45" />;
       case 'Flat': return <Building2 size={18} className="text-[#374151]" />;
       case 'Garden': return <Sofa size={18} className="text-[#374151]" />;
+      case 'Office': return <Building2 size={18} className="text-[#374151]" />;
+      case 'Hotel':
+      case 'Riad':
+      case 'Guesthouse': return <Building2 size={18} className="text-[#374151]" />;
       default: return <Navigation size={18} className="text-[#374151]" />;
     }
   };
 
-  const isMissingDetails = !address.buildingName || !address.floorNumber || !address.doorNumber;
 
   return (
     <div 
@@ -35,21 +38,13 @@ const AddressRow: React.FC<AddressRowProps> = ({ address, onSelect, onEdit }) =>
       <div className="flex-1 min-w-0">
         <div className="flex flex-col">
           <p className="text-[15px] font-semibold text-[#111827] leading-tight flex items-center gap-1.5">
-            {address.label} · {address.address.split(',')[0]}
+            {address.label === 'Other' && address.customLabel ? address.customLabel : address.label} · {address.address.split(',')[0]}
           </p>
           
           <div className="flex flex-col gap-0.5 mt-0.5">
              <p className="text-[13px] text-[#6B7280] truncate">
-              {[address.buildingName, address.floorNumber, address.doorNumber].filter(Boolean).join(', ') || 'No details added'}
+              {address.buildingName || 'No details added'}
             </p>
-            
-            {isMissingDetails && (
-              <div className="mt-1">
-                <span className="inline-block bg-[#CCF1FF] text-[#92400E] text-[11px] font-semibold px-2 py-0.5 rounded-[6px]">
-                  Missing address details
-                </span>
-              </div>
-            )}
           </div>
         </div>
       </div>
