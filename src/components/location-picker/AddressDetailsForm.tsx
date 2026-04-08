@@ -159,7 +159,7 @@ const AddressDetailsForm: React.FC<AddressDetailsFormProps> = ({ initialData, on
                 <button
                   key={l}
                   onClick={() => setFormData({ ...formData, label: l })}
-                  className={`flex-shrink-0 w-[85px] h-11 flex items-center justify-center rounded-[10px] text-[13px] font-bold leading-[1.1] text-center transition-all border snap-center whitespace-pre-line ${formData.label === l
+                  className={`flex-shrink-0 w-[115px] h-14 flex items-center justify-center rounded-[12px] text-[14px] font-bold leading-[1.1] text-center transition-all border snap-center whitespace-pre-line ${formData.label === l
                     ? 'bg-[#FFB700] border-[#FFB700] text-[#111827]'
                     : 'bg-white border-[#E5E7EB] text-[#6B7280]'
                     }`}
