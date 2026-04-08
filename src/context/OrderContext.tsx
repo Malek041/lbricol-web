@@ -59,7 +59,7 @@ interface OrderContextType {
   resetOrder: () => void;
 }
 
-const defaultOrder: OrderState = {
+export const defaultOrder: OrderState = {
   serviceType: '',
   serviceName: '',
   subServiceId: '',
