@@ -96,7 +96,7 @@ export default function PWAPrompt() {
                     <div className="absolute top-0 right-0 w-32 h-32 bg-[#FFCC02]/10 rounded-full blur-3xl -mr-16 -mt-16" />
 
                     {/* Close Button */}
-                    <button 
+                    <button
                         onClick={dismiss}
                         className="absolute top-5 right-5 w-10 h-10 rounded-full bg-neutral-100 flex items-center justify-center text-neutral-500 hover:bg-neutral-200 active:scale-90 transition-all z-10"
                     >
@@ -104,7 +104,7 @@ export default function PWAPrompt() {
                     </button>
 
                     <div className="flex flex-col items-center text-center">
-                        <div className="w-40 h-40 bg-white rounded-2xl p-2 mb-4 flex items-center justify-center overflow-hidden">
+                        <div className="w-40 h-40 rounded-2xl p-2 mb-4 flex items-center justify-center overflow-hidden">
                             <img
                                 src="/Images/Logo/image-Photoroom (2) copy 5.png"
                                 alt="Lbricol Logo"
