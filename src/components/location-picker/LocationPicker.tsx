@@ -165,9 +165,9 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
       savedAddress: data
     });
 
-    // 3. Return to Map View (or the picker might be closed by parent onConfirm)
-    setActiveView('MAP');
-    setSelectedForDetails(null);
+    // 3. Return to Map View (Removed view switch to avoid flash before unmount)
+    // setActiveView('MAP');
+    // setSelectedForDetails(null);
   };
 
   // View C (Search) Actions
@@ -206,7 +206,7 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
       transition={{ type: 'spring', damping: 28, stiffness: 220, mass: 0.8 }}
       className={cn(
         "bg-white flex flex-col font-jakarta transition-all overflow-hidden",
-        isInline ? "relative w-full h-full" : "fixed inset-0 z-[6000]"
+        isInline ? "relative w-full h-full" : "fixed inset-0 z-[10000]"
       )}
     >
       {/* 1. Map Area (Fixed Height) */}

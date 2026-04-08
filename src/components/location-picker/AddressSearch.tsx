@@ -71,7 +71,7 @@ const AddressSearch: React.FC<AddressSearchProps> = ({ onSelect, onBack }) => {
   }, [query]);
 
   return (
-    <div className="fixed inset-0 bg-white z-[2200] flex flex-col font-jakarta">
+    <div className="fixed inset-0 bg-white z-[10002] flex flex-col font-jakarta">
       {/* Search Header */}
       <div className="flex items-center gap-3 px-4 h-16 border-b border-[#F3F4F6]">
         <button onClick={onBack} className="p-2 -ml-2 text-[#111827]">

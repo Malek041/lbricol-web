@@ -48,7 +48,7 @@ const AddressDetailsForm: React.FC<AddressDetailsFormProps> = ({ initialData, on
   const labelOptions: AddressLabel[] = ['Home', 'Flat', 'Garden', 'Custom'];
 
   return (
-    <div className="fixed inset-0 bg-white z-[2100] flex flex-col font-jakarta overflow-y-auto">
+    <div className="fixed inset-0 bg-white z-[10001] flex flex-col font-jakarta overflow-y-auto">
       {/* Header */}
       <div className="flex items-center px-4 h-14 sticky top-0 bg-white z-10">
         <button onClick={onBack} className="p-2 -ml-2 text-[#111827]">
