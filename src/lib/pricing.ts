@@ -49,6 +49,8 @@ export const calculateOrderPrice = (
         officeAddOns?: string[];
         // Glass Cleaning specific
         windowCount?: number;
+        windowSize?: 'small' | 'medium' | 'large';
+        buildingStories?: number;
         glassCleaningType?: 'interior' | 'exterior' | 'both';
         glassAccessibility?: 'easy' | 'ladder';
         storeFrontSize?: 'small' | 'medium' | 'large';
@@ -265,36 +267,52 @@ export const calculateOrderPrice = (
         }
 
         extraFees = details.reduce((sum: number, item) => sum + item.amount, 0);
-    } else if (subServiceId === 'residential_glass') {
-        basePrice = providerRate; // User confirmed: base price decided by bricoler
-        const winCount = options.windowCount || 1;
+    } else if (subServiceId === 'residential_glass' || subServiceId === 'commercial_glass') {
+        basePrice = providerRate;
+        
+        // Window Size Multiplier
+        let sizeMultiplier = 1.0;
+        if (options.windowSize === 'medium') sizeMultiplier = 1.4;
+        else if (options.windowSize === 'large') sizeMultiplier = 2.0;
+        
+        // Property Type Coef (Consolidated logic)
+        let propertyCoef = 1.0;
+        if (options.propertyType) {
+            const coefMap: Record<string, number> = { 
+                studio: 0.85, apartment: 1.0, villa: 1.4, 
+                guesthouse: 1.5, riad: 1.9, hotel: 1.6, business: 1.8 
+            };
+            propertyCoef = coefMap[options.propertyType.toLowerCase()] || 1.0;
+        }
+
+        const winCount = options.windowCount || 10;
         
         // Multiplier for cleaning type
         let typeMultiplier = 1.0;
-        if (options.glassCleaningType === 'both') typeMultiplier = 1.6; // Not quite double, but more effort
-        else if (options.glassCleaningType === 'exterior') typeMultiplier = 1.2; // Exterior is usually harder
+        if (options.glassCleaningType === 'both') typeMultiplier = 1.6;
+        else if (options.glassCleaningType === 'exterior') typeMultiplier = 1.3;
 
         quantity = winCount;
         unit = 'window';
         
-        // Per window fee (platform suggestion)
-        const perWindowFee = 15 * typeMultiplier;
-        basePrice = providerRate + perWindowFee;
+        const perWindowFee = 15 * typeMultiplier * sizeMultiplier;
+        basePrice = (providerRate + perWindowFee) * propertyCoef;
         
         if (options.glassAccessibility === 'ladder') {
-            extraFees += 40;
-            details.push({ en: 'Ladder Surcharge', fr: 'Supplément échelle', ar: 'رسوم إضافية للسلم' } as any);
+            extraFees += (subServiceId === 'commercial_glass' ? 60 : 40);
+            details.push({ 
+                label: { en: 'Height Access Fee', fr: 'Supplément hauteur', ar: 'رسوم العمل في الارتفاع' }, 
+                amount: subServiceId === 'commercial_glass' ? 60 : 40 
+            });
         }
-    } else if (subServiceId === 'commercial_glass') {
-        basePrice = providerRate;
-        const sizeMultiplier = options.storeFrontSize === 'large' ? 2.5 : (options.storeFrontSize === 'medium' ? 1.6 : 1.0);
-        
-        quantity = 1;
-        unit = 'storefront';
-        basePrice = providerRate * sizeMultiplier;
 
-        if (options.glassAccessibility === 'ladder') {
-            extraFees += 60; // Pro ladder work is more expensive
+        // --- Multi-Story Multiplier ---
+        const stories = options.buildingStories || 1;
+        if (stories > 1) {
+            // Apply stories multiplier to current basePrice * quantity + extraFees
+            // Actually, we'll just factor it into the quantity or subtotal later
+            // But to keep it clean, let's adjust quantity
+            quantity *= stories;
         }
     } else {
         // Fallback Strategy

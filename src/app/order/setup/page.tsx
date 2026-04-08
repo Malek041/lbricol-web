@@ -122,9 +122,18 @@ export default function ServiceSetupPage() {
 
     // Glass Cleaning State
     const [windowCount, setWindowCount] = useState<number>(order.serviceDetails?.windowCount || 10);
+    const [windowSize, setWindowSize] = useState<'small' | 'medium' | 'large'>(order.serviceDetails?.windowSize || 'medium');
+    const [buildingStories, setBuildingStories] = useState<number>(order.serviceDetails?.buildingStories || 1);
     const [glassCleaningType, setGlassCleaningType] = useState<'interior' | 'exterior' | 'both'>(order.serviceDetails?.glassCleaningType || 'both');
     const [glassAccessibility, setGlassAccessibility] = useState<'easy' | 'ladder'>(order.serviceDetails?.glassAccessibility || 'easy');
     const [storeFrontSize, setStoreFrontSize] = useState<'small' | 'medium' | 'large'>(order.serviceDetails?.storeFrontSize || 'small');
+
+    // Default Pro Glass to Business
+    useEffect(() => {
+        if (order.subServiceId === 'commercial_glass' && hasLoaded) {
+            setPropertyType('Business');
+        }
+    }, [order.subServiceId, hasLoaded]);
 
     // Availability State
     const [selectedSlots, setSelectedSlots] = useState<{ date: Date, time: string }[]>(
@@ -486,8 +495,11 @@ export default function ServiceSetupPage() {
                 order.providerRate || 100,
                 {
                     windowCount,
+                    windowSize,
+                    buildingStories,
                     glassCleaningType,
                     glassAccessibility,
+                    propertyType,
                     storeFrontSize
                 }
             );
@@ -551,9 +563,12 @@ export default function ServiceSetupPage() {
         provider.coords,
         // Glass Cleaning deps
         windowCount,
+        windowSize,
+        buildingStories,
         glassCleaningType,
         glassAccessibility,
-        storeFrontSize
+        storeFrontSize,
+        propertyType
     ]);
 
     const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -1739,7 +1754,7 @@ export default function ServiceSetupPage() {
                                             <div className="space-y-6">
                                                 <h3 className="text-[20px] text-[#111827] font-bold">{t({ en: 'What kind of place is this?', fr: 'Quel type de lieu est-ce ?' })}</h3>
                                                 <div className="flex flex-wrap gap-2">
-                                                    {['Studio', 'Apartment', 'Villa', 'Guesthouse', 'Riad', 'Hotel'].map(type => (
+                                                    {['Studio', 'Apartment', 'Villa', 'Guesthouse', 'Riad', 'Hotel', 'Business'].map(type => (
                                                         <button
                                                             key={type}
                                                             onClick={() => setPropertyType(type)}
@@ -2161,78 +2176,83 @@ export default function ServiceSetupPage() {
                                                     <h3 className="text-[25px] font-bold text-[#111827]">{order.subServiceId === 'residential_glass' ? t({ en: 'Home Glass Cleaning', fr: 'Vitres Résidentielles', ar: 'تنظيف زجاج مـنزلي' }) : t({ en: 'Business Frontage', fr: 'Vitrines Commerciales', ar: 'واجهات تجارية' })}</h3>
                                                 </div>
 
-                                                {/* Residential: Window Count */}
-                                                {order.subServiceId === 'residential_glass' && (
-                                                    <div className="space-y-6">
-                                                        <label className="text-[20px] font-bold text-[#111827]">{t({ en: 'How many windows?', fr: 'Combien de fenêtres ?', ar: 'كم عدد النوافذ؟' })}</label>
-                                                        <div className="flex gap-4 overflow-x-auto pb-4 pt-2 no-scrollbar -mx-6 px-6 snap-x snap-mandatory">
-                                                            {[5, 10, 15, 20, 25, 30, 40, 50].map((num) => (
-                                                                <motion.button
-                                                                    key={`win-${num}`}
-                                                                    whileTap={{ scale: 0.9 }}
-                                                                    onClick={() => setWindowCount(num)}
-                                                                    className={`flex-shrink-0 w-16 h-16 flex items-center justify-center font-bold text-[22px] transition-all snap-center relative ${windowCount === num ? 'bg-[#01A083] text-white scale-110 z-10 rounded-full shadow-lg shadow-[#01A083]/20' : 'bg-[#F9FAFB] text-neutral-400 border border-neutral-100 rounded-full'}`}
-                                                                >
-                                                                    {num}
-                                                                </motion.button>
-                                                            ))}
-                                                        </div>
+                                                {/* Glass Cleaning: Window Count */}
+                                                <div className="space-y-6">
+                                                    <label className="text-[20px] font-bold text-[#111827]">{t({ en: 'How many windows?', fr: 'Combien de fenêtres ?', ar: 'كم عدد النوافذ؟' })}</label>
+                                                    <div className="flex gap-4 overflow-x-auto pb-4 pt-2 no-scrollbar -mx-6 px-6 snap-x snap-mandatory">
+                                                        {[5, 10, 15, 20, 25, 30, 40, 50].map((num) => (
+                                                            <motion.button
+                                                                key={`win-${num}`}
+                                                                whileTap={{ scale: 0.9 }}
+                                                                onClick={() => setWindowCount(num)}
+                                                                className={`flex-shrink-0 w-16 h-16 flex items-center justify-center font-bold text-[22px] transition-all snap-center relative ${windowCount === num ? 'bg-[#01A083] text-white scale-110 z-10 rounded-full shadow-lg shadow-[#01A083]/20' : 'bg-[#F9FAFB] text-neutral-400 border border-neutral-100 rounded-full'}`}
+                                                            >
+                                                                {num}
+                                                            </motion.button>
+                                                        ))}
                                                     </div>
-                                                )}
+                                                </div>
 
-                                                {/* Business: Storefront Size */}
-                                                {order.subServiceId === 'commercial_glass' && (
-                                                    <div className="space-y-6">
-                                                        <h3 className="text-[20px] font-bold text-[#111827]">{t({ en: 'Storefront Scale', fr: 'Taille de la vitrine', ar: 'حجم الواجهة' })}</h3>
-                                                        <div className="grid grid-cols-1 gap-3">
-                                                            {[
-                                                                { id: 'small', name: t({ en: 'Small Retail', fr: 'Petit Commerce' }), desc: t({ en: 'Single glass door + 1 window', fr: 'Une porte vitrée + 1 fenêtre' }), icon: '🏪' },
-                                                                { id: 'medium', name: t({ en: 'Standard Shop', fr: 'Magasin Standard' }), desc: t({ en: 'Double frontage / Full glass corner', fr: 'Double façade / Angle vitré' }), icon: '🛍️' },
-                                                                { id: 'large', name: t({ en: 'Large Showroom', fr: 'Grand Showroom' }), desc: t({ en: 'Multi-floor or expansive glass walls', fr: 'Plusieurs étages ou grandes parois' }), icon: '🏢' },
-                                                            ].map((size) => (
-                                                                <button
-                                                                    key={size.id}
-                                                                    onClick={() => setStoreFrontSize(size.id as any)}
-                                                                    className={`p-6 rounded-[15px] border-2 text-left transition-all flex items-center justify-between ${storeFrontSize === size.id ? 'border-[#01A083] bg-[#F0FDF9]' : 'border-neutral-100 bg-white shadow-sm'}`}
-                                                                >
-                                                                    <div className="flex items-center gap-4">
-                                                                        <span className="text-3xl">{size.icon}</span>
-                                                                        <div>
-                                                                            <p className="font-bold text-[17px] text-[#111827]">{size.name}</p>
-                                                                            <p className="font-medium text-[13px] text-neutral-500">{size.desc}</p>
-                                                                        </div>
-                                                                    </div>
-                                                                    <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${storeFrontSize === size.id ? 'bg-[#01A083] border-[#01A083]' : 'border-neutral-200'}`}>
-                                                                        {storeFrontSize === size.id && <Check size={14} className="text-white" strokeWidth={4} />}
-                                                                    </div>
-                                                                </button>
-                                                            ))}
-                                                        </div>
+                                                {/* Window Size Section */}
+                                                <div className="space-y-6">
+                                                    <h3 className="text-[20px] font-bold text-[#111827]">{t({ en: 'The size of majority of windows', fr: 'La taille de la majorité des fenêtres' })}</h3>
+                                                    <div className="grid grid-cols-3 gap-3">
+                                                        {[
+                                                            { id: 'small', label: t({ en: 'Small', fr: 'Petit' }), icon: '🪟' },
+                                                            { id: 'medium', label: t({ en: 'Medium', fr: 'Moyen' }), icon: '🖼️' },
+                                                            { id: 'large', label: t({ en: 'Large', fr: 'Grand' }), icon: '🏢' },
+                                                        ].map((size) => (
+                                                            <button
+                                                                key={size.id}
+                                                                onClick={() => setWindowSize(size.id as any)}
+                                                                className={`flex flex-col items-center gap-3 p-4 rounded-[12px] border-2 transition-all ${windowSize === size.id ? 'border-[#01A083] bg-[#F0FDF9] text-[#01A083]' : 'border-neutral-100 bg-white'}`}
+                                                            >
+                                                                <span className="text-2xl">{size.icon}</span>
+                                                                <span className="text-[13px] font-black">{size.label}</span>
+                                                            </button>
+                                                        ))}
                                                     </div>
-                                                )}
+                                                </div>
 
-                                                {/* Common: Coverage Type (Residential only) */}
-                                                {order.subServiceId === 'residential_glass' && (
-                                                    <div className="space-y-6">
-                                                        <h3 className="text-[20px] font-bold text-[#111827]">{t({ en: 'Coverage', fr: 'Couverture', ar: 'نطاق الخدمة' })}</h3>
-                                                        <div className="grid grid-cols-3 gap-3">
-                                                            {[
-                                                                { id: 'interior', label: t({ en: 'Interior', fr: 'Intérieur' }), icon: '🏠' },
-                                                                { id: 'exterior', label: t({ en: 'Exterior', fr: 'Extérieur' }), icon: '🌤️' },
-                                                                { id: 'both', label: t({ en: 'Both Sides', fr: 'Les deux' }), icon: '✨' },
-                                                            ].map((type) => (
-                                                                <button
-                                                                    key={type.id}
-                                                                    onClick={() => setGlassCleaningType(type.id as any)}
-                                                                    className={`flex flex-col items-center gap-3 p-4 rounded-[12px] border-2 transition-all ${glassCleaningType === type.id ? 'border-[#01A083] bg-[#F0FDF9] text-[#01A083]' : 'border-neutral-100 bg-white'}`}
-                                                                >
-                                                                    <span className="text-2xl">{type.icon}</span>
-                                                                    <span className="text-[13px] font-black">{type.label}</span>
-                                                                </button>
-                                                            ))}
-                                                        </div>
+                                                {/* Story Selector */}
+                                                <div className="space-y-6">
+                                                    <div className="flex flex-col px-1">
+                                                        <label className="text-[20px] font-bold text-[#111827]">{t({ en: 'How much stories of building you want to clean the glass for?', fr: 'Combien d\'étages souhaitez-vous nettoyer ?' })}</label>
                                                     </div>
-                                                )}
+                                                    <div className="flex gap-4 overflow-x-auto pb-6 pt-2 no-scrollbar -mx-6 px-6 snap-x snap-mandatory">
+                                                        {[1, 2, 3, 4, 5].map((num) => (
+                                                            <motion.button
+                                                                key={`story-${num}`}
+                                                                whileTap={{ scale: 0.9 }}
+                                                                onClick={() => setBuildingStories(num)}
+                                                                className={`flex-shrink-0 w-16 h-16 flex items-center justify-center font-medium text-[22px] transition-all snap-center relative ${buildingStories === num ? 'bg-[#111827] text-white scale-110 z-10 rounded-full shadow-lg' : 'bg-[#F9FAFB] text-neutral-400 border border-neutral-100 rounded-full'}`}
+                                                            >
+                                                                {num}
+                                                            </motion.button>
+                                                        ))}
+                                                    </div>
+                                                </div>
+
+                                                {/* Common: Coverage Type */}
+                                                <div className="space-y-6">
+                                                    <h3 className="text-[20px] font-bold text-[#111827]">{t({ en: 'Coverage', fr: 'Couverture', ar: 'نطاق الخدمة' })}</h3>
+                                                    <div className="grid grid-cols-3 gap-3">
+                                                        {[
+                                                            { id: 'interior', label: t({ en: 'Interior', fr: 'Intérieur' }), icon: '🏠' },
+                                                            { id: 'exterior', label: t({ en: 'Exterior', fr: 'Extérieur' }), icon: '🌤️' },
+                                                            { id: 'both', label: t({ en: 'Both Sides', fr: 'Les deux' }), icon: '✨' },
+                                                        ].map((type) => (
+                                                            <button
+                                                                key={type.id}
+                                                                onClick={() => setGlassCleaningType(type.id as any)}
+                                                                className={`flex flex-col items-center gap-3 p-4 rounded-[12px] border-2 transition-all ${glassCleaningType === type.id ? 'border-[#01A083] bg-[#F0FDF9] text-[#01A083]' : 'border-neutral-100 bg-white'}`}
+                                                            >
+                                                                <span className="text-2xl">{type.icon}</span>
+                                                                <span className="text-[13px] font-black">{type.label}</span>
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                </div>
 
                                                 {/* Common: Accessibility */}
                                                 <div className="space-y-6">

@@ -403,7 +403,7 @@ const MapView: React.FC<MapViewProps> = ({
       const radarIcon = L.divIcon({
         className: 'gps-pulse-icon',
         html: `
-          <div style="position: relative; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;">
+          <div style="position: relative; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; pointer-events: none;">
             <div style="position: absolute; width: 32px; height: 32px; background: #10B981; border-radius: 50%; opacity: 0.3; animation: radarPulse 2s cubic-bezier(0,0,0.2,1) infinite;"></div>
             ${avatar ? `
               <div style="position: relative; width: 28px; height: 28px; background: white; border: 2px solid white; border-radius: 50%; box-shadow: 0 4px 10px rgba(0,0,0,0.25); z-index: 10; overflow: hidden; display: flex; items-center; justify-center;">
@@ -419,7 +419,11 @@ const MapView: React.FC<MapViewProps> = ({
         iconAnchor: [16, 16],
       });
 
-      gpsMarkerRef.current = L.marker([lat, lng], { icon: radarIcon, zIndexOffset: 7000 }).addTo(map);
+      gpsMarkerRef.current = L.marker([lat, lng], { 
+        icon: radarIcon, 
+        interactive: false,
+        zIndexOffset: -100 
+      }).addTo(map);
     };
 
     if (mapRef.current) {
@@ -457,7 +461,7 @@ const MapView: React.FC<MapViewProps> = ({
               const gpsIcon = L.divIcon({
                 className: 'gps-pulse-icon',
                 html: `
-                  <div style="position:relative;width:20px;height:20px;display:flex;align-items:center;justify-content:center;">
+                  <div style="position:relative;width:20px;height:20px;display:flex;align-items:center;justify-content:center;pointer-events:none;">
                     <div style="position:absolute;width:20px;height:20px;background:#10B981;border-radius:50%;opacity:0.4;animation:radarPulse 2s cubic-bezier(0,0,0.2,1) infinite;"></div>
                     <div style="position:absolute;width:12px;height:12px;background:#10B981;border-radius:50%;border:2px solid white;box-shadow:0 1px 4px rgba(0,0,0,0.2);z-index:10;"></div>
                   </div>
@@ -465,7 +469,11 @@ const MapView: React.FC<MapViewProps> = ({
                 iconSize: [20, 20],
                 iconAnchor: [10, 10],
               });
-              gpsMarkerRef.current = L.marker([latitude, longitude], { icon: gpsIcon }).addTo(mapRef.current);
+              gpsMarkerRef.current = L.marker([latitude, longitude], { 
+                icon: gpsIcon,
+                interactive: false,
+                zIndexOffset: -100 // Lower z-index to not block actual pins
+              }).addTo(mapRef.current);
             }
             onLoadingChangeProp?.(false);
           },
