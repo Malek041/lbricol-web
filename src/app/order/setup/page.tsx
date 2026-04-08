@@ -2443,7 +2443,7 @@ export default function ServiceSetupPage() {
                                                 <button className="w-[22px] h-[22px] rounded-full border border-[#D1D5DB] flex items-center justify-center text-[10px] text-[#9CA3AF] font-bold">i</button>
                                             </div>
                                             <span className="text-[18px] font-normal text-[#111827]">
-                                                {estimate.basePrice.toFixed(0)} MAD/{estimate.unit === 'unit' ? (t({ en: 'unit', fr: 'unité', ar: 'وحدة' })) : estimate.unit === 'day' ? (t({ en: 'day', fr: 'jour', ar: 'يوم' })) : estimate.unit === 'room' ? (t({ en: 'room', fr: 'pièce', ar: 'غرفة' })) : estimate.unit === 'office' ? (t({ en: 'office', fr: 'bureau', ar: 'مكتب' })) : (t({ en: 'hr', fr: 'h', ar: 'ساعة' }))}
+                                                {estimate.basePrice.toFixed(0)} MAD/{estimate.unit === 'unit' ? (t({ en: 'unit', fr: 'unité', ar: 'وحدة' })) : estimate.unit === 'day' ? (t({ en: 'day', fr: 'jour', ar: 'يوم' })) : estimate.unit === 'room' ? (t({ en: 'room', fr: 'pièce', ar: 'غرفة' })) : estimate.unit === 'window' ? (t({ en: 'window', fr: 'fenêtre', ar: 'نافذة' })) : estimate.unit === 'TV' ? 'TV' : estimate.unit === 'office' ? (t({ en: 'office', fr: 'bureau', ar: 'مكتب' })) : (t({ en: 'hr', fr: 'h', ar: 'ساعة' }))}
                                             </span>
                                         </div>
 
