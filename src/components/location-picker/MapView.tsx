@@ -582,12 +582,10 @@ const MapView: React.FC<MapViewProps> = ({
                 return emojis[index];
               })()} ${pin.name || 'Bricoler'}
                   </span>
-                  ${isFocused ? `
-                    <div style="display: flex; align-items: center; gap: 2px; border-left: 1px solid #E5E7EB; padding-left: 6px;">
-                      <span style="color: #33D5FF; font-size: 11px;">★</span>
-                      <span style="font-size: 11px; font-weight: 800; color: #111827;">${pin.rating ? Number(pin.rating).toFixed(1) : '0.0'}</span>
-                    </div>
-                  ` : ''}
+                  <div style="display: flex; align-items: center; gap: 2px; border-left: 1px solid #E5E7EB; padding-left: 6px;">
+                    <span style="color: #FFC244; font-size: 11px;">★</span>
+                    <span style="font-size: 11px; font-weight: 800; color: #111827;">${pin.rating ? Number(pin.rating).toFixed(1) : '0.0'}</span>
+                  </div>
                 </div>
               </div>
               <div style="position:relative;width:${size}px;height:${size}px;min-width:${size}px;min-height:${size}px;flex-shrink:0;transition: all 0.3s; margin-bottom: 0px; border-radius: 50%; border: 3px solid #fff; box-shadow: 0 4px 12px rgba(0,0,0,0.15); overflow: hidden; background: #fff;">

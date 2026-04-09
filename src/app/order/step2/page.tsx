@@ -899,7 +899,7 @@ function BricolerDetails({
             width: 52, height: 52, borderRadius: '60% 40% 30% 70% / 50% 30% 70% 50%',
             background: '#FFF7ED', display: 'flex', alignItems: 'center', justifyContent: 'center'
           }}>
-            <Star size={24} color="#EA580C" fill="#EA580C" />
+            <Star size={24} color="#FFC244" fill="#FFC244" />
           </div>
           <div style={{ textAlign: 'center' }}>
             <div style={{ fontSize: 14, fontWeight: 950, color: '#111827' }}>{ratingStr}</div>
@@ -1117,7 +1117,7 @@ function ProviderCard({
           </span>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
-            <Star size={12} fill="#EA580C" color="#EA580C" />
+            <Star size={12} fill="#FFC244" color="#FFC244" />
             <span style={{ fontSize: 14, fontWeight: 500, color: '#111827' }}>
               {provider.rating && Number(provider.rating) > 0 ? Number(provider.rating).toFixed(1) : '0.0'}
             </span>
