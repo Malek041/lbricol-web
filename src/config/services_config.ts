@@ -305,8 +305,9 @@ export const SERVICES_HIERARCHY: Record<string, ServiceConfig> = {
         icon: Leaf,
         subServices: [
             { id: 'lawn_mowing', name: 'Lawn Mowing', pricingArchetype: 'hourly' },
-            { id: 'yard_work', name: 'Yard Work', pricingArchetype: 'hourly' },
-            { id: 'branch_hedge_trimming', name: 'Branch & Hedge Trimming', pricingArchetype: 'hourly' }
+            { id: 'yard_work', name: 'Garden Cleanup', pricingArchetype: 'hourly' },
+            { id: 'branch_hedge_trimming', name: 'Branch & Hedge Trimming', pricingArchetype: 'hourly' },
+            { id: 'planting', name: 'Planting & Landscaping', pricingArchetype: 'hourly' }
         ]
     },
 
