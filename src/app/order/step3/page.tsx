@@ -541,7 +541,7 @@ export default function CheckoutPage() {
                                                     <div style={{ marginTop: 8, paddingTop: 8, borderTop: '1px solid #F3F4F6' }}>
                                                         <span style={{ fontSize: 11, fontWeight: 700, color: '#9CA3AF', textTransform: 'uppercase' }}>Add-ons</span>
                                                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 4 }}>
-                                                            {order.serviceDetails?.officeAddOns.map((a: string) => (
+                                                            {order.serviceDetails?.officeAddOns?.map((a: string) => (
                                                                 <span key={a} style={{ background: '#F3F4F6', padding: '4px 10px', borderRadius: 5, fontSize: 12, fontWeight: 600 }}>
                                                                     {a.replace(/_/g, ' ')}
                                                                 </span>
@@ -692,11 +692,11 @@ export default function CheckoutPage() {
                                 );
                             })()}
 
-                            {order.serviceDetails?.photoUrls && order.serviceDetails?.photoUrls.length > 0 && (
+                            {(order.serviceDetails?.photoUrls?.length || 0) > 0 && (
                                 <div style={{ marginTop: 12 }}>
-                                    <span style={{ fontSize: 12, fontWeight: 900, color: '#9CA3AF', textTransform: 'uppercase' }}>Photos ({order.serviceDetails?.photoUrls.length})</span>
+                                    <span style={{ fontSize: 12, fontWeight: 900, color: '#9CA3AF', textTransform: 'uppercase' }}>Photos ({order.serviceDetails?.photoUrls?.length})</span>
                                     <div style={{ display: 'flex', gap: 8, marginTop: 8, overflowX: 'auto' }}>
-                                        {order.serviceDetails?.photoUrls.map((url: string, i: number) => (
+                                        {order.serviceDetails?.photoUrls?.map((url: string, i: number) => (
                                             <img key={i} src={url} style={{ width: 60, height: 60, borderRadius: 10, objectFit: 'cover' }} />
                                         ))}
                                     </div>
