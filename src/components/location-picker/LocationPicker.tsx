@@ -291,7 +291,7 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
                 if (radiusView) {
                   setRadiusView(false);
                 } else {
-                  onClose();
+                  onClose?.();
                   // Always take client users back home if they dismiss the picker
                   if (!isBricolerBase) {
                     router.push('/');
