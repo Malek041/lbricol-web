@@ -93,14 +93,7 @@ export const SearchPopup: React.FC<SearchPopupProps> = ({
 
 
     const handleSelect = (item: any) => {
-        if (item.serviceId !== 'cleaning') {
-            alert(t({
-                en: 'This service is not yet enabled in your city. We are currently focusing on Cleaning services.',
-                fr: 'Ce service n\'est pas encore activé dans votre ville. Nous nous concentrons actuellement sur les services de Nettoyage.',
-                ar: 'هذه الخدمة غير مفعلة في مدينتك بعد. نحن نركز حاليًا على خدمات التنظيف.'
-            }));
-            return;
-        }
+        // Restriction removed: allow any service as long as it's shown in results
 
         // Save to recent
         const term = t(item.subService);
@@ -221,12 +214,12 @@ export const SearchPopup: React.FC<SearchPopupProps> = ({
                                             <div className="w-12 h-12 rounded-[18px_22px_15px_25px] bg-[#FFCC02] flex items-center justify-center shrink-0">
                                                 <img src={SERVICES_CATALOGUE.find(s => s.id === item.serviceId)?.iconPath} className="w-8 h-8 object-contain" alt="" />
                                             </div>
-                                            <div className={cn("flex-1 flex flex-col", item.serviceId !== 'cleaning' && "opacity-40 grayscale")}>
+                                            <div className={cn("flex-1 flex flex-col")}>
                                                 <span className="text-[16px] font-medium text-neutral-900">
                                                     {t(item.subService)}
                                                 </span>
                                                 <span className="text-[13px] font-light text-neutral-500">
-                                                    {item.serviceLabel} {item.serviceId !== 'cleaning' && `(${t({ en: 'Coming soon', fr: 'Bientôt disponible', ar: 'قريباً' })})`}
+                                                    {item.serviceLabel}
                                                 </span>
                                             </div>
                                             <ChevronRight size={20} className="text-neutral-300" />

@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
+import { useRouter } from 'next/navigation';
 import { X, Loader2, Navigation, Search, ChevronLeft, MapPin, Edit2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
@@ -37,14 +38,28 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
   onConfirmRadius,
   initialRadius = 10,
   pinImage,
+  onPermissionStatusChange,
 }) => {
   // Views & State
+  const router = useRouter();
   const { t } = useLanguage();
   const [activeView, setActiveView] = useState<PickerView>('MAP');
   const [currentPoint, setCurrentPoint] = useState<LocationPoint | null>(null);
   const [isGeocoding, setIsGeocoding] = useState(false);
   const [selectedForDetails, setSelectedForDetails] = useState<Partial<SavedAddress> & { lat: number, lng: number, address: string } | null>(null);
   const [savedAddresses, setSavedAddresses] = useState<SavedAddress[]>(initialSavedAddresses);
+  const [gpsPermissionDenied, setGpsPermissionDenied] = useState(false);
+
+  const handlePermissionStatusChange = (denied: boolean) => {
+    setGpsPermissionDenied(denied);
+    onPermissionStatusChange?.(denied);
+    
+    // If permission was just granted, auto-locate
+    if (!denied && gpsPermissionDenied) {
+      handleLocate();
+    }
+  };
+
 
   // Interaction State
   const [pickupPoint, setPickupPoint] = useState<LocationPoint | null>(null);
@@ -227,7 +242,9 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
             onInteractionEnd={() => setIsInteracting(false)}
             pinY={50}
             zoom={17}
+            onPermissionStatusChange={handlePermissionStatusChange}
           />
+
         </div>
 
         {/* 3. TRULY FIXED PIN & CALLOUT — Always in visual center of Map */}
@@ -270,7 +287,17 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
           {/* X Close Button */}
           <div className="absolute top-4 left-4 pointer-events-auto">
             <button
-              onClick={radiusView ? () => setRadiusView(false) : onClose}
+              onClick={() => {
+                if (radiusView) {
+                  setRadiusView(false);
+                } else {
+                  onClose();
+                  // Always take client users back home if they dismiss the picker
+                  if (!isBricolerBase) {
+                    router.push('/');
+                  }
+                }
+              }}
               className="w-9 h-9 bg-white rounded-full shadow-[0_2px_8px_rgba(0,0,0,0.15)] flex items-center justify-center active:scale-95 transition-transform"
             >
               {radiusView ? (

@@ -2,6 +2,7 @@ import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 import { initializeFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
+import { getMessaging } from "firebase/messaging";
 
 const firebaseConfig = {
     apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY || "AIzaSyCeTY89i4763jkw7jebB8KuiTyOS-q361E",
@@ -21,4 +22,9 @@ export const db = initializeFirestore(app, {
     experimentalForceLongPolling: true,
 });
 export const storage = getStorage(app);
+
+// Initialize Messaging only in browser
+export const messaging = typeof window !== 'undefined' ? getMessaging(app) : null;
+
 export default app;
+

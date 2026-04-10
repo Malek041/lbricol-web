@@ -154,9 +154,9 @@ function CheckoutContent() {
     setState(prev => ({ ...prev, isLoading: true }));
     setIsSplashing(true);
     try {
-      // Mocking submission for now as /api/orders isn't built yet
-      // const result = await submitOrder(state);
-      await new Promise(r => setTimeout(r, 2000));
+      const result = await submitOrder(state);
+      // Wait a tiny bit for the splash to be visible
+      await new Promise(r => setTimeout(r, 800));
       router.push('/order/success');
     } catch (error: any) {
       setIsSplashing(false);

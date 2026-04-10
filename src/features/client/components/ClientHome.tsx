@@ -55,6 +55,7 @@ interface ClientHomeProps {
     onAddressUpdate?: (address: string) => void;
     isSearchOpen?: boolean;
     setIsSearchOpen?: (open: boolean) => void;
+    gpsPermissionDenied?: boolean;
 }
 
 // ── Component ──────────────────────────────────────────────────────────────
@@ -209,6 +210,7 @@ const ClientHome: React.FC<ClientHomeProps> = ({
     onAddressUpdate,
     isSearchOpen: isSearchOpenProp = false,
     setIsSearchOpen: setIsSearchOpenProp = () => { },
+    gpsPermissionDenied = false,
 }) => {
     const { t, language } = useLanguage();
     const router = useRouter();
@@ -605,19 +607,17 @@ const ClientHome: React.FC<ClientHomeProps> = ({
                                         return (
                                             <motion.button
                                                 key={svc.id}
-                                                disabled={!['cleaning', 'glass_cleaning'].includes(svc.id)}
+                                                // Removed hardcoded restriction: now depend only on city availability
                                                 onClick={() => {
-                                                    if (['cleaning', 'glass_cleaning'].includes(svc.id)) {
-                                                        setActiveId(svc.id);
-                                                        setHasManuallySelected(true);
-                                                    }
+                                                    setActiveId(svc.id);
+                                                    setHasManuallySelected(true);
                                                 }}
                                                 initial={{ opacity: 0, y: 20, scale: 0.8 }}
                                                 animate={{
-                                                    opacity: ['cleaning', 'glass_cleaning'].includes(svc.id) ? 1 : 0.4,
+                                                    opacity: 1,
                                                     y: 0,
                                                     scale: 1,
-                                                    filter: ['cleaning', 'glass_cleaning'].includes(svc.id) ? 'grayscale(0)' : 'grayscale(1)'
+                                                    filter: 'grayscale(0)'
                                                 }}
                                                 transition={{
                                                     type: "spring",
@@ -663,12 +663,21 @@ const ClientHome: React.FC<ClientHomeProps> = ({
                                                     ) : isTrending ? (
                                                         <span style={{ fontSize: 36 }}>🔥</span>
                                                     ) : (
-                                                        <img
-                                                            key={svc.iconPath}
-                                                            src={svc.iconPath}
-                                                            className="w-12 h-12 object-contain transition-all duration-300"
-                                                            alt={svc.label}
-                                                        />
+                                                        <div className="relative w-full h-full flex items-center justify-center">
+                                                            <img
+                                                                key={svc.iconPath}
+                                                                src={svc.iconPath}
+                                                                className={cn(
+                                                                    "w-16 h-16 object-contain transition-all duration-500",
+                                                                    isActive ? "scale-[1.25] rotate-[2deg] drop-shadow-xl" : "scale-[1.1] grayscale-[0.2]"
+                                                                )}
+                                                                style={{
+                                                                    zIndex: 10,
+                                                                    filter: isActive ? 'drop-shadow(0 20px 13px rgb(0 0 0 / 0.03)) drop-shadow(0 8px 5px rgb(0 0 0 / 0.08))' : 'none'
+                                                                }}
+                                                                alt={svc.label}
+                                                            />
+                                                        </div>
                                                     )}
                                                 </motion.div>
 
@@ -699,21 +708,40 @@ const ClientHome: React.FC<ClientHomeProps> = ({
                                         <div className="w-full py-12 px-6 text-center">
                                             <div className="w-40 h-40 flex items-center justify-center mx-auto mb-2">
                                                 <img
-                                                    src="/Images/Vectors Illu/Ordercancelled.webp"
+                                                    src={gpsPermissionDenied ? "/Images/Vectors Illu/TrackingVect.webp" : "/Images/Vectors Illu/Ordercancelled.webp"}
                                                     className="w-full h-full object-contain"
-                                                    alt="Not available"
+                                                    alt={gpsPermissionDenied ? "Location required" : "Not available"}
                                                 />
                                             </div>
-                                            <p className="text-[16px] font-medium text-neutral-800 mb-1">
-                                                {t({ en: 'Not available here yet', fr: 'Pas encore disponible ici', ar: 'غير متوفر هنا بعد' })}
+                                            <p className="text-[17px] font-bold text-neutral-900 mb-1.5 line-clamp-1">
+                                                {gpsPermissionDenied 
+                                                  ? t({ en: 'Location access required', fr: 'Accès localisation requis', ar: 'مطلوب الإذن بالوصول للموقع' })
+                                                  : t({ en: 'Not available here yet', fr: 'Pas encore disponible ici', ar: 'غير متوفر هنا بعد' })
+                                                }
                                             </p>
-                                            <p className="text-[13px] font-medium text-neutral-500 max-w-[380px] mx-auto leading-relaxed">
-                                                {t({
-                                                    en: 'We are expanding fast! Try selecting a major city nearby.',
-                                                    fr: 'Nous nous développons rapidement ! Essayez de sélectionner une grande ville à proximité.',
-                                                    ar: 'نحن نتوسع بسرعة! حاول اختيار مدينة كبرى قريبة.'
-                                                })}
+                                            <p className="text-[14px] font-medium text-neutral-500 max-w-[340px] mx-auto leading-relaxed mb-6">
+                                                {gpsPermissionDenied
+                                                  ? t({ 
+                                                      en: 'We need your location to show available services near you.', 
+                                                      fr: 'Nous avons besoin de votre position pour afficher les services disponibles près de vous.', 
+                                                      ar: 'نحتاج إلى موقعك لإظهار الخدمات المتاحة بالقرب منك.' 
+                                                    })
+                                                  : t({
+                                                      en: 'We are expanding fast! Try selecting a major city nearby.',
+                                                      fr: 'Nous nous développons rapidement ! Essayez de sélectionner une grande ville à proximité.',
+                                                      ar: 'نحن نتوسع بسرعة! حاول اختيار مدينة كبرى قريبة.'
+                                                    })
+                                                }
                                             </p>
+                                            
+                                            {gpsPermissionDenied && (
+                                              <button
+                                                onClick={onChangeLocation}
+                                                className="bg-[#FFC244] text-black px-8 py-3.5 rounded-full font-black text-[15px] active:scale-95 transition-all shadow-md mx-auto"
+                                              >
+                                                {t({ en: 'Enable Location', fr: 'Activer la localisation', ar: 'تفعيل تحديد الموقع' })}
+                                              </button>
+                                            )}
                                         </div>
                                     )
                                 )}

@@ -116,18 +116,20 @@ const JobDetailsPopup: React.FC<JobDetailsPopupProps> = ({ job, onClose, onAccep
 
     // --- STRATEGIC PRICING DATA EXTRACTION ---
     // We prioritize stored data (The 'True' values saved in orders) over re-calculation to avoid mismatches
-    const hasStoredPricing = job.totalPrice !== undefined;
-    const clientPay = hasStoredPricing ? (job.totalPrice || 0) : 0;
-    const fee = hasStoredPricing ? (job.details?.fee || job.fee || (clientPay * 0.1)) : 0;
-    const bricolerEarnings = hasStoredPricing ? (job.details?.basePrice || (clientPay - fee)) : 0;
-
+    const storedBreakdown = job.details?.pricing;
+    
     // Use calculateOrderPrice ONLY as a fallback for legacy items or purely UI estimations
-    const breakdownFallback = calculateOrderPrice(job.service, job.price || 80, job.details?.serviceDetails || job.details || {});
+    const finalPricingBreakdown = storedBreakdown || calculateOrderPrice(job.service, job.price || 80, job.details?.serviceDetails || job.details || {});
 
-    const finalClientPay = hasStoredPricing ? clientPay : breakdownFallback.total;
-    const finalFee = hasStoredPricing ? fee : breakdownFallback.serviceFee;
-    const finalEarnings = hasStoredPricing ? bricolerEarnings : (breakdownFallback.total - breakdownFallback.serviceFee);
-    const finalDuration = job.estimatedDuration || (job.details?.serviceDetails as any)?.taskDuration || breakdownFallback.duration || 1;
+    const hasStoredPricing = job.totalPrice !== undefined;
+    const clientPay = hasStoredPricing ? (job.totalPrice || 0) : finalPricingBreakdown.total;
+    const fee = hasStoredPricing ? (job.details?.fee || job.fee || (clientPay * 0.1)) : finalPricingBreakdown.serviceFee;
+    const bricolerEarnings = hasStoredPricing ? (job.details?.basePrice || (clientPay - fee)) : (finalPricingBreakdown.total - finalPricingBreakdown.serviceFee);
+
+    const finalClientPay = clientPay;
+    const finalFee = fee;
+    const finalEarnings = bricolerEarnings;
+    const finalDuration = job.estimatedDuration || (job.details?.serviceDetails as any)?.taskDuration || finalPricingBreakdown.duration || 1;
 
     return (
         <AnimatePresence>
@@ -203,7 +205,7 @@ const JobDetailsPopup: React.FC<JobDetailsPopupProps> = ({ job, onClose, onAccep
                                 <div className="flex items-center justify-between mb-8 relative z-10">
                                     <div>
                                         <p className="text-[#01A083] text-[13px] font-black uppercase tracking-widest mb-1">
-                                            {t({ en: 'Client Pays', fr: 'Le Client Paye', ar: 'العميل يدفع' })}
+                                            {t({ en: 'Total Client Payment', fr: 'Paiement Total Client', ar: 'إجمالي دفع العميل' })}
                                         </p>
                                         <div className="flex items-baseline gap-2">
                                             <span className="text-[54px] font-black tracking-tighter leading-none">
@@ -232,6 +234,29 @@ const JobDetailsPopup: React.FC<JobDetailsPopupProps> = ({ job, onClose, onAccep
                                     </div>
                                 </div>
                             </div>
+
+                            {/* Precise Price Breakdown for Provider */}
+                            {finalPricingBreakdown.details && finalPricingBreakdown.details.length > 0 && (
+                                <div className="space-y-4">
+                                    <h3 className="text-[20px] font-black text-black px-1">
+                                        {t({ en: 'Price Breakdown', fr: 'Détails du Prix', ar: 'تفاصيل السعر' })}
+                                    </h3>
+                                    <div className="bg-[#F9FAFB] rounded-[28px] p-6 border border-neutral-100 space-y-4">
+                                        {finalPricingBreakdown.details.map((item: any, i: number) => (
+                                            <div key={i} className="flex justify-between items-center text-[15px]">
+                                                <span className="text-neutral-500 font-medium">
+                                                    {typeof item.label === 'object' ? (item.label[language] || item.label.en) : item.label}
+                                                </span>
+                                                <span className="font-bold text-black">{item.amount.toFixed(2)} MAD</span>
+                                            </div>
+                                        ))}
+                                        <div className="pt-4 border-t border-neutral-200 flex justify-between items-center">
+                                            <span className="text-black font-black uppercase text-[12px] tracking-widest">{t({ en: 'Subtotal', fr: 'Sous-total', ar: 'المجموع الفرعي' })}</span>
+                                            <span className="text-[18px] font-black text-black">{finalPricingBreakdown.subtotal.toFixed(0)} MAD</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
 
                             {/* Logistics & Communication */}
                             <div className="space-y-4">
@@ -340,8 +365,8 @@ const JobDetailsPopup: React.FC<JobDetailsPopupProps> = ({ job, onClose, onAccep
                                         specs = [
                                             { icon: '🏠', label: t({ en: 'Property', fr: 'Logement', ar: 'العقار' }), value: details.propertyType || t({ en: 'Apartment', fr: 'Appartement' }) },
                                             { icon: '🚪', label: t({ en: 'Rooms', fr: 'Pièces', ar: 'الغرف' }), value: details.rooms || 1 },
-                                            { icon: '🚽', label: t({ en: 'Bathrooms', fr: 'SDB', ar: 'حمامات' }), value: details.bathrooms || 1 },
-                                            { icon: '⏱️', label: t({ en: 'Duration', fr: 'Durée', ar: 'المدة' }), value: `${finalDuration}h` }
+                                            { icon: '🔢', label: t({ en: 'Units', fr: 'Unités', ar: 'الوحدات' }), value: details.unitCount || 1 },
+                                            { icon: '🪜', label: t({ en: 'Stairs', fr: 'Escaliers', ar: 'السلالم' }), value: details.stairsType !== 'none' ? t({ en: 'Included', fr: 'Inclus' }) : t({ en: 'None', fr: 'Aucun' }) }
                                         ];
                                     } else {
                                         specs = [
@@ -549,6 +574,23 @@ const JobDetailsPopup: React.FC<JobDetailsPopupProps> = ({ job, onClose, onAccep
                                         <span className="text-neutral-500">{t({ en: 'Time', fr: 'Heure', ar: 'الوقت' })}</span>
                                         <span className="font-bold">{job.time}</span>
                                     </div>
+
+                                    {/* Detailed Breakdown for Client */}
+                                    {finalPricingBreakdown.details && finalPricingBreakdown.details.length > 0 && (
+                                        <div className="pt-4 space-y-3">
+                                            <p className="text-[11px] font-black text-neutral-400 uppercase tracking-widest mb-2 px-1">
+                                                {t({ en: 'Pricing Details', fr: 'Détails de la tarification', ar: 'تفاصيل السعر' })}
+                                            </p>
+                                            {finalPricingBreakdown.details.map((item: any, i: number) => (
+                                                <div key={i} className="flex justify-between items-center text-[14px]">
+                                                    <span className="text-neutral-500 font-medium">
+                                                        {typeof item.label === 'object' ? (item.label[language] || item.label.en) : item.label}
+                                                    </span>
+                                                    <span className="font-bold text-neutral-800">{(item.amount || item.value || 0).toFixed(2)} MAD</span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
                                 </div>
                             </section>
                         </div>

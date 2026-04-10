@@ -54,6 +54,14 @@ export const calculateOrderPrice = (
         glassCleaningType?: 'interior' | 'exterior' | 'both';
         glassAccessibility?: 'easy' | 'ladder';
         storeFrontSize?: 'small' | 'medium' | 'large';
+        // Gardening specific
+        gardenSize?: 'small' | 'medium' | 'large' | 'estate';
+        lawnCondition?: 'standard' | 'wild' | 'overgrown';
+        needsMower?: boolean;
+        // Hospitality & Unit enhancements
+        unitCount?: number;
+        stairsType?: 'small' | 'medium' | 'large' | 'none';
+        tipAmount?: number;
     } = {}
 ): PricingBreakdown => {
     // 1. Find the subservice to get its archetype
@@ -268,64 +276,88 @@ export const calculateOrderPrice = (
 
         extraFees = details.reduce((sum: number, item) => sum + item.amount, 0);
     } else if (subServiceId === 'residential_glass' || subServiceId === 'commercial_glass') {
-        const displayBasePrice = providerRate;
-        
-        // Window Size Multiplier (Reduced for affordability)
-        let sizeMultiplier = 1.0;
-        if (options.windowSize === 'medium') sizeMultiplier = 1.2;
-        else if (options.windowSize === 'large') sizeMultiplier = 1.5;
-        
-        // Property Type Coef (Reduced for affordability)
-        let propertyCoef = 1.0;
-        if (options.propertyType) {
-            const coefMap: Record<string, number> = { 
-                studio: 0.85, apartment: 1.0, villa: 1.2, 
-                guesthouse: 1.3, riad: 1.5, hotel: 1.4, business: 1.3 
-            };
-            propertyCoef = coefMap[options.propertyType.toLowerCase()] || 1.0;
-        }
-
         const winCount = options.windowCount || 10;
         const stories = options.buildingStories || 1;
+        const isBoth = options.glassCleaningType === 'both';
         
-        // Multiplier for cleaning type (Reduced for affordability)
-        let typeMultiplier = 1.0;
-        if (options.glassCleaningType === 'both') typeMultiplier = 1.4;
-        else if (options.glassCleaningType === 'exterior') typeMultiplier = 1.2;
-
-        quantity = winCount; 
-        unit = 'window';
+        // 1. Complexity Base
+        let complexityPart = 15 * winCount;
         
-        // Total formula: (BaseRate * Quantity * Multipliers) + FixedFees
-        // stories is now non-linear: 100% for 1st floor, 50% for each extra floor
-        const storiesMultiplier = 1 + (Math.max(0, stories - 1) * 0.5);
-        
-        const totalBaseSubtotal = displayBasePrice * winCount;
-        const complexityMultiplier = typeMultiplier * sizeMultiplier * propertyCoef * storiesMultiplier;
-        const totalCalculatedSubtotal = totalBaseSubtotal * complexityMultiplier;
-        
-        const complexityAdjustment = totalCalculatedSubtotal - totalBaseSubtotal;
-        
-        if (complexityAdjustment !== 0) {
-            details.push({
-                label: { 
-                    en: 'Configuration & Complexity', 
-                    fr: 'Configuration et complexité', 
-                    ar: 'التهيئة والتعقيد' 
-                },
-                amount: Math.round(complexityAdjustment * 10) / 10
-            });
+        // 2. Both Surfaces Surcharge (+40%)
+        if (isBoth) {
+            complexityPart *= 1.4;
         }
         
-        basePrice = displayBasePrice;
-        extraFees += complexityAdjustment;
+        // 3. Story Multiplier (Applies to everything: Labor + Complexity)
+        // Set quantity to 1 to keep Labor as a job-based fee, but multiply the rate
+        quantity = 1; 
+        unit = 'job';
+        
+        const totalLabor = providerRate * stories;
+        const totalComplexity = complexityPart * stories;
+        // We add both Complexity AND Labor Adjustment to extraFees so subtotal is correct
+        extraFees += (totalLabor - providerRate * quantity) + totalComplexity;
+        
+        details.push({
+            label: { 
+                en: `Base Labor (Rate: ${providerRate} MAD)`, 
+                fr: `Main d'œuvre (Base: ${providerRate} MAD)`,
+                ar: `أجر العمل الأساسي (${providerRate} درهم)`
+            },
+            amount: totalLabor
+        });
+
+        details.push({
+            label: { 
+                en: `Windows (${winCount})${isBoth ? ' - Both Sides' : ''}${stories > 1 ? ` x ${stories} Floors` : ''}`, 
+                fr: `Fenêtres (${winCount})${isBoth ? ' - Les deux' : ''}${stories > 1 ? ` x ${stories} Étages` : ''}`, 
+                ar: `النوافذ (${winCount})${isBoth ? ' - كلا الجانبين' : ''}${stories > 1 ? ` x ${stories} طوابق` : ''}` 
+            },
+            amount: Math.round(totalComplexity * 10) / 10
+        });
 
         if (options.glassAccessibility === 'ladder') {
-            const ladderFee = subServiceId === 'commercial_glass' ? 60 : 40;
+            const ladderFee = (subServiceId === 'commercial_glass' ? 60 : 40) * stories;
             extraFees += ladderFee;
             details.push({ 
                 label: { en: 'Height Access Fee', fr: 'Supplément hauteur', ar: 'رسوم العمل في الارتفاع' }, 
                 amount: ladderFee 
+            });
+        }
+    } else if (subServiceId === 'lawn_mowing') {
+        const sizeMultipliers: Record<string, number> = { small: 1.0, medium: 2.0, large: 3.5, estate: 6.0 };
+        const conditionMultipliers: Record<string, number> = { standard: 1.0, wild: 1.5, overgrown: 2.0 };
+        
+        const sizeMult = sizeMultipliers[options.gardenSize || 'small'];
+        const condMult = conditionMultipliers[options.lawnCondition || 'standard'];
+        const mowerFee = options.needsMower ? 50 : 0;
+
+        quantity = 1; 
+        unit = 'job';
+        
+        const sizeMinima: Record<string, number> = { small: 120, medium: 180, large: 300, estate: 500 };
+        const baseMin = sizeMinima[options.gardenSize || 'small'];
+        const baseLaborForSize = Math.max(baseMin, providerRate * sizeMult);
+        
+        // The condition multipliers (Wild/Overgrown) are felt on top of the size-specific minimum.
+        const totalLabor = baseLaborForSize * condMult;
+
+        // Correcting the labor subtotal logic
+        extraFees = mowerFee + (totalLabor - providerRate * quantity);
+        
+        details.push({
+            label: { 
+                en: `Lawn Mowing (${options.gardenSize || 'small'})${providerRate * sizeMult < baseMin ? ' (Min. Base)' : ''}`, 
+                fr: `Tonte de pelouse (${options.gardenSize || 'small'})${providerRate * sizeMult < baseMin ? ' (Base Min.)' : ''}`, 
+                ar: `قص العشب (${options.gardenSize || 'small'})` 
+            },
+            amount: Math.round(totalLabor * 10) / 10
+        });
+        
+        if (options.needsMower) {
+            details.push({
+                label: { en: 'Equipment Rental', fr: 'Matériel (Tondeuse)', ar: 'تأجير المعدات (جزازة)' },
+                amount: mowerFee
             });
         }
     } else {
@@ -363,14 +395,49 @@ export const calculateOrderPrice = (
         }
     }
 
-    // --- General Add-ons (Apply to ALL) ---
-    if (options.mountingAddOns?.includes('supplies')) extraFees += 15;
+    // --- Add-ons & Multipliers ---
+    
+    // 1. Unit Multiplier (for Hospitality/Apartments)
+    const unitCount = options.unitCount || 1;
+    if (unitCount > 1) {
+        // We multiply the logic above by the number of units/apartments
+        extraFees += (basePrice * quantity) * (unitCount - 1);
+        details.push({
+            label: { 
+                en: `Multiplier for ${unitCount} Units`, 
+                fr: `Multiplicateur pour ${unitCount} Biens`, 
+                ar: `مضاعف لـ ${unitCount} وحدات` 
+            },
+            amount: Math.round(((basePrice * quantity) * (unitCount - 1)) * 10) / 10
+        });
+    }
+
+    // 2. Stairs Surcharge
+    if (options.stairsType && options.stairsType !== 'none') {
+        const stairFees = { small: 30, medium: 45, large: 60, none: 0 };
+        const stairFee = stairFees[options.stairsType] || 0;
+        extraFees += stairFee;
+        details.push({
+            label: { en: 'Stairs Cleaning', fr: 'Nettoyage des escaliers', ar: 'تنظيف السلالم' },
+            amount: stairFee
+        });
+    }
 
     // --- Calculations ---
     const subtotal = Math.round(((providerRate * quantity) + extraFees) * 10) / 10;
     const serviceFee = Math.round((subtotal * 0.10) * 10) / 10;
-    const travelFee = (isMovingOrErrands && extraFees > 0) ? 0 : Math.round((options.distanceKm || 0) * 3 * 10) / 10;
-    const total = Math.round((subtotal + serviceFee + travelFee) * 100) / 100;
+    const travelFee = Math.round((Number(options.distanceKm) || 0) * 1 * 10) / 10;
+    
+    // 3. Tips (Added after fees)
+    const tip = options.tipAmount || 0;
+    const total = Math.round((subtotal + serviceFee + travelFee + tip) * 100) / 100;
+
+    if (tip > 0) {
+        details.push({
+            label: { en: 'Tip for Bricoler', fr: 'Pourboire bricoleur', ar: 'عمولة إضافية' },
+            amount: tip
+        });
+    }
 
     return {
         basePrice: providerRate, // Always that of Bricoler

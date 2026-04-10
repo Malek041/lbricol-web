@@ -97,8 +97,9 @@ import {
   FaPlaneArrival,
   FaMapLocationDot,
   FaTruck,
-  FaWindowRestore
+  FaWindowRestore,
 } from 'react-icons/fa6';
+import { requestNotificationPermission, onMessageListener } from '@/lib/pushNotification';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLanguage } from '@/context/LanguageContext';
 import { MOROCCAN_CITIES, MOROCCAN_CITIES_AREAS } from '@/config/moroccan_areas';
@@ -320,6 +321,8 @@ const Home = () => {
   const [selectedPoint, setSelectedPoint] = useState<{ lat: number; lng: number, address?: string } | null>(null);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isProfileOnboardingOpen, setIsProfileOnboardingOpen] = useState(false);
+  const [gpsPermissionDenied, setGpsPermissionDenied] = useState(false);
+  const [sessionDismissedRatings, setSessionDismissedRatings] = useState<string[]>([]);
 
   const handleAddressUpdate = (address: string) => {
     if (!address) return;
@@ -443,7 +446,6 @@ const Home = () => {
     if (lat && lng) setSelectedPoint({ lat: parseFloat(lat), lng: parseFloat(lng), address: addr || '' } as any);
   }, []);
 
-  // Reset view details when changing tabs
   useEffect(() => {
     if (mobileNavTab !== 'calendar') {
       setIsViewingOrderDetails(false);
@@ -456,7 +458,6 @@ const Home = () => {
     }
   }, [userSavedAddresses, mounted]);
 
-  // Form States
   const [service, setService] = useState("");
   const [subService, setSubService] = useState<string | null>(null);
   const [location, setLocation] = useState("Essaouira");
@@ -482,24 +483,19 @@ const Home = () => {
 
   const [isViewingOrderDetails, setIsViewingOrderDetails] = useState(false);
 
-  // Handle Splash Dismissal based on data syncing
   useEffect(() => {
-    // We wait for initial mount and for the main loading flags to clear
     const minTimer = setTimeout(() => {
       if (mounted && !loadingOrders && !loadingServices) {
         setShowSplash(false);
         
-        // Forced location flow if not set (First Arrival ever)
         const prefCity = localStorage.getItem('lbricol_preferred_city');
         if (!prefCity && !showLanguagePopup) {
-          // Immediately show location picker if no city is preferred yet
           setShowLocationPicker(true);
         }
       }
-    }, 2500); // 2.5 seconds minimum for a premium feel
+    }, 2500);
 
     if (mounted && !loadingOrders && !loadingServices) {
-      // Small additional buffer for UX transitions
       const finalTimer = setTimeout(() => setShowSplash(false), 1000);
       return () => {
         clearTimeout(minTimer);
@@ -510,7 +506,6 @@ const Home = () => {
     return () => clearTimeout(minTimer);
   }, [mounted, loadingOrders, loadingServices, showLanguagePopup]);
 
-  // Cycle Hero Images
   useEffect(() => {
     const interval = setInterval(() => {
       setHeroImageIndex((prev) => (prev + 1) % HERO_IMAGES.length);
@@ -518,7 +513,6 @@ const Home = () => {
     return () => clearInterval(interval);
   }, []);
 
-  // Prevent body scroll when calendar is expanded
   useEffect(() => {
     if (isCalendarExpanded && !isMobile) {
       const originalStyle = window.getComputedStyle(document.body).overflow;
@@ -529,7 +523,6 @@ const Home = () => {
     }
   }, [isCalendarExpanded, isMobile]);
 
-  // Optimistic Calendar Show & Orders
   useEffect(() => {
     const hasOrders = localStorage.getItem('lbricol_has_orders') === 'true';
     if (hasOrders) setShowFloatingCalendar(true);
@@ -538,7 +531,7 @@ const Home = () => {
     if (savedOrders) {
       try {
         setOrders(JSON.parse(savedOrders));
-        setLoadingOrders(false); // Can optimistically set to false if we have data
+        setLoadingOrders(false);
       } catch (e) {
         console.error("Error parsing saved orders", e);
       }
@@ -570,7 +563,6 @@ const Home = () => {
   const [activeBubble, setActiveBubble] = useState<{ id: string, avatar?: string, count: number, jobId: string } | null>(null);
   const [dismissedMessages, setDismissedMessages] = useState<string[]>([]);
 
-  // Persist dismissed items
   useEffect(() => {
     if (mounted) {
       localStorage.setItem('lbricol_dismissed_messages', JSON.stringify(dismissedMessages));
@@ -583,17 +575,15 @@ const Home = () => {
     }
   }, [dismissedOffers, mounted]);
 
-  // Clear newly programmed highlight after a few seconds
   useEffect(() => {
     if (newlyProgrammedOrderId) {
       const timer = setTimeout(() => {
         setNewlyProgrammedOrderId(null);
-      }, 5000); // 5 seconds of highlight
+      }, 5000);
       return () => clearTimeout(timer);
     }
   }, [newlyProgrammedOrderId]);
 
-  // Auto-dismiss messages when job is selected
   useEffect(() => {
     if (selectedOrderId) {
       const messagesToDismiss = incomingMessages
@@ -612,7 +602,6 @@ const Home = () => {
   const notifiedMessageIds = useRef<Set<string>>(new Set());
   const notifiedNotificationIds = useRef<Set<string>>(new Set());
 
-  // Fetch provider details when viewingProviderId changes
   useEffect(() => {
     if (viewingProviderId) {
       const fetchProvider = async () => {
@@ -632,7 +621,6 @@ const Home = () => {
     }
   }, [viewingProviderId]);
 
-  // Persistence: Load city, language, and dismissed items on mount
   useEffect(() => {
     const savedCity = localStorage.getItem('lbricol_preferred_city');
     const savedLang = localStorage.getItem('lbricol_language');
@@ -666,7 +654,6 @@ const Home = () => {
       }
     }
 
-    // NEW: Check for Client Onboarding - Mark as shown immediately to ensure Home is the first view
     const onboardingShown = localStorage.getItem('client_onboarding_shown');
     if (!onboardingShown) {
       localStorage.setItem('client_onboarding_shown', 'true');
@@ -675,9 +662,17 @@ const Home = () => {
 
 
     setMounted(true);
+
+    if (typeof window !== 'undefined' && "permissions" in navigator) {
+      navigator.permissions.query({ name: 'geolocation' as any }).then((result) => {
+        if (result.state === 'denied') setGpsPermissionDenied(true);
+        result.onchange = () => {
+          setGpsPermissionDenied(result.state === 'denied');
+        };
+      });
+    }
   }, []);
 
-  // Sequential popups after splash finishes (for first-timers)
   useEffect(() => {
     if (!showSplash && mounted && !showClientOnboarding) {
       const savedLang = localStorage.getItem('lbricol_language');
@@ -688,7 +683,6 @@ const Home = () => {
       } else if (!savedCity) {
         handleFirstArrivalLocationTrigger();
       } else {
-        // Migration and Sync
         let migratedCity = savedCity;
         if (migratedCity === 'Marrakesh') migratedCity = 'Marrakech';
         if (migratedCity && migratedCity.includes(' (')) {
@@ -701,13 +695,11 @@ const Home = () => {
         if (savedArea) setSelectedArea(savedArea);
         setShowCityPopup(false);
 
-        // Auto-start Bricoler onboarding if user came from /join as first-timer
         if (typeof window !== 'undefined') {
           const params = new URLSearchParams(window.location.search);
           const startBricolerIntent = params.get('start_bricoler');
           if (startBricolerIntent === 'true' && !showMobileOnboarding && !showClientOnboarding) {
             setShowMobileOnboarding(true);
-            // Clean up URL
             const url = new URL(window.location.href);
             url.searchParams.delete('start_bricoler');
             window.history.replaceState({}, '', url.toString());
@@ -717,7 +709,6 @@ const Home = () => {
     }
   }, [showSplash, mounted, showClientOnboarding, showMobileOnboarding]);
 
-  // Supply-side Service Filtering
   useEffect(() => {
     if (!selectedCity) {
       setAvailableServices([]);
@@ -748,9 +739,6 @@ const Home = () => {
         const activeSubIds = new Set<string>();
         const subFreq: Record<string, number> = {};
 
-        // Populate categories and sub-services available in the city
-        // We look at ALL pros in the city (pros) regardless of the specific area selected (localPros)
-        // for the purpose of showing what's available in the catalogue.
         pros.forEach(p => {
           if (Array.isArray(p.services)) {
             p.services.forEach((s: any) => {
@@ -766,16 +754,14 @@ const Home = () => {
               };
 
               if (serviceId) {
-                // If it's a category ID, add it
                 if (SERVICES_HIERARCHY[serviceId]) {
                   activeIds.add(serviceId);
                 } else {
-                  // It might be a sub-service ID, resolve its category
                   const resolvedSubId = normalizeSubId(serviceId);
                   const resolvedCatId = getCategoryForSubService(resolvedSubId);
                   if (resolvedCatId) {
                     activeIds.add(resolvedCatId);
-                    activeSubIds.add(resolvedSubId); // Log it as available sub-service
+                    activeSubIds.add(resolvedSubId);
                   }
                 }
               }
@@ -794,16 +780,11 @@ const Home = () => {
           }
         });
 
-        // However, we can still use localPros for area-specific logic if needed in the future.
-        // For now, availability and trending are city-wide for better visibility.
-
         const trendingIds = Object.entries(subFreq)
-          .sort((a, b) => b[1] - a[1]) // Sort by count descending
-          .slice(0, 6) // Top 6 hottest sub-tasks
+          .sort((a, b) => b[1] - a[1])
+          .slice(0, 6)
           .map(e => e[0]);
 
-        // Use only supply-side results (activeIds and activeSubIds) 
-        // to strictly follow the requirement of showing what Bricolers offer locally.
         setAvailableServices(Array.from(activeIds));
         setAvailableSubServices(Array.from(activeSubIds));
         setTrendingSubServices(trendingIds);
@@ -817,7 +798,6 @@ const Home = () => {
     fetchActiveServices();
   }, [selectedCity, selectedArea]);
 
-  // Monthly popularity stats per city & service category
   useEffect(() => {
     if (!selectedCity) return;
     const now = new Date();
@@ -829,7 +809,6 @@ const Home = () => {
         if (!snap.exists()) return;
         const data = snap.data() as Record<string, any>;
 
-        // Aggregate counts by canonical service ID so we can sort categories
         const aggregated = new Map<string, number>();
 
         Object.entries(data)
@@ -838,7 +817,6 @@ const Home = () => {
             const count = typeof value === 'number' ? value : 0;
             if (count <= 0) return;
 
-            // rawKey might be a craft label slug; map it to a known service when possible
             const serviceConfig = getServiceById(rawKey);
             const serviceId = (serviceConfig?.id || rawKey).toLowerCase();
 
@@ -854,7 +832,6 @@ const Home = () => {
       .catch(() => { });
   }, [selectedCity]);
 
-  // Professional Types Animation
   const [profIndex, setProfIndex] = useState(0);
 
   const professionalTypesDomestic = [
@@ -872,11 +849,9 @@ const Home = () => {
     { en: "Driver", fr: "Chauffeur" },
     { en: "Courier", fr: "Coursier" },
   ];
-  // const [isBricoler, setIsBricoler] = useState(false); // Already declared above
 
   const handleProfileBricolerAction = () => {
     if (isBricoler) {
-      // When switching to provider mode, clear the "force client" flag
       localStorage.removeItem('lbricol_force_client_mode');
       window.location.href = '/provider';
     } else {
@@ -894,7 +869,6 @@ const Home = () => {
   const currentTypes = activeTab === 'domestic' ? professionalTypesDomestic : professionalTypesGo;
   const currentProf = currentTypes[profIndex % currentTypes.length];
 
-  // Sound Notification for Responses
   const prevOfferCountRef = useRef<number | null>(null);
   useEffect(() => {
     if (!orders || orders.length === 0) {
@@ -907,9 +881,7 @@ const Home = () => {
       return total + providerOffers.length;
     }, 0);
 
-    // Only play sound if the count has increased and it's not the first load
     if (prevOfferCountRef.current !== null && currentOfferCount > prevOfferCountRef.current) {
-      // Find the newest offer to determine type
       const allOffers: any[] = [];
       orders.forEach(j => j.offers?.forEach((o: any) => { if (o.sender !== 'client') allOffers.push({ o, j }); }));
 
@@ -918,7 +890,6 @@ const Home = () => {
       if (latestOfferPair) {
         const isAcceptance = Number(latestOfferPair.o.price) === Number(latestOfferPair.j.price);
         try {
-          // Acceptance chimes vs Counter pop
           const soundUrl = isAcceptance
             ? 'https://assets.mixkit.co/active_storage/sfx/2000/2000-preview.mp3'
             : 'https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3';
@@ -936,7 +907,6 @@ const Home = () => {
     }
   }, [orders, loadingOrders]);
 
-  // Message Listener for Notifications
   useEffect(() => {
     if (!currentUser || orders.length === 0) return;
 
@@ -960,7 +930,6 @@ const Home = () => {
             const data = change.doc.data();
             const msgId = change.doc.id;
 
-            // Only notify if sender is NOT the current user AND we haven't notified for this msgId yet
             if (data.senderId !== currentUser.uid && !notifiedMessageIds.current.has(msgId)) {
               notifiedMessageIds.current.add(msgId);
 
@@ -970,7 +939,6 @@ const Home = () => {
                 return [...prev, { ...data, id: msgId, jobId, serviceTitle: job?.service || 'Service' }];
               });
 
-              // Play sound
               try {
                 const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3');
                 audio.volume = 0.5;
@@ -988,7 +956,6 @@ const Home = () => {
     return () => unsubs.forEach(u => u());
   }, [orders, currentUser]);
 
-  // Client Notifications Listener (Real-time Toasts & Sounds)
   useEffect(() => {
     if (!currentUser) return;
 
@@ -1004,17 +971,14 @@ const Home = () => {
           const id = change.doc.id;
 
           if (!notifiedNotificationIds.current.has(id)) {
-            // Only chime/toast if it's very recent (to avoid noise on initial load)
             const createdAtMillis = data.createdAt?.toMillis ? data.createdAt.toMillis() : (data.createdAt ? new Date(data.createdAt).getTime() : Date.now());
-            const isFresh = (Date.now() - createdAtMillis) < 60000; // Within 1 minute
+            const isFresh = (Date.now() - createdAtMillis) < 60000;
 
             if (isFresh) {
               notifiedNotificationIds.current.add(id);
-              // Save to localStorage to persist across refreshes
               const currentIds = Array.from(notifiedNotificationIds.current);
               localStorage.setItem('lbricol_notified_notif_ids', JSON.stringify(currentIds));
 
-              // Play Sound
               try {
                 const soundUrl = data.type === 'order_confirmed'
                   ? 'https://assets.mixkit.co/active_storage/sfx/2000/2000-preview.mp3'
@@ -1027,8 +991,6 @@ const Home = () => {
                 console.warn("Error playing notification sound:", err);
               }
 
-              // Show Toast
-              // Show Toast OR Floating Bubble
               if (data.type === 'new_message') {
                 setActiveBubble({
                   id,
@@ -1045,7 +1007,6 @@ const Home = () => {
                 });
               }
             } else {
-              // Even if not fresh, mark as notified so it doesn't toast if it becomes "fresh" later (unlikely but safe)
               notifiedNotificationIds.current.add(id);
               const currentIds = Array.from(notifiedNotificationIds.current);
               localStorage.setItem('lbricol_notified_notif_ids', JSON.stringify(currentIds));
@@ -1062,7 +1023,6 @@ const Home = () => {
     return unsub;
   }, [currentUser, showToast]);
 
-  // Listener for unread count
   useEffect(() => {
     if (!currentUser) return;
     const q = query(
@@ -1101,7 +1061,6 @@ const Home = () => {
         async (position) => {
           const { latitude: lat, longitude: lng } = position.coords;
           try {
-            // Perform a silent reverse geocode to detect the user's city
             const res = await fetch(
               `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=fr,en`,
               { headers: { 'User-Agent': 'Lbricol/1.0' } }
@@ -1112,7 +1071,6 @@ const Home = () => {
             const street = data.address?.road || '';
             const finalAddress = street ? `${street}, ${cityName}` : (cityName || 'Custom Location, Morocco');
             
-            // Silently update the app state. This populates services on Home page.
             handleLocationConfirm({
               pickup: {
                 lat,
@@ -1124,13 +1082,9 @@ const Home = () => {
             });
           } catch (err) {
             console.error("Silent location detection failed:", err);
-            // If reverse geocoding fails, we don't force anything. 
-            // The user can still set their location manually via the header button.
           }
         },
         () => {
-          // On deny or error - stay on Home page. DO NOT show the LocationPicker.
-          // This ensures "nothing steps in the way" of the first-time user experience.
         },
         { timeout: 30000, enableHighAccuracy: true }
       );
@@ -1142,21 +1096,17 @@ const Home = () => {
     const address = savedAddress?.address || pickup.address || '';
     const lowerAddress = address.toLowerCase();
 
-    // 1. Find City
     let city = MOROCCAN_CITIES.find((c: string) => lowerAddress.includes(c.toLowerCase())) || 'Casablanca';
     
-    // 2. Find Area within that city
     const areaList = MOROCCAN_CITIES_AREAS[city] || [];
     let area = '';
 
-    // Sort areaList by length (longest first) to match most specific area
     const sortedAreas = [...areaList].sort((a, b) => b.length - a.length);
     const matchedArea = sortedAreas.find((a: string) => lowerAddress.includes(a.toLowerCase()));
 
     if (matchedArea) {
       area = matchedArea;
     } else {
-      // Fallback: Check if any other city's area matches (maybe city detection was wrong)
       for (const [c, areas] of Object.entries(MOROCCAN_CITIES_AREAS)) {
         const sorted = [...areas].sort((a, b) => b.length - a.length);
         const match = sorted.find((a: string) => lowerAddress.includes(a.toLowerCase()));
@@ -1168,7 +1118,6 @@ const Home = () => {
       }
     }
 
-    // Default to first area if still none found
     if (!area && areaList.length > 0) {
       area = areaList[0];
     }
@@ -1184,6 +1133,7 @@ const Home = () => {
     localStorage.setItem('lastKnownAddress', pickup.address);
     setShowLocationPicker(false);
     setShowCityPopup(false);
+    router.push('/');
   };
 
   const handleAdminAction = async (code?: string) => {
@@ -1230,7 +1180,6 @@ const Home = () => {
   };
 
   useEffect(() => {
-    // Auth Listener
     let unsubscribeJobs: (() => void) | null = null;
     let unsubscribeUserData: (() => void) | null = null;
     let unsubscribeBricolerStatus: (() => void) | null = null;
@@ -1238,7 +1187,6 @@ const Home = () => {
     const unsubscribeAuth = onAuthStateChanged(
       auth,
       async (user) => {
-        // Cleanup previous listeners
         if (unsubscribeJobs) { unsubscribeJobs(); unsubscribeJobs = null; }
         if (unsubscribeUserData) { unsubscribeUserData(); unsubscribeUserData = null; }
         if (unsubscribeBricolerStatus) { unsubscribeBricolerStatus(); unsubscribeBricolerStatus = null; }
@@ -1247,7 +1195,6 @@ const Home = () => {
         console.log("🔐 Auth state changed:", user ? `Logged in as ${user.email}` : "Not logged in");
 
         if (user) {
-          // 1. Real-time User Data (Global profile)
           const userRef = doc(db, 'users', user.uid);
           let hasAdminRedirected = false;
           unsubscribeUserData = onSnapshot(userRef, (snap) => {
@@ -1256,7 +1203,6 @@ const Home = () => {
               setUserData(data);
               const isAdminUser = data.role === 'admin';
               setIsAdmin(isAdminUser);
-              // Redirect admins to their dedicated /admin URL
               if (!hasAdminRedirected && isAdminUser && typeof window !== 'undefined' && window.location.pathname === '/') {
                 const forceClient = localStorage.getItem('lbricol_force_client_mode') === 'true';
                 hasAdminRedirected = true;
@@ -1265,7 +1211,6 @@ const Home = () => {
                 }
               }
             } else {
-              // Initialize global user profile if new
               const newUser = {
                 uid: user.uid,
                 name: user.displayName,
@@ -1277,15 +1222,12 @@ const Home = () => {
             }
           });
 
-          // 2. Real-time Bricoler Status + Role-based URL redirect
           const bricolerRef = doc(db, 'bricolers', user.uid);
           let hasRedirectedScroll = false;
           unsubscribeBricolerStatus = onSnapshot(bricolerRef, (snap) => {
             const isBricolerUser = snap.exists() && snap.data()?.isBricoler === true;
             setIsBricoler(isBricolerUser);
 
-            // Smart redirect: send users to their dedicated URL on first load
-            // Only redirect if they haven't explicitly chosen to stay in client mode
             if (!hasRedirectedScroll && typeof window !== 'undefined' && window.location.pathname === '/') {
               const forceClient = localStorage.getItem('lbricol_force_client_mode') === 'true';
               hasRedirectedScroll = true;
@@ -1297,7 +1239,6 @@ const Home = () => {
             }
           });
 
-          // 3. Real-time Jobs
           const jobsQuery = query(collection(db, 'jobs'), where('clientId', '==', user.uid));
           setLoadingOrders(true);
           unsubscribeJobs = onSnapshot(jobsQuery, (snapshot) => {
@@ -1314,7 +1255,6 @@ const Home = () => {
 
             setLoadingOrders(false);
 
-            // Handle Recurring Orders Duplicate Logic
             const now = new Date();
             loadedJobs.forEach(async (job) => {
               if (job.status === 'cancelled') return;
@@ -1322,7 +1262,6 @@ const Home = () => {
               if (job.frequency && job.frequency !== 'once' && job.nextRunDate) {
                 const nextDate = new Date(job.nextRunDate);
                 if (now >= nextDate) {
-                  // Compute the NEXT nextDate for the NEW child job
                   const advanceDate = new Date(nextDate);
                   if (job.frequency === 'daily') advanceDate.setDate(advanceDate.getDate() + 1);
                   else if (job.frequency === 'weekly') advanceDate.setDate(advanceDate.getDate() + 7);
@@ -1330,13 +1269,11 @@ const Home = () => {
                   else if (job.frequency === 'monthly') advanceDate.setMonth(advanceDate.getMonth() + 1);
 
                   try {
-                    // Turn off recurrence on OLD job
                     await updateDoc(doc(db, 'jobs', job.id as string), {
                       frequency: 'once',
                       nextRunDate: null
                     });
 
-                    // Spawn the NEW master job
                     const newJobData = {
                       ...job,
                       status: 'new',
@@ -1376,18 +1313,17 @@ const Home = () => {
               }
             });
 
-            // Detect newly completed jobs to show rating popup
-            const unratedDoneJob = loadedJobs.find(j => (j.status === 'done' || j.status === 'delivered') && !j.rated);
+            const unratedDoneJob = loadedJobs.find(j => 
+              (j.status === 'done' || j.status === 'delivered') && 
+              !j.rated && 
+              !sessionDismissedRatings.includes(j.id as string)
+            );
             if (unratedDoneJob) {
               setJobToRate(unratedDoneJob);
             }
           }, (err) => {
             if (err.code === 'permission-denied') {
-              console.warn("⚠️ Firestore Permission Denied - Possible causes:");
-              console.warn("  1. Rules not published yet (wait 1-2 min after publishing)");
-              console.warn("  2. User not authenticated (check auth state above)");
-              console.warn("  3. Rules syntax error in Firebase Console");
-              console.warn("Full error:", err);
+              console.warn("⚠️ Firestore Permission Denied");
             } else {
               console.error("Error fetching jobs real-time:", err);
             }
@@ -1396,27 +1332,53 @@ const Home = () => {
         } else {
           setUserData(null);
           setIsBricoler(false);
-          setOrders([]); // Clear orders if logged out
+          setOrders([]);
           setLoadingOrders(false);
         }
-      },
-      (error: any) => {
-        console.error("Error fetching client data:", error);
       }
     );
 
+
+    const timer = setTimeout(() => {
+      if (auth.currentUser) {
+        requestNotificationPermission();
+      }
+    }, 5000);
+
     return () => {
       unsubscribeAuth();
+      clearTimeout(timer);
       if (unsubscribeJobs) unsubscribeJobs();
+      if (unsubscribeUserData) unsubscribeUserData();
+      if (unsubscribeBricolerStatus) unsubscribeBricolerStatus();
     };
-  }, []); // Reverted to mount-only
+  }, []);
 
-  // Separate Click Outside Listener
+  useEffect(() => {
+    let isMounted = true;
+
+    const setupListener = async () => {
+      if (!isMounted) return;
+      const payload: any = await onMessageListener();
+      if (payload && isMounted) {
+        showToast({
+          title: payload.notification?.title || 'Notification',
+          description: payload.notification?.body,
+          variant: 'info',
+          duration: 7000
+        });
+        setupListener();
+      }
+    };
+
+    setupListener();
+    return () => { isMounted = false; };
+  }, [showToast]);
+
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (searchAreaRef.current && !searchAreaRef.current.contains(event.target as Node)) {
         setActiveSearchSection(null);
-        // We do NOT hide showExtraDetails on click outside anymore, so it persists
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
@@ -1429,7 +1391,6 @@ const Home = () => {
     }
   }, [activeSearchSection, isMobile]);
 
-  // --- Automatic Order Status Updates ---
   useEffect(() => {
     if (!orders || orders.length === 0) return;
 
@@ -1439,17 +1400,12 @@ const Home = () => {
       for (const order of orders) {
         if (!auth.currentUser || !order.id || !order.date) continue;
 
-        // Skip terminal statuses
-          // Skip terminal statuses AND newly created/broadcast statuses that shouldn't auto-complete
           if (['cancelled', 'done', 'delivered', 'programmed', 'broadcast', 'accepted'].includes(order.status || '')) continue;
 
           try {
-            // Parse start time (Local Time)
             const datePart = order.date.includes(' at ') ? order.date.split(' at ')[0] : order.date;
             const timeStr = order.time?.split('-')[0].trim() || "09:00";
 
-            // Use a local date constructor to avoid UTC shift
-            // If datePart is '2025-03-25', parse it safely
             let scheduledStart: Date;
             if (/^\d{4}-\d{2}-\d{2}$/.test(datePart)) {
               const [y, m, d] = datePart.split('-').map(Number);
@@ -1463,13 +1419,11 @@ const Home = () => {
 
             if (isNaN(scheduledStart.getTime())) continue;
 
-            // Use expectedEndTime if available, otherwise calculate fallback
             let scheduledEnd: Date;
             if (order.expectedEndTime) {
                 scheduledEnd = order.expectedEndTime.toDate ? order.expectedEndTime.toDate() : new Date(order.expectedEndTime);
             } else {
-                // Calculate estimated duration fallback
-                let durationHours = 2; // Default
+                let durationHours = 2;
                 const size = (order.taskSize || 'medium').toLowerCase();
                 const serviceStr = (order.service || '').toLowerCase();
 
@@ -1490,7 +1444,6 @@ const Home = () => {
             if (now >= scheduledEnd) {
               newStatus = 'done';
             } else if (now >= scheduledStart) {
-              // Mark as pending/in_progress once time starts
               if (['confirmed', 'accepted', 'programmed'].includes(order.status || '')) {
                 newStatus = 'pending';
               }
@@ -1506,7 +1459,6 @@ const Home = () => {
       }
     };
 
-    // Check every 2 minutes
     const interval = setInterval(checkStatusTransitions, 120000);
     checkStatusTransitions();
 
@@ -1514,7 +1466,6 @@ const Home = () => {
   }, [orders]);
 
 
-  // Global Keyboard-Aware Scroll Handling
   useEffect(() => {
     if (!window.visualViewport) return;
 
@@ -1546,15 +1497,11 @@ const Home = () => {
   const [calendarMode, setCalendarMode] = useState<'multi' | 'range'>('multi');
   const [rangeSelection, setRangeSelection] = useState<{ start: Date | null, end: Date | null }>({ start: null, end: null });
 
-  // Extra Details State
   const [showExtraDetails, setShowExtraDetails] = useState(false);
   const [bricolersCount, setBricolersCount] = useState(1);
   const [orderComment, setOrderComment] = useState("");
   const [orderPictures, setOrderPictures] = useState<string[]>([]);
 
-  // Icon imports check (already has MapPin, ChevronDown, search, clock, dollar from searchbox)
-  // Need Plus, Minus, Image, MessageSquare? Let's check imports.
-  // Calendar Helpers
   const monthName = calendarDate.toLocaleString('default', { month: 'long' });
   const year = calendarDate.getFullYear();
   const daysInMonth = new Date(year, calendarDate.getMonth() + 1, 0).getDate();
@@ -1580,14 +1527,11 @@ const Home = () => {
         return isSelected ? prev.filter(d => d !== dateString) : [...prev, dateString];
       });
     } else {
-      // Range Logic
       if (!rangeSelection.start || (rangeSelection.start && rangeSelection.end)) {
-        // Start new range
         setRangeSelection({ start: selectedDate, end: null });
         setSelectedDates([dateString]);
         setActiveSchedulingDate(dateString);
       } else {
-        // Complete range
         let newStart = rangeSelection.start;
         let newEnd = selectedDate;
 
@@ -1598,10 +1542,6 @@ const Home = () => {
         setRangeSelection({ start: newStart, end: newEnd });
         setActiveSchedulingDate(dateString);
 
-        // Generate formats for visual feedback? Or just store range string
-        // actually we just need to know the range.
-        // selectedDates can just hold the string representation for the UI to use if needed,
-        // but rely on rangeSelection for logic.
         const startStr = `${newStart.toLocaleString('default', { month: 'long' })} ${newStart.getDate()}, ${newStart.getFullYear()}`;
         const endStr = `${newEnd.toLocaleString('default', { month: 'long' })} ${newEnd.getDate()}, ${newEnd.getFullYear()}`;
         setSelectedDates([`${startStr} - ${endStr}`]);
@@ -1629,7 +1569,6 @@ const Home = () => {
     }
   };
 
-  // Availability Check Logic
   useEffect(() => {
     if (!service || !selectedCity) {
       setUnavailableDates([]);
@@ -1639,7 +1578,6 @@ const Home = () => {
 
     const checkAvailability = async () => {
       try {
-        // 1. Get all providers in city who offer this service
         const providersQuery = query(
           collection(db, 'bricolers'),
           where('city', '==', selectedCity)
@@ -1649,7 +1587,6 @@ const Home = () => {
           if (!data.services || !Array.isArray(data.services)) return false;
 
           return data.services.some((s: any) => {
-            // Handle both formats: categoryId (new), serviceId (old-new), or fallback to strings
             const currentCatId = typeof s === 'string' ? s : (s.categoryId || s.serviceId);
             if (!currentCatId || typeof currentCatId !== 'string') return false;
 
@@ -1657,8 +1594,6 @@ const Home = () => {
             if (!catMatch) return false;
 
             if (subService) {
-              // Check if subService matches. For strings, we assume true. 
-              // For objects, check subServiceId (new) or subServices array (old-new).
               if (typeof s === 'string') return true;
 
               const currentSubId = s.subServiceId || (s.subServices?.includes(subService) ? subService : null);
@@ -1672,14 +1607,10 @@ const Home = () => {
         });
 
         if (eligibleProviders.length === 0) {
-          // If no providers at all, all dates are busy
-          // We don't want to show everything as red yet, maybe a toast elsewhere
           setUnavailableDates([]);
           return;
         }
 
-        // 2. Identify "Closed Dates" (Capacity-based)
-        // Check for all dates in a reasonable window (e.g., current month +/- 15 days)
         const dateRangeQuery = query(
           collection(db, 'jobs'),
           where('city', '==', selectedCity)
@@ -1690,7 +1621,6 @@ const Home = () => {
           .map(d => d.data())
           .filter(d => validStatuses.includes(d.status));
 
-        // Group jobs by date then by providerId
         const usage: Record<string, Record<string, number>> = {};
         list.forEach(jd => {
           if (!jd.date) return;
@@ -1702,14 +1632,12 @@ const Home = () => {
         });
 
         const newUnavailableDates: string[] = [];
-        // A date is CLOSED if for EVERY eligible provider, that provider is at capacity (2 jobs)
         Object.entries(usage).forEach(([d_str, providerMap]) => {
           const allBusy = eligibleProviders.every(p => (providerMap[p.id] || 0) >= 2);
           if (allBusy) newUnavailableDates.push(d_str);
         });
         setUnavailableDates(newUnavailableDates);
 
-        // 3. Identify "Unavailable Times" (COILLISION-based per DATE)
         const selectedDatesToCheck = calendarMode === 'range' && rangeSelection.start && rangeSelection.end
           ? (() => {
             const dates: string[] = [];
@@ -1729,7 +1657,6 @@ const Home = () => {
         for (const d_val of selectedDatesToCheck) {
           const unavailableAtDay: string[] = [];
           for (const t_val of timeSlots) {
-            // Get jobs at this exact date + time
             const collisions = jobsSnap.docs.filter(doc => {
               const jd = doc.data();
               return jd.date === d_val && jd.time === t_val;
@@ -1741,7 +1668,6 @@ const Home = () => {
               occupiedIds.forEach((id: string) => collisionProviderIds.add(id));
             });
 
-            // Check if ANY eligible provider is free
             const availableCount = eligibleProviders.filter(p =>
               !collisionProviderIds.has(p.id) && (usage[d_val]?.[p.id] || 0) < 2
             ).length;
@@ -1755,7 +1681,6 @@ const Home = () => {
 
         setDateUnavailableTimes(newDateUnavailable);
 
-        // Sanity Check: Remove selectedTimes if they are no longer available
         setSelectedTimes(prev => {
           const next = { ...prev };
           let changed = false;
@@ -1785,7 +1710,6 @@ const Home = () => {
       behavior: 'smooth'
     });
     setActiveSearchSection('what');
-    // Ensure it stays at the top if something else shifts it
     setTimeout(() => {
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }, 100);
@@ -1818,7 +1742,7 @@ const Home = () => {
         canvas.height = height;
         const ctx = canvas.getContext('2d');
         ctx?.drawImage(img, 0, 0, width, height);
-        resolve(canvas.toDataURL('image/jpeg', 0.4)); // Lower quality for faster uploads
+        resolve(canvas.toDataURL('image/jpeg', 0.4));
       };
     });
   };
@@ -1854,14 +1778,9 @@ const Home = () => {
 
     const effectiveUser = userOverride || currentUser;
 
-    // We need to resolve the whatsapp number.
-    // If we have an override, use it.
-    // If not, check userData.
-    // NOTE: userData might also be stale, so if we have an effectiveUser, we might want to trust the override or wait.
     let effectiveWhatsApp = whatsappOverride || userData?.whatsappNumber;
 
     try {
-      // Step 1: Validate inputs
       if (!service) {
         showToast({ variant: 'error', title: t({ en: "Please select a service first.", fr: "Veuillez d'abord sélectionner un service." }) });
         setActiveSearchSection('what');
@@ -1889,7 +1808,6 @@ const Home = () => {
         return;
       }
 
-      // Ensure every date has a time
       const missingTimeDate = datesToProcess.find(d => !selectedTimes[d]);
       if (missingTimeDate) {
         showToast({ variant: 'error', title: t({ en: `Please select a time for ${missingTimeDate}.`, fr: `Veuillez sélectionner une heure pour ${missingTimeDate}.` }) });
@@ -1898,7 +1816,6 @@ const Home = () => {
         return;
       }
 
-      // Ensure all selected times are still valid
       const staleDate = datesToProcess.find(d => dateUnavailableTimes[d]?.includes(selectedTimes[d]));
       if (staleDate) {
         showToast({ variant: 'error', title: t({ en: `The time for ${staleDate} is no longer available.`, fr: `L'hour pour ${staleDate} n'est plus disponible.` }) });
@@ -1915,7 +1832,6 @@ const Home = () => {
         return;
       }
 
-      // Step 2: Check authentication
       if (!effectiveUser) {
         console.log("[handleProgramOrder] No user, showing auth");
         setAuthIntent('program_order');
@@ -1924,28 +1840,18 @@ const Home = () => {
         return;
       }
 
-      // Step 3: Check WhatsApp
-      // If we don't have it in state OR override
       if (!effectiveWhatsApp) {
-        // Double check firestore just in case state is stale but auth is real? 
-        // No, that's too slow. trust the flow.
-        // But maybe userData is null because it hasn't loaded yet?
-        // If effectiveUser is present but userData is null, we might be in a race.
-        // However, let's assume if we are here, we should have it.
-
         console.log("[handleProgramOrder] No WhatsApp");
         setShowClientWhatsAppPopup(true);
         setIsProgramming(false);
         return;
       }
 
-      // Ensure it is associated to the profile if we have it now
       if (effectiveWhatsApp && effectiveUser) {
         await setDoc(doc(db, 'users', effectiveUser.uid), { whatsappNumber: effectiveWhatsApp }, { merge: true });
         await setDoc(doc(db, 'clients', effectiveUser.uid), { whatsappNumber: effectiveWhatsApp }, { merge: true });
       }
 
-      // Step 4: Build orders
       let newOrders: OrderDetails[] = [];
 
       let finalPrice = parseFloat(price) || 0;
@@ -1954,10 +1860,8 @@ const Home = () => {
         const userSnap = await getDoc(userRef);
         if (userSnap.exists() && userSnap.data().referralDiscountAvailable) {
           const disc = userSnap.data().referralDiscountAvailable;
-          // In handleProgramOrder, we always apply the discount if available
           finalPrice = Math.max(0, finalPrice * 0.85);
           await updateDoc(userRef, { referralDiscountAvailable: increment(-15) });
-          // Mark as issued so delivery logic doesn't double-award
           await updateDoc(userRef, { referralRewardIssued: true });
 
           const referrerId = userSnap.data().referredBy;
@@ -1973,7 +1877,6 @@ const Home = () => {
               }
             }
           }
-          // Mark as issued so delivery logic doesn't double-award
           await updateDoc(userRef, { referralRewardIssued: true });
 
           showToast({
@@ -2000,13 +1903,11 @@ const Home = () => {
         craft: SERVICE_CRAFTS.find(key => key === service || service.includes(key)) || 'general'
       }));
 
-      // Step 5: Save to Firestore
       console.log("[handleProgramOrder] Saving to 'jobs' collection...", newOrders.length, "orders");
 
       const savedOrders: OrderDetails[] = [];
 
       for (const order of newOrders) {
-        // NEW: Distribution Algorithm
         const distribution = await distributeJob({
           service: service as string,
           subService: subService || null,
@@ -2016,14 +1917,12 @@ const Home = () => {
           clientId: effectiveUser.uid
         });
 
-        // NEW: Calculate expected end time (start time + estimated duration + 30m buffer)
         let expectedEndTime = null;
         try {
           const [h, m] = (order.time || "10:00").split(':').map(Number);
           const startDate = new Date(order.date);
           startDate.setHours(h, m, 0, 0);
           
-          // Estimate duration based on service
           const serviceConfig = getServiceById(service as string);
           const subConfig = (serviceConfig as any)?.subServices?.find((s: any) => s.id === subService);
           const durationHr = subConfig?.estimatedDurationHr || (serviceConfig as any)?.estimatedDurationHr || 2;
@@ -2038,19 +1937,19 @@ const Home = () => {
           clientName: effectiveUser.displayName || "Anonymous",
           clientAvatar: effectiveUser.photoURL || "",
           service: service as string,
-          subService: subService || null, // NEW: Include sub-service ID
-          subServiceDisplayName: order.subServiceDisplayName || null, // NEW: Include translated sub-service
+          subService: subService || null,
+          subServiceDisplayName: order.subServiceDisplayName || null,
           date: order.date,
           time: order.time,
           expectedEndTime: expectedEndTime || null,
           status: 'new',
           offers: [],
-          offeredTo: distribution.providerIds, // NEW: Tag with selected providers
+          offeredTo: distribution.providerIds,
           city: selectedCity,
           createdAt: serverTimestamp(),
-          title: order.service, // Mapping for Provider view
+          title: order.service,
           description: order.comment || "No detailed description provided.",
-          rating: 5, // Default for new users? Or fetch from user profile
+          rating: 5,
           clientWhatsApp: effectiveWhatsApp,
           bricolersCount,
           comment: orderComment,
@@ -2074,7 +1973,7 @@ const Home = () => {
                 return await getDownloadURL(storageRef);
               } catch (err) {
                 console.error("Failed to upload pending data URL image", err);
-                return null; // Ignore failed uploads
+                return null;
               }
             }
             return img;
@@ -2086,7 +1985,6 @@ const Home = () => {
         const docRef = await addDoc(collection(db, 'jobs'), jobData);
         console.log("Job saved with ID: ", docRef.id);
 
-        // GUARANTEE CLIENT STATUS
         await setDoc(doc(db, 'clients', effectiveUser.uid), {
           uid: effectiveUser.uid,
           name: effectiveUser.displayName,
@@ -2098,7 +1996,6 @@ const Home = () => {
 
         savedOrders.push({ ...order, id: docRef.id });
 
-        // Activity Log
         await addDoc(collection(db, 'activity'), {
           type: 'new_order',
           clientId: effectiveUser.uid,
@@ -2108,14 +2005,12 @@ const Home = () => {
           timestamp: serverTimestamp()
         });
 
-        // Monthly popularity tracking per city & service category
         try {
           const now = new Date();
           const monthKey = `${now.getFullYear()}_${String(now.getMonth() + 1).padStart(2, '0')}`;
           const statsDocId = `${selectedCity}_${monthKey}`;
           const statsRef = doc(db, 'city_monthly_stats', statsDocId);
 
-          // Prefer canonical service ID for aggregation; fall back to craft label
           const svc = getServiceById(service || jobData.craft || 'general');
           const rawKey = svc?.id || service || jobData.craft || 'general';
           const serviceKey = rawKey.toLowerCase().replace(/[^a-z0-9_]/g, '_');
@@ -2130,14 +2025,11 @@ const Home = () => {
             { merge: true },
           );
         } catch (e) {
-          // Non-blocking: failure to update stats should not break order programming
         }
       }
 
-      // Step 6: Success logging (Orders state is updated by onSnapshot listener)
       console.log("[handleProgramOrder] Success:", savedOrders.length);
 
-      // --- Congrats Animation ---
       confetti({
         particleCount: 150,
         spread: 70,
@@ -2145,7 +2037,6 @@ const Home = () => {
         colors: ['#000000', '#FFD700', '#FFFFFF']
       });
 
-      // Step 7: Reset and notify
       showToast({
         variant: 'success',
         title: t({
@@ -2169,26 +2060,18 @@ const Home = () => {
       setShowExtraDetails(false);
       setActiveSearchSection(null);
 
-      // Scroll to dashboard
-      // setTimeout(() => {
-      //   document.getElementById('orders-dashboard')?.scrollIntoView({ behavior: 'smooth' });
-      // }, 500);
-
-      // Show and expand floating calendar (Desktop) or transition to Calendar Tab (Mobile)
       if (isMobile) {
         setMobileNavTab('calendar');
-        // We'll set the selected ID below in the timeout to ensure component is mounted
       } else {
         setShowFloatingCalendar(true);
         setIsCalendarExpanded(true);
       }
 
-      // Auto-open the first new order and highlight it
       if (savedOrders.length > 0) {
         setTimeout(() => {
           setSelectedOrderId(savedOrders[0].id || null);
           setNewlyProgrammedOrderId(savedOrders[0].id || null);
-        }, 400); // Wait for modal animation to start/mount
+        }, 400);
       }
 
     } catch (error: any) {
@@ -2212,7 +2095,7 @@ const Home = () => {
 
   const handleWhatsAppSuccess = async (whatsappNumber: string, referralCode?: string) => {
     console.log("[handleWhatsAppSuccess] Saving WhatsApp number", referralCode ? "with referral" : "");
-    setShowClientWhatsAppPopup(false); // Always close the popup
+    setShowClientWhatsAppPopup(false);
 
     if (!currentUser) {
       console.error("[handleWhatsAppSuccess] No current user, cannot save WhatsApp.");
@@ -2225,14 +2108,12 @@ const Home = () => {
     }
 
     try {
-      // 1. Save WhatsApp to both users and clients for universal availability
       await setDoc(doc(db, 'clients', currentUser.uid), { whatsappNumber }, { merge: true });
       await setDoc(doc(db, 'users', currentUser.uid), { whatsappNumber }, { merge: true });
       setUserData((prev: any) => ({ ...prev, whatsappNumber }));
 
       let referralDiscountApplied = 0;
 
-      // 2. Handle Referral Code if provided
       if (referralCode && referralCode.trim()) {
         const upperCode = referralCode.trim().toUpperCase();
         try {
@@ -2240,7 +2121,6 @@ const Home = () => {
           const currentUserSnap = await getDoc(currentUserRef);
           const userData = currentUserSnap.data() || {};
 
-          // Basic checks: not used before, not own code
           if (!userData.referredBy && userData.referralCode !== upperCode) {
             const usersRef = collection(db, 'users');
             const q = query(usersRef, where('referralCode', '==', upperCode));
@@ -2272,9 +2152,6 @@ const Home = () => {
         }
       }
 
-
-
-      // Retry order programming IMMEDIATELY with the new number
       handleProgramOrder(currentUser || undefined, whatsappNumber);
     } catch (error) {
       console.error("[handleWhatsAppSuccess] Error:", error);
@@ -2303,7 +2180,6 @@ const Home = () => {
     if (order && order.id) {
       try {
         await updateDoc(doc(db, 'jobs', order.id), { status: 'cancelled' });
-        // Clear selection to close card and close calendar
         setSelectedOrderId(null);
         setIsCalendarExpanded(false);
       } catch (err) {
@@ -2315,7 +2191,6 @@ const Home = () => {
   const handleAcceptOffer = async (jobId: string, offer: any, jobTitle: string) => {
     try {
       const jobRef = doc(db, 'jobs', jobId);
-      // Sanitize offer object to remove undefined values for Firestore
       const sanitizedOffer = JSON.parse(JSON.stringify(offer));
 
       await updateDoc(jobRef, {
@@ -2327,14 +2202,12 @@ const Home = () => {
         acceptedOffer: sanitizedOffer
       });
 
-      // NEW: Update Client History for Familiarity Scoring
       if (currentUser) {
         const clientRef = doc(db, 'clients', currentUser.uid);
         await updateDoc(clientRef, {
           previousProviders: arrayUnion(offer.bricolerId)
         });
 
-        // NEW: Notify Bricoler of Acceptance
         await addDoc(collection(db, 'bricoler_notifications'), {
           bricolerId: offer.bricolerId,
           type: 'offer_accepted',
@@ -2351,12 +2224,10 @@ const Home = () => {
         origin: { y: 0.6 }
       });
 
-      // Navigate
       setSelectedOrderId(jobId);
       setAutoChatOrderId(jobId);
       if (isMobile) {
         setMobileNavTab('calendar');
-        // The WeekCalendar will pick up setSelectedOrderId via externalSelectedOrderId prop
       } else {
         setIsCalendarExpanded(true);
       }
@@ -2369,14 +2240,11 @@ const Home = () => {
     try {
       const jobRef = doc(db, 'jobs', jobId);
 
-      // Update job: add to declinedBricolers so they don't see it anymore
-      // Also remove them from offeredTo if present
       await updateDoc(jobRef, {
         offeredTo: arrayRemove(offer.bricolerId),
         declinedBricolers: arrayUnion(offer.bricolerId)
       });
 
-      // Notify Bricoler
       await addDoc(collection(db, 'bricoler_notifications'), {
         bricolerId: offer.bricolerId,
         type: 'offer_declined',
@@ -2386,7 +2254,6 @@ const Home = () => {
         read: false
       });
 
-      // Local dismissal
       const offerId = `${jobId}_${offer.bricolerId}_${offer.timestamp?.seconds}`;
       setDismissedOffers(prev => [...prev, offerId]);
     } catch (err) {
@@ -2399,7 +2266,7 @@ const Home = () => {
     try {
       const jobRef = doc(db, 'jobs', activeCounterOffer.jobId);
       const newOffer = {
-        bricolerId: activeCounterOffer.bricolerId, // Keep reference to provider
+        bricolerId: activeCounterOffer.bricolerId,
         type: 'counter',
         price: parseFloat(counterInputPrice) || 0,
         sender: 'client',
@@ -2411,7 +2278,6 @@ const Home = () => {
         status: 'negotiating'
       });
 
-      // Notify Bricoler of Counter Offer
       await addDoc(collection(db, 'bricoler_notifications'), {
         bricolerId: activeCounterOffer.bricolerId,
         type: 'counter_offer_received',
@@ -2453,7 +2319,6 @@ const Home = () => {
         user = result.user;
       }
 
-      // Fetch existing user data if not provided
       const userRef = doc(db, 'users', user.uid);
       if (!providedResult || !providedResult.userData) {
         const userSnap = await getDoc(userRef);
@@ -2463,7 +2328,6 @@ const Home = () => {
         }
       }
 
-      // Create/update user profile globally
       await setDoc(userRef, {
         uid: user.uid,
         name: user.displayName,
@@ -2472,7 +2336,6 @@ const Home = () => {
         ...existingData
       }, { merge: true });
 
-      // Update local state
       setCurrentUser(user);
       setShowAuthPopup(false);
 
@@ -2496,7 +2359,6 @@ const Home = () => {
       } else if (error.code === 'auth/cancelled-popup-request') {
         console.log("Popup request was cancelled by a new request.");
       } else if (error.code === 'auth/popup-closed-by-user') {
-        // User closed the popup, silent
       } else {
         showToast({
           variant: 'error',
@@ -2538,8 +2400,7 @@ const Home = () => {
 
   const isFullscreenMobileTab = isMobile && ['home', 'profile', 'share', 'promocodes', 'calendar', 'messages', 'heroes'].includes(mobileNavTab);
 
-  // --- PAUSE DEPLOYMENT ---
-  const isMaintenanceMode = false; // process.env.NODE_ENV === 'production';
+  const isMaintenanceMode = false;
   if (isMaintenanceMode) {
     return <ComingSoon />;
   }
@@ -2578,7 +2439,12 @@ const Home = () => {
 
       <RatingPopup
         isOpen={!!jobToRate}
-        onClose={() => setJobToRate(null)}
+        onClose={() => {
+          if (jobToRate?.id) {
+            setSessionDismissedRatings(prev => [...prev, jobToRate.id as string]);
+          }
+          setJobToRate(null);
+        }}
         jobId={jobToRate?.id || ''}
         bricolerId={jobToRate?.bricolerId || ''}
         bricolerName={jobToRate?.bricolerName || 'Bricoler'}
@@ -2873,53 +2739,13 @@ const Home = () => {
                 selectedArea={selectedArea}
                 onAddressUpdate={handleAddressUpdate}
                 recentOrders={orders.filter(o => o.status !== 'cancelled')}
-                onSelectService={(serviceName: string, sub?: string) => {
-                  const cfg = getServiceById(serviceName);
-                  if (!cfg) return;
-                  
-                  const finalSvc = cfg.id;
-                  let finalSub = sub || null;
-                  let finalSubName = sub || '';
-                  
-                  if (sub) {
-                    const subCfg = cfg.subServices.find(ss => 
-                      ss.id === sub || ss.name === sub || 
-                      ss.id.toLowerCase().replace(/[_\s-]/g, '') === sub.toLowerCase().replace(/[_\s-]/g, '')
-                    );
-                    if (subCfg) {
-                      finalSub = subCfg.id;
-                      finalSubName = subCfg.name;
-                    }
-                  }
-
-                  const icon = getServiceVector(finalSvc);
-                  
-                  setOrderState({
-                    serviceType: finalSvc,
-                    serviceName: cfg.name,
-                    subServiceId: finalSub || '',
-                    subServiceName: finalSubName,
-                    location: selectedPoint ? {
-                      lat: selectedPoint.lat,
-                      lng: selectedPoint.lng,
-                      address: selectedPoint.address || ''
-                    } : null,
-                    discoveryLocation: null,
-                    providerId: null,
-                    providerName: null,
-                    providerRate: null,
-                    scheduledDate: null,
-                    scheduledTime: null,
-                    serviceIcon: icon
-                  });
-                  
-                  router.push('/order/step1');
-                }}
                 availableServiceIds={availableServices}
+
                 availableSubServiceIds={availableSubServices}
                 trendingSubServiceIds={trendingSubServices}
                 popularServiceIds={popularServiceIds}
-
+                gpsPermissionDenied={gpsPermissionDenied}
+                onSelectService={handleServiceSelection}
                 onChangeLocation={() => {
                   setAutoLocateOnPickerOpen(true);
                   setShowLocationPicker(true);
@@ -2948,8 +2774,10 @@ const Home = () => {
                     setShowAuthPopup(true);
                   }
                 }}
+                isBricoler={isBricoler}
                 initialLocation={selectedPoint as any}
               />
+
             ) : (
 
               <>

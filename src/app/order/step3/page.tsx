@@ -147,7 +147,8 @@ export default function CheckoutPage() {
 
             // 2. Create the Job/Mission(s)
             for (const slot of slotsToProcess) {
-                const pricing = calculateOrderPrice(
+                // prioritize stored estimate from setup step for 100% consistency
+                const pricing = order.estimate || calculateOrderPrice(
                     order.subServiceId || order.serviceType,
                     order.providerRate || 80,
                     {
@@ -176,6 +177,13 @@ export default function CheckoutPage() {
                         glassCleaningType: (order.serviceDetails as any)?.glassCleaningType,
                         glassAccessibility: (order.serviceDetails as any)?.glassAccessibility,
                         storeFrontSize: (order.serviceDetails as any)?.storeFrontSize,
+                        gardenSize: (order.serviceDetails as any)?.gardenSize,
+                        lawnCondition: (order.serviceDetails as any)?.lawnCondition,
+                        needsMower: (order.serviceDetails as any)?.needsMower,
+                        // Hospitality enhancements
+                        unitCount: (order.serviceDetails as any)?.unitCount,
+                        stairsType: (order.serviceDetails as any)?.stairsType,
+                        tipAmount: (order.serviceDetails as any)?.tipAmount,
                     }
                 );
 
@@ -235,6 +243,7 @@ export default function CheckoutPage() {
                         setupProfileId: order.setupProfileId || '',
                         basePrice: pricing.subtotal,
                         fee: pricing.serviceFee,
+                        pricing: pricing, // Save full breakdown details for consistent UI across all views
                         deliveryDetails: {
                             pickupAddress: (order.serviceDetails as any)?.pickupAddress,
                             dropoffAddress: (order.serviceDetails as any)?.dropoffAddress,
@@ -602,6 +611,40 @@ export default function CheckoutPage() {
                                                         {(order.serviceDetails as any).glassAccessibility === 'ladder' ? t({ en: 'Ladder Required', fr: 'Échelle Requise' }) : t({ en: 'Ground Level', fr: 'Rez-de-chaussée' })}
                                                     </span>
                                                 </div>
+                                                {/* Hospitality Details */}
+                                        {subId === 'hospitality_turnover' && (
+                                            <>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                                                    <span style={{ fontSize: 14, fontWeight: 400, color: '#111827' }}>{t({ en: 'Units/Apartments', fr: 'Nombre de biens' })}</span>
+                                                    <span style={{ fontSize: 14, fontWeight: 700, color: '#111827' }}>{(order.serviceDetails as any).unitCount || 1} {t({ en: 'Units', fr: 'Biens' })}</span>
+                                                </div>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                                                    <span style={{ fontSize: 14, fontWeight: 400, color: '#111827' }}>{t({ en: 'Stairs Cleaning', fr: 'Nettoyage escaliers' })}</span>
+                                                    <span style={{ fontSize: 14, fontWeight: 700, color: '#111827' }}>{(order.serviceDetails as any).stairsType !== 'none' ? t({ en: 'Included', fr: 'Inclus' }) : t({ en: 'Not needed', fr: 'Non requis' })}</span>
+                                                </div>
+                                            </>
+                                        )}
+
+                                        {/* Tips Summary */}
+                                        {((order.serviceDetails as any).tipAmount > 0) && (
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8, marginTop: 8, paddingTop: 8, borderTop: '1px dotted #E5E7EB' }}>
+                                                <span style={{ fontSize: 14, fontWeight: 700, color: '#D97706' }}>✨ {t({ en: 'Gratuity', fr: 'Pourboire' })}</span>
+                                                <span style={{ fontSize: 14, fontWeight: 900, color: '#D97706' }}>+{(order.serviceDetails as any).tipAmount} MAD</span>
+                                            </div>
+                                        )}
+                                    </>
+                                        )}
+                                        {/* Lawn Mowing Details */}
+                                        {subId === 'lawn_mowing' && (
+                                            <>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                                                    <span style={{ fontSize: 14, fontWeight: 400, color: '#111827' }}>{t({ en: 'Garden Size', fr: 'Taille du jardin' })}</span>
+                                                    <span style={{ fontSize: 14, fontWeight: 700, color: '#111827' }}>{((order.serviceDetails as any).gardenSize || 'small').toUpperCase()}</span>
+                                                </div>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                                                    <span style={{ fontSize: 14, fontWeight: 400, color: '#111827' }}>{t({ en: 'Mower Needed', fr: 'Tondeuse requise' })}</span>
+                                                    <span style={{ fontSize: 14, fontWeight: 700, color: '#111827' }}>{(order.serviceDetails as any).needsMower ? t({ en: 'Yes', fr: 'Oui' }) : t({ en: 'No', fr: 'Non' })}</span>
+                                                </div>
                                             </>
                                         )}
                                     </>
@@ -763,6 +806,14 @@ export default function CheckoutPage() {
                                     glassCleaningType: (order.serviceDetails as any)?.glassCleaningType,
                                     glassAccessibility: (order.serviceDetails as any)?.glassAccessibility,
                                     storeFrontSize: (order.serviceDetails as any)?.storeFrontSize,
+                                    // Gardening specific
+                                    gardenSize: (order.serviceDetails as any)?.gardenSize,
+                                    lawnCondition: (order.serviceDetails as any)?.lawnCondition,
+                                    needsMower: (order.serviceDetails as any)?.needsMower,
+                                    // Hospitality enhancements
+                                    unitCount: (order.serviceDetails as any)?.unitCount,
+                                    stairsType: (order.serviceDetails as any)?.stairsType,
+                                    tipAmount: (order.serviceDetails as any)?.tipAmount,
                                 }
                             );
 
@@ -806,20 +857,20 @@ export default function CheckoutPage() {
                                         <span style={{ fontSize: 18, fontWeight: 400, color: '#111827' }}>{serviceFee.toFixed(2)} MAD</span>
                                     </div>
 
-                                    {individualPricing.travelFee > 0 && (
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                            <div style={{ display: 'flex', flexDirection: 'column' }}>
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                                                    <span style={{ fontSize: 18, fontWeight: 400, color: '#111827' }}>{t({ en: 'Travel Fee', fr: 'Frais de déplacement', ar: 'رسوم التنقل' })}</span>
-                                                    <div style={{ width: 22, height: 22, borderRadius: '50%', border: '1px solid #D1D5DB', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, color: '#9CA3AF', fontWeight: 700 }}>i</div>
-                                                </div>
-                                                {travelInfo && (
-                                                    <span style={{ fontSize: 11, fontWeight: 400, color: '#9CA3AF' }}>{travelInfo.distanceKm} km · ~{travelInfo.durationMinutes} min</span>
-                                                )}
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                        <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                                <span style={{ fontSize: 18, fontWeight: 400, color: '#111827' }}>{t({ en: 'Travel Fee', fr: 'Frais de déplacement', ar: 'رسوم التنقل' })}</span>
+                                                <div style={{ width: 22, height: 22, borderRadius: '50%', border: '1px solid #D1D5DB', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, color: '#9CA3AF', fontWeight: 700 }}>i</div>
                                             </div>
-                                            <span style={{ fontSize: 18, fontWeight: 400, color: '#111827' }}>{individualPricing.travelFee.toFixed(2)} MAD</span>
+                                            {travelInfo ? (
+                                                <span style={{ fontSize: 11, fontWeight: 400, color: '#9CA3AF' }}>{travelInfo.distanceKm} km · ~{travelInfo.durationMinutes} min</span>
+                                            ) : (
+                                                <span style={{ fontSize: 11, fontWeight: 400, color: '#9CA3AF' }}>0.0 km · ~0 min</span>
+                                            )}
                                         </div>
-                                    )}
+                                        <span style={{ fontSize: 18, fontWeight: 400, color: '#111827' }}>{individualPricing.travelFee.toFixed(2)} MAD</span>
+                                    </div>
 
                                     <div style={{ height: 1, background: '#E5E7EB', width: '100%', margin: '8px 0' }} />
 
@@ -844,7 +895,7 @@ export default function CheckoutPage() {
                 </div>
                 {(() => {
                     const slotsCount = (order.multiSlots && order.multiSlots.length > 0) ? order.multiSlots.length : 1;
-                    const individualPricing = calculateOrderPrice(
+                    const individualPricing = order.estimate || calculateOrderPrice(
                         order.subServiceId || order.serviceType || 'car_rental',
                         order.selectedCar?.pricePerDay || order.providerRate || 0,
                         {
@@ -868,6 +919,14 @@ export default function CheckoutPage() {
                             hasKitchenette: (order.serviceDetails as any)?.hasKitchenette,
                             hasReception: (order.serviceDetails as any)?.hasReception,
                             officeAddOns: (order.serviceDetails as any)?.officeAddOns,
+                            // Gardening specific
+                            gardenSize: (order.serviceDetails as any)?.gardenSize,
+                            lawnCondition: (order.serviceDetails as any)?.lawnCondition,
+                            needsMower: (order.serviceDetails as any)?.needsMower,
+                            // Hospitality enhancements
+                            unitCount: (order.serviceDetails as any)?.unitCount,
+                            stairsType: (order.serviceDetails as any)?.stairsType,
+                            tipAmount: (order.serviceDetails as any)?.tipAmount,
                         }
                     );
                     const total = individualPricing.total * slotsCount;

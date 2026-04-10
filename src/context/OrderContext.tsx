@@ -43,6 +43,7 @@ interface OrderState {
   isPublic?: boolean;
   description?: string;
   recipientDetails?: { name: string; phone: string; address?: string } | null;
+  estimate?: any; // Stores the final PricingBreakdown
   // TV Mounting specific
   tvCount?: number;
   mountTypes?: string[];

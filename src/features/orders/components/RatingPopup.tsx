@@ -45,34 +45,25 @@ const RatingPopup: React.FC<RatingPopupProps> = ({
     const [hover, setHover] = useState(0);
     const [review, setReview] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [alreadySeen, setAlreadySeen] = useState(false);
 
     const setStepWithDirection = (s: number) => {
         setDirection(s > step ? 1 : -1);
         setStep(s);
     };
 
-    // Guard: only show once per job using localStorage
+    // Guard: only show once per session for this job to avoid annoyance 
+    // BUT allow it to reappear on next visit/refresh (localStorage cleared or ignored on mount)
     useEffect(() => {
         if (isOpen && jobId) {
-            const key = `lbricol_rated_${jobId}`;
-            if (localStorage.getItem(key)) {
-                setAlreadySeen(true);
-                onClose();
-                return;
-            }
-            setAlreadySeen(false);
-
             const swoosh = new Audio('https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3');
             swoosh.volume = 0.35;
             swoosh.play().catch(() => { });
         }
-    }, [isOpen, jobId, onClose]);
+    }, [isOpen, jobId]);
 
     const handleClose = () => {
-        if (jobId) {
-            localStorage.setItem(`lbricol_rated_${jobId}`, '1');
-        }
+        // Dismissing with "X" no longer sets localStorage, 
+        // ensuring it pops up again on the next visit.
         onClose();
     };
 
@@ -196,7 +187,7 @@ const RatingPopup: React.FC<RatingPopupProps> = ({
 
     return (
         <AnimatePresence>
-            {isOpen && !alreadySeen && (
+            {isOpen && (
                 <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4">
                     {/* Backdrop */}
                     <motion.div

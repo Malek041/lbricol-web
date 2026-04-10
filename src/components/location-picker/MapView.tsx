@@ -58,6 +58,7 @@ interface MapViewProps {
   onOrderClick?: (id: string) => void;
   onLocationError?: (error: any) => void;
   onLoadingChange?: (isLoading: boolean) => void; // New callback for fetching state
+  onPermissionStatusChange?: (denied: boolean) => void;
   lockCenterOnFocus?: boolean;  // When true, do NOT auto-fly to focused provider pin
   disableFitBounds?: boolean;   // When true, do NOT auto-fit map to all provider pins
   clientPin?: { lat: number; lng: number }; // When set, place a fixed Leaflet marker (Step 2)
@@ -94,6 +95,7 @@ const MapView: React.FC<MapViewProps> = ({
   onOrderClick,
   onLocationError,
   onLoadingChange: onLoadingChangeProp,
+  onPermissionStatusChange,
   lockCenterOnFocus = false,
   disableFitBounds = false,
   clientPin,
@@ -110,21 +112,41 @@ const MapView: React.FC<MapViewProps> = ({
 
   // ── Permission Check ──
   useEffect(() => {
-    if ("permissions" in navigator) {
-      navigator.permissions.query({ name: 'geolocation' }).then((result) => {
-        if (result.state === 'denied') {
-          setPermissionDenied(true);
+    const checkPermission = () => {
+      if ("permissions" in navigator) {
+        navigator.permissions.query({ name: 'geolocation' as any }).then((result) => {
+          const updateState = () => {
+            if (result.state === 'denied') {
+              setPermissionDenied(true);
+              onPermissionStatusChange?.(true);
+            } else {
+              setPermissionDenied(false);
+              onPermissionStatusChange?.(false);
+            }
+          };
+
+          updateState();
+          result.onchange = updateState;
+        });
+      }
+    };
+
+    checkPermission();
+
+    // Re-check when window becomes visible (e.g. returning from settings)
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        checkPermission();
+        // If we were waiting for location, trigger it
+        if (triggerGps) {
+          // Parent will handle if needed, or we can manually trigger a one-off
         }
-        result.onchange = () => {
-          if (result.state === 'granted') {
-            setPermissionDenied(false);
-          } else if (result.state === 'denied') {
-            setPermissionDenied(true);
-          }
-        };
-      });
-    }
-  }, []);
+      }
+    };
+
+    window.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => window.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [triggerGps]);
   const gpsDotRef = useRef<L.CircleMarker | null>(null);
   const gpsPulseRef = useRef<L.CircleMarker | null>(null);
   const centerMarkerRef = useRef<L.Marker | null>(null);
@@ -1133,9 +1155,10 @@ const MapView: React.FC<MapViewProps> = ({
             onClick={async () => {
               if (Capacitor.isNativePlatform()) {
                 try {
+                  // Direct to App Settings where permissions are
                   await NativeSettings.open({
-                    optionAndroid: 'location',
-                    optionIOS: 'location'
+                    optionAndroid: 'app',
+                    optionIOS: 'app'
                   } as any);
                   return;
                 } catch (err) {

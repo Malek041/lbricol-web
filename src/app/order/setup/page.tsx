@@ -129,6 +129,16 @@ export default function ServiceSetupPage() {
     const [glassAccessibility, setGlassAccessibility] = useState<'easy' | 'ladder'>(order.serviceDetails?.glassAccessibility || 'easy');
     const [storeFrontSize, setStoreFrontSize] = useState<'small' | 'medium' | 'large'>(order.serviceDetails?.storeFrontSize || 'small');
 
+    // Gardening - Lawn Mowing State
+    const [gardenSize, setGardenSize] = useState<'small' | 'medium' | 'large' | 'estate'>(order.serviceDetails?.gardenSize || 'small');
+    const [lawnCondition, setLawnCondition] = useState<'standard' | 'wild' | 'overgrown'>(order.serviceDetails?.lawnCondition || 'standard');
+    const [needsMower, setNeedsMower] = useState<boolean>(order.serviceDetails?.needsMower || false);
+
+    // Hospitality Cleaning enhancements
+    const [unitCount, setUnitCount] = useState<number>(order.serviceDetails?.unitCount || 1);
+    const [stairsType, setStairsType] = useState<'small' | 'medium' | 'large' | 'none'>(order.serviceDetails?.stairsType || 'none');
+    const [tipAmount, setTipAmount] = useState<number>(order.serviceDetails?.tipAmount || 0);
+
     // Default Pro Glass to Business
     useEffect(() => {
         if (order.subServiceId === 'commercial_glass' && hasLoaded) {
@@ -229,7 +239,7 @@ export default function ServiceSetupPage() {
         try {
             const { translateBio } = await import('@/lib/translateBio');
             const translations = await translateBio(provider.bio);
-            
+
             if (Object.keys(translations).length === 0) {
                 setTranslationError(true);
                 return;
@@ -452,8 +462,8 @@ export default function ServiceSetupPage() {
                 setEstimate(result);
             };
             calculateTVPrice();
-        } else if ((order.serviceType === 'cleaning' || order.serviceType === 'hospitality') && !['car_washing', 'car_detailing', 'dish_cleaning'].includes(order.subServiceId || '')) {
-            const calculateCleaningPrice = async () => {
+        } else if (order.subServiceId === 'residential_glass' || order.subServiceId === 'commercial_glass' || order.subServiceId === 'lawn_mowing' || (order.serviceType === 'cleaning' || order.serviceType === 'hospitality')) {
+            const calculateSpecialServicePrice = async () => {
                 let distance = 0;
                 let durationMinutes = 0;
                 if (provider.coords && order.location) {
@@ -465,19 +475,30 @@ export default function ServiceSetupPage() {
                         distance = res.distanceKm;
                         durationMinutes = res.durationMinutes;
                     } catch (e) {
-                        console.warn("Distance calculation failed for Cleaning:", e);
+                        console.warn("Distance calculation failed:", e);
                     }
                 }
 
                 const result = calculateOrderPrice(
-                    order.subServiceId || order.serviceType,
-                    order.providerRate || 80,
+                    order.subServiceId || order.serviceType || '',
+                    order.providerRate || 100,
                     {
                         rooms,
                         propertyType,
+                        windowCount,
+                        windowSize,
+                        buildingStories,
+                        glassCleaningType,
+                        glassAccessibility,
+                        storeFrontSize,
+                        gardenSize,
+                        lawnCondition,
+                        needsMower,
+                        unitCount,
+                        stairsType,
+                        tipAmount,
                         distanceKm: distance,
                         durationMinutes: durationMinutes,
-                        // Office specific
                         officeDesks,
                         officeMeetingRooms,
                         officeBathrooms,
@@ -486,25 +507,9 @@ export default function ServiceSetupPage() {
                         officeAddOns
                     }
                 );
-
                 setEstimate(result);
             };
-            calculateCleaningPrice();
-        } else if (order.subServiceId === 'residential_glass' || order.subServiceId === 'commercial_glass') {
-            const result = calculateOrderPrice(
-                order.subServiceId,
-                order.providerRate || 100,
-                {
-                    windowCount,
-                    windowSize,
-                    buildingStories,
-                    glassCleaningType,
-                    glassAccessibility,
-                    propertyType,
-                    storeFrontSize
-                }
-            );
-            setEstimate(result);
+            calculateSpecialServicePrice();
         } else {
             // General fallback: check if it's hourly
             const config = getAllServices().find(s => s.id === order.serviceType);
@@ -569,7 +574,15 @@ export default function ServiceSetupPage() {
         glassCleaningType,
         glassAccessibility,
         storeFrontSize,
-        propertyType
+        propertyType,
+        // Gardening deps
+        gardenSize,
+        lawnCondition,
+        needsMower,
+        // Hospitality deps
+        unitCount,
+        stairsType,
+        tipAmount
     ]);
 
     const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -719,7 +732,15 @@ export default function ServiceSetupPage() {
                 windowCount,
                 glassCleaningType,
                 glassAccessibility,
-                storeFrontSize
+                storeFrontSize,
+                // Gardening fields
+                gardenSize,
+                lawnCondition,
+                needsMower,
+                // Hospitality fields
+                unitCount,
+                stairsType,
+                tipAmount
             };
 
             // 1. Save profile if requested
@@ -734,6 +755,7 @@ export default function ServiceSetupPage() {
 
             // 2. Update Order Context
             setOrderField('serviceDetails', serviceDetails);
+            setOrderField('estimate', estimate);
             setOrderField('setupProfileId', selectedProfileId === 'new' ? '' : selectedProfileId);
             setOrderField('carRentalNote', note); // Legacy fallback
 
@@ -1063,7 +1085,7 @@ export default function ServiceSetupPage() {
                                                     <div className="flex flex-col gap-2">
                                                         <span>{provider.bio}</span>
                                                         {((isArabic(provider.bio) && language !== 'ar') || (!isArabic(provider.bio) && language === 'ar')) && (
-                                                            <button 
+                                                            <button
                                                                 onClick={handleTranslateBio}
                                                                 disabled={isTranslating}
                                                                 className="flex items-center gap-1.5 text-[12px] font-bold text-[#01A083] hover:opacity-80 transition-opacity w-fit"
@@ -1077,7 +1099,7 @@ export default function ServiceSetupPage() {
                                                             </button>
                                                         )}
                                                         {translationError && (
-                                                            <a 
+                                                            <a
                                                                 href={`https://translate.google.com/?sl=auto&tl=${language}&text=${encodeURIComponent(provider.bio)}&op=translate`}
                                                                 target="_blank"
                                                                 rel="noopener noreferrer"
@@ -1103,8 +1125,8 @@ export default function ServiceSetupPage() {
                                                 </div>
                                                 <div className="flex gap-4 overflow-x-auto no-scrollbar -mx-6 px-6 pb-2">
                                                     {provider.portfolio.map((img, i) => (
-                                                        <motion.div 
-                                                            key={i} 
+                                                        <motion.div
+                                                            key={i}
                                                             whileTap={{ scale: 0.95 }}
                                                             onClick={() => setLightboxIndex(i)}
                                                             className="flex-shrink-0 cursor-pointer"
@@ -1211,9 +1233,9 @@ export default function ServiceSetupPage() {
 
                                                                 {/* Category Badge & Date */}
                                                                 <div className="flex items-center gap-3">
-                                                                    <span 
+                                                                    <span
                                                                         className="px-2.5 py-1 rounded-[4px] text-[10px] font-black tracking-wider uppercase"
-                                                                        style={{ 
+                                                                        style={{
                                                                             background: (order.serviceType || '').includes('clean') ? '#F5F3FF' : '#F0F9FF',
                                                                             color: (order.serviceType || '').includes('clean') ? '#7C3AED' : '#0284C7'
                                                                         }}
@@ -1226,7 +1248,7 @@ export default function ServiceSetupPage() {
                                                                 </div>
                                                             </div>
                                                         </div>
-                                                        
+
                                                         {/* Comment Text */}
                                                         <div className="pl-0">
                                                             <p className="text-[15px] text-[#4B5563] font-medium leading-[1.6]">{rev.comment}</p>
@@ -1801,6 +1823,90 @@ export default function ServiceSetupPage() {
                                                 </div>
                                             </div>
                                         )}
+
+                                        {/* Hospitality Cleaning Specialized: Property Multiplier & Stairs */}
+                                        {(order.subServiceId === 'hospitality_turnover' || order.serviceType === 'hospitality') && (
+                                            <div className="space-y-12 bg-[#F9FAFB]/50 p-6 rounded-[24px] border border-neutral-100/50">
+                                                {/* Property Count (How many apartments?) */}
+                                                <div className="space-y-6">
+                                                    <div className="flex flex-col pb-2">
+                                                        <label className="text-[20px] font-black text-[#111827]">{t({ en: 'How many units/apartments?', fr: 'Combien de biens / appartements ?', ar: 'كم عدد الوحدات؟' })}</label>
+                                                        <p className="text-[14px] font-bold text-black/40 mt-1">{t({ en: 'Total price will be multiplied by this number.', fr: 'Le prix total sera multiplié par ce nombre.', ar: 'سيتم ضرب السعر الإجمالي في هذا الرقم.' })}</p>
+                                                    </div>
+                                                    <div className="flex gap-4 overflow-x-auto pb-6 pt-2 no-scrollbar -mx-6 px-6 snap-x snap-mandatory">
+                                                        {[1, 2, 3, 4, 5, 6, 8, 10].map((num) => (
+                                                            <motion.button
+                                                                key={`unit-${num}`}
+                                                                whileTap={{ scale: 0.9 }}
+                                                                onClick={() => setUnitCount(num)}
+                                                                className={`flex-shrink-0 w-16 h-16 flex items-center justify-center font-black text-[22px] transition-all snap-center relative ${unitCount === num ? 'bg-[#111827] text-white scale-110 z-10 rounded-full shadow-lg' : 'bg-white text-neutral-400 border border-neutral-100 rounded-full'}`}
+                                                            >
+                                                                {num}
+                                                            </motion.button>
+                                                        ))}
+                                                    </div>
+                                                </div>
+
+                                                {/* Stairs Add-on */}
+                                                <div className="space-y-6">
+                                                    <h3 className="text-[20px] font-black text-[#111827] pb-2">{t({ en: 'Clean Stairs?', fr: 'Nettoyer les escaliers ?', ar: 'تنظيف السلالم؟' })}</h3>
+                                                    <div className="grid grid-cols-1 gap-3">
+                                                        {[
+                                                            { id: 'none', label: t({ en: 'No Stairs', fr: 'Pas d\'escaliers' }), price: 0, icon: '🚫' },
+                                                            { id: 'small', label: t({ en: 'Small Stairs', fr: 'Petit escalier' }), price: 30, icon: '🪜' },
+                                                            { id: 'medium', label: t({ en: 'Medium / Standard', fr: 'Moyen / Standard' }), price: 45, icon: '🪜' },
+                                                            { id: 'large', label: t({ en: 'Large / Grand', fr: 'Grand escalier' }), price: 60, icon: '🏛️' },
+                                                        ].map((item) => (
+                                                            <button
+                                                                key={item.id}
+                                                                onClick={() => setStairsType(item.id as any)}
+                                                                className={`p-5 rounded-[15px] border-2 text-left transition-all flex items-center gap-4 ${stairsType === item.id ? 'border-[#01A083] bg-[#F1FEF4]' : 'border-neutral-100 bg-white'}`}
+                                                            >
+                                                                <span className="text-2xl">{item.icon}</span>
+                                                                <div className="flex-1">
+                                                                    <p className="text-[16px] font-black">{item.label}</p>
+                                                                    {item.price > 0 && <p className="text-[12px] font-bold text-[#01A083]">+{item.price} MAD</p>}
+                                                                </div>
+                                                                <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${stairsType === item.id ? 'bg-[#01A083] border-[#01A083]' : 'border-neutral-200'}`}>
+                                                                    {stairsType === item.id && <div className="w-2 h-2 rounded-full bg-white" />}
+                                                                </div>
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* Tips Selection Group (Available for all cleaning/hospitality) */}
+                                        {(order.serviceType === 'cleaning' || order.serviceType === 'hospitality') && (
+                                            <div className="space-y-6">
+                                                <div className="flex items-center gap-3 pb-2">
+                                                    <h3 className="text-[20px] font-black text-[#111827]">{t({ en: 'Support your Bricoler', fr: 'Soutenez votre Bricoleur', ar: 'دعم البريكولور' })}</h3>
+                                                    <span className="bg-[#FFC244]/20 text-[#D97706] text-[10px] px-2 py-0.5 rounded-full font-black uppercase tracking-wider">{t({ en: 'Tips', fr: 'Pourboire' })}</span>
+                                                </div>
+                                                <div className="grid grid-cols-4 gap-2">
+                                                    {[0, 20, 40, 60].map((amt) => (
+                                                        <button
+                                                            key={`tip-${amt}`}
+                                                            onClick={() => setTipAmount(amt)}
+                                                            className={`py-4 rounded-[12px] border-2 font-black text-[15px] transition-all ${tipAmount === amt ? 'border-[#FFC244] bg-[#FFFBEB] text-[#D97706]' : 'border-neutral-100 bg-white text-neutral-400'}`}
+                                                        >
+                                                            {amt === 0 ? t({ en: 'None', fr: 'Aucun' }) : `${amt} MAD`}
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                                <div className="relative">
+                                                    <input
+                                                        type="number"
+                                                        placeholder={t({ en: 'Custom Amount', fr: 'Montant personnalisé' })}
+                                                        value={tipAmount === 0 || [20, 40, 60].includes(tipAmount) ? '' : tipAmount}
+                                                        onChange={(e) => setTipAmount(Number(e.target.value))}
+                                                        className="w-full p-5 bg-[#F9FAFB] rounded-[15px] border border-neutral-100 outline-none focus:border-[#FFC244]/30 font-bold text-[15px]"
+                                                    />
+                                                    <span className="absolute right-5 top-1/2 -translate-y-1/2 font-black text-neutral-300">MAD</span>
+                                                </div>
+                                            </div>
+                                        )}
                                         {/* Office Cleaning Specialized Section */}
                                         {order.subServiceId === 'office_cleaning' && (
                                             <div className="space-y-10">
@@ -2312,15 +2418,14 @@ export default function ServiceSetupPage() {
                                                     <h3 className="text-[20px] font-black text-[#111827]">
                                                         {SERVICES_HIERARCHY[order.serviceType as keyof typeof SERVICES_HIERARCHY]?.subServices.find(s => s.id === order.subServiceId)?.name || 'Task details'}
                                                     </h3>
-
                                                 </div>
 
                                                 {/* Task Size Selector */}
                                                 <div className="space-y-6">
-                                                    <p className="text-[18px] font-black text-[#111827]">{t({ en: 'How big is your task?', fr: 'Quelle est la taille de votre tâche ?', ar: 'ما هو حجم مهمتك؟' })}</p>
+                                                    <p className="text-[18px] font-black text-[#111827]">{t({ en: 'How big is your task?', fr: 'Quelle est la taille de votre tâche ?', ar: 'ما هي مساحة عملك؟' })}</p>
                                                     <div className="grid grid-cols-1 gap-3">
                                                         {[
-                                                            { id: 'small', label: t({ en: 'Small', fr: 'Petit', ar: 'صغير' }), desc: t({ en: 'Est. 1 hr', fr: 'Est. 1 h', ar: 'تقدير ساعة' }), hours: 1 },
+                                                            { id: 'small', label: t({ en: 'Small', fr: 'Petit', ar: 'صغير' }), desc: t({ en: 'Est. 1 hr', fr: 'Est. 1 h', ar: 'تقدير ساعة واحدة' }), hours: 1 },
                                                             { id: 'medium', label: t({ en: 'Medium', fr: 'Moyen', ar: 'متوسط' }), desc: t({ en: 'Est. 2-3 hrs', fr: 'Est. 2-3 h', ar: 'تقدير 2-3 ساعات' }), hours: 2.5 },
                                                             { id: 'large', label: t({ en: 'Large', fr: 'Grand', ar: 'كبير' }), desc: t({ en: 'Est. 4+ hrs', fr: 'Est. 4+ h', ar: 'تقدير +4 ساعات' }), hours: 4 },
                                                         ].map((size) => (
@@ -2337,6 +2442,87 @@ export default function ServiceSetupPage() {
                                                             </button>
                                                         ))}
                                                     </div>
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* Gardening Specialized Section: Lawn Mowing */}
+                                        {order.subServiceId === 'lawn_mowing' && (
+                                            <div className="space-y-12">
+                                                <div className="flex items-center justify-between">
+                                                    <h3 className="text-[25px] font-bold text-[#111827]">{t({ en: 'Lawn Mowing', fr: 'Tonte de Pelouse', ar: 'قص العشب' })}</h3>
+                                                </div>
+
+                                                {/* Garden Size Selector */}
+                                                <div className="space-y-6">
+                                                    <label className="text-[20px] font-medium text-[#111827] block pb-2">{t({ en: 'How big is your garden?', fr: 'Quelle est la taille de votre jardin ?', ar: 'ما هي مساحة حديقتك؟' })}</label>
+                                                    <div className="grid grid-cols-2 gap-3">
+                                                        {[
+                                                            { id: 'small', label: t({ en: 'Small', fr: 'Petit' }), desc: '< 50m²', icon: '🏡' },
+                                                            { id: 'medium', label: t({ en: 'Medium', fr: 'Moyen' }), desc: '50-150m²', icon: '🏠' },
+                                                            { id: 'large', label: t({ en: 'Large', fr: 'Grand' }), desc: '150-300m²', icon: '🏰' },
+                                                            { id: 'estate', label: t({ en: 'Estate', fr: 'Propriété' }), desc: '> 300m²', icon: '🌳' },
+                                                        ].map((size) => (
+                                                            <button
+                                                                key={size.id}
+                                                                onClick={() => setGardenSize(size.id as any)}
+                                                                className={`flex flex-col items-center gap-2 p-5 rounded-[12px] border-2 transition-all text-center ${gardenSize === size.id ? 'border-[#01A083] bg-[#F0FDF9] text-[#01A083]' : 'border-neutral-100 bg-white shadow-sm'}`}
+                                                            >
+                                                                <span className="text-3xl">{size.icon}</span>
+                                                                <div className="flex flex-col">
+                                                                    <span className="text-[15px] font-black">{size.label}</span>
+                                                                    <span className="text-[12px] font-bold text-neutral-400 opacity-60">{size.desc}</span>
+                                                                </div>
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                </div>
+
+                                                {/* Lawn Condition Selector */}
+                                                <div className="space-y-6">
+                                                    <h3 className="text-[20px] font-bold text-[#111827] pb-2">{t({ en: 'Current Grass Condition', fr: 'État actuel de l\'herbe', ar: 'حالة العشب الحالية' })}</h3>
+                                                    <div className="grid grid-cols-1 gap-3">
+                                                        {[
+                                                            { id: 'standard', label: t({ en: 'Regularly Maintained', fr: 'Entretien régulier' }), desc: t({ en: 'Standard cut', fr: 'Coupe standard' }), icon: '✨' },
+                                                            { id: 'wild', label: t({ en: 'Wild / Tall Grass', fr: 'Herbe haute' }), desc: t({ en: 'Needs extra effort', fr: 'Nécessite plus d\'effort' }), icon: '🌾' },
+                                                            { id: 'overgrown', label: t({ en: 'Overgrown / Wild', fr: 'Jungle / Très haute' }), desc: t({ en: 'Needs heavy work', fr: 'Travail intensif' }), icon: '🎋' },
+                                                        ].map((cond) => (
+                                                            <button
+                                                                key={cond.id}
+                                                                onClick={() => setLawnCondition(cond.id as any)}
+                                                                className={`p-5 rounded-[12px] border-2 text-left transition-all flex items-center gap-4 ${lawnCondition === cond.id ? 'border-[#01A083] bg-[#F0FDF9]' : 'border-neutral-100 bg-white'}`}
+                                                            >
+                                                                <span className="text-2xl">{cond.icon}</span>
+                                                                <div className="flex-1">
+                                                                    <p className="text-[16px] font-black">{cond.label}</p>
+                                                                    <p className="text-[12px] font-medium text-neutral-400">{cond.desc}</p>
+                                                                </div>
+                                                                <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${lawnCondition === cond.id ? 'bg-[#01A083] border-[#01A083]' : 'border-neutral-200'}`}>
+                                                                    {lawnCondition === cond.id && <div className="w-2 h-2 rounded-full bg-white" />}
+                                                                </div>
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                </div>
+
+                                                {/* Equipment Check */}
+                                                <div className="space-y-6">
+                                                    <h3 className="text-[20px] font-bold text-[#111827]">{t({ en: 'Equipment Needed?', fr: 'Matériel nécessaire ?', ar: 'هل تحتاج للمعدات؟' })}</h3>
+                                                    <button
+                                                        onClick={() => setNeedsMower(!needsMower)}
+                                                        className={`w-full p-6 rounded-[12px] border-2 text-left transition-all flex items-center gap-6 ${needsMower ? 'border-[#01A083] bg-[#F1FEF4]' : 'border-neutral-100 bg-white'}`}
+                                                    >
+                                                        <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-3xl transition-all ${needsMower ? 'bg-[#01A083]/10 scale-110' : 'bg-neutral-50'}`}>
+                                                            🚜
+                                                        </div>
+                                                        <div className="flex-1">
+                                                            <p className="text-[17px] font-black text-[#111827]">{t({ en: 'Bricoler brings a mower', fr: 'Le Bricoleur apporte une tondeuse', ar: 'البريكولور يحضر جزازة' })}</p>
+                                                            <p className="text-[13px] font-bold text-[#6B7280] mt-0.5">{t({ en: 'Add +50 MAD for equipment rental/transport', fr: 'Ajoutez +50 MAD pour la location/transport', ar: 'إضافة +50 درهم لتأجير/نقل المعدات' })}</p>
+                                                        </div>
+                                                        <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${needsMower ? 'bg-[#01A083] border-[#01A083]' : 'border-neutral-300'}`}>
+                                                            {needsMower && <Check size={14} className="text-white" strokeWidth={4} />}
+                                                        </div>
+                                                    </button>
                                                 </div>
                                             </div>
                                         )}
@@ -2478,18 +2664,16 @@ export default function ServiceSetupPage() {
                                             </div>
                                         </div>
 
-                                        {estimate.travelFee > 0 && (
-                                            <div className="flex items-center justify-between">
-                                                <div className="flex flex-col">
-                                                    <div className="flex items-center gap-2">
-                                                        <span className="text-[18px] font-normal text-[#111827]">{t({ en: 'Travel Fee', fr: 'Frais de déplacement', ar: 'رسوم التنقل' })}</span>
-                                                        <button className="w-[22px] h-[22px] rounded-full border border-[#D1D5DB] flex items-center justify-center text-[10px] text-[#9CA3AF] font-bold">i</button>
-                                                    </div>
-                                                    <span className="text-[11px] font-normal text-[#9CA3AF] text-left">{estimate.distanceKm?.toFixed(1) || '0.0'} km · ~{estimate.duration} {t({ en: 'min', fr: 'min', ar: 'دقيقة' })}</span>
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex flex-col">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-[18px] font-normal text-[#111827]">{t({ en: 'Travel Fee', fr: 'Frais de déplacement', ar: 'رسوم التنقل' })}</span>
+                                                    <button className="w-[22px] h-[22px] rounded-full border border-[#D1D5DB] flex items-center justify-center text-[10px] text-[#9CA3AF] font-bold">i</button>
                                                 </div>
-                                                <span className="text-[18px] font-normal text-[#111827]">{estimate.travelFee.toFixed(2)} MAD</span>
+                                                <span className="text-[11px] font-normal text-[#9CA3AF] text-left">{estimate.distanceKm?.toFixed(1) || '0.0'} km · ~{estimate.duration || 0} {t({ en: 'min', fr: 'min', ar: 'دقيقة' })}</span>
                                             </div>
-                                        )}
+                                            <span className="text-[18px] font-normal text-[#111827]">{estimate.travelFee.toFixed(2)} MAD</span>
+                                        </div>
 
                                         <div className="h-px bg-[#E5E7EB] w-full my-2" />
 
