@@ -544,7 +544,7 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
     const [selectedOrder, setSelectedOrder] = useState<OrderDetails | null>(null);
     const [liveBricolerInfo, setLiveBricolerInfo] = useState<{ rating: number, jobsCount: number } | null>(null);
 
-    const openWhatsApp = async (number?: string | null, bricolerId?: string) => {
+    const openWhatsApp = async (number?: string | null, bricolerId?: string | null) => {
         let targetNumber = number;
 
         if (!targetNumber && bricolerId) {
