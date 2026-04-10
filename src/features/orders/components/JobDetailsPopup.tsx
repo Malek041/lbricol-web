@@ -81,7 +81,7 @@ interface JobDetailsPopupProps {
 
 const JobDetailsPopup: React.FC<JobDetailsPopupProps> = ({ job, onClose, onAccept, onDecline, isAdmin, onChat, mode = 'client' }) => {
     const popupRef = useRef<HTMLDivElement>(null);
-    const { t } = useLanguage();
+    const { t, language } = useLanguage();
 
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
