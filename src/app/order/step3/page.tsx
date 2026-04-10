@@ -692,6 +692,7 @@ export default function CheckoutPage() {
                                                     <span style={{ fontSize: 14, fontWeight: 400, color: '#111827' }}>{t({ en: 'Waste Removal', fr: 'Évacuation' })}</span>
                                                     <span style={{ fontSize: 14, fontWeight: 700, color: '#111827' }}>{order.serviceDetails?.includeWasteRemoval ? t({ en: 'Yes', fr: 'Oui' }) : t({ en: 'No', fr: 'Non' })}</span>
                                                 </div>
+                                            </>
                                         )}
 
                                         {/* Planting Details */}
