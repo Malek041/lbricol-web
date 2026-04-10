@@ -63,6 +63,9 @@ export const calculateOrderPrice = (
         treeHeight?: 'small' | 'medium' | 'large' | 'giant';
         trimmingType?: 'shaping' | 'thinning' | 'deadwood' | 'removal';
         includeWasteRemoval?: boolean;
+        unitCount?: number;
+        stairsType?: 'small' | 'medium' | 'large' | 'none';
+        tipAmount?: number;
     } = {}
 ): PricingBreakdown => {
     // 1. Find the subservice to get its archetype
