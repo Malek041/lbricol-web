@@ -142,7 +142,7 @@ export const SERVICES_CATALOGUE: ServiceEntry[] = [
         iconPath: '/Images/Service Category vectors/GardeningVector.webp',
         subServices: [
             { id: 'lawn_mowing', en: 'Lawn Mowing', fr: 'Tonte de Pelouse', ar: 'قص العشب' },
-            { id: 'tree_trimming', en: 'Tree Trimming', fr: 'Taille d\'Arbres', ar: 'تقليم الأشجار' },
+            { id: 'branch_hedge_trimming', en: 'Branch & Hedge Trimming', fr: 'Taille d\'Arbres', ar: 'تقليم الأشجار' },
             { id: 'planting', en: 'Planting & Landscaping', fr: 'Plantation et Aménagement Paysager', ar: 'زراعة وتنسيق حدائق' },
             { id: 'garden_cleanup', en: 'Garden Cleanup', fr: 'Nettoyage de Jardin', ar: 'تنظيف الحديقة' },
             { id: 'watering_setup', en: 'Watering Setup', fr: 'Installation d\'Arrosage', ar: 'تركيب نظام ري' }

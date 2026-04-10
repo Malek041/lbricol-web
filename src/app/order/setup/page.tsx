@@ -139,6 +139,12 @@ export default function ServiceSetupPage() {
     const [stairsType, setStairsType] = useState<'small' | 'medium' | 'large' | 'none'>(order.serviceDetails?.stairsType || 'none');
     const [tipAmount, setTipAmount] = useState<number>(order.serviceDetails?.tipAmount || 0);
 
+    // Tree Trimming State
+    const [treeCount, setTreeCount] = useState<number>(order.serviceDetails?.treeCount || 1);
+    const [treeHeight, setTreeHeight] = useState<'small' | 'medium' | 'large' | 'giant'>(order.serviceDetails?.treeHeight || 'medium');
+    const [trimmingType, setTrimmingType] = useState<'shaping' | 'thinning' | 'deadwood' | 'removal'>(order.serviceDetails?.trimmingType || 'shaping');
+    const [includeWasteRemoval, setIncludeWasteRemoval] = useState<boolean>(order.serviceDetails?.includeWasteRemoval || true);
+
     // Default Pro Glass to Business
     useEffect(() => {
         if (order.subServiceId === 'commercial_glass' && hasLoaded) {
@@ -462,7 +468,7 @@ export default function ServiceSetupPage() {
                 setEstimate(result);
             };
             calculateTVPrice();
-        } else if (order.subServiceId === 'residential_glass' || order.subServiceId === 'commercial_glass' || order.subServiceId === 'lawn_mowing' || (order.serviceType === 'cleaning' || order.serviceType === 'hospitality')) {
+        } else if (order.subServiceId === 'residential_glass' || order.subServiceId === 'commercial_glass' || order.subServiceId === 'lawn_mowing' || order.subServiceId === 'branch_hedge_trimming' || (order.serviceType === 'cleaning' || order.serviceType === 'hospitality')) {
             const calculateSpecialServicePrice = async () => {
                 let distance = 0;
                 let durationMinutes = 0;
@@ -494,6 +500,11 @@ export default function ServiceSetupPage() {
                         gardenSize,
                         lawnCondition,
                         needsMower,
+                        // Tree Trimming
+                        treeCount,
+                        treeHeight,
+                        trimmingType,
+                        includeWasteRemoval,
                         unitCount,
                         stairsType,
                         tipAmount,
@@ -740,7 +751,12 @@ export default function ServiceSetupPage() {
                 // Hospitality fields
                 unitCount,
                 stairsType,
-                tipAmount
+                tipAmount,
+                // Tree Trimming fields
+                treeCount,
+                treeHeight,
+                trimmingType,
+                includeWasteRemoval
             };
 
             // 1. Save profile if requested
@@ -2521,6 +2537,105 @@ export default function ServiceSetupPage() {
                                                         </div>
                                                         <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${needsMower ? 'bg-[#01A083] border-[#01A083]' : 'border-neutral-300'}`}>
                                                             {needsMower && <Check size={14} className="text-white" strokeWidth={4} />}
+                                                        </div>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* Gardening Specialized Section: Tree Trimming */}
+                                        {order.subServiceId === 'branch_hedge_trimming' && (
+                                            <div className="space-y-12">
+                                                <div className="flex items-center justify-between">
+                                                    <h3 className="text-[25px] font-bold text-[#111827]">{t({ en: 'Branch & Hedge Trimming', fr: 'Taille d\'Arbres', ar: 'تقليم الأشجار' })}</h3>
+                                                </div>
+
+                                                {/* Tree Count Selector */}
+                                                <div className="space-y-6">
+                                                    <label className="text-[20px] font-medium text-[#111827] block pb-2">{t({ en: 'How many trees?', fr: 'Combien d\'arbres ?', ar: 'كم عدد الأشجار؟' })}</label>
+                                                    <div className="flex gap-4 overflow-x-auto pb-4 pt-2 no-scrollbar -mx-6 px-6 snap-x snap-mandatory">
+                                                        {[1, 2, 3, 4, 5, 6, 8, 10].map((num) => (
+                                                            <motion.button
+                                                                key={`tree-${num}`}
+                                                                whileTap={{ scale: 0.9 }}
+                                                                onClick={() => setTreeCount(num)}
+                                                                className={`flex-shrink-0 w-16 h-16 flex items-center justify-center font-bold text-[22px] transition-all snap-center relative ${treeCount === num ? 'bg-[#01A083] text-white scale-110 z-10 rounded-full shadow-lg' : 'bg-[#F9FAFB] text-neutral-400 border border-neutral-100 rounded-full'}`}
+                                                            >
+                                                                {num}
+                                                            </motion.button>
+                                                        ))}
+                                                    </div>
+                                                </div>
+
+                                                {/* Tree Height Selector */}
+                                                <div className="space-y-6">
+                                                    <h3 className="text-[20px] font-bold text-[#111827] pb-2">{t({ en: 'Average Tree Height', fr: 'Hauteur moyenne des arbres', ar: 'متوسط ارتفاع الأشجار' })}</h3>
+                                                    <div className="grid grid-cols-2 gap-3">
+                                                        {[
+                                                            { id: 'small', label: t({ en: 'Small', fr: 'Petit' }), desc: '< 3m', icon: '🌳' },
+                                                            { id: 'medium', label: t({ en: 'Medium', fr: 'Moyen' }), desc: '3-7m', icon: '🌲' },
+                                                            { id: 'large', label: t({ en: 'Large', fr: 'Grand' }), desc: '7-12m', icon: '🌴' },
+                                                            { id: 'giant', label: t({ en: 'Giant', fr: 'Géant' }), desc: '> 12m', icon: '🏰' },
+                                                        ].map((size) => (
+                                                            <button
+                                                                key={size.id}
+                                                                onClick={() => setTreeHeight(size.id as any)}
+                                                                className={`flex flex-col items-center gap-2 p-5 rounded-[12px] border-2 transition-all text-center ${treeHeight === size.id ? 'border-[#01A083] bg-[#F0FDF9] text-[#01A083]' : 'border-neutral-100 bg-white shadow-sm'}`}
+                                                            >
+                                                                <span className="text-3xl">{size.icon}</span>
+                                                                <div className="flex flex-col">
+                                                                    <span className="text-[15px] font-black">{size.label}</span>
+                                                                    <span className="text-[12px] font-bold text-neutral-400 opacity-60">{size.desc}</span>
+                                                                </div>
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                </div>
+
+                                                {/* Trimming Type Selector */}
+                                                <div className="space-y-6">
+                                                    <h3 className="text-[20px] font-bold text-[#111827] pb-2">{t({ en: 'Preferred Service', fr: 'Service souhaité', ar: 'الخدمة المفضلة' })}</h3>
+                                                    <div className="grid grid-cols-1 gap-3">
+                                                        {[
+                                                            { id: 'shaping', label: t({ en: 'Shaping & Design', fr: 'Taille & Design' }), desc: t({ en: 'For aesthetic looks', fr: 'Pour l\'aspect esthétique' }), icon: '✂️' },
+                                                            { id: 'thinning', label: t({ en: 'Thinning / Health', fr: 'Éclaircissage / Santé' }), desc: t({ en: 'Improve light & air flow', fr: 'Améliorer l\'air et la lumière' }), icon: '🍃' },
+                                                            { id: 'deadwood', label: t({ en: 'Deadwood / Safety', fr: 'Bois mort / Sécurité' }), desc: t({ en: 'Remove old/risky branches', fr: 'Enlever branches mortes' }), icon: '⚠️' },
+                                                            { id: 'removal', label: t({ en: 'Complete Removal', fr: 'Abattage complet' }), desc: t({ en: 'Cutting tree to ground', fr: 'Coupe au sol' }), icon: '🪓' },
+                                                        ].map((type) => (
+                                                            <button
+                                                                key={type.id}
+                                                                onClick={() => setTrimmingType(type.id as any)}
+                                                                className={`p-5 rounded-[12px] border-2 text-left transition-all flex items-center gap-4 ${trimmingType === type.id ? 'border-[#01A083] bg-[#F0FDF9]' : 'border-neutral-100 bg-white'}`}
+                                                            >
+                                                                <span className="text-2xl">{type.icon}</span>
+                                                                <div className="flex-1">
+                                                                    <p className="text-[16px] font-black">{type.label}</p>
+                                                                    <p className="text-[12px] font-medium text-neutral-400">{type.desc}</p>
+                                                                </div>
+                                                                <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${trimmingType === type.id ? 'bg-[#01A083] border-[#01A083]' : 'border-neutral-300'}`}>
+                                                                    {trimmingType === type.id && <Check size={14} className="text-white" strokeWidth={4} />}
+                                                                </div>
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                </div>
+
+                                                {/* Waste Removal Toggle */}
+                                                <div className="space-y-4">
+                                                    <label className="text-[20px] font-bold text-[#111827]">{t({ en: 'Waste Removal', fr: 'Évacuation des déchets', ar: 'إزالة النفايات' })}</label>
+                                                    <button
+                                                        onClick={() => setIncludeWasteRemoval(!includeWasteRemoval)}
+                                                        className={`w-full p-5 rounded-[12px] border-2 text-left transition-all flex items-center justify-between ${includeWasteRemoval ? 'border-[#01A083] bg-[#F0FDF9]' : 'border-neutral-100 bg-white'}`}
+                                                    >
+                                                        <div className="flex items-center gap-4">
+                                                            <span className="text-2xl">🚛</span>
+                                                            <div className="flex flex-col">
+                                                                <span className="text-[16px] font-black text-[#111827]">{t({ en: 'Include Disposal', fr: 'Inclure l\'évacuation' })}</span>
+                                                                <span className="text-[12px] font-medium text-neutral-400">{t({ en: 'Courier takes branches away', fr: 'Le coursier emporte les branches' })}</span>
+                                                            </div>
+                                                        </div>
+                                                        <div className={`w-12 h-6 rounded-full transition-all relative ${includeWasteRemoval ? 'bg-[#01A083]' : 'bg-neutral-200'}`}>
+                                                            <div className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow-sm transition-all ${includeWasteRemoval ? 'left-7' : 'left-1'}`} />
                                                         </div>
                                                     </button>
                                                 </div>

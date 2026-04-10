@@ -58,10 +58,11 @@ export const calculateOrderPrice = (
         gardenSize?: 'small' | 'medium' | 'large' | 'estate';
         lawnCondition?: 'standard' | 'wild' | 'overgrown';
         needsMower?: boolean;
-        // Hospitality & Unit enhancements
-        unitCount?: number;
-        stairsType?: 'small' | 'medium' | 'large' | 'none';
-        tipAmount?: number;
+        // Tree Trimming specific
+        treeCount?: number;
+        treeHeight?: 'small' | 'medium' | 'large' | 'giant';
+        trimmingType?: 'shaping' | 'thinning' | 'deadwood' | 'removal';
+        includeWasteRemoval?: boolean;
     } = {}
 ): PricingBreakdown => {
     // 1. Find the subservice to get its archetype
@@ -322,6 +323,37 @@ export const calculateOrderPrice = (
             details.push({ 
                 label: { en: 'Height Access Fee', fr: 'Supplément hauteur', ar: 'رسوم العمل في الارتفاع' }, 
                 amount: ladderFee 
+            });
+        }
+    } else if (subServiceId === 'branch_hedge_trimming') {
+        const tCount = options.treeCount || 1;
+        const heightMults = { small: 1.0, medium: 1.5, large: 2.8, giant: 5.5 };
+        const typeMults = { shaping: 1.0, thinning: 1.3, deadwood: 1.6, removal: 3.5 };
+        
+        const hMult = heightMults[options.treeHeight || 'medium'];
+        const tMult = typeMults[options.trimmingType || 'shaping'];
+        
+        quantity = 1;
+        unit = 'job';
+        
+        const treeLabor = providerRate * tCount * hMult * tMult;
+        const wasteRemovalFee = options.includeWasteRemoval ? (50 * tCount) : 0;
+        
+        extraFees = wasteRemovalFee + (treeLabor - providerRate);
+        
+        details.push({
+            label: { 
+                en: `Branch & Hedge Trimming (${tCount} trees, ${options.treeHeight || 'medium'})`, 
+                fr: `Élagage (${tCount} arbres, ${options.treeHeight || 'medium'})`, 
+                ar: `تقليم الأشجار (${tCount} أشجار)` 
+            },
+            amount: Math.round(treeLabor * 10) / 10
+        });
+        
+        if (options.includeWasteRemoval) {
+            details.push({
+                label: { en: 'Waste Removal', fr: 'Évacuation des déchets', ar: 'إزالة النفايات' },
+                amount: wasteRemovalFee
             });
         }
     } else if (subServiceId === 'lawn_mowing') {

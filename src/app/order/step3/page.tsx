@@ -8,19 +8,7 @@ import {
     X,
     Check,
     CreditCard,
-    Banknote,
-    MapPin,
-    Clock,
-    Calendar,
     CheckCircle2,
-    ArrowRight,
-    Star,
-    Info,
-    ChevronRight,
-    Search,
-    Navigation,
-    Truck,
-    Package
 } from 'lucide-react';
 import { format } from 'date-fns';
 import dynamic from 'next/dynamic';
@@ -49,10 +37,18 @@ export default function CheckoutPage() {
     const [showAuthPopup, setShowAuthPopup] = useState(false);
     const [showWhatsAppPopup, setShowWhatsAppPopup] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [travelInfo, setTravelInfo] = useState<{ distanceKm: number; durationMinutes: number } | null>(null);
     const [showSuccess, setShowSuccess] = useState(false);
     const [receiptImage, setReceiptImage] = useState<string | null>(null);
     const [isUploading, setIsUploading] = useState(false);
-    const [travelInfo, setTravelInfo] = useState<{ distanceKm: number; durationMinutes: number } | null>(null);
+
+    const calculateDays = () => {
+        if (!order.carRentalDates) return 1;
+        const start = new Date(`${order.carRentalDates.pickupDate}T${order.carRentalDates.pickupTime}`);
+        const end = new Date(`${order.carRentalDates.returnDate}T${order.carRentalDates.returnTime}`);
+        const diff = end.getTime() - start.getTime();
+        return Math.max(1, Math.ceil(diff / (1000 * 60 * 60 * 24)));
+    };
 
     // ── Pre-flight Checks ────────────────────────────────────────────────
     useEffect(() => {
@@ -91,8 +87,8 @@ export default function CheckoutPage() {
         const isSpecialized = order.serviceType === 'moving' || order.serviceType?.includes('moving') || order.serviceType === 'errands' || (order.serviceType === 'delivery') || order.subServiceId === 'packing';
 
         if (isSpecialized) {
-            const pickup = (order.serviceDetails as any)?.pickupCoords || order.location;
-            const dropoff = (order.serviceDetails as any)?.dropoffCoords;
+            const pickup = order.serviceDetails?.pickupCoords || order.location;
+            const dropoff = order.serviceDetails?.dropoffCoords;
 
             if (pickup?.lat && pickup?.lng && dropoff?.lat && dropoff?.lng) {
                 getRoadDistance(pickup.lat, pickup.lng, dropoff.lat, dropoff.lng)
@@ -153,37 +149,46 @@ export default function CheckoutPage() {
                     order.providerRate || 80,
                     {
                         rooms: order.serviceDetails?.rooms || 1,
-                        hours: (order.serviceDetails as any)?.taskDuration || 1,
+                        hours: order.serviceDetails?.taskDuration || 1,
                         days: calculateDays() || 1,
-                        propertyType: (order.serviceDetails as any)?.propertyType,
+                        propertyType: order.serviceDetails?.propertyType,
                         distanceKm: travelInfo?.distanceKm || 0,
                         // TV Mounting specific
-                        tvCount: (order.serviceDetails as any)?.tvCount,
-                        mountTypes: (order.serviceDetails as any)?.mountTypes,
-                        wallMaterial: (order.serviceDetails as any)?.wallMaterial,
-                        liftingHelp: (order.serviceDetails as any)?.liftingHelp,
-                        mountingAddOns: (order.serviceDetails as any)?.mountingAddOns,
-                        deliveryDistanceKm: (order.serviceDetails as any)?.deliveryDistanceKm,
-                        deliveryDurationMinutes: (order.serviceDetails as any)?.deliveryDurationMinutes,
+                        tvCount: order.serviceDetails?.tvCount,
+                        mountTypes: order.serviceDetails?.mountTypes,
+                        wallMaterial: order.serviceDetails?.wallMaterial,
+                        liftingHelp: order.serviceDetails?.liftingHelp,
+                        mountingAddOns: order.serviceDetails?.mountingAddOns,
+                        deliveryDistanceKm: order.serviceDetails?.deliveryDistanceKm,
+                        deliveryDurationMinutes: order.serviceDetails?.deliveryDurationMinutes,
+                        taskSize: order.serviceDetails?.taskSize,
                         // Office Cleaning specific
-                        officeDesks: (order.serviceDetails as any)?.officeDesks,
-                        officeMeetingRooms: (order.serviceDetails as any)?.officeMeetingRooms,
-                        officeBathrooms: (order.serviceDetails as any)?.officeBathrooms,
-                        hasKitchenette: (order.serviceDetails as any)?.hasKitchenette,
-                        hasReception: (order.serviceDetails as any)?.hasReception,
-                        officeAddOns: (order.serviceDetails as any)?.officeAddOns,
+                        officeDesks: order.serviceDetails?.officeDesks,
+                        officeMeetingRooms: order.serviceDetails?.officeMeetingRooms,
+                        officeBathrooms: order.serviceDetails?.officeBathrooms,
+                        hasKitchenette: order.serviceDetails?.hasKitchenette,
+                        hasReception: order.serviceDetails?.hasReception,
+                        officeAddOns: order.serviceDetails?.officeAddOns,
                         // Glass Cleaning specific
-                        windowCount: (order.serviceDetails as any)?.windowCount,
-                        glassCleaningType: (order.serviceDetails as any)?.glassCleaningType,
-                        glassAccessibility: (order.serviceDetails as any)?.glassAccessibility,
-                        storeFrontSize: (order.serviceDetails as any)?.storeFrontSize,
-                        gardenSize: (order.serviceDetails as any)?.gardenSize,
-                        lawnCondition: (order.serviceDetails as any)?.lawnCondition,
-                        needsMower: (order.serviceDetails as any)?.needsMower,
+                        windowCount: order.serviceDetails?.windowCount,
+                        windowSize: order.serviceDetails?.windowSize,
+                        buildingStories: order.serviceDetails?.buildingStories,
+                        glassCleaningType: order.serviceDetails?.glassCleaningType,
+                        glassAccessibility: order.serviceDetails?.glassAccessibility,
+                        storeFrontSize: order.serviceDetails?.storeFrontSize,
+                        // Gardening specific
+                        gardenSize: order.serviceDetails?.gardenSize,
+                        lawnCondition: order.serviceDetails?.lawnCondition,
+                        needsMower: order.serviceDetails?.needsMower,
+                        // Tree Trimming specific
+                        treeCount: order.serviceDetails?.treeCount,
+                        treeHeight: order.serviceDetails?.treeHeight,
+                        trimmingType: order.serviceDetails?.trimmingType,
+                        includeWasteRemoval: order.serviceDetails?.includeWasteRemoval,
                         // Hospitality enhancements
-                        unitCount: (order.serviceDetails as any)?.unitCount,
-                        stairsType: (order.serviceDetails as any)?.stairsType,
-                        tipAmount: (order.serviceDetails as any)?.tipAmount,
+                        unitCount: order.serviceDetails?.unitCount,
+                        stairsType: order.serviceDetails?.stairsType,
+                        tipAmount: order.serviceDetails?.tipAmount,
                     }
                 );
 
@@ -198,7 +203,7 @@ export default function CheckoutPage() {
                         const [h, m] = slot.time.split(':').map(Number);
                         const startDate = new Date(slot.date);
                         startDate.setHours(h, m, 0, 0);
-                        const durationHr = (order.serviceDetails as any)?.taskDuration || 1;
+                        const durationHr = order.serviceDetails?.taskDuration || 1;
                         expectedEndTime = new Date(startDate.getTime() + (durationHr * 60 * 60 * 1000) + (30 * 60 * 1000));
                     }
                 } catch (e) {
@@ -223,7 +228,7 @@ export default function CheckoutPage() {
                     isPublic: order.isPublic || false,
                     date: slotDate,
                     time: slot.time,
-                    estimatedDuration: (order.serviceDetails as any)?.taskDuration || 1,
+                    estimatedDuration: order.serviceDetails?.taskDuration || 1,
                     selectedCar: order.selectedCar,
                     carRentalDates: order.carRentalDates,
                     carReturnDate: order.carRentalDates?.returnDate,
@@ -238,20 +243,20 @@ export default function CheckoutPage() {
                     details: {
                         car: order.selectedCar,
                         carRentalDates: order.carRentalDates,
-                        note: order.carRentalNote || (order.serviceDetails as any)?.note || (order.serviceDetails as any)?.itemDescription,
+                        note: order.carRentalNote || order.serviceDetails?.note || order.serviceDetails?.itemDescription,
                         serviceDetails: order.serviceDetails || {},
                         setupProfileId: order.setupProfileId || '',
                         basePrice: pricing.subtotal,
                         fee: pricing.serviceFee,
                         pricing: pricing, // Save full breakdown details for consistent UI across all views
                         deliveryDetails: {
-                            pickupAddress: (order.serviceDetails as any)?.pickupAddress,
-                            dropoffAddress: (order.serviceDetails as any)?.dropoffAddress,
-                            recipientName: (order.serviceDetails as any)?.recipientName,
-                            recipientPhone: (order.serviceDetails as any)?.recipientPhone,
-                            deliveryType: (order.serviceDetails as any)?.deliveryType,
-                            deliveryDate: (order.serviceDetails as any)?.deliveryDate,
-                            deliveryTime: (order.serviceDetails as any)?.deliveryTime
+                            pickupAddress: order.serviceDetails?.pickupAddress,
+                            dropoffAddress: order.serviceDetails?.dropoffAddress,
+                            recipientName: order.serviceDetails?.recipientName,
+                            recipientPhone: order.serviceDetails?.recipientPhone,
+                            deliveryType: order.serviceDetails?.deliveryType,
+                            deliveryDate: order.serviceDetails?.deliveryDate,
+                            deliveryTime: order.serviceDetails?.deliveryTime
                         }
                     },
                     createdAt: serverTimestamp(),
@@ -291,13 +296,6 @@ export default function CheckoutPage() {
         createOrders(user, userData.whatsappNumber);
     };
 
-    const calculateDays = () => {
-        if (!order.carRentalDates) return 1;
-        const start = new Date(`${order.carRentalDates.pickupDate}T${order.carRentalDates.pickupTime}`);
-        const end = new Date(`${order.carRentalDates.returnDate}T${order.carRentalDates.returnTime}`);
-        const diff = end.getTime() - start.getTime();
-        return Math.max(1, Math.ceil(diff / (1000 * 60 * 60 * 24)));
-    };
 
     if (loading && !showSuccess) return null;
 
@@ -519,11 +517,11 @@ export default function CheckoutPage() {
                                             <>
                                                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
                                                     <span style={{ fontSize: 14, fontWeight: 400, color: '#111827' }}>{t({ en: 'Property Type', fr: 'Type de propriété' })}</span>
-                                                    <span style={{ fontSize: 14, fontWeight: 700, color: '#111827' }}>{order.serviceDetails.propertyType || 'Studio'}</span>
+                                                    <span style={{ fontSize: 14, fontWeight: 700, color: '#111827' }}>{order.serviceDetails?.propertyType || 'Studio'}</span>
                                                 </div>
                                                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
                                                     <span style={{ fontSize: 14, fontWeight: 400, color: '#111827' }}>{t({ en: 'Rooms', fr: 'Pièces' })}</span>
-                                                    <span style={{ fontSize: 14, fontWeight: 700, color: '#111827' }}>{order.serviceDetails.rooms || 1} {t({ en: 'Rooms', fr: 'Pièces' })}</span>
+                                                    <span style={{ fontSize: 14, fontWeight: 700, color: '#111827' }}>{order.serviceDetails?.rooms || 1} {t({ en: 'Rooms', fr: 'Pièces' })}</span>
                                                 </div>
                                             </>
                                         )}
@@ -533,17 +531,17 @@ export default function CheckoutPage() {
                                             <>
                                                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
                                                     <span style={{ fontSize: 14, fontWeight: 400, color: '#111827' }}>{t({ en: 'Desks', fr: 'Bureaux' })}</span>
-                                                    <span style={{ fontSize: 14, fontWeight: 700, color: '#111827' }}>{(order.serviceDetails as any).officeDesks || 1}</span>
+                                                    <span style={{ fontSize: 14, fontWeight: 700, color: '#111827' }}>{order.serviceDetails?.officeDesks || 1}</span>
                                                 </div>
                                                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
                                                     <span style={{ fontSize: 14, fontWeight: 400, color: '#111827' }}>{t({ en: 'Meeting Rooms', fr: 'Salles de réunion' })}</span>
-                                                    <span style={{ fontSize: 14, fontWeight: 700, color: '#111827' }}>{(order.serviceDetails as any).officeMeetingRooms || 0}</span>
+                                                    <span style={{ fontSize: 14, fontWeight: 700, color: '#111827' }}>{order.serviceDetails?.officeMeetingRooms || 0}</span>
                                                 </div>
-                                                {(order.serviceDetails as any).officeAddOns?.length > 0 && (
+                                                {order.serviceDetails?.officeAddOns?.length > 0 && (
                                                     <div style={{ marginTop: 8, paddingTop: 8, borderTop: '1px solid #F3F4F6' }}>
                                                         <span style={{ fontSize: 11, fontWeight: 700, color: '#9CA3AF', textTransform: 'uppercase' }}>Add-ons</span>
                                                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 4 }}>
-                                                            {(order.serviceDetails as any).officeAddOns.map((a: string) => (
+                                                            {order.serviceDetails?.officeAddOns.map((a: string) => (
                                                                 <span key={a} style={{ background: '#F3F4F6', padding: '4px 10px', borderRadius: 5, fontSize: 12, fontWeight: 600 }}>
                                                                     {a.replace(/_/g, ' ')}
                                                                 </span>
@@ -559,11 +557,11 @@ export default function CheckoutPage() {
                                             <>
                                                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
                                                     <span style={{ fontSize: 14, fontWeight: 400, color: '#111827' }}>{t({ en: 'TV count', fr: 'Nombre de TV' })}</span>
-                                                    <span style={{ fontSize: 14, fontWeight: 700, color: '#111827' }}>{(order.serviceDetails as any).tvCount || 1}</span>
+                                                    <span style={{ fontSize: 14, fontWeight: 700, color: '#111827' }}>{order.serviceDetails?.tvCount || 1}</span>
                                                 </div>
                                                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
                                                     <span style={{ fontSize: 14, fontWeight: 400, color: '#111827' }}>{t({ en: 'Wall Material', fr: 'Type de mur' })}</span>
-                                                    <span style={{ fontSize: 14, fontWeight: 700, color: '#111827' }}>{(order.serviceDetails as any).wallMaterial}</span>
+                                                    <span style={{ fontSize: 14, fontWeight: 700, color: '#111827' }}>{order.serviceDetails?.wallMaterial}</span>
                                                 </div>
                                             </>
                                         )}
@@ -571,16 +569,16 @@ export default function CheckoutPage() {
                                         {/* Delivery/Errands Details */}
                                         {isDelivery && (
                                             <>
-                                                {(order.serviceDetails as any).recipientName && (
+                                                {order.serviceDetails?.recipientName && (
                                                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
                                                         <span style={{ fontSize: 14, fontWeight: 700, color: '#111827' }}>Recipient</span>
-                                                        <span style={{ fontSize: 14, fontWeight: 900, color: '#060708ff' }}>{(order.serviceDetails as any).recipientName}</span>
+                                                        <span style={{ fontSize: 14, fontWeight: 900, color: '#060708ff' }}>{order.serviceDetails?.recipientName}</span>
                                                     </div>
                                                 )}
                                                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
                                                     <span style={{ fontSize: 14, fontWeight: 700, color: '#111827' }}>Schedule</span>
                                                     <span style={{ fontSize: 14, fontWeight: 900, color: '#111827' }}>
-                                                        {(order.serviceDetails as any).deliveryType === 'standard' ? "As soon as possible" : `${(order.serviceDetails as any).deliveryDate} at ${(order.serviceDetails as any).deliveryTime}`}
+                                                        {order.serviceDetails?.deliveryType === 'standard' ? "As soon as possible" : `${order.serviceDetails?.deliveryDate} at ${order.serviceDetails?.deliveryTime}`}
                                                     </span>
                                                 </div>
                                             </>
@@ -590,25 +588,37 @@ export default function CheckoutPage() {
                                         {(subId === 'residential_glass' || subId === 'commercial_glass') && (
                                             <>
                                                 {subId === 'residential_glass' && (
-                                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                                                        <span style={{ fontSize: 14, fontWeight: 400, color: '#111827' }}>{t({ en: 'Coverage', fr: 'Couverture' })}</span>
-                                                        <span style={{ fontSize: 14, fontWeight: 700, color: '#111827' }}>
-                                                            {(order.serviceDetails as any).windowCount || 5} {t({ en: 'Windows', fr: 'Fenêtres' })} - {((order.serviceDetails as any).glassCleaningType || 'both').toUpperCase()}
-                                                        </span>
-                                                    </div>
+                                                    <>
+                                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                                                            <span style={{ fontSize: 14, fontWeight: 400, color: '#111827' }}>{t({ en: 'Coverage', fr: 'Couverture' })}</span>
+                                                            <span style={{ fontSize: 14, fontWeight: 700, color: '#111827' }}>
+                                                                {order.serviceDetails?.windowCount || 5} {t({ en: 'Windows', fr: 'Fenêtres' })}
+                                                            </span>
+                                                        </div>
+                                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                                                            <span style={{ fontSize: 14, fontWeight: 400, color: '#111827' }}>{t({ en: 'Window Size', fr: 'Taille fenêtres' })}</span>
+                                                            <span style={{ fontSize: 14, fontWeight: 700, color: '#111827' }}>
+                                                                {(order.serviceDetails?.windowSize || 'medium').toUpperCase()}
+                                                            </span>
+                                                        </div>
+                                                    </>
                                                 )}
                                                 {subId === 'commercial_glass' && (
                                                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
                                                         <span style={{ fontSize: 14, fontWeight: 400, color: '#111827' }}>{t({ en: 'Scale', fr: 'Taille' })}</span>
                                                         <span style={{ fontSize: 14, fontWeight: 700, color: '#111827' }}>
-                                                            {((order.serviceDetails as any).storeFrontSize || 'small').toUpperCase()}
+                                                            {(order.serviceDetails?.storeFrontSize || 'small').toUpperCase()}
                                                         </span>
                                                     </div>
                                                 )}
                                                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                                                    <span style={{ fontSize: 14, fontWeight: 400, color: '#111827' }}>{t({ en: 'Stories/Floors', fr: 'Étages' })}</span>
+                                                    <span style={{ fontSize: 14, fontWeight: 700, color: '#111827' }}>{order.serviceDetails?.buildingStories || 1}</span>
+                                                </div>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
                                                     <span style={{ fontSize: 14, fontWeight: 400, color: '#111827' }}>{t({ en: 'Accessibility', fr: 'Accessibilité' })}</span>
-                                                    <span style={{ fontSize: 14, fontWeight: 700, color: (order.serviceDetails as any).glassAccessibility === 'ladder' ? '#D97706' : '#111827' }}>
-                                                        {(order.serviceDetails as any).glassAccessibility === 'ladder' ? t({ en: 'Ladder Required', fr: 'Échelle Requise' }) : t({ en: 'Ground Level', fr: 'Rez-de-chaussée' })}
+                                                    <span style={{ fontSize: 14, fontWeight: 700, color: order.serviceDetails?.glassAccessibility === 'ladder' ? '#D97706' : '#111827' }}>
+                                                        {order.serviceDetails?.glassAccessibility === 'ladder' ? t({ en: 'Ladder Required', fr: 'Échelle Requise' }) : t({ en: 'Ground Level', fr: 'Rez-de-chaussée' })}
                                                     </span>
                                                 </div>
                                             </>
@@ -619,28 +629,28 @@ export default function CheckoutPage() {
                                             <>
                                                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
                                                     <span style={{ fontSize: 14, fontWeight: 400, color: '#111827' }}>{t({ en: 'Units/Apartments', fr: 'Nombre de biens' })}</span>
-                                                    <span style={{ fontSize: 14, fontWeight: 700, color: '#111827' }}>{(order.serviceDetails as any).unitCount || 1} {t({ en: 'Units', fr: 'Biens' })}</span>
+                                                    <span style={{ fontSize: 14, fontWeight: 700, color: '#111827' }}>{order.serviceDetails?.unitCount || 1} {t({ en: 'Units', fr: 'Biens' })}</span>
                                                 </div>
                                                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
                                                     <span style={{ fontSize: 14, fontWeight: 400, color: '#111827' }}>{t({ en: 'Stairs Cleaning', fr: 'Nettoyage escaliers' })}</span>
-                                                    <span style={{ fontSize: 14, fontWeight: 700, color: '#111827' }}>{(order.serviceDetails as any).stairsType !== 'none' ? t({ en: 'Included', fr: 'Inclus' }) : t({ en: 'Not needed', fr: 'Non requis' })}</span>
+                                                    <span style={{ fontSize: 14, fontWeight: 700, color: '#111827' }}>{order.serviceDetails?.stairsType !== 'none' ? t({ en: 'Included', fr: 'Inclus' }) : t({ en: 'Not needed', fr: 'Non requis' })}</span>
                                                 </div>
                                             </>
                                         )}
 
                                         {/* Tips Summary - applies to glass cleaning when they're active */}
-                                        {(subId === 'residential_glass' || subId === 'commercial_glass') && ((order.serviceDetails as any).tipAmount > 0) && (
+                                        {(subId === 'residential_glass' || subId === 'commercial_glass') && (order.serviceDetails?.tipAmount > 0) && (
                                             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8, marginTop: 8, paddingTop: 8, borderTop: '1px dotted #E5E7EB' }}>
                                                 <span style={{ fontSize: 14, fontWeight: 700, color: '#D97706' }}>✨ {t({ en: 'Gratuity', fr: 'Pourboire' })}</span>
-                                                <span style={{ fontSize: 14, fontWeight: 900, color: '#D97706' }}>+{(order.serviceDetails as any).tipAmount} MAD</span>
+                                                <span style={{ fontSize: 14, fontWeight: 900, color: '#D97706' }}>+{order.serviceDetails?.tipAmount} MAD</span>
                                             </div>
                                         )}
 
                                         {/* Tips Summary - for general services if not handled above (simplified) */}
-                                        {subId !== 'residential_glass' && subId !== 'commercial_glass' && ((order.serviceDetails as any).tipAmount > 0) && (
+                                        {subId !== 'residential_glass' && subId !== 'commercial_glass' && (order.serviceDetails?.tipAmount > 0) && (
                                             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8, marginTop: 8, paddingTop: 8, borderTop: '1px dotted #E5E7EB' }}>
                                                 <span style={{ fontSize: 14, fontWeight: 700, color: '#D97706' }}>✨ {t({ en: 'Gratuity', fr: 'Pourboire' })}</span>
-                                                <span style={{ fontSize: 14, fontWeight: 900, color: '#D97706' }}>+{(order.serviceDetails as any).tipAmount} MAD</span>
+                                                <span style={{ fontSize: 14, fontWeight: 900, color: '#D97706' }}>+{order.serviceDetails?.tipAmount} MAD</span>
                                             </div>
                                         )}
                                         {/* Lawn Mowing Details */}
@@ -648,11 +658,33 @@ export default function CheckoutPage() {
                                             <>
                                                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
                                                     <span style={{ fontSize: 14, fontWeight: 400, color: '#111827' }}>{t({ en: 'Garden Size', fr: 'Taille du jardin' })}</span>
-                                                    <span style={{ fontSize: 14, fontWeight: 700, color: '#111827' }}>{((order.serviceDetails as any).gardenSize || 'small').toUpperCase()}</span>
+                                                    <span style={{ fontSize: 14, fontWeight: 700, color: '#111827' }}>{(order.serviceDetails?.gardenSize || 'small').toUpperCase()}</span>
                                                 </div>
                                                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
                                                     <span style={{ fontSize: 14, fontWeight: 400, color: '#111827' }}>{t({ en: 'Mower Needed', fr: 'Tondeuse requise' })}</span>
-                                                    <span style={{ fontSize: 14, fontWeight: 700, color: '#111827' }}>{(order.serviceDetails as any).needsMower ? t({ en: 'Yes', fr: 'Oui' }) : t({ en: 'No', fr: 'Non' })}</span>
+                                                    <span style={{ fontSize: 14, fontWeight: 700, color: '#111827' }}>{order.serviceDetails?.needsMower ? t({ en: 'Yes', fr: 'Oui' }) : t({ en: 'No', fr: 'Non' })}</span>
+                                                </div>
+                                            </>
+                                        )}
+
+                                        {/* Tree Trimming Details */}
+                                        {subId === 'branch_hedge_trimming' && (
+                                            <>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                                                    <span style={{ fontSize: 14, fontWeight: 400, color: '#111827' }}>{t({ en: 'Tree Count', fr: 'Nombre d\'arbres' })}</span>
+                                                    <span style={{ fontSize: 14, fontWeight: 700, color: '#111827' }}>{order.serviceDetails?.treeCount || 1}</span>
+                                                </div>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                                                    <span style={{ fontSize: 14, fontWeight: 400, color: '#111827' }}>{t({ en: 'Height', fr: 'Hauteur' })}</span>
+                                                    <span style={{ fontSize: 14, fontWeight: 700, color: '#111827' }}>{(order.serviceDetails?.treeHeight || 'medium').toUpperCase()}</span>
+                                                </div>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                                                    <span style={{ fontSize: 14, fontWeight: 400, color: '#111827' }}>{t({ en: 'Service', fr: 'Service' })}</span>
+                                                    <span style={{ fontSize: 14, fontWeight: 700, color: '#111827' }}>{(order.serviceDetails?.trimmingType || 'shaping').toUpperCase()}</span>
+                                                </div>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                                                    <span style={{ fontSize: 14, fontWeight: 400, color: '#111827' }}>{t({ en: 'Waste Removal', fr: 'Évacuation' })}</span>
+                                                    <span style={{ fontSize: 14, fontWeight: 700, color: '#111827' }}>{order.serviceDetails?.includeWasteRemoval ? t({ en: 'Yes', fr: 'Oui' }) : t({ en: 'No', fr: 'Non' })}</span>
                                                 </div>
                                             </>
                                         )}
@@ -660,11 +692,11 @@ export default function CheckoutPage() {
                                 );
                             })()}
 
-                            {order.serviceDetails.photoUrls && order.serviceDetails.photoUrls.length > 0 && (
+                            {order.serviceDetails?.photoUrls && order.serviceDetails?.photoUrls.length > 0 && (
                                 <div style={{ marginTop: 12 }}>
-                                    <span style={{ fontSize: 12, fontWeight: 900, color: '#9CA3AF', textTransform: 'uppercase' }}>Photos ({order.serviceDetails.photoUrls.length})</span>
+                                    <span style={{ fontSize: 12, fontWeight: 900, color: '#9CA3AF', textTransform: 'uppercase' }}>Photos ({order.serviceDetails?.photoUrls.length})</span>
                                     <div style={{ display: 'flex', gap: 8, marginTop: 8, overflowX: 'auto' }}>
-                                        {order.serviceDetails.photoUrls.map((url: string, i: number) => (
+                                        {order.serviceDetails?.photoUrls.map((url: string, i: number) => (
                                             <img key={i} src={url} style={{ width: 60, height: 60, borderRadius: 10, objectFit: 'cover' }} />
                                         ))}
                                     </div>
@@ -675,14 +707,14 @@ export default function CheckoutPage() {
                 )}
 
                 {/* Description Card */}
-                {(order.carRentalNote || (order.serviceDetails as any)?.note || (order.serviceDetails as any)?.itemDescription) && (
+                {(order.carRentalNote || order.serviceDetails?.note || order.serviceDetails?.itemDescription) && (
                     <div style={{ marginTop: 24 }}>
                         <h3 style={{ fontSize: 30, fontWeight: 700, marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
                             Description
                         </h3>
                         <div style={{ padding: 16, borderRadius: 12, background: '#F9FAFB', border: '1px solid #F3F4F6' }}>
                             <p style={{ fontSize: 14, color: '#4B5563', fontWeight: 600, lineHeight: 1.5 }}>
-                                {order.carRentalNote || (order.serviceDetails as any)?.note || (order.serviceDetails as any)?.itemDescription}
+                                {order.carRentalNote || order.serviceDetails?.note || order.serviceDetails?.itemDescription}
                             </p>
                         </div>
                     </div>
@@ -693,7 +725,7 @@ export default function CheckoutPage() {
                 </h3>
 
                 {/* Route Section (Pic 4 Style) */}
-                {((order.serviceType === 'moving' || order.serviceType?.includes('moving') || order.serviceType === 'errands' || order.subServiceId === 'packing') && (order.serviceDetails as any)?.needsTransport !== false) && (
+                {((order.serviceType === 'moving' || order.serviceType?.includes('moving') || order.serviceType === 'errands' || order.subServiceId === 'packing') && order.serviceDetails?.needsTransport !== false) && (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 24 }}>
                         <div style={{ height: 180, background: '#F3F4F6', borderRadius: 5, border: '1px solid #E5E7EB', overflow: 'hidden', position: 'relative' }}>
                             <MapView
@@ -703,9 +735,9 @@ export default function CheckoutPage() {
                                 lockCenterOnFocus={true}
                                 zoom={14}
                                 clientPin={order.location ? { lat: order.location.lat, lng: order.location.lng } : undefined}
-                                destinationPin={(order.serviceDetails as any)?.dropoffCoords ? {
-                                    lat: (order.serviceDetails as any).dropoffCoords.lat,
-                                    lng: (order.serviceDetails as any).dropoffCoords.lng
+                                destinationPin={order.serviceDetails?.dropoffCoords ? {
+                                    lat: order.serviceDetails?.dropoffCoords.lat,
+                                    lng: order.serviceDetails?.dropoffCoords.lng
                                 } : undefined}
                             />
                             <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', background: 'linear-gradient(to bottom, rgba(255,255,255,0.1), transparent)' }} />
@@ -737,13 +769,13 @@ export default function CheckoutPage() {
                                 {(order.serviceType === 'errands' || order.serviceType?.includes('delivery')) ? 'Pickup Location' : 'Your Location'}
                             </div>
                             <div style={{ fontSize: 15, fontWeight: 700, color: '#111827', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                                {(order.serviceDetails as any)?.pickupAddress || order.location?.address}
+                                {order.serviceDetails?.pickupAddress || order.location?.address}
                             </div>
                         </div>
                     </div>
 
                     {/* Dropoff Location (For Deliveries) */}
-                    {(order.serviceType === 'errands' || order.serviceType?.includes('delivery')) && (order.serviceDetails as any)?.dropoffAddress && (
+                    {(order.serviceType === 'errands' || order.serviceType?.includes('delivery')) && order.serviceDetails?.dropoffAddress && (
                         <div style={{ padding: '16px 20px', background: '#F9FAFB', borderRadius: 5, display: 'flex', alignItems: 'center', gap: 16 }}>
                             <div style={{ width: 44, height: 44, borderRadius: 5, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                 <img src="/Images/Icons/Lightpin.png" alt="location" style={{ width: 34, height: 34, objectFit: 'contain' }} />
@@ -751,7 +783,7 @@ export default function CheckoutPage() {
                             <div style={{ flex: 1, minWidth: 0 }}>
                                 <div style={{ fontSize: 11, fontWeight: 900, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 2 }}>Dropoff Location</div>
                                 <div style={{ fontSize: 15, fontWeight: 900, color: '#111827', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                                    {(order.serviceDetails as any).dropoffAddress}
+                                    {order.serviceDetails?.dropoffAddress}
                                 </div>
                             </div>
                         </div>
@@ -790,39 +822,40 @@ export default function CheckoutPage() {
                                 order.providerRate || 80,
                                 {
                                     rooms: order.serviceDetails?.rooms || 1,
-                                    hours: (order.serviceDetails as any)?.taskDuration || 1,
+                                    hours: order.serviceDetails?.taskDuration || 1,
                                     days: calculateDays() || 1,
-                                    propertyType: (order.serviceDetails as any)?.propertyType,
+                                    propertyType: order.serviceDetails?.propertyType,
                                     distanceKm: travelInfo?.distanceKm || 0,
-                                    // TV Mounting specific
-                                    tvCount: (order.serviceDetails as any)?.tvCount,
-                                    mountTypes: (order.serviceDetails as any)?.mountTypes,
-                                    wallMaterial: (order.serviceDetails as any)?.wallMaterial,
-                                    liftingHelp: (order.serviceDetails as any)?.liftingHelp,
-                                    mountingAddOns: (order.serviceDetails as any)?.mountingAddOns,
-                                    deliveryDistanceKm: (order.serviceDetails as any)?.deliveryDistanceKm,
-                                    deliveryDurationMinutes: (order.serviceDetails as any)?.deliveryDurationMinutes,
-                                    // Office Cleaning specific
-                                    officeDesks: (order.serviceDetails as any)?.officeDesks,
-                                    officeMeetingRooms: (order.serviceDetails as any)?.officeMeetingRooms,
-                                    officeBathrooms: (order.serviceDetails as any)?.officeBathrooms,
-                                    hasKitchenette: (order.serviceDetails as any)?.hasKitchenette,
-                                    hasReception: (order.serviceDetails as any)?.hasReception,
-                                    officeAddOns: (order.serviceDetails as any)?.officeAddOns,
-                                    taskSize: (order.serviceDetails as any)?.taskSize,
-                                    // Glass Cleaning specific
-                                    windowCount: (order.serviceDetails as any)?.windowCount,
-                                    glassCleaningType: (order.serviceDetails as any)?.glassCleaningType,
-                                    glassAccessibility: (order.serviceDetails as any)?.glassAccessibility,
-                                    storeFrontSize: (order.serviceDetails as any)?.storeFrontSize,
-                                    // Gardening specific
-                                    gardenSize: (order.serviceDetails as any)?.gardenSize,
-                                    lawnCondition: (order.serviceDetails as any)?.lawnCondition,
-                                    needsMower: (order.serviceDetails as any)?.needsMower,
-                                    // Hospitality enhancements
-                                    unitCount: (order.serviceDetails as any)?.unitCount,
-                                    stairsType: (order.serviceDetails as any)?.stairsType,
-                                    tipAmount: (order.serviceDetails as any)?.tipAmount,
+                                    tvCount: order.serviceDetails?.tvCount,
+                                    mountTypes: order.serviceDetails?.mountTypes,
+                                    wallMaterial: order.serviceDetails?.wallMaterial,
+                                    liftingHelp: order.serviceDetails?.liftingHelp,
+                                    mountingAddOns: order.serviceDetails?.mountingAddOns,
+                                    deliveryDistanceKm: order.serviceDetails?.deliveryDistanceKm,
+                                    deliveryDurationMinutes: order.serviceDetails?.deliveryDurationMinutes,
+                                    taskSize: order.serviceDetails?.taskSize,
+                                    officeDesks: order.serviceDetails?.officeDesks,
+                                    officeMeetingRooms: order.serviceDetails?.officeMeetingRooms,
+                                    officeBathrooms: order.serviceDetails?.officeBathrooms,
+                                    hasKitchenette: order.serviceDetails?.hasKitchenette,
+                                    hasReception: order.serviceDetails?.hasReception,
+                                    officeAddOns: order.serviceDetails?.officeAddOns,
+                                    windowCount: order.serviceDetails?.windowCount,
+                                    windowSize: order.serviceDetails?.windowSize,
+                                    buildingStories: order.serviceDetails?.buildingStories,
+                                    glassCleaningType: order.serviceDetails?.glassCleaningType,
+                                    glassAccessibility: order.serviceDetails?.glassAccessibility,
+                                    storeFrontSize: order.serviceDetails?.storeFrontSize,
+                                    gardenSize: order.serviceDetails?.gardenSize,
+                                    lawnCondition: order.serviceDetails?.lawnCondition,
+                                    needsMower: order.serviceDetails?.needsMower,
+                                    treeCount: order.serviceDetails?.treeCount,
+                                    treeHeight: order.serviceDetails?.treeHeight,
+                                    trimmingType: order.serviceDetails?.trimmingType,
+                                    includeWasteRemoval: order.serviceDetails?.includeWasteRemoval,
+                                    unitCount: order.serviceDetails?.unitCount,
+                                    stairsType: order.serviceDetails?.stairsType,
+                                    tipAmount: order.serviceDetails?.tipAmount,
                                 }
                             );
 
@@ -909,34 +942,46 @@ export default function CheckoutPage() {
                         order.selectedCar?.pricePerDay || order.providerRate || 0,
                         {
                             rooms: order.serviceDetails?.rooms || 1,
-                            hours: (order.serviceDetails as any)?.taskDuration || 1,
+                            hours: order.serviceDetails?.taskDuration || 1,
                             days: calculateDays() || 1,
-                            propertyType: (order.serviceDetails as any)?.propertyType,
+                            propertyType: order.serviceDetails?.propertyType,
                             distanceKm: travelInfo?.distanceKm || 0,
                             // TV Mounting specific
-                            tvCount: (order.serviceDetails as any)?.tvCount,
-                            mountTypes: (order.serviceDetails as any)?.mountTypes,
-                            wallMaterial: (order.serviceDetails as any)?.wallMaterial,
-                            liftingHelp: (order.serviceDetails as any)?.liftingHelp,
-                            mountingAddOns: (order.serviceDetails as any)?.mountingAddOns,
-                            deliveryDistanceKm: (order.serviceDetails as any)?.deliveryDistanceKm,
-                            deliveryDurationMinutes: (order.serviceDetails as any)?.deliveryDurationMinutes,
+                            tvCount: order.serviceDetails?.tvCount,
+                            mountTypes: order.serviceDetails?.mountTypes,
+                            wallMaterial: order.serviceDetails?.wallMaterial,
+                            liftingHelp: order.serviceDetails?.liftingHelp,
+                            mountingAddOns: order.serviceDetails?.mountingAddOns,
+                            deliveryDistanceKm: order.serviceDetails?.deliveryDistanceKm,
+                            deliveryDurationMinutes: order.serviceDetails?.deliveryDurationMinutes,
+                            taskSize: order.serviceDetails?.taskSize,
                             // Office Cleaning specific
-                            officeDesks: (order.serviceDetails as any)?.officeDesks,
-                            officeMeetingRooms: (order.serviceDetails as any)?.officeMeetingRooms,
-                            officeBathrooms: (order.serviceDetails as any)?.officeBathrooms,
-                            hasKitchenette: (order.serviceDetails as any)?.hasKitchenette,
-                            hasReception: (order.serviceDetails as any)?.hasReception,
-                            officeAddOns: (order.serviceDetails as any)?.officeAddOns,
-                            taskSize: (order.serviceDetails as any)?.taskSize,
+                            officeDesks: order.serviceDetails?.officeDesks,
+                            officeMeetingRooms: order.serviceDetails?.officeMeetingRooms,
+                            officeBathrooms: order.serviceDetails?.officeBathrooms,
+                            hasKitchenette: order.serviceDetails?.hasKitchenette,
+                            hasReception: order.serviceDetails?.hasReception,
+                            officeAddOns: order.serviceDetails?.officeAddOns,
+                            // Glass Cleaning specific
+                            windowCount: order.serviceDetails?.windowCount,
+                            windowSize: order.serviceDetails?.windowSize,
+                            buildingStories: order.serviceDetails?.buildingStories,
+                            glassCleaningType: order.serviceDetails?.glassCleaningType,
+                            glassAccessibility: order.serviceDetails?.glassAccessibility,
+                            storeFrontSize: order.serviceDetails?.storeFrontSize,
                             // Gardening specific
-                            gardenSize: (order.serviceDetails as any)?.gardenSize,
-                            lawnCondition: (order.serviceDetails as any)?.lawnCondition,
-                            needsMower: (order.serviceDetails as any)?.needsMower,
+                            gardenSize: order.serviceDetails?.gardenSize,
+                            lawnCondition: order.serviceDetails?.lawnCondition,
+                            needsMower: order.serviceDetails?.needsMower,
+                            // Tree Trimming specific
+                            treeCount: order.serviceDetails?.treeCount,
+                            treeHeight: order.serviceDetails?.treeHeight,
+                            trimmingType: order.serviceDetails?.trimmingType,
+                            includeWasteRemoval: order.serviceDetails?.includeWasteRemoval,
                             // Hospitality enhancements
-                            unitCount: (order.serviceDetails as any)?.unitCount,
-                            stairsType: (order.serviceDetails as any)?.stairsType,
-                            tipAmount: (order.serviceDetails as any)?.tipAmount,
+                            unitCount: order.serviceDetails?.unitCount,
+                            stairsType: order.serviceDetails?.stairsType,
+                            tipAmount: order.serviceDetails?.tipAmount,
                         }
                     );
                     const total = individualPricing.total * slotsCount;

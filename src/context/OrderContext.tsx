@@ -9,6 +9,56 @@ interface LocationPoint {
   area?: string;
 }
 
+export interface ServiceDetails {
+  rooms?: number;
+  taskDuration?: number;
+  propertyType?: string;
+  tvCount?: number;
+  mountTypes?: string[];
+  wallMaterial?: string;
+  liftingHelp?: string;
+  mountingAddOns?: string[];
+  pickupCoords?: any;
+  dropoffCoords?: any;
+  deliveryDistanceKm?: number;
+  deliveryDurationMinutes?: number;
+  taskSize?: string;
+  needsTransport?: boolean;
+  recipientName?: string;
+  recipientPhone?: string;
+  pickupAddress?: string;
+  dropoffAddress?: string;
+  deliveryType?: string;
+  deliveryDate?: string;
+  deliveryTime?: string;
+  note?: string;
+  itemDescription?: string;
+  officeDesks?: number;
+  officeMeetingRooms?: number;
+  officeBathrooms?: number;
+  hasKitchenette?: boolean;
+  hasReception?: boolean;
+  officeAddOns?: string[];
+  windowCount?: number;
+  windowSize?: string;
+  buildingStories?: number;
+  glassCleaningType?: string;
+  glassAccessibility?: string;
+  storeFrontSize?: string;
+  gardenSize?: string;
+  lawnCondition?: string;
+  needsMower?: boolean;
+  treeCount?: number;
+  treeHeight?: string;
+  trimmingType?: string;
+  includeWasteRemoval?: boolean;
+  unitCount?: number;
+  stairsType?: string;
+  tipAmount?: number;
+  photoUrls?: string[];
+  [key: string]: any;
+}
+
 interface OrderState {
   serviceType: string;
   serviceName: string;
@@ -38,7 +88,7 @@ interface OrderState {
   date?: string;
   time?: string;
   multiSlots?: { date: string; time: string }[];
-  serviceDetails?: Record<string, any>;
+  serviceDetails?: ServiceDetails;
   setupProfileId?: string;
   isPublic?: boolean;
   description?: string;
