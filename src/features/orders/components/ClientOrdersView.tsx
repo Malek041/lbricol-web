@@ -997,15 +997,26 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
                                                     </span>
                                                 </div>
                                             </div>
-                                            <button
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    setActiveChatOrderId(selectedOrder.id!);
-                                                }}
-                                                className="w-14 h-14 rounded-[20px] bg-[#01A083] flex flex-shrink-0 items-center justify-center active:scale-90 transition-all "
-                                            >
-                                                <MessageCircle size={28} className="text-white" />
-                                            </button>
+                                            <div className="flex items-center gap-2">
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        openWhatsApp(selectedOrder.bricolerWhatsApp, selectedOrder.bricolerId);
+                                                    }}
+                                                    className="w-14 h-14 rounded-[20px] bg-white border border-[#25D366]/30 flex flex-shrink-0 items-center justify-center active:scale-90 transition-all shadow-sm"
+                                                >
+                                                    <WhatsAppBrandIcon className="w-8 h-8" />
+                                                </button>
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setActiveChatOrderId(selectedOrder.id!);
+                                                    }}
+                                                    className="w-14 h-14 rounded-[20px] bg-[#01A083] flex flex-shrink-0 items-center justify-center active:scale-90 transition-all shadow-lg shadow-[#01A083]/10"
+                                                >
+                                                    <MessageCircle size={28} className="text-white" />
+                                                </button>
+                                            </div>
                                         </div>
                                     </section>
                                 )}

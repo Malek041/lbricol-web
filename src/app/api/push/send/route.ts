@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import webpush from 'web-push';
-import { db } from '@/lib/firebase-admin'; // Assuming a firebase-admin lib exists or use standard firebase if it works on server
+import { db } from '@/lib/firebase';
 
 const VAPID_PUBLIC_KEY = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || "BMXM4XvAashUocep0BbgS6B6_7bCjUAx93b4AbqN7MQ0vYDbzFteUrdQ6VKX9fx5YIF4q-leG_h-fU3GoOhilb0";
 const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY;

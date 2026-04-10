@@ -130,6 +130,13 @@ const JobDetailsPopup: React.FC<JobDetailsPopupProps> = ({ job, onClose, onAccep
     const finalFee = fee;
     const finalEarnings = bricolerEarnings;
     const finalDuration = job.estimatedDuration || (job.details?.serviceDetails as any)?.taskDuration || finalPricingBreakdown.duration || 1;
+    
+    const handleWhatsApp = (number?: string | null) => {
+        if (!number) return;
+        const cleanNumber = number.replace(/\D/g, '');
+        const finalNumber = cleanNumber.startsWith('212') ? cleanNumber : '212' + (cleanNumber.startsWith('0') ? cleanNumber.slice(1) : cleanNumber);
+        window.open(`https://wa.me/${finalNumber}`, '_blank');
+    };
 
     return (
         <AnimatePresence>
@@ -289,12 +296,20 @@ const JobDetailsPopup: React.FC<JobDetailsPopupProps> = ({ job, onClose, onAccep
                                             </h4>
                                         </div>
                                     </div>
-                                    <button
-                                        onClick={() => onChat?.(job.id, job.bricolerId || '', job.clientName)}
-                                        className="w-14 h-14 rounded-2xl bg-[#01A083] flex items-center justify-center text-white shadow-lg shadow-[#01A083]/20 active:scale-95 transition-all"
-                                    >
-                                        <MessageCircle size={28} />
-                                    </button>
+                                    <div className="flex items-center gap-2">
+                                        <button
+                                            onClick={() => handleWhatsApp(job.clientWhatsApp)}
+                                            className="w-14 h-14 rounded-2xl bg-white border border-[#25D366]/30 flex items-center justify-center text-[#25D366] shadow-sm active:scale-95 transition-all"
+                                        >
+                                            <WhatsAppBrandIcon className="w-8 h-8" />
+                                        </button>
+                                        <button
+                                            onClick={() => onChat?.(job.id, job.bricolerId || '', job.clientName)}
+                                            className="w-14 h-14 rounded-2xl bg-[#01A083] flex items-center justify-center text-white shadow-lg shadow-[#01A083]/20 active:scale-95 transition-all"
+                                        >
+                                            <MessageCircle size={28} />
+                                        </button>
+                                    </div>
                                 </div>
 
                                 {/* Address & Nav Card */}
@@ -520,15 +535,26 @@ const JobDetailsPopup: React.FC<JobDetailsPopupProps> = ({ job, onClose, onAccep
                                             </div>
                                         </div>
                                     </div>
-                                    <button
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            onChat?.(job.id, job.bricolerId || '', job.bricolerName || job.clientName);
-                                        }}
-                                        className="w-14 h-14 rounded-[20px] bg-[#01A083] flex flex-shrink-0 items-center justify-center active:scale-90 transition-all "
-                                    >
-                                        <MessageCircle size={28} className="text-white" />
-                                    </button>
+                                    <div className="flex items-center gap-2">
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleWhatsApp(job.bricolerWhatsApp);
+                                            }}
+                                            className="w-14 h-14 rounded-[20px] bg-white border border-[#25D366]/30 flex flex-shrink-0 items-center justify-center active:scale-90 transition-all shadow-sm"
+                                        >
+                                            <WhatsAppBrandIcon className="w-8 h-8" />
+                                        </button>
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                onChat?.(job.id, job.bricolerId || '', job.bricolerName || job.clientName);
+                                            }}
+                                            className="w-14 h-14 rounded-[20px] bg-[#01A083] flex flex-shrink-0 items-center justify-center active:scale-90 transition-all shadow-lg shadow-[#01A083]/10"
+                                        >
+                                            <MessageCircle size={28} className="text-white" />
+                                        </button>
+                                    </div>
                                 </div>
                             </section>
 
