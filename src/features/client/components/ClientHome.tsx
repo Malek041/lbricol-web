@@ -372,6 +372,7 @@ const ClientHome: React.FC<ClientHomeProps> = ({
                             { en: 'The hottest tasks in your city right now.', fr: 'Les tâches les plus demandées dans votre ville en ce moment.', ar: 'أكثر الخدمات طلباً في مدينتك الآن.' },
                         ],
                         heroImage: '',
+                        disabled: true,
                     }
                 ];
             }
