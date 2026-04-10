@@ -5,14 +5,22 @@ import { db } from '@/lib/firebase';
 const VAPID_PUBLIC_KEY = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || "BMXM4XvAashUocep0BbgS6B6_7bCjUAx93b4AbqN7MQ0vYDbzFteUrdQ6VKX9fx5YIF4q-leG_h-fU3GoOhilb0";
 const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY;
 
-webpush.setVapidDetails(
-  'mailto:support@lbricol.ma',
-  VAPID_PUBLIC_KEY,
-  VAPID_PRIVATE_KEY || ""
-);
-
 export async function POST(request: Request) {
   try {
+    if (!VAPID_PRIVATE_KEY) {
+      console.warn('Push Notification private key is missing. Skipping initialization.');
+      return NextResponse.json({ 
+        error: 'Push configuration missing on server',
+        details: 'VAPID_PRIVATE_KEY is not set'
+      }, { status: 500 });
+    }
+
+    webpush.setVapidDetails(
+      'mailto:support@lbricol.ma',
+      VAPID_PUBLIC_KEY,
+      VAPID_PRIVATE_KEY
+    );
+
     const { userId, title, body, url, icon } = await request.json();
 
     if (!userId) {
