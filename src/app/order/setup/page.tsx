@@ -590,6 +590,11 @@ export default function ServiceSetupPage() {
         gardenSize,
         lawnCondition,
         needsMower,
+        // Tree Trimming deps
+        treeCount,
+        treeHeight,
+        trimmingType,
+        includeWasteRemoval,
         // Hospitality deps
         unitCount,
         stairsType,
