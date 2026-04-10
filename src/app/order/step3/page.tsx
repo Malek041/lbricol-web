@@ -830,7 +830,7 @@ export default function CheckoutPage() {
                                             <div style={{ width: 22, height: 22, borderRadius: '50%', border: '1px solid #D1D5DB', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, color: '#9CA3AF', fontWeight: 700 }}>i</div>
                                         </div>
                                         <span style={{ fontSize: 18, fontWeight: 400, color: '#111827' }}>
-                                            {Math.round(basePrice)} MAD/{individualPricing.unit === 'unit' ? (t({ en: 'unit', fr: 'unité', ar: 'وحدة' })) : individualPricing.unit === 'day' ? (t({ en: 'day', fr: 'jour', ar: 'يوم' })) : individualPricing.unit === 'office' ? (t({ en: 'office', fr: 'bureau', ar: 'مكتب' })) : (t({ en: 'hr', fr: 'h', ar: 'ساعة' }))}
+                                            {Math.round(basePrice)} MAD/{individualPricing.unit === 'unit' ? (t({ en: 'unit', fr: 'unité', ar: 'وحدة' })) : individualPricing.unit === 'day' ? (t({ en: 'day', fr: 'jour', ar: 'يوم' })) : individualPricing.unit === 'office' ? (t({ en: 'office', fr: 'bureau', ar: 'مكتب' })) : individualPricing.unit === 'job' ? (t({ en: 'job', fr: 'mission', ar: 'مهمة' })) : (t({ en: 'hr', fr: 'h', ar: 'ساعة' }))}
                                         </span>
                                     </div>
 
@@ -869,7 +869,7 @@ export default function CheckoutPage() {
                                                 <span style={{ fontSize: 11, fontWeight: 400, color: '#9CA3AF' }}>0.0 km · ~0 min</span>
                                             )}
                                         </div>
-                                        <span style={{ fontSize: 18, fontWeight: 400, color: '#111827' }}>{individualPricing.travelFee.toFixed(2)} MAD</span>
+                                        <span style={{ fontSize: 18, fontWeight: 400, color: '#111827' }}>{(individualPricing.travelFee * slotsCount).toFixed(2)} MAD</span>
                                     </div>
 
                                     <div style={{ height: 1, background: '#E5E7EB', width: '100%', margin: '8px 0' }} />
@@ -895,7 +895,7 @@ export default function CheckoutPage() {
                 </div>
                 {(() => {
                     const slotsCount = (order.multiSlots && order.multiSlots.length > 0) ? order.multiSlots.length : 1;
-                    const individualPricing = order.estimate || calculateOrderPrice(
+                    const individualPricing = calculateOrderPrice(
                         order.subServiceId || order.serviceType || 'car_rental',
                         order.selectedCar?.pricePerDay || order.providerRate || 0,
                         {
@@ -919,6 +919,7 @@ export default function CheckoutPage() {
                             hasKitchenette: (order.serviceDetails as any)?.hasKitchenette,
                             hasReception: (order.serviceDetails as any)?.hasReception,
                             officeAddOns: (order.serviceDetails as any)?.officeAddOns,
+                            taskSize: (order.serviceDetails as any)?.taskSize,
                             // Gardening specific
                             gardenSize: (order.serviceDetails as any)?.gardenSize,
                             lawnCondition: (order.serviceDetails as any)?.lawnCondition,

@@ -21,7 +21,7 @@ export interface PricingBreakdown {
  * @param options Additional inputs like room count, hours, or days
  */
 export const calculateOrderPrice = (
-    subServiceId: string,
+    subServiceId: string = '',
     providerRate: number,
     options: {
         rooms?: number;
