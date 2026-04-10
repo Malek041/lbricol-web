@@ -51,6 +51,7 @@ export const SearchPopup: React.FC<SearchPopupProps> = ({
         const softBlocklist = ['car_wash', 'car_detailing', 'car_detail'];
 
         SERVICES_CATALOGUE.forEach(svc => {
+            if (svc.disabled) return;
             svc.subServices.forEach(sub => {
                 if (sub.id && !softBlocklist.includes(sub.id)) {
                     const translation: any = {
@@ -114,7 +115,6 @@ export const SearchPopup: React.FC<SearchPopupProps> = ({
         { en: 'Plumbing', fr: 'Plomberie', ar: 'سباكة' },
         { en: 'Moving', fr: 'Déménagement', ar: 'نقل' },
         { en: 'Electricity', fr: 'Électricité', ar: 'كهرباء' },
-        { en: 'Painting', fr: 'Peinture', ar: 'صباغة' },
         { en: 'Assembly', fr: 'Montage', ar: 'تركيب' },
     ];
 

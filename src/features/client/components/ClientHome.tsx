@@ -340,6 +340,7 @@ const ClientHome: React.FC<ClientHomeProps> = ({
             const trendingSubs: { en: string; fr: string; ar?: string; parentServiceId: string }[] = [];
             for (const subId of trendingSubServiceIds) {
                 SERVICES_CATALOGUE.forEach(svc => {
+                    if (svc.disabled) return;
                     const svcConfig = require('@/config/services_config').getServiceById(svc.id);
                     if (svcConfig) {
                         const targetSub = svcConfig.subServices.find((ss: any) => ss.id === subId);
@@ -382,7 +383,7 @@ const ClientHome: React.FC<ClientHomeProps> = ({
     useEffect(() => {
         if (visibleServices.length > 0) {
             if (!activeId || (!hasManuallySelected && visibleServices[0].id !== activeId) || !visibleServices.find(s => s.id === activeId)) {
-                setActiveId(visibleServices[0].id);
+                setActiveId(visibleServices.find((s: any) => !s.disabled)?.id || visibleServices[0].id);
             }
         }
     }, [visibleServices, activeId, hasManuallySelected]);
@@ -435,7 +436,7 @@ const ClientHome: React.FC<ClientHomeProps> = ({
         }
     };
 
-    const active = visibleServices.find(s => s.id === activeId) || visibleServices[0] || SERVICES_CATALOGUE[0];
+    const active = visibleServices.find(s => s.id === activeId && !s.disabled) || visibleServices.find((s: any) => !s.disabled) || visibleServices[0] || SERVICES_CATALOGUE[0];
     const [isWhiteSectionVisible, setIsWhiteSectionVisible] = useState(false);
     const [startTicker, setStartTicker] = useState(false);
     const [isWaving, setIsWaving] = useState(true);
@@ -609,15 +610,16 @@ const ClientHome: React.FC<ClientHomeProps> = ({
                                                 key={svc.id}
                                                 // Removed hardcoded restriction: now depend only on city availability
                                                 onClick={() => {
+                                                    if (svc.disabled) return;
                                                     setActiveId(svc.id);
                                                     setHasManuallySelected(true);
                                                 }}
                                                 initial={{ opacity: 0, y: 20, scale: 0.8 }}
                                                 animate={{
-                                                    opacity: 1,
+                                                    opacity: svc.disabled ? 0.4 : 1,
                                                     y: 0,
                                                     scale: 1,
-                                                    filter: 'grayscale(0)'
+                                                    filter: svc.disabled ? 'grayscale(0.8)' : 'grayscale(0)'
                                                 }}
                                                 transition={{
                                                     type: "spring",
@@ -625,7 +627,7 @@ const ClientHome: React.FC<ClientHomeProps> = ({
                                                     stiffness: 200,
                                                     delay: 1.4 + idx * 0.07
                                                 }}
-                                                className={`flex flex-col items-center gap-3 px-1 pt-4 pb-3 flex-shrink-0 relative transition-all ${!['cleaning', 'glass_cleaning'].includes(svc.id) ? 'cursor-not-allowed' : ''}`}
+                                                className={`flex flex-col items-center gap-3 px-1 pt-4 pb-3 flex-shrink-0 relative transition-all ${svc.disabled ? 'opacity-40 cursor-not-allowed' : ''}`}
                                             >
                                                 <motion.div
                                                     animate={isActive ? {

@@ -8,6 +8,7 @@ export interface ServiceEntry {
     subServices: { id?: string; en: string; fr: string; ar?: string }[];
     bullets: { en: string; fr: string; ar?: string }[];
     heroImage: string;
+    disabled?: boolean;
 }
 
 export const SERVICES_CATALOGUE: ServiceEntry[] = [
@@ -200,6 +201,7 @@ export const SERVICES_CATALOGUE: ServiceEntry[] = [
         labelFr: 'Peinture',
         labelAr: 'صباغ',
         iconPath: '/Images/Service Category vectors/Paintingvector.webp',
+        disabled: true,
         subServices: [
             { id: 'indoor_painting', en: 'Indoor Painting', fr: 'Peinture Intérieure', ar: 'صباغة داخلية' },
             { id: 'wallpapering', en: 'Wallpapering', fr: 'Pose de Papier Peint', ar: 'تركيب ورق الجدران' },
