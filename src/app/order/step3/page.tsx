@@ -185,6 +185,12 @@ export default function CheckoutPage() {
                         treeHeight: order.serviceDetails?.treeHeight,
                         trimmingType: order.serviceDetails?.trimmingType,
                         includeWasteRemoval: order.serviceDetails?.includeWasteRemoval,
+                        // Planting specific
+                        plantingSize: order.serviceDetails?.plantingSize,
+                        plantingFocus: order.serviceDetails?.plantingFocus,
+                        plantingState: order.serviceDetails?.plantingState,
+                        materialSource: order.serviceDetails?.materialSource,
+                        plantingWasteRemoval: order.serviceDetails?.plantingWasteRemoval,
                         // Hospitality enhancements
                         unitCount: order.serviceDetails?.unitCount,
                         stairsType: order.serviceDetails?.stairsType,
@@ -686,6 +692,31 @@ export default function CheckoutPage() {
                                                     <span style={{ fontSize: 14, fontWeight: 400, color: '#111827' }}>{t({ en: 'Waste Removal', fr: 'Évacuation' })}</span>
                                                     <span style={{ fontSize: 14, fontWeight: 700, color: '#111827' }}>{order.serviceDetails?.includeWasteRemoval ? t({ en: 'Yes', fr: 'Oui' }) : t({ en: 'No', fr: 'Non' })}</span>
                                                 </div>
+                                        )}
+
+                                        {/* Planting Details */}
+                                        {subId === 'planting' && (
+                                            <>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                                                    <span style={{ fontSize: 14, fontWeight: 400, color: '#111827' }}>{t({ en: 'Size', fr: 'Taille' })}</span>
+                                                    <span style={{ fontSize: 14, fontWeight: 700, color: '#111827' }}>{(order.serviceDetails?.plantingSize || 'small').toUpperCase()}</span>
+                                                </div>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                                                    <span style={{ fontSize: 14, fontWeight: 400, color: '#111827' }}>{t({ en: 'Focus', fr: 'Type' })}</span>
+                                                    <span style={{ fontSize: 14, fontWeight: 700, color: '#111827' }}>{(order.serviceDetails?.plantingFocus || 'seeding').toUpperCase()}</span>
+                                                </div>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                                                    <span style={{ fontSize: 14, fontWeight: 400, color: '#111827' }}>{t({ en: 'State', fr: 'État' })}</span>
+                                                    <span style={{ fontSize: 14, fontWeight: 700, color: '#111827' }}>{(order.serviceDetails?.plantingState || 'clean').toUpperCase()}</span>
+                                                </div>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                                                    <span style={{ fontSize: 14, fontWeight: 400, color: '#111827' }}>{t({ en: 'Materials', fr: 'Matériel' })}</span>
+                                                    <span style={{ fontSize: 14, fontWeight: 700, color: '#111827' }}>{(order.serviceDetails?.materialSource || 'client').toUpperCase()}</span>
+                                                </div>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                                                    <span style={{ fontSize: 14, fontWeight: 400, color: '#111827' }}>{t({ en: 'Waste Removal', fr: 'Évacuation' })}</span>
+                                                    <span style={{ fontSize: 14, fontWeight: 700, color: '#111827' }}>{order.serviceDetails?.plantingWasteRemoval ? t({ en: 'Yes', fr: 'Oui' }) : t({ en: 'No', fr: 'Non' })}</span>
+                                                </div>
                                             </>
                                         )}
                                     </>
@@ -853,6 +884,11 @@ export default function CheckoutPage() {
                                     treeHeight: order.serviceDetails?.treeHeight,
                                     trimmingType: order.serviceDetails?.trimmingType,
                                     includeWasteRemoval: order.serviceDetails?.includeWasteRemoval,
+                                    plantingSize: order.serviceDetails?.plantingSize,
+                                    plantingFocus: order.serviceDetails?.plantingFocus,
+                                    plantingState: order.serviceDetails?.plantingState,
+                                    materialSource: order.serviceDetails?.materialSource,
+                                    plantingWasteRemoval: order.serviceDetails?.plantingWasteRemoval,
                                     unitCount: order.serviceDetails?.unitCount,
                                     stairsType: order.serviceDetails?.stairsType,
                                     tipAmount: order.serviceDetails?.tipAmount,
@@ -978,6 +1014,11 @@ export default function CheckoutPage() {
                             treeHeight: order.serviceDetails?.treeHeight,
                             trimmingType: order.serviceDetails?.trimmingType,
                             includeWasteRemoval: order.serviceDetails?.includeWasteRemoval,
+                            plantingSize: order.serviceDetails?.plantingSize,
+                            plantingFocus: order.serviceDetails?.plantingFocus,
+                            plantingState: order.serviceDetails?.plantingState,
+                            materialSource: order.serviceDetails?.materialSource,
+                            plantingWasteRemoval: order.serviceDetails?.plantingWasteRemoval,
                             // Hospitality enhancements
                             unitCount: order.serviceDetails?.unitCount,
                             stairsType: order.serviceDetails?.stairsType,

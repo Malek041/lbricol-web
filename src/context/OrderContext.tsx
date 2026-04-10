@@ -55,6 +55,11 @@ export interface ServiceDetails {
   unitCount?: number;
   stairsType?: 'small' | 'medium' | 'large' | 'none';
   tipAmount?: number;
+  plantingSize?: 'small' | 'medium' | 'large' | 'giant';
+  plantingFocus?: 'seeding' | 'sod' | 'soil' | 'hardscape';
+  plantingState?: 'clean' | 'clearing';
+  materialSource?: 'client' | 'bricoler';
+  plantingWasteRemoval?: boolean;
   photoUrls?: string[];
   [key: string]: any;
 }

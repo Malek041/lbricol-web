@@ -66,6 +66,12 @@ export const calculateOrderPrice = (
         unitCount?: number;
         stairsType?: 'small' | 'medium' | 'large' | 'none';
         tipAmount?: number;
+        // Planting specific
+        plantingSize?: 'small' | 'medium' | 'large' | 'giant';
+        plantingFocus?: 'seeding' | 'sod' | 'soil' | 'hardscape';
+        plantingState?: 'clean' | 'clearing';
+        materialSource?: 'client' | 'bricoler';
+        plantingWasteRemoval?: boolean;
     } = {}
 ): PricingBreakdown => {
     // 1. Find the subservice to get its archetype
@@ -357,6 +363,44 @@ export const calculateOrderPrice = (
             details.push({
                 label: { en: 'Waste Removal', fr: 'Évacuation des déchets', ar: 'إزالة النفايات' },
                 amount: wasteRemovalFee
+            });
+        }
+    } else if (subServiceId === 'planting') {
+        const pSize = options.plantingSize || 'small';
+        const pFocus = options.plantingFocus || 'seeding';
+        const pState = options.plantingState || 'clean';
+        
+        // Base hours (Size)
+        let estimatedHours = pSize === 'small' ? 1.5 : pSize === 'medium' ? 3 : pSize === 'large' ? 5 : 8;
+        
+        // State Multiplier
+        if (pState === 'clearing') estimatedHours *= 1.3;
+        
+        // Focus Multiplier
+        if (pFocus === 'sod') estimatedHours *= 1.5;
+        if (pFocus === 'hardscape') estimatedHours *= 1.2;
+
+        quantity = 1;
+        unit = 'job';
+        
+        const plantingLabor = Math.round((providerRate * estimatedHours) * 10) / 10;
+        const pWasteRemovalFee = options.plantingWasteRemoval ? 80 : 0;
+        
+        extraFees = pWasteRemovalFee + (plantingLabor - providerRate);
+        
+        details.push({
+            label: { 
+                en: `Planting & Landscaping (${pSize})`, 
+                fr: `Plantation et Aménagement (${pSize})`, 
+                ar: `زراعة وتنسيق حدائق (${pSize})` 
+            },
+            amount: plantingLabor
+        });
+        
+        if (options.plantingWasteRemoval) {
+            details.push({
+                label: { en: 'Waste Removal / Haul away', fr: 'Évacuation déchets/terre', ar: 'إزالة النفايات / التراب' },
+                amount: pWasteRemovalFee
             });
         }
     } else if (subServiceId === 'lawn_mowing') {
