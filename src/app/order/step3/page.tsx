@@ -611,7 +611,10 @@ export default function CheckoutPage() {
                                                         {(order.serviceDetails as any).glassAccessibility === 'ladder' ? t({ en: 'Ladder Required', fr: 'Échelle Requise' }) : t({ en: 'Ground Level', fr: 'Rez-de-chaussée' })}
                                                     </span>
                                                 </div>
-                                                {/* Hospitality Details */}
+                                            </>
+                                        )}
+
+                                        {/* Hospitality Details */}
                                         {subId === 'hospitality_turnover' && (
                                             <>
                                                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
@@ -625,14 +628,20 @@ export default function CheckoutPage() {
                                             </>
                                         )}
 
-                                        {/* Tips Summary */}
-                                        {((order.serviceDetails as any).tipAmount > 0) && (
+                                        {/* Tips Summary - applies to glass cleaning when they're active */}
+                                        {(subId === 'residential_glass' || subId === 'commercial_glass') && ((order.serviceDetails as any).tipAmount > 0) && (
                                             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8, marginTop: 8, paddingTop: 8, borderTop: '1px dotted #E5E7EB' }}>
                                                 <span style={{ fontSize: 14, fontWeight: 700, color: '#D97706' }}>✨ {t({ en: 'Gratuity', fr: 'Pourboire' })}</span>
                                                 <span style={{ fontSize: 14, fontWeight: 900, color: '#D97706' }}>+{(order.serviceDetails as any).tipAmount} MAD</span>
                                             </div>
                                         )}
-                                    </>
+
+                                        {/* Tips Summary - for general services if not handled above (simplified) */}
+                                        {subId !== 'residential_glass' && subId !== 'commercial_glass' && ((order.serviceDetails as any).tipAmount > 0) && (
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8, marginTop: 8, paddingTop: 8, borderTop: '1px dotted #E5E7EB' }}>
+                                                <span style={{ fontSize: 14, fontWeight: 700, color: '#D97706' }}>✨ {t({ en: 'Gratuity', fr: 'Pourboire' })}</span>
+                                                <span style={{ fontSize: 14, fontWeight: 900, color: '#D97706' }}>+{(order.serviceDetails as any).tipAmount} MAD</span>
+                                            </div>
                                         )}
                                         {/* Lawn Mowing Details */}
                                         {subId === 'lawn_mowing' && (
