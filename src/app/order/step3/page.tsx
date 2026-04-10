@@ -537,7 +537,7 @@ export default function CheckoutPage() {
                                                     <span style={{ fontSize: 14, fontWeight: 400, color: '#111827' }}>{t({ en: 'Meeting Rooms', fr: 'Salles de réunion' })}</span>
                                                     <span style={{ fontSize: 14, fontWeight: 700, color: '#111827' }}>{order.serviceDetails?.officeMeetingRooms || 0}</span>
                                                 </div>
-                                                {order.serviceDetails?.officeAddOns?.length > 0 && (
+                                                {(order.serviceDetails?.officeAddOns?.length || 0) > 0 && (
                                                     <div style={{ marginTop: 8, paddingTop: 8, borderTop: '1px solid #F3F4F6' }}>
                                                         <span style={{ fontSize: 11, fontWeight: 700, color: '#9CA3AF', textTransform: 'uppercase' }}>Add-ons</span>
                                                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 4 }}>
