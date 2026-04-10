@@ -639,7 +639,7 @@ export default function CheckoutPage() {
                                         )}
 
                                         {/* Tips Summary - applies to glass cleaning when they're active */}
-                                        {(subId === 'residential_glass' || subId === 'commercial_glass') && (order.serviceDetails?.tipAmount > 0) && (
+                                        {(subId === 'residential_glass' || subId === 'commercial_glass') && ((order.serviceDetails?.tipAmount || 0) > 0) && (
                                             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8, marginTop: 8, paddingTop: 8, borderTop: '1px dotted #E5E7EB' }}>
                                                 <span style={{ fontSize: 14, fontWeight: 700, color: '#D97706' }}>✨ {t({ en: 'Gratuity', fr: 'Pourboire' })}</span>
                                                 <span style={{ fontSize: 14, fontWeight: 900, color: '#D97706' }}>+{order.serviceDetails?.tipAmount} MAD</span>
@@ -647,7 +647,7 @@ export default function CheckoutPage() {
                                         )}
 
                                         {/* Tips Summary - for general services if not handled above (simplified) */}
-                                        {subId !== 'residential_glass' && subId !== 'commercial_glass' && (order.serviceDetails?.tipAmount > 0) && (
+                                        {subId !== 'residential_glass' && subId !== 'commercial_glass' && ((order.serviceDetails?.tipAmount || 0) > 0) && (
                                             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8, marginTop: 8, paddingTop: 8, borderTop: '1px dotted #E5E7EB' }}>
                                                 <span style={{ fontSize: 14, fontWeight: 700, color: '#D97706' }}>✨ {t({ en: 'Gratuity', fr: 'Pourboire' })}</span>
                                                 <span style={{ fontSize: 14, fontWeight: 900, color: '#D97706' }}>+{order.serviceDetails?.tipAmount} MAD</span>
