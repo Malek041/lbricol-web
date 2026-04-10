@@ -143,7 +143,7 @@ export default function ServiceSetupPage() {
     const [treeCount, setTreeCount] = useState<number>(order.serviceDetails?.treeCount || 1);
     const [treeHeight, setTreeHeight] = useState<'small' | 'medium' | 'large' | 'giant'>(order.serviceDetails?.treeHeight || 'medium');
     const [trimmingType, setTrimmingType] = useState<'shaping' | 'thinning' | 'deadwood' | 'removal'>(order.serviceDetails?.trimmingType || 'shaping');
-    const [includeWasteRemoval, setIncludeWasteRemoval] = useState<boolean>(order.serviceDetails?.includeWasteRemoval || true);
+    const [includeWasteRemoval, setIncludeWasteRemoval] = useState<boolean>(order.serviceDetails?.includeWasteRemoval ?? true);
 
     // Default Pro Glass to Business
     useEffect(() => {
@@ -2622,7 +2622,7 @@ export default function ServiceSetupPage() {
 
                                                 {/* Waste Removal Toggle */}
                                                 <div className="space-y-4">
-                                                    <label className="text-[20px] font-bold text-[#111827]">{t({ en: 'Waste Removal', fr: 'Évacuation des déchets', ar: 'إزالة النفايات' })}</label>
+                                                    <label className="text-[20px] font-medium text-[#111827] block pb-2">{t({ en: 'Waste Removal', fr: 'Évacuation des déchets', ar: 'إزالة النفايات' })}</label>
                                                     <button
                                                         onClick={() => setIncludeWasteRemoval(!includeWasteRemoval)}
                                                         className={`w-full p-5 rounded-[12px] border-2 text-left transition-all flex items-center justify-between ${includeWasteRemoval ? 'border-[#01A083] bg-[#F0FDF9]' : 'border-neutral-100 bg-white'}`}
