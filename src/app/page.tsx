@@ -3,44 +3,46 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Header from '@/components/layout/Header';
-import confetti from 'canvas-confetti';
+
 import SearchBox from '@/components/shared/SearchBox';
-import CitySelectionPopup from '@/features/client/components/CitySelectionPopup';
+const CitySelectionPopup = dynamic(() => import('@/features/client/components/CitySelectionPopup'));
 import Footer from '@/components/layout/Footer';
-import AuthPopup from '@/features/onboarding/components/AuthPopup';
-import ClientWhatsAppPopup from '@/features/client/components/ClientWhatsAppPopup';
+const AuthPopup = dynamic(() => import('@/features/onboarding/components/AuthPopup'));
+const ClientWhatsAppPopup = dynamic(() => import('@/features/client/components/ClientWhatsAppPopup'));
 import OrderCard, { OrderDetails } from '@/features/orders/components/OrderCard';
-import WeekCalendar from '@/features/calendar/components/WeekCalendar';
-import ClientOrdersView from '@/features/orders/components/ClientOrdersView';
-import HeroesView from '@/features/client/components/HeroesView';
-import ShareAndEarnView from '@/features/client/components/ShareAndEarnView';
-import PromocodesView from '@/features/client/components/PromocodesView';
+const WeekCalendar = dynamic(() => import('@/features/calendar/components/WeekCalendar'));
+const ClientOrdersView = dynamic(() => import('@/features/orders/components/ClientOrdersView'));
+const HeroesView = dynamic(() => import('@/features/client/components/HeroesView'));
+const ShareAndEarnView = dynamic(() => import('@/features/client/components/ShareAndEarnView'));
+const PromocodesView = dynamic(() => import('@/features/client/components/PromocodesView'));
 import { DesktopHeroScroll } from '@/components/shared/DesktopHeroScroll';
-import { MoroccoServiceMap } from '@/components/shared/MoroccoServiceMap';
+const MoroccoServiceMap = dynamic(() => import('@/components/shared/MoroccoServiceMap').then(mod => ({ default: mod.MoroccoServiceMap })));
 import OrderHistoryCarousel from '@/features/orders/components/OrderHistoryCarousel';
-import LanguagePreferencePopup from '@/features/onboarding/components/LanguagePreferencePopup';
+const LanguagePreferencePopup = dynamic(() => import('@/features/onboarding/components/LanguagePreferencePopup'));
 import MobileBottomNav from '@/components/layout/MobileBottomNav';
-import MessagesView from '@/features/messages/components/MessagesView';
+const MessagesView = dynamic(() => import('@/features/messages/components/MessagesView'));
 import { FloatingMessengerBubble } from '@/components/shared/FloatingMessengerBubble';
-import ProfileView from '@/features/provider/components/ProfileView';
+const ProfileView = dynamic(() => import('@/features/provider/components/ProfileView'));
 import ComingSoon from '@/components/layout/ComingSoon';
 import ClientHome from '@/features/client/components/ClientHome';
-import OnboardingPopup from '@/features/onboarding/components/OnboardingPopup';
-import { SearchPopup } from '@/features/client/components/SearchPopup';
+const OnboardingPopup = dynamic(() => import('@/features/onboarding/components/OnboardingPopup'));
+const SearchPopup = dynamic(() => import('@/features/client/components/SearchPopup').then(mod => ({ default: mod.SearchPopup })));
 import { SERVICES_CATALOGUE } from '@/config/services_catalogue';
 import { useOrder } from '@/context/OrderContext';
 
-import AdminDashboard from '@/features/admin/components/AdminDashboard';
-import AdminOrdersView from '@/features/orders/components/AdminOrdersView';
-import AdminBricolerCreator from '@/features/admin/components/AdminBricolerCreator';
-import AdminBricolersView from '@/features/admin/components/AdminBricolersView';
-import SplashScreen from '@/components/layout/SplashScreen';
-import RatingPopup from '@/features/orders/components/RatingPopup';
-import ClientNotificationsView from '@/features/client/components/ClientNotificationsView';
-import AdminNotificationsView from '@/features/admin/components/AdminNotificationsView';
-import AdminReceivablesView from '@/features/admin/components/AdminReceivablesView';
-import AdminReviewsView from '@/features/admin/components/AdminReviewsView';
-import LocationPicker from '@/components/location-picker/LocationPicker';
+import dynamic from 'next/dynamic';
+
+const AdminDashboard = dynamic(() => import('@/features/admin/components/AdminDashboard'));
+const AdminOrdersView = dynamic(() => import('@/features/orders/components/AdminOrdersView'));
+const AdminBricolerCreator = dynamic(() => import('@/features/admin/components/AdminBricolerCreator'));
+const AdminBricolersView = dynamic(() => import('@/features/admin/components/AdminBricolersView'));
+const AdminNotificationsView = dynamic(() => import('@/features/admin/components/AdminNotificationsView'));
+const AdminReceivablesView = dynamic(() => import('@/features/admin/components/AdminReceivablesView'));
+const AdminReviewsView = dynamic(() => import('@/features/admin/components/AdminReviewsView'));
+const LocationPicker = dynamic(() => import('@/components/location-picker/LocationPicker'));
+const SplashScreen = dynamic(() => import('@/components/layout/SplashScreen'));
+const RatingPopup = dynamic(() => import('@/features/orders/components/RatingPopup'));
+const ClientNotificationsView = dynamic(() => import('@/features/client/components/ClientNotificationsView'));
 import { SavedAddress } from '@/components/location-picker/types';
 import {
   MapPin,
@@ -105,10 +107,10 @@ import { useLanguage } from '@/context/LanguageContext';
 import { MOROCCAN_CITIES, MOROCCAN_CITIES_AREAS } from '@/config/moroccan_areas';
 import { useTheme } from '@/context/ThemeContext';
 import { useToast } from '@/context/ToastContext';
-import MillionsImpactSection from '@/components/shared/MillionsImpactSection';
-import { DesktopOrderModal } from '@/features/client/components/DesktopOrderModal';
-import ServicesHeroSection from '@/components/shared/ServicesHeroSection';
-import OpportunitySection from '@/components/shared/OpportunitySection';
+const MillionsImpactSection = dynamic(() => import('@/components/shared/MillionsImpactSection'));
+const DesktopOrderModal = dynamic(() => import('@/features/client/components/DesktopOrderModal').then(mod => ({ default: mod.DesktopOrderModal })));
+const ServicesHeroSection = dynamic(() => import('@/components/shared/ServicesHeroSection'));
+const OpportunitySection = dynamic(() => import('@/components/shared/OpportunitySection'));
 import { auth, db, storage } from '@/lib/firebase';
 import {
   onAuthStateChanged,
@@ -2030,12 +2032,12 @@ const Home = () => {
 
       console.log("[handleProgramOrder] Success:", savedOrders.length);
 
-      confetti({
+      import('canvas-confetti').then((m) => m.default({
         particleCount: 150,
         spread: 70,
         origin: { y: 0.6 },
         colors: ['#000000', '#FFD700', '#FFFFFF']
-      });
+      }));
 
       showToast({
         variant: 'success',
@@ -2218,11 +2220,11 @@ const Home = () => {
         });
       }
 
-      confetti({
+      import('canvas-confetti').then((m) => m.default({
         particleCount: 150,
         spread: 70,
         origin: { y: 0.6 }
-      });
+      }));
 
       setSelectedOrderId(jobId);
       setAutoChatOrderId(jobId);
