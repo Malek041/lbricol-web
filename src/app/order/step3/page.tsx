@@ -277,7 +277,7 @@ export default function CheckoutPage() {
             setShowSuccess(true);
             setTimeout(() => {
                 resetOrder();
-                router.replace('/?tab=calendar');
+                router.replace('/?tab=calendar&order_success=true');
             }, 2000);
 
         } catch (err) {
