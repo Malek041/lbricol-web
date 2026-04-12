@@ -1,6 +1,7 @@
 import { MetadataRoute } from 'next';
 import { SERVICES_HIERARCHY } from '@/config/services_config';
 
+export const dynamic = 'force-static';
 export default function sitemap(): MetadataRoute.Sitemap {
     const baseUrl = 'https://lbricol.ma';
 
