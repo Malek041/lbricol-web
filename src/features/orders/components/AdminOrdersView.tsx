@@ -1,14 +1,15 @@
+"use client";
+
 import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronLeft, User, Search, Filter, MapPin, Check } from 'lucide-react';
 import { db } from '@/lib/firebase';
-import { collection, query, onSnapshot, where } from 'firebase/firestore';
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, addMonths, startOfWeek, endOfWeek, isSameMonth, isSameDay, isBefore, startOfDay, addDays } from 'date-fns';
+import { collection, query, onSnapshot, where, Timestamp } from 'firebase/firestore';
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, addMonths, startOfWeek, endOfWeek, isSameMonth, isSameDay, isBefore, startOfDay, addDays, parseISO } from 'date-fns';
 import { fr } from 'date-fns/locale/fr';
 import { arMA } from 'date-fns/locale/ar-MA';
 import JobDetailsPopup, { JobDetails } from '@/features/orders/components/JobDetailsPopup';
 import { getSubService, getServiceVector } from '@/config/services_config';
-import { parseISO } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/context/LanguageContext';
 
@@ -38,20 +39,31 @@ export default function AdminOrdersView({ t, onChat, onViewMessages, hideHeader 
         if (!autoStatuses.includes(order.status || '')) return order.status;
 
         try {
-            const timeStr = String(order.time).split('-')[0].trim();
-            let safeDate = new Date();
-            if (typeof order.date === 'string') safeDate = parseISO(order.date);
-            else if (order.date?.toDate) safeDate = order.date.toDate();
-            else safeDate = new Date(order.date);
+            const rawTime = String(order.time || '09:00').split('-')[0].trim();
+            // Ensure 09:00 format even if it's 9:00
+            const timeStr = rawTime.includes(':') && rawTime.split(':')[0].length === 1 ? `0${rawTime}` : rawTime;
             
-            const dateStr = format(safeDate, 'yyyy-MM-dd');
-            const startTime = parseISO(`${dateStr}T${timeStr}:00`).getTime();
+            let dateStr = '';
+            if (typeof order.date === 'string') {
+                dateStr = order.date.split('T')[0];
+            } else if (order.date?.toDate) {
+                dateStr = format(order.date.toDate(), 'yyyy-MM-dd');
+            } else if (order.date instanceof Date) {
+                dateStr = format(order.date, 'yyyy-MM-dd');
+            } else {
+                const d = new Date(order.date);
+                dateStr = isNaN(d.getTime()) ? format(new Date(), 'yyyy-MM-dd') : format(d, 'yyyy-MM-dd');
+            }
+            
+            const isoStr = `${dateStr}T${timeStr.includes(':') ? timeStr : '09:00'}:00`;
+            const startTimeRaw = parseISO(isoStr);
+            const startTime = isNaN(startTimeRaw.getTime()) ? new Date().getTime() : startTimeRaw.getTime();
             const now = currentTime.getTime();
 
             let durationHr = 2;
             const subService = getSubService(order.serviceId || order.service || '', order.subService || '');
             if (subService?.estimatedDurationHr) {
-                durationHr = subService.estimatedDurationHr;
+                durationHr = Number(subService.estimatedDurationHr) || 2;
             }
 
             const endTime = startTime + (durationHr * 60 * 60 * 1000);
@@ -59,12 +71,12 @@ export default function AdminOrdersView({ t, onChat, onViewMessages, hideHeader 
             if (now < startTime) return 'on_time';
             if (now >= startTime && now < endTime) return 'in_progress';
             if (now >= endTime) return 'done';
-            return order.status;
-        } catch (e) { return order.status; }
+            return order.status || 'new';
+        } catch (e) { return order.status || 'new'; }
     };
 
     const getOrderColor = (status: string) => {
-        const lower = status?.toLowerCase() || '';
+        const lower = String(status || '').toLowerCase();
         if (['cancelled', 'rejected'].includes(lower)) {
             return { raw: '#ef4444', class: 'bg-red-500 text-white' };
         }
@@ -77,7 +89,7 @@ export default function AdminOrdersView({ t, onChat, onViewMessages, hideHeader 
         if (['confirmed', 'accepted', 'programmed', 'matching', 'in_progress', 'on_time', 'negotiating'].includes(lower)) {
             return { raw: '#3b82f6', class: 'bg-blue-500 text-white' };
         }
-        return { raw: '#4b5563', class: 'bg-neutral-600 text-white' };
+        return { raw: '#9ea5b1', class: 'bg-neutral-400 text-white' };
     };
 
     useEffect(() => {
@@ -107,44 +119,64 @@ export default function AdminOrdersView({ t, onChat, onViewMessages, hideHeader 
 
     const [viewMode, setViewMode] = useState<'day' | 'month'>('month');
     const [horizontalSelectedDate, setHorizontalSelectedDate] = useState<Date>(new Date());
-    const dateLocale = language === 'fr' ? 'fr-FR' : language === 'ar' ? 'ar-MA' : 'en-US';
+    
+    // Safety guard for date locales
+    const dfLocale = language === 'fr' ? fr : language === 'ar' ? arMA : undefined;
 
     const getMonday = (date: Date) => {
-        const d = new Date(date);
-        const day = d.getDay();
-        const diff = day === 0 ? -6 : 1 - day;
-        d.setDate(d.getDate() + diff);
-        return startOfDay(d);
+        try {
+            const d = new Date(date);
+            if (isNaN(d.getTime())) return startOfDay(new Date());
+            const day = d.getDay();
+            const diff = day === 0 ? -6 : 1 - day;
+            d.setDate(d.getDate() + diff);
+            return startOfDay(d);
+        } catch (e) {
+            return startOfDay(new Date());
+        }
     };
 
     const [weekStart, setWeekStart] = useState<Date>(() => getMonday(horizontalSelectedDate));
-    const selectedDateStr = format(horizontalSelectedDate, 'yyyy-MM-dd');
+    
+    // SAFE FORMATTING
+    const safeFormat = (date: Date | any, pattern: string) => {
+        try {
+            const d = date instanceof Date ? date : new Date(date);
+            if (isNaN(d.getTime())) return "";
+            return format(d, pattern, { locale: dfLocale });
+        } catch (e) { return ""; }
+    };
+
+    const selectedDateStr = safeFormat(horizontalSelectedDate, 'yyyy-MM-dd');
 
     const weekDays = Array.from({ length: 7 }, (_, i) => {
         const d = addDays(weekStart, i);
         return {
             date: d,
-            dateStr: format(d, 'yyyy-MM-dd'),
-            dayNum: d.toLocaleDateString(dateLocale, { day: 'numeric' }),
-            dayLabel: d.toLocaleDateString(dateLocale, { weekday: 'short' })
+            dateStr: safeFormat(d, 'yyyy-MM-dd'),
+            dayNum: safeFormat(d, 'd'),
+            dayLabel: safeFormat(d, 'EEEEEE') // Short weekday like 'Mo', 'Lu', etc
         };
     });
 
     const bookedDates = useMemo(() => {
         const set = new Set<string>();
-        orders.forEach(o => {
-            if (o.date) set.add(o.date);
-        });
+        try {
+            orders.forEach(o => {
+                if (o.date) set.add(String(o.date));
+            });
+        } catch (e) {}
         return set;
     }, [orders]);
 
-    const weekLabel = `${weekStart.toLocaleDateString(dateLocale, { month: 'short', day: 'numeric' })} – ${addDays(weekStart, 6).toLocaleDateString(dateLocale, { month: 'short', day: 'numeric', year: 'numeric' }).replace('2026', '').trim()}`;
+    const weekLabel = `${safeFormat(weekStart, 'MMM d')} – ${safeFormat(addDays(weekStart, 6), 'MMM d, yyyy')}`;
 
     const hours = Array.from({ length: 15 }, (_, i) => 7 + i);
 
     const getTimePosition = (timeStr: string) => {
         if (!timeStr) return 0;
         const [h, m] = timeStr.split(':').map(Number);
+        if (isNaN(h)) return 0;
         const offsetHours = h - 7;
         const totalMins = offsetHours * 60 + (m || 0);
         return (totalMins / 60) * 100;
@@ -153,7 +185,8 @@ export default function AdminOrdersView({ t, onChat, onViewMessages, hideHeader 
     const getTimeHeight = (from: string, to: string) => {
         const start = getTimePosition(from);
         const end = getTimePosition(to);
-        return Math.max(end - start, 110);
+        const height = end - start;
+        return isNaN(height) ? 140 : Math.max(height, 110);
     };
 
     const dayMissions = useMemo(() => {
@@ -384,7 +417,7 @@ export default function AdminOrdersView({ t, onChat, onViewMessages, hideHeader 
                                             isSelected ? "text-black opacity-100" : isPast ? "text-neutral-300" : "text-black",
                                             isTodayDay && !isSelected && "text-[#01A083] opacity-100"
                                         )}>
-                                            {day.dayLabel.replace('.', '')}
+                                            {String(day.dayLabel || '').replace('.', '')}
                                         </span>
                                         <span className={cn(
                                             "text-[16px] font-bold leading-none",
@@ -408,7 +441,7 @@ export default function AdminOrdersView({ t, onChat, onViewMessages, hideHeader 
                                     <div key={h} className="flex h-[100px] border-b border-neutral-100/60 group">
                                         <div className="w-16 flex-none flex flex-col items-end justify-start pr-3 -mt-2.5">
                                             <span className="text-[11px] font-bold text-neutral-400 uppercase tracking-tighter">
-                                                {new Date(2000, 0, 1, h, 0).toLocaleTimeString(dateLocale, { hour: 'numeric', hour12: true })}
+                                                {safeFormat(new Date(2000, 0, 1, h, 0), 'p')}
                                             </span>
                                         </div>
                                         <div className="flex-1 border-l border-neutral-100/60 relative">
@@ -479,22 +512,22 @@ export default function AdminOrdersView({ t, onChat, onViewMessages, hideHeader 
                 job={
                     selectedOrder
                         ? {
-                            id: selectedOrder.id,
-                            service: selectedOrder.service || 'Service',
-                            clientName: selectedOrder.clientName || 'Client',
+                            id: String(selectedOrder.id || ''),
+                            service: String(selectedOrder.service || 'Service'),
+                            clientName: String(selectedOrder.clientName || 'Client'),
                             clientRating: typeof selectedOrder.clientRating === 'number' ? selectedOrder.clientRating : 5.0,
-                            location: selectedOrder.location || selectedOrder.city || '',
-                            date: selectedOrder.date || (selectedOrder.createdAt?.seconds ? format(selectedOrder.createdAt.seconds * 1000, 'MMM d, yyyy') : ''),
+                            location: String(selectedOrder.location || selectedOrder.city || ''),
+                            date: selectedOrder.date || (selectedOrder.createdAt?.seconds ? safeFormat(new Date(selectedOrder.createdAt.seconds * 1000), 'MMM d, yyyy') : ''),
                             time: selectedOrder.time || '',
                             duration: selectedOrder.duration ? `${selectedOrder.duration}h` : '',
-                            price: Number(selectedOrder.totalPrice ?? selectedOrder.price ?? 0),
-                            description: selectedOrder.description || '',
-                            status: selectedOrder.status as any,
-                            bricolerId: selectedOrder.bricolerId,
-                            bricolerName: selectedOrder.bricolerName,
-                            clientAvatar: selectedOrder.clientAvatar,
-                            bricolerWhatsApp: selectedOrder.bricolerWhatsApp,
-                            clientWhatsApp: selectedOrder.clientWhatsApp,
+                            price: Number(selectedOrder.totalPrice ?? selectedOrder.price ?? 0) || 0,
+                            description: String(selectedOrder.description || ''),
+                            status: (selectedOrder.status as any) || 'new',
+                            bricolerId: String(selectedOrder.bricolerId || ''),
+                            bricolerName: String(selectedOrder.bricolerName || ''),
+                            clientAvatar: String(selectedOrder.clientAvatar || ''),
+                            bricolerWhatsApp: String(selectedOrder.bricolerWhatsApp || ''),
+                            clientWhatsApp: String(selectedOrder.clientWhatsApp || ''),
                         } as JobDetails
                         : null
                 }
