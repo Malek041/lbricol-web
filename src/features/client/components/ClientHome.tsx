@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MapPin, ChevronDown, Search, X, Bell, Home, Building } from 'lucide-react';
+import { MapPin, ChevronDown, Search, X, Bell, Home, Building, Star, Zap, Tag, ShieldCheck, Leaf } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useOrder } from '@/context/OrderContext';
 import { cn } from '@/lib/utils';
@@ -11,6 +11,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { ReviewsScrollingSection } from './ReviewsScrollingSection';
 import { ClientOnboarding } from './ClientOnboarding';
 import { SERVICES_CATALOGUE } from '@/config/services_catalogue';
+import { SERVICE_TIER_RATES } from '@/config/moroccan_areas';
 import SplashScreen from '@/components/layout/SplashScreen';
 import CompactHomeMap from '@/components/shared/CompactHomeMap';
 import WaveTop from '@/components/shared/WaveTop';
@@ -42,6 +43,8 @@ interface ClientHomeProps {
     recentOrders?: any[];
     availableServiceIds: string[] | null;
     availableSubServiceIds: string[] | null;
+    bricolersCountMap?: Record<string, number>;
+    serviceRatingsMap?: Record<string, number>;
     trendingSubServiceIds?: string[]; // array of subService ids
     popularServiceIds?: string[]; // ordered list of service ids by popularity
     onSelectService: (service: string, subService?: string) => void;
@@ -211,6 +214,8 @@ const ClientHome: React.FC<ClientHomeProps> = ({
     isSearchOpen: isSearchOpenProp = false,
     setIsSearchOpen: setIsSearchOpenProp = () => { },
     gpsPermissionDenied = false,
+    bricolersCountMap = {},
+    serviceRatingsMap = {}
 }) => {
     const { t, language } = useLanguage();
     const router = useRouter();
@@ -717,33 +722,33 @@ const ClientHome: React.FC<ClientHomeProps> = ({
                                                 />
                                             </div>
                                             <p className="text-[17px] font-bold text-neutral-900 mb-1.5 line-clamp-1">
-                                                {gpsPermissionDenied 
-                                                  ? t({ en: 'Location access required', fr: 'Accès localisation requis', ar: 'مطلوب الإذن بالوصول للموقع' })
-                                                  : t({ en: 'Not available here yet', fr: 'Pas encore disponible ici', ar: 'غير متوفر هنا بعد' })
+                                                {gpsPermissionDenied
+                                                    ? t({ en: 'Location access required', fr: 'Accès localisation requis', ar: 'مطلوب الإذن بالوصول للموقع' })
+                                                    : t({ en: 'Not available here yet', fr: 'Pas encore disponible ici', ar: 'غير متوفر هنا بعد' })
                                                 }
                                             </p>
                                             <p className="text-[14px] font-medium text-neutral-500 max-w-[340px] mx-auto leading-relaxed mb-6">
                                                 {gpsPermissionDenied
-                                                  ? t({ 
-                                                      en: 'We need your location to show available services near you.', 
-                                                      fr: 'Nous avons besoin de votre position pour afficher les services disponibles près de vous.', 
-                                                      ar: 'نحتاج إلى موقعك لإظهار الخدمات المتاحة بالقرب منك.' 
+                                                    ? t({
+                                                        en: 'We need your location to show available services near you.',
+                                                        fr: 'Nous avons besoin de votre position pour afficher les services disponibles près de vous.',
+                                                        ar: 'نحتاج إلى موقعك لإظهار الخدمات المتاحة بالقرب منك.'
                                                     })
-                                                  : t({
-                                                      en: 'We are expanding fast! Try selecting a major city nearby.',
-                                                      fr: 'Nous nous développons rapidement ! Essayez de sélectionner une grande ville à proximité.',
-                                                      ar: 'نحن نتوسع بسرعة! حاول اختيار مدينة كبرى قريبة.'
+                                                    : t({
+                                                        en: 'We are expanding fast! Try selecting a major city nearby.',
+                                                        fr: 'Nous nous développons rapidement ! Essayez de sélectionner une grande ville à proximité.',
+                                                        ar: 'نحن نتوسع بسرعة! حاول اختيار مدينة كبرى قريبة.'
                                                     })
                                                 }
                                             </p>
-                                            
+
                                             {gpsPermissionDenied && (
-                                              <button
-                                                onClick={onChangeLocation}
-                                                className="bg-[#FFC244] text-black px-8 py-3.5 rounded-full font-black text-[15px] active:scale-95 transition-all shadow-md mx-auto"
-                                              >
-                                                {t({ en: 'Enable Location', fr: 'Activer la localisation', ar: 'تفعيل تحديد الموقع' })}
-                                              </button>
+                                                <button
+                                                    onClick={onChangeLocation}
+                                                    className="bg-[#FFC244] text-black px-8 py-3.5 rounded-full font-black text-[15px] active:scale-95 transition-all shadow-md mx-auto"
+                                                >
+                                                    {t({ en: 'Enable Location', fr: 'Activer la localisation', ar: 'تفعيل تحديد الموقع' })}
+                                                </button>
                                             )}
                                         </div>
                                     )
@@ -828,25 +833,126 @@ const ClientHome: React.FC<ClientHomeProps> = ({
                                                 ))}
                                         </div>
 
-                                        {/* Feature bullets */}
-                                        <div className="px-5 pb-5 space-y-3.5">
-                                            {active.bullets.map((b, i) => (
-                                                <motion.div
-                                                    key={i}
-                                                    className="flex items-start gap-3"
-                                                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                                                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                                                    transition={{
-                                                        type: 'spring',
-                                                        stiffness: 260,
-                                                        damping: 22,
-                                                        delay: (hasManuallySelected ? 0.2 : 1.7) + i * 0.04
-                                                    }}
-                                                >
-                                                    <span className="mt-0.5 text-[#B3B3B3] flex-shrink-0 text-[14px]">✓</span>
-                                                    <p className="text-[14px] text-[#4A4A4A] leading-snug font-medium">{t(b)}</p>
-                                                </motion.div>
-                                            ))}
+                                        {/* Dynamic Info Cards instead of static bullets */}
+                                        <div className="px-4 pb-5">
+                                            <motion.div
+                                                className="bg-white rounded-2xl   overflow-hidden"
+                                                initial={{ opacity: 0, y: 10, scale: 0.98 }}
+                                                animate={{ opacity: 1, y: 0, scale: 1 }}
+                                                transition={{ delay: (hasManuallySelected ? 0.2 : 1.7) }}
+                                            >
+                                                {/* Top Stats Row */}
+                                                {/* <div className="flex items-center justify-between pb-4 pt-5 px-3 ">
+                                                    {/* Left: Rating */}
+                                                {/* <div className="flex flex-col items-center justify-center flex-1">
+                                                        <span className="text-[18px] font-bold text-[#222222] tracking-tight mb-0.5">
+                                                            {(serviceRatingsMap[active.id] || 4.9).toFixed(1)}
+                                                        </span>
+                                                        <div className="flex items-center text-[#222222]">
+                                                            {[...Array(5)].map((_, i) => (
+                                                                <Star
+                                                                    key={i}
+                                                                    size={10}
+                                                                    fill={i < Math.floor(serviceRatingsMap[active.id] || 4.9) ? "currentColor" : "none"}
+                                                                    strokeWidth={1}
+                                                                />
+                                                            ))}
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="w-[1px] h-10 bg-[#DDDDDD] opacity-70"></div>
+
+                                                    {/* Middle: Verified Badge */}
+                                                {/*<div className="flex flex-col items-center justify-center flex-[1.2] px-1">
+                                                        <div className="flex items-center justify-center gap-1 w-full text-[#222222]">
+                                                            <Leaf size={18} className="scale-x-[-1] flex-shrink-0" strokeWidth={1.5} />
+                                                            <span className="text-[14.5px] font-extrabold text-[#222222] text-center leading-[1.1] tracking-tight flex-shrink-0">
+                                                                {t({ en: 'Verified', fr: 'Pros', ar: 'محترفون' })}<br />{t({ en: 'Pros', fr: 'Vérifiés', ar: 'معتمدون' })}
+                                                            </span>
+                                                            <Leaf size={18} className="flex-shrink-0" strokeWidth={1.5} />
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="w-[1px] h-10 bg-[#DDDDDD] opacity-70"></div>
+
+                                                    {/* Right: Count */}
+                                                {/*<div className="flex flex-col items-center justify-center flex-1">
+                                                        <span className="text-[18px] font-bold text-[#222222] tracking-tight mb-0.5">
+                                                            {bricolersCountMap[active.id] ? Math.max(5, bricolersCountMap[active.id]) + '+' : '5+'}
+                                                        </span>
+                                                        <span className="text-[11px] font-semibold text-[#222222] text-center ">
+                                                            {t({ en: 'Active pros', fr: 'Pros actifs', ar: 'محترفون نشطون' })}
+                                                        </span>
+                                                    </div>
+                                                </div>*/}
+
+                                                {/* Details Rows */}
+                                                <div className="flex flex-col gap-5 p-5">
+                                                    {/* Row 1: Speed */}
+                                                    <motion.div
+                                                        className="flex items-start gap-4"
+                                                        initial={{ opacity: 0, x: -15 }}
+                                                        animate={{ opacity: 1, x: 0 }}
+                                                        transition={{ delay: (hasManuallySelected ? 0.2 : 1.7) + 0.2 }}
+                                                    >
+                                                        <div className="mt-0.5 text-[#222222]">
+                                                            <Zap size={24} strokeWidth={1.5} />
+                                                        </div>
+                                                        <div className="flex-1">
+                                                            <h4 className="text-[15px] font-semibold text-[#222222] leading-tight mb-0.5">
+                                                                {t({ en: 'Book in 10s (2 steps)', fr: 'Trouvez un pro en 10s', ar: 'احجز في 10 ثوانٍ' })}
+                                                            </h4>
+                                                            <p className="text-[14px] text-[#717171] leading-tight">
+                                                                {t({ en: 'Find available pros instantly.', fr: 'Trouvez des pros disponibles instantanément.', ar: 'ابحث عن محترفين متاحين على الفور.' })}
+                                                            </p>
+                                                        </div>
+                                                    </motion.div>
+
+                                                    {/* Row 2: Price */}
+                                                    <motion.div
+                                                        className="flex items-start gap-4"
+                                                        initial={{ opacity: 0, x: -15 }}
+                                                        animate={{ opacity: 1, x: 0 }}
+                                                        transition={{ delay: (hasManuallySelected ? 0.2 : 1.7) + 0.3 }}
+                                                    >
+                                                        <div className="mt-0.5 text-[#222222]">
+                                                            <Tag size={24} strokeWidth={1.5} />
+                                                        </div>
+                                                        <div className="flex-1">
+                                                            <h4 className="text-[15px] font-semibold text-[#222222] leading-tight mb-0.5">
+                                                                {t({
+                                                                    en: `Starting from 99 MAD`,
+                                                                    fr: `À partir de 99 MAD`,
+                                                                    ar: `ابتداءً من 99 درهم`
+                                                                })}
+                                                            </h4>
+                                                            <p className="text-[14px] text-[#717171] leading-tight">
+                                                                {t({ en: 'Transparent and fair pricing.', fr: 'Des prix transparents et justes.', ar: 'أسعار شفافة وعادلة.' })}
+                                                            </p>
+                                                        </div>
+                                                    </motion.div>
+
+                                                    {/* Row 3: Safer than random */}
+                                                    <motion.div
+                                                        className="flex items-start gap-4"
+                                                        initial={{ opacity: 0, x: -15 }}
+                                                        animate={{ opacity: 1, x: 0 }}
+                                                        transition={{ delay: (hasManuallySelected ? 0.2 : 1.7) + 0.4 }}
+                                                    >
+                                                        <div className="mt-0.5 text-[#222222]">
+                                                            <ShieldCheck size={24} strokeWidth={1.5} />
+                                                        </div>
+                                                        <div className="flex-1">
+                                                            <h4 className="text-[15px] font-semibold text-[#222222] leading-tight mb-0.5">
+                                                                {t({ en: 'Safer than a random number', fr: 'Plus sûr qu\'un numéro au hasard', ar: 'أكثر أمانًا من رقم عشوائي' })}
+                                                            </h4>
+                                                            <p className="text-[14px] text-[#717171] leading-tight">
+                                                                {t({ en: 'Verified pros with reviews.', fr: 'Pros vérifiés avec avis clients.', ar: 'محترفون معتمدون مع تقييمات.' })}
+                                                            </p>
+                                                        </div>
+                                                    </motion.div>
+                                                </div>
+                                            </motion.div>
                                         </div>
                                     </motion.div>
                                 </AnimatePresence>

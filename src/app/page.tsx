@@ -299,6 +299,8 @@ const Home = () => {
 
   const [availableServices, setAvailableServices] = useState<string[] | null>(null);
   const [availableSubServices, setAvailableSubServices] = useState<string[] | null>(null);
+  const [bricolersCountMap, setBricolersCountMap] = useState<Record<string, number>>({});
+  const [serviceRatingsMap, setServiceRatingsMap] = useState<Record<string, number>>({});
   const [isBricoler, setIsBricoler] = useState(false);
   const [isAdminMode, setIsAdminMode] = useState(false);
   const [selectedDesktopServiceId, setSelectedDesktopServiceId] = useState<string | null>(null);
@@ -740,8 +742,13 @@ const Home = () => {
         const activeIds = new Set<string>();
         const activeSubIds = new Set<string>();
         const subFreq: Record<string, number> = {};
+        const serviceFreq: Record<string, Set<string>> = {};
+        const serviceRatings: Record<string, { total: number, count: number }> = {};
 
         pros.forEach(p => {
+          const proRating = typeof p.rating === 'number' ? p.rating : 4.9;
+          const hasRating = typeof p.rating === 'number' && p.rating > 0;
+          
           if (Array.isArray(p.services)) {
             p.services.forEach((s: any) => {
               const serviceId = typeof s === 'string' ? s : (s.serviceId || s.categoryId);
@@ -758,12 +765,24 @@ const Home = () => {
               if (serviceId) {
                 if (SERVICES_HIERARCHY[serviceId]) {
                   activeIds.add(serviceId);
+                  if (!serviceFreq[serviceId]) serviceFreq[serviceId] = new Set();
+                  if (p.uid || p.id) serviceFreq[serviceId].add(p.uid || p.id);
+                  
+                  if (!serviceRatings[serviceId]) serviceRatings[serviceId] = { total: 0, count: 0 };
+                  serviceRatings[serviceId].total += proRating;
+                  serviceRatings[serviceId].count += 1;
                 } else {
                   const resolvedSubId = normalizeSubId(serviceId);
                   const resolvedCatId = getCategoryForSubService(resolvedSubId);
                   if (resolvedCatId) {
                     activeIds.add(resolvedCatId);
                     activeSubIds.add(resolvedSubId);
+                    if (!serviceFreq[resolvedCatId]) serviceFreq[resolvedCatId] = new Set();
+                    if (p.uid || p.id) serviceFreq[resolvedCatId].add(p.uid || p.id);
+
+                    if (!serviceRatings[resolvedCatId]) serviceRatings[resolvedCatId] = { total: 0, count: 0 };
+                    serviceRatings[resolvedCatId].total += proRating;
+                    serviceRatings[resolvedCatId].count += 1;
                   }
                 }
               }
@@ -786,6 +805,23 @@ const Home = () => {
           .sort((a, b) => b[1] - a[1])
           .slice(0, 6)
           .map(e => e[0]);
+
+        const serviceCountResult: Record<string, number> = {};
+        const serviceRatingsResult: Record<string, number> = {};
+        
+        Object.keys(serviceFreq).forEach(k => {
+            serviceCountResult[k] = serviceFreq[k].size;
+        });
+        
+        Object.keys(serviceRatings).forEach(k => {
+            const avg = serviceRatings[k].total / serviceRatings[k].count;
+            // Add a tiny random jitter so it doesn't look like exactly 4.90 everywhere if many have default
+            // But let's keep it clean: if there are no ratings, it'll be 4.9.
+            serviceRatingsResult[k] = avg;
+        });
+
+        setBricolersCountMap(serviceCountResult);
+        setServiceRatingsMap(serviceRatingsResult);
 
         setAvailableServices(Array.from(activeIds));
         setAvailableSubServices(Array.from(activeSubIds));
@@ -2747,6 +2783,8 @@ const Home = () => {
                 trendingSubServiceIds={trendingSubServices}
                 popularServiceIds={popularServiceIds}
                 gpsPermissionDenied={gpsPermissionDenied}
+                bricolersCountMap={bricolersCountMap}
+                serviceRatingsMap={serviceRatingsMap}
                 onSelectService={handleServiceSelection}
                 onChangeLocation={() => {
                   setAutoLocateOnPickerOpen(true);

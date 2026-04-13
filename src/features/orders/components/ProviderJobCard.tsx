@@ -359,13 +359,25 @@ export default function ProviderJobCard({
                         <button
                             onClick={handleNavigate}
                             className={cn(
-                                "h-10 rounded-full bg-neutral-50 flex items-center justify-center border border-neutral-200 hover:bg-neutral-100 active:scale-95 transition-all",
-                                (onStatusUpdate && !order.providerStatus && isUrgent) ? "w-10 text-neutral-600" : "flex-1 text-[#01A083] font-bold border-[#01A083]/20 gap-2 px-4"
+                                "h-10 rounded-full bg-neutral-50 flex items-center justify-center border border-neutral-200 hover:bg-neutral-100 active:scale-95 transition-all text-neutral-600",
+                                (onStatusUpdate && !order.providerStatus && isUrgent) ? "w-10" : "flex-1 font-bold border-[#01A083]/20 gap-2 px-4 text-[#01A083]"
                             )}
                         >
                             <Navigation size={18} strokeWidth={2.5} />
                             {(!onStatusUpdate || order.providerStatus || !isUrgent) && t({ en: 'Navigate', fr: 'Naviguer', ar: 'يتنقل' })}
                         </button>
+                        {(onStatusUpdate && (dynamicStatus === 'done' || order.status === 'in_progress')) && (
+                          <button
+                              onClick={(e) => {
+                                  e.stopPropagation();
+                                  if (order.id) onStatusUpdate(order.id, 'done');
+                              }}
+                              className="flex-1 h-10 rounded-full bg-emerald-600 text-white text-[13px] font-black border border-emerald-700 hover:bg-emerald-700 active:scale-95 transition-all flex items-center justify-center gap-1.5"
+                          >
+                              <Check size={16} strokeWidth={3} />
+                              {t({ en: 'Mark Done', fr: 'Terminer', ar: 'تم' })}
+                          </button>
+                        )}
                     </div>
                 )}
                 {(order.status === 'new' || order.status === 'waiting') && !order.providerConfirmed && onConfirm && (

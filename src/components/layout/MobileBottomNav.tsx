@@ -6,7 +6,7 @@ import { useTheme } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { fluidMobilePx, useMobileTier, useViewportWidth } from '@/lib/mobileOnly';
 
-export type TabType = 'home' | 'search' | 'heroes' | 'orders' | 'profile' | 'jobs' | 'calendar' | 'messages' | 'performance' | 'services' | 'reviews';
+export type TabType = 'home' | 'search' | 'heroes' | 'orders' | 'profile' | 'jobs' | 'calendar' | 'messages' | 'performance' | 'services' | 'reviews' | 'activity';
 
 interface MobileBottomNavProps {
     activeTab: TabType;
@@ -48,9 +48,7 @@ const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
 
     const adminTabs = [
         { id: 'performance' as TabType, icon: TrendingUp, label: t({ en: 'Dashboard', fr: 'Tableau de bord', ar: 'لوحة التحكم' }) },
-        { id: 'calendar' as TabType, icon: ShoppingBag, label: t({ en: 'All Orders', fr: 'Toutes les commandes', ar: 'كل الطلبات' }) },
-        { id: 'reviews' as TabType, icon: MessageSquare, label: t({ en: 'Reviews', fr: 'Avis', ar: 'التقييمات' }) },
-        { id: 'services' as TabType, icon: Star, label: t({ en: 'Bricolers', fr: 'Bricoleurs', ar: 'المحترفون' }) },
+        { id: 'activity' as TabType, icon: Calendar, label: t({ en: 'Activity', fr: 'Activité', ar: 'النشاط' }) },
         { id: 'profile' as TabType, icon: User, label: t({ en: 'Profile', fr: 'Profil', ar: 'الملف الشخصي' }) },
     ];
 
@@ -65,9 +63,7 @@ const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
             if (id === 'profile') return 'profile';
         } else if (variant === 'admin') {
             if (id === 'performance') return 'performance';
-            if (id === 'calendar') return 'calendar';
-            if (id === 'services') return 'services';
-            if (id === 'reviews') return 'reviews';
+            if (id === 'activity') return 'activity';
             if (id === 'profile') return 'profile';
         } else {
             if (id === 'home') return 'home';

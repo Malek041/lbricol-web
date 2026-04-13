@@ -581,7 +581,14 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
                     if (snap.exists()) {
                         const d = snap.data();
                         const reviews = d.reviews || [];
-                        const jobsCount = d.jobsCompleted || d.completedJobs || d.numReviews || reviews.length || 0;
+                        const jobsCount = Math.max(
+                            Number(d.completedJobs || 0),
+                            Number(d.numReviews || 0),
+                            Number(d.jobsCompleted || 0),
+                            Number(d.jobsDone || 0),
+                            Number(d.taskCount || 0),
+                            reviews.length
+                        );
                         let rating = d.rating;
                         if (!rating && d.totalRating && reviews.length > 0) {
                             rating = d.totalRating / reviews.length;
@@ -727,7 +734,13 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
                 const newTotal = (data.totalRating || 0) + rating;
                 const newCount = (data.numReviews || 0) + 1;
                 const avgRating = newTotal / newCount;
-                const jobsCount = (data.completedJobs || data.jobsCompleted || data.numReviews || data.jobsDone || 0);
+                const jobsCount = Math.max(
+                    Number(data.completedJobs || 0),
+                    Number(data.numReviews || 0),
+                    Number(data.jobsCompleted || 0),
+                    Number(data.jobsDone || 0),
+                    Number(data.taskCount || 0)
+                );
                 // Score formula: (avg_rating × 10) + (completed_jobs × 5)
                 const newScore = Math.round((avgRating * 10) + (jobsCount * 5));
 

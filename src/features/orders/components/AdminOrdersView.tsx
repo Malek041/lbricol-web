@@ -1,35 +1,30 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import {
-    ShoppingBag, Search, Filter, MapPin,
-    Calendar as CalendarIcon, Clock, ChevronRight,
-    CheckCircle2, AlertCircle, RotateCcw, XCircle, Star
-} from 'lucide-react';
+import { ChevronLeft, User, Search, Filter, MapPin, Check } from 'lucide-react';
 import { db } from '@/lib/firebase';
 import { collection, query, onSnapshot, where } from 'firebase/firestore';
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, addMonths } from 'date-fns';
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, addMonths, startOfWeek, endOfWeek, isSameMonth, isSameDay, isBefore, startOfDay, addDays } from 'date-fns';
+import { fr } from 'date-fns/locale/fr';
+import { arMA } from 'date-fns/locale/ar-MA';
 import JobDetailsPopup, { JobDetails } from '@/features/orders/components/JobDetailsPopup';
-import { getSubService } from '@/config/services_config';
+import { getSubService, getServiceVector } from '@/config/services_config';
 import { parseISO } from 'date-fns';
+import { cn } from '@/lib/utils';
+import { useLanguage } from '@/context/LanguageContext';
 
 interface AdminOrdersViewProps {
-    t: (vals: { en: string; fr: string }) => string;
+    t: (vals: { en: string; fr: string; ar?: string }) => string;
     onViewMessages?: (jobId: string) => void;
     onChat?: (jobId: string, bricolerId: string, bricolerName: string) => void;
+    hideHeader?: boolean;
 }
 
-const AdminOrdersView: React.FC<AdminOrdersViewProps> = ({ t, onChat, onViewMessages }) => {
+export default function AdminOrdersView({ t, onChat, onViewMessages, hideHeader }: AdminOrdersViewProps) {
+    const { language } = useLanguage();
     const [orders, setOrders] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
-    const [selectedCity, setSelectedCity] = useState<string>('all');
-    const [searchQuery, setSearchQuery] = useState('');
-    const [statusFilter, setStatusFilter] = useState<'all' | 'open' | 'completed' | 'cancelled' | 'negotiating'>('all');
-    const [sortBy, setSortBy] = useState<'date_desc' | 'date_asc' | 'amount_desc' | 'amount_asc'>('date_desc');
-    const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
-    const [calendarMonth, setCalendarMonth] = useState<Date>(new Date());
     const [selectedOrder, setSelectedOrder] = useState<any | null>(null);
 
-    const cities = ['all', 'Marrakech', 'Casablanca', 'Essaouira', 'Agadir', 'Rabat', 'Tangier'];
     const [currentTime, setCurrentTime] = useState(new Date());
 
     useEffect(() => {
@@ -63,25 +58,32 @@ const AdminOrdersView: React.FC<AdminOrdersViewProps> = ({ t, onChat, onViewMess
         } catch (e) { return order.status; }
     };
 
+    const getOrderColor = (status: string) => {
+        const lower = status?.toLowerCase() || '';
+        if (['cancelled', 'rejected'].includes(lower)) {
+            return { raw: '#ef4444', class: 'bg-red-500 text-white' };
+        }
+        if (['done', 'completed', 'delivered'].includes(lower)) {
+            return { raw: '#22c55e', class: 'bg-green-500 text-white' };
+        }
+        if (['pending', 'waiting', 'new'].includes(lower)) {
+            return { raw: '#facc15', class: 'bg-yellow-400 text-black' };
+        }
+        if (['confirmed', 'accepted', 'programmed', 'matching', 'in_progress', 'on_time', 'negotiating'].includes(lower)) {
+            return { raw: '#3b82f6', class: 'bg-blue-500 text-white' };
+        }
+        return { raw: '#4b5563', class: 'bg-neutral-600 text-white' };
+    };
+
     useEffect(() => {
         setLoading(true);
-
-        // Avoid Firestore composite index requirement by only ordering globally,
-        // and sorting client-side for city-scoped queries.
-        let q;
-        if (selectedCity === 'all') {
-            q = query(collection(db, 'jobs'));
-        } else {
-            q = query(collection(db, 'jobs'), where('city', '==', selectedCity));
-        }
-
+        const q = query(collection(db, 'jobs'));
         const unsubscribe = onSnapshot(q, (snapshot) => {
             const loadedOrders = snapshot.docs.map(doc => ({
                 id: doc.id,
                 ...doc.data()
             } as any));
 
-            // Sort by createdAt desc by default
             loadedOrders.sort((a, b) => {
                 const aTs = a.createdAt?.seconds || 0;
                 const bTs = b.createdAt?.seconds || 0;
@@ -96,327 +98,377 @@ const AdminOrdersView: React.FC<AdminOrdersViewProps> = ({ t, onChat, onViewMess
         });
 
         return () => unsubscribe();
-    }, [selectedCity]);
+    }, []);
 
-    const getStatusStyle = (status: string) => {
-        switch (status) {
-            case 'completed':
-            case 'done':
-                return { bg: 'bg-green-100', text: 'text-green-700', icon: CheckCircle2 };
-            case 'pending':
-            case 'waiting':
-                return { bg: 'bg-sky-100', text: 'text-sky-700', icon: Clock };
-            case 'cancelled':
-                return { bg: 'bg-red-100', text: 'text-red-700', icon: XCircle };
-            case 'negotiating':
-                return { bg: 'bg-blue-100', text: 'text-blue-700', icon: RotateCcw };
-            default:
-                return { bg: 'bg-neutral-100', text: 'text-neutral-700', icon: AlertCircle };
-        }
+    const [viewMode, setViewMode] = useState<'day' | 'month'>('month');
+    const [horizontalSelectedDate, setHorizontalSelectedDate] = useState<Date>(new Date());
+    const dateLocale = language === 'fr' ? 'fr-FR' : language === 'ar' ? 'ar-MA' : 'en-US';
+
+    const getMonday = (date: Date) => {
+        const d = new Date(date);
+        const day = d.getDay();
+        const diff = day === 0 ? -6 : 1 - day;
+        d.setDate(d.getDate() + diff);
+        return startOfDay(d);
     };
 
-    const filteredOrders = useMemo(() => {
-        let result = orders.filter(order =>
-            (order.service || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-            (order.clientId || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-            ((typeof order.location === 'object' ? order.location.address : order.location) || '').toLowerCase().includes(searchQuery.toLowerCase())
-        );
+    const [weekStart, setWeekStart] = useState<Date>(() => getMonday(horizontalSelectedDate));
+    const selectedDateStr = format(horizontalSelectedDate, 'yyyy-MM-dd');
 
-        if (statusFilter !== 'all') {
-            result = result.filter(order => {
-                const s = (getDynamicStatus(order) || '').toLowerCase();
-                if (statusFilter === 'open') {
-                    return ['pending', 'waiting', 'new', 'negotiating', 'accepted', 'matching', 'confirmed', 'in_progress', 'on_time'].includes(s);
-                }
-                if (statusFilter === 'completed') {
-                    return ['done', 'completed', 'delivered'].includes(s);
-                }
-                if (statusFilter === 'cancelled') {
-                    return ['cancelled', 'rejected'].includes(s);
-                }
-                if (statusFilter === 'negotiating') {
-                    return ['negotiating'].includes(s);
-                }
-                return true;
-            });
-        }
+    const weekDays = Array.from({ length: 7 }, (_, i) => {
+        const d = addDays(weekStart, i);
+        return {
+            date: d,
+            dateStr: format(d, 'yyyy-MM-dd'),
+            dayNum: d.toLocaleDateString(dateLocale, { day: 'numeric' }),
+            dayLabel: d.toLocaleDateString(dateLocale, { weekday: 'short' })
+        };
+    });
 
-        result.sort((a, b) => {
-            if (sortBy === 'date_desc' || sortBy === 'date_asc') {
-                const aTs = a.createdAt?.seconds || 0;
-                const bTs = b.createdAt?.seconds || 0;
-                return sortBy === 'date_desc' ? bTs - aTs : aTs - bTs;
-            }
-            const aAmount = Number(a.totalPrice ?? a.price ?? 0);
-            const bAmount = Number(b.totalPrice ?? b.price ?? 0);
-            return sortBy === 'amount_desc' ? bAmount - aAmount : aAmount - bAmount;
+    const bookedDates = useMemo(() => {
+        const set = new Set<string>();
+        orders.forEach(o => {
+            if (o.date) set.add(o.date);
         });
+        return set;
+    }, [orders]);
 
-        return result;
-    }, [orders, searchQuery, statusFilter, sortBy]);
+    const weekLabel = `${weekStart.toLocaleDateString(dateLocale, { month: 'short', day: 'numeric' })} – ${addDays(weekStart, 6).toLocaleDateString(dateLocale, { month: 'short', day: 'numeric', year: 'numeric' }).replace('2026', '').trim()}`;
 
-    const dailyCounts = useMemo(() => {
-        const counts: Record<string, number> = {};
-        filteredOrders.forEach(order => {
-            const d = order.date
-                ? new Date(order.date)
-                : (order.createdAt?.seconds ? new Date(order.createdAt.seconds * 1000) : null);
-            if (!d) return;
-            const key = format(d, 'yyyy-MM-dd');
-            counts[key] = (counts[key] || 0) + 1;
-        });
-        return counts;
-    }, [filteredOrders]);
+    const hours = Array.from({ length: 15 }, (_, i) => 7 + i);
 
-    const monthStart = startOfMonth(calendarMonth);
-    const monthEnd = endOfMonth(calendarMonth);
-    const daysInMonth = eachDayOfInterval({ start: monthStart, end: monthEnd });
+    const getTimePosition = (timeStr: string) => {
+        if (!timeStr) return 0;
+        const [h, m] = timeStr.split(':').map(Number);
+        const offsetHours = h - 7;
+        const totalMins = offsetHours * 60 + (m || 0);
+        return (totalMins / 60) * 100;
+    };
 
-    return (
-        <div className="flex flex-col h-[100dvh] bg-white pb-24">
-            {/* Sticky Header */}
-            <div className="sticky top-0 z-30 bg-white/80 backdrop-blur-xl pt-12 pb-4 px-5 border-b border-neutral-100">
-                <h1 className="text-2xl font-black text-black mb-6">
-                    {t({ en: 'Platform Orders', fr: 'Commandes Plateforme' })}
-                </h1>
+    const getTimeHeight = (from: string, to: string) => {
+        const start = getTimePosition(from);
+        const end = getTimePosition(to);
+        return Math.max(end - start, 110);
+    };
 
-                <div className="flex gap-2 mb-4 overflow-x-auto no-scrollbar pb-2">
-                    {cities.map(city => (
-                        <button
-                            key={city}
-                            onClick={() => setSelectedCity(city)}
-                            className={`px-4 py-2 rounded-full text-sm font-bold whitespace-nowrap transition-all ${selectedCity === city
-                                ? 'bg-black text-white'
-                                : 'bg-neutral-100 text-neutral-500 hover:bg-neutral-200'
-                                }`}
-                        >
-                            {city === 'all' ? t({ en: 'All Cities', fr: 'Toutes les villes' }) : city}
+    const dayMissions = useMemo(() => {
+        return orders.filter(o => o.date === selectedDateStr);
+    }, [selectedDateStr, orders]);
+
+    const [monthOffset, setMonthOffset] = useState(0);
+    const viewMonth = useMemo(() => {
+        const d = new Date();
+        d.setMonth(d.getMonth() + monthOffset);
+        return d;
+    }, [monthOffset]);
+
+    const monthDays = useMemo(() => {
+        const start = startOfWeek(startOfMonth(viewMonth), { weekStartsOn: 1 });
+        const end = endOfWeek(endOfMonth(viewMonth), { weekStartsOn: 1 });
+        return eachDayOfInterval({ start, end });
+    }, [viewMonth]);
+
+    const monthLabel = format(viewMonth, 'MMMM', {
+        locale: language === 'fr' ? fr : language === 'ar' ? arMA : undefined
+    });
+
+    const weekdayShorts = language === 'ar'
+        ? ['ح', 'ث', 'ر', 'خ', 'ج', 'س', 'ن']
+        : language === 'fr'
+            ? ['L', 'M', 'M', 'J', 'V', 'S', 'D']
+            : ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+
+    const renderMonthView = () => (
+        <div className="flex flex-col bg-white h-full overflow-y-auto no-scrollbar">
+            <div className="p-4 sm:p-6 pb-24">
+                <div className="flex items-center justify-between mb-8 px-1">
+                    <h2 className="text-[32px] font-bold text-black lowercase tracking-tight ">{monthLabel}</h2>
+                    <div className="flex gap-4">
+                        <button onClick={() => setMonthOffset(p => p - 1)} className="p-2 hover:bg-neutral-100 rounded-full transition-colors active:scale-95">
+                            <ChevronLeft size={24} />
                         </button>
+                        <button onClick={() => setMonthOffset(p => p + 1)} className="p-2 hover:bg-neutral-100 rounded-full transition-colors active:scale-95">
+                            <ChevronLeft size={24} className="rotate-180" />
+                        </button>
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-7 mb-4">
+                    {weekdayShorts.map((d, i) => (
+                        <div key={i} className="text-center text-[12px] font-medium text-neutral-400 uppercase tracking-wider">{d}</div>
                     ))}
                 </div>
 
-                <div className="relative">
-                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-400" size={20} />
-                    <input
-                        type="text"
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        placeholder={t({ en: 'Search orders, services...', fr: 'Rechercher commandes, services...' })}
-                        className="w-full h-12 bg-neutral-100 rounded-2xl pl-12 pr-4 text-sm font-medium focus:bg-white focus:ring-2 focus:ring-black transition-all outline-none"
-                    />
-                </div>
+                <div className="grid grid-cols-7 gap-1 sm:gap-2">
+                    {monthDays.map((date, i) => {
+                        const dateStr = format(date, 'yyyy-MM-dd');
+                        const isCurrentMonth = isSameMonth(date, viewMonth);
+                        const dayOrders = orders.filter(o => o.date === dateStr);
+                        const isTodayDate = isSameDay(date, new Date());
+                        const isSelected = isSameDay(date, horizontalSelectedDate);
+                        const isPast = isBefore(date, startOfDay(new Date()));
 
-                {/* Filters row */}
-                <div className="mt-4 flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-2">
-                        <Filter size={16} className="text-neutral-400" />
-                        <select
-                            value={statusFilter}
-                            onChange={(e) => setStatusFilter(e.target.value as any)}
-                            className="h-9 rounded-full bg-neutral-100 px-3 text-xs font-bold text-neutral-700 outline-none"
-                        >
-                            <option value="all">{t({ en: 'All statuses', fr: 'Tous statuts' })}</option>
-                            <option value="open">{t({ en: 'Open / In progress', fr: 'Ouvert / En cours' })}</option>
-                            <option value="completed">{t({ en: 'Completed', fr: 'Terminées' })}</option>
-                            <option value="cancelled">{t({ en: 'Cancelled', fr: 'Annulées' })}</option>
-                            <option value="negotiating">{t({ en: 'Negotiating', fr: 'En négociation' })}</option>
-                        </select>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <span className="text-[11px] font-bold text-neutral-400 uppercase tracking-widest">
-                            {t({ en: 'Sort by', fr: 'Trier par' })}
-                        </span>
-                        <select
-                            value={sortBy}
-                            onChange={(e) => setSortBy(e.target.value as any)}
-                            className="h-9 rounded-full bg-neutral-100 px-3 text-xs font-bold text-neutral-700 outline-none"
-                        >
-                            <option value="date_desc">{t({ en: 'Newest first', fr: 'Plus récents' })}</option>
-                            <option value="date_asc">{t({ en: 'Oldest first', fr: 'Plus anciens' })}</option>
-                            <option value="amount_desc">{t({ en: 'Amount (high → low)', fr: 'Montant (haut → bas)' })}</option>
-                            <option value="amount_asc">{t({ en: 'Amount (low → high)', fr: 'Montant (bas → haut)' })}</option>
-                        </select>
-                    </div>
-                </div>
+                        return (
+                            <div
+                                key={i}
+                                onClick={() => {
+                                    setHorizontalSelectedDate(date);
+                                    setWeekStart(getMonday(date));
+                                    setViewMode('day');
+                                }}
+                                className={cn(
+                                    "aspect-[1/1.5] sm:aspect-[1/1.2] border border-neutral-100 rounded-xl p-1.5 sm:p-2 flex flex-col items-start transition-all cursor-pointer relative",
+                                    !isCurrentMonth && "opacity-0 pointer-events-none",
+                                    isSelected && "border-black ring-[0.5px] ring-black shadow-sm bg-white",
+                                    isPast && !isSelected && "bg-neutral-100/50",
+                                    isTodayDate && !isSelected && "bg-neutral-50"
+                                )}
+                            >
+                                <span className={cn(
+                                    "text-[15px] font-bold mb-1.5 ml-0.5",
+                                    isTodayDate ? "text-[#01A083]" : isPast ? "text-neutral-400 line-through" : "text-neutral-900",
+                                    isSelected && "text-black no-underline"
+                                )}>
+                                    {format(date, 'd')}
+                                </span>
 
-                {/* View mode toggle */}
-                <div className="mt-3 inline-flex items-center bg-neutral-100 rounded-full p-1">
-                    <button
-                        onClick={() => setViewMode('list')}
-                        className={`px-4 py-1.5 rounded-full text-xs font-bold ${viewMode === 'list' ? 'bg-white shadow-sm text-black' : 'text-neutral-500'}`}
-                    >
-                        {t({ en: 'List', fr: 'Liste' })}
-                    </button>
-                    <button
-                        onClick={() => setViewMode('calendar')}
-                        className={`px-4 py-1.5 rounded-full text-xs font-bold ${viewMode === 'calendar' ? 'bg-white shadow-sm text-black' : 'text-neutral-500'}`}
-                    >
-                        {t({ en: 'Calendar', fr: 'Calendrier' })}
-                    </button>
+                                <div className="flex flex-col gap-1 w-full overflow-hidden mt-auto">
+                                    {dayOrders.slice(0, 3).map((order: any) => {
+                                        const dynStatus = getDynamicStatus(order);
+                                        const orderColor = getOrderColor(dynStatus);
+                                        return (
+                                            <div
+                                                key={order.id}
+                                                className={cn("w-full h-6 sm:h-7 rounded-lg flex items-center gap-1.5 px-1.5 shadow-sm overflow-hidden", orderColor.class)}
+                                            >
+                                                <div className="w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full bg-black/20 flex-shrink-0 flex items-center justify-center overflow-hidden">
+                                                    {order.bricolerAvatar ? (
+                                                        <img src={order.bricolerAvatar} className="w-full h-full object-cover" />
+                                                    ) : (
+                                                        <User size={10} className="text-white/80" />
+                                                    )}
+                                                </div>
+                                                <span className="text-[9px] sm:text-[10px] font-bold text-white truncate leading-none">
+                                                    {order.bricolerName ? order.bricolerName.split(' ')[0] : t({ en: 'Matching', fr: 'Matching', ar: 'جاري' })}
+                                                </span>
+                                            </div>
+                                        )
+                                    })}
+                                    {dayOrders.length > 3 && (
+                                        <div className="text-[9px] font-bold text-neutral-400 ml-1">
+                                            +{dayOrders.length - 3}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        );
+                    })}
                 </div>
             </div>
+        </div>
+    );
 
-            {/* Main Content: either list or calendar */}
-            <div className="flex-1 overflow-y-auto px-5 py-6 space-y-4">
-                {viewMode === 'list' ? (
-                    <>
-                        {loading ? (
-                            <div className="flex justify-center py-20">
-                                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-black"></div>
-                            </div>
-                        ) : filteredOrders.length > 0 ? (
-                            filteredOrders.map(order => {
-                                const style = getStatusStyle(order.status);
-                                const StatusIcon = style.icon;
-                                const price = Number(order.totalPrice ?? order.price ?? 0);
+    return (
+        <div className="flex flex-col bg-white h-full relative overflow-hidden">
+            {/* Header with Jour/Mois Toggle */}
+            {!hideHeader && (
+                <div className="bg-white px-6 pt-4 pb-1 flex items-center justify-between sticky top-0 z-[40]">
+                    <div className="flex flex-col">
+                        <span className="text-[26px] font-bold text-black leading-none tracking-tight">
+                            {language === 'ar' ? 'الجدول الزمني' : language === 'fr' ? 'Planning' : 'Schedule'}
+                        </span>
+                        <span className="text-[12px] font-bold text-[#01A083] uppercase tracking-widest mt-1">
+                            {viewMode === 'day' ? weekLabel : monthLabel}
+                        </span>
+                    </div>
 
-                                return (
-                                    <motion.div
-                                        layout
-                                        initial={{ opacity: 0, y: 10 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                        key={order.id}
-                                        className="bg-white rounded-[32px] p-6 border border-neutral-100 shadow-sm hover:shadow-md transition-all cursor-pointer group active:scale-[0.98]"
-                                        onClick={() => setSelectedOrder(order)}
-                                    >
-                                        <div className="flex justify-between items-start mb-4">
-                                            <div className="flex flex-col gap-1">
-                                                <div className={`w-fit px-3 py-1 rounded-full ${style.bg} ${style.text} text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5`}>
-                                                    <StatusIcon size={12} />
-                                                    {getDynamicStatus(order)}
-                                                </div>
-                                                <span className="text-neutral-400 text-[11px] font-bold uppercase tracking-widest mt-2">{order.city}</span>
-                                            </div>
-                                            <div className="text-right">
-                                                <p className="text-black font-black text-xl leading-none">{price.toLocaleString(undefined, { maximumFractionDigits: 0 })} MAD</p>
-                                                <p className="text-neutral-400 text-[11px] font-medium mt-1">
-                                                    {order.createdAt?.seconds ? format(order.createdAt.seconds * 1000, 'MMM d, HH:mm') : t({ en: 'Recently', fr: 'Récemment' })}
-                                                </p>
-                                            </div>
-                                        </div>
+                    <div className="flex bg-neutral-100 p-1 rounded-full">
+                        <button
+                            onClick={() => setViewMode('day')}
+                            className={cn(
+                                "px-4 py-1.5 rounded-full text-[13px] font-bold transition-all",
+                                viewMode === 'day' ? "bg-white text-[#000000]" : "text-neutral-400"
+                            )}
+                        >
+                            {t({ en: 'Day', fr: 'Jour', ar: 'يوم' })}
+                        </button>
+                        <button
+                            onClick={() => setViewMode('month')}
+                            className={cn(
+                                "px-4 py-1.5 rounded-full text-[13px] font-bold transition-all",
+                                viewMode === 'month' ? "bg-white text-[#01A083] shadow-sm" : "text-neutral-400"
+                            )}
+                        >
+                            {t({ en: 'Month', fr: 'Mois', ar: 'شهر' })}
+                        </button>
+                    </div>
+                </div>
+            )}
 
-                                        <div className="flex items-center gap-4 mb-5">
-                                            <div className="w-14 h-14 bg-neutral-50 rounded-2xl flex items-center justify-center p-2 group-hover:bg-[#FFCC02]/10 transition-colors">
-                                                <img 
-                                                    src="/Images/Vectors Illu/LbricolFaceOY.webp" 
-                                                    className="w-full h-full object-contain" 
-                                                    alt="Service" 
-                                                />
-                                            </div>
-                                            <div className="flex flex-col flex-1">
-                                                <h3 className="text-[20px] font-black text-black leading-tight tracking-tight">{order.service}</h3>
-                                                <div className="flex items-center gap-1.5 text-neutral-400 mt-1">
-                                                    <MapPin size={12} />
-                                                    <p className="text-[12px] font-bold truncate max-w-[180px]">
-                                                        {typeof order.location === 'object' ? order.location.address : order.location}
-                                                    </p>
-                                                </div>
-                                            </div>
-                                        </div>
+            {hideHeader && (
+                <div className="bg-white px-4 py-3 flex items-center justify-end sticky top-0 z-[40]">
+                    <div className="flex bg-neutral-100 p-1 rounded-full">
+                        <button
+                            onClick={() => setViewMode('day')}
+                            className={cn(
+                                "px-4 py-1.5 rounded-full text-[13px] font-bold transition-all",
+                                viewMode === 'day' ? "bg-white text-[#000000]" : "text-neutral-400"
+                            )}
+                        >
+                            {t({ en: 'Day', fr: 'Jour', ar: 'يوم' })}
+                        </button>
+                        <button
+                            onClick={() => setViewMode('month')}
+                            className={cn(
+                                "px-4 py-1.5 rounded-full text-[13px] font-bold transition-all",
+                                viewMode === 'month' ? "bg-white text-[#01A083] shadow-sm" : "text-neutral-400"
+                            )}
+                        >
+                            {t({ en: 'Month', fr: 'Mois', ar: 'شهر' })}
+                        </button>
+                    </div>
+                </div>
+            )}
 
-                                        <div className="flex items-center justify-between pt-4 border-t border-neutral-50">
-                                            <div className="flex items-center gap-3">
-                                                <div className="flex -space-x-2">
-                                                    <div className="w-8 h-8 rounded-full bg-neutral-100 border-2 border-white flex items-center justify-center text-[10px] font-black text-neutral-400">
-                                                        {order.clientName ? order.clientName[0] : 'C'}
-                                                    </div>
-                                                </div>
-                                                <div className="flex flex-col">
-                                                    <p className="text-[11px] font-black text-black">{order.clientName || 'Client'}</p>
-                                                    <div className="flex items-center gap-1">
-                                                        <Star size={10} className="text-[#FFCC02] fill-[#FFCC02]" />
-                                                        <span className="text-[10px] font-bold text-neutral-500">{(order.clientRating || 5.0).toFixed(1)}</span>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div className="flex items-center gap-1 text-neutral-400">
-                                                <span className="text-[11px] font-bold uppercase tracking-widest mt-0.5">Details</span>
-                                                <ChevronRight size={14} className="group-hover:translate-x-1 transition-transform" />
-                                            </div>
-                                        </div>
-                                    </motion.div>
-                                );
-                            })
-                        ) : (
-                            <div className="text-center py-20">
-                                <div className="w-20 h-20 bg-neutral-50 rounded-full flex items-center justify-center mx-auto mb-4">
-                                    <ShoppingBag size={32} className="text-neutral-300" />
-                                </div>
-                                <p className="text-neutral-400 font-medium">{t({ en: 'No orders found', fr: 'Aucune commande trouvée' })}</p>
-                            </div>
-                        )}
-                    </>
-                ) : (
-                    <div className="space-y-4">
-                        {/* Calendar header */}
-                        <div className="flex items-center justify-between">
+            {loading ? (
+                <div className="flex-1 flex justify-center py-20">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-black"></div>
+                </div>
+            ) : viewMode === 'month' ? renderMonthView() : (
+                <div className="flex flex-col h-full overflow-hidden">
+                    <div className="bg-white px-4 pt-0 pb-3 flex-shrink-0 sticky top-[25px] z-30 mb-2 border-b border-neutral-50/50">
+                        <div className="flex items-center justify-between mb-2 px-1">
                             <button
-                                onClick={() => setCalendarMonth(prev => addMonths(prev, -1))}
-                                className="p-2 rounded-full hover:bg-neutral-100"
+                                onClick={() => setWeekStart(prev => addDays(prev, -7))}
+                                className="w-8 h-8 rounded-full bg-neutral-50 flex items-center justify-center active:scale-95 transition-all"
                             >
-                                <ChevronRight size={18} className="rotate-180 text-neutral-600" />
+                                <ChevronLeft size={16} className="text-black" />
                             </button>
-                            <div className="text-sm font-black text-neutral-900">
-                                {format(calendarMonth, 'MMMM yyyy')}
-                            </div>
+                            <span className="text-[14px] font-bold text-black lowercase tracking-tight">{weekLabel}</span>
                             <button
-                                onClick={() => setCalendarMonth(prev => addMonths(prev, 1))}
-                                className="p-2 rounded-full hover:bg-neutral-100"
+                                onClick={() => setWeekStart(prev => addDays(prev, 7))}
+                                className="w-8 h-8 rounded-full bg-neutral-50 flex items-center justify-center active:scale-95 transition-all"
                             >
-                                <ChevronRight size={18} className="text-neutral-600" />
+                                <ChevronLeft size={16} className="text-black rotate-180" />
                             </button>
                         </div>
 
-                        {/* Weekday header */}
-                        <div className="grid grid-cols-7 gap-1 text-[10px] font-bold text-neutral-400 uppercase tracking-widest">
-                            {['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'].map(d => (
-                                <div key={d} className="text-center">
-                                    {d}
-                                </div>
-                            ))}
-                        </div>
-
-                        {/* Days grid */}
-                        <div className="grid grid-cols-7 gap-2">
-                            {/* Pad start of month */}
-                            {Array.from({ length: (monthStart.getDay() + 6) % 7 }).map((_, idx) => (
-                                <div key={`pad-${idx}`} />
-                            ))}
-                            {daysInMonth.map((day) => {
-                                const key = format(day, 'yyyy-MM-dd');
-                                const count = dailyCounts[key] || 0;
-                                const isToday = format(day, 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd');
-                                const intensity =
-                                    count === 0 ? 'bg-neutral-50 border-neutral-100 text-neutral-400' :
-                                        count < 3 ? 'bg-[#E6F6F2] border-[#B3E1D6] text-[#006A52]' :
-                                            count < 7 ? 'bg-[#C7EFE4] border-[#7FD7BE] text-[#00513E]' :
-                                                'bg-[#01A083] border-[#00846B] text-white';
+                        <div className="grid grid-cols-7 gap-1">
+                            {weekDays.map(day => {
+                                const isTodayDay = day.dateStr === format(new Date(), 'yyyy-MM-dd');
+                                const isSelected = day.dateStr === selectedDateStr;
+                                const hasJobs = bookedDates.has(day.dateStr);
+                                const isPast = isBefore(day.date, startOfDay(new Date()));
 
                                 return (
-                                    <div
-                                        key={key}
-                                        className={`aspect-square rounded-2xl border flex flex-col items-center justify-center text-xs font-bold ${intensity}`}
-                                    >
-                                        <span className="text-[11px] mb-0.5">
-                                            {day.getDate()}
-                                        </span>
-                                        <span className="text-[9px] opacity-80">
-                                            {count > 0 ? `${count} ${t({ en: 'jobs', fr: 'jobs' })}` : ''}
-                                        </span>
-                                        {isToday && (
-                                            <span className="mt-0.5 text-[8px] uppercase">
-                                                {t({ en: 'Today', fr: 'Auj' })}
-                                            </span>
+                                    <button
+                                        key={day.dateStr}
+                                        onClick={() => setHorizontalSelectedDate(day.date)}
+                                        className={cn(
+                                            "flex flex-col items-center py-2.5 rounded-xl border border-black/10 transition-all relative overflow-hidden",
+                                            isSelected
+                                                ? "border-black ring-[0.5px] ring-black shadow-sm bg-white"
+                                                : isPast
+                                                    ? "bg-neutral-100/40"
+                                                    : "bg-white hover:bg-neutral-50",
+                                            isTodayDay && !isSelected && "bg-white"
                                         )}
-                                    </div>
+                                    >
+                                        <span className={cn(
+                                            "text-[9px] font-bold uppercase tracking-wider mb-1 opacity-60",
+                                            isSelected ? "text-black opacity-100" : isPast ? "text-neutral-300" : "text-black",
+                                            isTodayDay && !isSelected && "text-[#01A083] opacity-100"
+                                        )}>
+                                            {day.dayLabel.replace('.', '')}
+                                        </span>
+                                        <span className={cn(
+                                            "text-[16px] font-bold leading-none",
+                                            isSelected ? "text-black" : isPast ? "text-neutral-300 line-through" : isTodayDay ? "text-[#01A083]" : "text-black"
+                                        )}>
+                                            {day.dayNum}
+                                        </span>
+                                        {hasJobs && !isSelected && (
+                                            <div className="absolute top-1.5 right-1.5 w-1 h-1 bg-[#222222] rounded-full" />
+                                        )}
+                                    </button>
                                 );
                             })}
                         </div>
                     </div>
-                )}
-            </div>
 
-            {/* Order details */}
+                    <div className="flex-1 overflow-y-auto no-scrollbar relative bg-[#FAFAFA] pb-32">
+                        <div className="relative min-h-[1550px] w-full">
+                            <div className="absolute inset-0 pt-6 px-0">
+                                {hours.map((h) => (
+                                    <div key={h} className="flex h-[100px] border-b border-neutral-100/60 group">
+                                        <div className="w-16 flex-none flex flex-col items-end justify-start pr-3 -mt-2.5">
+                                            <span className="text-[11px] font-bold text-neutral-400 uppercase tracking-tighter">
+                                                {new Date(2000, 0, 1, h, 0).toLocaleTimeString(dateLocale, { hour: 'numeric', hour12: true })}
+                                            </span>
+                                        </div>
+                                        <div className="flex-1 border-l border-neutral-100/60 relative">
+                                            <div className="absolute top-[50px] left-0 right-0 border-t border-[#FAFAFA] border-dashed" />
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+
+                            <div className="absolute inset-0 pt-6 left-16">
+                                {dayMissions.map((order) => {
+                                    const fromTime = order.time?.split('-')[0].trim() || "09:00";
+                                    const toTime = order.time?.split('-')[1]?.trim() || "11:00";
+                                    
+                                    const dynStatus = getDynamicStatus(order);
+                                    const orderColor = getOrderColor(dynStatus);
+
+                                    return (
+                                        <motion.div
+                                            key={order.id}
+                                            initial={{ opacity: 0, y: 10 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            onClick={() => setSelectedOrder(order)}
+                                            className="absolute left-4 right-6 rounded-[24px] bg-white border border-neutral-100/80 p-5 z-20 cursor-pointer shadow-md shadow-neutral-200/30 hover:shadow-lg transition-all flex flex-col gap-3"
+                                            style={{
+                                                top: getTimePosition(fromTime) + 4,
+                                                height: Math.max(getTimeHeight(fromTime, toTime) - 8, 140),
+                                                borderLeftColor: orderColor.raw,
+                                                borderLeftWidth: '6px'
+                                            }}
+                                        >
+                                            <div className="flex items-start gap-4">
+                                                <div className="w-14 h-14 rounded-2xl bg-neutral-50 flex items-center justify-center flex-shrink-0 overflow-hidden shadow-inner">
+                                                    {order.images && order.images.length > 0 ? (
+                                                        <img src={order.images[0]} className="w-full h-full object-cover" />
+                                                    ) : (
+                                                        <img src={getServiceVector(order.service)} alt={order.service} className="w-10 h-10 object-contain" />
+                                                    )}
+                                                </div>
+                                                <div className="flex-1 min-w-0">
+                                                    <div className="flex items-center justify-between mb-1">
+                                                        <span className="text-[18px] font-bold text-black truncate uppercase tracking-tight">
+                                                            {order.subServiceDisplayName || order.service}
+                                                        </span>
+                                                        <div className={cn("w-7 h-7 rounded-full flex items-center justify-center shadow-sm", orderColor.class)}>
+                                                            <Check size={14} className="text-white fill-white" strokeWidth={3} />
+                                                        </div>
+                                                    </div>
+                                                    <p className="text-[14px] font-medium text-neutral-400 truncate">
+                                                        {order.bricolerName || t({ en: 'Matching...', fr: 'Matching...', ar: 'جاري البحث...' })} • {order.city || (typeof order.location === 'object' ? (order.location as any).address : order.location)}
+                                                    </p>
+                                                    <p className="text-[15px] font-bold text-[#01A083] mt-2 tracking-tight">
+                                                        {fromTime}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </motion.div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             <JobDetailsPopup
                 job={
                     selectedOrder
@@ -446,6 +498,4 @@ const AdminOrdersView: React.FC<AdminOrdersViewProps> = ({ t, onChat, onViewMess
             />
         </div>
     );
-};
-
-export default AdminOrdersView;
+}
