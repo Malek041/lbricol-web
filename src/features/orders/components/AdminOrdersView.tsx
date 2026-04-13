@@ -2,12 +2,24 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeft, User, Search, Filter, MapPin, Check } from 'lucide-react';
+import { ChevronLeft, User, Search, MapPin, Check } from 'lucide-react';
 import { db } from '@/lib/firebase';
-import { collection, query, onSnapshot, where } from 'firebase/firestore';
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, addMonths, startOfWeek, endOfWeek, isSameMonth, isSameDay, isBefore, startOfDay, addDays, parseISO } from 'date-fns';
-import { fr } from 'date-fns/locale/fr';
-import { arMA } from 'date-fns/locale/ar-MA';
+import { collection, query, onSnapshot } from 'firebase/firestore';
+import { 
+    format, 
+    startOfMonth, 
+    endOfMonth, 
+    eachDayOfInterval, 
+    startOfWeek, 
+    endOfWeek, 
+    isSameMonth, 
+    isSameDay, 
+    isBefore, 
+    startOfDay, 
+    addDays, 
+    parseISO 
+} from 'date-fns';
+import { fr, arMA } from 'date-fns/locale';
 import JobDetailsPopup, { JobDetails } from '@/features/orders/components/JobDetailsPopup';
 import { getSubService, getServiceVector } from '@/config/services_config';
 import { cn } from '@/lib/utils';
@@ -25,17 +37,70 @@ export default function AdminOrdersView({ t, onChat, onViewMessages, hideHeader 
     const [orders, setOrders] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [selectedOrder, setSelectedOrder] = useState<any | null>(null);
-
     const [currentTime, setCurrentTime] = useState(new Date());
+    const [viewMode, setViewMode] = useState<'day' | 'month'>('month');
+    const [horizontalSelectedDate, setHorizontalSelectedDate] = useState<Date>(new Date());
+    const [monthOffset, setMonthOffset] = useState(0);
 
+    // Update time every minute for dynamic statuses
     useEffect(() => {
         const timer = setInterval(() => setCurrentTime(new Date()), 60000);
         return () => clearInterval(timer);
     }, []);
 
+    // Fetch Orders
+    useEffect(() => {
+        setLoading(true);
+        const q = query(collection(db, 'jobs'));
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+            const loadedOrders = snapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data()
+            } as any));
+
+            loadedOrders.sort((a, b) => {
+                const aTs = (a.createdAt as any)?.seconds || (a.createdAt as any)?._seconds || 0;
+                const bTs = (b.createdAt as any)?.seconds || (b.createdAt as any)?._seconds || 0;
+                return bTs - aTs;
+            });
+
+            setOrders(loadedOrders);
+            setLoading(false);
+        }, (error) => {
+            console.error("AdminOrdersView snapshot error", error);
+            setLoading(false);
+        });
+
+        return () => {
+            try { unsubscribe(); } catch (e) {}
+        };
+    }, []);
+
+    // Safety Locale
+    const dfLocale = language === 'fr' ? fr : language === 'ar' ? arMA : undefined;
+
+    // Helper: Get Monday of a week
+    const getMonday = (date: Date) => {
+        const d = new Date(date);
+        if (isNaN(d.getTime())) return startOfDay(new Date());
+        const day = d.getDay();
+        const diff = day === 0 ? -6 : 1 - day;
+        d.setDate(d.getDate() + diff);
+        return startOfDay(d);
+    };
+
+    const [weekStart, setWeekStart] = useState<Date>(() => getMonday(new Date()));
+
+    const safeFormat = (date: Date | any, pattern: string) => {
+        try {
+            const d = date instanceof Date ? date : new Date(date);
+            if (isNaN(d.getTime())) return "";
+            return format(d, pattern, { locale: dfLocale });
+        } catch (e) { return ""; }
+    };
+
     const getDynamicStatus = (order: any) => {
         if (!order || !order.date || !order.time) return order?.status || 'new';
-        
         try {
             const autoStatuses = ['confirmed', 'accepted', 'programmed', 'pending', 'in_progress'];
             if (!autoStatuses.includes(order.status || '')) return order.status;
@@ -72,134 +137,19 @@ export default function AdminOrdersView({ t, onChat, onViewMessages, hideHeader 
             if (now >= startTime && now < endTime) return 'in_progress';
             if (now >= endTime) return 'done';
             return order.status || 'new';
-        } catch (e) { 
-            console.error("Crash in getDynamicStatus:", e);
-            return order?.status || 'new'; 
-        }
+        } catch (e) { return order?.status || 'new'; }
     };
 
     const getOrderColor = (status: string) => {
         const lower = String(status || '').toLowerCase();
-        if (['cancelled', 'rejected'].includes(lower)) {
-            return { raw: '#ef4444', class: 'bg-red-500 text-white' };
-        }
-        if (['done', 'completed', 'delivered'].includes(lower)) {
-            return { raw: '#22c55e', class: 'bg-green-500 text-white' };
-        }
-        if (['pending', 'waiting', 'new'].includes(lower)) {
-            return { raw: '#facc15', class: 'bg-yellow-400 text-black' };
-        }
-        if (['confirmed', 'accepted', 'programmed', 'matching', 'in_progress', 'on_time', 'negotiating'].includes(lower)) {
-            return { raw: '#3b82f6', class: 'bg-blue-500 text-white' };
-        }
+        if (['cancelled', 'rejected'].includes(lower)) return { raw: '#ef4444', class: 'bg-red-500 text-white' };
+        if (['done', 'completed', 'delivered'].includes(lower)) return { raw: '#22c55e', class: 'bg-green-500 text-white' };
+        if (['pending', 'waiting', 'new'].includes(lower)) return { raw: '#facc15', class: 'bg-yellow-400 text-black' };
+        if (['confirmed', 'accepted', 'programmed', 'matching', 'in_progress', 'on_time', 'negotiating'].includes(lower)) return { raw: '#3b82f6', class: 'bg-blue-500 text-white' };
         return { raw: '#9ea5b1', class: 'bg-neutral-400 text-white' };
     };
 
-    useEffect(() => {
-        setLoading(true);
-        const q = query(collection(db, 'jobs'));
-        const unsubscribe = onSnapshot(q, (snapshot) => {
-            const loadedOrders = snapshot.docs.map(doc => ({
-                id: doc.id,
-                ...doc.data()
-            } as any));
-
-            loadedOrders.sort((a, b) => {
-                if (!a || !b) return 0;
-                const aTs = (a.createdAt as any)?.seconds || (a.createdAt as any)?._seconds || 0;
-                const bTs = (b.createdAt as any)?.seconds || (b.createdAt as any)?._seconds || 0;
-                return bTs - aTs;
-            });
-
-            setOrders(loadedOrders);
-            setLoading(false);
-        }, (error) => {
-            console.error("AdminOrdersView snapshot error", error);
-            setLoading(false);
-        });
-
-        return () => {
-            try { unsubscribe(); } catch (e) {}
-        };
-    }, []);
-
-    const [viewMode, setViewMode] = useState<'day' | 'month'>('month');
-    const [horizontalSelectedDate, setHorizontalSelectedDate] = useState<Date>(new Date());
-    
-    // Safety guard for date locales
-    const dfLocale = language === 'fr' ? fr : language === 'ar' ? arMA : undefined;
-
-    const getMonday = (date: Date) => {
-        try {
-            const d = new Date(date);
-            if (isNaN(d.getTime())) return startOfDay(new Date());
-            const day = d.getDay();
-            const diff = day === 0 ? -6 : 1 - day;
-            d.setDate(d.getDate() + diff);
-            return startOfDay(d);
-        } catch (e) {
-            return startOfDay(new Date());
-        }
-    };
-
-    const [weekStart, setWeekStart] = useState<Date>(() => getMonday(horizontalSelectedDate));
-    
-    // SAFE FORMATTING
-    const safeFormat = (date: Date | any, pattern: string) => {
-        try {
-            const d = date instanceof Date ? date : new Date(date);
-            if (isNaN(d.getTime())) return "";
-            return format(d, pattern, { locale: dfLocale });
-        } catch (e) { return ""; }
-    };
-
-    const selectedDateStr = safeFormat(horizontalSelectedDate, 'yyyy-MM-dd');
-
-    const weekDays = Array.from({ length: 7 }, (_, i) => {
-        const d = addDays(weekStart, i);
-        return {
-            date: d,
-            dateStr: safeFormat(d, 'yyyy-MM-dd'),
-            dayNum: safeFormat(d, 'd'),
-            dayLabel: safeFormat(d, 'EEEEEE') // Short weekday like 'Mo', 'Lu', etc
-        };
-    });
-
-    const bookedDates = useMemo(() => {
-        const set = new Set<string>();
-        try {
-            orders.forEach(o => {
-                if (o.date) set.add(String(o.date));
-            });
-        } catch (e) {}
-        return set;
-    }, [orders]);
-
-    const weekLabel = `${safeFormat(weekStart, 'MMM d')} – ${safeFormat(addDays(weekStart, 6), 'MMM d, yyyy')}`;
-
-    const hours = Array.from({ length: 15 }, (_, i) => 7 + i);
-
-    const getTimePosition = (timeStr: string) => {
-        if (!timeStr) return 0;
-        const [h, m] = timeStr.split(':').map(Number);
-        if (isNaN(h)) return 0;
-        const offsetHours = h - 7;
-        const totalMins = offsetHours * 60 + (m || 0);
-        return (totalMins / 60) * 100;
-    };
-
-    const getTimeHeight = (from: string, to: string) => {
-        const start = getTimePosition(from);
-        const end = getTimePosition(to);
-        const height = end - start;
-        return isNaN(height) ? 140 : Math.max(height, 110);
-    };
-
-    const dayMissions = useMemo(() => {
-        return orders.filter(o => o.date === selectedDateStr);
-    }, [selectedDateStr, orders]);
-
-    const [monthOffset, setMonthOffset] = useState(0);
+    // Month View Data
     const viewMonth = useMemo(() => {
         const d = new Date();
         d.setMonth(d.getMonth() + monthOffset);
@@ -212,333 +162,198 @@ export default function AdminOrdersView({ t, onChat, onViewMessages, hideHeader 
         return eachDayOfInterval({ start, end });
     }, [viewMonth]);
 
-    const monthLabel = format(viewMonth, 'MMMM', {
-        locale: language === 'fr' ? fr : language === 'ar' ? arMA : undefined
+    const monthLabel = safeFormat(viewMonth, 'MMMM');
+    const weekdayShorts = language === 'ar' ? ['ح', 'ث', 'ر', 'خ', 'ج', 'س', 'ن'] : language === 'fr' ? ['L', 'M', 'M', 'J', 'V', 'S', 'D'] : ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+
+    // Day View Data
+    const selectedDateStr = safeFormat(horizontalSelectedDate, 'yyyy-MM-dd');
+    const weekDaysArr = Array.from({ length: 7 }, (_, i) => {
+        const d = addDays(weekStart, i);
+        return {
+            date: d,
+            dateStr: safeFormat(d, 'yyyy-MM-dd'),
+            dayNum: safeFormat(d, 'd'),
+            dayLabel: safeFormat(d, 'EEEEEE')
+        };
     });
+    const weekLabel = `${safeFormat(weekStart, 'MMM d')} – ${safeFormat(addDays(weekStart, 6), 'MMM d, yyyy')}`;
+    const hours = Array.from({ length: 15 }, (_, i) => 7 + i);
+    const dayMissions = orders.filter(o => o.date === selectedDateStr);
 
-    const weekdayShorts = language === 'ar'
-        ? ['ح', 'ث', 'ر', 'خ', 'ج', 'س', 'ن']
-        : language === 'fr'
-            ? ['L', 'M', 'M', 'J', 'V', 'S', 'D']
-            : ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+    const getTimePosition = (timeStr: string) => {
+        const [h, m] = String(timeStr || '09:00').split(':').map(Number);
+        const offsetHours = (h || 9) - 7;
+        return ((offsetHours * 60 + (m || 0)) / 60) * 100;
+    };
 
-    const renderMonthView = () => (
-        <div className="flex flex-col bg-white h-full overflow-y-auto no-scrollbar">
-            <div className="p-4 sm:p-6 pb-24">
-                <div className="flex items-center justify-between mb-8 px-1">
-                    <h2 className="text-[32px] font-bold text-black lowercase tracking-tight ">{monthLabel}</h2>
-                    <div className="flex gap-4">
-                        <button onClick={() => setMonthOffset(p => p - 1)} className="p-2 hover:bg-neutral-100 rounded-full transition-colors active:scale-95">
-                            <ChevronLeft size={24} />
-                        </button>
-                        <button onClick={() => setMonthOffset(p => p + 1)} className="p-2 hover:bg-neutral-100 rounded-full transition-colors active:scale-95">
-                            <ChevronLeft size={24} className="rotate-180" />
-                        </button>
-                    </div>
-                </div>
-
-                <div className="grid grid-cols-7 mb-4">
-                    {weekdayShorts.map((d, i) => (
-                        <div key={i} className="text-center text-[12px] font-medium text-neutral-400 uppercase tracking-wider">{d}</div>
-                    ))}
-                </div>
-
-                <div className="grid grid-cols-7 gap-1 sm:gap-2">
-                    {monthDays.map((date, i) => {
-                        const dateStr = format(date, 'yyyy-MM-dd');
-                        const isCurrentMonth = isSameMonth(date, viewMonth);
-                        const dayOrders = orders.filter(o => o.date === dateStr);
-                        const isTodayDate = isSameDay(date, new Date());
-                        const isSelected = isSameDay(date, horizontalSelectedDate);
-                        const isPast = isBefore(date, startOfDay(new Date()));
-
-                        return (
-                            <div
-                                key={i}
-                                onClick={() => {
-                                    setHorizontalSelectedDate(date);
-                                    setWeekStart(getMonday(date));
-                                    setViewMode('day');
-                                }}
-                                className={cn(
-                                    "aspect-[1/1.5] sm:aspect-[1/1.2] border border-neutral-100 rounded-xl p-1.5 sm:p-2 flex flex-col items-start transition-all cursor-pointer relative",
-                                    !isCurrentMonth && "opacity-0 pointer-events-none",
-                                    isSelected && "border-black ring-[0.5px] ring-black shadow-sm bg-white",
-                                    isPast && !isSelected && "bg-neutral-100/50",
-                                    isTodayDate && !isSelected && "bg-neutral-50"
-                                )}
-                            >
-                                <span className={cn(
-                                    "text-[15px] font-bold mb-1.5 ml-0.5",
-                                    isTodayDate ? "text-[#01A083]" : isPast ? "text-neutral-400 line-through" : "text-neutral-900",
-                                    isSelected && "text-black no-underline"
-                                )}>
-                                    {format(date, 'd')}
-                                </span>
-
-                                <div className="flex flex-col gap-1 w-full overflow-hidden mt-auto">
-                                    {dayOrders.slice(0, 3).map((order: any) => {
-                                        const dynStatus = getDynamicStatus(order);
-                                        const orderColor = getOrderColor(dynStatus);
-                                        return (
-                                            <div
-                                                key={order.id}
-                                                className={cn("w-full h-6 sm:h-7 rounded-lg flex items-center gap-1.5 px-1.5 shadow-sm overflow-hidden", orderColor.class)}
-                                            >
-                                                <div className="w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full bg-black/20 flex-shrink-0 flex items-center justify-center overflow-hidden">
-                                                    {order.bricolerAvatar ? (
-                                                        <img src={order.bricolerAvatar} className="w-full h-full object-cover" />
-                                                    ) : (
-                                                        <User size={10} className="text-white/80" />
-                                                    )}
-                                                </div>
-                                                <span className="text-[9px] sm:text-[10px] font-bold text-white truncate leading-none">
-                                                    {order.bricolerName ? String(order.bricolerName).split(' ')[0] : t({ en: 'Matching', fr: 'Matching', ar: 'جاري' })}
-                                                </span>
-                                            </div>
-                                        )
-                                    })}
-                                    {dayOrders.length > 3 && (
-                                        <div className="text-[9px] font-bold text-neutral-400 ml-1">
-                                            +{dayOrders.length - 3}
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                        );
-                    })}
-                </div>
+    if (loading) {
+        return (
+            <div className="flex-1 flex justify-center py-20 bg-white">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-black"></div>
             </div>
-        </div>
-    );
+        );
+    }
 
     return (
         <div className="flex flex-col bg-white h-full relative overflow-hidden">
-            {/* Header with Jour/Mois Toggle */}
-            {!hideHeader && (
-                <div className="bg-white px-6 pt-4 pb-1 flex items-center justify-between sticky top-0 z-[40]">
-                    <div className="flex flex-col">
-                        <span className="text-[26px] font-bold text-black leading-none tracking-tight">
-                            {language === 'ar' ? 'الجدول الزمني' : language === 'fr' ? 'Planning' : 'Schedule'}
-                        </span>
-                        <span className="text-[12px] font-bold text-[#01A083] uppercase tracking-widest mt-1">
-                            {viewMode === 'day' ? weekLabel : monthLabel}
-                        </span>
-                    </div>
-
-                    <div className="flex bg-neutral-100 p-1 rounded-full">
-                        <button
-                            onClick={() => setViewMode('day')}
-                            className={cn(
-                                "px-4 py-1.5 rounded-full text-[13px] font-bold transition-all",
-                                viewMode === 'day' ? "bg-white text-[#000000]" : "text-neutral-400"
-                            )}
-                        >
-                            {t({ en: 'Day', fr: 'Jour', ar: 'يوم' })}
-                        </button>
-                        <button
-                            onClick={() => setViewMode('month')}
-                            className={cn(
-                                "px-4 py-1.5 rounded-full text-[13px] font-bold transition-all",
-                                viewMode === 'month' ? "bg-white text-[#01A083] shadow-sm" : "text-neutral-400"
-                            )}
-                        >
-                            {t({ en: 'Month', fr: 'Mois', ar: 'شهر' })}
-                        </button>
-                    </div>
+            {/* Tab Bar */}
+            <div className="bg-white px-6 pt-4 pb-1 flex items-center justify-between sticky top-0 z-[40]">
+                <div className="flex flex-col">
+                    <span className="text-[26px] font-bold text-black leading-none tracking-tight">
+                        {language === 'ar' ? 'الجدول الزمني' : language === 'fr' ? 'Planning' : 'Schedule'}
+                    </span>
+                    <span className="text-[12px] font-bold text-[#01A083] uppercase tracking-widest mt-1">
+                        {viewMode === 'day' ? weekLabel : monthLabel}
+                    </span>
                 </div>
-            )}
-
-            {hideHeader && (
-                <div className="bg-white px-4 py-3 flex items-center justify-end sticky top-0 z-[40]">
-                    <div className="flex bg-neutral-100 p-1 rounded-full">
+                <div className="flex bg-neutral-100 p-1 rounded-full">
+                    {['day', 'month'].map((m) => (
                         <button
-                            onClick={() => setViewMode('day')}
+                            key={m}
+                            onClick={() => setViewMode(m as any)}
                             className={cn(
-                                "px-4 py-1.5 rounded-full text-[13px] font-bold transition-all",
-                                viewMode === 'day' ? "bg-white text-[#000000]" : "text-neutral-400"
+                                "px-4 py-1.5 rounded-full text-[13px] font-bold transition-all capitalize",
+                                viewMode === m ? "bg-white text-black shadow-sm" : "text-neutral-400"
                             )}
                         >
-                            {t({ en: 'Day', fr: 'Jour', ar: 'يوم' })}
+                            {t({ en: m, fr: m === 'day' ? 'Jour' : 'Mois', ar: m === 'day' ? 'يوم' : 'شهر' })}
                         </button>
-                        <button
-                            onClick={() => setViewMode('month')}
-                            className={cn(
-                                "px-4 py-1.5 rounded-full text-[13px] font-bold transition-all",
-                                viewMode === 'month' ? "bg-white text-[#01A083] shadow-sm" : "text-neutral-400"
-                            )}
-                        >
-                            {t({ en: 'Month', fr: 'Mois', ar: 'شهر' })}
-                        </button>
-                    </div>
+                    ))}
                 </div>
-            )}
+            </div>
 
-            {loading ? (
-                <div className="flex-1 flex justify-center py-20">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-black"></div>
-                </div>
-            ) : viewMode === 'month' ? renderMonthView() : (
-                <div className="flex flex-col h-full overflow-hidden">
-                    <div className="bg-white px-4 pt-0 pb-3 flex-shrink-0 sticky top-[25px] z-30 mb-2 border-b border-neutral-50/50">
-                        <div className="flex items-center justify-between mb-2 px-1">
-                            <button
-                                onClick={() => setWeekStart(prev => addDays(prev, -7))}
-                                className="w-8 h-8 rounded-full bg-neutral-50 flex items-center justify-center active:scale-95 transition-all"
-                            >
-                                <ChevronLeft size={16} className="text-black" />
-                            </button>
-                            <span className="text-[14px] font-bold text-black lowercase tracking-tight">{weekLabel}</span>
-                            <button
-                                onClick={() => setWeekStart(prev => addDays(prev, 7))}
-                                className="w-8 h-8 rounded-full bg-neutral-50 flex items-center justify-center active:scale-95 transition-all"
-                            >
-                                <ChevronLeft size={16} className="text-black rotate-180" />
-                            </button>
+            <div className="flex-1 overflow-hidden relative">
+                {viewMode === 'month' ? (
+                    /* MONTH VIEW */
+                    <div className="h-full overflow-y-auto p-4 sm:p-6 pb-32 no-scrollbar">
+                        <div className="flex items-center justify-between mb-8 px-1">
+                            <h2 className="text-[32px] font-bold text-black lowercase tracking-tight">{monthLabel}</h2>
+                            <div className="flex gap-4">
+                                <button onClick={() => setMonthOffset(p => p - 1)} className="p-2 hover:bg-neutral-100 rounded-full transition-colors"><ChevronLeft size={24} /></button>
+                                <button onClick={() => setMonthOffset(p => p + 1)} className="p-2 hover:bg-neutral-100 rounded-full transition-colors"><ChevronLeft size={24} className="rotate-180" /></button>
+                            </div>
                         </div>
 
-                        <div className="grid grid-cols-7 gap-1">
-                            {weekDays.map(day => {
-                                const isTodayDay = day.dateStr === format(new Date(), 'yyyy-MM-dd');
-                                const isSelected = day.dateStr === selectedDateStr;
-                                const hasJobs = bookedDates.has(day.dateStr);
-                                const isPast = isBefore(day.date, startOfDay(new Date()));
+                        <div className="grid grid-cols-7 mb-4">
+                            {weekdayShorts.map((d, i) => <div key={i} className="text-center text-[12px] font-medium text-neutral-400 uppercase tracking-wider">{d}</div>)}
+                        </div>
 
+                        <div className="grid grid-cols-7 gap-1 sm:gap-2">
+                            {monthDays.map((date, i) => {
+                                const dateStr = format(date, 'yyyy-MM-dd');
+                                const dayOrders = orders.filter(o => o.date === dateStr);
+                                const isCurrentMonth = isSameMonth(date, viewMonth);
+                                const isSelected = isSameDay(date, horizontalSelectedDate);
                                 return (
-                                    <button
-                                        key={day.dateStr}
-                                        onClick={() => setHorizontalSelectedDate(day.date)}
+                                    <div
+                                        key={i}
+                                        onClick={() => { setHorizontalSelectedDate(date); setWeekStart(getMonday(date)); setViewMode('day'); }}
                                         className={cn(
-                                            "flex flex-col items-center py-2.5 rounded-xl border border-black/10 transition-all relative overflow-hidden",
-                                            isSelected
-                                                ? "border-black ring-[0.5px] ring-black shadow-sm bg-white"
-                                                : isPast
-                                                    ? "bg-neutral-100/40"
-                                                    : "bg-white hover:bg-neutral-50",
-                                            isTodayDay && !isSelected && "bg-white"
+                                            "aspect-[1/1.5] border border-neutral-100 rounded-xl p-1.5 flex flex-col items-start transition-all cursor-pointer relative",
+                                            !isCurrentMonth && "opacity-0 pointer-events-none",
+                                            isSelected && "border-black ring-[0.5px] ring-black shadow-sm",
+                                            isBefore(date, startOfDay(new Date())) && !isSelected && "bg-neutral-50/50"
                                         )}
                                     >
-                                        <span className={cn(
-                                            "text-[9px] font-bold uppercase tracking-wider mb-1 opacity-60",
-                                            isSelected ? "text-black opacity-100" : isPast ? "text-neutral-300" : "text-black",
-                                            isTodayDay && !isSelected && "text-[#01A083] opacity-100"
-                                        )}>
-                                            {String(day.dayLabel || '').replace('.', '')}
+                                        <span className={cn("text-[15px] font-bold mb-1.5 ml-0.5", isSameDay(date, new Date()) ? "text-[#01A083]" : "text-neutral-900")}>
+                                            {format(date, 'd')}
                                         </span>
-                                        <span className={cn(
-                                            "text-[16px] font-bold leading-none",
-                                            isSelected ? "text-black" : isPast ? "text-neutral-300 line-through" : isTodayDay ? "text-[#01A083]" : "text-black"
-                                        )}>
-                                            {day.dayNum}
-                                        </span>
-                                        {hasJobs && !isSelected && (
-                                            <div className="absolute top-1.5 right-1.5 w-1 h-1 bg-[#222222] rounded-full" />
-                                        )}
-                                    </button>
+                                        <div className="flex flex-col gap-1 w-full overflow-hidden mt-auto">
+                                            {dayOrders.slice(0, 3).map((order) => {
+                                                const color = getOrderColor(getDynamicStatus(order));
+                                                return <div key={order.id} className={cn("w-full h-6 rounded-lg flex items-center px-1.5 shadow-sm overflow-hidden", color.class)}>
+                                                    <span className="text-[9px] font-bold text-white truncate">{order.bricolerName?.split(' ')[0] || 'Matching'}</span>
+                                                </div>
+                                            })}
+                                        </div>
+                                    </div>
                                 );
                             })}
                         </div>
                     </div>
-
-                    <div className="flex-1 overflow-y-auto no-scrollbar relative bg-[#FAFAFA] pb-32">
-                        <div className="relative min-h-[1550px] w-full">
-                            <div className="absolute inset-0 pt-6 px-0">
-                                {hours.map((h) => (
-                                    <div key={h} className="flex h-[100px] border-b border-neutral-100/60 group">
-                                        <div className="w-16 flex-none flex flex-col items-end justify-start pr-3 -mt-2.5">
-                                            <span className="text-[11px] font-bold text-neutral-400 uppercase tracking-tighter">
-                                                {safeFormat(new Date(2000, 0, 1, h, 0), 'p')}
-                                            </span>
-                                        </div>
-                                        <div className="flex-1 border-l border-neutral-100/60 relative">
-                                            <div className="absolute top-[50px] left-0 right-0 border-t border-[#FAFAFA] border-dashed" />
-                                        </div>
-                                    </div>
+                ) : (
+                    /* DAY VIEW */
+                    <div className="flex flex-col h-full">
+                        <div className="bg-white px-4 pb-3 flex-shrink-0 border-b border-neutral-50">
+                            <div className="flex items-center justify-between mb-2">
+                                <button onClick={() => setWeekStart(prev => addDays(prev, -7))} className="w-8 h-8 rounded-full bg-neutral-50 flex items-center justify-center"><ChevronLeft size={16} /></button>
+                                <span className="text-[14px] font-bold text-black lowercase tracking-tight">{weekLabel}</span>
+                                <button onClick={() => setWeekStart(prev => addDays(prev, 7))} className="w-8 h-8 rounded-full bg-neutral-50 flex items-center justify-center"><ChevronLeft size={16} className="rotate-180" /></button>
+                            </div>
+                            <div className="grid grid-cols-7 gap-1">
+                                {weekDaysArr.map(day => (
+                                    <button
+                                        key={day.dateStr}
+                                        onClick={() => setHorizontalSelectedDate(day.date)}
+                                        className={cn(
+                                            "flex flex-col items-center py-2.5 rounded-xl border transition-all",
+                                            day.dateStr === selectedDateStr ? "border-black bg-white shadow-sm" : "border-transparent text-neutral-400"
+                                        )}
+                                    >
+                                        <span className="text-[9px] font-bold mb-1 uppercase opacity-60">{day.dayLabel.slice(0,1)}</span>
+                                        <span className="text-[16px] font-bold">{day.dayNum}</span>
+                                    </button>
                                 ))}
                             </div>
+                        </div>
 
-                            <div className="absolute inset-0 pt-6 left-16">
-                                {dayMissions.map((order) => {
-                                    const timeStr = String(order.time || '');
-            const fromTime = String(timeStr).split('-')[0]?.trim() || "09:00";
-            const toTime = String(timeStr).split('-')[1]?.trim() || "11:00";
-            
-            const dynStatus = getDynamicStatus(order);
-            const orderColor = getOrderColor(dynStatus);
-
-            if (!orderColor) return null;
-
-                                    return (
-                                        <motion.div
-                                            key={order.id}
-                                            initial={{ opacity: 0, y: 10 }}
-                                            animate={{ opacity: 1, y: 0 }}
-                                            onClick={() => setSelectedOrder(order)}
-                                            className="absolute left-4 right-6 rounded-[24px] bg-white border border-neutral-100/80 p-5 z-20 cursor-pointer shadow-md shadow-neutral-200/30 hover:shadow-lg transition-all flex flex-col gap-3"
-                                            style={{
-                                                top: getTimePosition(fromTime) + 4,
-                                                height: Math.max(getTimeHeight(fromTime, toTime) - 8, 140),
-                                                borderLeftColor: orderColor.raw,
-                                                borderLeftWidth: '6px'
-                                            }}
-                                        >
-                                            <div className="flex items-start gap-4">
-                                                <div className="w-14 h-14 rounded-2xl bg-neutral-50 flex items-center justify-center flex-shrink-0 overflow-hidden shadow-inner">
-                                                    {order.images && order.images.length > 0 ? (
-                                                        <img src={order.images[0]} className="w-full h-full object-cover" />
-                                                    ) : (
-                                                        <img src={getServiceVector(order.service)} alt={order.service} className="w-10 h-10 object-contain" />
-                                                    )}
-                                                </div>
-                                                <div className="flex-1 min-w-0">
-                                                    <div className="flex items-center justify-between mb-1">
-                                                        <span className="text-[18px] font-bold text-black truncate uppercase tracking-tight">
-                                                            {order.subServiceDisplayName || order.service}
-                                                        </span>
-                                                        <div className={cn("w-7 h-7 rounded-full flex items-center justify-center shadow-sm", orderColor.class)}>
-                                                            <Check size={14} className="text-white fill-white" strokeWidth={3} />
-                                                        </div>
+                        <div className="flex-1 overflow-y-auto relative bg-[#FAFAFA] pb-32 no-scrollbar">
+                            <div className="relative min-h-[1550px] w-full pt-6">
+                                {hours.map((h) => (
+                                    <div key={h} className="flex h-[100px] border-b border-neutral-100/60">
+                                        <div className="w-16 pr-3 -mt-2.5 text-right"><span className="text-[11px] font-bold text-neutral-400 uppercase">{h}:00</span></div>
+                                        <div className="flex-1 border-l border-neutral-100/60 relative" />
+                                    </div>
+                                ))}
+                                <div className="absolute inset-0 pt-6 left-16">
+                                    {dayMissions.map((order) => {
+                                        const color = getOrderColor(getDynamicStatus(order));
+                                        const startPos = getTimePosition(order.time?.split('-')[0] || '09:00');
+                                        return (
+                                            <motion.div
+                                                key={order.id}
+                                                onClick={() => setSelectedOrder(order)}
+                                                className="absolute left-4 right-6 rounded-[24px] bg-white border border-neutral-100 p-5 z-20 cursor-pointer shadow-md flex flex-col gap-3"
+                                                style={{ top: startPos + 4, height: 140, borderLeft: `6px solid ${color.raw}` }}
+                                            >
+                                                <div className="flex items-start gap-4">
+                                                    <div className="w-14 h-14 rounded-2xl bg-neutral-50 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                                                        <img src={getServiceVector(order.service)} className="w-10 h-10 object-contain" />
                                                     </div>
-                                                    <p className="text-[14px] font-medium text-neutral-400 truncate">
-                                                        {order.bricolerName || t({ en: 'Matching...', fr: 'Matching...', ar: 'جاري البحث...' })} • {order.city || (typeof order.location === 'object' ? (order.location as any).address : order.location)}
-                                                    </p>
-                                                    <p className="text-[15px] font-bold text-[#01A083] mt-2 tracking-tight">
-                                                        {fromTime}
-                                                    </p>
+                                                    <div className="flex-1 min-w-0">
+                                                        <span className="text-[18px] font-bold text-black truncate block">{order.subServiceDisplayName || order.service}</span>
+                                                        <p className="text-[14px] font-medium text-neutral-400 truncate">{order.bricolerName || 'Matching...'} • {order.city || 'Address'}</p>
+                                                        <p className="text-[15px] font-bold text-[#01A083] mt-2">{order.time || '09:00'}</p>
+                                                    </div>
                                                 </div>
-                                            </div>
-                                        </motion.div>
-                                    );
-                                })}
+                                            </motion.div>
+                                        );
+                                    })}
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
-            )}
+                )}
+            </div>
 
             <JobDetailsPopup
-                job={
-                    selectedOrder
-                        ? {
-                            id: String(selectedOrder.id || ''),
-                            service: String(selectedOrder.service || 'Service'),
-                            clientName: String(selectedOrder.clientName || 'Client'),
-                            clientRating: typeof selectedOrder.clientRating === 'number' ? selectedOrder.clientRating : 5.0,
-                            location: String(selectedOrder.location || selectedOrder.city || ''),
-                            date: selectedOrder.date || (selectedOrder.createdAt?.seconds ? safeFormat(new Date(selectedOrder.createdAt.seconds * 1000), 'MMM d, yyyy') : ''),
-                            time: selectedOrder.time || '',
-                            duration: selectedOrder.duration ? `${selectedOrder.duration}h` : '',
-                            price: Number(selectedOrder.totalPrice ?? selectedOrder.price ?? 0) || 0,
-                            description: String(selectedOrder.description || ''),
-                            status: (selectedOrder.status as any) || 'new',
-                            bricolerId: String(selectedOrder.bricolerId || ''),
-                            bricolerName: String(selectedOrder.bricolerName || ''),
-                            clientAvatar: String(selectedOrder.clientAvatar || ''),
-                            bricolerWhatsApp: String(selectedOrder.bricolerWhatsApp || ''),
-                            clientWhatsApp: String(selectedOrder.clientWhatsApp || ''),
-                        } as JobDetails
-                        : null
-                }
+                job={selectedOrder ? {
+                    id: String(selectedOrder.id),
+                    service: String(selectedOrder.service),
+                    clientName: String(selectedOrder.clientName || 'Client'),
+                    clientRating: 5.0,
+                    location: String(selectedOrder.location || selectedOrder.city || ''),
+                    date: String(selectedOrder.date || ''),
+                    time: String(selectedOrder.time || ''),
+                    duration: String(selectedOrder.duration || '2h'),
+                    price: Number(selectedOrder.totalPrice || selectedOrder.price || 0),
+                    status: (selectedOrder.status as any) || 'new',
+                    description: String(selectedOrder.description || ''),
+                    bricolerId: String(selectedOrder.bricolerId || ''),
+                    bricolerName: String(selectedOrder.bricolerName || ''),
+                    bricolerAvatar: String(selectedOrder.bricolerAvatar || ''),
+                    bricolerRating: Number(selectedOrder.bricolerRating || 5.0)
+                } as JobDetails : null}
                 onClose={() => setSelectedOrder(null)}
                 isAdmin={true}
                 onChat={onChat}
