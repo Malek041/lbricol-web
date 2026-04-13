@@ -38,8 +38,13 @@ export default function AdminOrdersView({ t, onChat, onViewMessages, hideHeader 
         if (!autoStatuses.includes(order.status || '')) return order.status;
 
         try {
-            const timeStr = order.time.split('-')[0].trim();
-            const dateStr = typeof order.date === 'string' ? order.date : format(new Date(order.date), 'yyyy-MM-dd');
+            const timeStr = String(order.time).split('-')[0].trim();
+            let safeDate = new Date();
+            if (typeof order.date === 'string') safeDate = parseISO(order.date);
+            else if (order.date?.toDate) safeDate = order.date.toDate();
+            else safeDate = new Date(order.date);
+            
+            const dateStr = format(safeDate, 'yyyy-MM-dd');
             const startTime = parseISO(`${dateStr}T${timeStr}:00`).getTime();
             const now = currentTime.getTime();
 
@@ -249,7 +254,7 @@ export default function AdminOrdersView({ t, onChat, onViewMessages, hideHeader 
                                                     )}
                                                 </div>
                                                 <span className="text-[9px] sm:text-[10px] font-bold text-white truncate leading-none">
-                                                    {order.bricolerName ? order.bricolerName.split(' ')[0] : t({ en: 'Matching', fr: 'Matching', ar: 'جاري' })}
+                                                    {order.bricolerName ? String(order.bricolerName).split(' ')[0] : t({ en: 'Matching', fr: 'Matching', ar: 'جاري' })}
                                                 </span>
                                             </div>
                                         )
@@ -415,8 +420,9 @@ export default function AdminOrdersView({ t, onChat, onViewMessages, hideHeader 
 
                             <div className="absolute inset-0 pt-6 left-16">
                                 {dayMissions.map((order) => {
-                                    const fromTime = order.time?.split('-')[0].trim() || "09:00";
-                                    const toTime = order.time?.split('-')[1]?.trim() || "11:00";
+                                    const timeStr = String(order.time || '');
+                                    const fromTime = timeStr.split('-')[0]?.trim() || "09:00";
+                                    const toTime = timeStr.split('-')[1]?.trim() || "11:00";
                                     
                                     const dynStatus = getDynamicStatus(order);
                                     const orderColor = getOrderColor(dynStatus);
