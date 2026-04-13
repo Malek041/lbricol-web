@@ -342,7 +342,7 @@ export default function ProviderJobCard({
                         </button>
                     </>
                 )}
-                {(order.status === 'programmed' || order.status === 'accepted') && order.providerConfirmed && (
+                {(order.status === 'programmed' || order.status === 'accepted' || (order.status as string) === 'in_progress') && order.providerConfirmed && (
                     <div className="flex items-center gap-2 w-full justify-end">
                         {onStatusUpdate && !order.providerStatus && isUrgent && (
                             <button
@@ -366,7 +366,7 @@ export default function ProviderJobCard({
                             <Navigation size={18} strokeWidth={2.5} />
                             {(!onStatusUpdate || order.providerStatus || !isUrgent) && t({ en: 'Navigate', fr: 'Naviguer', ar: 'يتنقل' })}
                         </button>
-                        {(onStatusUpdate && (dynamicStatus === 'done' || order.status === 'in_progress')) && (
+                        {(onStatusUpdate && (dynamicStatus === 'done' || (order.status as string) === 'in_progress')) && (
                           <button
                               onClick={(e) => {
                                   e.stopPropagation();

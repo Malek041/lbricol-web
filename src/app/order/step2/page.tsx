@@ -167,13 +167,7 @@ function Step2Content() {
       try {
         const all = snap.docs.map(d => {
           const data = d.data();
-          const tasks = Math.max(
-            Number(data.completedJobs || 0),
-            Number(data.numReviews || 0),
-            Number(data.jobsCompleted || 0),
-            Number(data.jobsDone || 0),
-            Number(data.taskCount || 0)
-          );
+          const tasks = Number(data.completedJobs || data.numReviews || data.jobsDone || data.taskCount || 0);
           return {
             id: d.id,
             ...data,

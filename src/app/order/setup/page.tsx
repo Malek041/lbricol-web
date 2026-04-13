@@ -2968,7 +2968,7 @@ export default function ServiceSetupPage() {
                                                     whileTap={{ scale: 0.97 }}
                                                     onClick={handleContinue}
                                                     disabled={isSubmitting}
-                                                    className="w-full py-5 bg-[#01A083] text-white rounded-full font-black text-[20px] flex items-center justify-center gap-3 disabled:opacity-50"
+                                                    className="w-full py-2.5 bg-[#01A083] text-white rounded-full font-semibold text-[20px] flex items-center justify-center gap-3 disabled:opacity-50"
                                                 >
                                                     {isSubmitting ? <Loader2 className="animate-spin" /> : t({ en: 'Confirm Order', fr: 'Confirmer la commande', ar: 'تأكيد الطلب' })}
                                                 </motion.button>

@@ -240,13 +240,7 @@ const AdminBricolersView: React.FC<AdminBricolersViewProps> = ({ t }) => {
 
 const BricolerCard = ({ b, t, expandedId, setExpandedId, toggleStatus, handleDelete, onEdit, onSchedule, onViewProfile }: any) => {
   const isClaimed = !!b.uid;
-  const jobs = Math.max(
-    Number(b.completedJobs || 0),
-    Number(b.numReviews || 0),
-    Number(b.jobsCompleted || 0),
-    Number(b.jobsDone || 0),
-    Number(b.taskCount || 0)
-  );
+  const jobs = b.numReviews || b.completedJobs || 0;
   const rating = jobs === 0 ? 0.0 : (typeof b.rating === 'number' ? b.rating : 0.0);
 
   return (
@@ -590,18 +584,12 @@ const BricolerProfileBottomSheet = ({ bricoler, isOpen, onClose, t }: any) => {
                     />
                     <KpiCard
                       label="Stars"
-                      value={((Math.max(Number(bricoler.numReviews || 0), Number(bricoler.completedJobs || 0), Number(bricoler.jobsCompleted || 0), Number(bricoler.jobsDone || 0))) === 0 ? 0.0 : (bricoler.rating || 0.0)).toFixed(1)}
+                      value={((bricoler.numReviews || bricoler.completedJobs || 0) === 0 ? 0.0 : (bricoler.rating || 0.0)).toFixed(1)}
                       icon={<Star size={16} className="text-[#FFCC02] fill-[#FFCC02]" />}
                     />
                     <KpiCard
                       label="Total Jobs"
-                      value={Math.max(
-                        Number(bricoler.completedJobs || 0),
-                        Number(bricoler.numReviews || 0),
-                        Number(bricoler.jobsCompleted || 0),
-                        Number(bricoler.jobsDone || 0),
-                        Number(bricoler.taskCount || 0)
-                      )}
+                      value={bricoler.numReviews || bricoler.completedJobs || 0}
                       icon={<Check size={16} className="text-[#01A083]" />}
                     />
                     <KpiCard

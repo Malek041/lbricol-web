@@ -65,11 +65,11 @@ export default function CheckoutPage() {
                     getDoc(doc(db, 'users', u.uid)),
                     getDoc(doc(db, 'clients', u.uid))
                 ]);
-                
+
                 let combinedData: any = {};
                 if (uSnap.exists()) combinedData = { ...combinedData, ...uSnap.data() };
                 if (cSnap.exists()) combinedData = { ...combinedData, ...cSnap.data() };
-                
+
                 // Fallback to localStorage if WhatsApp number is still missing
                 if (!combinedData.whatsappNumber) {
                     const localPhone = localStorage.getItem('lbricol_user_phone');
@@ -1055,7 +1055,7 @@ export default function CheckoutPage() {
                             color: '#FFFFFF',
                             border: 'none',
                             fontSize: 17,
-                            fontWeight: 900,
+                            fontWeight: 700,
                             cursor: (paymentMethod === 'bank_transfer' && !receiptImage) ? 'not-allowed' : 'pointer',
                             display: 'flex',
                             alignItems: 'center',
@@ -1078,17 +1078,17 @@ export default function CheckoutPage() {
                     const currUser = auth.currentUser;
                     if (currUser) {
                         setUser(currUser);
-                        
+
                         // Robust check: both collections
                         const [uSnap, cSnap] = await Promise.all([
                             getDoc(doc(db, 'users', currUser.uid)),
                             getDoc(doc(db, 'clients', currUser.uid))
                         ]);
-                        
+
                         let combinedData: any = {};
                         if (uSnap.exists()) combinedData = { ...combinedData, ...uSnap.data() };
                         if (cSnap.exists()) combinedData = { ...combinedData, ...cSnap.data() };
-                        
+
                         const cachedPhone = localStorage.getItem('lbricol_user_phone');
                         const finalNumber = combinedData.whatsappNumber || cachedPhone;
 
