@@ -4,7 +4,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronLeft, User, Search, Filter, MapPin, Check } from 'lucide-react';
 import { db } from '@/lib/firebase';
-import { collection, query, onSnapshot, where, Timestamp } from 'firebase/firestore';
+import { collection, query, onSnapshot, where } from 'firebase/firestore';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, addMonths, startOfWeek, endOfWeek, isSameMonth, isSameDay, isBefore, startOfDay, addDays, parseISO } from 'date-fns';
 import { fr } from 'date-fns/locale/fr';
 import { arMA } from 'date-fns/locale/ar-MA';
@@ -34,13 +34,13 @@ export default function AdminOrdersView({ t, onChat, onViewMessages, hideHeader 
     }, []);
 
     const getDynamicStatus = (order: any) => {
-        if (!order.date || !order.time) return order.status;
-        const autoStatuses = ['confirmed', 'accepted', 'programmed', 'pending', 'in_progress'];
-        if (!autoStatuses.includes(order.status || '')) return order.status;
-
+        if (!order || !order.date || !order.time) return order?.status || 'new';
+        
         try {
+            const autoStatuses = ['confirmed', 'accepted', 'programmed', 'pending', 'in_progress'];
+            if (!autoStatuses.includes(order.status || '')) return order.status;
+
             const rawTime = String(order.time || '09:00').split('-')[0].trim();
-            // Ensure 09:00 format even if it's 9:00
             const timeStr = rawTime.includes(':') && rawTime.split(':')[0].length === 1 ? `0${rawTime}` : rawTime;
             
             let dateStr = '';
@@ -72,7 +72,10 @@ export default function AdminOrdersView({ t, onChat, onViewMessages, hideHeader 
             if (now >= startTime && now < endTime) return 'in_progress';
             if (now >= endTime) return 'done';
             return order.status || 'new';
-        } catch (e) { return order.status || 'new'; }
+        } catch (e) { 
+            console.error("Crash in getDynamicStatus:", e);
+            return order?.status || 'new'; 
+        }
     };
 
     const getOrderColor = (status: string) => {
@@ -102,8 +105,9 @@ export default function AdminOrdersView({ t, onChat, onViewMessages, hideHeader 
             } as any));
 
             loadedOrders.sort((a, b) => {
-                const aTs = a.createdAt?.seconds || 0;
-                const bTs = b.createdAt?.seconds || 0;
+                if (!a || !b) return 0;
+                const aTs = (a.createdAt as any)?.seconds || (a.createdAt as any)?._seconds || 0;
+                const bTs = (b.createdAt as any)?.seconds || (b.createdAt as any)?._seconds || 0;
                 return bTs - aTs;
             });
 
@@ -114,7 +118,9 @@ export default function AdminOrdersView({ t, onChat, onViewMessages, hideHeader 
             setLoading(false);
         });
 
-        return () => unsubscribe();
+        return () => {
+            try { unsubscribe(); } catch (e) {}
+        };
     }, []);
 
     const [viewMode, setViewMode] = useState<'day' | 'month'>('month');
@@ -454,11 +460,13 @@ export default function AdminOrdersView({ t, onChat, onViewMessages, hideHeader 
                             <div className="absolute inset-0 pt-6 left-16">
                                 {dayMissions.map((order) => {
                                     const timeStr = String(order.time || '');
-                                    const fromTime = timeStr.split('-')[0]?.trim() || "09:00";
-                                    const toTime = timeStr.split('-')[1]?.trim() || "11:00";
-                                    
-                                    const dynStatus = getDynamicStatus(order);
-                                    const orderColor = getOrderColor(dynStatus);
+            const fromTime = String(timeStr).split('-')[0]?.trim() || "09:00";
+            const toTime = String(timeStr).split('-')[1]?.trim() || "11:00";
+            
+            const dynStatus = getDynamicStatus(order);
+            const orderColor = getOrderColor(dynStatus);
+
+            if (!orderColor) return null;
 
                                     return (
                                         <motion.div
