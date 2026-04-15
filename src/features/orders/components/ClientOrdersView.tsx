@@ -920,20 +920,20 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
                     >
                         {/* Scrollable Content */}
                         <div style={{ flex: 1, overflowY: 'auto', WebkitOverflowScrolling: 'touch', paddingBottom: '200px' }} className="no-scrollbar">
-                            {/* Header (Moved here to be scrollable) */}
-                            <div style={{ flexShrink: 0, width: '100%', paddingTop: '48px', paddingBottom: '16px', paddingLeft: '24px', paddingRight: '24px', backgroundColor: '#fff', borderBottom: '1px solid #F0F0F0' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                            {/* Header (Simplified Airbnb Style) */}
+                            <div className="flex-shrink-0 w-full pt-12 pb-4 px-6 bg-white">
+                                <div className="flex items-center justify-between">
                                     <button
                                         onClick={() => setSelectedOrder(null)}
-                                        className="w-12 h-12 flex items-center justify-center rounded-2xl bg-[#01A083] active:scale-95 transition-all"
+                                        className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-neutral-50 active:scale-95 transition-all"
                                     >
-                                        <ChevronLeft size={28} className="text-white" />
+                                        <ChevronLeft size={28} className="text-black" />
                                     </button>
                                     <div className="text-right">
-                                        <span className="text-[11px] font-medium text-neutral-400 uppercase tracking-widest block">
+                                        <span className="text-[12px] font-bold text-neutral-400 uppercase tracking-widest block mb-0.5">
                                             {t({ en: 'Order ID', fr: 'ID Commande', ar: 'رقم الطلب' })}
                                         </span>
-                                        <span className="text-[17px] font-medium text-black">
+                                        <span className="text-[16px] font-bold text-black font-mono">
                                             #{selectedOrder.id?.slice(-6).toUpperCase()}
                                         </span>
                                     </div>
@@ -941,68 +941,59 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
                             </div>
 
                             <div className="px-6">
-                                {/* Hero Image & Title Section */}
-                                <div className="text-center mt-8 mb-10">
-                                    <motion.div
-                                        initial={{ scale: 0.8, opacity: 0 }}
-                                        animate={{ scale: 1, opacity: 1 }}
-                                        className="flex justify-center mb-6"
-                                    >
-                                        <img
-                                            src={selectedOrder.service === 'car_rental' ?
-                                                (selectedOrder.selectedCar?.modelImage || selectedOrder.selectedCar?.image || "/Images/Vectors Illu/carKey.png") :
-                                                getServiceVector(selectedOrder.service || '')
-                                            }
-                                            className="w-40 h-40 object-contain"
-                                            alt="Service"
-                                        />
-                                    </motion.div>
-                                    <h2 className="text-[28px] font-black text-black leading-tight tracking-tight px-4">
-                                        {selectedOrder.subServiceDisplayName || (selectedOrder as any).title || selectedOrder.serviceName || selectedOrder.service}
-                                    </h2>
-                                    <div className="text-[17px] font-medium text-neutral-500 flex items-center justify-center gap-2 mt-2">
-                                        <span>{selectedOrder.date ? format(parseISO(selectedOrder.date), 'MMMM d, yyyy') : ''}</span>
-                                        <span>•</span>
-                                        <span>{selectedOrder.time || '09:00'}</span>
+                                {/* Hero & Title Section - Minimalist */}
+                                <div className="mt-6 mb-12">
+                                    <div className="flex items-center justify-between mb-4">
+                                        <h2 className="text-[32px] font-bold text-black leading-tight tracking-tight flex-1">
+                                            {selectedOrder.subServiceDisplayName || (selectedOrder as any).title || selectedOrder.serviceName || selectedOrder.service}
+                                        </h2>
+                                        <div className="w-14 h-14 rounded-2xl bg-neutral-50 flex items-center justify-center flex-shrink-0">
+                                            <img
+                                                src={selectedOrder.service === 'car_rental' ?
+                                                    (selectedOrder.selectedCar?.modelImage || selectedOrder.selectedCar?.image || "/Images/Vectors Illu/carKey.png") :
+                                                    getServiceVector(selectedOrder.service || '')
+                                                }
+                                                className="w-10 h-10 object-contain"
+                                                alt="Service"
+                                            />
+                                        </div>
+                                    </div>
+                                    
+                                    <div className="flex flex-wrap items-center gap-3 text-neutral-500 font-medium">
+                                        <div className="flex items-center gap-2 px-3 py-1.5 bg-neutral-50 rounded-lg">
+                                            <CalendarIcon size={16} className="text-neutral-400" />
+                                            <span className="text-[14px]">{selectedOrder.date ? format(parseISO(selectedOrder.date), 'MMMM d, yyyy') : ''}</span>
+                                        </div>
+                                        <div className="flex items-center gap-2 px-3 py-1.5 bg-neutral-50 rounded-lg">
+                                            <Clock size={16} className="text-neutral-400" />
+                                            <span className="text-[14px]">{selectedOrder.time || '09:00'}</span>
+                                        </div>
                                     </div>
                                 </div>
 
-                                {/* Decorative Separator */}
-                                <div className="mx-[-24px] mb-8 relative h-5 overflow-hidden">
-                                    <svg width="100%" height="20" viewBox="0 0 400 20" preserveAspectRatio="none">
-                                        <path d="M0 10 Q 5 0, 10 10 T 20 10 T 30 10 T 40 10 T 50 10 T 60 10 T 70 10 T 80 10 T 90 10 T 100 10 T 110 10 T 120 10 T 130 10 T 140 10 T 150 10 T 160 10 T 170 10 T 180 10 T 190 10 T 200 10 T 210 10 T 220 10 T 230 10 T 240 10 T 250 10 T 260 10 T 270 10 T 280 10 T 290 10 T 300 10 T 310 10 T 320 10 T 330 10 T 340 10 T 350 10 T 360 10 T 370 10 T 380 10 T 390 10 T 400 10 V 20 H 0 Z" fill="#F9FAFB" />
-                                    </svg>
-                                </div>
-
-                                {/* Bricoler Details Section (REQUESTED TO KEEP) */}
+                                {/* Simplified Professional Section */}
                                 {selectedOrder.bricolerId && (
-                                    <section className="mb-10">
-                                        <h3 className="text-[25px] font-medium text-black mb-6 flex items-center gap-3">
-                                            Professional <span className="text-2xl">👨‍🔧</span>
+                                    <section className="mb-12">
+                                        <h3 className="text-[22px] font-bold text-black mb-6">
+                                            {t({ en: 'Professional', fr: 'Le Professionnel', ar: 'المحترف' })}
                                         </h3>
-                                        <div className="bg-[#F9FAFB] rounded-[32px] p-4 sm:p-6 border border-neutral-100 flex flex-wrap items-center gap-4 sm:gap-6">
-                                            <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-[24px] bg-white flex-shrink-0 overflow-hidden relative border-2 border-white">
+                                        <div className="flex items-center gap-5 pb-8 border-b border-neutral-100">
+                                            <div className="w-16 h-16 rounded-full overflow-hidden relative ring-1 ring-neutral-100">
                                                 <img
                                                     src={(selectedOrder.bricolerAvatar && selectedOrder.bricolerAvatar.length > 5) ? selectedOrder.bricolerAvatar : "/Images/Vectors Illu/Avatar.png"}
                                                     className="w-full h-full object-cover"
                                                     alt="Pro"
-                                                    onError={(e) => {
-                                                        (e.target as HTMLImageElement).src = "/Images/Vectors Illu/Avatar.png";
-                                                    }}
                                                 />
-                                                <div className="absolute bottom-1 right-1 w-5 h-5 bg-[#01A083] rounded-full border-2 border-white flex items-center justify-center">
-                                                    <Check size={10} className="text-white" />
-                                                </div>
                                             </div>
-                                            <div className="flex-1 min-w-[120px]">
-                                                <h4 className="text-[20px] font-medium text-black mb-1 leading-tight">{selectedOrder.bricolerName}</h4>
-                                                <div className="flex flex-wrap items-center gap-2 mt-1">
-                                                    <div className="flex items-center gap-1 flex-shrink-0">
-                                                        <Star size={14} className="fill-sky-400 text-sky-400" />
-                                                        <span className="text-[14px] font-medium text-black">{selectedOrder.bricolerRating || '4.9'}</span>
+                                            <div className="flex-1 min-w-0">
+                                                <h4 className="text-[18px] font-bold text-black mb-1">{selectedOrder.bricolerName}</h4>
+                                                <div className="flex items-center gap-2">
+                                                    <div className="flex items-center gap-1">
+                                                        <Star size={14} className="fill-black text-black" />
+                                                        <span className="text-[14px] font-bold text-black">{selectedOrder.bricolerRating || '4.9'}</span>
                                                     </div>
-                                                    <span className="text-neutral-300 flex-shrink-0">|</span>
-                                                    <span className="text-[13px] font-medium text-neutral-500 uppercase tracking-wider whitespace-nowrap">
+                                                    <span className="text-neutral-200">·</span>
+                                                    <span className="text-[14px] font-medium text-neutral-500">
                                                         {t({ en: 'Verified Pro', fr: 'Pro Vérifié', ar: 'محترف موثق' })}
                                                     </span>
                                                 </div>
@@ -1013,39 +1004,35 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
                                                         e.stopPropagation();
                                                         openWhatsApp(selectedOrder.bricolerWhatsApp, selectedOrder.bricolerId);
                                                     }}
-                                                    className="w-14 h-14 rounded-[20px] bg-white border border-[#25D366]/30 flex flex-shrink-0 items-center justify-center active:scale-90 transition-all shadow-sm"
+                                                    className="w-12 h-12 rounded-full border border-neutral-100 flex items-center justify-center active:scale-90 transition-all"
                                                 >
-                                                    <WhatsAppBrandIcon className="w-8 h-8" />
+                                                    <WhatsAppBrandIcon className="w-6 h-6" />
                                                 </button>
                                                 <button
                                                     onClick={(e) => {
                                                         e.stopPropagation();
                                                         setActiveChatOrderId(selectedOrder.id!);
                                                     }}
-                                                    className="w-14 h-14 rounded-[20px] bg-[#01A083] flex flex-shrink-0 items-center justify-center active:scale-90 transition-all shadow-lg shadow-[#01A083]/10"
+                                                    className="w-12 h-12 rounded-full bg-black flex items-center justify-center active:scale-90 transition-all"
                                                 >
-                                                    <MessageCircle size={28} className="text-white" />
+                                                    <MessageCircle size={22} className="text-white" />
                                                 </button>
                                             </div>
                                         </div>
                                     </section>
                                 )}
 
-                                {/* Payment Details Section */}
-                                <section className="mb-10">
-                                    <h3 className="text-[25px] font-medium text-black mb-2 flex items-center gap-3">
-                                        Payment <span className="text-2xl">💳</span>
+                                {/* Simplified Payment Details */}
+                                <section className="mb-12">
+                                    <h3 className="text-[22px] font-bold text-black mb-6">
+                                        {t({ en: 'Payment', fr: 'Paiement', ar: 'الدفع' })}
                                     </h3>
-                                    <p className="text-[15px] font-medium text-neutral-400 mb-6">
-                                        {t({ en: 'Method of payment', fr: 'Mode de paiement', ar: 'طريقة الدفع' })}
-                                    </p>
-
-                                    <div className="bg-[#F9FAFB] rounded-[32px] p-6 border border-neutral-100 flex items-center gap-5">
-                                        <div className="w-16 h-16 rounded-[24px] bg-white flex items-center justify-center text-3xl">
+                                    <div className="flex items-center gap-4 pb-8 border-b border-neutral-100">
+                                        <div className="w-12 h-12 rounded-xl bg-neutral-50 flex items-center justify-center text-2xl flex-shrink-0">
                                             {selectedOrder.paymentMethod === 'bank_transfer' ? '🏦' : '💵'}
                                         </div>
                                         <div className="flex-1">
-                                            <h4 className="text-[18px] font-medium text-black mb-1 capitalize">
+                                            <h4 className="text-[16px] font-bold text-black capitalize">
                                                 {selectedOrder.paymentMethod === 'bank_transfer' ?
                                                     t({ en: 'Bank Transfer', fr: 'Virement Bancaire', ar: 'تحويل بنكي' }) :
                                                     t({ en: 'Cash', fr: 'Espèces', ar: 'كاش' })
@@ -1058,18 +1045,19 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
                                                 }
                                             </p>
                                         </div>
-                                        <div className="w-10 h-10 rounded-full bg-[#01A083]/10 flex items-center justify-center">
-                                            <Check size={20} className="text-[#01A083]" />
+                                        <div className="flex items-center gap-1.5 px-3 py-1.5 bg-[#01A083]/10 rounded-full">
+                                            <Check size={14} className="text-[#01A083]" strokeWidth={3} />
+                                            <span className="text-[12px] font-bold text-[#01A083] uppercase tracking-wider">{t({ en: 'Paid', fr: 'Payé', ar: 'مدفوع' })}</span>
                                         </div>
                                     </div>
                                 </section>
 
-                                {/* Setup Summary Section */}
-                                <section className="mb-10">
-                                    <h3 className="text-[25px] font-medium text-black mb-6">
-                                        Setup Summary <span className="text-2xl">📋</span>
+                                {/* Redesigned Setup Summary (Airbnb Style List) */}
+                                <section className="mb-12">
+                                    <h3 className="text-[22px] font-bold text-black mb-6">
+                                        {t({ en: 'Reservation Details', fr: 'Détails de la réservation', ar: 'تفاصيل الحجز' })}
                                     </h3>
-                                    <div className="bg-[#F9FAFB] rounded-[20px] p-6 space-y-6">
+                                    <div className="space-y-4">
                                         {(() => {
                                             const subId = (selectedOrder.subService || (selectedOrder as any).subServiceId || (selectedOrder as any).serviceType || selectedOrder.service || 'car_rental');
                                             const details = selectedOrder.details?.serviceDetails || selectedOrder.details || {};
@@ -1103,10 +1091,10 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
                                             );
 
                                             return (
-                                                <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-                                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #e4e4e4ff', paddingBottom: 16 }}>
-                                                        <span style={{ fontSize: 17, fontWeight: 350, color: '#6B7280' }}>{t({ en: 'Type', fr: 'Type', ar: 'النوع' })}</span>
-                                                        <span style={{ fontSize: 17, fontWeight: 350, color: '#111827', textAlign: 'right' }}>
+                                                <div className="divide-y divide-neutral-100">
+                                                    <div className="flex justify-between items-center py-4">
+                                                        <span className="text-[16px] font-medium text-neutral-500">{t({ en: 'Type', fr: 'Type', ar: 'النوع' })}</span>
+                                                        <span className="text-[16px] font-bold text-black text-right">
                                                             {(() => {
                                                                 try {
                                                                     const { SERVICES_CATALOGUE, getSubServiceName } = require("@/config/services_config");
@@ -1128,93 +1116,93 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
                                                     </div>
 
                                                     {isHouseCleaning && (
-                                                        <div style={{ display: 'flex', flexDirection: 'column', gap: 16, borderBottom: '1px solid #e4e4e4ff', paddingBottom: 16 }}>
-                                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                                <span style={{ fontSize: 17, fontWeight: 350, color: '#6B7280' }}>{t({ en: 'Place', fr: 'Lieu' })}</span>
-                                                                <span style={{ fontSize: 17, fontWeight: 350, color: '#111827' }}>{details.propertyType || 'Studio'}</span>
+                                                        <>
+                                                            <div className="flex justify-between items-center py-4">
+                                                                <span className="text-[16px] font-medium text-neutral-500">{t({ en: 'Place', fr: 'Lieu' })}</span>
+                                                                <span className="text-[16px] font-bold text-black">{details.propertyType || 'Studio'}</span>
                                                             </div>
-                                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                                <span style={{ fontSize: 17, fontWeight: 350, color: '#6B7280' }}>{t({ en: 'Rooms', fr: 'Pièces' })}</span>
-                                                                <span style={{ fontSize: 17, fontWeight: 350, color: '#111827' }}>{details.rooms || 1}</span>
+                                                            <div className="flex justify-between items-center py-4">
+                                                                <span className="text-[16px] font-medium text-neutral-500">{t({ en: 'Rooms', fr: 'Pièces' })}</span>
+                                                                <span className="text-[16px] font-bold text-black">{details.rooms || 1}</span>
                                                             </div>
-                                                        </div>
+                                                        </>
                                                     )}
 
                                                     {isOfficeCleaning && (
-                                                        <div style={{ display: 'flex', flexDirection: 'column', gap: 16, borderBottom: '1px solid #e4e4e4ff', paddingBottom: 16 }}>
-                                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                                <span style={{ fontSize: 17, fontWeight: 350, color: '#6B7280' }}>{t({ en: 'Desks', fr: 'Bureaux' })}</span>
-                                                                <span style={{ fontSize: 17, fontWeight: 350, color: '#111827' }}>{details.officeDesks || 1}</span>
+                                                        <>
+                                                            <div className="flex justify-between items-center py-4">
+                                                                <span className="text-[16px] font-medium text-neutral-500">{t({ en: 'Desks', fr: 'Bureaux' })}</span>
+                                                                <span className="text-[16px] font-bold text-black">{details.officeDesks || 1}</span>
                                                             </div>
-                                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                                <span style={{ fontSize: 17, fontWeight: 350, color: '#6B7280' }}>{t({ en: 'Meeting Rooms', fr: 'Salles de réunion' })}</span>
-                                                                <span style={{ fontSize: 17, fontWeight: 350, color: '#111827' }}>{details.officeMeetingRooms || 0}</span>
+                                                            <div className="flex justify-between items-center py-4">
+                                                                <span className="text-[16px] font-medium text-neutral-500">{t({ en: 'Meeting Rooms', fr: 'Salles de réunion' })}</span>
+                                                                <span className="text-[16px] font-bold text-black">{details.officeMeetingRooms || 0}</span>
                                                             </div>
-                                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                                <span style={{ fontSize: 17, fontWeight: 350, color: '#6B7280' }}>{t({ en: 'Bathrooms', fr: 'Salles de bain' })}</span>
-                                                                <span style={{ fontSize: 17, fontWeight: 350, color: '#111827' }}>{details.officeBathrooms || 0}</span>
+                                                            <div className="flex justify-between items-center py-4">
+                                                                <span className="text-[16px] font-medium text-neutral-500">{t({ en: 'Bathrooms', fr: 'Salles de bain' })}</span>
+                                                                <span className="text-[16px] font-bold text-black">{details.officeBathrooms || 0}</span>
                                                             </div>
-                                                        </div>
+                                                        </>
                                                     )}
 
                                                     {isTvMounting && (
-                                                        <div style={{ display: 'flex', flexDirection: 'column', gap: 16, borderBottom: '1px solid #e4e4e4ff', paddingBottom: 16 }}>
-                                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                                <span style={{ fontSize: 17, fontWeight: 350, color: '#6B7280' }}>{t({ en: 'TV count', fr: 'Nombre de TV' })}</span>
-                                                                <span style={{ fontSize: 17, fontWeight: 350, color: '#111827' }}>{details.tvCount || 1}</span>
+                                                        <>
+                                                            <div className="flex justify-between items-center py-4">
+                                                                <span className="text-[16px] font-medium text-neutral-500">{t({ en: 'TV count', fr: 'Nombre de TV' })}</span>
+                                                                <span className="text-[16px] font-bold text-black">{details.tvCount || 1}</span>
                                                             </div>
-                                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                                <span style={{ fontSize: 17, fontWeight: 350, color: '#6B7280' }}>{t({ en: 'Wall', fr: 'Mur' })}</span>
-                                                                <span style={{ fontSize: 17, fontWeight: 350, color: '#111827' }}>{details.wallMaterial}</span>
+                                                            <div className="flex justify-between items-center py-4">
+                                                                <span className="text-[16px] font-medium text-neutral-500">{t({ en: 'Wall', fr: 'Mur' })}</span>
+                                                                <span className="text-[16px] font-bold text-black">{details.wallMaterial}</span>
                                                             </div>
-                                                        </div>
+                                                        </>
                                                     )}
 
-                                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                                                            <span style={{ fontSize: 17, fontWeight: 350, color: '#6B7280' }}>{t({ en: 'Base price', fr: 'Prix de base', ar: 'السعر الأساسي' })}</span>
-                                                            <div style={{ width: 20, height: 20, borderRadius: '50%', border: '1px solid #E5E7EB', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, color: '#9CA3AF', fontWeight: 350 }}>i</div>
+                                                    <div className="flex justify-between items-center py-4">
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="text-[16px] font-medium text-neutral-500">{t({ en: 'Base price', fr: 'Prix de base', ar: 'السعر الأساسي' })}</span>
+                                                            <div className="w-5 h-5 rounded-full border border-neutral-100 flex items-center justify-center text-[10px] text-neutral-400">i</div>
                                                         </div>
-                                                        <span style={{ fontSize: 17, fontWeight: 450, color: '#111827' }}>
+                                                        <span className="text-[16px] font-bold text-black">
                                                             {Math.round(breakdown.basePrice)} MAD/{breakdown.unit === 'unit' ? (t({ en: 'unit', fr: 'unité', ar: 'وحدة' })) : breakdown.unit === 'day' ? (t({ en: 'day', fr: 'jour', ar: 'يوم' })) : breakdown.unit === 'office' ? (t({ en: 'office', fr: 'bureau', ar: 'مكتب' })) : (t({ en: 'hr', fr: 'h', ar: 'ساعة' }))}
                                                         </span>
                                                     </div>
 
                                                     {breakdown.details && breakdown.details.map((detail, idx) => (
-                                                        <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingLeft: 16, borderLeft: '2px solid rgba(1, 160, 131, 0.2)' }}>
-                                                            <span style={{ fontSize: 17, fontWeight: 350, color: '#6B7280' }}>{t(detail.label)}</span>
-                                                            <span style={{ fontSize: 17, fontWeight: 350, color: '#111827' }}>{detail.amount.toFixed(0)} MAD</span>
+                                                        <div key={idx} className="flex justify-between items-center py-4">
+                                                            <span className="text-[16px] font-medium text-neutral-500">{t(detail.label)}</span>
+                                                            <span className="text-[16px] font-bold text-black">{detail.amount.toFixed(0)} MAD</span>
                                                         </div>
                                                     ))}
 
-                                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                                                            <span style={{ fontSize: 17, fontWeight: 350, color: '#6B7280' }}>{t({ en: 'Services', fr: 'Services', ar: 'الخدمات' })}</span>
-                                                            <div style={{ width: 20, height: 20, borderRadius: '50%', border: '1px solid #E5E7EB', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, color: '#9CA3AF', fontWeight: 350 }}>i</div>
+                                                    <div className="flex justify-between items-center py-4">
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="text-[16px] font-medium text-neutral-500">{t({ en: 'Services', fr: 'Services', ar: 'الخدمات' })}</span>
+                                                            <div className="w-5 h-5 rounded-full border border-neutral-100 flex items-center justify-center text-[10px] text-neutral-400">i</div>
                                                         </div>
-                                                        <span style={{ fontSize: 17, fontWeight: 350, color: '#111827' }}>{breakdown.subtotal.toFixed(2)} MAD</span>
+                                                        <span className="text-[16px] font-bold text-black">{breakdown.subtotal.toFixed(2)} MAD</span>
                                                     </div>
 
-                                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                                                            <span style={{ fontSize: 17, fontWeight: 350, color: '#6B7280' }}>{t({ en: 'Lbricol Fee', fr: 'Frais Lbricol', ar: 'رسوم Lbricol' })}</span>
-                                                            <div style={{ width: 20, height: 20, borderRadius: '50%', border: '1px solid #E5E7EB', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, color: '#9CA3AF', fontWeight: 350 }}>i</div>
+                                                    <div className="flex justify-between items-center py-4">
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="text-[16px] font-medium text-neutral-500">{t({ en: 'Lbricol Fee', fr: 'Frais Lbricol', ar: 'رسوم Lbricol' })}</span>
+                                                            <div className="w-5 h-5 rounded-full border border-neutral-100 flex items-center justify-center text-[10px] text-neutral-400">i</div>
                                                         </div>
-                                                        <span style={{ fontSize: 17, fontWeight: 350, color: '#111827' }}>{breakdown.serviceFee.toFixed(2)} MAD</span>
+                                                        <span className="text-[16px] font-bold text-black">{breakdown.serviceFee.toFixed(2)} MAD</span>
                                                     </div>
 
                                                     {breakdown.travelFee > 0 && (
-                                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                            <div style={{ display: 'flex', flexDirection: 'column' }}>
-                                                                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                                                                    <span style={{ fontSize: 17, fontWeight: 350, color: '#6B7280' }}>{t({ en: 'Travel Fee', fr: 'Frais de déplacement', ar: 'رسوم التنقل' })}</span>
-                                                                    <div style={{ width: 20, height: 20, borderRadius: '50%', border: '1px solid #E5E7EB', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, color: '#9CA3AF', fontWeight: 350 }}>i</div>
+                                                        <div className="flex justify-between items-center py-4">
+                                                            <div className="flex flex-col">
+                                                                <div className="flex items-center gap-2">
+                                                                    <span className="text-[16px] font-medium text-neutral-500">{t({ en: 'Travel Fee', fr: 'Frais de déplacement', ar: 'رسوم التنقل' })}</span>
+                                                                    <div className="w-5 h-5 rounded-full border border-neutral-100 flex items-center justify-center text-[10px] text-neutral-400">i</div>
                                                                 </div>
-                                                                <span style={{ fontSize: 17, fontWeight: 350, color: '#9CA3AF', marginTop: 4 }}>
+                                                                <span className="text-[12px] font-medium text-neutral-400 mt-1">
                                                                     {breakdown.distanceKm?.toFixed(1)} km · ~{breakdown.duration} min
                                                                 </span>
                                                             </div>
-                                                            <span style={{ fontSize: 17, fontWeight: 350, color: '#111827' }}>{breakdown.travelFee.toFixed(2)} MAD</span>
+                                                            <span className="text-[16px] font-bold text-black">{breakdown.travelFee.toFixed(2)} MAD</span>
                                                         </div>
                                                     )}
                                                 </div>
@@ -1223,56 +1211,43 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
                                     </div>
                                 </section>
 
-                                {/* Location Summaries */}
-                                <section className="mb-10">
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                                        {/* Pickup Location or User Location */}
-                                        <div style={{ padding: '16px 20px', background: '#F9FAFB', borderRadius: 24, display: 'flex', alignItems: 'center', gap: 16 }}>
-                                            <div style={{ width: 44, height: 44, borderRadius: 12, border: '1px solid #F3F4F6', background: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                                <MapPin size={20} className="text-[#01A083]" />
+                                {/* Redesigned Location Section */}
+                                <section className="mb-12">
+                                    <h3 className="text-[22px] font-bold text-black mb-6">
+                                        {t({ en: 'Location', fr: 'Localisation', ar: 'الموقع' })}
+                                    </h3>
+                                    <div className="space-y-4">
+                                        <div className="flex items-center gap-4 py-4 border-b border-neutral-100">
+                                            <div className="w-10 h-10 rounded-xl bg-neutral-50 flex items-center justify-center text-neutral-400">
+                                                <MapPin size={20} />
                                             </div>
-                                            <div style={{ flex: 1, minWidth: 0 }}>
-                                                <div style={{ fontSize: 11, fontWeight: 700, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 2 }}>
-                                                    {(selectedOrder.service === 'errands' || selectedOrder.service?.includes('delivery')) ? t({ en: 'Pickup Location', fr: 'Lieu d\'enlèvement', ar: 'موقع الاستلام' }) : t({ en: 'Your Location', fr: 'Votre Position', ar: 'موقعك' })}
-                                                </div>
-                                                <div style={{ fontSize: 15, fontWeight: 700, color: '#111827', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                            <div className="flex-1 min-w-0">
+                                                <span className="text-[12px] font-bold text-neutral-400 uppercase tracking-widest block mb-0.5">
+                                                    {(selectedOrder.service === 'errands' || selectedOrder.service?.includes('delivery')) ? t({ en: 'Pickup', fr: 'Retrait', ar: 'الاستلام' }) : t({ en: 'Task Address', fr: 'Adresse de mission', ar: 'عنوان المهمة' })}
+                                                </span>
+                                                <p className="text-[16px] font-bold text-black truncate">
                                                     {typeof selectedOrder.location === 'object' ? (selectedOrder.location as any).address : selectedOrder.location}
-                                                </div>
+                                                </p>
                                             </div>
                                         </div>
 
-                                        {/* Dropoff Location */}
                                         {(selectedOrder.service === 'errands' || selectedOrder.service?.includes('delivery')) && selectedOrder.details?.serviceDetails?.dropoffAddress && (
-                                            <div style={{ padding: '16px 20px', background: '#F9FAFB', borderRadius: 24, display: 'flex', alignItems: 'center', gap: 16 }}>
-                                                <div style={{ width: 44, height: 44, borderRadius: 12, border: '1px solid #F3F4F6', background: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                                    <MapPin size={20} className="text-[#01A083]" />
+                                            <div className="flex items-center gap-4 py-4 border-b border-neutral-100">
+                                                <div className="w-10 h-10 rounded-xl bg-neutral-50 flex items-center justify-center text-neutral-400">
+                                                    <MapPin size={20} />
                                                 </div>
-                                                <div style={{ flex: 1, minWidth: 0 }}>
-                                                    <div style={{ fontSize: 11, fontWeight: 900, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 2 }}>{t({ en: 'Dropoff Location', fr: 'Lieu de dépôt', ar: 'موقع التسليم' })}</div>
-                                                    <div style={{ fontSize: 15, fontWeight: 900, color: '#111827', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                                <div className="flex-1 min-w-0">
+                                                    <span className="text-[12px] font-bold text-neutral-400 uppercase tracking-widest block mb-0.5">{t({ en: 'Delivery', fr: 'Livraison', ar: 'التسليم' })}</span>
+                                                    <p className="text-[16px] font-bold text-black truncate">
                                                         {selectedOrder.details.serviceDetails.dropoffAddress}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        )}
-
-                                        {/* Bricoler Location */}
-                                        {selectedOrder.providerAddress && (
-                                            <div style={{ padding: '16px 20px', background: '#F9FAFB', borderRadius: 24, display: 'flex', alignItems: 'center', gap: 16 }}>
-                                                <div style={{ width: 44, height: 44, borderRadius: 12, border: '1px solid #F3F4F6', background: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                                    <MapPin size={20} className="text-[#01A083]" />
-                                                </div>
-                                                <div style={{ flex: 1 }}>
-                                                    <div style={{ fontSize: 11, fontWeight: 700, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 2 }}>{t({ en: 'Bricoler Location', fr: 'Position du Bricoleur', ar: 'موقع العامل' })}</div>
-                                                    <div style={{ fontSize: 15, fontWeight: 700, color: '#111827', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 1, WebkitBoxOrient: 'vertical' }}>
-                                                        {selectedOrder.providerAddress || 'Essaouira, Morocco'}
-                                                    </div>
+                                                    </p>
                                                 </div>
                                             </div>
                                         )}
                                     </div>
                                 </section>
 
+                                {/* Redesigned Instructions */}
                                 {(() => {
                                     const raw = (selectedOrder as any)?.raw || {};
                                     const details = selectedOrder.details || {};
@@ -1286,12 +1261,12 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
                                     if (!note) return null;
 
                                     return (
-                                        <section className="mb-10">
-                                            <h3 className="text-[25px] font-medium text-black mb-6">
-                                                {t({ en: 'Instructions', fr: 'Instructions', ar: 'تعليمات' })} <span className="text-2xl">📝</span>
+                                        <section className="mb-12">
+                                            <h3 className="text-[22px] font-bold text-black mb-6">
+                                                {t({ en: 'Instructions', fr: 'Instructions', ar: 'تعليمات' })}
                                             </h3>
-                                            <div className="bg-[#F9FAFB] rounded-[32px] p-8 border border-neutral-100">
-                                                <p className="text-[16px] font-medium text-neutral-600 leading-relaxed italic">
+                                            <div className="py-6 px-4 bg-neutral-50 rounded-2xl border border-neutral-100/50">
+                                                <p className="text-[15px] font-medium text-neutral-600 leading-relaxed italic">
                                                     "{note}"
                                                 </p>
                                             </div>
@@ -1299,15 +1274,14 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
                                     );
                                 })()}
 
-                                {/* Attached Photos */}
-                                <section className="mb-10">
-                                    <h3 className="text-[25px] font-medium text-black mb-6">
-                                        {t({ en: 'Attached Photos', fr: 'Photos Jointes', ar: 'الصور المرفقة' })} <span className="text-2xl">📸</span>
+                                {/* Redesigned Attached Photos */}
+                                <section className="mb-12">
+                                    <h3 className="text-[22px] font-bold text-black mb-6">
+                                        {t({ en: 'Photos', fr: 'Photos', ar: 'الصور' })}
                                     </h3>
-                                    <div className="grid grid-cols-2 gap-4">
+                                    <div className="flex gap-4 overflow-x-auto no-scrollbar pb-4 scroll-smooth">
                                         {(() => {
                                             const photosSet = new Set<string>();
-                                            // Collect all possible photo sources
                                             const sources = [
                                                 selectedOrder.details?.serviceDetails?.photoUrls,
                                                 (selectedOrder as any)?.images,
@@ -1330,83 +1304,67 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
 
                                             if (allPhotos.length === 0) {
                                                 return (
-                                                    <div className="col-span-2 py-8 text-center bg-neutral-50 rounded-3xl border border-dashed border-neutral-200">
-                                                        <span className="text-neutral-400 font-medium">{t({ en: 'No photos provided', fr: 'Aucune photo fournie', ar: 'لا توجد صور' })}</span>
+                                                    <div className="w-full py-8 text-center bg-neutral-50 rounded-2xl border border-dashed border-neutral-200">
+                                                        <span className="text-[14px] text-neutral-400 font-medium">{t({ en: 'No photos provided', fr: 'Aucune photo fournie', ar: 'لا توجد صور' })}</span>
                                                     </div>
                                                 );
                                             }
 
                                             return allPhotos.map((url, i) => (
-                                                <div key={i} className="aspect-square bg-neutral-100 rounded-[12px] overflow-hidden border border-neutral-100/50 group relative">
+                                                <div key={i} className="w-40 h-40 flex-shrink-0 bg-neutral-100 rounded-2xl overflow-hidden border border-neutral-100/50 relative">
                                                     <img
                                                         src={url}
-                                                        className="w-full h-full object-cover transition-transform group-hover:scale-105"
-                                                        onError={(e) => {
-                                                            (e.target as HTMLImageElement).parentElement?.style.setProperty('display', 'none');
-                                                        }}
+                                                        className="w-full h-full object-cover"
                                                     />
-                                                    <div className="absolute inset-0 bg-black/5 opacity-0 group-hover:opacity-100 transition-opacity" />
                                                 </div>
                                             ));
                                         })()}
                                     </div>
                                 </section>
 
-                                {/* Cancel Order — inside scrollable area */}
+                                {/* Cancel Order Button - Subtle */}
                                 {!['done', 'cancelled', 'delivered'].includes(selectedOrder.status || '') && (
-                                    <section className="mb-6">
+                                    <section className="mb-8">
                                         <button
                                             onClick={() => handleCancelOrder(selectedOrder.id!)}
-                                            className="w-full py-4 rounded-2xl border-2 border-red-200 text-red-500 font-bold text-[15px] flex items-center justify-center gap-2 hover:bg-red-50 active:scale-[0.98] transition-all"
+                                            className="w-full py-3 text-red-500 font-bold text-[14px] underline decoration-red-200 underline-offset-4"
                                         >
-                                            <Ban size={18} />
-                                            {t({ en: 'Cancel Order', fr: 'Annuler la commande', ar: 'إلغاء الطلب' })}
+                                            {t({ en: 'Cancel this order', fr: 'Annuler cette commande', ar: 'إلغاء هذا الطلب' })}
                                         </button>
                                     </section>
                                 )}
 
-                                {/* Help Link Footer Content */}
-                                <div className="pt-2 pb-[160px] text-center">
+                                {/* Help Link */}
+                                <div className="pt-2 pb-32 text-center">
                                     <button
                                         onClick={() => window.open('https://wa.me/212702814355', '_blank')}
-                                        className="inline-flex items-center gap-2 text-[15px] font-medium text-[#01A083] hover:underline"
+                                        className="inline-flex items-center gap-2 text-[14px] font-bold text-neutral-400 hover:text-black transition-colors"
                                     >
-                                        <HelpCircle size={18} />
-                                        {t({ en: 'Need help with this order?', fr: 'Besoin d\'aide pour cette commande ?', ar: 'تحتاج مساعدة؟' })}
+                                        <HelpCircle size={16} />
+                                        {t({ en: 'I need help', fr: 'J\'ai besoin d\'aide', ar: 'أحتاج مساعدة' })}
                                     </button>
                                 </div>
-
                             </div>
                         </div>
 
-                        {/* Fixed Bottom Total Footer (Blue Signature) */}
+                        {/* Redesigned Bottom Footer - Minimal White Airbnb Style */}
                         {!activeChatOrderId && (
-                            <div className="fixed bottom-0 left-0 right-0 bg-[#FFCC02] z-[4005] px-8 pt-10 pb-[calc(24px+env(safe-area-inset-bottom))]">
-                                {/* Wave Top Effect */}
-                                <div className="absolute top-[-30px] left-0 right-0 h-[30px] pointer-events-none">
-                                    <svg viewBox="0 0 1440 320" preserveAspectRatio="none" className="w-full h-full fill-[#FFCC02]">
-                                        <path d="M0,160L48,176C96,192,192,224,288,224C384,224,480,192,576,165.3C672,139,768,117,864,128C960,139,1056,181,1152,192C1248,203,1344,181,1392,170.7L1440,160L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path>
-                                    </svg>
-                                </div>
-
-                                <div className="flex items-center justify-between mb-6">
-                                    <span className="text-[22px] font-medium text-black">{t({ en: 'Total Price', fr: 'Prix Total', ar: 'الإجمالي' })}</span>
-                                    <div className="flex items-baseline gap-1.5">
-                                        <span className="text-[36px] font-[1000] text-black tracking-tighter">
+                            <div className="fixed bottom-0 left-0 right-0 bg-white z-[4005] px-6 pt-4 pb-[calc(24px+env(safe-area-inset-bottom))] border-t border-neutral-100 flex items-center justify-between">
+                                <div className="flex flex-col">
+                                    <span className="text-[12px] font-bold text-neutral-400 uppercase tracking-widest">{t({ en: 'Total Price', fr: 'Prix Total', ar: 'الإجمالي' })}</span>
+                                    <div className="flex items-baseline gap-1">
+                                        <span className="text-[24px] font-[1000] text-black">
                                             {(selectedOrder.totalPrice || parseFloat(String(selectedOrder.price || '0'))).toFixed(0)}
                                         </span>
-                                        <span className="text-[18px] font-medium text-black">MAD</span>
+                                        <span className="text-[14px] font-bold text-black uppercase tracking-wider">MAD</span>
                                     </div>
                                 </div>
 
-                                {/* Single CTA — Chat with Bricoler */}
                                 <button
                                     onClick={() => setActiveChatOrderId(selectedOrder.id!)}
-                                    style={{ background: '#01A083' }}
-                                    className="w-full text-white py-4 rounded-full font-bold text-[16px] flex items-center justify-center gap-2 active:scale-95 transition-transform border border-[#008f75]"
+                                    className="px-10 py-4 bg-black text-white rounded-full font-bold text-[16px] active:scale-95 transition-transform"
                                 >
-                                    <MessageCircle size={20} />
-                                    {t({ en: 'Chat with Bricoler', fr: 'Chatter avec le Bricoler', ar: 'الدردشة مع الصانع' })}
+                                    {t({ en: 'Chat', fr: 'Chatter', ar: 'دردشة' })}
                                 </button>
                             </div>
                         )}
@@ -1686,27 +1644,27 @@ function ActivityTab({
                 key={draft.id}
                 whileTap={{ scale: 0.98 }}
                 onClick={() => onResumeDraft?.(draft)}
-                className="bg-white rounded-[35px_22px_45px_28px] p-5 flex items-center gap-5 cursor-pointer transition-all mb-4 border-2 border-black/5 relative overflow-hidden group hover:border-[#FFCC02]/30"
+                className="bg-white rounded-[24px] p-5 flex items-center gap-5 cursor-pointer transition-all mb-4 border border-neutral-100 relative overflow-hidden group hover:border-black/10"
             >
                 {/* Draft Badge */}
-                <div className="absolute top-0 right-0 px-4 py-1.5 bg-[#FFCC02] text-black text-[11px] font-medium rounded-bl-xl uppercase tracking-wider">
-                    {t({ en: 'Resume', fr: 'Reprendre', ar: 'متابعة' })}
+                <div className="absolute top-0 right-0 px-4 py-1.5 bg-black text-white text-[10px] font-bold rounded-bl-xl uppercase tracking-widest">
+                    {t({ en: 'Draft', fr: 'Brouillon', ar: 'مسودة' })}
                 </div>
 
-                <div className="w-20 h-20 bg-neutral-50 rounded-2xl flex items-center justify-center flex-shrink-0 p-3">
+                <div className="w-16 h-16 bg-neutral-50 rounded-2xl flex items-center justify-center flex-shrink-0 p-3 grayscale opacity-60">
                     <img src={getServiceVector(draft.service)} className="w-full h-full object-contain" />
                 </div>
 
                 <div className="flex-1 min-w-0 pr-8">
-                    <h3 className="text-[18px] font-medium text-black truncate leading-tight mb-1">
-                        {draft.service} {draft.subService ? `› ${getSubServiceName(draft.service, draft.subService)}` : ''}
+                    <h3 className="text-[17px] font-bold text-black truncate leading-tight mb-1">
+                        {draft.serviceDisplayName || draft.service} {draft.subService ? `› ${getSubServiceName(draft.service, draft.subService)}` : ''}
                     </h3>
-                    <p className="text-[14px] font-medium text-neutral-400 line-clamp-1">
+                    <p className="text-[13px] font-medium text-neutral-400 line-clamp-1">
                         {draft.description || t({ en: 'Continue where you left off', fr: 'Continuez là où vous vous êtes arrêté', ar: 'أكمل من حيث توقفت' })}
                     </p>
-                    <div className="flex items-center gap-2 mt-2">
+                    <div className="flex items-center gap-2 mt-3">
                         <div className="w-full h-1 bg-neutral-100 rounded-full overflow-hidden">
-                            <div className="h-full bg-[#FFCC02] rounded-full" style={{ width: `${(draft.step / 4) * 100}%` }} />
+                            <div className="h-full bg-black rounded-full" style={{ width: `${(draft.step / 4) * 100}%` }} />
                         </div>
                     </div>
                 </div>
