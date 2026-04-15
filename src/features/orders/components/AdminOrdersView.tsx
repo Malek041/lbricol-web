@@ -16,9 +16,10 @@ interface AdminOrdersViewProps {
     t: (vals: { en: string; fr: string }) => string;
     onViewMessages?: (jobId: string) => void;
     onChat?: (jobId: string, bricolerId: string, bricolerName: string) => void;
+    hideHeader?: boolean;
 }
 
-const AdminOrdersView: React.FC<AdminOrdersViewProps> = ({ t, onChat, onViewMessages }) => {
+const AdminOrdersView: React.FC<AdminOrdersViewProps> = ({ t, onChat, onViewMessages, hideHeader = false }) => {
     const [orders, setOrders] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [selectedCity, setSelectedCity] = useState<string>('all');
@@ -175,7 +176,8 @@ const AdminOrdersView: React.FC<AdminOrdersViewProps> = ({ t, onChat, onViewMess
     return (
         <div className="flex flex-col h-[100dvh] bg-white pb-24">
             {/* Sticky Header */}
-            <div className="sticky top-0 z-30 bg-white/80 backdrop-blur-xl pt-12 pb-4 px-5 border-b border-neutral-100">
+            {!hideHeader && (
+                <div className="sticky top-0 z-30 bg-white/80 backdrop-blur-xl pt-12 pb-4 px-5 border-b border-neutral-100">
                 <h1 className="text-2xl font-black text-black mb-6">
                     {t({ en: 'Platform Orders', fr: 'Commandes Plateforme' })}
                 </h1>
@@ -254,6 +256,7 @@ const AdminOrdersView: React.FC<AdminOrdersViewProps> = ({ t, onChat, onViewMess
                         {t({ en: 'Calendar', fr: 'Calendrier' })}
                     </button>
                 </div>
+            )}
             </div>
 
             {/* Main Content: either list or calendar */}
