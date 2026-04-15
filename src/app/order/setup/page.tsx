@@ -3015,18 +3015,18 @@ export default function ServiceSetupPage() {
                                         {/* ─── Promo Code Widget ─── */}
                                         <div className="py-2">
                                             {promoStatus !== 'valid' ? (
-                                                <div className="flex gap-2">
+                                                <div className="flex flex-col sm:flex-row gap-2">
                                                     <input
                                                         type="text"
                                                         value={promoInput}
                                                         onChange={e => { setPromoInput(e.target.value.toUpperCase()); setPromoStatus('idle'); }}
                                                         placeholder={t({ en: 'Promo code', fr: 'Code promo', ar: 'رمز الخصم' })}
-                                                        className="flex-1 px-4 py-2.5 rounded-xl border border-[#E5E7EB] text-[15px] font-semibold text-[#111827] placeholder:text-[#9CA3AF] focus:outline-none focus:border-[#01A083] transition-colors"
+                                                        className="w-full sm:flex-1 px-4 py-2.5 rounded-xl border border-[#E5E7EB] text-[15px] font-semibold text-[#111827] placeholder:text-[#9CA3AF] focus:outline-none focus:border-[#01A083] transition-colors"
                                                     />
                                                     <button
                                                         onClick={handleValidatePromo}
                                                         disabled={promoStatus === 'validating' || !promoInput.trim()}
-                                                        className="px-5 py-2.5 rounded-xl bg-[#111827] text-white text-[14px] font-bold disabled:opacity-40 transition-all active:scale-95"
+                                                        className="w-full sm:w-auto whitespace-nowrap px-5 py-2.5 rounded-xl bg-[#111827] text-white text-[14px] font-bold disabled:opacity-40 transition-all active:scale-95"
                                                     >
                                                         {promoStatus === 'validating' ? '...' : t({ en: 'Apply', fr: 'Appliquer', ar: 'تطبيق' })}
                                                     </button>
