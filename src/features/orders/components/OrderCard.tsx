@@ -175,20 +175,20 @@ const OrderCard = ({ order, onCancel }: OrderCardProps) => {
         display: 'flex',
         flexDirection: isMobile ? 'column' : 'row',
         alignItems: isMobile ? 'flex-start' : 'center',
-        justifyContent: 'space-between',
-        padding: isMobile ? cardPadding : '2rem',
-        backgroundColor: c.bg,
+        padding: isMobile ? `20px` : '24px',
+        backgroundColor: '#FFFFFF',
         borderRadius: '24px',
-        border: `1px solid ${c.border}`,
+        border: `1.5px solid #F3F4F6`,
         overflow: 'hidden',
         width: '100%',
-        gap: isCompactPhone ? '0.9rem' : '1.25rem'
+        gap: '20px',
+        boxShadow: '0 2px 10px rgba(0,0,0,0.02)'
     };
 
     return (
         <motion.div
-            initial={{ opacity: 0, scale: 0.98 }}
-            animate={{ opacity: 1, scale: 1 }}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.98 }}
             style={cardStyles}
         >
@@ -198,15 +198,40 @@ const OrderCard = ({ order, onCancel }: OrderCardProps) => {
                         e.stopPropagation();
                         onCancel();
                     }}
-                    className="absolute top-4 right-4 w-9 h-9 rounded-full bg-white/80 backdrop-blur-md border border-neutral-100 flex items-center justify-center text-neutral-400 hover:text-red-500 hover:bg-white transition-all active:scale-90 z-[30]"
+                    className="absolute top-4 right-4 w-10 h-10 rounded-full bg-neutral-50 flex items-center justify-center text-neutral-400 hover:text-red-500 hover:bg-red-50 transition-all active:scale-90 z-[30]"
                 >
                     <X size={18} strokeWidth={2.5} />
                 </button>
             )}
 
-            {/* Left Content Area */}
+            {/* Content Area */}
             <div style={{ flex: 1, position: 'relative', zIndex: 10 }}>
-                <h3 style={{ fontSize: isMobile ? titleSize : '1.5rem', fontWeight: 500, color: c.text, marginBottom: '0.4rem', letterSpacing: '-0.03em', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', fontFamily: 'Uber Move, var(--font-sans)', direction: language === 'ar' ? 'rtl' : 'ltr' }}>
+                {/* Top Metadata Row */}
+                <div className="flex items-center gap-2 mb-3">
+                    <span className="text-[11px] font-black uppercase tracking-widest text-[#01A083] bg-[#E6F6F2] px-2.5 py-1 rounded-full">
+                        {order.status || 'New'}
+                    </span>
+                    <div className="w-1.5 h-1.5 rounded-full bg-neutral-200" />
+                    <span className="text-[13px] font-bold text-neutral-400">
+                        {order.date ? (typeof order.date === 'string' ? order.date : format(new Date(order.date), 'MMM d, yyyy')) : '---'}
+                    </span>
+                    {order.time && (
+                        <>
+                            <div className="w-1.5 h-1.5 rounded-full bg-neutral-200" />
+                            <span className="text-[13px] font-bold text-neutral-400">{order.time}</span>
+                        </>
+                    )}
+                </div>
+
+                {/* Main Heading */}
+                <h3 style={{ 
+                    fontSize: isMobile ? '20px' : '24px', 
+                    fontWeight: 900, 
+                    color: '#000000', 
+                    marginBottom: '8px', 
+                    letterSpacing: '-0.02em',
+                    lineHeight: 1.2
+                }}>
                     {(() => {
                         const config = getServiceById(order.serviceId || order.service);
                         const stableBase = config ? config.name : formatServiceName(order.service);
@@ -215,257 +240,78 @@ const OrderCard = ({ order, onCancel }: OrderCardProps) => {
                         const subDisplay = getSubServiceName(order.serviceId || order.service, order.subService || '') || order.subServiceDisplayName;
                         const translatedSub = subDisplay ? t({ en: subDisplay, fr: subDisplay }) : '';
 
-                        const isCleaning = (order.serviceId || order.service) === 'cleaning';
-                        const rooms = order.details?.rooms;
-
                         return (
                             <>
-                                {isCleaning && rooms ? (
-                                    <>
-                                        {translatedSub || translatedBase}
-                                        <span style={{ opacity: 0.6, fontWeight: 500, fontSize: '0.85em', marginLeft: '6px' }}>
-                                            • {rooms} {rooms > 1 ? t({ en: 'Rooms', fr: 'Pièces', ar: 'غرف' }) : t({ en: 'Room', fr: 'Pièce', ar: 'غرفة' })}
-                                        </span>
-                                    </>
-                                ) : (
-                                    <>
-                                        {translatedBase}
-                                        {translatedSub && <span style={{ opacity: 0.6, fontWeight: 500, fontSize: '0.9em', marginLeft: '2px' }}> › {translatedSub}</span>}
-                                    </>
-                                )}
+                                {translatedBase}
+                                {translatedSub && <span className="text-neutral-400 ml-1.5">› {translatedSub}</span>}
                             </>
                         );
                     })()}
-                    {order.rating && (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px', backgroundColor: '#FFCC0222', padding: '4px 10px', borderRadius: '100px', fontSize: badgeSize, color: '#FFCC02' }}>
-                            <Star size={14} fill="#FFCC02" />
-                            {order.rating}
-                        </div>
-                    )}
-                    {timeLeft && (
-                        <span style={{ fontSize: badgeSize, fontWeight: 500, color: '#01A083', marginLeft: '4px' }}>
-                            {timeLeft}
-                        </span>
-                    )}
-                    <span style={{ fontSize: '0.75em', fontWeight: 500, color: c.textMuted, marginLeft: 'auto', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                        <Calendar size={14} />
-                        {order.date ? (typeof order.date === 'string' ? order.date : format(new Date(order.date), 'MMM d, yyyy')) : '---'}
-                    </span>
                 </h3>
-                <div style={{ fontSize: isMobile ? bodySize : '15px', color: c.textMuted, fontWeight: 500, lineHeight: 1.6, maxWidth: '440px', direction: language === 'ar' ? 'rtl' : 'ltr' }}>
-                    {(() => {
-                        const loc = order.city ? t({ en: order.city, fr: order.city }) : (order.location ? t({ en: order.location, fr: order.location }) : '');
-                        const isCarRental = order.service === 'car_rental' || order.serviceId === 'car_rental';
-                        
-                        if (isCarRental && order.date && order.carReturnDate) {
-                            return (
-                                <div className="space-y-4">
-                                    <p>{order.bricolerName ? (
-                                        t({
-                                            en: `${order.bricolerName} is scheduled for your car rental at ${loc}.`,
-                                            fr: `${order.bricolerName} est prévu pour votre location de voiture à ${loc}.`,
-                                            ar: `${order.bricolerName} مبرمج لتأجير سيارتك في ${loc}.`
-                                        })
-                                    ) : (
-                                        t({
-                                            en: `Your car rental request at ${loc} is being processed.`,
-                                            fr: `Votre demande de location de voiture à ${loc} est en cours de traitement.`,
-                                            ar: `طلب تأجير سيارتك في ${loc} قيد المعالجة.`
-                                        })
-                                    )}</p>
-                                    
-                                    <div style={{ 
-                                        display: 'flex', 
-                                        gap: '15px', 
-                                        padding: '12px 16px', 
-                                        backgroundColor: theme === 'light' ? '#01A08308' : '#01A08315', 
-                                        borderRadius: '16px', 
-                                        border: `1px dashed ${theme === 'light' ? '#01A08333' : '#01A08355'}`,
-                                        marginTop: '4px'
-                                    }}>
-                                        <div style={{ flex: 1 }}>
-                                            <span style={{ fontSize: '10px', fontWeight: 500, color: '#01A083', textTransform: 'uppercase', letterSpacing: '0.1em', display: 'block', marginBottom: '2px' }}>{t({ en: 'Pickup', fr: 'Départ', ar: 'الاستلام' })}</span>
-                                            <div style={{ fontSize: '13px', fontWeight: 500, color: c.text }}>{order.date} <span style={{ opacity: 0.6 }}>{order.time}</span></div>
-                                        </div>
-                                        <div style={{ width: '1px', backgroundColor: theme === 'light' ? '#01A08322' : '#01A08344' }} />
-                                        <div style={{ flex: 1 }}>
-                                            <span style={{ fontSize: '10px', fontWeight: 500, color: '#008C74', textTransform: 'uppercase', letterSpacing: '0.1em', display: 'block', marginBottom: '2px' }}>{t({ en: 'Return', fr: 'Retour', ar: 'الاسترجاع' })}</span>
-                                            <div style={{ fontSize: '13px', fontWeight: 500, color: c.text }}>{order.carReturnDate} <span style={{ opacity: 0.6 }}>{order.carReturnTime}</span></div>
-                                        </div>
-                                    </div>
-                                </div>
-                            );
-                        }
 
-                        const isCleaning = (order.serviceId || order.service) === 'cleaning';
-                        const propType = order.details?.propertyType;
-
-                        if (isCleaning && propType) {
-                            return (
-                                <p>
-                                    {t({
-                                        en: `${propType} • ${loc} • ${order.date} ${order.time ? 'at ' + order.time : ''}`,
-                                        fr: `${propType} • ${loc} • le ${order.date} ${order.time ? 'à ' + order.time : ''}`,
-                                        ar: `${propType} • ${loc} • يوم ${order.date} ${order.time ? 'على الساعة ' + order.time : ''}`
-                                    })}
-                                </p>
-                            );
-                        }
-
-                        return order.bricolerName ? (
-                            <p>
-                            {t({
-                                en: `${order.bricolerName} is scheduled for your task at ${loc} on ${order.date} ${order.time ? 'at ' + order.time : ''}.`,
-                                fr: `${order.bricolerName} est prévu pour votre tâche à ${loc} le ${order.date} ${order.time ? 'à ' + order.time : ''}.`,
-                                ar: `${order.bricolerName} مبرمج لمهمتك في ${loc} يوم ${order.date} ${order.time ? 'على الساعة ' + order.time : ''}.`
-                            })}
-                            </p>
-                        ) : (
-                            <p>
-                            {t({
-                                en: `Your request at ${loc} for ${order.date} ${order.time ? 'at ' + order.time : ''} is being processed.`,
-                                fr: `Votre demande à ${loc} pour ${order.date} ${order.time ? 'à ' + order.time : ''} est en cours de traitement.`,
-                                ar: `طلبك في ${loc} ليوم ${order.date} ${order.time ? 'على الساعة ' + order.time : ''} قيد المعالجة.`
-                            })}
-                            </p>
-                        );
-                    })()}
-                    <div style={{ marginTop: '4px' }}>
-                        <span style={{ fontWeight: 500, color: c.text }}>
-                            {t({ en: 'Offer', fr: 'Offre', ar: 'عرض' })}: {order.price} MAD
-                        </span>
-                        <span style={{ opacity: 0.6, fontSize: '0.9em', marginLeft: '8px', fontWeight: 500 }}>
-                            • {order.time}
-                        </span>
-                    </div>
-                    {order.bricolerName && (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '12px' }}>
-                            <div style={{ width: '32px', height: '32px', borderRadius: '50%', backgroundColor: c.border, overflow: 'hidden' }}>
-                                <img
-                                    src={order.bricolerAvatar || '/Images/DefaultAvatar.webp'}
-                                    alt={order.bricolerName}
-                                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                                    onError={(e: any) => e.target.src = '/Images/DefaultAvatar.webp'}
-                                />
-                            </div>
-                            <span style={{ fontSize: '14px', fontWeight: 500, color: c.text }}>
-                                {order.bricolerName}
-                            </span>
+                {/* Details Summary */}
+                <div style={{ fontSize: '15px', color: '#6B7280', fontWeight: 500, lineHeight: 1.5 }}>
+                   <p className="flex items-center gap-1.5">
+                        <MapPin size={14} className="text-neutral-400" />
+                        {order.city ? t({ en: order.city, fr: order.city }) : (order.location ? t({ en: order.location, fr: order.location }) : 'Morocco')}
+                   </p>
+                   
+                   <div className="mt-4 flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                            <span className="text-[18px] font-black text-black">{order.price} MAD</span>
+                            <div className="w-1 h-1 rounded-full bg-neutral-200" />
+                            <button className="text-[14px] font-bold text-[#01A083] hover:underline transition-all">
+                                {t({ en: 'View details', fr: 'Détails', ar: 'تفاصيل' })}
+                            </button>
                         </div>
-                    )}
-                    {!order.bricolerName && order.bricolersCount && order.bricolersCount > 0 && (
-                        <span style={{ marginLeft: '12px', fontSize: '13px', backgroundColor: c.border, padding: '2px 8px', borderRadius: '4px', color: c.text }}>
-                            {order.bricolersCount} {t({ en: 'Bricolers', fr: 'Bricoleurs', ar: 'عمال' })}
-                        </span>
-                    )}
-                    {order.images && order.images.length > 0 && (
-                        <span style={{ marginLeft: '12px', fontSize: '13px', backgroundColor: '#06C16722', padding: '2px 8px', borderRadius: '4px', color: '#06C167' }}>
-                            {order.images.length} {t({ en: 'Photos', fr: 'Photos', ar: 'صور' })}
-                        </span>
-                    )}
-                    {order.movingVehicle && (
-                        <span style={{ marginLeft: '12px', fontSize: '13px', backgroundColor: '#01A08315', padding: '2px 8px', borderRadius: '4px', color: '#01A083', fontWeight: 500 }}>
-                            {(() => {
-                                const opts = {
-                                    triporteur: { en: '🛵 Triporteur', fr: '🛵 Triporteur', ar: '🛵 تربورتور' },
-                                    small_van: { en: '🚐 Small Van', fr: '🚐 Petit Van', ar: '🚐 سيارة "برلانكو"' },
-                                    large_van: { en: '🚚 Large Van', fr: '🚚 Grand Van', ar: '🚚 شاحنة فورد ترانزيت' },
-                                    small_truck: { en: '🚛 Small Truck', fr: '🚛 Petit Camion', ar: '🚛 شاحنة صغيرة' },
-                                    large_truck: { en: '🚚 Large Truck', fr: '🚚 Grand Camion', ar: '🚚 شاحنة كبيرة' },
-                                    labor_only: { en: '💪 Labor only', fr: '💪 Main-d’œuvre seule', ar: '💪 يد عاملة فقط' }
-                                };
-                                return t((opts as any)[order.movingVehicle] || { en: order.movingVehicle });
-                            })()}
-                        </span>
-                    )}
-                    {order.comment && (
-                        <span style={{ display: 'block', marginTop: '8px', fontStyle: 'italic', fontSize: '14px', borderLeft: `2px solid ${c.border}`, paddingLeft: '12px' }}>
-                            "{order.comment}"
-                        </span>
-                    )}
+
+                        {order.bricolerName && (
+                            <div className="flex items-center gap-2">
+                                <div className="w-8 h-8 rounded-full bg-neutral-100 overflow-hidden border border-neutral-100">
+                                    <img
+                                        src={order.bricolerAvatar || '/Images/DefaultAvatar.webp'}
+                                        alt={order.bricolerName}
+                                        className="w-full h-full object-cover"
+                                    />
+                                </div>
+                                <span className="text-[14px] font-bold text-black">{order.bricolerName}</span>
+                            </div>
+                        )}
+                   </div>
                 </div>
             </div>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: isCompactPhone ? '0.65rem' : '1rem', width: isMobile ? '100%' : 'auto', justifyContent: isMobile ? 'space-between' : 'flex-start' }}>
-                <button style={{
-                    padding: isMobile ? `${Math.round(fluidMobilePx(viewportWidth, 9, 10))}px ${Math.round(fluidMobilePx(viewportWidth, 16, 22))}px` : '0.625rem 1.75rem',
-                    backgroundColor: (theme === 'light' ? '#FFFFFF' : '#000000'),
-                    color: c.text,
-                    fontSize: isMobile ? badgeSize : '14px',
-                    fontWeight: 500,
-                    borderRadius: '100px',
-                    border: `1px solid ${c.border}`,
-                    cursor: 'pointer',
-                    boxShadow: 'none'
-                }}>
-                    {t({ en: 'Details', fr: 'Détails', ar: 'تفاصيل' })}
-                </button>
-            </div>
-
-            {/* Right Illustration */}
-            {!isMobile && (
-                <div style={{ position: 'relative', width: '100px', height: '80px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <motion.div
-                        animate={{ rotate: [-4, 0, -4] }}
-                        transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
-                        style={{
-                            width: '70px',
-                            height: '70px',
-                            backgroundColor: c.card,
-                            borderRadius: '14px',
-                            overflow: 'hidden',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            boxShadow: 'none',
-                            border: `2px solid #FFF`,
-                            position: 'relative'
-                        }}
-                    >
+            {/* Right Side Illustration - Airbnb Style Pin */}
+            {(!isMobile || order.images?.length || order.selectedCar) && (
+                <div className="relative shrink-0 flex items-center justify-center">
+                    <div style={{
+                        width: isMobile ? '100%' : '80px',
+                        height: isMobile ? '140px' : '80px',
+                        backgroundColor: '#F9FAFB',
+                        borderRadius: '20px',
+                        overflow: 'hidden',
+                        border: '1px solid #F3F4F6'
+                    }}>
                         {order.images && order.images.length > 0 ? (
                             <img
                                 src={order.images[0]}
-                                alt="Service preview"
-                                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                alt="Preview"
+                                className="w-full h-full object-cover"
                             />
                         ) : order.selectedCar ? (
                             <img
                                 src={order.selectedCar.modelImage || order.selectedCar.image}
-                                alt="Car preview"
-                                style={{ width: '100%', height: '100%', objectFit: 'contain', padding: '10px' }}
+                                alt="Car"
+                                className="w-full h-full object-contain p-2"
                             />
                         ) : (
-                            <Package size={32} color={c.textMuted} />
+                            <div className="w-full h-full flex items-center justify-center text-neutral-300">
+                                <Package size={32} />
+                            </div>
                         )}
-                    </motion.div>
-                    {order.images && order.images.length > 1 && (
-                        <div style={{
-                            position: 'absolute',
-                            bottom: '10px',
-                            right: '10px',
-                            backgroundColor: '#000',
-                            color: '#FFF',
-                            fontSize: '10px',
-                            fontWeight: 500,
-                            padding: '2px 6px',
-                            borderRadius: '6px',
-                            zIndex: 20
-                        }}>
-                            +{order.images.length - 1}
-                        </div>
-                    )}
+                    </div>
                 </div>
             )}
-
-            {/* Progress Bar */}
-            <div style={{ position: 'absolute', bottom: 0, left: 0, width: '100%', height: '3px', backgroundColor: theme === 'light' ? 'rgba(0,0,0,0.03)' : 'rgba(255,255,255,0.03)' }}>
-                <motion.div
-                    initial={{ width: '0%' }}
-                    animate={{ width: `${progress}%` }}
-                    transition={{ duration: 1, ease: 'easeOut' }}
-                    style={{ height: '100%', backgroundColor: '#01A083' }}
-                />
-            </div>
         </motion.div>
     );
 };
