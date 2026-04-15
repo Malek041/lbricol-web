@@ -10,7 +10,7 @@ import {
     MapPin, Calendar, Clock, User, Navigation,
     Trophy, CheckCircle2, TrendingUp, ShieldCheck,
     Star, Search, Map as MapIcon, ChevronDown, Info,
-    Gift, Plus, Minus, FileText, Tag, Ticket
+    Gift, Plus, Minus, FileText, Tag, Ticket, Loader2, Sparkles
 } from 'lucide-react';
 import { format } from 'date-fns';
 
@@ -31,7 +31,7 @@ import { getRoadDistance } from '@/lib/calculateDistance';
 import { validatePromoCode, markPromoCodeUsed, type PromoCodeResult } from '@/lib/promoCode';
 
 const MapView = dynamic(() => import('@/components/location-picker/MapView'), { ssr: false });
-const OrderAvailabilityPicker = dynamic(() => import('@/features/orders/components/OrderAvailabilityPicker'), { 
+const OrderAvailabilityPicker = dynamic(() => import('@/features/orders/components/OrderAvailabilityPicker'), {
     ssr: false,
     loading: () => <div className="h-40 flex items-center justify-center"><Loader2 className="animate-spin text-[#01A083]" /></div>
 });
@@ -1938,8 +1938,8 @@ export default function ServiceSetupPage() {
                                                 </div>
                                                 <div className="flex items-center justify-center pt-2">
                                                     <div className="flex items-center gap-10 bg-[#F3F4F6] px-8 py-4 rounded-full">
-                                                        <button 
-                                                            onClick={(e) => { e.preventDefault(); setRooms(Math.max((order.subServiceId === 'hospitality_turnover' || order.serviceType === 'hospitality') ? 2 : 1, rooms - 1)); }} 
+                                                        <button
+                                                            onClick={(e) => { e.preventDefault(); setRooms(Math.max((order.subServiceId === 'hospitality_turnover' || order.serviceType === 'hospitality') ? 2 : 1, rooms - 1)); }}
                                                             className="p-1 active:scale-90 transition-all text-[#111827] hover:opacity-70"
                                                         >
                                                             <Minus size={28} strokeWidth={2.5} />
@@ -1947,16 +1947,16 @@ export default function ServiceSetupPage() {
                                                         <span className="text-[28px] font-bold text-[#111827] min-w-[40px] text-center tabular-nums">
                                                             {rooms}
                                                         </span>
-                                                        <button 
-                                                            onClick={(e) => { e.preventDefault(); setRooms(Math.min(12, rooms + 1)); }} 
+                                                        <button
+                                                            onClick={(e) => { e.preventDefault(); setRooms(Math.min(12, rooms + 1)); }}
                                                             className="p-1 active:scale-90 transition-all text-[#111827] hover:opacity-70"
                                                         >
-                                                        <Plus size={28} strokeWidth={2.5} />
-                                                    </button>
+                                                            <Plus size={28} strokeWidth={2.5} />
+                                                        </button>
+                                                    </div>
                                                 </div>
                                             </div>
-                                        </div>
-                                    )}
+                                        )}
 
                                         {/* Hospitality Cleaning Specialized: Property Multiplier & Stairs */}
                                         {(order.subServiceId === 'hospitality_turnover' || order.serviceType === 'hospitality') && (
@@ -1969,8 +1969,8 @@ export default function ServiceSetupPage() {
                                                     </div>
                                                     <div className="flex items-center justify-center pt-2">
                                                         <div className="flex items-center gap-10 bg-[#F3F4F6] px-8 py-4 rounded-full">
-                                                            <button 
-                                                                onClick={(e) => { e.preventDefault(); setUnitCount(Math.max(1, unitCount - 1)); }} 
+                                                            <button
+                                                                onClick={(e) => { e.preventDefault(); setUnitCount(Math.max(1, unitCount - 1)); }}
                                                                 className="p-1 active:scale-90 transition-all text-[#111827] hover:opacity-70"
                                                             >
                                                                 <Minus size={28} strokeWidth={2.5} />
@@ -1978,8 +1978,8 @@ export default function ServiceSetupPage() {
                                                             <span className="text-[28px] font-bold text-[#111827] min-w-[40px] text-center tabular-nums">
                                                                 {unitCount}
                                                             </span>
-                                                            <button 
-                                                                onClick={(e) => { e.preventDefault(); setUnitCount(Math.min(20, unitCount + 1)); }} 
+                                                            <button
+                                                                onClick={(e) => { e.preventDefault(); setUnitCount(Math.min(20, unitCount + 1)); }}
                                                                 className="p-1 active:scale-90 transition-all text-[#111827] hover:opacity-70"
                                                             >
                                                                 <Plus size={28} strokeWidth={2.5} />
@@ -2001,7 +2001,7 @@ export default function ServiceSetupPage() {
                                                             <button
                                                                 key={item.id}
                                                                 onClick={() => setStairsType(item.id as any)}
-                                                                className={`p-5 rounded-[15px] border-2 text-left transition-all flex items-center gap-4 ${stairsType === item.id ? 'border-[#01A083] bg-[#F1FEF4]' : 'border-neutral-100 bg-white'}`}
+                                                                className={`p-5 rounded-full border-2 text-left transition-all flex items-center gap-4 ${stairsType === item.id ? 'border-[#01A083] bg-[#F1FEF4]' : 'border-neutral-100 bg-white'}`}
                                                             >
                                                                 <span className="text-2xl">{item.icon}</span>
                                                                 <div className="flex-1">
@@ -2030,7 +2030,7 @@ export default function ServiceSetupPage() {
                                                         <button
                                                             key={`tip-${amt}`}
                                                             onClick={() => setTipAmount(amt)}
-                                                            className={`py-4 rounded-[12px] border-2 font-black text-[15px] transition-all ${tipAmount === amt ? '  text-[#000000]' : 'border-neutral-100 bg-white text-neutral-400'}`}
+                                                            className={`py-4 rounded-[12px] border-2 font-black text-[15px] transition-all ${tipAmount === amt ? 'bg-[#FFC244] border-[#FFC244] text-[#000000]' : 'border-neutral-100 bg-white text-neutral-400'}`}
                                                         >
                                                             {amt === 0 ? t({ en: 'None', fr: 'Aucun' }) : `${amt} MAD`}
                                                         </button>
