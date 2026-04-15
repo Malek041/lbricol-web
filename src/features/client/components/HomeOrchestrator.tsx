@@ -79,6 +79,7 @@ import {
 } from 'lucide-react';
 import CompactHomeMap from '@/components/shared/CompactHomeMap';
 import { getServiceById,
+  getSubServiceName,
   getCategoryForSubService,
   type ServiceConfig,
   SERVICES_HIERARCHY
