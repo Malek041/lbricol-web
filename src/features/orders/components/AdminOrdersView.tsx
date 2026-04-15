@@ -257,7 +257,6 @@ const AdminOrdersView: React.FC<AdminOrdersViewProps> = ({ t, onChat, onViewMess
                     </button>
                 </div>
             )}
-            </div>
 
             {/* Main Content: either list or calendar */}
             <div className="flex-1 overflow-y-auto px-5 py-6 space-y-4">
