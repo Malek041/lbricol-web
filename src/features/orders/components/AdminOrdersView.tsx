@@ -175,86 +175,87 @@ const AdminOrdersView: React.FC<AdminOrdersViewProps> = ({ t, onChat, onViewMess
 
     return (
         <div className="flex flex-col h-[100dvh] bg-white pb-24">
-            {/* Sticky Header */}
-            {!hideHeader && (
+            {/* Platform Header */}
+            {hideHeader ? null : (
                 <div className="sticky top-0 z-30 bg-white/80 backdrop-blur-xl pt-12 pb-4 px-5 border-b border-neutral-100">
-                <h1 className="text-2xl font-black text-black mb-6">
-                    {t({ en: 'Platform Orders', fr: 'Commandes Plateforme' })}
-                </h1>
+                    <h1 className="text-2xl font-black text-black mb-6">
+                        {t({ en: 'Platform Orders', fr: 'Commandes Plateforme' })}
+                    </h1>
 
-                <div className="flex gap-2 mb-4 overflow-x-auto no-scrollbar pb-2">
-                    {cities.map(city => (
+                    <div className="flex gap-2 mb-4 overflow-x-auto no-scrollbar pb-2">
+                        {cities.map(city => (
+                            <button
+                                key={city}
+                                onClick={() => setSelectedCity(city)}
+                                className={`px-4 py-2 rounded-full text-sm font-bold whitespace-nowrap transition-all ${selectedCity === city
+                                    ? 'bg-black text-white'
+                                    : 'bg-neutral-100 text-neutral-500 hover:bg-neutral-200'
+                                    }`}
+                            >
+                                {city === 'all' ? t({ en: 'All Cities', fr: 'Toutes les villes' }) : city}
+                            </button>
+                        ))}
+                    </div>
+
+                    <div className="relative">
+                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-400" size={20} />
+                        <input
+                            type="text"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            placeholder={t({ en: 'Search orders, services...', fr: 'Rechercher commandes, services...' })}
+                            className="w-full h-12 bg-neutral-100 rounded-2xl pl-12 pr-4 text-sm font-medium focus:bg-white focus:ring-2 focus:ring-black transition-all outline-none"
+                        />
+                    </div>
+
+                    {/* Filters row */}
+                    <div className="mt-4 flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-2">
+                            <Filter size={16} className="text-neutral-400" />
+                            <select
+                                value={statusFilter}
+                                onChange={(e) => setStatusFilter(e.target.value as any)}
+                                className="h-9 rounded-full bg-neutral-100 px-3 text-xs font-bold text-neutral-700 outline-none"
+                            >
+                                <option value="all">{t({ en: 'All statuses', fr: 'Tous statuts' })}</option>
+                                <option value="open">{t({ en: 'Open / In progress', fr: 'Ouvert / En cours' })}</option>
+                                <option value="completed">{t({ en: 'Completed', fr: 'Terminées' })}</option>
+                                <option value="cancelled">{t({ en: 'Cancelled', fr: 'Annulées' })}</option>
+                                <option value="negotiating">{t({ en: 'Negotiating', fr: 'En négociation' })}</option>
+                            </select>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <span className="text-[11px] font-bold text-neutral-400 uppercase tracking-widest">
+                                {t({ en: 'Sort by', fr: 'Trier par' })}
+                            </span>
+                            <select
+                                value={sortBy}
+                                onChange={(e) => setSortBy(e.target.value as any)}
+                                className="h-9 rounded-full bg-neutral-100 px-3 text-xs font-bold text-neutral-700 outline-none"
+                            >
+                                <option value="date_desc">{t({ en: 'Newest first', fr: 'Plus récents' })}</option>
+                                <option value="date_asc">{t({ en: 'Oldest first', fr: 'Plus anciens' })}</option>
+                                <option value="amount_desc">{t({ en: 'Amount (high → low)', fr: 'Montant (haut → bas)' })}</option>
+                                <option value="amount_asc">{t({ en: 'Amount (low → high)', fr: 'Montant (bas → haut)' })}</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    {/* View mode toggle */}
+                    <div className="mt-3 inline-flex items-center bg-neutral-100 rounded-full p-1">
                         <button
-                            key={city}
-                            onClick={() => setSelectedCity(city)}
-                            className={`px-4 py-2 rounded-full text-sm font-bold whitespace-nowrap transition-all ${selectedCity === city
-                                ? 'bg-black text-white'
-                                : 'bg-neutral-100 text-neutral-500 hover:bg-neutral-200'
-                                }`}
+                            onClick={() => setViewMode('list')}
+                            className={`px-4 py-1.5 rounded-full text-xs font-bold ${viewMode === 'list' ? 'bg-white shadow-sm text-black' : 'text-neutral-500'}`}
                         >
-                            {city === 'all' ? t({ en: 'All Cities', fr: 'Toutes les villes' }) : city}
+                            {t({ en: 'List', fr: 'Liste' })}
                         </button>
-                    ))}
-                </div>
-
-                <div className="relative">
-                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-400" size={20} />
-                    <input
-                        type="text"
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        placeholder={t({ en: 'Search orders, services...', fr: 'Rechercher commandes, services...' })}
-                        className="w-full h-12 bg-neutral-100 rounded-2xl pl-12 pr-4 text-sm font-medium focus:bg-white focus:ring-2 focus:ring-black transition-all outline-none"
-                    />
-                </div>
-
-                {/* Filters row */}
-                <div className="mt-4 flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-2">
-                        <Filter size={16} className="text-neutral-400" />
-                        <select
-                            value={statusFilter}
-                            onChange={(e) => setStatusFilter(e.target.value as any)}
-                            className="h-9 rounded-full bg-neutral-100 px-3 text-xs font-bold text-neutral-700 outline-none"
+                        <button
+                            onClick={() => setViewMode('calendar')}
+                            className={`px-4 py-1.5 rounded-full text-xs font-bold ${viewMode === 'calendar' ? 'bg-white shadow-sm text-black' : 'text-neutral-500'}`}
                         >
-                            <option value="all">{t({ en: 'All statuses', fr: 'Tous statuts' })}</option>
-                            <option value="open">{t({ en: 'Open / In progress', fr: 'Ouvert / En cours' })}</option>
-                            <option value="completed">{t({ en: 'Completed', fr: 'Terminées' })}</option>
-                            <option value="cancelled">{t({ en: 'Cancelled', fr: 'Annulées' })}</option>
-                            <option value="negotiating">{t({ en: 'Negotiating', fr: 'En négociation' })}</option>
-                        </select>
+                            {t({ en: 'Calendar', fr: 'Calendrier' })}
+                        </button>
                     </div>
-                    <div className="flex items-center gap-2">
-                        <span className="text-[11px] font-bold text-neutral-400 uppercase tracking-widest">
-                            {t({ en: 'Sort by', fr: 'Trier par' })}
-                        </span>
-                        <select
-                            value={sortBy}
-                            onChange={(e) => setSortBy(e.target.value as any)}
-                            className="h-9 rounded-full bg-neutral-100 px-3 text-xs font-bold text-neutral-700 outline-none"
-                        >
-                            <option value="date_desc">{t({ en: 'Newest first', fr: 'Plus récents' })}</option>
-                            <option value="date_asc">{t({ en: 'Oldest first', fr: 'Plus anciens' })}</option>
-                            <option value="amount_desc">{t({ en: 'Amount (high → low)', fr: 'Montant (haut → bas)' })}</option>
-                            <option value="amount_asc">{t({ en: 'Amount (low → high)', fr: 'Montant (bas → haut)' })}</option>
-                        </select>
-                    </div>
-                </div>
-
-                {/* View mode toggle */}
-                <div className="mt-3 inline-flex items-center bg-neutral-100 rounded-full p-1">
-                    <button
-                        onClick={() => setViewMode('list')}
-                        className={`px-4 py-1.5 rounded-full text-xs font-bold ${viewMode === 'list' ? 'bg-white shadow-sm text-black' : 'text-neutral-500'}`}
-                    >
-                        {t({ en: 'List', fr: 'Liste' })}
-                    </button>
-                    <button
-                        onClick={() => setViewMode('calendar')}
-                        className={`px-4 py-1.5 rounded-full text-xs font-bold ${viewMode === 'calendar' ? 'bg-white shadow-sm text-black' : 'text-neutral-500'}`}
-                    >
-                        {t({ en: 'Calendar', fr: 'Calendrier' })}
-                    </button>
                 </div>
             )}
 
