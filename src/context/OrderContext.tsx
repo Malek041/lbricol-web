@@ -106,6 +106,7 @@ interface OrderState {
   liftingHelp?: string;
   mountingAddOns?: string[];
   vehicleType?: string | null;
+  promoCode?: string | null;
 }
 
 interface OrderContextType {
@@ -147,6 +148,7 @@ const defaultOrder: OrderState = {
   liftingHelp: '',
   mountingAddOns: [],
   vehicleType: null,
+  promoCode: null,
 };
 
 const OrderContext = createContext<OrderContextType | null>(null);

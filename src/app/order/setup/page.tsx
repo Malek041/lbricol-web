@@ -28,6 +28,7 @@ import { compressImageFileToDataUrl } from '@/lib/imageCompression';
 import SplashScreen from '@/components/layout/SplashScreen';
 import dynamic from 'next/dynamic';
 import { getRoadDistance } from '@/lib/calculateDistance';
+import { validatePromoCode, markPromoCodeUsed, type PromoCodeResult } from '@/lib/promoCode';
 
 const MapView = dynamic(() => import('@/components/location-picker/MapView'), { ssr: false });
 import OrderAvailabilityPicker from '@/features/orders/components/OrderAvailabilityPicker';
@@ -200,6 +201,38 @@ export default function ServiceSetupPage() {
 
     const [isTranslating, setIsTranslating] = useState(false);
     const [translationError, setTranslationError] = useState(false);
+
+    // Promo Code State
+    const [promoInput, setPromoInput] = useState('');
+    const [promoStatus, setPromoStatus] = useState<'idle' | 'validating' | 'valid' | 'invalid'>('idle');
+    const [promoResult, setPromoResult] = useState<PromoCodeResult | null>(null);
+    const [appliedCode, setAppliedCode] = useState<string | null>(null);
+
+    const handleValidatePromo = async () => {
+        if (!promoInput.trim()) return;
+        if (!user) { alert('Please log in to use a promo code.'); return; }
+        setPromoStatus('validating');
+        const result = await validatePromoCode(promoInput, user.uid);
+        setPromoResult(result);
+        if (result.valid) {
+            setPromoStatus('valid');
+            setAppliedCode(promoInput.trim().toUpperCase());
+        } else {
+            setPromoStatus('invalid');
+            setAppliedCode(null);
+        }
+    };
+
+    const promoErrorMessage = () => {
+        if (!promoResult) return '';
+        switch (promoResult.error) {
+            case 'not_found': return t({ en: 'Code not found', fr: 'Code introuvable', ar: 'الرمز غير موجود' });
+            case 'already_used': return t({ en: 'You already used this code', fr: 'Ce code a déjà été utilisé', ar: 'لقد استخدمت هذا الرمز بالفعل' });
+            case 'expired': return t({ en: 'This code has expired', fr: 'Ce code a expiré', ar: 'انتهت صلاحية هذا الرمز' });
+            case 'inactive': return t({ en: 'This code is no longer active', fr: 'Ce code n\'est plus actif', ar: 'هذا الرمز لم يعد نشطًا' });
+            default: return t({ en: 'Invalid code', fr: 'Code invalide', ar: 'رمز غير صالح' });
+        }
+    };
 
     // Synchronize errand category with subservice selection from Home
     useEffect(() => {
@@ -802,13 +835,33 @@ export default function ServiceSetupPage() {
                 });
             }
 
-            // 2. Update Order Context
+            // 2. Apply promo code discount before saving estimate
+            let finalEstimate = estimate;
+            if (promoStatus === 'valid' && promoResult?.valid && appliedCode) {
+                if (promoResult.type === 'free_service') {
+                    // Zero out the total for the free service
+                    finalEstimate = estimate ? { ...estimate, total: 0, subtotal: 0, serviceFee: 0, travelFee: 0 } : estimate;
+                } else if (promoResult.type === 'discount_percent' && promoResult.discountPercent && estimate) {
+                    const disc = estimate.total * (promoResult.discountPercent / 100);
+                    finalEstimate = { ...estimate, total: Math.max(0, estimate.total - disc) };
+                } else if (promoResult.type === 'discount_fixed' && promoResult.discountFixed && estimate) {
+                    finalEstimate = { ...estimate, total: Math.max(0, estimate.total - promoResult.discountFixed) };
+                }
+            }
+
+            // 3. Update Order Context
             setOrderField('serviceDetails', serviceDetails);
-            setOrderField('estimate', estimate);
+            setOrderField('estimate', finalEstimate);
+            setOrderField('promoCode', appliedCode || null);
             setOrderField('setupProfileId', selectedProfileId === 'new' ? '' : selectedProfileId);
             setOrderField('carRentalNote', note); // Legacy fallback
 
-            // 3. Navigate
+            // 4. Mark promo code as used
+            if (appliedCode && user) {
+                await markPromoCodeUsed(appliedCode, user.uid);
+            }
+
+            // 5. Navigate
             setIsSplashing(true);
             setTimeout(() => {
                 router.push('/order/step3');
@@ -2959,10 +3012,67 @@ export default function ServiceSetupPage() {
 
                                         <div className="h-px bg-[#E5E7EB] w-full my-2" />
 
+                                        {/* ─── Promo Code Widget ─── */}
+                                        <div className="py-2">
+                                            {promoStatus !== 'valid' ? (
+                                                <div className="flex gap-2">
+                                                    <input
+                                                        type="text"
+                                                        value={promoInput}
+                                                        onChange={e => { setPromoInput(e.target.value.toUpperCase()); setPromoStatus('idle'); }}
+                                                        placeholder={t({ en: 'Promo code', fr: 'Code promo', ar: 'رمز الخصم' })}
+                                                        className="flex-1 px-4 py-2.5 rounded-xl border border-[#E5E7EB] text-[15px] font-semibold text-[#111827] placeholder:text-[#9CA3AF] focus:outline-none focus:border-[#01A083] transition-colors"
+                                                    />
+                                                    <button
+                                                        onClick={handleValidatePromo}
+                                                        disabled={promoStatus === 'validating' || !promoInput.trim()}
+                                                        className="px-5 py-2.5 rounded-xl bg-[#111827] text-white text-[14px] font-bold disabled:opacity-40 transition-all active:scale-95"
+                                                    >
+                                                        {promoStatus === 'validating' ? '...' : t({ en: 'Apply', fr: 'Appliquer', ar: 'تطبيق' })}
+                                                    </button>
+                                                </div>
+                                            ) : (
+                                                <div className="flex items-center justify-between px-4 py-3 rounded-xl bg-[#01A083]/10 border border-[#01A083]/30">
+                                                    <div className="flex items-center gap-2">
+                                                        <Gift size={18} className="text-[#01A083]" />
+                                                        <div>
+                                                            <p className="text-[14px] font-bold text-[#01A083]">{appliedCode}</p>
+                                                            <p className="text-[12px] text-[#4B5563]">{promoResult?.description || t({ en: 'Free service applied!', fr: 'Service gratuit appliqué !', ar: 'تم تطبيق الخدمة المجانية!' })}</p>
+                                                        </div>
+                                                    </div>
+                                                    <button onClick={() => { setPromoStatus('idle'); setAppliedCode(null); setPromoResult(null); setPromoInput(''); }} className="text-[#9CA3AF] hover:text-[#374151] transition-colors">
+                                                        <X size={16} />
+                                                    </button>
+                                                </div>
+                                            )}
+                                            {promoStatus === 'invalid' && (
+                                                <p className="text-[12px] text-red-500 font-semibold mt-1.5 ml-1">{promoErrorMessage()}</p>
+                                            )}
+                                        </div>
+
                                         {/* Total Section */}
                                         <div className="flex items-center justify-between py-2 gap-4">
                                             <span className="text-[22px] font-extrabold text-[#111827] whitespace-nowrap">{t({ en: 'Total to pay', fr: 'Total à payer', ar: 'الإجمالي للدفع' })}</span>
-                                            <span className="text-[25px] font-extrabold text-[#111827] text-right">{estimate.total.toFixed(2)} MAD</span>
+                                            <div className="flex flex-col items-end">
+                                                {promoStatus === 'valid' && promoResult?.type === 'free_service' ? (
+                                                    <>
+                                                        <span className="text-[18px] font-bold text-[#9CA3AF] line-through">{estimate.total.toFixed(2)} MAD</span>
+                                                        <span className="text-[25px] font-extrabold text-[#01A083]">0.00 MAD 🎁</span>
+                                                    </>
+                                                ) : promoStatus === 'valid' && promoResult?.discountFixed ? (
+                                                    <>
+                                                        <span className="text-[18px] font-bold text-[#9CA3AF] line-through">{estimate.total.toFixed(2)} MAD</span>
+                                                        <span className="text-[25px] font-extrabold text-[#01A083]">{Math.max(0, estimate.total - (promoResult.discountFixed || 0)).toFixed(2)} MAD</span>
+                                                    </>
+                                                ) : promoStatus === 'valid' && promoResult?.discountPercent ? (
+                                                    <>
+                                                        <span className="text-[18px] font-bold text-[#9CA3AF] line-through">{estimate.total.toFixed(2)} MAD</span>
+                                                        <span className="text-[25px] font-extrabold text-[#01A083]">{Math.max(0, estimate.total * (1 - (promoResult.discountPercent || 0) / 100)).toFixed(2)} MAD</span>
+                                                    </>
+                                                ) : (
+                                                    <span className="text-[25px] font-extrabold text-[#111827] text-right">{estimate.total.toFixed(2)} MAD</span>
+                                                )}
+                                            </div>
                                         </div>
 
                                         {!isErrand && (

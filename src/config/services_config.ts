@@ -252,13 +252,6 @@ export const SERVICES_HIERARCHY: Record<string, ServiceConfig> = {
                 desc: { en: 'Windshield and glass repair.', fr: 'Réparation de pare-brise et de vitres.', ar: 'إصلاح الزجاج والزجاج الأمامي.' }
             },
             {
-                id: 'automotive_glass',
-                name: 'Automotive Glass',
-                pricingArchetype: 'fixed',
-                estimatedDurationHr: 1.5,
-                desc: { en: 'Windshield and glass repair.', fr: 'Réparation de pare-brise et de vitres.', ar: 'إصلاح الزجاج والزجاج الأمامي.' }
-            },
-            {
                 id: 'rent_a_car',
                 name: 'Car Rental',
                 pricingArchetype: 'rental',
