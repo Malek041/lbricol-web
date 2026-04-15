@@ -3337,7 +3337,7 @@ export default function ProviderPage() {
                                             setSelectedWorkAreas(userData?.workAreas || []);
                                             // Initialize phone state
                                             if (userData?.whatsappNumber) {
-                                                const country = getCountryFromE164(userData.whatsappNumber);
+                                                const country = getCountryFromE164(userData.whatsappNumber) || COUNTRY_DATA[0];
                                                 setWhatsappCountry(country);
                                                 setLocalWhatsappNumber(getLocalPart(userData.whatsappNumber, country.dialCode));
                                             } else {
