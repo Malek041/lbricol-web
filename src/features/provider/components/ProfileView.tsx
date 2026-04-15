@@ -458,7 +458,6 @@ const ProfileView: React.FC<ProfileViewProps> = ({
                                                             <CountrySelector 
                                                                 selectedCountry={selectedCountry} 
                                                                 onSelect={setSelectedCountry}
-                                                                showLabel={false}
                                                             />
                                                             <input
                                                                 autoFocus
