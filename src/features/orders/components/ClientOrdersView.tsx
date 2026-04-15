@@ -944,10 +944,29 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
                                 {/* Hero & Title Section - Minimalist */}
                                 <div className="mt-6 mb-12">
                                     <div className="flex items-center justify-between mb-4">
-                                        <h2 className="text-[32px] font-bold text-black leading-tight tracking-tight flex-1">
-                                            {selectedOrder.subServiceDisplayName || (selectedOrder as any).title || selectedOrder.serviceName || selectedOrder.service}
+                                        <h2 className="text-[28px] font-bold text-black leading-tight tracking-tight flex-1">
+                                            {(() => {
+                                                try {
+                                                    const { SERVICES_CATALOGUE } = require("@/config/services_config");
+                                                    const serviceId = selectedOrder.serviceId || selectedOrder.service;
+                                                    const subServiceId = selectedOrder.subService || (selectedOrder as any).subServiceId || (selectedOrder as any).serviceType || selectedOrder.service;
+                                                    
+                                                    const catalogService = SERVICES_CATALOGUE.find((s: any) => s.id === serviceId);
+                                                    const serviceName = catalogService ? t({ en: catalogService.en, fr: catalogService.fr, ar: catalogService.ar || catalogService.en }) : (selectedOrder.serviceName || selectedOrder.service);
+                                                    
+                                                    const catalogSub = catalogService?.subServices?.find((ss: any) => ss.id === subServiceId);
+                                                    const subName = catalogSub ? t({ en: catalogSub.en, fr: catalogSub.fr, ar: catalogSub.ar || catalogSub.en }) : selectedOrder.subServiceDisplayName;
+
+                                                    if (subName && subName !== serviceName) {
+                                                        return <span className="capitalize">{serviceName} <span className="text-neutral-300 mx-1">›</span> <span className="text-neutral-500 font-medium">{subName}</span></span>;
+                                                    }
+                                                    return <span className="capitalize">{serviceName}</span>;
+                                                } catch (e) {
+                                                    return selectedOrder.subServiceDisplayName || selectedOrder.serviceName || selectedOrder.service;
+                                                }
+                                            })()}
                                         </h2>
-                                        <div className="w-14 h-14 rounded-2xl bg-neutral-50 flex items-center justify-center flex-shrink-0">
+                                        <div className="w-14 h-14 rounded-2xl bg-neutral-50 flex items-center justify-center flex-shrink-0 ml-4">
                                             <img
                                                 src={selectedOrder.service === 'car_rental' ?
                                                     (selectedOrder.selectedCar?.modelImage || selectedOrder.selectedCar?.image || "/Images/Vectors Illu/carKey.png") :
@@ -970,6 +989,8 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
                                         </div>
                                     </div>
                                 </div>
+
+                                <div className="mx-[-24px] h-2 bg-neutral-100/50 mb-12" />
 
                                 {/* Simplified Professional Section */}
                                 {selectedOrder.bricolerId && (
@@ -1021,6 +1042,8 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
                                         </div>
                                     </section>
                                 )}
+
+                                <div className="mx-[-24px] h-2 bg-neutral-100/50 mb-12" />
 
                                 {/* Simplified Payment Details */}
                                 <section className="mb-12">
@@ -1211,6 +1234,8 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
                                     </div>
                                 </section>
 
+                                <div className="mx-[-24px] h-2 bg-neutral-100/50 mb-12" />
+
                                 {/* Redesigned Location Section */}
                                 <section className="mb-12">
                                     <h3 className="text-[22px] font-bold text-black mb-6">
@@ -1247,6 +1272,8 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
                                     </div>
                                 </section>
 
+                                <div className="mx-[-24px] h-2 bg-neutral-100/50 mb-12" />
+
                                 {/* Redesigned Instructions */}
                                 {(() => {
                                     const raw = (selectedOrder as any)?.raw || {};
@@ -1271,6 +1298,8 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
                                                 </p>
                                             </div>
                                         </section>
+
+                                        <div className="mx-[-24px] h-2 bg-neutral-100/50 mb-12" />
                                     );
                                 })()}
 
