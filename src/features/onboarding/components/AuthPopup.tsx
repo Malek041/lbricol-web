@@ -371,3 +371,4 @@ const AuthPopup = ({ isOpen, onClose, onSuccess }: AuthPopupProps) => {
 };
 
 export default AuthPopup;
+
