@@ -10,7 +10,7 @@ import {
     MapPin, Calendar, Clock, User, Navigation,
     Trophy, CheckCircle2, TrendingUp, ShieldCheck,
     Star, Search, Map as MapIcon, ChevronDown, Info,
-    Gift, Plus, FileText, Tag, Ticket
+    Gift, Plus, Minus, FileText, Tag, Ticket
 } from 'lucide-react';
 import { format } from 'date-fns';
 
@@ -31,10 +31,13 @@ import { getRoadDistance } from '@/lib/calculateDistance';
 import { validatePromoCode, markPromoCodeUsed, type PromoCodeResult } from '@/lib/promoCode';
 
 const MapView = dynamic(() => import('@/components/location-picker/MapView'), { ssr: false });
-import OrderAvailabilityPicker from '@/features/orders/components/OrderAvailabilityPicker';
+const OrderAvailabilityPicker = dynamic(() => import('@/features/orders/components/OrderAvailabilityPicker'), { 
+    ssr: false,
+    loading: () => <div className="h-40 flex items-center justify-center"><Loader2 className="animate-spin text-[#01A083]" /></div>
+});
 import { useLanguage } from '@/context/LanguageContext';
 import { COUNTRY_DATA, formatToE164, validatePhone, CountryConfig } from '@/lib/phoneUtils';
-import CountrySelector from '@/components/phone/CountrySelector';
+const CountrySelector = dynamic(() => import('@/components/phone/CountrySelector'), { ssr: false });
 
 
 // Types for Saved Profiles
@@ -1933,28 +1936,27 @@ export default function ServiceSetupPage() {
                                                 <div className="flex items-center justify-between px-1">
                                                     <label className="text-[20px] font-medium text-[#111827] setup-heading">{t({ en: 'How many rooms?', fr: 'Combien de chambres ?', ar: 'كم عدد الغرف؟' })}</label>
                                                 </div>
-                                                <div className="flex gap-4 overflow-x-auto pb-6 pt-2 no-scrollbar -mx-6 px-6 snap-x snap-mandatory">
-                                                    {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].filter(num => (order.subServiceId === 'hospitality_turnover' || order.serviceType === 'hospitality') ? num >= 2 : true).map((num) => (
-                                                        <motion.button
-                                                            key={num}
-                                                            whileTap={{ scale: 0.9 }}
-                                                            animate={rooms === num ? {
-                                                                borderRadius: ["45% 55% 52% 48% / 55% 45% 58% 42%", "52% 48% 45% 55% / 45% 55% 42% 58%", "45% 55% 52% 48% / 55% 45% 58% 42%"],
-                                                                rotate: [0, -2, 2, 0]
-                                                            } : { borderRadius: "50%", rotate: 0 }}
-                                                            transition={rooms === num ? {
-                                                                borderRadius: { repeat: Infinity, duration: 4, ease: "easeInOut" },
-                                                                rotate: { repeat: Infinity, duration: 5, ease: "easeInOut" }
-                                                            } : { duration: 0 }}
-                                                            onClick={() => setRooms(num)}
-                                                            className={`flex-shrink-0 w-16 h-16 flex items-center justify-center font-medium text-[22px] transition-all snap-center relative ${rooms === num ? 'bg-[#01A083] text-white scale-125 z-10' : 'bg-[#F9FAFB] text-neutral-400 border border-neutral-100/50 rounded-full'}`}
+                                                <div className="flex items-center justify-center pt-2">
+                                                    <div className="flex items-center gap-10 bg-[#F3F4F6] px-8 py-4 rounded-full">
+                                                        <button 
+                                                            onClick={(e) => { e.preventDefault(); setRooms(Math.max((order.subServiceId === 'hospitality_turnover' || order.serviceType === 'hospitality') ? 2 : 1, rooms - 1)); }} 
+                                                            className="p-1 active:scale-90 transition-all text-[#111827] hover:opacity-70"
                                                         >
-                                                            {num}
-                                                        </motion.button>
-                                                    ))}
+                                                            <Minus size={28} strokeWidth={2.5} />
+                                                        </button>
+                                                        <span className="text-[28px] font-bold text-[#111827] min-w-[40px] text-center tabular-nums">
+                                                            {rooms}
+                                                        </span>
+                                                        <button 
+                                                            onClick={(e) => { e.preventDefault(); setRooms(Math.min(12, rooms + 1)); }} 
+                                                            className="p-1 active:scale-90 transition-all text-[#111827] hover:opacity-70"
+                                                        >
+                                                        <Plus size={28} strokeWidth={2.5} />
+                                                    </button>
                                                 </div>
                                             </div>
-                                        )}
+                                        </div>
+                                    )}
 
                                         {/* Hospitality Cleaning Specialized: Property Multiplier & Stairs */}
                                         {(order.subServiceId === 'hospitality_turnover' || order.serviceType === 'hospitality') && (
@@ -1965,17 +1967,24 @@ export default function ServiceSetupPage() {
                                                         <label className="text-[20px] font-medium text-[#111827]">{t({ en: 'How many units/apartments?', fr: 'Combien de biens / appartements ?', ar: 'كم عدد الوحدات؟' })}</label>
                                                         <p className="text-[14px] font-bold text-black/40 mt-1">{t({ en: 'Total price will be multiplied by this number.', fr: 'Le prix total sera multiplié par ce nombre.', ar: 'سيتم ضرب السعر الإجمالي في هذا الرقم.' })}</p>
                                                     </div>
-                                                    <div className="flex gap-4 overflow-x-auto pb-6 pt-2 no-scrollbar -mx-6 px-6 snap-x snap-mandatory">
-                                                        {[1, 2, 3, 4, 5, 6, 8, 10].map((num) => (
-                                                            <motion.button
-                                                                key={`unit-${num}`}
-                                                                whileTap={{ scale: 0.9 }}
-                                                                onClick={() => setUnitCount(num)}
-                                                                className={`flex-shrink-0 w-16 h-16 flex items-center justify-center font-black text-[22px] transition-all snap-center relative ${unitCount === num ? 'bg-[#111827] text-white scale-110 z-10 rounded-full ' : 'bg-white text-neutral-400 border border-neutral-100 rounded-full'}`}
+                                                    <div className="flex items-center justify-center pt-2">
+                                                        <div className="flex items-center gap-10 bg-[#F3F4F6] px-8 py-4 rounded-full">
+                                                            <button 
+                                                                onClick={(e) => { e.preventDefault(); setUnitCount(Math.max(1, unitCount - 1)); }} 
+                                                                className="p-1 active:scale-90 transition-all text-[#111827] hover:opacity-70"
                                                             >
-                                                                {num}
-                                                            </motion.button>
-                                                        ))}
+                                                                <Minus size={28} strokeWidth={2.5} />
+                                                            </button>
+                                                            <span className="text-[28px] font-bold text-[#111827] min-w-[40px] text-center tabular-nums">
+                                                                {unitCount}
+                                                            </span>
+                                                            <button 
+                                                                onClick={(e) => { e.preventDefault(); setUnitCount(Math.min(20, unitCount + 1)); }} 
+                                                                className="p-1 active:scale-90 transition-all text-[#111827] hover:opacity-70"
+                                                            >
+                                                                <Plus size={28} strokeWidth={2.5} />
+                                                            </button>
+                                                        </div>
                                                     </div>
                                                 </div>
 
