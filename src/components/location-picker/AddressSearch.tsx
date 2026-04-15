@@ -74,7 +74,7 @@ const AddressSearch: React.FC<AddressSearchProps> = ({ onSelect, onBack }) => {
     <div className="fixed inset-0 bg-white z-[10002] flex flex-col font-jakarta">
       {/* Search Header */}
       <div className="flex items-center gap-3 px-4 h-16 border-b border-[#F3F4F6]">
-        <button onClick={onBack} className="p-2 -ml-2 text-[#111827]">
+        <button onClick={onBack} className="p-2 -ml-2 text-[#111827] hover:bg-neutral-50 rounded-full transition-colors">
           <ArrowLeft size={24} />
         </button>
         
@@ -87,17 +87,31 @@ const AddressSearch: React.FC<AddressSearchProps> = ({ onSelect, onBack }) => {
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Enter street, building number, etc"
-            className="w-full h-11 pl-11 pr-10 bg-white border-[1.5px] border-[#E5E7EB] rounded-full outline-none text-[15px] font-medium placeholder:text-[#9CA3AF] placeholder:font-normal focus:border-[#10B981] transition-all"
+            placeholder="Rechercher une adresse..."
+            className="w-full h-11 pl-11 pr-24 bg-[#F9FAFB] border-none rounded-full outline-none text-[15px] font-medium placeholder:text-[#9CA3AF] focus:ring-2 focus:ring-[#10B981]/20 transition-all"
           />
-          {query && (
+          <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1">
+            {query && (
+              <button 
+                onClick={() => setQuery('')}
+                className="text-[#9CA3AF] p-1.5 hover:text-[#374151]"
+              >
+                <X size={18} />
+              </button>
+            )}
             <button 
-              onClick={() => setQuery('')}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-[#9CA3AF] p-1"
+              onClick={onBack}
+              className="p-1.5 text-[#10B981] hover:bg-[#E6F6F2] rounded-full transition-colors flex items-center justify-center"
+              title="Select on map"
             >
-              <X size={18} />
+              <div className="w-5 h-5 flex items-center justify-center">
+                <svg viewBox="0 0 24 24" fill="none" className="w-full h-full" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                  <circle cx="12" cy="10" r="3" />
+                </svg>
+              </div>
             </button>
-          )}
+          </div>
         </div>
       </div>
 

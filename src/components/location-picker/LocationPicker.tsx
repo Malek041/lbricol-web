@@ -227,7 +227,7 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
       <div
         className={cn(
           "relative bg-neutral-100 overflow-hidden transition-all duration-500 ease-in-out z-0 shrink-0",
-          isInteracting ? 'h-[65%]' : (radiusView ? 'h-[45%]' : (isBricolerBase && !showSearchInput ? 'h-[48%]' : 'h-[42%]'))
+          isInteracting || showSearchInput ? 'h-[65%]' : (radiusView ? 'h-[45%]' : (isBricolerBase && !showSearchInput ? 'h-[48%]' : 'h-[42%]'))
         )}
       >
         {/* Full-screen under-layer map -> Now dynamically matches flex height */}
@@ -340,6 +340,37 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
             <div className="h-15 bg-neutral-100 rounded-full w-full" />
             <div className="h-4 bg-neutral-100 rounded w-1/3 mx-auto" />
           </div>
+        ) : showSearchInput ? (
+          <motion.div
+            key="search-view"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="flex flex-col gap-6"
+          >
+            <div className="relative">
+              <button 
+                onClick={() => setShowSearchInput(false)}
+                className="absolute -top-1 -left-2 p-2 text-neutral-400 hover:text-neutral-600 active:scale-90 transition-all"
+              >
+                <ChevronLeft size={20} />
+              </button>
+              <p className="text-center text-[15px] font-medium text-neutral-600">
+                {t({ en: 'Trouble locating your address?', fr: 'Problème pour localiser votre adresse ?', ar: 'هل تواجه مشكلة في تحديد موقعك؟' })}<br />
+                {t({ en: 'Try using search instead', fr: 'Essayez d’utiliser la recherche', ar: 'جرب البحث بدلاً من ذلك' })}
+              </p>
+            </div>
+
+            <div
+              onClick={() => setActiveView('SEARCH')}
+              className="flex items-center gap-3 px-6 py-4 bg-[#F9FAFB] border border-neutral-100 rounded-full cursor-pointer hover:bg-neutral-100 transition-all group"
+            >
+              <Search size={22} className="text-neutral-400 group-hover:text-neutral-600 transition-colors" />
+              <span className="text-neutral-400 font-medium text-[16px] group-hover:text-neutral-600 transition-colors">
+                {t({ en: 'Rechercher rue, ville, quartier...', fr: 'Rechercher rue, ville, quartier...', ar: 'ابحث عن الشارع، المدينة، الحي...' })}
+              </span>
+            </div>
+          </motion.div>
         ) : isBricolerBase ? (
           <div className="flex flex-col h-full overflow-y-auto scrollbar-hide">
             <AnimatePresence mode="wait">
@@ -379,9 +410,8 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
                       </button>
                     ))}
                   </div>
-
                 </motion.div>
-              ) : !showSearchInput ? (
+              ) : (
                 <motion.div
                   key="confirm-view"
                   initial={{ opacity: 0, y: 10 }}
@@ -431,49 +461,6 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
                      {t({ en: 'Set Another address', fr: 'Définir une autre adresse', ar: 'تحديد عنوان آخر' })}
                    </button>
                 </motion.div>
-              ) : (
-                <motion.div
-                  key="search-view"
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                  className="flex flex-col gap-6"
-                >
-                  <div className="relative">
-                    <button
-                      onClick={() => setShowSearchInput(false)}
-                      className="absolute -top-1 -left-2 p-2 text-neutral-400 hover:text-neutral-600 active:scale-90 transition-all"
-                    >
-                      <ChevronLeft size={20} />
-                    </button>
-                    <p className="text-center text-[15px] font-medium text-neutral-600">
-                      {t({
-                        en: 'Trouble locating your address?',
-                        fr: 'Problème pour localiser votre adresse ?',
-                        ar: 'هل تواجه مشكلة في تحديد موقعك؟'
-                      })}<br />
-                      {t({
-                        en: 'Try using search instead',
-                        fr: 'Essayez d’utiliser la recherche',
-                        ar: 'جرب البحث بدلاً من ذلك'
-                      })}
-                    </p>
-                  </div>
-
-                  <div
-                    onClick={() => setActiveView('SEARCH')}
-                    className="flex items-center gap-3 px-6 py-4 bg-[#F9FAFB] border border-neutral-100 rounded-full cursor-pointer hover:bg-neutral-100 transition-all group"
-                  >
-                    <Search size={22} className="text-neutral-400 group-hover:text-neutral-600 transition-colors" />
-                    <span className="text-neutral-400 font-medium text-[16px] group-hover:text-neutral-600 transition-colors">
-                      {t({
-                        en: 'Search street, city, district...',
-                        fr: 'Rechercher rue, ville, quartier...',
-                        ar: 'ابحث عن الشارع، المدينة، الحي...'
-                      })}
-                    </span>
-                  </div>
-                </motion.div>
               )}
             </AnimatePresence>
           </div>
@@ -483,15 +470,15 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
               addresses={savedAddresses}
               onSelect={handleSavedSelect}
               onEdit={handleEditAddress}
-              onAdd={() => setActiveView('SEARCH')}
+              onAdd={() => setShowSearchInput(true)}
               title={mode === 'double' && step === 2 
                 ? t({ en: "Where are you moving to?", fr: "Où déménagez-vous ?", ar: "إلى أين ستنتقل؟" })
                 : t({ en: "Where do you need help?", fr: "Où avez-vous besoin d'aide ?", ar: "أيـن تـحـتـاج الـمـسـاعـدة؟" })
               }
             />
-
           </div>
-        )}
+        )
+}
       </div>
     </div>
 
