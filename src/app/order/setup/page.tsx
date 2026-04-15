@@ -10,7 +10,7 @@ import {
     MapPin, Calendar, Clock, User, Navigation,
     Trophy, CheckCircle2, TrendingUp, ShieldCheck,
     Star, Search, Map as MapIcon, ChevronDown, Info,
-    Gift, Plus, FileText
+    Gift, Plus, FileText, Tag, Ticket
 } from 'lucide-react';
 import { format } from 'date-fns';
 
@@ -201,12 +201,14 @@ export default function ServiceSetupPage() {
 
     const [isTranslating, setIsTranslating] = useState(false);
     const [translationError, setTranslationError] = useState(false);
+    const [isBioExpanded, setIsBioExpanded] = useState(false);
 
     // Promo Code State
     const [promoInput, setPromoInput] = useState('');
     const [promoStatus, setPromoStatus] = useState<'idle' | 'validating' | 'valid' | 'invalid'>('idle');
     const [promoResult, setPromoResult] = useState<PromoCodeResult | null>(null);
     const [appliedCode, setAppliedCode] = useState<string | null>(null);
+    const [isPromoDrawerOpen, setIsPromoDrawerOpen] = useState(false);
 
     const handleValidatePromo = async () => {
         if (!promoInput.trim()) return;
@@ -338,14 +340,18 @@ export default function ServiceSetupPage() {
         const unsub = onAuthStateChanged(auth, async (u) => {
             setUser(u);
             if (u) {
-                // Load saved profiles for this service
-                const q = query(
-                    collection(db, 'clients', u.uid, 'service_profiles'),
-                    where('serviceId', '==', order.serviceType)
-                );
-                const snap = await getDocs(q);
-                const loaded = snap.docs.map(d => ({ id: d.id, ...d.data() } as ServiceProfile));
-                setProfiles(loaded);
+                try {
+                    // Load saved profiles for this service
+                    const q = query(
+                        collection(db, 'clients', u.uid, 'service_profiles'),
+                        where('serviceId', '==', order.serviceType)
+                    );
+                    const snap = await getDocs(q);
+                    const loaded = snap.docs.map(d => ({ id: d.id, ...d.data() } as ServiceProfile));
+                    setProfiles(loaded);
+                } catch (err) {
+                    console.warn("[onAuthStateChanged] Failed to load profiles:", err);
+                }
             }
             setLoading(false);
         });
@@ -389,8 +395,10 @@ export default function ServiceSetupPage() {
                     });
                     setHasLoaded(true);
                 }
-            } catch (err) {
+            } catch (err: any) {
                 console.warn("Failed to fetch full Bricoler profile:", err);
+                // If permissions fail, we still want to show the basic info from the order context
+                setHasLoaded(true);
             }
         };
         fetchBricolerData();
@@ -1182,10 +1190,32 @@ export default function ServiceSetupPage() {
                                             <h4 className="text-[18px] font-black text-[#111827]">{t({ en: 'About Me', fr: 'À propos de moi' })}</h4>
                                             <div className="text-[15px] text-[#000000] leading-relaxed font-medium mt-2">
                                                 {provider.bio_translations?.[language as keyof typeof provider.bio_translations] ? (
-                                                    provider.bio_translations[language as keyof typeof provider.bio_translations]
+                                                    <div className="flex flex-col gap-1">
+                                                        <span className={isBioExpanded ? "" : "line-clamp-4"}>
+                                                            {provider.bio_translations[language as keyof typeof provider.bio_translations]}
+                                                        </span>
+                                                        {provider.bio_translations[language as keyof typeof provider.bio_translations].length > 180 && (
+                                                            <button
+                                                                onClick={() => setIsBioExpanded(!isBioExpanded)}
+                                                                className="text-[#01A083] font-bold text-[13px] w-fit hover:underline mt-0.5"
+                                                            >
+                                                                {isBioExpanded ? t({ en: 'Show less', fr: 'Lire moins', ar: 'عرض أقل' }) : t({ en: 'Read more', fr: 'Lire plus', ar: 'اقرأ المزيد' })}
+                                                            </button>
+                                                        )}
+                                                    </div>
                                                 ) : provider.bio && provider.bio.trim() ? (
-                                                    <div className="flex flex-col gap-2">
-                                                        <span>{provider.bio}</span>
+                                                    <div className="flex flex-col gap-1">
+                                                        <span className={isBioExpanded ? "" : "line-clamp-4"}>
+                                                            {provider.bio}
+                                                        </span>
+                                                        {provider.bio.length > 180 && (
+                                                            <button
+                                                                onClick={() => setIsBioExpanded(!isBioExpanded)}
+                                                                className="text-[#01A083] font-bold text-[13px] w-fit hover:underline mt-0.5"
+                                                            >
+                                                                {isBioExpanded ? t({ en: 'Show less', fr: 'Lire moins', ar: 'عرض أقل' }) : t({ en: 'Read more', fr: 'Lire plus', ar: 'اقرأ المزيد' })}
+                                                            </button>
+                                                        )}
                                                         {((isArabic(provider.bio) && language !== 'ar') || (!isArabic(provider.bio) && language === 'ar')) && (
                                                             <button
                                                                 onClick={handleTranslateBio}
@@ -1928,11 +1958,11 @@ export default function ServiceSetupPage() {
 
                                         {/* Hospitality Cleaning Specialized: Property Multiplier & Stairs */}
                                         {(order.subServiceId === 'hospitality_turnover' || order.serviceType === 'hospitality') && (
-                                            <div className="space-y-12 bg-[#F9FAFB]/50 p-6 rounded-[24px] border border-neutral-100/50">
+                                            <div className="space-y-12 bg-[#FFFFFF]/50 p-6 rounded-[24px] border border-neutral-100/50">
                                                 {/* Property Count (How many apartments?) */}
                                                 <div className="space-y-6">
                                                     <div className="flex flex-col pb-2">
-                                                        <label className="text-[20px] font-black text-[#111827]">{t({ en: 'How many units/apartments?', fr: 'Combien de biens / appartements ?', ar: 'كم عدد الوحدات؟' })}</label>
+                                                        <label className="text-[20px] font-medium text-[#111827]">{t({ en: 'How many units/apartments?', fr: 'Combien de biens / appartements ?', ar: 'كم عدد الوحدات؟' })}</label>
                                                         <p className="text-[14px] font-bold text-black/40 mt-1">{t({ en: 'Total price will be multiplied by this number.', fr: 'Le prix total sera multiplié par ce nombre.', ar: 'سيتم ضرب السعر الإجمالي في هذا الرقم.' })}</p>
                                                     </div>
                                                     <div className="flex gap-4 overflow-x-auto pb-6 pt-2 no-scrollbar -mx-6 px-6 snap-x snap-mandatory">
@@ -1941,7 +1971,7 @@ export default function ServiceSetupPage() {
                                                                 key={`unit-${num}`}
                                                                 whileTap={{ scale: 0.9 }}
                                                                 onClick={() => setUnitCount(num)}
-                                                                className={`flex-shrink-0 w-16 h-16 flex items-center justify-center font-black text-[22px] transition-all snap-center relative ${unitCount === num ? 'bg-[#111827] text-white scale-110 z-10 rounded-full shadow-lg' : 'bg-white text-neutral-400 border border-neutral-100 rounded-full'}`}
+                                                                className={`flex-shrink-0 w-16 h-16 flex items-center justify-center font-black text-[22px] transition-all snap-center relative ${unitCount === num ? 'bg-[#111827] text-white scale-110 z-10 rounded-full ' : 'bg-white text-neutral-400 border border-neutral-100 rounded-full'}`}
                                                             >
                                                                 {num}
                                                             </motion.button>
@@ -1984,14 +2014,14 @@ export default function ServiceSetupPage() {
                                             <div className="space-y-6">
                                                 <div className="flex items-center gap-3 pb-2">
                                                     <h3 className="text-[20px] font-black text-[#111827]">{t({ en: 'Support your Bricoler', fr: 'Soutenez votre Bricoleur', ar: 'دعم البريكولور' })}</h3>
-                                                    <span className="bg-[#FFC244]/20 text-[#D97706] text-[10px] px-2 py-0.5 rounded-full font-black uppercase tracking-wider">{t({ en: 'Tips', fr: 'Pourboire' })}</span>
+                                                    <span className="bg-[#FFC244]/20 text-[#000000] text-[10px] px-2 py-0.5 rounded-full font-black uppercase tracking-wider">{t({ en: 'Tips', fr: 'Pourboire' })}</span>
                                                 </div>
                                                 <div className="grid grid-cols-4 gap-2">
                                                     {[0, 20, 40, 60].map((amt) => (
                                                         <button
                                                             key={`tip-${amt}`}
                                                             onClick={() => setTipAmount(amt)}
-                                                            className={`py-4 rounded-[12px] border-2 font-black text-[15px] transition-all ${tipAmount === amt ? 'border-[#FFC244] bg-[#FFFBEB] text-[#D97706]' : 'border-neutral-100 bg-white text-neutral-400'}`}
+                                                            className={`py-4 rounded-[12px] border-2 font-black text-[15px] transition-all ${tipAmount === amt ? '  text-[#000000]' : 'border-neutral-100 bg-white text-neutral-400'}`}
                                                         >
                                                             {amt === 0 ? t({ en: 'None', fr: 'Aucun' }) : `${amt} MAD`}
                                                         </button>
@@ -2951,7 +2981,31 @@ export default function ServiceSetupPage() {
                                 )}
                             </motion.section>
 
-                            {/* Summary Tab Content - Restored & Polished */}
+                            {/* Promo Code Clickable Section - Styled per Pic 4 */}
+                            <div className="px-6 sm:px-10 py-6">
+                                <button
+                                    onClick={() => setIsPromoDrawerOpen(true)}
+                                    className="flex items-center justify-between w-full group active:opacity-60 transition-all"
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <div className="text-[#111827]">
+                                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                                <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path>
+                                                <line x1="7" y1="7" x2="7.01" y2="7" strokeWidth="3"></line>
+                                                <path d="M11 15l4-4" strokeWidth="2"></path>
+                                                <circle cx="11.5" cy="11.5" r="0.8" fill="currentColor" stroke="none"></circle>
+                                                <circle cx="14.5" cy="14.5" r="0.8" fill="currentColor" stroke="none"></circle>
+                                            </svg>
+                                        </div>
+                                        <span className="text-[17px] font-bold text-[#111827]">
+                                            {appliedCode ? t({ en: 'Promo code applied', fr: 'Code promo appliqué', ar: 'تم تطبيق الكود' }) : t({ en: 'Got a promo code?', fr: 'Vous avez un code promo ?', ar: 'هل لديك كود خصم؟' })}
+                                        </span>
+                                    </div>
+                                    <ChevronDown size={18} className="text-[#111827]" />
+                                </button>
+                            </div>
+
+                            {/* Summary Tab Content - Grey Background Section */}
                             <div className="bg-[#F2F2F2] w-full pt-12 pb-18 px-6 sm:px-10 space-y-8 relative ">
                                 {/* Wave Top Effect for Summary Transition */}
                                 <div className="absolute top-[-40px] left-0 right-0 h-[40px] z-10 pointer-events-none">
@@ -3012,43 +3066,22 @@ export default function ServiceSetupPage() {
 
                                         <div className="h-px bg-[#E5E7EB] w-full my-2" />
 
-                                        {/* ─── Promo Code Widget ─── */}
-                                        <div className="py-2">
-                                            {promoStatus !== 'valid' ? (
-                                                <div className="flex flex-col sm:flex-row gap-2">
-                                                    <input
-                                                        type="text"
-                                                        value={promoInput}
-                                                        onChange={e => { setPromoInput(e.target.value.toUpperCase()); setPromoStatus('idle'); }}
-                                                        placeholder={t({ en: 'Promo code', fr: 'Code promo', ar: 'رمز الخصم' })}
-                                                        className="w-full sm:flex-1 px-4 py-2.5 rounded-xl border border-[#E5E7EB] text-[15px] font-semibold text-[#111827] placeholder:text-[#9CA3AF] focus:outline-none focus:border-[#01A083] transition-colors"
-                                                    />
-                                                    <button
-                                                        onClick={handleValidatePromo}
-                                                        disabled={promoStatus === 'validating' || !promoInput.trim()}
-                                                        className="w-full sm:w-auto whitespace-nowrap px-5 py-2.5 rounded-xl bg-[#111827] text-white text-[14px] font-bold disabled:opacity-40 transition-all active:scale-95"
-                                                    >
-                                                        {promoStatus === 'validating' ? '...' : t({ en: 'Apply', fr: 'Appliquer', ar: 'تطبيق' })}
-                                                    </button>
-                                                </div>
-                                            ) : (
-                                                <div className="flex items-center justify-between px-4 py-3 rounded-xl bg-[#01A083]/10 border border-[#01A083]/30">
-                                                    <div className="flex items-center gap-2">
-                                                        <Gift size={18} className="text-[#01A083]" />
-                                                        <div>
-                                                            <p className="text-[14px] font-bold text-[#01A083]">{appliedCode}</p>
-                                                            <p className="text-[12px] text-[#4B5563]">{promoResult?.description || t({ en: 'Free service applied!', fr: 'Service gratuit appliqué !', ar: 'تم تطبيق الخدمة المجانية!' })}</p>
-                                                        </div>
+                                        {/* Applied Promo Display in List */}
+                                        {promoStatus === 'valid' && (
+                                            <div className="flex items-center justify-between py-1 animate-in slide-in-from-left duration-300">
+                                                <div className="flex items-center gap-2">
+                                                    <div className="w-5 h-5 rounded-full bg-[#01A083]/10 flex items-center justify-center">
+                                                        <Check size={12} className="text-[#01A083]" />
                                                     </div>
-                                                    <button onClick={() => { setPromoStatus('idle'); setAppliedCode(null); setPromoResult(null); setPromoInput(''); }} className="text-[#9CA3AF] hover:text-[#374151] transition-colors">
-                                                        <X size={16} />
-                                                    </button>
+                                                    <span className="text-[16px] font-semibold text-[#01A083]">{t({ en: 'Voucher discount', fr: 'Réduction coupon', ar: 'خصم الكوبون' })}</span>
                                                 </div>
-                                            )}
-                                            {promoStatus === 'invalid' && (
-                                                <p className="text-[12px] text-red-500 font-semibold mt-1.5 ml-1">{promoErrorMessage()}</p>
-                                            )}
-                                        </div>
+                                                <span className="text-[16px] font-bold text-[#01A083]">
+                                                    {promoResult?.discountFixed ? `-${promoResult.discountFixed} MAD` :
+                                                        promoResult?.discountPercent ? `-${((estimate.total * promoResult.discountPercent) / 100).toFixed(0)} MAD` :
+                                                            promoResult?.type === 'free_service' ? 'Gratuit' : ''}
+                                                </span>
+                                            </div>
+                                        )}
 
                                         {/* Total Section */}
                                         <div className="flex items-center justify-between py-2 gap-4">
@@ -3460,6 +3493,110 @@ export default function ServiceSetupPage() {
                             </div>
                         )}
                     </motion.div>
+                )}
+            </AnimatePresence>
+
+            {/* Promo Drawer Sheet - Styled Exactly per Pic 2 */}
+            <AnimatePresence>
+                {isPromoDrawerOpen && (
+                    <>
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            onClick={() => setIsPromoDrawerOpen(false)}
+                            className="fixed inset-0 bg-black/60 z-[110]"
+                        />
+                        <motion.div
+                            initial={{ y: '100%' }}
+                            animate={{ y: 0 }}
+                            exit={{ y: '100%' }}
+                            transition={{ type: 'spring', damping: 30, stiffness: 300 }}
+                            className="fixed bottom-0 left-0 right-0 bg-white z-[120] shadow-[0_-20px_50px_-10px_rgba(0,0,0,0.1)]"
+                            style={{ paddingBottom: 'max(4px, env(safe-area-inset-bottom))' }}
+                        >
+                            {/* NEW Pronounced Wave Top Header */}
+                            <div className="absolute top-[-50px] left-0 right-0 h-[52px] pointer-events-none">
+                                <svg viewBox="0 0 1440 100" preserveAspectRatio="none" className="w-full h-full fill-white drop-shadow-[0_-5px_15px_rgba(0,0,0,0.08)]">
+                                    <path d="M0,80 C 480,0 960,160 1440,80 V100 H0 Z"></path>
+                                </svg>
+                            </div>
+
+                            <div className="p-8 pt-6 pb-12">
+                                <div className="flex items-center justify-between mb-8">
+                                    <h2 className="text-[28px] font-black text-[#111827] tracking-tight">
+                                        {t({ en: 'Add your voucher', fr: 'Ajoutez votre coupon', ar: 'أضف قسيمتك' })}
+                                    </h2>
+                                    <button onClick={() => setIsPromoDrawerOpen(false)} className="w-10 h-10 rounded-full bg-neutral-100 flex items-center justify-center">
+                                        <X size={24} className="text-neutral-500" />
+                                    </button>
+                                </div>
+
+                                <div className="space-y-8">
+                                    <div className="space-y-3">
+                                        <label className="block text-[15px] font-bold text-neutral-400 capitalize pl-1">
+                                            {t({ en: 'Enter voucher code', fr: 'Entrez le code promo', ar: 'أدخل كود الخصم' })}
+                                        </label>
+                                        <input
+                                            type="text"
+                                            autoFocus
+                                            value={promoInput}
+                                            onChange={e => { setPromoInput(e.target.value.toUpperCase()); setPromoStatus('idle'); }}
+                                            className="w-full px-6 py-5 rounded-2xl border border-neutral-200 focus:border-neutral-400 outline-none text-[20px] font-bold text-[#111827] placeholder:text-neutral-200 transition-all"
+                                            placeholder="LBRICOL-20"
+                                        />
+                                    </div>
+
+                                    {promoStatus === 'invalid' && (
+                                        <div className="text-red-500 text-[15px] font-bold px-2 animate-in fade-in duration-200">
+                                            {promoErrorMessage()}
+                                        </div>
+                                    )}
+
+                                    {promoStatus === 'valid' && (
+                                        <div className="flex items-center gap-4 text-[#01A083] bg-[#01A083]/5 p-5 rounded-2xl border border-[#01A083]/10">
+                                            <div className="w-10 h-10 rounded-full bg-[#01A083] flex items-center justify-center shrink-0">
+                                                <CheckCircle2 size={24} className="text-white" />
+                                            </div>
+                                            <div className="flex flex-col">
+                                                <span className="text-[18px] font-black">{appliedCode}</span>
+                                                <span className="text-[14px] font-bold opacity-70">{promoResult?.description || t({ en: 'Discount applied!', fr: 'Réduction appliquée !', ar: 'تم تطبيق الخصم!' })}</span>
+                                            </div>
+                                            <button
+                                                onClick={() => { setPromoStatus('idle'); setAppliedCode(null); setPromoResult(null); setPromoInput(''); }}
+                                                className="ml-auto p-2 hover:bg-black/5 rounded-full transition-colors"
+                                            >
+                                                <Trash2 size={20} className="text-neutral-400" />
+                                            </button>
+                                        </div>
+                                    )}
+
+                                    <div className="pt-6">
+                                        <button
+                                            onClick={async () => {
+                                                if (promoStatus === 'valid') {
+                                                    setIsPromoDrawerOpen(false);
+                                                    return;
+                                                }
+                                                await handleValidatePromo();
+                                            }}
+                                            disabled={promoStatus === 'validating' || !promoInput.trim()}
+                                            className="w-full py-3 rounded-full font-black text-[18px] transition-all active:scale-[0.98] flex items-center justify-center"
+                                            style={promoInput.trim() && promoStatus !== 'validating'
+                                                ? { backgroundColor: '#01A082', color: 'white' }
+                                                : { backgroundColor: '#E5E7EB', color: '#9CA3AF' }
+                                            }
+                                        >
+                                            {promoStatus === 'validating' ?
+                                                <span className="flex items-center gap-2"><Loader2 size={20} className="animate-spin" /> ...</span> :
+                                                (promoStatus === 'valid' ? t({ en: 'Continue', fr: 'Continuer', ar: 'استمرار' }) : t({ en: 'Apply', fr: 'Appliquer', ar: 'تطبيق' }))
+                                            }
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </motion.div>
+                    </>
                 )}
             </AnimatePresence>
 
