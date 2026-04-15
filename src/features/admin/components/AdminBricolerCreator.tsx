@@ -205,7 +205,8 @@ const AdminBricolerCreator: React.FC<AdminBricolerCreatorProps> = ({ t, onBack }
                             <CountrySelector 
                                 selectedCountry={selectedCountry} 
                                 onSelect={setSelectedCountry}
-                                size="sm"
+                                isCompact={true}
+                                fontSize="14px"
                             />
                             <input
                                 type="tel"
