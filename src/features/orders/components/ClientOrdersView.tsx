@@ -994,56 +994,57 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
 
                                 {/* Simplified Professional Section */}
                                 {selectedOrder.bricolerId && (
-                                    <section className="mb-12">
-                                        <h3 className="text-[22px] font-bold text-black mb-6">
-                                            {t({ en: 'Professional', fr: 'Le Professionnel', ar: 'المحترف' })}
-                                        </h3>
-                                        <div className="flex items-center gap-5 pb-8 border-b border-neutral-100">
-                                            <div className="w-16 h-16 rounded-full overflow-hidden relative ring-1 ring-neutral-100">
-                                                <img
-                                                    src={(selectedOrder.bricolerAvatar && selectedOrder.bricolerAvatar.length > 5) ? selectedOrder.bricolerAvatar : "/Images/Vectors Illu/Avatar.png"}
-                                                    className="w-full h-full object-cover"
-                                                    alt="Pro"
-                                                />
-                                            </div>
-                                            <div className="flex-1 min-w-0">
-                                                <h4 className="text-[18px] font-bold text-black mb-1">{selectedOrder.bricolerName}</h4>
-                                                <div className="flex items-center gap-2">
-                                                    <div className="flex items-center gap-1">
-                                                        <Star size={14} className="fill-black text-black" />
-                                                        <span className="text-[14px] font-bold text-black">{selectedOrder.bricolerRating || '4.9'}</span>
+                                    <>
+                                        <section className="mb-12">
+                                            <h3 className="text-[22px] font-bold text-black mb-6">
+                                                {t({ en: 'Professional', fr: 'Le Professionnel', ar: 'المحترف' })}
+                                            </h3>
+                                            <div className="flex items-center gap-5 pb-8 border-b border-neutral-100">
+                                                <div className="w-16 h-16 rounded-full overflow-hidden relative ring-1 ring-neutral-100">
+                                                    <img
+                                                        src={(selectedOrder.bricolerAvatar && selectedOrder.bricolerAvatar.length > 5) ? selectedOrder.bricolerAvatar : "/Images/Vectors Illu/Avatar.png"}
+                                                        className="w-full h-full object-cover"
+                                                        alt="Pro"
+                                                    />
+                                                </div>
+                                                <div className="flex-1 min-w-0">
+                                                    <h4 className="text-[18px] font-bold text-black mb-1">{selectedOrder.bricolerName}</h4>
+                                                    <div className="flex items-center gap-2">
+                                                        <div className="flex items-center gap-1">
+                                                            <Star size={14} className="fill-black text-black" />
+                                                            <span className="text-[14px] font-bold text-black">{selectedOrder.bricolerRating || '4.9'}</span>
+                                                        </div>
+                                                        <span className="text-neutral-200">·</span>
+                                                        <span className="text-[14px] font-medium text-neutral-500">
+                                                            {t({ en: 'Verified Pro', fr: 'Pro Vérifié', ar: 'محترف موثق' })}
+                                                        </span>
                                                     </div>
-                                                    <span className="text-neutral-200">·</span>
-                                                    <span className="text-[14px] font-medium text-neutral-500">
-                                                        {t({ en: 'Verified Pro', fr: 'Pro Vérifié', ar: 'محترف موثق' })}
-                                                    </span>
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            openWhatsApp(selectedOrder.bricolerWhatsApp, selectedOrder.bricolerId);
+                                                        }}
+                                                        className="w-12 h-12 rounded-full border border-neutral-100 flex items-center justify-center active:scale-90 transition-all"
+                                                    >
+                                                        <WhatsAppBrandIcon className="w-6 h-6" />
+                                                    </button>
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            setActiveChatOrderId(selectedOrder.id!);
+                                                        }}
+                                                        className="w-12 h-12 rounded-full bg-black flex items-center justify-center active:scale-90 transition-all"
+                                                    >
+                                                        <MessageCircle size={22} className="text-white" />
+                                                    </button>
                                                 </div>
                                             </div>
-                                            <div className="flex items-center gap-2">
-                                                <button
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        openWhatsApp(selectedOrder.bricolerWhatsApp, selectedOrder.bricolerId);
-                                                    }}
-                                                    className="w-12 h-12 rounded-full border border-neutral-100 flex items-center justify-center active:scale-90 transition-all"
-                                                >
-                                                    <WhatsAppBrandIcon className="w-6 h-6" />
-                                                </button>
-                                                <button
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        setActiveChatOrderId(selectedOrder.id!);
-                                                    }}
-                                                    className="w-12 h-12 rounded-full bg-black flex items-center justify-center active:scale-90 transition-all"
-                                                >
-                                                    <MessageCircle size={22} className="text-white" />
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </section>
+                                        </section>
+                                        <div className="mx-[-24px] h-2 bg-neutral-100/50 mb-12" />
+                                    </>
                                 )}
-
-                                <div className="mx-[-24px] h-2 bg-neutral-100/50 mb-12" />
 
                                 {/* Simplified Payment Details */}
                                 <section className="mb-12">
@@ -1288,18 +1289,20 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
                                     if (!note) return null;
 
                                     return (
-                                        <section className="mb-12">
-                                            <h3 className="text-[22px] font-bold text-black mb-6">
-                                                {t({ en: 'Instructions', fr: 'Instructions', ar: 'تعليمات' })}
-                                            </h3>
-                                            <div className="py-6 px-4 bg-neutral-50 rounded-2xl border border-neutral-100/50">
-                                                <p className="text-[15px] font-medium text-neutral-600 leading-relaxed italic">
-                                                    "{note}"
-                                                </p>
-                                            </div>
-                                        </section>
+                                        <>
+                                            <section className="mb-12">
+                                                <h3 className="text-[22px] font-bold text-black mb-6">
+                                                    {t({ en: 'Instructions', fr: 'Instructions', ar: 'تعليمات' })}
+                                                </h3>
+                                                <div className="py-6 px-4 bg-neutral-50 rounded-2xl border border-neutral-100/50">
+                                                    <p className="text-[15px] font-medium text-neutral-600 leading-relaxed italic">
+                                                        "{note}"
+                                                    </p>
+                                                </div>
+                                            </section>
 
-                                        <div className="mx-[-24px] h-2 bg-neutral-100/50 mb-12" />
+                                            <div className="mx-[-24px] h-2 bg-neutral-100/50 mb-12" />
+                                        </>
                                     );
                                 })()}
 
