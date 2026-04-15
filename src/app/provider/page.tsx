@@ -141,6 +141,9 @@ import {
     getFallbackJobCardImage
 } from '@/features/provider/utils/providerUtils';
 
+import { COUNTRY_DATA, getCountryFromE164, getLocalPart, formatToE164, CountryConfig } from '@/lib/phoneUtils';
+import CountrySelector from '@/components/phone/CountrySelector';
+
 
 export default function ProviderPage() {
     // 1. Data State & Hooks
@@ -245,6 +248,8 @@ export default function ProviderPage() {
     const [newServiceData, setNewServiceData] = useState<{ id: string, rate: number, pitch: string }>({ id: '', rate: 100, pitch: '' });
     const [selectedWorkAreas, setSelectedWorkAreas] = useState<string[]>([]);
     const [isSavingProfile, setIsSavingProfile] = useState(false);
+    const [whatsappCountry, setWhatsappCountry] = useState<CountryConfig>(COUNTRY_DATA[0]);
+    const [localWhatsappNumber, setLocalWhatsappNumber] = useState('');
     const [isEditingSlots, setIsEditingSlots] = useState(false);
     const [settlementReceipt, setSettlementReceipt] = useState<string | null>(null);
     const [isSubmittingSettlement, setIsSubmittingSettlement] = useState(false);
@@ -513,7 +518,7 @@ export default function ProviderPage() {
 
         const name = nameInputRef.current?.value || '';
         const city = cityInputRef.current?.value || '';
-        const whatsapp = whatsappInputRef.current?.value || '';
+        const whatsapp = localWhatsappNumber ? formatToE164(localWhatsappNumber, whatsappCountry.dialCode) : '';
 
         try {
             const updates: Partial<UserData> = {
@@ -3263,6 +3268,15 @@ export default function ProviderPage() {
                                             setActiveNav('services');
                                         } else if (path === '/edit-profile') {
                                             setSelectedWorkAreas(userData?.workAreas || []);
+                                            // Initialize phone state
+                                            if (userData?.whatsappNumber) {
+                                                const country = getCountryFromE164(userData.whatsappNumber);
+                                                setWhatsappCountry(country);
+                                                setLocalWhatsappNumber(getLocalPart(userData.whatsappNumber, country.dialCode));
+                                            } else {
+                                                setWhatsappCountry(COUNTRY_DATA[0]); // Morocco default
+                                                setLocalWhatsappNumber('');
+                                            }
                                             setShowProfileModal(true);
                                         } else if (path === '/add-services') {
                                             window.location.href = '/onboarding';
@@ -3321,6 +3335,15 @@ export default function ProviderPage() {
                                             setActiveNav('services');
                                         } else if (path === '/edit-profile') {
                                             setSelectedWorkAreas(userData?.workAreas || []);
+                                            // Initialize phone state
+                                            if (userData?.whatsappNumber) {
+                                                const country = getCountryFromE164(userData.whatsappNumber);
+                                                setWhatsappCountry(country);
+                                                setLocalWhatsappNumber(getLocalPart(userData.whatsappNumber, country.dialCode));
+                                            } else {
+                                                setWhatsappCountry(COUNTRY_DATA[0]); // Morocco default
+                                                setLocalWhatsappNumber('');
+                                            }
                                             setShowProfileModal(true);
                                         } else if (path === '/add-services') {
                                             window.location.href = '/onboarding';
@@ -3760,12 +3783,20 @@ export default function ProviderPage() {
 
                                             <div>
                                                 <label className="block text-xs font-black text-neutral-400 uppercase tracking-widest mb-2">{t({ en: 'WhatsApp Number', fr: 'Numéro WhatsApp', ar: 'رقم الواتساب' })}</label>
-                                                <input
-                                                    ref={whatsappInputRef}
-                                                    type="tel"
-                                                    defaultValue={userData?.whatsappNumber || ''}
-                                                    className="w-full px-5 py-4 bg-neutral-50 border border-neutral-100 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#01A083]/10 transition-all text-sm"
-                                                />
+                                                <div className="flex gap-2 items-center bg-neutral-50 border border-neutral-100 rounded-2xl p-1 focus-within:ring-2 focus-within:ring-[#01A083]/10 transition-all">
+                                                    <CountrySelector
+                                                        selectedCountry={whatsappCountry}
+                                                        onSelect={setWhatsappCountry}
+                                                        fontSize="14px"
+                                                    />
+                                                    <input
+                                                        type="tel"
+                                                        value={localWhatsappNumber}
+                                                        onChange={(e) => setLocalWhatsappNumber(e.target.value.replace(/\D/g, ''))}
+                                                        className="flex-1 px-3 py-3 bg-transparent focus:outline-none text-sm font-medium"
+                                                        placeholder={whatsappCountry.placeholder}
+                                                    />
+                                                </div>
                                             </div>
 
                                             <div className="pt-4 flex gap-4">

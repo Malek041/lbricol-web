@@ -16,6 +16,7 @@ import { format, isToday, isThisWeek, parseISO, startOfDay, addDays, startOfMont
 import { fr } from 'date-fns/locale/fr';
 import { arMA } from 'date-fns/locale/ar-MA';
 import { calculateOrderPrice } from '@/lib/pricing';
+import { formatForWhatsApp } from '@/lib/phoneUtils';
 
 
 
@@ -567,8 +568,17 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
             return;
         }
 
-        const cleanNumber = targetNumber.replace(/\D/g, '');
-        const finalNumber = cleanNumber.startsWith('212') ? cleanNumber : '212' + (cleanNumber.startsWith('0') ? cleanNumber.slice(1) : cleanNumber);
+        // Handle both old formats (9 digits) and new E.164 format (+212...)
+        let finalNumber = '';
+        if (targetNumber.startsWith('+')) {
+            finalNumber = formatForWhatsApp(targetNumber);
+        } else {
+            const cleanNumber = targetNumber.replace(/\D/g, '');
+            finalNumber = cleanNumber.startsWith('212') 
+                ? cleanNumber 
+                : '212' + (cleanNumber.startsWith('0') ? cleanNumber.slice(1) : cleanNumber);
+        }
+        
         window.open('https://wa.me/' + finalNumber, '_blank');
     };
 

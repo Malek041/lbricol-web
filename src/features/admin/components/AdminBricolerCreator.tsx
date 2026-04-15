@@ -10,6 +10,8 @@ import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { useToast } from '@/context/ToastContext';
 import { translateBio } from '@/lib/translateBio';
 import LocationPicker from '@/components/location-picker/LocationPicker';
+import { COUNTRY_DATA, formatToE164, CountryConfig } from '@/lib/phoneUtils';
+import CountrySelector from '@/components/phone/CountrySelector';
 
 interface AdminBricolerCreatorProps {
     t: (vals: { en: string; fr: string }) => string;
@@ -35,6 +37,7 @@ const AdminBricolerCreator: React.FC<AdminBricolerCreatorProps> = ({ t, onBack }
 
     const [locationData, setLocationData] = useState<{ lat: number; lng: number; address: string } | null>(null);
     const [showLocationPicker, setShowLocationPicker] = useState(false);
+    const [selectedCountry, setSelectedCountry] = useState<CountryConfig>(COUNTRY_DATA[0]);
 
     const cities = ['Marrakech', 'Casablanca', 'Essaouira', 'Agadir', 'Rabat', 'Tangier'];
     const serviceCategories = [
@@ -65,10 +68,11 @@ const AdminBricolerCreator: React.FC<AdminBricolerCreatorProps> = ({ t, onBack }
 
         try {
             const bioTranslations = formData.bio ? await translateBio(formData.bio) : {};
+            const e164Phone = formData.phone ? formatToE164(formData.phone, selectedCountry.dialCode) : '';
             const bricolerData = {
                 name: formData.name,
                 city: formData.city,
-                phone: formData.phone,
+                phone: e164Phone,
                 bio: formData.bio,
                 base_lat: locationData?.lat || null,
                 base_lng: locationData?.lng || null,
@@ -197,13 +201,20 @@ const AdminBricolerCreator: React.FC<AdminBricolerCreatorProps> = ({ t, onBack }
                     </div>
                     <div>
                         <label className="block text-sm font-bold text-black mb-2 px-1">{t({ en: 'Phone (WA)', fr: 'Téléphone (WA)' })}</label>
-                        <input
-                            type="tel"
-                            value={formData.phone}
-                            onChange={e => setFormData({ ...formData, phone: e.target.value })}
-                            className="w-full h-14 bg-neutral-50 rounded-2xl px-5 font-medium border-2 border-transparent focus:border-[#FFCC02] focus:bg-white transition-all outline-none"
-                            placeholder={t({ en: '+212...', fr: '+212...' })}
-                        />
+                        <div className="flex gap-2 items-center bg-neutral-50 rounded-2xl border-2 border-transparent focus-within:border-[#FFCC02] focus-within:bg-white transition-all px-2 overflow-hidden">
+                            <CountrySelector 
+                                selectedCountry={selectedCountry} 
+                                onSelect={setSelectedCountry}
+                                size="sm"
+                            />
+                            <input
+                                type="tel"
+                                value={formData.phone}
+                                onChange={e => setFormData({ ...formData, phone: e.target.value.replace(/\D/g, '') })}
+                                className="flex-1 h-14 bg-transparent font-medium transition-all outline-none"
+                                placeholder={selectedCountry.placeholder}
+                            />
+                        </div>
                     </div>
                 </div>
 

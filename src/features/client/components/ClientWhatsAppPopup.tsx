@@ -6,6 +6,8 @@ import { MessageSquare, X, ArrowLeft, ArrowRight } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
 import { useTheme } from '@/context/ThemeContext';
 import { fluidMobilePx, useIsMobileViewport, useMobileTier, useViewportWidth } from '@/lib/mobileOnly';
+import { COUNTRY_DATA, formatToE164, validatePhone, CountryConfig } from '@/lib/phoneUtils';
+import CountrySelector from '@/components/phone/CountrySelector';
 
 interface ClientWhatsAppPopupProps {
     isOpen: boolean;
@@ -18,6 +20,7 @@ const ClientWhatsAppPopup = ({ isOpen, onClose, onSuccess }: ClientWhatsAppPopup
     const { theme } = useTheme();
     const [whatsappNumber, setWhatsappNumber] = useState("");
     const [referralCode, setReferralCode] = useState("");
+    const [selectedCountry, setSelectedCountry] = useState<CountryConfig>(COUNTRY_DATA[0]); // Default to Morocco
 
     const isMobile = useIsMobileViewport(968);
     const mobileTier = useMobileTier();
@@ -31,18 +34,12 @@ const ClientWhatsAppPopup = ({ isOpen, onClose, onSuccess }: ClientWhatsAppPopup
     const inputFontSize = `${Math.round(fluidMobilePx(viewportWidth, 16, 18))}px`;
     const footerPadding = `${Math.round(fluidMobilePx(viewportWidth, 20, 32))}px`;
 
-    const c = {
-        bg: theme === 'light' ? '#FFFFFF' : '#000000',
-        text: theme === 'light' ? '#000000' : '#FFFFFF',
-        textMuted: theme === 'light' ? '#545454' : '#A0A0A0',
-        border: theme === 'light' ? '#EEEEEE' : '#2D2D2D',
-        overlay: theme === 'light' ? 'rgba(0,0,0,0.5)' : 'rgba(0,0,0,0.8)',
-        inputBg: theme === 'light' ? '#F6F6F6' : '#1A1A1A',
-    };
+    const isValid = validatePhone(whatsappNumber, selectedCountry);
 
     const handleSubmit = () => {
-        if (whatsappNumber.length === 9) {
-            onSuccess(whatsappNumber, referralCode);
+        if (isValid) {
+            const e164 = formatToE164(whatsappNumber, selectedCountry.dialCode);
+            onSuccess(e164, referralCode);
         }
     };
 
@@ -101,30 +98,27 @@ const ClientWhatsAppPopup = ({ isOpen, onClose, onSuccess }: ClientWhatsAppPopup
                             alignItems: 'center',
                             backgroundColor: '#FDFCF6',
                             borderRadius: '12px',
-                            padding: `${Math.round(fluidMobilePx(viewportWidth, 14, 16))}px ${Math.round(fluidMobilePx(viewportWidth, 14, 20))}px`,
-                            border: '1px solid #F5F0E0',
+                            padding: `0 ${Math.round(fluidMobilePx(viewportWidth, 14, 20))}px`,
+                            border: `2px solid ${isValid ? '#0CB380' : whatsappNumber.length > 0 ? '#FF5252' : '#F5F0E0'}`,
+                            height: isCompactPhone ? '60px' : '70px',
                             gap: isCompactPhone ? '8px' : '12px',
-                            marginBottom: isCompactPhone ? '16px' : '20px'
+                            marginBottom: isCompactPhone ? '16px' : '20px',
+                            transition: 'all 0.2s ease'
                         }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', borderRight: '1px solid #E0DBCF', paddingRight: isCompactPhone ? '10px' : '12px', flexShrink: 0 }}>
-                                <img src="https://flagcdn.com/w20/ma.png" width="20" alt="MA" style={{ borderRadius: '2px' }} />
-                                <span style={{ fontSize: inputFontSize, fontWeight: 600, color: '#1D1D1D', whiteSpace: 'nowrap' }}>+212</span>
-                                <div style={{ width: '0', height: '0', borderLeft: '5px solid transparent', borderRight: '5px solid transparent', borderTop: '5px solid #1D1D1D', marginLeft: '2px', flexShrink: 0 }} />
-                            </div>
+                            <CountrySelector 
+                                selectedCountry={selectedCountry} 
+                                onSelect={setSelectedCountry}
+                                isCompact={isCompactPhone}
+                                fontSize={inputFontSize}
+                            />
                             <input
                                 type="tel"
                                 value={whatsappNumber}
                                 onChange={(e) => {
-                                    let val = e.target.value.replace(/\D/g, '');
-                                    if (val.startsWith('212')) val = val.slice(3);
-                                    if (val.startsWith('0')) val = val.slice(1);
-                                    if (val.length > 0 && !val.startsWith('6') && !val.startsWith('7')) {
-                                        val = val.slice(1);
-                                    }
-                                    val = val.slice(0, 9);
+                                    const val = e.target.value.replace(/\D/g, '');
                                     setWhatsappNumber(val);
                                 }}
-                                placeholder={t({ en: 'Phone number', fr: 'Numéro de téléphone' })}
+                                placeholder={selectedCountry.placeholder}
                                 autoFocus
                                 style={{
                                     flex: 1,
@@ -132,7 +126,7 @@ const ClientWhatsAppPopup = ({ isOpen, onClose, onSuccess }: ClientWhatsAppPopup
                                     border: 'none',
                                     outline: 'none',
                                     fontSize: inputFontSize,
-                                    fontWeight: 600,
+                                    fontWeight: 700,
                                     color: '#1D1D1D',
                                 }}
                             />
@@ -185,17 +179,17 @@ const ClientWhatsAppPopup = ({ isOpen, onClose, onSuccess }: ClientWhatsAppPopup
                         <motion.button
                             whileTap={{ scale: 0.98 }}
                             onClick={handleSubmit}
-                            disabled={whatsappNumber.length !== 9}
+                            disabled={!isValid}
                             style={{
                                 width: '100%',
                                 padding: `${Math.round(fluidMobilePx(viewportWidth, 14, 16))}px 24px`,
                                 borderRadius: '100px',
-                                backgroundColor: whatsappNumber.length === 9 ? '#0CB380' : '#F0F0F0',
-                                color: whatsappNumber.length === 9 ? '#ffffffff' : '#B3B3B3',
+                                backgroundColor: isValid ? '#0CB380' : '#F0F0F0',
+                                color: isValid ? '#ffffff' : '#B3B3B3',
                                 border: 'none',
                                 fontSize: `${Math.round(fluidMobilePx(viewportWidth, 16, 18))}px`,
                                 fontWeight: 800,
-                                cursor: whatsappNumber.length !== 9 ? 'not-allowed' : 'pointer',
+                                cursor: !isValid ? 'not-allowed' : 'pointer',
                                 transition: 'all 0.2s ease',
                                 display: 'flex',
                                 alignItems: 'center',
@@ -212,5 +206,6 @@ const ClientWhatsAppPopup = ({ isOpen, onClose, onSuccess }: ClientWhatsAppPopup
         </AnimatePresence>
     );
 };
+
 
 export default ClientWhatsAppPopup;

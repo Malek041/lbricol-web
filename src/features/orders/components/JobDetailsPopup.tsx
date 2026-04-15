@@ -30,6 +30,7 @@ import { WhatsAppBrandIcon } from '@/components/shared/WhatsAppIcon';
 import { getServiceVector, getSubServiceName } from '@/config/services_config';
 import { SERVICES_CATALOGUE } from '@/config/services_catalogue';
 import { calculateOrderPrice } from '@/lib/pricing';
+import { formatForWhatsApp } from '@/lib/phoneUtils';
 
 export interface JobDetails {
     id: string;
@@ -133,8 +134,7 @@ const JobDetailsPopup: React.FC<JobDetailsPopupProps> = ({ job, onClose, onAccep
     
     const handleWhatsApp = (number?: string | null) => {
         if (!number) return;
-        const cleanNumber = number.replace(/\D/g, '');
-        const finalNumber = cleanNumber.startsWith('212') ? cleanNumber : '212' + (cleanNumber.startsWith('0') ? cleanNumber.slice(1) : cleanNumber);
+        const finalNumber = formatForWhatsApp(number);
         window.open(`https://wa.me/${finalNumber}`, '_blank');
     };
 

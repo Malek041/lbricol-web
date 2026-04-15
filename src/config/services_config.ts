@@ -454,7 +454,7 @@ export const getSubService = (serviceIdOrName: string, subServiceIdOrName: strin
 // Helper function to get the correct vector path for a service
 export const getServiceVector = (serviceIdOrName: string | undefined): string => {
     if (!serviceIdOrName) return '/Images/Service Category vectors/HandymanVector.webp';
-    const id = String(serviceIdOrName).toLowerCase();
+    const id = serviceIdOrName.toLowerCase();
 
     if (id.includes('handyman') || id.includes('repair')) return '/Images/Service Category vectors/HandymanVector.webp';
     if (id.includes('assembly')) return '/Images/Service Category vectors/AsssemblyVector.webp';

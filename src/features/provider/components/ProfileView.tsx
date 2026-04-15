@@ -14,6 +14,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { getServiceName, getServiceVector } from '@/config/services_config';
 import OnboardingPopup from '@/features/onboarding/components/OnboardingPopup';
+import { COUNTRY_DATA, formatToE164, getCountryFromE164, getLocalPart, CountryConfig } from '@/lib/phoneUtils';
+import CountrySelector from '@/components/phone/CountrySelector';
 
 interface ProfileViewProps {
     onLogout?: () => void;
@@ -62,6 +64,7 @@ const ProfileView: React.FC<ProfileViewProps> = ({
     const [isVerifying, setIsVerifying] = useState(false);
     const [editingField, setEditingField] = useState<'none' | 'name' | 'email' | 'bankName' | 'cardHolderName' | 'rib' | 'phone'>('none');
     const [editValue, setEditValue] = useState('');
+    const [selectedCountry, setSelectedCountry] = useState<CountryConfig>(COUNTRY_DATA[0]);
     const [isSaving, setIsSaving] = useState(false);
 
     // Onboarding Mode Popup state
@@ -338,8 +341,9 @@ const ProfileView: React.FC<ProfileViewProps> = ({
                 }
                 else if (editingField === 'email') bricolerUpdate.email = editValue.trim();
                 else if (editingField === 'phone') {
-                    bricolerUpdate.phone = editValue.trim();
-                    bricolerUpdate.whatsappNumber = editValue.trim();
+                    const e164 = formatToE164(editValue, selectedCountry.dialCode);
+                    bricolerUpdate.phone = e164;
+                    bricolerUpdate.whatsappNumber = e164;
                 }
 
                 const providerRef = doc(db, 'bricolers', user.uid);
@@ -376,7 +380,7 @@ const ProfileView: React.FC<ProfileViewProps> = ({
                 const newData = { ...userData };
                 if (editingField === 'name') newData.name = editValue.trim();
                 if (editingField === 'email') newData.email = editValue.trim();
-                if (editingField === 'phone') newData.phone = editValue.trim();
+                if (editingField === 'phone') newData.phone = formatToE164(editValue, selectedCountry.dialCode);
                 if (editingField === 'bankName') newData.bankName = editValue.trim();
                 if (editingField === 'rib') newData.rib = editValue.trim();
                 setUserData(newData);
@@ -446,17 +450,38 @@ const ProfileView: React.FC<ProfileViewProps> = ({
                                         <div className="py-4 flex flex-col gap-3">
                                             <div className="flex items-center gap-5">
                                                 <div className="w-6 flex justify-center">
-                                                    <Icon size={24} className="text-[#01A083]" strokeWidth={1.5} />
+                                                    <Icon size={24} className={item.field === 'phone' ? "" : "text-[#01A083]"} strokeWidth={1.5} />
                                                 </div>
-                                                <input
-                                                    autoFocus
-                                                    type="text"
-                                                    value={editValue}
-                                                    onChange={(e) => setEditValue(e.target.value)}
-                                                    placeholder={item.label}
-                                                    className="flex-1 text-[17px] text-[#1D1D1D] font-medium leading-tight outline-none border-b-2 border-[#01A083] py-1"
-                                                    onKeyDown={(e) => e.key === 'Enter' && handleSaveEdit()}
-                                                />
+                                                {item.field === 'phone' ? (
+                                                    <div className="flex-1 flex flex-col gap-2">
+                                                        <div className="flex items-center gap-3 bg-neutral-50 px-3 py-2 rounded-xl border-2 border-neutral-100">
+                                                            <CountrySelector 
+                                                                selectedCountry={selectedCountry} 
+                                                                onSelect={setSelectedCountry}
+                                                                showLabel={false}
+                                                            />
+                                                            <input
+                                                                autoFocus
+                                                                type="tel"
+                                                                value={editValue}
+                                                                onChange={(e) => setEditValue(e.target.value.replace(/\D/g, ''))}
+                                                                placeholder={selectedCountry.placeholder}
+                                                                className="flex-1 text-[17px] text-[#1D1D1D] font-bold outline-none bg-transparent"
+                                                                onKeyDown={(e) => e.key === 'Enter' && handleSaveEdit()}
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                ) : (
+                                                    <input
+                                                        autoFocus
+                                                        type="text"
+                                                        value={editValue}
+                                                        onChange={(e) => setEditValue(e.target.value)}
+                                                        placeholder={item.label}
+                                                        className="flex-1 text-[17px] text-[#1D1D1D] font-medium leading-tight outline-none border-b-2 border-[#01A083] py-1"
+                                                        onKeyDown={(e) => e.key === 'Enter' && handleSaveEdit()}
+                                                    />
+                                                )}
                                             </div>
                                             <div className="flex gap-2 justify-end">
                                                 <button
@@ -488,8 +513,16 @@ const ProfileView: React.FC<ProfileViewProps> = ({
                                             {item.editable ? (
                                                 <button
                                                     onClick={() => {
-                                                        setEditingField(item.field as any);
-                                                        setEditValue(item.value === t({ en: 'Not set', fr: 'Non défini', ar: 'غير محدد' }) ? '' : item.value);
+                                                        const field = item.field as any;
+                                                        setEditingField(field);
+                                                        const rawVal = item.value === t({ en: 'Not set', fr: 'Non défini', ar: 'غير محدد' }) ? '' : item.value;
+                                                        if (field === 'phone') {
+                                                            const country = getCountryFromE164(rawVal) || COUNTRY_DATA[0];
+                                                            setSelectedCountry(country);
+                                                            setEditValue(getLocalPart(rawVal, country.dialCode));
+                                                        } else {
+                                                            setEditValue(rawVal);
+                                                        }
                                                     }}
                                                     className="px-4 py-1.5 bg-neutral-100 rounded-full text-[13px] font-bold text-black"
                                                 >

@@ -29,6 +29,8 @@ import { MOROCCAN_CITIES, MOROCCAN_CITIES_AREAS, SERVICE_TIER_RATES } from '@/co
 import { useToast } from '@/context/ToastContext';
 import { writeCityIndex } from '@/lib/cityIndex';
 import { useLanguage } from '@/context/LanguageContext';
+import { COUNTRY_DATA, formatToE164, validatePhone, getCountryFromE164, getLocalPart, CountryConfig } from '@/lib/phoneUtils';
+import CountrySelector from '@/components/phone/CountrySelector';
 import SplashScreen from '@/components/layout/SplashScreen';
 import { useIsMobileViewport } from '@/lib/mobileOnly';
 import { isImageDataUrl, compressImageFileToDataUrl, dataUrlToBlob } from '@/lib/imageCompression';
@@ -320,7 +322,15 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
     const scrollContainerRef = useRef<HTMLDivElement>(null);
 
     const [fullName, setFullName] = useState(userData?.fullName || '');
-    const [whatsappNumber, setWhatsappNumber] = useState(userData?.whatsappNumber || '');
+    const [whatsappNumber, setWhatsappNumber] = useState(() => {
+        const initialPhone = userData?.whatsappNumber || '';
+        const country = getCountryFromE164(initialPhone) || COUNTRY_DATA[0];
+        return initialPhone ? getLocalPart(initialPhone, country.dialCode) : '';
+    });
+    const [selectedCountry, setSelectedCountry] = useState<CountryConfig>(() => {
+        const initialPhone = userData?.whatsappNumber || '';
+        return getCountryFromE164(initialPhone) || COUNTRY_DATA[0];
+    });
     const [profilePhotoUrl, setProfilePhotoUrl] = useState<string>(
         userData?.profilePhotoURL || userData?.avatar || userData?.photoURL || auth.currentUser?.photoURL || ''
     );
@@ -591,7 +601,11 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                     setSelectedSubServices(subIds);
                 }
                 if (data.name) setFullName(data.name);
-                if (data.whatsappNumber) setWhatsappNumber(data.whatsappNumber);
+                if (data.whatsappNumber) {
+                    const country = getCountryFromE164(data.whatsappNumber) || COUNTRY_DATA[0];
+                    setSelectedCountry(country);
+                    setWhatsappNumber(getLocalPart(data.whatsappNumber, country.dialCode));
+                }
 
                 showToast({
                     variant: 'success',
@@ -784,6 +798,8 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
             const bioText = mergedServices.find((s: any) => s.pitch)?.pitch || (mergedServices[0] as any)?.pitch || "";
             const bioTranslations = bioText ? await translateBio(bioText) : {};
 
+            const e164 = formatToE164(whatsappNumber, selectedCountry.dialCode);
+
             const bricolerData = cleanObj({
                 uid: user.uid,
                 name: (fullName || user.displayName || "Bricoler").trim(),
@@ -793,8 +809,8 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                 avatar: finalProfilePhotoUrl || existingBricoler?.avatar || googlePhotoURL || "",
                 profilePhotoURL: finalProfilePhotoUrl || "",
                 googlePhotoURL: googlePhotoURL || "",
-                whatsappNumber: (whatsappNumber || '').trim(),
-                phone: (whatsappNumber || '').trim(),
+                whatsappNumber: e164,
+                phone: e164,
                 bankName: (bankName || '').trim(),
                 bricolerBankCardName: (bricolerBankCardName || '').trim(),
                 ribIBAN: (ribIBAN || '').trim(),
@@ -1102,6 +1118,8 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                 return newObj;
             };
 
+            const e164 = formatToE164(whatsappNumber, selectedCountry.dialCode);
+
             const bricolerData = cleanObj({
                 uid: userData?.uid || null,
                 name: (fullName || "Bricoler").trim(),
@@ -1110,8 +1128,8 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                 photoURL: userData?.photoURL || googlePhotoURL || finalProfilePhotoUrl,
                 profilePhotoURL: finalProfilePhotoUrl,
                 googlePhotoURL,
-                whatsappNumber: (whatsappNumber || '').trim(),
-                phone: (whatsappNumber || '').trim(),
+                whatsappNumber: e164,
+                phone: e164,
                 bankName: (bankName || '').trim(),
                 bricolerBankCardName: (bricolerBankCardName || '').trim(),
                 ribIBAN: (ribIBAN || '').trim(),
@@ -1398,7 +1416,7 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
         if (step === 'city') return selectedCity !== '';
         if (step === 'moving_selection') return movingTransports.length > 0;
         if (step === 'areas') return selectedAreas.length > 0;
-        if (step === 'profile') return fullName.trim().length > 2 && whatsappNumber.length >= 9;
+        if (step === 'profile') return fullName.trim().length > 2 && validatePhone(whatsappNumber, selectedCountry);
         return true;
     };
 
@@ -2886,24 +2904,34 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                                             </div>
                                             <div className="space-y-2">
                                                 <label className="text-[14px] font-bold text-neutral-900 ml-1">{t({ en: 'WhatsApp Number', fr: 'Numéro WhatsApp', ar: 'رقم الواتساب' })}</label>
-                                                <div className="flex items-center gap-2 md:gap-3">
-                                                    <div className="px-3 md:px-5 py-4 bg-neutral-100 rounded-[12px] text-[15px] md:text-[16px] font-bold text-neutral-600 shrink-0">+212</div>
+                                                <div style={{ 
+                                                    display: 'flex', 
+                                                    gap: '12px', 
+                                                    backgroundColor: '#F9FAFB',
+                                                    borderRadius: '16px',
+                                                    padding: '0 16px',
+                                                    border: `2px solid ${validatePhone(whatsappNumber, selectedCountry) ? '#0CB380' : whatsappNumber.length > 0 ? '#FF5252' : '#E5E7EB'}`,
+                                                    height: '70px',
+                                                    alignItems: 'center',
+                                                    transition: 'all 0.2s ease'
+                                                }}>
+                                                    <CountrySelector 
+                                                        selectedCountry={selectedCountry} 
+                                                        onSelect={setSelectedCountry}
+                                                        fontSize="18px"
+                                                    />
                                                     <input
                                                         type="tel"
                                                         value={whatsappNumber}
                                                         onChange={e => {
-                                                            let val = e.target.value.replace(/\D/g, '');
-                                                            if (val.startsWith('212')) val = val.slice(3);
-                                                            if (val.startsWith('0')) val = val.slice(1);
-                                                            // Limit to 9 digits starting with 6 or 7
-                                                            if (val.length > 0 && !['6', '7'].includes(val[0])) return;
-                                                            setWhatsappNumber(val.slice(0, 9));
+                                                            const val = e.target.value.replace(/\D/g, '');
+                                                            setWhatsappNumber(val);
                                                         }}
-                                                        placeholder="6 00 00 00 00"
-                                                        className="flex-1 min-w-0 px-4 md:px-6 py-4 bg-white border-2 border-neutral-100 rounded-[12px] text-[16px] md:text-[17px] font-bold text-neutral-900 outline-none focus:border-[#01A083] transition-all placeholder:font-medium placeholder:text-neutral-400"
+                                                        placeholder={selectedCountry.placeholder}
+                                                        className="flex-1 min-w-0 bg-transparent border-none outline-none text-[18px] font-bold text-neutral-900 placeholder:text-neutral-400"
                                                     />
                                                 </div>
-                                                <p className="text-[11px] text-neutral-400 font-bold ml-1">{t({ en: '9 digits starting with 6 or 7', fr: '9 chiffres commençant par 6 ou 7', ar: '9 أرقام تبدأ بـ 6 أو 7' })}</p>
+                                                <p className="text-[11px] text-neutral-400 font-bold ml-1">{t({ en: 'Enter your valid WhatsApp number for communication.', fr: 'Entrez votre numéro WhatsApp valide pour la communication.', ar: 'أدخل رقم الواتساب الخاص بك للتواصل.' })}</p>
                                             </div>
                                         </motion.div>
                                     </motion.div>

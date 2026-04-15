@@ -32,6 +32,8 @@ import { getRoadDistance } from '@/lib/calculateDistance';
 const MapView = dynamic(() => import('@/components/location-picker/MapView'), { ssr: false });
 import OrderAvailabilityPicker from '@/features/orders/components/OrderAvailabilityPicker';
 import { useLanguage } from '@/context/LanguageContext';
+import { COUNTRY_DATA, formatToE164, validatePhone, CountryConfig } from '@/lib/phoneUtils';
+import CountrySelector from '@/components/phone/CountrySelector';
 
 
 // Types for Saved Profiles
@@ -183,6 +185,7 @@ export default function ServiceSetupPage() {
     });
     const [recipientName, setRecipientName] = useState('');
     const [recipientPhone, setRecipientPhone] = useState('');
+    const [recipientCountry, setRecipientCountry] = useState<CountryConfig>(COUNTRY_DATA[0]);
     const [deliveryType, setDeliveryType] = useState<'standard' | 'schedule'>('standard');
     const [deliveryDate, setDeliveryDate] = useState('');
     const [deliveryTime, setDeliveryTime] = useState('');
@@ -750,7 +753,7 @@ export default function ServiceSetupPage() {
                 pickupCoords: { lat: pickupLocation.lat, lng: pickupLocation.lng },
                 dropoffCoords: { lat: dropoffLocation.lat, lng: dropoffLocation.lng },
                 recipientName,
-                recipientPhone,
+                recipientPhone: recipientPhone ? formatToE164(recipientPhone, recipientCountry.dialCode) : '',
                 deliveryType,
                 deliveryDate,
                 deliveryTime,
@@ -3115,14 +3118,21 @@ export default function ServiceSetupPage() {
                                     </div>
                                     <div className="space-y-4">
                                         <label className="text-[14px] font-black text-[#4B5563]">{t({ en: 'Phone number', fr: 'Numéro de téléphone', ar: 'رقم الهاتف' })}</label>
-                                        <div className="flex gap-2">
-                                            <div className="px-4 py-4 bg-neutral-50 rounded-[10px] font-bold border-2 border-neutral-50">+212</div>
+                                        <div className="flex gap-2 items-center bg-neutral-50 rounded-[10px] border-2 border-neutral-50 p-1">
+                                            <CountrySelector
+                                                selectedCountry={recipientCountry}
+                                                onSelect={setRecipientCountry}
+                                                fontSize="16px"
+                                            />
                                             <input
                                                 type="tel"
                                                 value={recipientPhone}
-                                                onChange={(e) => setRecipientPhone(e.target.value)}
-                                                placeholder={t({ en: 'Phone number', fr: 'Numéro de téléphone', ar: 'رقم الهاتف' })}
-                                                className="flex-1 p-4 rounded-[10px] border-2 border-neutral-50 font-bold"
+                                                onChange={(e) => {
+                                                    const val = e.target.value.replace(/\D/g, '');
+                                                    setRecipientPhone(val);
+                                                }}
+                                                placeholder={recipientCountry.placeholder}
+                                                className="flex-1 p-3 bg-transparent font-bold outline-none"
                                             />
                                         </div>
                                     </div>

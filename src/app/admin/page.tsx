@@ -8,16 +8,18 @@ import { doc, getDoc } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase';
 import { useLanguage } from '@/context/LanguageContext';
 import AdminDashboard from '@/features/admin/components/AdminDashboard';
+import AdminOrdersView from '@/features/orders/components/AdminOrdersView';
+import AdminBricolersView from '@/features/admin/components/AdminBricolersView';
+import AdminBricolerCreator from '@/features/admin/components/AdminBricolerCreator';
 import AdminNotificationsView from '@/features/admin/components/AdminNotificationsView';
 import AdminReceivablesView from '@/features/admin/components/AdminReceivablesView';
 import AdminReviewsView from '@/features/admin/components/AdminReviewsView';
 import MessagesView from '@/features/messages/components/MessagesView';
-import AdminActivityView from '@/features/admin/components/AdminActivityView';
 import MobileBottomNav from '@/components/layout/MobileBottomNav';
 import { useIsMobileViewport } from '@/lib/mobileOnly';
 import { Shield, Bell, X, Home, LayoutDashboard, Users, ClipboardList } from 'lucide-react';
 
-type AdminTab = 'performance' | 'activity' | 'messages' | 'reviews' | 'profile';
+type AdminTab = 'performance' | 'services' | 'calendar' | 'messages' | 'reviews' | 'profile';
 
 export default function AdminPage() {
     const router = useRouter();
@@ -112,7 +114,8 @@ export default function AdminPage() {
                     <div className="flex gap-1 pb-3 pt-1">
                         {[
                             { id: 'performance', label: t({ en: 'Dashboard', fr: 'Tableau de bord', ar: 'لوحة التحكم' }) },
-                            { id: 'activity', label: t({ en: 'Activity', fr: 'Activité', ar: 'النشاط' }) },
+                            { id: 'services', label: t({ en: 'Bricolers', fr: 'Bricoleurs', ar: 'المحترفون' }) },
+                            { id: 'calendar', label: t({ en: 'Orders', fr: 'Commandes', ar: 'الطلبات' }) },
                             { id: 'reviews', label: t({ en: 'Reviews', fr: 'Avis', ar: 'التقييمات' }) },
                             { id: 'messages', label: t({ en: 'Messages', fr: 'Messages', ar: 'الرسائل' }) },
                         ].map(tab => (
@@ -140,21 +143,25 @@ export default function AdminPage() {
                     </div>
                 )}
 
-                {activeTab === 'activity' && (
+                {activeTab === 'services' && (
                     <div className="px-0">
-                        <AdminActivityView
-                            t={t}
-                            onViewMessages={(jobId) => {
-                                setSelectedOrderId(jobId);
-                                setActiveTab('messages');
-                            }}
-                            onChat={(jobId, bricolerId, bricolerName) => {
-                                setImpersonatedBricoler({ id: bricolerId, name: bricolerName });
-                                setSelectedOrderId(jobId);
-                                setActiveTab('messages');
-                            }}
-                        />
+                        <AdminBricolersView t={t} />
                     </div>
+                )}
+
+                {activeTab === 'calendar' && (
+                    <AdminOrdersView
+                        t={t}
+                        onViewMessages={(jobId) => {
+                            setSelectedOrderId(jobId);
+                            setActiveTab('messages');
+                        }}
+                        onChat={(jobId, bricolerId, bricolerName) => {
+                            setImpersonatedBricoler({ id: bricolerId, name: bricolerName });
+                            setSelectedOrderId(jobId);
+                            setActiveTab('messages');
+                        }}
+                    />
                 )}
 
                 {activeTab === 'messages' && (
@@ -164,7 +171,7 @@ export default function AdminPage() {
                         initialSelectedJobId={selectedOrderId}
                         impersonateBricoler={impersonatedBricoler || undefined}
                         onBackToOrders={() => {
-                            setActiveTab('activity');
+                            setActiveTab('calendar');
                             setImpersonatedBricoler(null);
                         }}
                     />

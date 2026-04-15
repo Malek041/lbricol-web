@@ -92,10 +92,17 @@ export function validateCheckout(state: CheckoutState): ValidationResult {
   };
 }
 
+import { COUNTRY_DATA, validatePhone } from './phoneUtils';
+
 export function validatePhoneNumber(phone: string): boolean {
-  // Morocco: +212, 0x, or 212x format
-  const moroccoPhone = /^(?:\+212|0|212)[5-7]\d{8}$/.test(phone.replace(/\s+/g, ''));
-  return moroccoPhone;
+  // Try to find a country that matches, or just validate against a general international format if it starts with +
+  if (phone.startsWith('+')) {
+    // If it starts with +, we should check if it's a valid E.164-ish number
+    return /^\+[1-9]\d{1,14}$/.test(phone.replace(/\s+/g, ''));
+  }
+  
+  // Default to Morocco validation if no prefix (maintaining backward compatibility for simple inputs)
+  return /^(?:0|212)[5-7]\d{8}$/.test(phone.replace(/\s+/g, ''));
 }
 
 // ────────── Promo Code Validation ──────────────────────────────
