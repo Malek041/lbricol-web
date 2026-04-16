@@ -265,6 +265,8 @@ export default function CheckoutPage() {
                             deliveryTime: order.serviceDetails?.deliveryTime
                         }
                     },
+                    promoCode: order.promoCode || null,
+                    promoResult: order.promoResult || null,
                     createdAt: serverTimestamp(),
                     updatedAt: serverTimestamp()
                 };

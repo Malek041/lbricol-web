@@ -40,6 +40,8 @@ export interface OrderDetails {
     craft?: string;
     description?: string;
     totalPrice?: number;
+    promoCode?: string;
+    promoResult?: any;
     createdAt?: any;
     tags?: string[];
     bankReceipt?: string;
@@ -256,9 +258,17 @@ const OrderCard = ({ order, onCancel }: OrderCardProps) => {
                         {order.city ? t({ en: order.city, fr: order.city }) : (order.location ? t({ en: order.location, fr: order.location }) : 'Morocco')}
                    </p>
                    
-                   <div className="mt-4 flex items-center justify-between">
+                   {(order.promoCode) && (
+                       <div className="mt-2 inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-[#F0FDF9] border border-[#CCFBF1]">
+                           <span className="text-[12px] font-bold text-[#01A083]">✨ {t({ en: 'Promo code applied', fr: 'Code promo appliqué', ar: 'تم تطبيق رمز ترويجي' })}: {order.promoCode}</span>
+                       </div>
+                   )}
+
+                   <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
                         <div className="flex items-center gap-3">
-                            <span className="text-[18px] font-black text-black">{order.price} MAD</span>
+                            <span className="text-[18px] font-black text-black">
+                                {order.totalPrice !== undefined ? `${order.totalPrice} MAD` : `${order.price} MAD`}
+                            </span>
                             <div className="w-1 h-1 rounded-full bg-neutral-200" />
                             <button className="text-[14px] font-bold text-[#01A083] hover:underline transition-all">
                                 {t({ en: 'View details', fr: 'Détails', ar: 'تفاصيل' })}

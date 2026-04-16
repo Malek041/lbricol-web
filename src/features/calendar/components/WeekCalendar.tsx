@@ -2880,7 +2880,30 @@ const WeekCalendar = ({
                                                 {t({ en: 'Confirmation code', fr: 'Code de confirmation' })}
                                             </div>
                                             <div style={{ fontSize: '15px', fontWeight: 700, color: '#111111' }}>{confirmationCode}</div>
+                                            </div>
+                                        <div style={{ height: '1px', backgroundColor: '#EFEFF0' }} />
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                            <div style={{ fontSize: '12px', fontWeight: 800, color: '#8E8E93', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                                                {t({ en: 'Total Price', fr: 'Prix Total' })}
+                                            </div>
+                                            <div style={{ fontSize: '18px', fontWeight: 900, color: '#01A083' }}>
+                                                {selectedOrderForDetails.totalPrice !== undefined ? selectedOrderForDetails.totalPrice : selectedOrderForDetails.price} MAD
+                                            </div>
                                         </div>
+                                        {selectedOrderForDetails.promoCode && (
+                                            <>
+                                                <div style={{ height: '1px', backgroundColor: '#EFEFF0' }} />
+                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                                    <div style={{ fontSize: '12px', fontWeight: 800, color: '#8E8E93', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                                                        {t({ en: 'Promo Code Applied', fr: 'Code Promo Appliqué' })}
+                                                    </div>
+                                                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', alignSelf: 'flex-start', padding: '6px 10px', backgroundColor: '#F0FDF9', border: '1px dashed #01A083', borderRadius: '8px' }}>
+                                                        <span style={{ fontSize: '14px', fontWeight: 800, color: '#01A083' }}>{selectedOrderForDetails.promoCode}</span>
+                                                    </div>
+                                                </div>
+                                            </>
+                                        )}
+                                    </div>
                                     </div>
                                 </div>
                             );

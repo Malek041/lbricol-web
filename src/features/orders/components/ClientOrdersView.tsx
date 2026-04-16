@@ -1229,6 +1229,16 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
                                                             <span className="text-[16px] font-bold text-black">{breakdown.travelFee.toFixed(2)} MAD</span>
                                                         </div>
                                                     )}
+
+                                                    {selectedOrder.promoCode && (
+                                                        <div className="flex justify-between items-center py-4 border-t border-dashed border-[#01A083]/30 bg-[#F0FDF9] -mx-4 px-4 rounded-xl mt-2">
+                                                            <div className="flex flex-col">
+                                                                <span className="text-[16px] font-bold text-[#01A083]">✨ {t({ en: 'Promo Code Applied', fr: 'Code Promo Appliqué', ar: 'تم تطبيق رمز ترويجي' })}</span>
+                                                                <span className="text-[12px] font-bold text-[#01A083] mt-0.5">{selectedOrder.promoCode}</span>
+                                                            </div>
+                                                            <span className="text-[16px] font-bold text-[#01A083]">-{selectedOrder.totalPrice !== undefined ? Math.max(0, Math.round(breakdown.total - selectedOrder.totalPrice)) : 0} MAD</span>
+                                                        </div>
+                                                    )}
                                                 </div>
                                             );
                                         })()}
@@ -1386,7 +1396,7 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
                                     <span className="text-[12px] font-bold text-neutral-400 uppercase tracking-widest">{t({ en: 'Total Price', fr: 'Prix Total', ar: 'الإجمالي' })}</span>
                                     <div className="flex items-baseline gap-1">
                                         <span className="text-[24px] font-[1000] text-black">
-                                            {(selectedOrder.totalPrice || parseFloat(String(selectedOrder.price || '0'))).toFixed(0)}
+                                            {(selectedOrder.totalPrice !== undefined ? selectedOrder.totalPrice : parseFloat(String(selectedOrder.price || '0'))).toFixed(0)}
                                         </span>
                                         <span className="text-[14px] font-bold text-black uppercase tracking-wider">MAD</span>
                                     </div>
