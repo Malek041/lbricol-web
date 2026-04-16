@@ -1,5 +1,6 @@
 "use client";
 
+import { safeStorage } from '@/lib/safeStorage';
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, X, ArrowLeft, Clock, Star, ChevronRight } from 'lucide-react';
@@ -27,7 +28,7 @@ export const SearchPopup: React.FC<SearchPopupProps> = ({
 
     // Load recent searches on mount
     useEffect(() => {
-        const saved = localStorage.getItem('lbricol_recent_searches');
+        const saved = safeStorage.getItem('lbricol_recent_searches');
         if (saved) {
             try {
                 setRecentSearches(JSON.parse(saved));
@@ -100,7 +101,7 @@ export const SearchPopup: React.FC<SearchPopupProps> = ({
         const term = t(item.subService);
         const updatedRecent = [term, ...recentSearches.filter(s => s !== term)].slice(0, 5);
         setRecentSearches(updatedRecent);
-        localStorage.setItem('lbricol_recent_searches', JSON.stringify(updatedRecent));
+        safeStorage.setItem('lbricol_recent_searches', JSON.stringify(updatedRecent));
 
         onSelectSubService(item.serviceId, item.subService);
         onClose();

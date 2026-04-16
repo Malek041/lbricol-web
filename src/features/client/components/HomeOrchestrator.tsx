@@ -1,5 +1,6 @@
 "use client";
 
+import { safeStorage } from '@/lib/safeStorage';
 import dynamic from 'next/dynamic';
 import Image from 'next/image';
 import React, { useState, useEffect, useRef } from 'react';
@@ -333,11 +334,11 @@ export default function HomeOrchestrator() {
       
       if (foundCity !== selectedCity) {
         setSelectedCity(foundCity);
-        localStorage.setItem('lbricol_preferred_city', foundCity);
+        safeStorage.setItem('lbricol_preferred_city', foundCity);
       }
       if (foundArea && foundArea !== selectedArea) {
         setSelectedArea(foundArea);
-        localStorage.setItem('lbricol_preferred_area', foundArea);
+        safeStorage.setItem('lbricol_preferred_area', foundArea);
       }
     } else {
       // If no supported city is found in the current address, 
@@ -359,7 +360,7 @@ export default function HomeOrchestrator() {
       ss.id === currentSub.id || ss.name === currentSub.en
     );
 
-    localStorage.setItem('last_service_category', serviceId);
+    safeStorage.setItem('last_service_category', serviceId);
     setOrderField('serviceType', serviceId);
     setOrderField('serviceName', serviceTemplate?.label || serviceId);
     setOrderField('subServiceId', currentSub.id || currentSub.en);
@@ -401,7 +402,7 @@ export default function HomeOrchestrator() {
     // Check for tab search param
     const params = new URLSearchParams(window.location.search);
     const tabParam = params.get('tab');
-    const onboardingShown = localStorage.getItem('client_onboarding_shown');
+    const onboardingShown = safeStorage.getItem('client_onboarding_shown');
     
     if (onboardingShown && tabParam && ['home', 'search', 'heroes', 'calendar', 'messages', 'profile'].includes(tabParam)) {
       setMobileNavTab(tabParam as any);
@@ -410,7 +411,7 @@ export default function HomeOrchestrator() {
       setMobileNavTab('home');
     }
 
-    const saved = localStorage.getItem('lbricol_saved_addresses');
+    const saved = safeStorage.getItem('lbricol_saved_addresses');
 
     if (saved) {
       try {
@@ -420,14 +421,14 @@ export default function HomeOrchestrator() {
       }
     }
     
-    const prefCity = localStorage.getItem('lbricol_preferred_city');
-    const prefArea = localStorage.getItem('lbricol_preferred_area');
+    const prefCity = safeStorage.getItem('lbricol_preferred_city');
+    const prefArea = safeStorage.getItem('lbricol_preferred_area');
     if (prefCity) setSelectedCity(prefCity);
     if (prefArea) setSelectedArea(prefArea);
 
-    const lat = localStorage.getItem('lastKnownLat');
-    const lng = localStorage.getItem('lastKnownLng');
-    const addr = localStorage.getItem('lastKnownAddress');
+    const lat = safeStorage.getItem('lastKnownLat');
+    const lng = safeStorage.getItem('lastKnownLng');
+    const addr = safeStorage.getItem('lastKnownAddress');
     if (lat && lng) setSelectedPoint({ lat: parseFloat(lat), lng: parseFloat(lng), address: addr || '' } as any);
   }, []);
 
@@ -439,7 +440,7 @@ export default function HomeOrchestrator() {
 
   useEffect(() => {
     if (mounted) {
-      localStorage.setItem('lbricol_saved_addresses', JSON.stringify(userSavedAddresses));
+      safeStorage.setItem('lbricol_saved_addresses', JSON.stringify(userSavedAddresses));
     }
   }, [userSavedAddresses, mounted]);
 
@@ -473,7 +474,7 @@ export default function HomeOrchestrator() {
       if (mounted && !loadingOrders && !loadingServices) {
         setShowSplash(false);
         
-        const prefCity = localStorage.getItem('lbricol_preferred_city');
+        const prefCity = safeStorage.getItem('lbricol_preferred_city');
         if (!prefCity && !showLanguagePopup) {
           setShowLocationPicker(true);
         }
@@ -509,10 +510,10 @@ export default function HomeOrchestrator() {
   }, [isCalendarExpanded, isMobile]);
 
   useEffect(() => {
-    const hasOrders = localStorage.getItem('lbricol_has_orders') === 'true';
+    const hasOrders = safeStorage.getItem('lbricol_has_orders') === 'true';
     if (hasOrders) setShowFloatingCalendar(true);
 
-    const savedOrders = localStorage.getItem('lbricol_saved_orders');
+    const savedOrders = safeStorage.getItem('lbricol_saved_orders');
     if (savedOrders) {
       try {
         setOrders(JSON.parse(savedOrders));
@@ -550,13 +551,13 @@ export default function HomeOrchestrator() {
 
   useEffect(() => {
     if (mounted) {
-      localStorage.setItem('lbricol_dismissed_messages', JSON.stringify(dismissedMessages));
+      safeStorage.setItem('lbricol_dismissed_messages', JSON.stringify(dismissedMessages));
     }
   }, [dismissedMessages, mounted]);
 
   useEffect(() => {
     if (mounted) {
-      localStorage.setItem('lbricol_dismissed_offers', JSON.stringify(dismissedOffers));
+      safeStorage.setItem('lbricol_dismissed_offers', JSON.stringify(dismissedOffers));
     }
   }, [dismissedOffers, mounted]);
 
@@ -607,10 +608,10 @@ export default function HomeOrchestrator() {
   }, [viewingProviderId]);
 
   useEffect(() => {
-    const savedCity = localStorage.getItem('lbricol_preferred_city');
-    const savedLang = localStorage.getItem('lbricol_language');
-    const savedDismissedMessages = localStorage.getItem('lbricol_dismissed_messages');
-    const savedDismissedOffers = localStorage.getItem('lbricol_dismissed_offers');
+    const savedCity = safeStorage.getItem('lbricol_preferred_city');
+    const savedLang = safeStorage.getItem('lbricol_language');
+    const savedDismissedMessages = safeStorage.getItem('lbricol_dismissed_messages');
+    const savedDismissedOffers = safeStorage.getItem('lbricol_dismissed_offers');
 
     if (savedDismissedMessages) {
       try {
@@ -629,7 +630,7 @@ export default function HomeOrchestrator() {
       }
     }
 
-    const savedNotifiedIds = localStorage.getItem('lbricol_notified_notif_ids');
+    const savedNotifiedIds = safeStorage.getItem('lbricol_notified_notif_ids');
     if (savedNotifiedIds) {
       try {
         const parsed = JSON.parse(savedNotifiedIds);
@@ -639,9 +640,9 @@ export default function HomeOrchestrator() {
       }
     }
 
-    const onboardingShown = localStorage.getItem('client_onboarding_shown');
+    const onboardingShown = safeStorage.getItem('client_onboarding_shown');
     if (!onboardingShown) {
-      localStorage.setItem('client_onboarding_shown', 'true');
+      safeStorage.setItem('client_onboarding_shown', 'true');
     }
 
 
@@ -660,8 +661,8 @@ export default function HomeOrchestrator() {
 
   useEffect(() => {
     if (!showSplash && mounted && !showClientOnboarding) {
-      const savedLang = localStorage.getItem('lbricol_language');
-      const savedCity = localStorage.getItem('lbricol_preferred_city');
+      const savedLang = safeStorage.getItem('lbricol_language');
+      const savedCity = safeStorage.getItem('lbricol_preferred_city');
 
       if (!savedLang) {
         setShowLanguagePopup(true);
@@ -672,11 +673,11 @@ export default function HomeOrchestrator() {
         if (migratedCity === 'Marrakesh') migratedCity = 'Marrakech';
         if (migratedCity && migratedCity.includes(' (')) {
           migratedCity = migratedCity.split(' (')[0];
-          localStorage.setItem('lbricol_preferred_city', migratedCity);
+          safeStorage.setItem('lbricol_preferred_city', migratedCity);
         }
         setSelectedCity(migratedCity);
         setLocation(migratedCity);
-        const savedArea = localStorage.getItem('lbricol_preferred_area');
+        const savedArea = safeStorage.getItem('lbricol_preferred_area');
         if (savedArea) setSelectedArea(savedArea);
         setShowCityPopup(false);
 
@@ -871,7 +872,7 @@ export default function HomeOrchestrator() {
 
   const handleProfileBricolerAction = () => {
     if (isBricoler) {
-      localStorage.removeItem('lbricol_force_client_mode');
+      safeStorage.removeItem('lbricol_force_client_mode');
       window.location.href = '/provider';
     } else {
       setShowMobileOnboarding(true);
@@ -996,7 +997,7 @@ export default function HomeOrchestrator() {
             if (isFresh) {
               notifiedNotificationIds.current.add(id);
               const currentIds = Array.from(notifiedNotificationIds.current);
-              localStorage.setItem('lbricol_notified_notif_ids', JSON.stringify(currentIds));
+              safeStorage.setItem('lbricol_notified_notif_ids', JSON.stringify(currentIds));
 
               try {
                 const soundUrl = data.type === 'order_confirmed'
@@ -1028,7 +1029,7 @@ export default function HomeOrchestrator() {
             } else {
               notifiedNotificationIds.current.add(id);
               const currentIds = Array.from(notifiedNotificationIds.current);
-              localStorage.setItem('lbricol_notified_notif_ids', JSON.stringify(currentIds));
+              safeStorage.setItem('lbricol_notified_notif_ids', JSON.stringify(currentIds));
             }
           }
         }
@@ -1145,11 +1146,11 @@ export default function HomeOrchestrator() {
     setSelectedArea(area);
     setSelectedPoint(pickup);
     setLocation(city);
-    localStorage.setItem('lbricol_preferred_city', city);
-    localStorage.setItem('lbricol_preferred_area', area);
-    localStorage.setItem('lastKnownLat', pickup.lat.toString());
-    localStorage.setItem('lastKnownLng', pickup.lng.toString());
-    localStorage.setItem('lastKnownAddress', pickup.address);
+    safeStorage.setItem('lbricol_preferred_city', city);
+    safeStorage.setItem('lbricol_preferred_area', area);
+    safeStorage.setItem('lastKnownLat', pickup.lat.toString());
+    safeStorage.setItem('lastKnownLng', pickup.lng.toString());
+    safeStorage.setItem('lastKnownAddress', pickup.address);
     setShowLocationPicker(false);
     setShowCityPopup(false);
     router.push('/');
@@ -1223,7 +1224,7 @@ export default function HomeOrchestrator() {
               const isAdminUser = data.role === 'admin';
               setIsAdmin(isAdminUser);
               if (!hasAdminRedirected && isAdminUser && typeof window !== 'undefined' && window.location.pathname === '/') {
-                const forceClient = localStorage.getItem('lbricol_force_client_mode') === 'true';
+                const forceClient = safeStorage.getItem('lbricol_force_client_mode') === 'true';
                 hasAdminRedirected = true;
                 if (!forceClient) {
                   router.push('/admin');
@@ -1248,7 +1249,7 @@ export default function HomeOrchestrator() {
             setIsBricoler(isBricolerUser);
 
             if (!hasRedirectedScroll && typeof window !== 'undefined' && window.location.pathname === '/') {
-              const forceClient = localStorage.getItem('lbricol_force_client_mode') === 'true';
+              const forceClient = safeStorage.getItem('lbricol_force_client_mode') === 'true';
               hasRedirectedScroll = true;
 
               if (isBricolerUser && !forceClient) {
@@ -1269,8 +1270,8 @@ export default function HomeOrchestrator() {
 
             const hasOrders = loadedJobs.length > 0;
             setShowFloatingCalendar(hasOrders);
-            localStorage.setItem('lbricol_has_orders', String(hasOrders));
-            localStorage.setItem('lbricol_saved_orders', JSON.stringify(loadedJobs));
+            safeStorage.setItem('lbricol_has_orders', String(hasOrders));
+            safeStorage.setItem('lbricol_saved_orders', JSON.stringify(loadedJobs));
 
             setLoadingOrders(false);
 
@@ -1572,8 +1573,8 @@ export default function HomeOrchestrator() {
     setSelectedCity(city);
     setSelectedArea(area);
     setLocation(city);
-    localStorage.setItem('lbricol_preferred_city', city);
-    localStorage.setItem('lbricol_preferred_area', area);
+    safeStorage.setItem('lbricol_preferred_city', city);
+    safeStorage.setItem('lbricol_preferred_area', area);
     setShowCityPopup(false);
     setActiveSearchSection('what');
   };
@@ -2774,7 +2775,7 @@ export default function HomeOrchestrator() {
                 onNavigateToShare={() => setMobileNavTab('share')}
                 showOnboarding={showClientOnboarding}
                 onOnboardingComplete={() => {
-                  localStorage.setItem('client_onboarding_shown', 'true');
+                  safeStorage.setItem('client_onboarding_shown', 'true');
                   setShowClientOnboarding(false);
                   
                   // Immediately ask for location after onboarding
@@ -2785,7 +2786,7 @@ export default function HomeOrchestrator() {
                 onBecomeBricoler={() => {
                   if (currentUser) {
                     if (isBricoler) {
-                      localStorage.removeItem('lbricol_force_client_mode');
+                      safeStorage.removeItem('lbricol_force_client_mode');
                       window.location.href = '/provider';
                     } else {
                       setShowMobileOnboarding(true);
@@ -2832,7 +2833,7 @@ export default function HomeOrchestrator() {
                   }}
                   onBecomeBricolerClick={() => {
                     if (currentUser && isBricoler) {
-                      localStorage.removeItem('lbricol_force_client_mode');
+                      safeStorage.removeItem('lbricol_force_client_mode');
                       window.location.href = '/provider';
                     } else if (currentUser) {
                       setShowMobileOnboarding(true);
@@ -3404,14 +3405,14 @@ export default function HomeOrchestrator() {
           isOpen={showLanguagePopup}
           onClose={() => {
             setShowLanguagePopup(false);
-            const onboardingShown = localStorage.getItem('client_onboarding_shown');
+            const onboardingShown = safeStorage.getItem('client_onboarding_shown');
             if (onboardingShown) {
-              const prefCity = localStorage.getItem('lbricol_preferred_city');
+              const prefCity = safeStorage.getItem('lbricol_preferred_city');
               if (!prefCity && !selectedCity) {
                 handleFirstArrivalLocationTrigger();
               }
             } else {
-              localStorage.setItem('client_onboarding_shown', 'true');
+              safeStorage.setItem('client_onboarding_shown', 'true');
               // setShowClientOnboarding(true);
             }
           }}

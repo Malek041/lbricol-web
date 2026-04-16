@@ -1,5 +1,6 @@
 "use client";
 
+import { safeStorage } from '@/lib/safeStorage';
 import React, { useState, useEffect, memo } from 'react';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -242,7 +243,7 @@ const ClientHome: React.FC<ClientHomeProps> = ({
         // Onboarding Check
         // Onboarding logic is now handled in page.tsx
 
-        const stored = localStorage.getItem('last_service_category');
+        const stored = safeStorage.getItem('last_service_category');
         if (stored) {
             setLastCategoryId(stored);
         } else if (recentOrders && recentOrders.length > 0) {
@@ -265,15 +266,15 @@ const ClientHome: React.FC<ClientHomeProps> = ({
             return;
         }
 
-        const lastDismissed = localStorage.getItem('referral_banner_dismissed_at');
-        const lastOrderCount = parseInt(localStorage.getItem('referral_last_order_count') || '0');
+        const lastDismissed = safeStorage.getItem('referral_banner_dismissed_at');
+        const lastOrderCount = parseInt(safeStorage.getItem('referral_last_order_count') || '0');
 
         const isNewOrder = recentOrders.length > lastOrderCount;
         const isExpired = lastDismissed ? (Date.now() - parseInt(lastDismissed) > 24 * 60 * 60 * 1000) : true;
 
         if (isNewOrder || isExpired) {
             setShowReferralBanner(true);
-            localStorage.setItem('referral_last_order_count', recentOrders.length.toString());
+            safeStorage.setItem('referral_last_order_count', recentOrders.length.toString());
         } else {
             setShowReferralBanner(false);
         }
@@ -287,8 +288,8 @@ const ClientHome: React.FC<ClientHomeProps> = ({
     }, [recentOrders, isBricoler]);
 
     const handleReferralClick = () => {
-        localStorage.setItem('referral_banner_dismissed_at', Date.now().toString());
-        localStorage.setItem('referral_last_order_count', (recentOrders?.length || 0).toString());
+        safeStorage.setItem('referral_banner_dismissed_at', Date.now().toString());
+        safeStorage.setItem('referral_last_order_count', (recentOrders?.length || 0).toString());
         setShowReferralBanner(false);
         if (onNavigateToShare) onNavigateToShare();
     };
@@ -412,7 +413,7 @@ const ClientHome: React.FC<ClientHomeProps> = ({
             ss.id === currentSub.id || ss.name === currentSub.en
         );
 
-        localStorage.setItem('last_service_category', serviceId);
+        safeStorage.setItem('last_service_category', serviceId);
         setLastCategoryId(serviceId);
         setOrderField('serviceType', serviceId);
         setOrderField('serviceName', serviceTemplate?.label || serviceId);
@@ -988,7 +989,7 @@ const ClientHome: React.FC<ClientHomeProps> = ({
                     <ClientOnboarding
                         onComplete={() => {
                             onOnboardingComplete();
-                            const alreadyShown = localStorage.getItem('bricoler_upsell_shown');
+                            const alreadyShown = safeStorage.getItem('bricoler_upsell_shown');
                             if (!alreadyShown) {
                                 setTimeout(() => setShowBricolerUpsell(true), 900);
                             }

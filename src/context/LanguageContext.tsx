@@ -26,18 +26,25 @@ export const LanguageProvider = ({ children }: { children: ReactNode }) => {
     const [language, setLanguage] = useState<Language>('fr');
 
     React.useEffect(() => {
-        const savedLang = localStorage.getItem('lbricol_language');
-        if (savedLang === 'en' || savedLang === 'fr' || savedLang === 'ar') {
-            setLanguage(savedLang as Language);
-        } else {
-            // Use French as default session language if no preference is saved, 
-            // but do NOT save it to localStorage yet so we can detect first-timers.
+        try {
+            const savedLang = localStorage.getItem('lbricol_language');
+            if (savedLang === 'en' || savedLang === 'fr' || savedLang === 'ar') {
+                setLanguage(savedLang as Language);
+            } else {
+                setLanguage('fr');
+            }
+        } catch (e) {
+            console.warn('localStorage access denied. Defaulting to fr.', e);
             setLanguage('fr');
         }
     }, []);
 
     React.useEffect(() => {
-        localStorage.setItem('lbricol_language', language);
+        try {
+            localStorage.setItem('lbricol_language', language);
+        } catch (e) {
+            console.warn('Failed to save language to localStorage.', e);
+        }
 
         const root = document.documentElement;
         const rtl = language === 'ar';

@@ -1,5 +1,6 @@
 "use client";
 
+import { safeStorage } from '@/lib/safeStorage';
 import React, { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Star, Clock, Calendar, ChevronLeft, X, CheckCircle2 } from 'lucide-react';
@@ -96,7 +97,7 @@ export default function HeroesView({ orders }: HeroesViewProps) {
     const [removedHeroIds, setRemovedHeroIds] = useState<string[]>(() => {
         if (typeof window !== 'undefined') {
             try {
-                return JSON.parse(localStorage.getItem('removedHeroIds') || '[]');
+                return JSON.parse(safeStorage.getItem('removedHeroIds') || '[]');
             } catch (e) { return []; }
         }
         return [];
@@ -105,7 +106,7 @@ export default function HeroesView({ orders }: HeroesViewProps) {
     const handleRemoveHero = (heroId: string) => {
         const updated = [...removedHeroIds, heroId];
         setRemovedHeroIds(updated);
-        localStorage.setItem('removedHeroIds', JSON.stringify(updated));
+        safeStorage.setItem('removedHeroIds', JSON.stringify(updated));
     };
 
     const getHeroFallbackSlots = (profile: any, date: Date) => {

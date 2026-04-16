@@ -172,7 +172,11 @@ export function OrderProvider({ children }: { children: ReactNode }) {
   // Save to localStorage whenever order changes
   useEffect(() => {
     if (order && order.serviceType) {
-      localStorage.setItem('lbricol_pending_order', JSON.stringify(order));
+      try {
+        localStorage.setItem('lbricol_pending_order', JSON.stringify(order));
+      } catch (e) {
+        console.warn("Failed to set pending order in localStorage", e);
+      }
     }
   }, [order]);
 
@@ -186,7 +190,11 @@ export function OrderProvider({ children }: { children: ReactNode }) {
 
   const resetOrder = () => {
     setOrder(defaultOrder);
-    localStorage.removeItem('lbricol_pending_order');
+    try {
+      localStorage.removeItem('lbricol_pending_order');
+    } catch (e) {
+      console.warn("Failed to remove pending order from localStorage", e);
+    }
   };
 
   return (
