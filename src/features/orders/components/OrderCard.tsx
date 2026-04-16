@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Package, X, Star, Calendar } from 'lucide-react';
+import { Package, X, Star, Calendar, MapPin } from 'lucide-react';
 import { format } from 'date-fns';
 import { useLanguage } from '@/context/LanguageContext';
 import { useTheme } from '@/context/ThemeContext';
