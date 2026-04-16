@@ -2904,7 +2904,6 @@ const WeekCalendar = ({
                                             </>
                                         )}
                                     </div>
-                                    </div>
                                 </div>
                             );
                         })()}
