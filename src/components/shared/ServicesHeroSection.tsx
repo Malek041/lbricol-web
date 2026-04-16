@@ -1,6 +1,7 @@
 "use client";
 
 import React from 'react';
+import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { useLanguage } from '@/context/LanguageContext';
 
@@ -80,13 +81,12 @@ const EggyServiceIcon = ({ id, title, image, onOrder }: { id: string; title: str
             borderRadius: staticEggyBorder
           }}
         >
-          <img
+          <Image
             src={imgSrc}
             alt={title}
             onError={handleImgError}
+            fill
             style={{
-              width: '100%',
-              height: '100%',
               objectFit: 'contain'
             }}
           />
@@ -216,7 +216,9 @@ const ServicesHeroSection = ({ availableServiceIds, onSelectService }: ServicesH
         zIndex: 2
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <img src="/Images/map Assets/LocationPin.png" alt="Logo" style={{ height: '32px' }} />
+          <div style={{ height: '32px', width: '32px', position: 'relative' }}>
+            <Image src="/Images/map Assets/LocationPin.png" alt="Logo" fill />
+          </div>
           <span style={{ fontSize: '24px', fontWeight: 700, color: '#037B3E' }}>Lbricol</span>
         </div>
         <button style={{

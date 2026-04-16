@@ -1,5 +1,7 @@
 "use client";
 
+import dynamic from 'next/dynamic';
+import Image from 'next/image';
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Moon, Sun, User, Menu, Globe, HelpCircle, Gift, LogIn, LogOut, Home, Truck } from 'lucide-react';
@@ -111,7 +113,9 @@ const Header = ({ activeTab, onTabChange, isBricoler = false, user = null, onLog
                 )}
             </div>
             {image && (
-                <img src={image} alt="" style={{ width: '28px', height: '28px', objectFit: 'contain' }} />
+                <div style={{ width: '28px', height: '28px', position: 'relative' }}>
+                    <Image src={image} alt="" fill style={{ objectFit: 'contain' }} />
+                </div>
             )}
         </div>
     );
@@ -143,16 +147,15 @@ const Header = ({ activeTab, onTabChange, isBricoler = false, user = null, onLog
                     alignItems: 'center'
                 }}>
                     {!isMobile && (
-                        <img
-                            src={theme === 'light' ? "/Images/map Assets/LocationPin.png" : "/Images/map Assets/LocationPin.png"}
-                            alt="Lbricol"
-                            style={{
-                                height: '2rem',
-                                cursor: 'pointer',
-                                flexShrink: 0
-                            }}
-                            onClick={() => window.location.href = '/'}
-                        />
+                        <div style={{ height: '2rem', width: '5rem', position: 'relative', cursor: 'pointer' }} onClick={() => window.location.href = '/'}>
+                            <Image
+                                src="/Images/map Assets/LocationPin.png"
+                                alt="Lbricol"
+                                fill
+                                priority
+                                style={{ objectFit: 'contain' }}
+                            />
+                        </div>
                     )}
                 </div>
 

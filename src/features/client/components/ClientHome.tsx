@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, memo } from 'react';
+import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MapPin, ChevronDown, Search, X, Bell, Home, Building, Star, Zap, Tag, ShieldCheck, Leaf } from 'lucide-react';
 import { useRouter } from 'next/navigation';
@@ -122,8 +123,8 @@ const PromoBannersWidget: React.FC<{
                             })}
                         </p>
                     </div>
-                    <div className="absolute -bottom-2 -right-1 z-10">
-                        <img src="/Images/Vectors Illu/gifts.webp" alt="Gifts" className="w-[60px] h-[60px] object-contain" />
+                    <div className="absolute -bottom-2 -right-1 z-10 w-[60px] h-[60px]">
+                        <Image src="/Images/Vectors Illu/gifts.webp" alt="Gifts" fill style={{ objectFit: 'contain' }} />
                     </div>
                     <div className="absolute top-0 right-0 w-20 h-20 bg-white/10 rounded-full blur-2xl pointer-events-none" />
                 </div>
@@ -149,9 +150,15 @@ const PromoBannersWidget: React.FC<{
                         </p>
                     </div>
                     <div className={`absolute ${isRTL ? 'left-0' : 'right-0'} bottom-0 h-full w-[45%] flex items-end justify-end`}>
-                        <img src="/Images/Vectors Illu/Groceriedbag.png" alt="Grocery bag" className={`absolute w-[50px] top-[15%] ${isRTL ? 'left-4' : 'right-4'} z-10`} />
-                        <img src="/Images/4c456a03818b25032d0e4e80a711d569-Photoroom.png" alt="Moving Helper" className={`absolute w-[45px] -bottom-1 ${isRTL ? 'left-12' : 'right-12'} z-20`} />
-                        <img src="/Images/Vectors Illu/Dogwalker.png" alt="Dogwalker" className={`absolute w-[40px] bottom-0 ${isRTL ? 'left-0' : 'right-0'} z-20`} />
+                        <div className={`absolute w-[50px] h-[50px] top-[15%] ${isRTL ? 'left-4' : 'right-4'} z-10`}>
+                            <Image src="/Images/Vectors Illu/Groceriedbag.png" alt="Grocery bag" fill style={{ objectFit: 'contain' }} />
+                        </div>
+                        <div className={`absolute w-[45px] h-[45px] -bottom-1 ${isRTL ? 'left-12' : 'right-12'} z-20`}>
+                            <Image src="/Images/4c456a03818b25032d0e4e80a711d569-Photoroom.png" alt="Moving Helper" fill style={{ objectFit: 'contain' }} />
+                        </div>
+                        <div className={`absolute w-[40px] h-[40px] bottom-0 ${isRTL ? 'left-0' : 'right-0'} z-20`}>
+                            <Image src="/Images/Vectors Illu/Dogwalker.png" alt="Dogwalker" fill style={{ objectFit: 'contain' }} />
+                        </div>
                     </div>
                 </div>
             )
@@ -538,9 +545,8 @@ const ClientHome: React.FC<ClientHomeProps> = ({
                         className="flex gap-2 items-center whitespace-nowrap"
                     >
                         {[...heroImages, ...heroImages, ...heroImages].map((img, i) => (
-                            <motion.img
+                            <motion.div
                                 key={i}
-                                src={img}
                                 initial={{ y: 35, opacity: 0 }}
                                 animate={{
                                     y: isWaving ? [0, -30, 0] : 0,
@@ -564,9 +570,16 @@ const ClientHome: React.FC<ClientHomeProps> = ({
                                         delay: 0.8 + (i % heroImages.length) * 0.12
                                     }
                                 }}
-                                className="w-[100px] h-[100px] object-contain flex-shrink-0"
-                                alt="Service Icon"
-                            />
+                                className="w-[100px] h-[100px] relative flex-shrink-0"
+                            >
+                                <Image
+                                    src={img}
+                                    alt="Service Icon"
+                                    fill
+                                    priority={i < heroImages.length}
+                                    style={{ objectFit: 'contain' }}
+                                />
+                            </motion.div>
                         ))}
                     </motion.div>
                 </div>
@@ -672,19 +685,22 @@ const ClientHome: React.FC<ClientHomeProps> = ({
                                                         <span style={{ fontSize: 36 }}>🔥</span>
                                                     ) : (
                                                         <div className="relative w-full h-full flex items-center justify-center">
-                                                            <img
-                                                                key={svc.iconPath}
-                                                                src={svc.iconPath}
-                                                                className={cn(
-                                                                    "w-16 h-16 object-contain transition-all duration-500",
-                                                                    isActive ? "scale-[1.25] rotate-[2deg] drop-shadow-xl" : "scale-[1.1] grayscale-[0.2]"
-                                                                )}
-                                                                style={{
-                                                                    zIndex: 10,
-                                                                    filter: isActive ? 'drop-shadow(0 20px 13px rgb(0 0 0 / 0.03)) drop-shadow(0 8px 5px rgb(0 0 0 / 0.08))' : 'none'
-                                                                }}
-                                                                alt={svc.label}
-                                                            />
+                                                            <div className={cn(
+                                                                "w-16 h-16 relative transition-all duration-500",
+                                                                isActive ? "scale-[1.25] rotate-[2deg] drop-shadow-xl" : "scale-[1.1] grayscale-[0.2]"
+                                                            )}>
+                                                                <Image
+                                                                    key={svc.iconPath}
+                                                                    src={svc.iconPath}
+                                                                    alt={svc.label}
+                                                                    fill
+                                                                    style={{
+                                                                        objectFit: 'contain',
+                                                                        zIndex: 10,
+                                                                        filter: isActive ? 'drop-shadow(0 20px 13px rgb(0 0 0 / 0.03)) drop-shadow(0 8px 5px rgb(0 0 0 / 0.08))' : 'none'
+                                                                    }}
+                                                                />
+                                                            </div>
                                                         </div>
                                                     )}
                                                 </motion.div>
@@ -714,11 +730,12 @@ const ClientHome: React.FC<ClientHomeProps> = ({
                                 ) : (
                                     availableServiceIds !== null && (
                                         <div className="w-full py-12 px-6 text-center">
-                                            <div className="w-40 h-40 flex items-center justify-center mx-auto mb-2">
-                                                <img
+                                            <div className="w-40 h-40 relative mx-auto mb-2">
+                                                <Image
                                                     src={gpsPermissionDenied ? "/Images/Vectors Illu/TrackingVect.webp" : "/Images/Vectors Illu/Ordercancelled.webp"}
-                                                    className="w-full h-full object-contain"
                                                     alt={gpsPermissionDenied ? "Location required" : "Not available"}
+                                                    fill
+                                                    style={{ objectFit: 'contain' }}
                                                 />
                                             </div>
                                             <p className="text-[17px] font-bold text-neutral-900 mb-1.5 line-clamp-1">

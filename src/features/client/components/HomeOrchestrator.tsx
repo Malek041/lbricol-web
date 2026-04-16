@@ -1,6 +1,7 @@
 "use client";
 
 import dynamic from 'next/dynamic';
+import Image from 'next/image';
 import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 
@@ -8,12 +9,8 @@ import { useRouter } from 'next/navigation';
 import Header from '@/components/layout/Header';
 import SearchBox from '@/components/shared/SearchBox';
 import Footer from '@/components/layout/Footer';
-import OrderCard, { OrderDetails } from '@/features/orders/components/OrderCard';
-import { DesktopHeroScroll } from '@/components/shared/DesktopHeroScroll';
-import OrderHistoryCarousel from '@/features/orders/components/OrderHistoryCarousel';
 import MobileBottomNav from '@/components/layout/MobileBottomNav';
-import { FloatingMessengerBubble } from '@/components/shared/FloatingMessengerBubble';
-import ComingSoon from '@/components/layout/ComingSoon';
+import { type OrderDetails } from '@/features/orders/components/OrderCard';
 import ClientHome from '@/features/client/components/ClientHome';
 import { SERVICES_CATALOGUE } from '@/config/services_catalogue';
 import { useOrder } from '@/context/OrderContext';
@@ -49,6 +46,12 @@ const MillionsImpactSection = dynamic(() => import('@/components/shared/Millions
 const DesktopOrderModal = dynamic(() => import('@/features/client/components/DesktopOrderModal').then(mod => ({ default: mod.DesktopOrderModal })));
 const ServicesHeroSection = dynamic(() => import('@/components/shared/ServicesHeroSection'));
 const OpportunitySection = dynamic(() => import('@/components/shared/OpportunitySection'));
+const OrderCard = dynamic(() => import('@/features/orders/components/OrderCard'));
+const DesktopHeroScroll = dynamic(() => import('@/components/shared/DesktopHeroScroll').then(mod => ({ default: mod.DesktopHeroScroll })));
+const OrderHistoryCarousel = dynamic(() => import('@/features/orders/components/OrderHistoryCarousel'));
+const FloatingMessengerBubble = dynamic(() => import('@/components/shared/FloatingMessengerBubble').then(mod => ({ default: mod.FloatingMessengerBubble })));
+const ComingSoon = dynamic(() => import('@/components/layout/ComingSoon'));
+const CompactHomeMap = dynamic(() => import('@/components/shared/CompactHomeMap'));
 
 import {
   MapPin,
@@ -77,7 +80,6 @@ import {
   Zap,
   Calendar
 } from 'lucide-react';
-import CompactHomeMap from '@/components/shared/CompactHomeMap';
 import { getServiceById,
   getSubServiceName,
   getCategoryForSubService,
@@ -3321,8 +3323,8 @@ export default function HomeOrchestrator() {
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                               <motion.div onClick={() => setViewingProviderId(offer.bricolerId)} whileHover={{ scale: 1.02, backgroundColor: theme === 'light' ? '#F5F5F7' : '#222' }} style={{ display: 'flex', alignItems: 'center', gap: '1rem', cursor: 'pointer', padding: '12px', borderRadius: '24px', border: `1px solid ${c.border}` }}>
                                 <div style={{ position: 'relative' }}>
-                                  <div style={{ width: '64px', height: '64px', borderRadius: '20px', backgroundColor: c.surface, overflow: 'hidden', border: `1px solid ${c.border}` }}>
-                                    {offer.avatar ? <img src={offer.avatar} alt={offer.bricolerName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: c.textMuted }}><UserIcon size={28} /></div>}
+                                  <div style={{ width: '64px', height: '64px', borderRadius: '20px', backgroundColor: c.surface, overflow: 'hidden', border: `1px solid ${c.border}`, position: 'relative' }}>
+                                    {offer.avatar ? <Image src={offer.avatar} alt={offer.bricolerName} fill style={{ objectFit: 'cover' }} /> : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: c.textMuted }}><UserIcon size={28} /></div>}
                                   </div>
                                   {offer.jobsCount > 0 && <div style={{ position: 'absolute', bottom: -4, right: -4, backgroundColor: '#FFCC02', color: '#000', padding: '2px 6px', borderRadius: '8px', fontSize: '10px', fontWeight: 900, display: 'flex', alignItems: 'center', gap: '2px', boxShadow: '0 2px 6px rgba(0,0,0,0.1)', border: '1.5px solid #FFF' }}><Star size={9} fill="#000" strokeWidth={0} /><span>{offer.rating ? Number(offer.rating).toFixed(1) : '5.0'}</span></div>}
                                 </div>
@@ -3384,7 +3386,7 @@ export default function HomeOrchestrator() {
             <div key="provider-details-modal" style={{ position: 'fixed', inset: 0, zIndex: 4000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setViewingProviderId(null)} style={{ position: 'absolute', inset: 0, backgroundColor: 'rgba(255,255,255,0.7)', backdropFilter: 'blur(12px)' }} />
               <motion.div initial={{ opacity: 0, scale: 0.95, y: 30 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 30 }} style={{ position: 'relative', backgroundColor: '#FFFFFF', width: '100%', maxWidth: '520px', borderRadius: '40px', padding: '2.5rem', boxShadow: '0 30px 90px rgba(0,0,0,0.12)', border: `1px solid #F0F0F0`, display: 'flex', flexDirection: 'column', gap: '2rem', maxHeight: '85vh', overflowY: 'auto' }}>
-                <div style={{ textAlign: 'center' }}><div style={{ position: 'relative', width: '120px', height: '120px', margin: '0 auto 1.5rem' }}><div style={{ width: '100%', height: '100%', borderRadius: '36px', backgroundColor: '#F9F9F9', overflow: 'hidden', border: `1.5px solid #F0F0F0` }}>{providerDetails.photoURL ? <img src={providerDetails.photoURL} alt={providerDetails.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#D1D1D1' }}><UserIcon size={48} /></div>}</div></div><h3 style={{ fontSize: '32px', fontWeight: 950, color: '#000', margin: 0, lineHeight: 1 }}>{providerDetails.name || 'Bricoleur'}</h3></div>
+                <div style={{ textAlign: 'center' }}><div style={{ position: 'relative', width: '120px', height: '120px', margin: '0 auto 1.5rem' }}><div style={{ width: '100%', height: '100%', borderRadius: '36px', backgroundColor: '#F9F9F9', overflow: 'hidden', border: `1.5px solid #F0F0F0`, position: 'relative' }}>{providerDetails.photoURL ? <Image src={providerDetails.photoURL} alt={providerDetails.name} fill style={{ objectFit: 'cover' }} /> : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#D1D1D1' }}><UserIcon size={48} /></div>}</div></div><h3 style={{ fontSize: '32px', fontWeight: 950, color: '#000', margin: 0, lineHeight: 1 }}>{providerDetails.name || 'Bricoleur'}</h3></div>
                 <div style={{ marginTop: 'auto', paddingTop: '1rem' }}><button onClick={() => setViewingProviderId(null)} style={{ width: '100%', padding: '1.5rem', borderRadius: '24px', backgroundColor: '#000000', color: '#FFFFFF', border: 'none', fontSize: '16px', fontWeight: 950, cursor: 'pointer' }}>{t({ en: 'Close Profile', fr: 'Fermer le profil' })}</button></div>
               </motion.div>
             </div>
