@@ -896,10 +896,11 @@ export default function CheckoutPage() {
                                 }
                             );
 
-                            const basePrice = individualPricing.basePrice;
-                            const servicesTotal = individualPricing.subtotal * slotsCount;
-                            const serviceFee = individualPricing.serviceFee * slotsCount;
-                            const total = individualPricing.total * slotsCount;
+                            const pricingToUse = order.estimate || individualPricing;
+                            const basePrice = pricingToUse.basePrice;
+                            const servicesTotal = pricingToUse.subtotal * slotsCount;
+                            const serviceFee = pricingToUse.serviceFee * slotsCount;
+                            const total = pricingToUse.total * slotsCount;
 
                             return (
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
@@ -950,6 +951,29 @@ export default function CheckoutPage() {
                                         </div>
                                         <span style={{ fontSize: 18, fontWeight: 400, color: '#111827' }}>{(individualPricing.travelFee * slotsCount).toFixed(2)} MAD</span>
                                     </div>
+
+                                    {order.promoCode && (
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(1, 160, 131, 0.05)', padding: '12px 16px', borderRadius: 12, border: '1px dashed rgba(1, 160, 131, 0.3)' }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                                <div style={{ width: 28, height: 28, borderRadius: '50%', background: '#01A083', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                                    <CheckCircle2 size={16} color="#fff" />
+                                                </div>
+                                                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                                    <span style={{ fontSize: 16, fontWeight: 900, color: '#01A083' }}>{order.promoCode}</span>
+                                                    <span style={{ fontSize: 12, fontWeight: 700, color: 'rgba(1, 160, 131, 0.6)' }}>{t({ en: 'Promo applied', fr: 'Promo appliquée', ar: 'تم تطبيق الخصم' })}</span>
+                                                </div>
+                                            </div>
+                                            <span style={{ fontSize: 18, fontWeight: 900, color: '#01A083' }}>
+                                                {order.promoResult?.type === 'free_service' 
+                                                    ? `-${servicesTotal.toFixed(0)} MAD` 
+                                                    : (order.promoResult?.type === 'discount_percent' 
+                                                        ? `-${order.promoResult.discountPercent}%` 
+                                                        : `-${order.promoResult?.discountFixed || 0} MAD`
+                                                    )
+                                                }
+                                            </span>
+                                        </div>
+                                    )}
 
                                     <div style={{ height: 1, background: '#E5E7EB', width: '100%', margin: '8px 0' }} />
 
@@ -1026,7 +1050,8 @@ export default function CheckoutPage() {
                             tipAmount: order.serviceDetails?.tipAmount,
                         }
                     );
-                    const total = individualPricing.total * slotsCount;
+                    const pricingToUse = order.estimate || individualPricing;
+                    const total = pricingToUse.total * slotsCount;
 
                     return (
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 20 }}>
