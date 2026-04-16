@@ -1212,49 +1212,54 @@ export default function ServiceSetupPage() {
                                                             </div>
                                                         );
                                                     }
-                                                    return null;
-                                                })() || (provider.bio && provider.bio.trim() ? (
-                                                    <div className="flex flex-col gap-1">
-                                                        <span className={isBioExpanded ? "" : "line-clamp-4"}>
-                                                            {provider.bio}
-                                                        </span>
-                                                        {provider.bio.length > 180 && (
-                                                            <button
-                                                                onClick={() => setIsBioExpanded(!isBioExpanded)}
-                                                                className="text-[#01A083] font-bold text-[13px] w-fit hover:underline mt-0.5"
-                                                            >
-                                                                {isBioExpanded ? t({ en: 'Show less', fr: 'Lire moins', ar: 'عرض أقل' }) : t({ en: 'Read more', fr: 'Lire plus', ar: 'اقرأ المزيد' })}
-                                                            </button>
-                                                        )}
-                                                        {((isArabic(provider.bio) && language !== 'ar') || (!isArabic(provider.bio) && language === 'ar')) && (
-                                                            <button
-                                                                onClick={handleTranslateBio}
-                                                                disabled={isTranslating}
-                                                                className="flex items-center gap-1.5 text-[12px] font-bold text-[#01A083] hover:opacity-80 transition-opacity w-fit"
-                                                            >
-                                                                {isTranslating ? (
-                                                                    <Loader2 size={13} className="animate-spin" />
-                                                                ) : (
-                                                                    <Sparkles size={13} />
+                                                    
+                                                    if (provider.bio && provider.bio.trim()) {
+                                                        return (
+                                                            <div className="flex flex-col gap-1">
+                                                                <span className={isBioExpanded ? "" : "line-clamp-4"}>
+                                                                    {provider.bio}
+                                                                </span>
+                                                                {provider.bio.length > 180 && (
+                                                                    <button
+                                                                        onClick={() => setIsBioExpanded(!isBioExpanded)}
+                                                                        className="text-[#01A083] font-bold text-[13px] w-fit hover:underline mt-0.5"
+                                                                    >
+                                                                        {isBioExpanded ? t({ en: 'Show less', fr: 'Lire moins', ar: 'عرض أقل' }) : t({ en: 'Read more', fr: 'Lire plus', ar: 'اقرأ المزيد' })}
+                                                                    </button>
                                                                 )}
-                                                                {t({ en: 'See translation', fr: 'Voir la traduction', ar: 'مشاهدة الترجمة' })}
-                                                            </button>
-                                                        )}
-                                                        {translationError && (
-                                                            <a
-                                                                href={`https://translate.google.com/?sl=auto&tl=${language}&text=${encodeURIComponent(provider.bio)}&op=translate`}
-                                                                target="_blank"
-                                                                rel="noopener noreferrer"
-                                                                className="text-[12px] font-medium text-neutral-400 hover:text-[#01A083] underline underline-offset-2 flex items-center gap-1"
-                                                            >
-                                                                {t({ en: 'Try Google Translate instead', fr: 'Essayer Google Traduction', ar: 'جرب ترجمة جوجل' })}
-                                                                <ChevronRight size={10} />
-                                                            </a>
-                                                        )}
-                                                    </div>
-                                                ) : (
-                                                    <span className="text-neutral-400 italic">{t({ en: 'No bio provided by the Bricoler yet.', fr: 'Aucune biographie fournie par le Bricoleur.' })}</span>
-                                                )}
+                                                                {((isArabic(provider.bio) && language !== 'ar') || (!isArabic(provider.bio) && language === 'ar')) && (
+                                                                    <button
+                                                                        onClick={handleTranslateBio}
+                                                                        disabled={isTranslating}
+                                                                        className="flex items-center gap-1.5 text-[12px] font-bold text-[#01A083] hover:opacity-80 transition-opacity w-fit"
+                                                                    >
+                                                                        {isTranslating ? (
+                                                                            <Loader2 size={13} className="animate-spin" />
+                                                                        ) : (
+                                                                            <Sparkles size={13} />
+                                                                        )}
+                                                                        {t({ en: 'See translation', fr: 'Voir la traduction', ar: 'مشاهدة الترجمة' })}
+                                                                    </button>
+                                                                )}
+                                                                {translationError && (
+                                                                    <a
+                                                                        href={`https://translate.google.com/?sl=auto&tl=${language}&text=${encodeURIComponent(provider.bio)}&op=translate`}
+                                                                        target="_blank"
+                                                                        rel="noopener noreferrer"
+                                                                        className="text-[12px] font-medium text-neutral-400 hover:text-[#01A083] underline underline-offset-2 flex items-center gap-1"
+                                                                    >
+                                                                        {t({ en: 'Try Google Translate instead', fr: 'Essayer Google Traduction', ar: 'جرب ترجمة جوجل' })}
+                                                                        <ChevronRight size={10} />
+                                                                    </a>
+                                                                )}
+                                                            </div>
+                                                        );
+                                                    }
+                                                    
+                                                    return (
+                                                        <span className="text-neutral-400 italic">{t({ en: 'No bio provided by the Bricoler yet.', fr: 'Aucune biographie fournie par le Bricoleur.' })}</span>
+                                                    );
+                                                })()}
                                             </div>
                                         </motion.div>
 
