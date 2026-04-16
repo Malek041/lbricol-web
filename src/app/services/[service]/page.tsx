@@ -152,12 +152,12 @@ export async function generateMetadata(
     title: content.title,
     description: content.description,
     alternates: {
-      canonical: `https://lbricol.ma/services/${service}`,
+      canonical: `https://lbricol.com/services/${service}`,
     },
     openGraph: {
       title: content.title,
       description: content.description,
-      url: `https://lbricol.ma/services/${service}`,
+      url: `https://lbricol.com/services/${service}`,
       type: 'website',
     },
   };
@@ -195,10 +195,10 @@ export default async function ServicePage(
     provider: {
       '@type': 'LocalBusiness',
       name: 'Lbricol',
-      url: 'https://lbricol.ma',
+      url: 'https://lbricol.com',
     },
     areaServed: content.cities.map((city) => ({ '@type': 'City', name: city })),
-    url: `https://lbricol.ma/services/${service}`,
+    url: `https://lbricol.com/services/${service}`,
   };
 
   return (

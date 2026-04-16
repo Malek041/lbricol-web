@@ -187,5 +187,11 @@ service cloud.firestore {
     match /{path=**}/offers/{offerId} {
       allow read, write: if isSignedIn();
     }
+
+    // ── 6. Marketing & Promos ────────────────────────────────────────────
+    match /promo_codes/{codeId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
   }
 }

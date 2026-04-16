@@ -107,6 +107,7 @@ interface OrderState {
   mountingAddOns?: string[];
   vehicleType?: string | null;
   promoCode?: string | null;
+  promoResult?: any | null;
 }
 
 interface OrderContextType {

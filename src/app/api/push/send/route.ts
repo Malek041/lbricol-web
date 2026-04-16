@@ -16,7 +16,7 @@ export async function POST(request: Request) {
     }
 
     webpush.setVapidDetails(
-      'mailto:support@lbricol.ma',
+      'mailto:support@lbricol.com',
       VAPID_PUBLIC_KEY,
       VAPID_PRIVATE_KEY
     );

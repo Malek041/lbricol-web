@@ -8,7 +8,7 @@ export const metadata: Metadata = {
   title: "Lbricol — Services à domicile au Maroc | Aide experte, tout de suite",
   description: "Réservez des professionnels de confiance au Maroc pour le nettoyage, la plomberie, l'électricité, le déménagement et plus encore. Intervention rapide à Marrakech, Casablanca, Agadir, Essaouira, Rabat.",
   alternates: {
-    canonical: "https://lbricol.ma",
+    canonical: "https://lbricol.com",
   },
 };
 

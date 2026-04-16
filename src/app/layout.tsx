@@ -33,7 +33,7 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://lbricol.ma"),
+  metadataBase: new URL("https://lbricol.com"),
   title: {
     default: "Lbricol — Services à domicile au Maroc | Nettoyage, Plomberie, Déménagement",
     template: "%s | Lbricol Maroc",
@@ -55,10 +55,10 @@ export const metadata: Metadata = {
   ],
   manifest: "/manifest.json",
   alternates: {
-    canonical: "https://lbricol.ma",
+    canonical: "https://lbricol.com",
     languages: {
-      "fr-MA": "https://lbricol.ma",
-      "ar-MA": "https://lbricol.ma",
+      "fr-MA": "https://lbricol.com",
+      "ar-MA": "https://lbricol.com",
     },
   },
   icons: {
@@ -70,7 +70,7 @@ export const metadata: Metadata = {
     title: "Lbricol — Services à domicile au Maroc",
     description:
       "Réservez des professionnels locaux de confiance pour le nettoyage, la réparation et les services à domicile au Maroc.",
-    url: "https://lbricol.ma",
+    url: "https://lbricol.com",
     siteName: "Lbricol",
     images: [
       {
@@ -100,6 +100,9 @@ export const metadata: Metadata = {
       "max-snippet": -1,
     },
   },
+  verification: {
+    google: "J29j-9JPoP2AZWvlSY19jVzxQoz7duxZHYveO6cWvng",
+  },
 };
 
 import { Providers } from "@/components/shared/Providers";
@@ -115,9 +118,9 @@ export default function RootLayout({
     "@context": "https://schema.org",
     "@type": "LocalBusiness",
     "name": "Lbricol",
-    "image": "https://lbricol.ma/Images/Logo/image-Photoroom%20(2)%20copy%205.png",
+    "image": "https://lbricol.com/Images/Logo/image-Photoroom%20(2)%20copy%205.png",
     "description": "Réservez des professionnels locaux de confiance pour le nettoyage, la réparation, la plomberie, l'électricité et le déménagement au Maroc.",
-    "url": "https://lbricol.ma",
+    "url": "https://lbricol.com",
     "priceRange": "$$",
     "address": {
       "@type": "PostalAddress",
@@ -144,20 +147,20 @@ export default function RootLayout({
       "@type": "OfferCatalog",
       "name": "Services à domicile au Maroc",
       "itemListElement": [
-        { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Nettoyage à domicile", "url": "https://lbricol.ma/services/cleaning" } },
-        { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Plomberie", "url": "https://lbricol.ma/services/plumbing" } },
-        { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Électricité", "url": "https://lbricol.ma/services/electricity" } },
-        { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Déménagement", "url": "https://lbricol.ma/services/moving" } },
-        { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Jardinage", "url": "https://lbricol.ma/services/gardening" } },
-        { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Bricolage & Réparations", "url": "https://lbricol.ma/services/home_repairs" } },
-        { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Garde d'enfants", "url": "https://lbricol.ma/services/babysitting" } },
-        { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Peinture", "url": "https://lbricol.ma/services/painting" } },
-        { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Guide touristique", "url": "https://lbricol.ma/services/tour_guide" } },
-        { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Chef à domicile", "url": "https://lbricol.ma/services/cooking" } }
+        { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Nettoyage à domicile", "url": "https://lbricol.com/services/cleaning" } },
+        { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Plomberie", "url": "https://lbricol.com/services/plumbing" } },
+        { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Électricité", "url": "https://lbricol.com/services/electricity" } },
+        { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Déménagement", "url": "https://lbricol.com/services/moving" } },
+        { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Jardinage", "url": "https://lbricol.com/services/gardening" } },
+        { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Bricolage & Réparations", "url": "https://lbricol.com/services/home_repairs" } },
+        { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Garde d'enfants", "url": "https://lbricol.com/services/babysitting" } },
+        { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Peinture", "url": "https://lbricol.com/services/painting" } },
+        { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Guide touristique", "url": "https://lbricol.com/services/tour_guide" } },
+        { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Chef à domicile", "url": "https://lbricol.com/services/cooking" } }
       ]
     },
     "sameAs": [
-      "https://lbricol.ma"
+      "https://lbricol.com"
     ]
   };
 

@@ -3452,8 +3452,13 @@ export default function HomeOrchestrator() {
           count={unreadNotifsCount || 1}
           jobId={activeBubble.jobId}
           onOpen={(jobId) => {
-            setMessagesModalJobId(jobId);
-            setShowMessagesModal(true);
+            if (isMobile) {
+              setMobileNavTab('messages');
+              setSelectedOrderId(jobId);
+            } else {
+              setMessagesModalJobId(jobId);
+              setShowMessagesModal(true);
+            }
             setActiveBubble(null);
           }}
           onDismiss={() => setActiveBubble(null)}

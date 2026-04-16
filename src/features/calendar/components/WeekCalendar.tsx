@@ -407,7 +407,7 @@ const WeekCalendar = ({
                 case 'negotiating': return { color: '#5856D6', bg: '#EBEBFF', icon: Timer, label: t({ en: 'Offer Sent', fr: 'Offre Envoyée' }) };
                 case 'confirmed': return { color: '#008A21', bg: '#E1FCE0', icon: ShieldCheck, label: t({ en: 'Confirmed', fr: 'Confirmé' }) };
                 case 'cancelled': return { color: '#FF3B30', bg: '#FFEBEA', icon: XCircle, label: t({ en: 'Cancelled', fr: 'Annulé' }) };
-                case 'done': return { color: '#8E8E93', bg: '#F2F2F7', icon: CheckCircle2, label: t({ en: 'Completed', fr: 'Terminé' }) };
+                case 'done': return { color: '#008A21', bg: '#E1FCE0', icon: CheckCircle2, label: t({ en: 'Completed', fr: 'Terminé' }) };
                 default: return { color: '#8E8E93', bg: '#F2F2F7', icon: Info, label: t({ en: 'Job', fr: 'Mission' }) };
             }
         }
@@ -643,6 +643,15 @@ const WeekCalendar = ({
     const isToday = (date: Date) => {
         const today = new Date();
         return date.getDate() === today.getDate() && date.getMonth() === today.getMonth() && date.getFullYear() === today.getFullYear();
+    };
+
+    const isOrderPassed = (order: OrderDetails) => {
+        const datePart = order.date.includes(' at ') ? order.date.split(' at ')[0] : (order.date.includes(' - ') ? order.date.split(' - ')[1] || order.date.split(' - ')[0] : order.date);
+        const d = new Date(datePart);
+        if (isNaN(d.getTime())) return false;
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        return d < today;
     };
 
     const isSameDay = (d1: Date, d2: Date) => {
@@ -1014,7 +1023,8 @@ const WeekCalendar = ({
                                                 gap: '6px',
                                                 position: 'relative',
                                                 zIndex: 10,
-                                                boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
+                                                boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                                                opacity: isOrderPassed(order) ? 0.4 : ((selectedOrder && order.id !== selectedOrder.id) ? 0.6 : 1)
                                             }}
                                         >
                                             {order.status === 'new' && (
@@ -1229,7 +1239,8 @@ const WeekCalendar = ({
                                         cursor: 'pointer',
                                         zIndex: (job.id === externalSelectedOrderId || job.id === selectedOrder?.id) ? 10 : 1,
                                         transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                                        minHeight: '160px' // Increased height for better visibility
+                                        minHeight: '160px', // Increased height for better visibility
+                                        opacity: isOrderPassed(job) ? 0.5 : 1
                                     }}
                                     whileHover={{ y: -2, boxShadow: '0 8px 30px rgba(0,0,0,0.08)' }}
                                 >
@@ -1990,7 +2001,7 @@ const WeekCalendar = ({
                                                                                             gap: '6px',
                                                                                             boxShadow: isHighlighted ? '0 5px 15px rgba(0,0,0,0.2)' : 'none',
                                                                                             borderLeft: isHighlighted ? '4px solid #fff' : 'none',
-                                                                                            opacity: (selectedOrder && !isHighlighted) ? 0.6 : 1,
+                                                                                            opacity: isOrderPassed(order) ? 0.4 : ((selectedOrder && !isHighlighted) ? 0.6 : 1),
                                                                                             transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
                                                                                             textTransform: 'uppercase',
                                                                                             letterSpacing: '0.02em'
@@ -2173,7 +2184,7 @@ const WeekCalendar = ({
                                                                 gap: '6px',
                                                                 boxShadow: isHighlighted ? '0 5px 15px rgba(0,0,0,0.2)' : 'none',
                                                                 borderLeft: isHighlighted ? '4px solid #fff' : 'none',
-                                                                opacity: (selectedOrder && !isHighlighted) ? 0.6 : 1,
+                                                                opacity: isOrderPassed(order) ? 0.4 : ((selectedOrder && !isHighlighted) ? 0.6 : 1),
                                                                 transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
                                                                 textTransform: 'uppercase',
                                                                 letterSpacing: '0.02em'

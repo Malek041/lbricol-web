@@ -6,7 +6,7 @@ export const metadata: Metadata = {
   title: 'Tous nos services à domicile au Maroc | Lbricol',
   description:
     'Découvrez tous les services à domicile proposés par Lbricol au Maroc : nettoyage, plomberie, électricité, déménagement, jardinage, baby-sitting et bien plus encore.',
-  alternates: { canonical: 'https://lbricol.ma/services' },
+  alternates: { canonical: 'https://lbricol.com/services' },
 };
 
 const CITIES = ['Marrakech', 'Casablanca', 'Agadir', 'Essaouira', 'Rabat', 'Tanger'];
@@ -44,7 +44,7 @@ export default function ServicesIndexPage() {
       '@type': 'ListItem',
       position: i + 1,
       name: SERVICE_FR_NAMES[s.id] ?? s.name,
-      url: `https://lbricol.ma/services/${s.id}`,
+      url: `https://lbricol.com/services/${s.id}`,
     })),
   };
 

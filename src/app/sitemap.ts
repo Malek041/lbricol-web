@@ -9,7 +9,7 @@ const MOROCCAN_CITIES = [
 ];
 
 export default function sitemap(): MetadataRoute.Sitemap {
-    const baseUrl = 'https://lbricol.ma';
+    const baseUrl = 'https://lbricol.com';
 
     // Core static routes
     const coreRoutes = [

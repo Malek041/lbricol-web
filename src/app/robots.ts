@@ -8,6 +8,6 @@ export default function robots(): MetadataRoute.Robots {
       allow: '/',
       disallow: ['/admin', '/admin/*'], // Keep admin routes out of search engines
     },
-    sitemap: 'https://lbricol.ma/sitemap.xml',
+    sitemap: 'https://lbricol.com/sitemap.xml',
   };
 }

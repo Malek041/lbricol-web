@@ -33,6 +33,8 @@ const CODES_TO_CREATE = [
   'LBRICOL-ESS-W8',
   'LBRICOL-ESS-W9',
   'LBRICOL-ESS-W10',
+  'LBRICOL-ESS-W11',
+  'LBRICOL-ESS-W12',
 ];
 
 const CODE_CONFIG = {
@@ -42,7 +44,7 @@ const CODE_CONFIG = {
   isActive: true,
   maxUses: 1,                                // Each code is single-use
   usedBy: [],
-  expiresAt: admin.firestore.Timestamp.fromDate(new Date('2025-12-31')), // Adjust date
+  expiresAt: admin.firestore.Timestamp.fromDate(new Date('2026-12-31')), // Adjust date
   createdAt: admin.firestore.FieldValue.serverTimestamp(),
   source: 'instagram_giveaway_april_2025',
 };

@@ -10,7 +10,7 @@ import {
     MapPin, Calendar, Clock, User, Navigation,
     Trophy, CheckCircle2, TrendingUp, ShieldCheck,
     Star, Search, Map as MapIcon, ChevronDown, Info,
-    Gift, Plus, Minus, FileText, Tag, Ticket, Loader2, Sparkles
+    Gift, Plus, Minus, FileText, Tag, Ticket
 } from 'lucide-react';
 import { format } from 'date-fns';
 
@@ -864,13 +864,14 @@ export default function ServiceSetupPage() {
             setOrderField('serviceDetails', serviceDetails);
             setOrderField('estimate', finalEstimate);
             setOrderField('promoCode', appliedCode || null);
+            setOrderField('promoResult', promoResult || null);
             setOrderField('setupProfileId', selectedProfileId === 'new' ? '' : selectedProfileId);
             setOrderField('carRentalNote', note); // Legacy fallback
 
-            // 4. Mark promo code as used
-            if (appliedCode && user) {
-                await markPromoCodeUsed(appliedCode, user.uid);
-            }
+            // 4. Mark promo code as used (DEFERRED TO CHECKOUT STEP)
+            // if (appliedCode && user) {
+            //     await markPromoCodeUsed(appliedCode, user.uid);
+            // }
 
             // 5. Navigate
             setIsSplashing(true);
@@ -1192,21 +1193,27 @@ export default function ServiceSetupPage() {
                                         <motion.div variants={staggerItem} className="mb-10">
                                             <h4 className="text-[18px] font-black text-[#111827]">{t({ en: 'About Me', fr: 'À propos de moi' })}</h4>
                                             <div className="text-[15px] text-[#000000] leading-relaxed font-medium mt-2">
-                                                {provider.bio_translations?.[language as keyof typeof provider.bio_translations] ? (
-                                                    <div className="flex flex-col gap-1">
-                                                        <span className={isBioExpanded ? "" : "line-clamp-4"}>
-                                                            {provider.bio_translations[language as keyof typeof provider.bio_translations]}
-                                                        </span>
-                                                        {provider.bio_translations[language as keyof typeof provider.bio_translations].length > 180 && (
-                                                            <button
-                                                                onClick={() => setIsBioExpanded(!isBioExpanded)}
-                                                                className="text-[#01A083] font-bold text-[13px] w-fit hover:underline mt-0.5"
-                                                            >
-                                                                {isBioExpanded ? t({ en: 'Show less', fr: 'Lire moins', ar: 'عرض أقل' }) : t({ en: 'Read more', fr: 'Lire plus', ar: 'اقرأ المزيد' })}
-                                                            </button>
-                                                        )}
-                                                    </div>
-                                                ) : provider.bio && provider.bio.trim() ? (
+                                                {(() => {
+                                                    const translation = provider.bio_translations?.[language as keyof typeof provider.bio_translations];
+                                                    if (translation) {
+                                                        return (
+                                                            <div className="flex flex-col gap-1">
+                                                                <span className={isBioExpanded ? "" : "line-clamp-4"}>
+                                                                    {translation}
+                                                                </span>
+                                                                {translation.length > 180 && (
+                                                                    <button
+                                                                        onClick={() => setIsBioExpanded(!isBioExpanded)}
+                                                                        className="text-[#01A083] font-bold text-[13px] w-fit hover:underline mt-0.5"
+                                                                    >
+                                                                        {isBioExpanded ? t({ en: 'Show less', fr: 'Lire moins', ar: 'عرض أقل' }) : t({ en: 'Read more', fr: 'Lire plus', ar: 'اقرأ المزيد' })}
+                                                                    </button>
+                                                                )}
+                                                            </div>
+                                                        );
+                                                    }
+                                                    return null;
+                                                })() || (provider.bio && provider.bio.trim() ? (
                                                     <div className="flex flex-col gap-1">
                                                         <span className={isBioExpanded ? "" : "line-clamp-4"}>
                                                             {provider.bio}

@@ -33,8 +33,9 @@ import AuthPopup from '@/features/onboarding/components/AuthPopup';
 import ClientWhatsAppPopup from '@/features/client/components/ClientWhatsAppPopup';
 import { useLanguage } from '@/context/LanguageContext';
 import { calculateOrderPrice } from '@/lib/pricing';
-import { getServiceVector } from '@/config/services_config';
+import { getServiceVector, SERVICES_HIERARCHY } from '@/config/services_config';
 import { getRoadDistance } from '@/lib/calculateDistance';
+import { markPromoCodeUsed } from '@/lib/promoCode';
 
 export default function CheckoutPage() {
     const router = useRouter();
@@ -107,6 +108,65 @@ export default function CheckoutPage() {
         }
     }, [order.location, order.providerCoords, order.serviceDetails, order.serviceType, order.subServiceId]);
 
+    const getFinalPricing = () => {
+        const slotsCount = (order.multiSlots && order.multiSlots.length > 0) ? order.multiSlots.length : 1;
+        const individualPricing = calculateOrderPrice(
+            order.subServiceId || order.serviceType || 'car_rental',
+            order.selectedCar?.pricePerDay || order.providerRate || 80,
+            {
+                rooms: order.serviceDetails?.rooms || 1,
+                hours: (order.serviceDetails as any)?.taskDuration || 1,
+                days: calculateDays() || 1,
+                propertyType: (order.serviceDetails as any)?.propertyType,
+                distanceKm: travelInfo?.distanceKm || 0,
+                // TV Mounting specific
+                tvCount: (order.serviceDetails as any)?.tvCount,
+                mountTypes: (order.serviceDetails as any)?.mountTypes,
+                wallMaterial: (order.serviceDetails as any)?.wallMaterial,
+                liftingHelp: (order.serviceDetails as any)?.liftingHelp,
+                mountingAddOns: (order.serviceDetails as any)?.mountingAddOns,
+                deliveryDistanceKm: (order.serviceDetails as any)?.deliveryDistanceKm,
+                deliveryDurationMinutes: (order.serviceDetails as any)?.deliveryDurationMinutes,
+                // Office Cleaning specific
+                officeDesks: (order.serviceDetails as any)?.officeDesks,
+                officeMeetingRooms: (order.serviceDetails as any)?.officeMeetingRooms,
+                officeBathrooms: (order.serviceDetails as any)?.officeBathrooms,
+                hasKitchenette: (order.serviceDetails as any)?.hasKitchenette,
+                hasReception: (order.serviceDetails as any)?.hasReception,
+                officeAddOns: (order.serviceDetails as any)?.officeAddOns,
+                // Glass Cleaning specific
+                windowCount: (order.serviceDetails as any)?.windowCount,
+                glassCleaningType: (order.serviceDetails as any)?.glassCleaningType,
+                glassAccessibility: (order.serviceDetails as any)?.glassAccessibility,
+                storeFrontSize: (order.serviceDetails as any)?.storeFrontSize,
+                unitCount: (order.serviceDetails as any)?.unitCount,
+                stairsType: (order.serviceDetails as any)?.stairsType,
+                tipAmount: (order.serviceDetails as any)?.tipAmount,
+            }
+        );
+
+        let total = individualPricing.total * slotsCount;
+        let discountAmount = 0;
+        let isFree = false;
+
+        if (order.promoCode && order.promoResult?.valid) {
+            const pr = order.promoResult;
+            if (pr.type === 'free_service') {
+                discountAmount = total;
+                total = 0;
+                isFree = true;
+            } else if (pr.type === 'discount_percent' && pr.discountPercent) {
+                discountAmount = total * (pr.discountPercent / 100);
+                total = Math.max(0, total - discountAmount);
+            } else if (pr.type === 'discount_fixed' && pr.discountFixed) {
+                discountAmount = pr.discountFixed;
+                total = Math.max(0, total - discountAmount);
+            }
+        }
+
+        return { ...individualPricing, slotsCount, total, discountAmount, isFree };
+    };
+
     const handleBack = () => router.back();
 
     const cleanObject = (obj: any): any => {
@@ -146,38 +206,8 @@ export default function CheckoutPage() {
                 : [{ date: order.date || order.carRentalDates?.pickupDate || new Date().toISOString(), time: order.time || order.carRentalDates?.pickupTime || "10:00" }];
 
             // 2. Create the Job/Mission(s)
+            const pricing = getFinalPricing();
             for (const slot of slotsToProcess) {
-                const pricing = calculateOrderPrice(
-                    order.subServiceId || order.serviceType,
-                    order.providerRate || 80,
-                    {
-                        rooms: order.serviceDetails?.rooms || 1,
-                        hours: (order.serviceDetails as any)?.taskDuration || 1,
-                        days: calculateDays() || 1,
-                        propertyType: (order.serviceDetails as any)?.propertyType,
-                        distanceKm: travelInfo?.distanceKm || 0,
-                        // TV Mounting specific
-                        tvCount: (order.serviceDetails as any)?.tvCount,
-                        mountTypes: (order.serviceDetails as any)?.mountTypes,
-                        wallMaterial: (order.serviceDetails as any)?.wallMaterial,
-                        liftingHelp: (order.serviceDetails as any)?.liftingHelp,
-                        mountingAddOns: (order.serviceDetails as any)?.mountingAddOns,
-                        deliveryDistanceKm: (order.serviceDetails as any)?.deliveryDistanceKm,
-                        deliveryDurationMinutes: (order.serviceDetails as any)?.deliveryDurationMinutes,
-                        // Office Cleaning specific
-                        officeDesks: (order.serviceDetails as any)?.officeDesks,
-                        officeMeetingRooms: (order.serviceDetails as any)?.officeMeetingRooms,
-                        officeBathrooms: (order.serviceDetails as any)?.officeBathrooms,
-                        hasKitchenette: (order.serviceDetails as any)?.hasKitchenette,
-                        hasReception: (order.serviceDetails as any)?.hasReception,
-                        officeAddOns: (order.serviceDetails as any)?.officeAddOns,
-                        // Glass Cleaning specific
-                        windowCount: (order.serviceDetails as any)?.windowCount,
-                        glassCleaningType: (order.serviceDetails as any)?.glassCleaningType,
-                        glassAccessibility: (order.serviceDetails as any)?.glassAccessibility,
-                        storeFrontSize: (order.serviceDetails as any)?.storeFrontSize,
-                    }
-                );
 
                 const slotDate = format(new Date(slot.date), 'yyyy-MM-dd');
 
@@ -224,7 +254,7 @@ export default function CheckoutPage() {
                     expectedEndTime: expectedEndTime || null,
                     status: order.isPublic ? 'broadcast' : 'programmed',
                     paymentMethod,
-                    totalPrice: pricing.total,
+                    totalPrice: pricing.total / pricing.slotsCount,
                     price: order.providerRate || 80,
                     whatsappNumber: finalWhatsApp,
                     details: {
@@ -253,7 +283,12 @@ export default function CheckoutPage() {
                 await addDoc(collection(db, 'jobs'), cleanedJobData);
             }
 
-            // 3. Success!
+            // 4. Mark promo code as used
+            if (order.promoCode && finalUser) {
+                await markPromoCodeUsed(order.promoCode, finalUser.uid);
+            }
+
+            // 5. Success!
             setShowSuccess(true);
             setTimeout(() => {
                 resetOrder();
@@ -719,7 +754,7 @@ export default function CheckoutPage() {
                     </div>
                 </div>
 
-                {/* Final Checkout Summary (100% Matched to Setup View Color/Design) */}
+{/* Final Checkout Summary (100% Matched to Setup View Color/Design) */}
                 <div style={{ margin: '32px -24px 0', position: 'relative' }}>
                     {/* Wave Transition matching setup/page.tsx */}
                     <div style={{ position: 'absolute', top: -40, left: 0, right: 0, height: 40, zIndex: 10, pointerEvents: 'none' }}>
@@ -732,44 +767,9 @@ export default function CheckoutPage() {
                         <h3 style={{ fontSize: 35, fontWeight: 700, color: '#111827', margin: 0 }}>Summary</h3>
 
                         {(() => {
-                            const slotsCount = (order.multiSlots && order.multiSlots.length > 0) ? order.multiSlots.length : 1;
-                            const individualPricing = calculateOrderPrice(
-                                order.subServiceId || order.serviceType,
-                                order.providerRate || 80,
-                                {
-                                    rooms: order.serviceDetails?.rooms || 1,
-                                    hours: (order.serviceDetails as any)?.taskDuration || 1,
-                                    days: calculateDays() || 1,
-                                    propertyType: (order.serviceDetails as any)?.propertyType,
-                                    distanceKm: travelInfo?.distanceKm || 0,
-                                    // TV Mounting specific
-                                    tvCount: (order.serviceDetails as any)?.tvCount,
-                                    mountTypes: (order.serviceDetails as any)?.mountTypes,
-                                    wallMaterial: (order.serviceDetails as any)?.wallMaterial,
-                                    liftingHelp: (order.serviceDetails as any)?.liftingHelp,
-                                    mountingAddOns: (order.serviceDetails as any)?.mountingAddOns,
-                                    deliveryDistanceKm: (order.serviceDetails as any)?.deliveryDistanceKm,
-                                    deliveryDurationMinutes: (order.serviceDetails as any)?.deliveryDurationMinutes,
-                                    // Office Cleaning specific
-                                    officeDesks: (order.serviceDetails as any)?.officeDesks,
-                                    officeMeetingRooms: (order.serviceDetails as any)?.officeMeetingRooms,
-                                    officeBathrooms: (order.serviceDetails as any)?.officeBathrooms,
-                                    hasKitchenette: (order.serviceDetails as any)?.hasKitchenette,
-                                    hasReception: (order.serviceDetails as any)?.hasReception,
-                                    officeAddOns: (order.serviceDetails as any)?.officeAddOns,
-                                    taskSize: (order.serviceDetails as any)?.taskSize,
-                                    // Glass Cleaning specific
-                                    windowCount: (order.serviceDetails as any)?.windowCount,
-                                    glassCleaningType: (order.serviceDetails as any)?.glassCleaningType,
-                                    glassAccessibility: (order.serviceDetails as any)?.glassAccessibility,
-                                    storeFrontSize: (order.serviceDetails as any)?.storeFrontSize,
-                                }
-                            );
-
-                            const basePrice = individualPricing.basePrice;
-                            const servicesTotal = individualPricing.subtotal * slotsCount;
-                            const serviceFee = individualPricing.serviceFee * slotsCount;
-                            const total = individualPricing.total * slotsCount;
+                            const p = getFinalPricing();
+                            const servicesTotal = p.subtotal * p.slotsCount;
+                            const serviceFee = p.serviceFee * p.slotsCount;
 
                             return (
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
@@ -779,11 +779,11 @@ export default function CheckoutPage() {
                                             <div style={{ width: 22, height: 22, borderRadius: '50%', border: '1px solid #D1D5DB', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, color: '#9CA3AF', fontWeight: 700 }}>i</div>
                                         </div>
                                         <span style={{ fontSize: 18, fontWeight: 400, color: '#111827' }}>
-                                            {Math.round(basePrice)} MAD/{individualPricing.unit === 'unit' ? (t({ en: 'unit', fr: 'unité', ar: 'وحدة' })) : individualPricing.unit === 'day' ? (t({ en: 'day', fr: 'jour', ar: 'يوم' })) : individualPricing.unit === 'office' ? (t({ en: 'office', fr: 'bureau', ar: 'مكتب' })) : (t({ en: 'hr', fr: 'h', ar: 'ساعة' }))}
+                                            {Math.round(p.basePrice)} MAD/{p.unit === 'unit' ? (t({ en: 'unit', fr: 'unité', ar: 'وحدة' })) : p.unit === 'day' ? (t({ en: 'day', fr: 'jour', ar: 'يوم' })) : p.unit === 'office' ? (t({ en: 'office', fr: 'bureau', ar: 'مكتب' })) : (t({ en: 'hr', fr: 'h', ar: 'ساعة' }))}
                                         </span>
                                     </div>
 
-                                    {individualPricing.details && individualPricing.details.map((detail, idx) => (
+                                    {p.details && p.details.map((detail, idx) => (
                                         <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingLeft: 16, borderLeft: '2px solid rgba(1, 160, 131, 0.2)' }}>
                                             <span style={{ fontSize: 16, fontWeight: 600, color: '#4B5563' }}>{t(detail.label)}</span>
                                             <span style={{ fontSize: 16, fontWeight: 800, color: '#111827' }}>{detail.amount.toFixed(0)} MAD</span>
@@ -806,7 +806,7 @@ export default function CheckoutPage() {
                                         <span style={{ fontSize: 18, fontWeight: 400, color: '#111827' }}>{serviceFee.toFixed(2)} MAD</span>
                                     </div>
 
-                                    {individualPricing.travelFee > 0 && (
+                                    {p.travelFee > 0 && (
                                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                             <div style={{ display: 'flex', flexDirection: 'column' }}>
                                                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -817,15 +817,34 @@ export default function CheckoutPage() {
                                                     <span style={{ fontSize: 11, fontWeight: 400, color: '#9CA3AF' }}>{travelInfo.distanceKm} km · ~{travelInfo.durationMinutes} min</span>
                                                 )}
                                             </div>
-                                            <span style={{ fontSize: 18, fontWeight: 400, color: '#111827' }}>{individualPricing.travelFee.toFixed(2)} MAD</span>
+                                            <span style={{ fontSize: 18, fontWeight: 400, color: '#111827' }}>{p.travelFee.toFixed(2)} MAD</span>
+                                        </div>
+                                    )}
+
+                                    {p.discountAmount > 0 && (
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', background: '#ecfdf5', borderRadius: 12, border: '1px solid #d1fae5' }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                                <div style={{ width: 24, height: 24, borderRadius: '50%', background: '#10b981', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                                    <Check size={14} color="#fff" strokeWidth={4} />
+                                                </div>
+                                                <span style={{ fontSize: 16, fontWeight: 700, color: '#065f46' }}>{t({ en: 'Discount applied', fr: 'Réduction coupon', ar: 'تم تطبيق الخصم' })}</span>
+                                            </div>
+                                            <span style={{ fontSize: 16, fontWeight: 900, color: '#059669' }}>
+                                                {p.isFree ? (t({ en: 'Free', fr: 'Gratuit', ar: 'مجاني' })) : `-${Math.round(p.discountAmount)} MAD`}
+                                            </span>
                                         </div>
                                     )}
 
                                     <div style={{ height: 1, background: '#E5E7EB', width: '100%', margin: '8px 0' }} />
 
                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                        <span style={{ fontSize: 22, fontWeight: 800, color: '#111827' }}>{t({ en: 'Total to pay', fr: 'Total à payer', ar: 'الإجمالي للدفع' })}</span>
-                                        <span style={{ fontSize: 25, fontWeight: 800, color: '#111827' }}>{total.toFixed(2)} MAD</span>
+                                        <span style={{ fontSize: 24, fontWeight: 900, color: '#111827' }}>{t({ en: 'Total to pay', fr: 'Total à payer', ar: 'الإجمالي للدفع' })}</span>
+                                        <div style={{ textAlign: 'right' }}>
+                                            <span style={{ fontSize: 28, fontWeight: 950, color: p.total === 0 ? '#059669' : '#111827' }}>
+                                                {p.total.toFixed(2)} MAD
+                                                {p.total === 0 && <span style={{ marginLeft: 8 }}>🎁</span>}
+                                            </span>
+                                        </div>
                                     </div>
                                 </div>
                             );
@@ -843,41 +862,15 @@ export default function CheckoutPage() {
                     </svg>
                 </div>
                 {(() => {
-                    const slotsCount = (order.multiSlots && order.multiSlots.length > 0) ? order.multiSlots.length : 1;
-                    const individualPricing = calculateOrderPrice(
-                        order.subServiceId || order.serviceType || 'car_rental',
-                        order.selectedCar?.pricePerDay || order.providerRate || 0,
-                        {
-                            rooms: order.serviceDetails?.rooms || 1,
-                            hours: (order.serviceDetails as any)?.taskDuration || 1,
-                            days: calculateDays() || 1,
-                            propertyType: (order.serviceDetails as any)?.propertyType,
-                            distanceKm: travelInfo?.distanceKm || 0,
-                            // TV Mounting specific
-                            tvCount: (order.serviceDetails as any)?.tvCount,
-                            mountTypes: (order.serviceDetails as any)?.mountTypes,
-                            wallMaterial: (order.serviceDetails as any)?.wallMaterial,
-                            liftingHelp: (order.serviceDetails as any)?.liftingHelp,
-                            mountingAddOns: (order.serviceDetails as any)?.mountingAddOns,
-                            deliveryDistanceKm: (order.serviceDetails as any)?.deliveryDistanceKm,
-                            deliveryDurationMinutes: (order.serviceDetails as any)?.deliveryDurationMinutes,
-                            // Office Cleaning specific
-                            officeDesks: (order.serviceDetails as any)?.officeDesks,
-                            officeMeetingRooms: (order.serviceDetails as any)?.officeMeetingRooms,
-                            officeBathrooms: (order.serviceDetails as any)?.officeBathrooms,
-                            hasKitchenette: (order.serviceDetails as any)?.hasKitchenette,
-                            hasReception: (order.serviceDetails as any)?.hasReception,
-                            officeAddOns: (order.serviceDetails as any)?.officeAddOns,
-                        }
-                    );
-                    const total = individualPricing.total * slotsCount;
-
+                    const p = getFinalPricing();
                     return (
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 20 }}>
                             <span style={{ fontSize: 22, fontWeight: 950 }}>Total</span>
                             <div style={{ display: 'flex', alignItems: 'baseline', gap: 4 }}>
-                                <span style={{ fontSize: 32, fontWeight: 1000 }}>{total.toFixed(2)}</span>
-                                <span style={{ fontSize: 16, fontWeight: 900, color: '#111827' }}>MAD</span>
+                                <span style={{ fontSize: 32, fontWeight: 1000, color: p.total === 0 ? '#059669' : '#111827' }}>
+                                    {p.total.toFixed(2)}
+                                </span>
+                                <span style={{ fontSize: 16, fontWeight: 900, color: p.total === 0 ? '#059669' : '#111827' }}>MAD</span>
                             </div>
                         </div>
                     );

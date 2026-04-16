@@ -8,10 +8,10 @@
 
 | | |
 |---|---|
-| 🔗 App | [lbricol.ma](https://lbricol.ma) |
-| 📲 Client link | lbricol.ma/client |
-| 👷 Join as a Pro | lbricol.ma/join |
-| 🏢 Provider Portal | lbricol.ma/provider |
+| 🔗 App | [lbricol.com](https://lbricol.com) |
+| 📲 Client link | lbricol.com/client |
+| 👷 Join as a Pro | lbricol.com/join |
+| 🏢 Provider Portal | lbricol.com/provider |
 
 ---
 
@@ -26,9 +26,9 @@
 > It's already live in **Casablanca, Marrakech, Essaouira, Rabat, Agadir, Tangier & Fes** 🇲🇦
 >
 > And if you have a skill, you can earn money by joining as a Bricoler 👇
-> 👉 lbricol.ma/join
+> 👉 lbricol.com/join
 >
-> Check it out: **lbricol.ma** 🚀
+> Check it out: **lbricol.com** 🚀
 
 ---
 
@@ -41,9 +41,9 @@
 > Disponible à Casablanca, Marrakech, Rabat, Essaouira, Agadir, Tanger et Fès 🇲🇦
 >
 > Vous avez un talent ? Rejoignez la plateforme et gagnez de l'argent en tant que Bricoleur 👇
-> 👉 lbricol.ma/join
+> 👉 lbricol.com/join
 >
-> Essayez dès maintenant : **lbricol.ma** 🚀
+> Essayez dès maintenant : **lbricol.com** 🚀
 
 ---
 
@@ -56,9 +56,9 @@
 > كاينة في: الدار البيضاء، مراكش، الصويرة، الرباط، أغادير، طنجة وفاس 🇲🇦
 >
 > وإلا عندك مهارة وبغيت تخدم — سجل كـ Bricoler:
-> 👉 lbricol.ma/join
+> 👉 lbricol.com/join
 >
-> **lbricol.ma** 🚀
+> **lbricol.com** 🚀
 
 ---
 
@@ -72,7 +72,7 @@
 ### **Lbricol Launches Morocco's First On-Demand Home Services Marketplace**
 *Platform connects homeowners with vetted local professionals across 7 Moroccan cities*
 
-**CASABLANCA, MOROCCO** — Lbricol, a Moroccan-built technology startup, has launched a mobile-first marketplace that connects households with trusted, local service professionals across Morocco. The platform — available today at **lbricol.ma** — covers an extensive range of services including home repairs, cleaning, plumbing, electrical work, carpentry, gardening, babysitting, cooking, and private drivers.
+**CASABLANCA, MOROCCO** — Lbricol, a Moroccan-built technology startup, has launched a mobile-first marketplace that connects households with trusted, local service professionals across Morocco. The platform — available today at **lbricol.com** — covers an extensive range of services including home repairs, cleaning, plumbing, electrical work, carpentry, gardening, babysitting, cooking, and private drivers.
 
 #### The Problem Lbricol Solves
 
@@ -83,12 +83,12 @@ Lbricol changes this. By building a structured marketplace with real-time job di
 #### How It Works
 
 **For Clients:**
-1. Visit lbricol.ma, select a city and service category
+1. Visit lbricol.com, select a city and service category
 2. Browse available professionals with ratings, portfolios, and hourly rates
 3. Book and pay securely — with real-time messaging and order tracking
 
 **For Professionals ("Bricolers"):**
-1. Sign up at lbricol.ma/join
+1. Sign up at lbricol.com/join
 2. Build a profile with work photos, certifications, and hourly rates
 3. Receive and accept job requests in real-time
 
@@ -129,8 +129,8 @@ The platform is available in **English, French, and Arabic** — one of the few 
 Lbricol is a Moroccan technology company building marketplace infrastructure for the informal home services economy in North Africa. The company is currently in early growth stage with a live product, active professionals, and clients across 7 Moroccan cities.
 
 **Media Contact:**
-Website: lbricol.ma
-Pro sign-up: lbricol.ma/join
+Website: lbricol.com
+Pro sign-up: lbricol.com/join
 
 ---
 
@@ -212,7 +212,7 @@ job completed + rated → payment processed
 
 ### 📈 Traction & Milestones
 
-- ✅ **Live product** at lbricol.ma — web app, mobile-optimized
+- ✅ **Live product** at lbricol.com — web app, mobile-optimized
 - ✅ **7 cities** active with neighborhood-level service matching
 - ✅ **25+ service categories** with 80+ specific subcategories
 - ✅ **Full onboarding flow** for Bricolers with portfolio, pricing, and availability
@@ -271,9 +271,9 @@ We are looking for **early believers** — whether that means:
 
 | | |
 |---|---|
-| 🌐 Website | [lbricol.ma](https://lbricol.ma) |
-| 👷 Become a Bricoler | [lbricol.ma/join](https://lbricol.ma/join) |
-| 📱 Try the App | [lbricol.ma/client](https://lbricol.ma/client) |
+| 🌐 Website | [lbricol.com](https://lbricol.com) |
+| 👷 Become a Bricoler | [lbricol.com/join](https://lbricol.com/join) |
+| 📱 Try the App | [lbricol.com/client](https://lbricol.com/client) |
 
 ---
 
