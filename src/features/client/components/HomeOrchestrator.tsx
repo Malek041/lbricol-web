@@ -1736,7 +1736,7 @@ export default function HomeOrchestrator() {
 
   const compressImage = (base64Str: string): Promise<string> => {
     return new Promise((resolve) => {
-      const img = new Image();
+      const img = new window.Image();
       img.src = base64Str;
       img.onload = () => {
         const canvas = document.createElement('canvas');
