@@ -1,5 +1,6 @@
 "use client";
 
+import { safeStorage } from '@/lib/safeStorage';
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -100,7 +101,7 @@ export default function AdminPage() {
                         </button>
                         <button
                             onClick={() => {
-                                localStorage.setItem('lbricol_force_client_mode', 'true');
+                                safeStorage.setItem('lbricol_force_client_mode', 'true');
                                 router.push('/');
                             }}
                             className="w-10 h-10 bg-black/10 rounded-2xl flex items-center justify-center"

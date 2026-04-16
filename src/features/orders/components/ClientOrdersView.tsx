@@ -1,5 +1,6 @@
 "use client";
 
+import { safeStorage } from '@/lib/safeStorage';
 import React, { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { OrderDetails } from '@/features/orders/components/OrderCard';
@@ -1620,7 +1621,7 @@ function ActivityTab({
     useEffect(() => {
         const loadDrafts = () => {
             try {
-                const saved = localStorage.getItem('lbricol_order_drafts');
+                const saved = safeStorage.getItem('lbricol_order_drafts');
                 if (saved) {
                     const parsed: any[] = JSON.parse(saved);
 
@@ -1637,7 +1638,7 @@ function ActivityTab({
 
                     // Persist deduplication back if we removed anything
                     if (deduped.length < parsed.length) {
-                        localStorage.setItem('lbricol_order_drafts', JSON.stringify(deduped));
+                        safeStorage.setItem('lbricol_order_drafts', JSON.stringify(deduped));
                     }
                     setLocalDrafts(deduped);
                 } else {
@@ -1658,7 +1659,7 @@ function ActivityTab({
         try {
             const updated = localDrafts.filter(d => d.id !== draftId);
             setLocalDrafts(updated);
-            localStorage.setItem('lbricol_order_drafts', JSON.stringify(updated));
+            safeStorage.setItem('lbricol_order_drafts', JSON.stringify(updated));
         } catch (e) { }
     };
 

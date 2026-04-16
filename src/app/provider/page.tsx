@@ -1,5 +1,6 @@
 "use client";
 
+import { safeStorage } from '@/lib/safeStorage';
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -158,7 +159,7 @@ export default function ProviderPage() {
 
     // Redirection check for first-timers
     useEffect(() => {
-        const onboardingShown = localStorage.getItem('client_onboarding_shown');
+        const onboardingShown = safeStorage.getItem('client_onboarding_shown');
         if (!onboardingShown) {
             router.push('/join');
         }
@@ -3257,7 +3258,7 @@ export default function ProviderPage() {
                                     variant="provider"
                                     initialView="portfolio"
                                     onBricolerAction={() => {
-                                        localStorage.setItem('lbricol_force_client_mode', 'true');
+                                        safeStorage.setItem('lbricol_force_client_mode', 'true');
                                         window.location.href = '/';
                                     }}
                                     onOpenLanguage={() => setShowLanguagePopup(true)}
@@ -3324,7 +3325,7 @@ export default function ProviderPage() {
                                     isAuthenticated={!!user}
                                     variant="provider"
                                     onBricolerAction={() => {
-                                        localStorage.setItem('lbricol_force_client_mode', 'true');
+                                        safeStorage.setItem('lbricol_force_client_mode', 'true');
                                         window.location.href = '/';
                                     }}
                                     onOpenLanguage={() => setShowLanguagePopup(true)}

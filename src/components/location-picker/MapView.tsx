@@ -1,5 +1,6 @@
 "use client";
 
+import { safeStorage } from '@/lib/safeStorage';
 import React, { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -252,8 +253,8 @@ const MapView: React.FC<MapViewProps> = ({
       });
       onLoadingChangeProp?.(false);
       try {
-        localStorage.setItem('lastKnownLat', lat.toString());
-        localStorage.setItem('lastKnownLng', lng.toString());
+        safeStorage.setItem('lastKnownLat', lat.toString());
+        safeStorage.setItem('lastKnownLng', lng.toString());
       } catch (e) { }
     }
   };
@@ -268,8 +269,8 @@ const MapView: React.FC<MapViewProps> = ({
       lng = initialLocation.lng;
     } else {
       try {
-        const lastLat = localStorage.getItem('lastKnownLat');
-        const lastLng = localStorage.getItem('lastKnownLng');
+        const lastLat = safeStorage.getItem('lastKnownLat');
+        const lastLng = safeStorage.getItem('lastKnownLng');
         if (lastLat && lastLng) {
           lat = parseFloat(lastLat);
           lng = parseFloat(lastLng);

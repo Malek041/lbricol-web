@@ -1,4 +1,5 @@
 'use client';
+import { safeStorage } from '@/lib/safeStorage';
 import { useEffect, useState, Suspense } from 'react';
 import { useRouter } from 'next/navigation';
 import { useOrder } from '@/context/OrderContext';
@@ -12,7 +13,7 @@ function Step1Content() {
 
   useEffect(() => {
     // Load saved addresses from localStorage
-    const saved = localStorage.getItem('lbricol_saved_addresses');
+    const saved = safeStorage.getItem('lbricol_saved_addresses');
     if (saved) {
       try {
         setUserSavedAddresses(JSON.parse(saved));
@@ -35,11 +36,11 @@ function Step1Content() {
     const currentArea = pickup.area || '';
 
     // Persist to localStorage for Home page consistency
-    if (currentCity) localStorage.setItem('lbricol_preferred_city', currentCity);
-    if (currentArea) localStorage.setItem('lbricol_preferred_area', currentArea);
-    localStorage.setItem('lastKnownLat', currentLat.toString());
-    localStorage.setItem('lastKnownLng', currentLng.toString());
-    localStorage.setItem('lastKnownAddress', currentAddress);
+    if (currentCity) safeStorage.setItem('lbricol_preferred_city', currentCity);
+    if (currentArea) safeStorage.setItem('lbricol_preferred_area', currentArea);
+    safeStorage.setItem('lastKnownLat', currentLat.toString());
+    safeStorage.setItem('lastKnownLng', currentLng.toString());
+    safeStorage.setItem('lastKnownAddress', currentAddress);
 
     // Update Order Context
     const locData = {
@@ -68,7 +69,7 @@ function Step1Content() {
     setUserSavedAddresses(prev => {
       const exists = prev.find(a => a.id === addr.id);
       const newList = exists ? prev.map(a => a.id === addr.id ? addr : a) : [addr, ...prev];
-      localStorage.setItem('lbricol_saved_addresses', JSON.stringify(newList));
+      safeStorage.setItem('lbricol_saved_addresses', JSON.stringify(newList));
       return newList;
     });
   };
@@ -76,7 +77,7 @@ function Step1Content() {
   const handleDeleteAddress = (id: string) => {
     setUserSavedAddresses(prev => {
       const newList = prev.filter(a => a.id !== id);
-      localStorage.setItem('lbricol_saved_addresses', JSON.stringify(newList));
+      safeStorage.setItem('lbricol_saved_addresses', JSON.stringify(newList));
       return newList;
     });
   };

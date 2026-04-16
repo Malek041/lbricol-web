@@ -1,5 +1,6 @@
 "use client";
 
+import { safeStorage } from '@/lib/safeStorage';
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import OnboardingPopup from '@/features/onboarding/components/OnboardingPopup';
@@ -9,7 +10,7 @@ export default function JoinPage() {
     const [isOpen, setIsOpen] = useState(true);
 
     React.useEffect(() => {
-        const onboardingShown = localStorage.getItem('client_onboarding_shown');
+        const onboardingShown = safeStorage.getItem('client_onboarding_shown');
         if (!onboardingShown) {
             router.push('/?start_bricoler=true');
         }

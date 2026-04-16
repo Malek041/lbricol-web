@@ -1,5 +1,6 @@
 "use client";
 
+import { safeStorage } from '@/lib/safeStorage';
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Star, X, Send, ChevronLeft } from 'lucide-react';
@@ -139,7 +140,7 @@ const RatingPopup: React.FC<RatingPopupProps> = ({
                 clientReviewComment: isSkip ? "" : review,
                 reviewedAt: new Date().toISOString()
             });
-            localStorage.setItem(`lbricol_rated_${jobId}`, '1');
+            safeStorage.setItem(`lbricol_rated_${jobId}`, '1');
             onClose();
         } catch (err) {
             console.error('Error submitting review:', err);

@@ -1,4 +1,5 @@
 'use client';
+import { safeStorage } from '@/lib/safeStorage';
 import { useEffect, useState, Suspense, useRef, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useOrder } from '@/context/OrderContext';
@@ -326,7 +327,7 @@ function Step2Content() {
   };
 
   useEffect(() => {
-    const saved = localStorage.getItem('lbricol_saved_addresses');
+    const saved = safeStorage.getItem('lbricol_saved_addresses');
     if (saved) {
       try {
         setUserSavedAddresses(JSON.parse(saved));
@@ -369,10 +370,10 @@ function Step2Content() {
         console.error("Error saving draft to DB:", e);
       }
     } else {
-      const existing = JSON.parse(localStorage.getItem('lbricol_order_drafts') || '[]');
+      const existing = JSON.parse(safeStorage.getItem('lbricol_order_drafts') || '[]');
       const draftWithId = { ...draftData, id: `draft_${Date.now()}` };
       existing.push(draftWithId);
-      localStorage.setItem('lbricol_order_drafts', JSON.stringify(existing));
+      safeStorage.setItem('lbricol_order_drafts', JSON.stringify(existing));
     }
     router.push('/?tab=calendar');
   };

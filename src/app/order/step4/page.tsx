@@ -1,5 +1,6 @@
 'use client';
 
+import { safeStorage } from '@/lib/safeStorage';
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -77,7 +78,7 @@ export default function CheckoutPage() {
 
                 // Fallback to localStorage if WhatsApp number is still missing
                 if (!combinedData.whatsappNumber) {
-                    const localPhone = localStorage.getItem('lbricol_user_phone');
+                    const localPhone = safeStorage.getItem('lbricol_user_phone');
                     if (localPhone) combinedData.whatsappNumber = localPhone;
                 }
 
@@ -191,7 +192,7 @@ export default function CheckoutPage() {
         try {
             // 1. Ensure user profile is updated with WhatsApp if new
             if (finalWhatsApp) {
-                localStorage.setItem('lbricol_user_phone', finalWhatsApp);
+                safeStorage.setItem('lbricol_user_phone', finalWhatsApp);
                 if (!userData?.whatsappNumber) {
                     await setDoc(doc(db, 'clients', finalUser.uid), {
                         whatsappNumber: finalWhatsApp,
@@ -926,7 +927,7 @@ export default function CheckoutPage() {
                         if (uSnap.exists()) combinedData = { ...combinedData, ...uSnap.data() };
                         if (cSnap.exists()) combinedData = { ...combinedData, ...cSnap.data() };
 
-                        const cachedPhone = localStorage.getItem('lbricol_user_phone');
+                        const cachedPhone = safeStorage.getItem('lbricol_user_phone');
                         const finalNumber = combinedData.whatsappNumber || cachedPhone;
 
                         if (finalNumber) {
@@ -945,7 +946,7 @@ export default function CheckoutPage() {
                 onClose={() => setShowWhatsAppPopup(false)}
                 onSuccess={(number) => {
                     setShowWhatsAppPopup(false);
-                    localStorage.setItem('lbricol_user_phone', number);
+                    safeStorage.setItem('lbricol_user_phone', number);
                     createOrders(user, number);
                 }}
             />
