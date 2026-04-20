@@ -237,6 +237,43 @@ const ClientHome: React.FC<ClientHomeProps> = ({
     const [activeId, setActiveId] = useState<string>('');
     const [hasManuallySelected, setHasManuallySelected] = useState(false);
 
+    // Hero Header Rotation Logic (Selling Points)
+    const allHeroTitles = [
+        {
+            en: 'Book trusted help for home tasks',
+            fr: 'Réservez une aide de confiance pour vos tâches',
+            ar: 'احجز مساعدة موثوقة لمهام منزلك',
+            icon: null
+        },
+        {
+            en: 'Find a pro in 10s',
+            fr: 'Trouvez un pro en 10s',
+            ar: 'جد محترفاً في 10 ثوانٍ',
+            icon: <Zap size={28} className="text-black" strokeWidth={2.5} />
+        },
+        {
+            en: 'Starting from 99 MAD',
+            fr: 'À partir de 99 MAD',
+            ar: 'ابتداءً من 99 درهم',
+            icon: <Tag size={28} className="text-black" strokeWidth={2.5} />
+        },
+        {
+            en: 'Safer than a random number',
+            fr: 'Plus sûr qu\'un numéro au hasard',
+            ar: 'أكثر أمانًا من رقم عشوائي',
+            icon: <ShieldCheck size={28} className="text-black" strokeWidth={2.5} />
+        }
+    ];
+
+    const [heroIndex, setHeroIndex] = useState(0);
+
+    useEffect(() => {
+        const interval = setInterval(() => {
+            setHeroIndex((prev) => (prev + 1) % allHeroTitles.length);
+        }, 4500);
+        return () => clearInterval(interval);
+    }, []);
+
 
     // Initial load
     useEffect(() => {
@@ -501,21 +538,37 @@ const ClientHome: React.FC<ClientHomeProps> = ({
                     </motion.button>
                 </div>
 
-                {/* Heading */}
-                <div className="text-center px-6 mb-2">
-                    <motion.h1
-                        initial={{ opacity: 0, scale: 0.9 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        transition={{ delay: 0.8, duration: 0.6, type: "spring", stiffness: 200 }}
-                        className="text-[30px] font-black leading-[1.05] tracking-tight text-black max-w-[340px] mx-auto"
-                        style={{ fontWeight: 700, fontFamily: '"Uber Move", "UberMoveText", var(--font-sans), sans-serif', letterSpacing: '-0.04em' }}
-                    >
-                        {t({
-                            en: 'Book trusted help for home tasks',
-                            fr: 'Réservez une aide de confiance pour vos tâches',
-                            ar: 'احجز مساعدة موثوقة لمهام منزلك'
-                        })}
-                    </motion.h1>
+                {/* Heading (Rotating) */}
+                <div className="text-center px-6 mb-2 min-h-[110px] flex items-center justify-center">
+                    <AnimatePresence mode="wait">
+                        <motion.h1
+                            key={heroIndex}
+                            initial={{ opacity: 0, y: 15, scale: 0.95 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            exit={{ opacity: 0, y: -15, scale: 0.95 }}
+                            transition={{ 
+                                duration: 0.5,
+                                type: "spring",
+                                stiffness: 260,
+                                damping: 20
+                            }}
+                            className="text-[30px] font-black leading-[1.05] tracking-tight text-black max-w-[340px] mx-auto flex flex-col items-center gap-2"
+                            style={{ fontWeight: 700, fontFamily: '"Uber Move", "UberMoveText", var(--font-sans), sans-serif', letterSpacing: '-0.04em' }}
+                        >
+                            {allHeroTitles[heroIndex].icon && (
+                                <motion.div
+                                    initial={{ scale: 0, rotate: -10 }}
+                                    animate={{ scale: 1, rotate: 0 }}
+                                    transition={{ type: "spring", stiffness: 300 }}
+                                >
+                                    {allHeroTitles[heroIndex].icon}
+                                </motion.div>
+                            )}
+                            <span>
+                                {t(allHeroTitles[heroIndex])}
+                            </span>
+                        </motion.h1>
+                    </AnimatePresence>
                 </div>
                 {/* Search bar trigger */}
                 {/*<div className="px-6 pb-1 pt-6 w-full max-w-[400px] h-[30px] mx-auto">
@@ -904,72 +957,7 @@ const ClientHome: React.FC<ClientHomeProps> = ({
                                                     </div>
                                                 </div>*/}
 
-                                                {/* Details Rows */}
-                                                <div className="flex flex-col gap-5 p-5">
-                                                    {/* Row 1: Speed */}
-                                                    <motion.div
-                                                        className="flex items-start gap-4"
-                                                        initial={{ opacity: 0, x: -15 }}
-                                                        animate={{ opacity: 1, x: 0 }}
-                                                        transition={{ delay: (hasManuallySelected ? 0.2 : 1.7) + 0.2 }}
-                                                    >
-                                                        <div className="mt-0.5 text-[#222222]">
-                                                            <Zap size={24} strokeWidth={1.5} />
-                                                        </div>
-                                                        <div className="flex-1">
-                                                            <h4 className="text-[15px] font-semibold text-[#222222] leading-tight mb-0.5">
-                                                                {t({ en: 'Book in 10s (2 steps)', fr: 'Trouvez un pro en 10s', ar: 'احجز في 10 ثوانٍ' })}
-                                                            </h4>
-                                                            <p className="text-[14px] text-[#717171] leading-tight">
-                                                                {t({ en: 'Find available pros instantly.', fr: 'Trouvez des pros disponibles instantanément.', ar: 'ابحث عن محترفين متاحين على الفور.' })}
-                                                            </p>
-                                                        </div>
-                                                    </motion.div>
-
-                                                    {/* Row 2: Price */}
-                                                    <motion.div
-                                                        className="flex items-start gap-4"
-                                                        initial={{ opacity: 0, x: -15 }}
-                                                        animate={{ opacity: 1, x: 0 }}
-                                                        transition={{ delay: (hasManuallySelected ? 0.2 : 1.7) + 0.3 }}
-                                                    >
-                                                        <div className="mt-0.5 text-[#222222]">
-                                                            <Tag size={24} strokeWidth={1.5} />
-                                                        </div>
-                                                        <div className="flex-1">
-                                                            <h4 className="text-[15px] font-semibold text-[#222222] leading-tight mb-0.5">
-                                                                {t({
-                                                                    en: `Starting from 99 MAD`,
-                                                                    fr: `À partir de 99 MAD`,
-                                                                    ar: `ابتداءً من 99 درهم`
-                                                                })}
-                                                            </h4>
-                                                            <p className="text-[14px] text-[#717171] leading-tight">
-                                                                {t({ en: 'Transparent and fair pricing.', fr: 'Des prix transparents et justes.', ar: 'أسعار شفافة وعادلة.' })}
-                                                            </p>
-                                                        </div>
-                                                    </motion.div>
-
-                                                    {/* Row 3: Safer than random */}
-                                                    <motion.div
-                                                        className="flex items-start gap-4"
-                                                        initial={{ opacity: 0, x: -15 }}
-                                                        animate={{ opacity: 1, x: 0 }}
-                                                        transition={{ delay: (hasManuallySelected ? 0.2 : 1.7) + 0.4 }}
-                                                    >
-                                                        <div className="mt-0.5 text-[#222222]">
-                                                            <ShieldCheck size={24} strokeWidth={1.5} />
-                                                        </div>
-                                                        <div className="flex-1">
-                                                            <h4 className="text-[15px] font-semibold text-[#222222] leading-tight mb-0.5">
-                                                                {t({ en: 'Safer than a random number', fr: 'Plus sûr qu\'un numéro au hasard', ar: 'أكثر أمانًا من رقم عشوائي' })}
-                                                            </h4>
-                                                            <p className="text-[14px] text-[#717171] leading-tight">
-                                                                {t({ en: 'Verified pros with reviews.', fr: 'Pros vérifiés avec avis clients.', ar: 'محترفون معتمدون مع تقييمات.' })}
-                                                            </p>
-                                                        </div>
-                                                    </motion.div>
-                                                </div>
+                                                {/* Details Section (Removed as selling points are now in the rotating header) */}
                                             </motion.div>
                                         </div>
                                     </motion.div>
