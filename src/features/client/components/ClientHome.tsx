@@ -507,8 +507,8 @@ const ClientHome: React.FC<ClientHomeProps> = ({
                         initial={{ opacity: 0, scale: 0.9 }}
                         animate={{ opacity: 1, scale: 1 }}
                         transition={{ delay: 0.8, duration: 0.6, type: "spring", stiffness: 200 }}
-                        className="text-[28px] font-black leading-[1.0] tracking-tight text-black max-w-[340px] mx-auto"
-                        style={{ fontWeight: 700, fontFamily: '"Uber Move", "UberMoveText", sans-serif' }}
+                        className="text-[30px] font-black leading-[1.05] tracking-tight text-black max-w-[340px] mx-auto"
+                        style={{ fontWeight: 900, fontFamily: '"Uber Move", "UberMoveText", var(--font-sans), sans-serif', letterSpacing: '-0.04em' }}
                     >
                         {t({
                             en: 'Book trusted help for home tasks',
@@ -688,7 +688,7 @@ const ClientHome: React.FC<ClientHomeProps> = ({
                                                         <div className="relative w-full h-full flex items-center justify-center">
                                                             <div className={cn(
                                                                 "w-16 h-16 relative transition-all duration-500",
-                                                                isActive ? "scale-[1.25] rotate-[2deg] drop-shadow-xl" : "scale-[1.1] grayscale-[0.2]"
+                                                                isActive ? "scale-[1.25] rotate-[2deg]" : "scale-[1.1] grayscale-[0.2]"
                                                             )}>
                                                                 <Image
                                                                     key={svc.iconPath}

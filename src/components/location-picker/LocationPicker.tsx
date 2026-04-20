@@ -249,14 +249,7 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
 
         {/* 3. TRULY FIXED PIN & CALLOUT — Always in visual center of Map */}
         <div className="absolute left-1/2 top-1/2 pointer-events-none z-[1001]" style={{ transform: 'translate(-50%, -100%)' }}>
-          <motion.div
-            animate={{ y: [0, -12, 0] }}
-            transition={{
-              duration: 2.5,
-              repeat: Infinity,
-              ease: "easeInOut"
-            }}
-          >
+          <motion.div>
             <div className="relative flex flex-col items-center">
               {/* The Address Bubble */}
               {currentPoint && (

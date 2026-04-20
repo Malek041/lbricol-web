@@ -470,27 +470,47 @@ export default function HomeOrchestrator() {
   const [isViewingOrderDetails, setIsViewingOrderDetails] = useState(false);
 
   useEffect(() => {
+    // 1. Minimum Splash Duration (Reduced for consistent but snappy brand impression)
     const minTimer = setTimeout(() => {
       if (mounted && !loadingOrders && !loadingServices) {
         setShowSplash(false);
-        
-        const prefCity = safeStorage.getItem('lbricol_preferred_city');
-        if (!prefCity && !showLanguagePopup) {
-          setShowLocationPicker(true);
-        }
       }
-    }, 2500);
+    }, 1200);
 
+    // 2. Maximum Splash Duration (Safety timeout to ensure app is ALWAYS accessible even if data hangs)
+    const safetyTimer = setTimeout(() => {
+      if (mounted) {
+        setShowSplash(false);
+      }
+    }, 4500);
+
+    // 3. Clear splash as soon as critical data is ready
     if (mounted && !loadingOrders && !loadingServices) {
-      const finalTimer = setTimeout(() => setShowSplash(false), 1000);
+      const readyTimer = setTimeout(() => {
+        setShowSplash(false);
+      }, 400); 
       return () => {
         clearTimeout(minTimer);
-        clearTimeout(finalTimer);
+        clearTimeout(safetyTimer);
+        readyTimer && clearTimeout(readyTimer);
       };
     }
 
-    return () => clearTimeout(minTimer);
-  }, [mounted, loadingOrders, loadingServices, showLanguagePopup]);
+    return () => {
+      clearTimeout(minTimer);
+      clearTimeout(safetyTimer);
+    };
+  }, [mounted, loadingOrders, loadingServices]);
+
+  // Handle location prompt trigger separately for clean state transitions
+  useEffect(() => {
+    if (!showSplash && mounted) {
+      const prefCity = safeStorage.getItem('lbricol_preferred_city');
+      if (!prefCity && !showLanguagePopup && !selectedCity) {
+        setShowLocationPicker(true);
+      }
+    }
+  }, [showSplash, mounted, showLanguagePopup, selectedCity]);
 
   useEffect(() => {
     const interval = setInterval(() => {

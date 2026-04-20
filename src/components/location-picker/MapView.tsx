@@ -184,11 +184,11 @@ const MapView: React.FC<MapViewProps> = ({
     const effectiveZoom = zoom !== undefined ? zoom : currentZoom;
 
     if (skipOffset) {
-      map.flyTo([lat, lng], effectiveZoom, { duration: 1.5 });
+      map.flyTo([lat, lng], effectiveZoom, { duration: 0.2 });
     } else {
       const mapSize = map.getSize();
       if (mapSize.x === 0 || mapSize.y === 0) {
-        map.flyTo([lat, lng], effectiveZoom, { duration: 1.5 });
+        map.flyTo([lat, lng], effectiveZoom, { duration: 0.2 });
       } else {
         const centerPoint = L.point(mapSize.x / 2, mapSize.y / 2);
         const targetPoint = L.point(mapSize.x / 2, mapSize.y * (pinY / 100));
@@ -197,7 +197,7 @@ const MapView: React.FC<MapViewProps> = ({
           map.project(targetLatLng, effectiveZoom).add(centerPoint).subtract(targetPoint),
           effectiveZoom
         );
-        map.flyTo(centerLatLng, effectiveZoom, { duration: 1.5 });
+        map.flyTo(centerLatLng, effectiveZoom, { duration: 0.2 });
       }
     }
 

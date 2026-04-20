@@ -86,26 +86,108 @@ export default function OrderAvailabilityPicker({
         fetchData();
     }, [bricolerId]);
 
-    // 2. Generate Next 14 Days
+    // 2. Generate Next 14 Available Days
     const nextDays = useMemo(() => {
-        return Array.from({ length: 14 }).map((_, i) => addDays(startOfToday(), i));
-    }, []);
+        const potentialDays = Array.from({ length: 21 }).map((_, i) => addDays(startOfToday(), i));
+        
+        if (!availabilityData) return potentialDays.slice(0, 14);
 
-    // 3. Calculate Available Slots for Selected Date
+        // Filter days that have at least one slot
+        const availableDays = potentialDays.filter(day => {
+            const dateKey = format(day, 'yyyy-MM-dd');
+            const dayOfWeek = DAYS_NAMES[getDay(day)];
+
+            // Logic matching calculateAvailableSlots
+            let baseSlots: { from: string, to: string }[] = [];
+            const hasOverrides = availabilityData.calendarSlots && availabilityData.calendarSlots[dateKey];
+
+            if (hasOverrides && Array.isArray(availabilityData.calendarSlots[dateKey]) && availabilityData.calendarSlots[dateKey].length > 0) {
+                baseSlots = availabilityData.calendarSlots[dateKey];
+            } else {
+                const routine = (availabilityData.routine && availabilityData.routine[dayOfWeek]) || 
+                               (availabilityData.availability?.weekly_routine && availabilityData.availability.weekly_routine[dayOfWeek]);
+                if (routine && (routine.active || routine.active === undefined)) {
+                    const startTime = routine.from || routine.start;
+                    const endTime = routine.to || routine.end;
+                    if (startTime && endTime) {
+                        baseSlots = TIME_SLOTS
+                            .filter(slot => slot >= startTime && slot < endTime)
+                            .map((slot) => {
+                                const [h, m] = slot.split(':').map(Number);
+                                let nextM = m + 30;
+                                let nextH = h;
+                                if (nextM >= 60) { nextM = 0; nextH += 1; }
+                                return { from: slot, to: `${nextH.toString().padStart(2, '0')}:${nextM.toString().padStart(2, '0')}` };
+                            });
+                    }
+                }
+            }
+
+            if (baseSlots.length === 0) return false;
+
+            const dateJobs = bookedJobs.filter(job => {
+                const jobDate = job.date ? (typeof job.date === 'string' ? job.date : format(new Date(job.date), 'yyyy-MM-dd')) : null;
+                return jobDate === dateKey;
+            });
+
+            const currentTaskDuration = taskDurationHours || 1;
+            const BUFFER_MINS = 30;
+
+            return baseSlots.some(slot => {
+                const [sh, sm] = slot.from.split(':').map(Number);
+                const slotStartMinutes = sh * 60 + sm;
+                const slotEndMinutes = slotStartMinutes + (currentTaskDuration * 60) + BUFFER_MINS;
+
+                const isBooked = dateJobs.some(job => {
+                    if (!job.time) return false;
+                    const [jh, jm] = job.time.split(':').map(Number);
+                    const jobStartMinutes = jh * 60 + jm;
+                    const jobDurationHours = job.estimatedDuration || job.duration || 1;
+                    const jobEndMinutes = jobStartMinutes + (jobDurationHours * 60) + BUFFER_MINS;
+                    return (slotStartMinutes >= jobStartMinutes && slotStartMinutes < jobEndMinutes) || 
+                           (jobStartMinutes >= slotStartMinutes && jobStartMinutes < slotEndMinutes);
+                });
+
+                if (isBooked) return false;
+
+                if (!hasOverrides) {
+                    const routineFinal = (availabilityData.routine && availabilityData.routine[dayOfWeek]) || 
+                                       (availabilityData.availability?.weekly_routine && availabilityData.availability.weekly_routine[dayOfWeek]);
+                    if (routineFinal && (routineFinal.active || routineFinal.active === undefined)) {
+                        const routineToTime = routineFinal.to || routineFinal.end;
+                        if (routineToTime) {
+                            const [rh_to, rm_to] = routineToTime.split(':').map(Number);
+                            if (slotStartMinutes + (currentTaskDuration * 60) > (rh_to * 60 + rm_to)) return false;
+                        }
+                    }
+                }
+
+                if (isToday(day)) {
+                    const now = new Date();
+                    const slotTime = setMinutes(setHours(startOfDay(now), sh), sm);
+                    return isAfter(slotTime, now);
+                }
+
+                return true;
+            });
+        });
+
+        return availableDays.slice(0, 14);
+    }, [availabilityData, bookedJobs, taskDurationHours]);
+
+    // 3. Current Day's Available Slots (extracted from nextDays logic indirectly, re-using selectedDate)
     const availableSlots = useMemo(() => {
         if (!availabilityData) return [];
 
         const dateKey = format(selectedDate, 'yyyy-MM-dd');
         const dayOfWeek = DAYS_NAMES[getDay(selectedDate)];
 
-        // A. Check Calendar Overrides (calendarSlots) first
         let baseSlots: { from: string, to: string }[] = [];
         const hasOverrides = availabilityData.calendarSlots && availabilityData.calendarSlots[dateKey];
 
         if (hasOverrides && Array.isArray(availabilityData.calendarSlots[dateKey]) && availabilityData.calendarSlots[dateKey].length > 0) {
             baseSlots = availabilityData.calendarSlots[dateKey];
         } else {
-            // B. Fallback to Weekly Routine (Handle both "routine" and "availability.weekly_routine")
             const routine = (availabilityData.routine && availabilityData.routine[dayOfWeek]) || 
                            (availabilityData.availability?.weekly_routine && availabilityData.availability.weekly_routine[dayOfWeek]);
                            
@@ -131,7 +213,6 @@ export default function OrderAvailabilityPicker({
             }
         }
 
-        // C. Filter out Booked Jobs
         const dateJobs = bookedJobs.filter(job => {
             const jobDate = job.date ? (typeof job.date === 'string' ? job.date : format(new Date(job.date), 'yyyy-MM-dd')) : null;
             return jobDate === dateKey;
@@ -140,51 +221,34 @@ export default function OrderAvailabilityPicker({
         const currentTaskDuration = taskDurationHours || 1;
         const BUFFER_MINS = 30;
 
-        const finalSlots = baseSlots.filter(slot => {
+        return baseSlots.filter(slot => {
             const [sh, sm] = slot.from.split(':').map(Number);
             const slotStartMinutes = sh * 60 + sm;
             const slotEndMinutes = slotStartMinutes + (currentTaskDuration * 60) + BUFFER_MINS;
 
-            // 1. Check if ANY existing job J overlaps with this theoretical window [slotStart, slotEnd]
             const isBooked = dateJobs.some(job => {
                 if (!job.time) return false;
-
                 const [jh, jm] = job.time.split(':').map(Number);
                 const jobStartMinutes = jh * 60 + jm;
-                const jobDurationHours = job.estimatedDuration || job.duration || 1;
-                const jobEndMinutes = jobStartMinutes + (jobDurationHours * 60) + BUFFER_MINS;
-
-                // Overlap exists if:
-                // (New Job Start is within Existing Job) OR (Existing Job Start is within New Job)
-                const newStartsInsideExisting = slotStartMinutes >= jobStartMinutes && slotStartMinutes < jobEndMinutes;
-                const existingStartsInsideNew = jobStartMinutes >= slotStartMinutes && jobStartMinutes < slotEndMinutes;
-
-                return newStartsInsideExisting || existingStartsInsideNew;
+                const jobEndMinutes = jobStartMinutes + (job.duration || 1) * 60 + BUFFER_MINS;
+                return (slotStartMinutes >= jobStartMinutes && slotStartMinutes < jobEndMinutes) ||
+                       (jobStartMinutes >= slotStartMinutes && jobStartMinutes < slotEndMinutes);
             });
 
             if (isBooked) return false;
 
-            // 2. Check if the entire task duration fits within the Bricoler's available hours for that day
-            // (Only if we are NOT using calendar overrides which are fixed blocks)
             if (!hasOverrides) {
                 const routineFinal = (availabilityData.routine && availabilityData.routine[dayOfWeek]) || 
                                    (availabilityData.availability?.weekly_routine && availabilityData.availability.weekly_routine[dayOfWeek]);
-                                   
                 if (routineFinal && (routineFinal.active || routineFinal.active === undefined)) {
                     const routineToTime = routineFinal.to || routineFinal.end;
                     if (routineToTime) {
                         const [rh_to, rm_to] = routineToTime.split(':').map(Number);
-                        const routineEndMinutes = rh_to * 60 + rm_to;
-                        
-                        // Task must finish (including cleanup/buffer) before routine ends
-                        if (slotStartMinutes + (currentTaskDuration * 60) > routineEndMinutes) {
-                            return false;
-                        }
+                        if (slotStartMinutes + (currentTaskDuration * 60) > (rh_to * 60 + rm_to)) return false;
                     }
                 }
             }
 
-            // 3. Current time check for today
             if (isToday(selectedDate)) {
                 const now = new Date();
                 const slotTime = setMinutes(setHours(startOfDay(now), sh), sm);
@@ -193,9 +257,14 @@ export default function OrderAvailabilityPicker({
 
             return true;
         });
-
-        return finalSlots;
     }, [selectedDate, availabilityData, bookedJobs, taskDurationHours]);
+
+    // Ensure selectedDate is always valid
+    useEffect(() => {
+        if (nextDays.length > 0 && !nextDays.find(d => isSameDay(d, selectedDate))) {
+            setSelectedDate(nextDays[0]);
+        }
+    }, [nextDays, selectedDate]);
 
     const [showAllSlots, setShowAllSlots] = useState(false);
     const INITIAL_SLOTS_LIMIT = 5;
@@ -220,7 +289,6 @@ export default function OrderAvailabilityPicker({
         if (exists) {
             newSlots = selectedSlots.filter(s => !(isSameDay(s.date, normalizedDate) && s.time === time));
         } else {
-            // Only one time slot per day: remove any other slot selected for the same day
             const otherDaysSlots = selectedSlots.filter(s => !isSameDay(s.date, normalizedDate));
             newSlots = [...otherDaysSlots, { date: normalizedDate, time }];
         }
