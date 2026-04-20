@@ -508,7 +508,7 @@ const ClientHome: React.FC<ClientHomeProps> = ({
                         animate={{ opacity: 1, scale: 1 }}
                         transition={{ delay: 0.8, duration: 0.6, type: "spring", stiffness: 200 }}
                         className="text-[30px] font-black leading-[1.05] tracking-tight text-black max-w-[340px] mx-auto"
-                        style={{ fontWeight: 900, fontFamily: '"Uber Move", "UberMoveText", var(--font-sans), sans-serif', letterSpacing: '-0.04em' }}
+                        style={{ fontWeight: 700, fontFamily: '"Uber Move", "UberMoveText", var(--font-sans), sans-serif', letterSpacing: '-0.04em' }}
                     >
                         {t({
                             en: 'Book trusted help for home tasks',
