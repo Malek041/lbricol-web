@@ -4,7 +4,7 @@ import React, { useState, useMemo } from 'react';
 import Image from 'next/image';
 import {
     X, ChevronRight, User, Mail, Lock, Phone,
-    CreditCard, FileText, Megaphone, ShoppingBag, Gift, Tag, Bell, LogOut, ArrowLeft, Globe, Wrench, LogIn, Plus, HelpCircle, Shield, UserPlus, Hash, Repeat
+    CreditCard, FileText, Megaphone, ShoppingBag, Gift, Tag, Bell, LogOut, ArrowLeft, Globe, Wrench, LogIn, Plus, HelpCircle, Shield, UserPlus, Hash, ArrowLeftRight
 } from 'lucide-react';
 import { auth, db, storage } from '@/lib/firebase';
 import { doc, getDoc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
@@ -1023,10 +1023,10 @@ const ProfileView: React.FC<ProfileViewProps> = ({
                     >
                         <button
                             onClick={onToggleHostMode}
-                            className="bg-[#2C2C2C] text-white px-7 py-3 rounded-full flex items-center gap-3  active:scale-95 transition-all "
+                            className="bg-[#2C2C2C] text-white px-8 py-4 rounded-full flex items-center gap-3 active:scale-95 transition-all whitespace-nowrap shadow-2xl"
                         >
-                            <Repeat size={18} strokeWidth={2.5} />
-                            <span className="text-[16px] font-medium tracking-tight">
+                            <ArrowLeftRight size={20} strokeWidth={2.5} />
+                            <span className="text-[16px] font-bold tracking-tight">
                                 {isHostMode
                                     ? t({ en: 'Switch to Client', fr: 'Passer en mode Client', ar: 'التحويل إلى وضع العميل' })
                                     : t({ en: 'Passer en mode Hote', fr: 'Passer en mode Hôte', ar: 'التحويل إلى وضع المضيف' })
