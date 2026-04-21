@@ -202,94 +202,7 @@ const PromoBannersWidget: React.FC<{
     );
 };
 
-const SellingPointsBottomSheet: React.FC<{
-    isOpen: boolean;
-    onClose: () => void;
-    t: any;
-}> = ({ isOpen, onClose, t }) => {
-    return (
-        <AnimatePresence>
-            {isOpen && (
-                <>
-                    <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        onClick={onClose}
-                        className="fixed inset-0 bg-black/40 z-[9500]"
-                    />
-                    <motion.div
-                        initial={{ y: '100%' }}
-                        animate={{ y: 0 }}
-                        exit={{ y: '100%' }}
-                        transition={{ type: "spring", damping: 25, stiffness: 200 }}
-                        className="fixed bottom-0 left-0 right-0 z-[9600] bg-[#F2F0EC] rounded-t-[32px] overflow-hidden"
-                        style={{ maxHeight: '85vh' }}
-                    >
-                        <div className="relative p-6 flex flex-col items-center pb-10">
-                            <button 
-                                onClick={onClose}
-                                className="absolute top-4 right-6 w-8 h-8 rounded-full bg-black/5 flex items-center justify-center"
-                            >
-                                <X size={20} className="text-black" />
-                            </button>
 
-                            <div className="w-full mt-6 flex flex-col items-center">
-                                <div className="relative w-48 h-48 mb-8">
-                                    <Image 
-                                        src="/Images/ChatGPT Image Apr 21, 2026, 11_39_28 PM.png" 
-                                        alt="Label" 
-                                        fill 
-                                        style={{ objectFit: 'contain' }}
-                                    />
-                                </div>
-
-                                <div className="space-y-6 w-full max-w-[320px] mb-10">
-                                    {[
-                                        {
-                                            en: 'Find a pro in 10s',
-                                            fr: 'Trouvez un pro en 10s',
-                                            ar: 'جد محترفاً في 10 ثوانٍ',
-                                            icon: <Zap size={24} className="text-black" strokeWidth={2.5} />
-                                        },
-                                        {
-                                            en: 'Starting from 99 MAD',
-                                            fr: 'À partir de 99 MAD',
-                                            ar: 'ابتداءً من 99 درهم',
-                                            icon: <Tag size={24} className="text-black" strokeWidth={2.5} />
-                                        },
-                                        {
-                                            en: 'Safer than a random number',
-                                            fr: 'Plus sûr qu\'un numéro au hasard',
-                                            ar: 'أكثر أمانًا من رقم عشوائي',
-                                            icon: <ShieldCheck size={24} className="text-black" strokeWidth={2.5} />
-                                        }
-                                    ].map((item, i) => (
-                                        <div key={i} className="flex items-center gap-5">
-                                            <div className="w-12 h-12 rounded-2xl bg-white flex items-center justify-center shadow-[0_4px_12px_rgba(0,0,0,0.05)]">
-                                                {item.icon}
-                                            </div>
-                                            <span className="text-[17px] font-bold text-[#1A1A1A] tracking-tight leading-tight">
-                                                {t(item)}
-                                            </span>
-                                        </div>
-                                    ))}
-                                </div>
-
-                                <button
-                                    onClick={onClose}
-                                    className="w-full bg-[#2C2C2C] text-white py-4.5 rounded-2xl text-[17px] font-bold active:scale-[0.98] transition-all shadow-lg"
-                                >
-                                    {t({ en: 'Got it', fr: 'J\'ai compris', ar: 'فهمت' })}
-                                </button>
-                            </div>
-                        </div>
-                    </motion.div>
-                </>
-            )}
-        </AnimatePresence>
-    );
-};
 
 const ClientHome: React.FC<ClientHomeProps> = ({
     onSelectService,
@@ -326,18 +239,7 @@ const ClientHome: React.FC<ClientHomeProps> = ({
     const [activeId, setActiveId] = useState<string>('');
     const [hasManuallySelected, setHasManuallySelected] = useState(false);
 
-    const [showSellingPoints, setShowSellingPoints] = useState(false);
 
-    useEffect(() => {
-        const timer = setTimeout(() => {
-            const alreadyShown = sessionStorage.getItem('selling_points_shown');
-            if (!alreadyShown) {
-                setShowSellingPoints(true);
-                sessionStorage.setItem('selling_points_shown', 'true');
-            }
-        }, 1500);
-        return () => clearTimeout(timer);
-    }, []);
 
 
     // Initial load
@@ -579,11 +481,11 @@ const ClientHome: React.FC<ClientHomeProps> = ({
 
     return (
         <div className={cn(
-            "fixed inset-0 bg-[#FFFFFF] overflow-y-auto no-scrollbar h-[100dvh] w-screen font-jakarta",
+            "fixed inset-0 bg-[#FFC244] overflow-y-auto no-scrollbar h-[100dvh] w-screen font-jakarta",
             "z-0"
         )}>
             {/* 1. New yellow Hero Section */}
-            <div className="w-full sticky top-0 z-0 bg-[#FFFFFF] overflow-hidden flex-shrink-0 pt-[env(safe-area-inset-top)] pb-5">
+            <div className="w-full sticky top-0 z-0 bg-[#FFC244] overflow-hidden flex-shrink-0 pt-[env(safe-area-inset-top)] pb-5">
                 {/* Location Pill */}
                 <div className="flex justify-center pt-8 mb-6">
                     <motion.button
@@ -605,14 +507,14 @@ const ClientHome: React.FC<ClientHomeProps> = ({
 
                 {/* Heading (Rotating) */}
                 <div className="text-center px-6 mb-2 flex items-center justify-center mt-2">
-                    <h1 
-                        className="text-[34px] font-[#2C2C2C] leading-[1.05] tracking-tight text-[#2C2C2C] max-w-[340px] mx-auto"
-                        style={{ fontWeight: 800, fontFamily: '"Uber Move", "UberMoveText", var(--font-sans), sans-serif', letterSpacing: '-0.05em' }}
+                    <h1
+                        className="text-[30px] font-[#2C2C2C] leading-[1.05] tracking-tight text-[#2C2C2C] max-w-[340px] mx-auto"
+                        style={{ fontWeight: 700, fontFamily: '"Uber Move", "UberMoveText", var(--font-sans), sans-serif', letterSpacing: '-0.05em' }}
                     >
-                        {t({ 
-                            en: 'Book trusted help for home tasks', 
-                            fr: 'Réservez une aide de confiance pour vos tâches', 
-                            ar: 'احجز مساعدة موثوقة لمهام منزلك' 
+                        {t({
+                            en: 'Book trusted help for home tasks',
+                            fr: 'Réservez une aide de confiance pour vos tâches',
+                            ar: 'احجز مساعدة موثوقة لمهام منزلك'
                         })}
                     </h1>
                 </div>
@@ -1033,12 +935,7 @@ const ClientHome: React.FC<ClientHomeProps> = ({
             </AnimatePresence>
 
             {/* Promo banners hidden as per request */}
-            
-            <SellingPointsBottomSheet 
-                isOpen={showSellingPoints} 
-                onClose={() => setShowSellingPoints(false)} 
-                t={t} 
-            />
+
         </div>
     );
 };

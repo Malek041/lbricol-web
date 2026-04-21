@@ -84,7 +84,9 @@ import {
   RotateCcw,
   Zap,
   Calendar,
-  Home
+  Home,
+  ShieldCheck,
+  Tag
 } from 'lucide-react';
 import { getServiceById,
   getSubServiceName,
@@ -251,6 +253,95 @@ const getTranslatedName = (s: string, t: (vals: { en: string, fr: string }) => s
   }
 };
 
+const SellingPointsBottomSheet: React.FC<{
+  isOpen: boolean;
+  onClose: () => void;
+  t: any;
+}> = ({ isOpen, onClose, t }) => {
+  return (
+    <AnimatePresence>
+      {isOpen && (
+        <>
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={onClose}
+            className="fixed inset-0 bg-black/40 z-[9500]"
+          />
+          <motion.div
+            initial={{ y: '100%' }}
+            animate={{ y: 0 }}
+            exit={{ y: '100%' }}
+            transition={{ type: "spring", damping: 25, stiffness: 200 }}
+            className="fixed bottom-0 left-0 right-0 z-[9600] bg-[#F2F0EC] rounded-t-[32px] overflow-hidden"
+            style={{ maxHeight: '85vh' }}
+          >
+            <div className="relative p-6 flex flex-col items-center pb-10">
+              <button 
+                onClick={onClose}
+                className="absolute top-4 right-6 w-8 h-8 rounded-full bg-black/5 flex items-center justify-center"
+              >
+                <X size={20} className="text-black" />
+              </button>
+
+              <div className="w-full mt-6 flex flex-col items-center">
+                <div className="relative w-48 h-48 mb-8">
+                  <Image 
+                    src="/Images/ChatGPT Image Apr 21, 2026, 11_39_28 PM.png" 
+                    alt="Label" 
+                    fill 
+                    style={{ objectFit: 'contain' }}
+                  />
+                </div>
+
+                <div className="space-y-6 w-full max-w-[320px] mb-10">
+                  {[
+                    {
+                      en: 'Find a pro in 10s',
+                      fr: 'Trouvez un pro en 10s',
+                      ar: 'جد محترفاً في 10 ثوانٍ',
+                      icon: <Zap size={24} className="text-black" strokeWidth={2.5} />
+                    },
+                    {
+                      en: 'Starting from 99 MAD',
+                      fr: 'À partir de 99 MAD',
+                      ar: 'ابتداءً من 99 درهم',
+                      icon: <Tag size={24} className="text-black" strokeWidth={2.5} />
+                    },
+                    {
+                      en: 'Safer than a random number',
+                      fr: 'Plus sûr qu\'un numéro au hasard',
+                      ar: 'أكثر أمانًا من رقم عشوائي',
+                      icon: <ShieldCheck size={24} className="text-black" strokeWidth={2.5} />
+                    }
+                  ].map((item, i) => (
+                    <div key={i} className="flex items-center gap-5">
+                      <div className="w-12 h-12 rounded-2xl bg-white flex items-center justify-center shadow-[0_4px_12px_rgba(0,0,0,0.05)]">
+                        {item.icon}
+                      </div>
+                      <span className="text-[17px] font-bold text-[#1A1A1A] tracking-tight leading-tight">
+                        {t(item)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+
+                <button
+                  onClick={onClose}
+                  className="w-full bg-[#2C2C2C] text-white py-4.5 rounded-2xl text-[17px] font-bold active:scale-[0.98] transition-all shadow-lg"
+                >
+                  {t({ en: 'Got it', fr: 'J\'ai compris', ar: 'فهمت' })}
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        </>
+      )}
+    </AnimatePresence>
+  );
+};
+
 const MASTER_ADMIN_CODE = "2026LB"; // You can change this or move to env
 
 export default function HomeOrchestrator() {
@@ -296,6 +387,15 @@ export default function HomeOrchestrator() {
   const [trendingSubServices, setTrendingSubServices] = useState<string[]>([]);
   const [isAdmin, setIsAdmin] = useState(false);
   const [shadowProfileData, setShadowProfileData] = useState<any | null>(null);
+  const [showSellingPoints, setShowSellingPoints] = useState(false);
+
+  useEffect(() => {
+    // Show every time the user enters the app (component mounts)
+    const timer = setTimeout(() => {
+      setShowSellingPoints(true);
+    }, 1500);
+    return () => clearTimeout(timer);
+  }, []);
   const [impersonatedBricoler, setImpersonatedBricoler] = useState<{ id: string; name: string } | null>(null);
   const [showAdminBricolerCreator, setShowAdminBricolerCreator] = useState(false);
   const [showSplash, setShowSplash] = useState(true);
@@ -3716,6 +3816,12 @@ export default function HomeOrchestrator() {
           onDismiss={() => setActiveBubble(null)}
         />
       )}
+
+      <SellingPointsBottomSheet 
+        isOpen={showSellingPoints} 
+        onClose={() => setShowSellingPoints(false)} 
+        t={t} 
+      />
     </div>
   );
 }
