@@ -12,6 +12,7 @@ import SearchBox from '@/components/shared/SearchBox';
 import Footer from '@/components/layout/Footer';
 import MobileBottomNav from '@/components/layout/MobileBottomNav';
 import { type OrderDetails } from '@/features/orders/components/OrderCard';
+import { format } from 'date-fns';
 import ClientHome from '@/features/client/components/ClientHome';
 import { SERVICES_CATALOGUE } from '@/config/services_catalogue';
 import { useOrder } from '@/context/OrderContext';
@@ -468,6 +469,53 @@ export default function HomeOrchestrator() {
   const [newlyProgrammedOrderId, setNewlyProgrammedOrderId] = useState<string | null>(null);
   const [heroImageIndex, setHeroImageIndex] = useState(0);
   const [showHistoryInOrders, setShowHistoryInOrders] = useState(false);
+
+  // --- Host Intervention State ---
+  const [isScheduling, setIsScheduling] = useState(false);
+  const [selectedPropertyId, setSelectedPropertyId] = useState<string | null>(null);
+  const [hostProperties, setHostProperties] = useState<any[]>([]);
+  const [selectedInterventionType, setSelectedInterventionType] = useState<'Check-in' | 'Check-out' | 'Cleaning'>('Cleaning');
+  const [isSubmittingIntervention, setIsSubmittingIntervention] = useState(false);
+
+
+  const handleCreateIntervention = async () => {
+    if (!auth.currentUser || !selectedPropertyId) return;
+    
+    setIsSubmittingIntervention(true);
+    const property = hostProperties.find(p => p.id === selectedPropertyId);
+    
+    try {
+        await addDoc(collection(db, 'jobs'), {
+            clientId: auth.currentUser.uid,
+            propertyId: selectedPropertyId,
+            status: 'new',
+            service: 'cleaning',
+            subService: selectedInterventionType,
+            subServiceDisplayName: selectedInterventionType,
+            address: property?.specs?.address || '',
+            date: format(new Date(), 'yyyy-MM-dd'),
+            time: "10:00",
+            preferredBricolerId: property?.specs?.preferredBricolerId || null,
+            createdAt: serverTimestamp(),
+            isHostJob: true
+        });
+
+        showToast({
+            variant: 'success',
+            title: t({ en: 'Intervention scheduled!', fr: 'Intervention programmée !' })
+        });
+        setIsScheduling(false);
+    } catch (err) {
+        console.error("Error scheduling intervention:", err);
+        showToast({
+            variant: 'error',
+            title: 'Erreur',
+            description: 'Impossible de programmer l\'intervention.'
+        });
+    } finally {
+        setIsSubmittingIntervention(false);
+    }
+  };
   const [isHostMode, setIsHostMode] = useState<boolean>(() => {
     if (typeof window !== 'undefined') {
       return safeStorage.getItem('lbricol_is_host_mode') === 'true';
@@ -476,10 +524,26 @@ export default function HomeOrchestrator() {
   });
 
   useEffect(() => {
+    if (isHostMode && mobileNavTab === 'home') {
+      setMobileNavTab('calendar');
+    }
+  }, [isHostMode, mobileNavTab]);
+
+  useEffect(() => {
     if (mounted) {
       safeStorage.setItem('lbricol_is_host_mode', String(isHostMode));
     }
   }, [isHostMode, mounted]);
+
+  useEffect(() => {
+    if (!auth.currentUser || !isHostMode) return;
+    const q = query(collection(db, 'properties'), where('hostId', '==', auth.currentUser.uid));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+        const result = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        setHostProperties(result);
+    });
+    return () => unsubscribe();
+  }, [auth.currentUser, isHostMode]);
 
 
   const [isViewingOrderDetails, setIsViewingOrderDetails] = useState(false);
@@ -2562,6 +2626,8 @@ export default function HomeOrchestrator() {
                     setSelectedOrderId(jobId);
                   }}
                   initialShowHistory={showHistoryInOrders}
+                  isHostMode={isHostMode}
+                  onAddIntervention={() => setIsScheduling(true)}
                    onResumeDraft={(draft) => {
                     const normalizedDraft = {
                       serviceType: draft.service || '',
@@ -2707,8 +2773,21 @@ export default function HomeOrchestrator() {
         {/* Host Mode Mobile Views */}
         {isMobile && mounted && isHostMode && (
           <>
-            {mobileNavTab === 'home' && <HostDashboard />}
-            {mobileNavTab === 'calendar' && <HostCalendarView />}
+            {mobileNavTab === 'calendar' && (
+              <ClientOrdersView
+                orders={orders}
+                onViewingOrderDetails={setIsViewingOrderDetails}
+                isHostMode={isHostMode}
+                onAddIntervention={() => {
+                  if (!selectedPropertyId && hostProperties.length > 0) setSelectedPropertyId(hostProperties[0].id);
+                  setIsScheduling(true);
+                }}
+                onViewMessages={(jobId: string) => {
+                    setMobileNavTab('messages');
+                    setSelectedOrderId(jobId);
+                }}
+              />
+            )}
             {mobileNavTab === 'services' && <PropertyListView />}
             {mobileNavTab === 'messages' && (
               <MessagesView
@@ -3491,6 +3570,79 @@ export default function HomeOrchestrator() {
         </AnimatePresence>
 
         {/* City selection/Language popups moved outside main */}
+        <AnimatePresence>
+          {isScheduling && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[10000] bg-black/40 backdrop-blur-sm flex items-end justify-center"
+              onClick={() => setIsScheduling(false)}
+            >
+              <motion.div
+                initial={{ y: "100%" }}
+                animate={{ y: 0 }}
+                exit={{ y: "100%" }}
+                className="bg-white w-full rounded-t-[42px] p-8 pb-12 shadow-2xl max-w-[500px]"
+                onClick={e => e.stopPropagation()}
+              >
+                <div className="flex justify-between items-center mb-8">
+                  <h3 className="text-[24px] font-bold">Programmer</h3>
+                  <button onClick={() => setIsScheduling(false)} className="p-2 -mr-2 rounded-full bg-neutral-50"><X size={20} /></button>
+                </div>
+
+                <div className="space-y-6 mb-10">
+                  <div>
+                    <label className="text-[14px] font-bold text-neutral-400 uppercase tracking-widest block mb-3">Type d'intervention</label>
+                    <div className="grid grid-cols-3 gap-3">
+                      {(['Check-in', 'Check-out', 'Cleaning'] as const).map((type) => (
+                        <button
+                          key={type}
+                          onClick={() => setSelectedInterventionType(type)}
+                          className={`py-4 rounded-2xl border-2 font-bold text-[14px] transition-all ${selectedInterventionType === type ? 'border-black bg-black text-white shadow-md' : 'border-neutral-100 text-neutral-500'}`}
+                        >
+                          {type}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-[14px] font-bold text-neutral-400 uppercase tracking-widest block mb-3">Propriété</label>
+                    <div className="flex flex-col gap-2">
+                        {hostProperties.length > 0 ? (
+                            <select 
+                                value={selectedPropertyId || ''} 
+                                onChange={(e) => setSelectedPropertyId(e.target.value)}
+                                className="w-full p-5 rounded-[24px] bg-neutral-50 border border-neutral-100 font-bold appearance-none outline-none"
+                            >
+                                <option value="" disabled>Sélectionnez une propriété</option>
+                                {hostProperties.map(p => (
+                                    <option key={p.id} value={p.id}>{p.name}</option>
+                                ))}
+                            </select>
+                        ) : (
+                            <div className="p-5 rounded-[24px] bg-neutral-50 border border-neutral-100 flex items-center gap-3 text-neutral-400 font-medium">
+                                <Home size={20} />
+                                <span>Aucune propriété trouvée</span>
+                            </div>
+                        )}
+                    </div>
+                  </div>
+                </div>
+
+                <button
+                  onClick={handleCreateIntervention}
+                  disabled={isSubmittingIntervention || !selectedPropertyId}
+                  className="w-full bg-black text-white py-5 rounded-2xl font-bold text-[17px] shadow-xl active:scale-[0.98] transition-all disabled:opacity-50"
+                >
+                  {isSubmittingIntervention ? 'Programmation...' : 'Confirmer et Notifier les Bricoleurs'}
+                </button>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         <CitySelectionPopup
           isOpen={showCityPopup}
           onClose={() => setShowCityPopup(false)}

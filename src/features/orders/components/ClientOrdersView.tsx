@@ -4,7 +4,7 @@ import { safeStorage } from '@/lib/safeStorage';
 import React, { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { OrderDetails } from '@/features/orders/components/OrderCard';
-import { ChevronLeft, Info, MessageCircle, MessageSquare, Image, HelpCircle, X, MapPin, Clock, Calendar as CalendarIcon, Phone, User, Ban, Check, AlertTriangle, RefreshCw, CreditCard, Wrench, Banknote, Star, Home, Layout, Sparkles, AlertCircle, Loader2, Calendar, Camera, Mic, Shield } from 'lucide-react';
+import { ChevronLeft, Info, MessageCircle, MessageSquare, Image, HelpCircle, X, MapPin, Clock, Calendar as CalendarIcon, Phone, User, Ban, Check, AlertTriangle, RefreshCw, CreditCard, Wrench, Banknote, Star, Home, Layout, Sparkles, AlertCircle, Loader2, Calendar, Camera, Mic, Shield, Plus } from 'lucide-react';
 import MessagesView from '@/features/messages/components/MessagesView';
 import { useLanguage } from '@/context/LanguageContext';
 import { useToast } from '@/context/ToastContext';
@@ -13,7 +13,7 @@ import { db, auth } from '@/lib/firebase';
 import { doc, updateDoc, arrayUnion, increment, serverTimestamp, getDoc, addDoc, collection } from 'firebase/firestore';
 import { cn } from '@/lib/utils';
 import { getServiceById, getSubServiceName, getServiceVector, getSubService } from '@/config/services_config';
-import { format, isToday, isThisWeek, parseISO, startOfDay, addDays, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, isSameMonth, isSameDay, isBefore } from 'date-fns';
+import { format, isToday, isThisWeek, parseISO, startOfDay, addDays, addMonths, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, isSameMonth, isSameDay, isBefore } from 'date-fns';
 import { fr } from 'date-fns/locale/fr';
 import { arMA } from 'date-fns/locale/ar-MA';
 import { calculateOrderPrice } from '@/lib/pricing';
@@ -27,6 +27,8 @@ interface ClientOrdersViewProps {
     initialShowHistory?: boolean;
     onResumeDraft?: (draft: any) => void;
     onViewingOrderDetails?: (isViewing: boolean) => void;
+    isHostMode?: boolean;
+    onAddIntervention?: () => void;
 }
 
 // ── Shared Hook for Progress ────────────────────────────────────────────────
@@ -181,12 +183,16 @@ function CalendarTab({
     orders,
     onSelectOrder,
     horizontalSelectedDate,
-    setHorizontalSelectedDate
+    setHorizontalSelectedDate,
+    isHostMode,
+    onAdd
 }: {
     orders: OrderDetails[],
     onSelectOrder: (o: OrderDetails) => void,
     horizontalSelectedDate: Date,
-    setHorizontalSelectedDate: (d: Date) => void
+    setHorizontalSelectedDate: (d: Date) => void,
+    isHostMode?: boolean,
+    onAdd?: () => void
 }) {
     const { t, language } = useLanguage();
     const [viewMode, setViewMode] = useState<'day' | 'month'>('month');
@@ -268,92 +274,110 @@ function CalendarTab({
             : ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 
     const renderMonthView = () => (
-        <div className="flex flex-col bg-white h-full overflow-y-auto no-scrollbar">
+        <div className="flex flex-col bg-white h-full overflow-y-auto no-scrollbar relative">
             <div className="p-4 sm:p-6 pb-24">
-                {/* Minimal Header */}
-                <div className="flex items-center justify-between mb-8 px-1">
-                    <h2 className="text-[32px] font-bold text-black lowercase tracking-tight ">{monthLabel}</h2>
-                    <div className="flex gap-4">
-                        <button onClick={() => setMonthOffset(p => p - 1)} className="p-2 hover:bg-neutral-100 rounded-full transition-colors active:scale-95">
-                            <ChevronLeft size={24} />
-                        </button>
-                        <button onClick={() => setMonthOffset(p => p + 1)} className="p-2 hover:bg-neutral-100 rounded-full transition-colors active:scale-95">
-                            <ChevronLeft size={24} className="rotate-180" />
-                        </button>
-                    </div>
-                </div>
+                {Array.from({ length: 12 }, (_, monthIdx) => {
+                    const viewMonth = addMonths(startOfMonth(new Date()), monthIdx);
+                    const monthLabel = format(viewMonth, 'MMMM yyyy', {
+                        locale: language === 'fr' ? fr : language === 'ar' ? arMA : undefined
+                    });
+                    const days = eachDayOfInterval({
+                        start: startOfWeek(startOfMonth(viewMonth), { weekStartsOn: 1 }),
+                        end: endOfWeek(endOfMonth(viewMonth), { weekStartsOn: 1 })
+                    });
 
-                {/* Weekday Header */}
-                <div className="grid grid-cols-7 mb-4">
-                    {weekdayShorts.map((d, i) => (
-                        <div key={i} className="text-center text-[12px] font-medium text-neutral-400 uppercase tracking-wider">{d}</div>
-                    ))}
-                </div>
+                    return (
+                        <div key={monthIdx} className="mb-12">
+                            <h2 className="text-[28px] font-bold text-black lowercase tracking-tight mb-8 px-1">
+                                {monthLabel}
+                            </h2>
 
-                {/* Airbnb Style Grid */}
-                <div className="grid grid-cols-7 gap-1 sm:gap-2">
-                    {monthDays.map((date, i) => {
-                        const dateStr = format(date, 'yyyy-MM-dd');
-                        const isCurrentMonth = isSameMonth(date, viewMonth);
-                        const dayOrders = validOrders.filter(o => o.date === dateStr);
-                        const isTodayDate = isSameDay(date, new Date());
-                        const isSelected = isSameDay(date, horizontalSelectedDate);
-                        const isPast = isBefore(date, startOfDay(new Date()));
+                            {/* Weekday Header */}
+                            <div className="grid grid-cols-7 mb-4">
+                                {weekdayShorts.map((d, i) => (
+                                    <div key={i} className="text-center text-[12px] font-medium text-neutral-400 uppercase tracking-wider">{d}</div>
+                                ))}
+                            </div>
 
-                        return (
-                            <div
-                                key={i}
-                                onClick={() => {
-                                    setHorizontalSelectedDate(date);
-                                    setWeekStart(getMonday(date));
-                                    setViewMode('day');
-                                }}
-                                className={cn(
-                                    "aspect-[1/1.5] sm:aspect-[1/1.2] border border-neutral-100 rounded-xl p-1.5 sm:p-2 flex flex-col items-start transition-all cursor-pointer relative",
-                                    !isCurrentMonth && "opacity-0 pointer-events-none",
-                                    isSelected && "border-black ring-[0.5px] ring-black shadow-sm bg-white",
-                                    isPast && !isSelected && "bg-neutral-100/50",
-                                    isTodayDate && !isSelected && "bg-neutral-50"
-                                )}
-                            >
-                                <span className={cn(
-                                    "text-[15px] font-bold mb-1.5 ml-0.5",
-                                    isTodayDate ? "text-[#01A083]" : isPast ? "text-neutral-400 line-through" : "text-neutral-900",
-                                    isSelected && "text-black no-underline"
-                                )}>
-                                    {format(date, 'd')}
-                                </span>
+                            {/* Airbnb Style Grid */}
+                            <div className="grid grid-cols-7 gap-1 sm:gap-2">
+                                {days.map((date, i) => {
+                                    const dateStr = format(date, 'yyyy-MM-dd');
+                                    const isCurrentMonth = isSameMonth(date, viewMonth);
+                                    const dayOrders = validOrders.filter(o => o.date === dateStr);
+                                    const isTodayDate = isSameDay(date, new Date());
+                                    const isSelected = isSameDay(date, horizontalSelectedDate);
+                                    const isPast = isBefore(date, startOfDay(new Date()));
 
-                                {/* Order Pills (Airbnb style) */}
-                                <div className="flex flex-col gap-1 w-full overflow-hidden mt-auto">
-                                    {dayOrders.slice(0, 2).map((order: OrderDetails) => (
+                                    return (
                                         <div
-                                            key={order.id}
-                                            className="w-full h-6 sm:h-7 rounded-lg bg-[#222222] flex items-center gap-1.5 px-1.5 shadow-sm overflow-hidden"
+                                            key={i}
+                                            onClick={() => {
+                                                setHorizontalSelectedDate(date);
+                                                setWeekStart(getMonday(date));
+                                                setViewMode('day');
+                                            }}
+                                            className={cn(
+                                                "aspect-[1/1.5] sm:aspect-[1/1.2] border border-neutral-100 rounded-xl p-1.5 sm:p-2 flex flex-col items-start transition-all cursor-pointer relative",
+                                                !isCurrentMonth && "opacity-20 grayscale pointer-events-none",
+                                                isSelected && "border-black ring-[0.5px] ring-black shadow-sm bg-white",
+                                                isPast && !isSelected && "bg-neutral-100/50",
+                                                isTodayDate && !isSelected && "bg-neutral-50"
+                                            )}
                                         >
-                                            <div className="w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full bg-neutral-600 flex-shrink-0 flex items-center justify-center overflow-hidden">
-                                                {order.bricolerAvatar ? (
-                                                    <img src={order.bricolerAvatar} className="w-full h-full object-cover" />
-                                                ) : (
-                                                    <User size={10} className="text-white/40" />
+                                            <span className={cn(
+                                                "text-[15px] font-bold mb-1.5 ml-0.5",
+                                                isTodayDate ? "text-[#01A083]" : isPast ? "text-neutral-400 line-through" : "text-neutral-900",
+                                                isSelected && "text-black no-underline"
+                                            )}>
+                                                {format(date, 'd')}
+                                            </span>
+
+                                            {/* Order Pills (Airbnb style) */}
+                                            <div className="flex flex-col gap-1 w-full overflow-hidden mt-auto">
+                                                {dayOrders.slice(0, 2).map((order: OrderDetails) => (
+                                                    <div
+                                                        key={order.id}
+                                                        className="w-full h-6 sm:h-7 rounded-lg bg-[#222222] flex items-center gap-1.5 px-1.5 shadow-sm overflow-hidden"
+                                                    >
+                                                        <div className="w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full bg-neutral-600 flex-shrink-0 flex items-center justify-center overflow-hidden">
+                                                            {order.bricolerAvatar ? (
+                                                                <img src={order.bricolerAvatar} className="w-full h-full object-cover" />
+                                                            ) : (
+                                                                <User size={10} className="text-white/40" />
+                                                            )}
+                                                        </div>
+                                                        <span className="text-[9px] sm:text-[10px] font-bold text-white truncate leading-none">
+                                                            {order.bricolerName ? order.bricolerName.split(' ')[0] : t({ en: 'Matching', fr: 'Matching', ar: 'جاري' })}
+                                                        </span>
+                                                    </div>
+                                                ))}
+                                                {dayOrders.length > 2 && (
+                                                    <div className="text-[9px] font-bold text-neutral-400 ml-1">
+                                                        +{dayOrders.length - 2}
+                                                    </div>
                                                 )}
                                             </div>
-                                            <span className="text-[9px] sm:text-[10px] font-bold text-white truncate leading-none">
-                                                {order.bricolerName ? order.bricolerName.split(' ')[0] : t({ en: 'Matching', fr: 'Matching', ar: 'جاري' })}
-                                            </span>
                                         </div>
-                                    ))}
-                                    {dayOrders.length > 2 && (
-                                        <div className="text-[9px] font-bold text-neutral-400 ml-1">
-                                            +{dayOrders.length - 2}
-                                        </div>
-                                    )}
-                                </div>
+                                    );
+                                })}
                             </div>
-                        );
-                    })}
-                </div>
+                        </div>
+                    );
+                })}
             </div>
+
+            {/* Floating Plus Button */}
+            {isHostMode && (
+                <div className="fixed bottom-32 right-6 z-[60]">
+                    <button
+                        onClick={(e) => { e.stopPropagation(); onAdd?.(); }}
+                        className="w-14 h-14 rounded-full bg-black text-white flex items-center justify-center shadow-2xl active:scale-95 transition-all"
+                    >
+                        <Plus size={32} />
+                    </button>
+                </div>
+            )}
         </div>
     );
 
@@ -527,7 +551,7 @@ function CalendarTab({
     );
 }
 
-export default function ClientOrdersView({ orders, onViewMessages, initialShowHistory = false, onResumeDraft, onViewingOrderDetails }: ClientOrdersViewProps) {
+export default function ClientOrdersView({ orders, onViewMessages, initialShowHistory = false, onResumeDraft, onViewingOrderDetails, isHostMode, onAddIntervention }: ClientOrdersViewProps) {
     const { t, language } = useLanguage();
     const { showToast } = useToast();
     const { getDynamicStatus } = useOrderProgress();
@@ -831,18 +855,20 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
                             <motion.div layoutId="client-orders-tab" className="absolute bottom-0 left-0 right-0 h-[3px] bg-[#01A083] rounded-t-full" />
                         )}
                     </button>
-                    <button
-                        onClick={() => setActiveTab('activity')}
-                        className={cn(
-                            "pb-3 text-[16px] transition-all relative",
-                            activeTab === 'activity' ? "font-medium text-[#1D1D1D]" : "font-medium text-[#6B6B6B]"
-                        )}
-                    >
-                        {t({ en: 'Activity', fr: 'Activité', ar: 'النشاط' })}
-                        {activeTab === 'activity' && (
-                            <motion.div layoutId="client-orders-tab" className="absolute bottom-0 left-0 right-0 h-[3px] bg-[#01A083] rounded-t-full" />
-                        )}
-                    </button>
+                    {!isHostMode && (
+                        <button
+                            onClick={() => setActiveTab('activity')}
+                            className={cn(
+                                "pb-3 text-[16px] transition-all relative",
+                                activeTab === 'activity' ? "font-medium text-[#1D1D1D]" : "font-medium text-[#6B6B6B]"
+                            )}
+                        >
+                            {t({ en: 'Activity', fr: 'Activité', ar: 'النشاط' })}
+                            {activeTab === 'activity' && (
+                                <motion.div layoutId="client-orders-tab" className="absolute bottom-0 left-0 right-0 h-[3px] bg-[#01A083] rounded-t-full" />
+                            )}
+                        </button>
+                    )}
                 </div>
             </div>
 
@@ -853,6 +879,8 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
                         onSelectOrder={setSelectedOrder}
                         horizontalSelectedDate={horizontalSelectedDate}
                         setHorizontalSelectedDate={setHorizontalSelectedDate}
+                        isHostMode={isHostMode}
+                        onAdd={onAddIntervention}
                     />
                 ) : (
                     <ActivityTab

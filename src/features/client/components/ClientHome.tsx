@@ -552,7 +552,7 @@ const ClientHome: React.FC<ClientHomeProps> = ({
                                 stiffness: 260,
                                 damping: 20
                             }}
-                            className="text-[30px] font-black leading-[1.05] tracking-tight text-[#2C2C2C] max-w-[340px] mx-auto flex flex-col items-center gap-2"
+                            className="text-[30px] font-[#2C2C2C] leading-[1.05] tracking-tight text-[#2C2C2C] max-w-[340px] mx-auto flex flex-col items-center gap-2"
                             style={{ fontWeight: 700, fontFamily: '"Uber Move", "UberMoveText", var(--font-sans), sans-serif', letterSpacing: '-0.04em' }}
                         >
                             {allHeroTitles[heroIndex].icon && (

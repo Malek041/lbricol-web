@@ -1,10 +1,10 @@
 "use client";
 
 import React, { useState, useMemo } from 'react';
+import Image from 'next/image';
 import {
     X, ChevronRight, User, Mail, Lock, Phone,
-    CreditCard, FileText, Megaphone, ShoppingBag, Gift,
-    Tag, Bell, LogOut, ArrowLeft, Globe, Wrench, LogIn, Plus, HelpCircle, Shield, UserPlus, Hash
+    CreditCard, FileText, Megaphone, ShoppingBag, Gift, Tag, Bell, LogOut, ArrowLeft, Globe, Wrench, LogIn, Plus, HelpCircle, Shield, UserPlus, Hash, Repeat
 } from 'lucide-react';
 import { auth, db, storage } from '@/lib/firebase';
 import { doc, getDoc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
@@ -260,30 +260,47 @@ const ProfileView: React.FC<ProfileViewProps> = ({
                                 className="bg-[#F2F2F2] rounded-[22px] p-8 flex flex-col items-center text-center  mb-6"
                             >
                                 <div className="flex gap-2 mb-6">
-                                    <div className="w-25 h-24 rounded-[12px] shadow-md overflow-hidden  rotate-[-10deg] translate-x-2 ">
-                                        <img src="/Images/Hosts/84ab3898-d9e6-474c-b371-fe5e20395dae_lfgezn.avif" className="w-full h-full object-cover" />
+                                    <div className="w-25 h-24 rounded-[12px] shadow-md overflow-hidden rotate-[-10deg] translate-x-2 relative">
+                                        <Image
+                                            src="/Images/Hosts/84ab3898-d9e6-474c-b371-fe5e20395dae_lfgezn.avif"
+                                            alt="Host Property 1"
+                                            fill
+                                            priority
+                                            className="object-cover"
+                                        />
                                     </div>
-                                    <div className="w-25 h-24 rounded-[12px]  shadow-md overflow-hidden  z-10 ">
-                                        <img src="/Images/Hosts/pexels-emris-17086317.jpg" className="w-full h-full object-cover" />
+                                    <div className="w-25 h-24 rounded-[12px] shadow-md overflow-hidden z-10 relative">
+                                        <Image
+                                            src="/Images/Hosts/pexels-emris-17086317.jpg"
+                                            alt="Host Person"
+                                            fill
+                                            priority
+                                            className="object-cover"
+                                        />
                                     </div>
-                                    <div className="w-25 h-24 rounded-[12px] shadow-md overflow-hidden  rotate-[10deg] -translate-x-2 ">
-                                        <img src="/Images/Hosts/584b8edd-dd10-47a1-9441-434fb4b05736_tqhtqg.avif" className="w-full h-full object-cover" />
+                                    <div className="w-25 h-24 rounded-[12px] shadow-md overflow-hidden rotate-[10deg] -translate-x-2 relative">
+                                        <Image
+                                            src="/Images/Hosts/584b8edd-dd10-47a1-9441-434fb4b05736_tqhtqg.avif"
+                                            alt="Host Property 2"
+                                            fill
+                                            priority
+                                            className="object-cover"
+                                        />
                                     </div>
                                 </div>
-                                <h3 className="text-[22px] font-bold text-black leading-tight mb-2">
-                                    {t({ en: 'Are you a host/co-host/concierge?', fr: 'Vous êtes hôte/co-hôte/concierge?', ar: 'هل أنت مضيف/مضيف مشارك/كونسيرج؟' })}
+                                <h3 className="text-[28px] font-bold text-black leading-tight mb-2">
+                                    {t({ en: 'Are you a host?', fr: 'Vous êtes hôte?', ar: 'هل أنت مضيف؟' })}
                                 </h3>
                                 <p className="text-[15px] text-neutral-500 max-w-[360px] mb-6 leading-snug">
                                     {t({
-                                        en: 'Save 70% of your time. List properties, set preferences, schedule check-ins—Lbricol Host handles the rest with vetted workers.',
-                                        fr: 'Économisez 70% de votre temps. Listez, configurez, programmez les arrivées/départs—Lbricol Host gère le reste',
+                                        en: 'Or co-host/concierge? Save 70% of your time. List properties, set preferences, schedule check-ins—Lbricol Host handles the rest with vetted workers.',
+                                        fr: 'Ou bien Co-hôte/concierge? Économisez 70% de votre temps. Listez, configurez, programmez les arrivées/départs—Lbricol Host gère le reste',
                                         ar: 'وفر 70% من وقتك. قم بإدراج العقارات، وحدد تفضيلاتك، وجدول تسجيل الوصول - يتولى Lbricol Host الباقي مع العمال المعتمدين.'
                                     })}
                                 </p>
                                 <button
                                     onClick={onToggleHostMode}
-                                    disabled
-                                    className="w-[360px] bg-[#01A084] opacity-50 cursor-not-allowed py-2 rounded-full text-[18px] font-medium text-white transition-all"
+                                    className="w-[360px] bg-[#01A084] py-2 rounded-full text-[18px] font-medium text-white active:scale-[0.98] transition-all"
                                 >
                                     {t({ en: 'Get Started', fr: 'Commencer', ar: 'ابدأ الآن' })}
                                 </button>
@@ -307,7 +324,7 @@ const ProfileView: React.FC<ProfileViewProps> = ({
                                 >
                                     <div className="flex items-center gap-5">
                                         <div className="w-6 flex justify-center">
-                                            <Icon size={25} className="text-[#333333]" strokeWidth={1.5} />
+                                            <Icon size={20} className="text-[#333333]" strokeWidth={1.5} />
                                         </div>
                                         <span className="text-[17px] text-[#1D1D1D] font-light">{item.label}</span>
                                         {badge && (
@@ -994,6 +1011,31 @@ const ProfileView: React.FC<ProfileViewProps> = ({
                     }}
                 />
             )}
+
+            <AnimatePresence>
+                {isAuthenticated && view === 'main' && (
+                    <motion.div
+                        initial={{ y: 100, opacity: 0 }}
+                        animate={{ y: 0, opacity: 1 }}
+                        exit={{ y: 100, opacity: 0 }}
+                        transition={{ type: "spring", damping: 25, stiffness: 200, delay: 0.1 }}
+                        className="fixed bottom-28 left-1/2 -translate-x-1/2 z-[100]"
+                    >
+                        <button
+                            onClick={onToggleHostMode}
+                            className="bg-[#2C2C2C] text-white px-7 py-3 rounded-full flex items-center gap-3  active:scale-95 transition-all "
+                        >
+                            <Repeat size={18} strokeWidth={2.5} />
+                            <span className="text-[16px] font-medium tracking-tight">
+                                {isHostMode
+                                    ? t({ en: 'Switch to Client', fr: 'Passer en mode Client', ar: 'التحويل إلى وضع العميل' })
+                                    : t({ en: 'Passer en mode Hote', fr: 'Passer en mode Hôte', ar: 'التحويل إلى وضع المضيف' })
+                                }
+                            </span>
+                        </button>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     );
 };

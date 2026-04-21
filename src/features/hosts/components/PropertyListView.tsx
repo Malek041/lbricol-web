@@ -31,12 +31,12 @@ const PropertyListView = () => {
             <div className="px-6 pt-16 pb-6 flex justify-between items-center bg-white sticky top-0 z-20">
                 <h1 className="text-[32px] font-bold text-black leading-none">Annonces</h1>
                 <div className="flex gap-2">
-                     <button className="w-10 h-10 rounded-full border border-neutral-200 flex items-center justify-center bg-white shadow-sm active:scale-90 transition-all">
+                    <button className="w-10 h-10 rounded-full flex items-center justify-center bg-[#F7F7F7] active:scale-90 transition-all">
                         <Search size={18} className="text-neutral-600" />
                     </button>
-                    <button 
+                    <button
                         onClick={() => setIsWizardOpen(true)}
-                        className="w-10 h-10 rounded-full border border-neutral-200 flex items-center justify-center bg-white shadow-sm active:scale-90 transition-all"
+                        className="w-10 h-10 rounded-full  flex items-center justify-center bg-[#F7F7F7] active:scale-90 transition-all"
                     >
                         <Plus size={20} className="text-neutral-600" />
                     </button>
@@ -48,16 +48,16 @@ const PropertyListView = () => {
                     <div className="py-20 flex justify-center"><div className="w-8 h-8 border-4 border-black border-t-transparent rounded-full animate-spin" /></div>
                 ) : properties.length === 0 ? (
                     <div className="py-20 flex flex-col items-center text-center px-10">
-                        <div className="w-24 h-24 rounded-[32px] bg-neutral-50 flex items-center justify-center mb-8 border border-neutral-100 shadow-inner">
-                            <Building size={48} className="text-neutral-200" />
+                        <div className="w-24 h-24 rounded-full bg-neutral-50 flex items-center justify-center mb-8 ">
+                            <Building size={78} className="text-black" />
                         </div>
-                        <h3 className="text-[22px] font-bold mb-3 tracking-tight">Créez votre première annonce</h3>
+                        <h3 className="text-[22px] font-bold mb-3 tracking-tight">Créez votre première Listing</h3>
                         <p className="text-neutral-500 text-[15px] leading-relaxed mb-10 max-w-[280px]">
-                            Répertoriez votre propriété pour commencer à automatiser vos check-ins, check-outs et nettoyages avec nos Bricoleurs.
+                            List your property to start automating your check-ins, check-outs, and cleanings with our Bricoleurs.
                         </p>
-                        <button 
+                        <button
                             onClick={() => setIsWizardOpen(true)}
-                            className="w-full bg-black text-white py-5 rounded-2xl font-bold text-[17px] shadow-xl hover:shadow-black/20 active:scale-[0.98] transition-all"
+                            className="w-full bg-[#01A083] text-white py-3 rounded-full font-bold text-[17px]  active:scale-[0.98] transition-all"
                         >
                             Débutez maintenant
                         </button>
@@ -65,7 +65,7 @@ const PropertyListView = () => {
                 ) : (
                     <div className="space-y-6">
                         {properties.map((property) => (
-                            <motion.div 
+                            <motion.div
                                 key={property.id}
                                 initial={{ opacity: 0, y: 10 }}
                                 animate={{ opacity: 1, y: 0 }}
@@ -104,9 +104,9 @@ const PropertyListView = () => {
                     Filtres
                 </button>
             </div>
-            <PropertySetupWizard 
-                isOpen={isWizardOpen} 
-                onClose={() => setIsWizardOpen(false)} 
+            <PropertySetupWizard
+                isOpen={isWizardOpen}
+                onClose={() => setIsWizardOpen(false)}
                 onComplete={() => {
                     setIsWizardOpen(false);
                     // Refresh properties logic here
