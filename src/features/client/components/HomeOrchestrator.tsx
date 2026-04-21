@@ -88,7 +88,8 @@ import {
   ShieldCheck,
   Tag
 } from 'lucide-react';
-import { getServiceById,
+import {
+  getServiceById,
   getSubServiceName,
   getCategoryForSubService,
   type ServiceConfig,
@@ -274,28 +275,28 @@ const SellingPointsBottomSheet: React.FC<{
             animate={{ y: 0 }}
             exit={{ y: '100%' }}
             transition={{ type: "spring", damping: 25, stiffness: 200 }}
-            className="fixed bottom-0 left-0 right-0 z-[9600] bg-[#F2F0EC] rounded-t-[32px] overflow-hidden"
+            className="fixed bottom-0 left-0 right-0 z-[9600] bg-[#F2F0EC] rounded-t-[45px] overflow-hidden"
             style={{ maxHeight: '85vh' }}
           >
             <div className="relative p-6 flex flex-col items-center pb-10">
-              <button 
+              <button
                 onClick={onClose}
-                className="absolute top-4 right-6 w-8 h-8 rounded-full bg-black/5 flex items-center justify-center"
+                className="absolute top-4 right-6 w-8 h-8 rounded-full flex items-center justify-center"
               >
-                <X size={20} className="text-black" />
+                <X size={25} className="text-black" />
               </button>
 
               <div className="w-full mt-6 flex flex-col items-center">
-                <div className="relative w-48 h-48 mb-8">
-                  <Image 
-                    src="/Images/ChatGPT Image Apr 21, 2026, 11_39_28 PM.png" 
-                    alt="Label" 
-                    fill 
+                <div className="relative w-60 h-60 mb-0">
+                  <Image
+                    src="/Images/ChatGPT Image Apr 21, 2026, 11_39_28 PM.png"
+                    alt="Label"
+                    fill
                     style={{ objectFit: 'contain' }}
                   />
                 </div>
 
-                <div className="space-y-6 w-full max-w-[320px] mb-10">
+                <div className="space-y-3 w-full max-w-[320px] mb-10">
                   {[
                     {
                       en: 'Find a pro in 10s',
@@ -317,7 +318,7 @@ const SellingPointsBottomSheet: React.FC<{
                     }
                   ].map((item, i) => (
                     <div key={i} className="flex items-center gap-5">
-                      <div className="w-12 h-12 rounded-2xl bg-white flex items-center justify-center shadow-[0_4px_12px_rgba(0,0,0,0.05)]">
+                      <div className="w-12 h-12 rounded-2xl  flex items-center justify-center ">
                         {item.icon}
                       </div>
                       <span className="text-[17px] font-bold text-[#1A1A1A] tracking-tight leading-tight">
@@ -329,7 +330,7 @@ const SellingPointsBottomSheet: React.FC<{
 
                 <button
                   onClick={onClose}
-                  className="w-full bg-[#2C2C2C] text-white py-4.5 rounded-2xl text-[17px] font-bold active:scale-[0.98] transition-all shadow-lg"
+                  className="w-full bg-[#2C2C2C] text-white py-3.5 rounded-2xl text-[17px] font-semibold active:scale-[0.98] transition-all "
                 >
                   {t({ en: 'Got it', fr: 'J\'ai compris', ar: 'فهمت' })}
                 </button>
@@ -417,10 +418,10 @@ export default function HomeOrchestrator() {
 
   const handleAddressUpdate = (address: string) => {
     if (!address) return;
-    
+
     const parts = address.split(',').map(p => p.trim());
     const cities = ['Casablanca', 'Marrakech', 'Essaouira', 'Agadir', 'Tangier', 'Rabat', 'Fes', 'Meknes', 'Oujda', 'Kenitra', 'Tetouan', 'Safi', 'Mohammedia', 'Khouribga', 'El Jadida', 'Beni Mellal', 'Nador', 'Taza', 'Settat'];
-    
+
     let foundCity = null;
     let foundArea = null;
 
@@ -436,7 +437,7 @@ export default function HomeOrchestrator() {
       if (cityIdx > 0) {
         foundArea = parts[cityIdx - 1];
       }
-      
+
       if (foundCity !== selectedCity) {
         setSelectedCity(foundCity);
         safeStorage.setItem('lbricol_preferred_city', foundCity);
@@ -503,12 +504,12 @@ export default function HomeOrchestrator() {
   // Persist Addresses & Location Preference
   useEffect(() => {
     setMounted(true);
-    
+
     // Check for tab search param
     const params = new URLSearchParams(window.location.search);
     const tabParam = params.get('tab');
     const onboardingShown = safeStorage.getItem('client_onboarding_shown');
-    
+
     if (onboardingShown && tabParam && ['home', 'search', 'heroes', 'calendar', 'messages', 'profile'].includes(tabParam)) {
       setMobileNavTab(tabParam as any);
     } else {
@@ -525,7 +526,7 @@ export default function HomeOrchestrator() {
         console.error("Error parsing saved addresses", e);
       }
     }
-    
+
     const prefCity = safeStorage.getItem('lbricol_preferred_city');
     const prefArea = safeStorage.getItem('lbricol_preferred_area');
     if (prefCity) setSelectedCity(prefCity);
@@ -581,40 +582,40 @@ export default function HomeOrchestrator() {
 
   const handleCreateIntervention = async () => {
     if (!auth.currentUser || !selectedPropertyId) return;
-    
+
     setIsSubmittingIntervention(true);
     const property = hostProperties.find(p => p.id === selectedPropertyId);
-    
-    try {
-        await addDoc(collection(db, 'jobs'), {
-            clientId: auth.currentUser.uid,
-            propertyId: selectedPropertyId,
-            status: 'new',
-            service: 'cleaning',
-            subService: selectedInterventionType,
-            subServiceDisplayName: selectedInterventionType,
-            address: property?.specs?.address || '',
-            date: format(new Date(), 'yyyy-MM-dd'),
-            time: "10:00",
-            preferredBricolerId: property?.specs?.preferredBricolerId || null,
-            createdAt: serverTimestamp(),
-            isHostJob: true
-        });
 
-        showToast({
-            variant: 'success',
-            title: t({ en: 'Intervention scheduled!', fr: 'Intervention programmée !' })
-        });
-        setIsScheduling(false);
+    try {
+      await addDoc(collection(db, 'jobs'), {
+        clientId: auth.currentUser.uid,
+        propertyId: selectedPropertyId,
+        status: 'new',
+        service: 'cleaning',
+        subService: selectedInterventionType,
+        subServiceDisplayName: selectedInterventionType,
+        address: property?.specs?.address || '',
+        date: format(new Date(), 'yyyy-MM-dd'),
+        time: "10:00",
+        preferredBricolerId: property?.specs?.preferredBricolerId || null,
+        createdAt: serverTimestamp(),
+        isHostJob: true
+      });
+
+      showToast({
+        variant: 'success',
+        title: t({ en: 'Intervention scheduled!', fr: 'Intervention programmée !' })
+      });
+      setIsScheduling(false);
     } catch (err) {
-        console.error("Error scheduling intervention:", err);
-        showToast({
-            variant: 'error',
-            title: 'Erreur',
-            description: 'Impossible de programmer l\'intervention.'
-        });
+      console.error("Error scheduling intervention:", err);
+      showToast({
+        variant: 'error',
+        title: 'Erreur',
+        description: 'Impossible de programmer l\'intervention.'
+      });
     } finally {
-        setIsSubmittingIntervention(false);
+      setIsSubmittingIntervention(false);
     }
   };
   const [isHostMode, setIsHostMode] = useState<boolean>(() => {
@@ -640,8 +641,8 @@ export default function HomeOrchestrator() {
     if (!auth.currentUser || !isHostMode) return;
     const q = query(collection(db, 'properties'), where('hostId', '==', auth.currentUser.uid));
     const unsubscribe = onSnapshot(q, (snapshot) => {
-        const result = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        setHostProperties(result);
+      const result = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setHostProperties(result);
     });
     return () => unsubscribe();
   }, [auth.currentUser, isHostMode]);
@@ -668,7 +669,7 @@ export default function HomeOrchestrator() {
     if (mounted && !loadingOrders && !loadingServices) {
       const readyTimer = setTimeout(() => {
         setShowSplash(false);
-      }, 400); 
+      }, 400);
       return () => {
         clearTimeout(minTimer);
         clearTimeout(safetyTimer);
@@ -930,11 +931,11 @@ export default function HomeOrchestrator() {
         pros.forEach(p => {
           const proRating = typeof p.rating === 'number' ? p.rating : 4.9;
           const hasRating = typeof p.rating === 'number' && p.rating > 0;
-          
+
           if (Array.isArray(p.services)) {
             p.services.forEach((s: any) => {
               const serviceId = typeof s === 'string' ? s : (s.serviceId || s.categoryId);
-              
+
               const normalizeSubId = (id: string) => {
                 const map: Record<string, string> = {
                   'family_home': 'standard_small',
@@ -949,7 +950,7 @@ export default function HomeOrchestrator() {
                   activeIds.add(serviceId);
                   if (!serviceFreq[serviceId]) serviceFreq[serviceId] = new Set();
                   if (p.uid || p.id) serviceFreq[serviceId].add(p.uid || p.id);
-                  
+
                   if (!serviceRatings[serviceId]) serviceRatings[serviceId] = { total: 0, count: 0 };
                   serviceRatings[serviceId].total += proRating;
                   serviceRatings[serviceId].count += 1;
@@ -973,7 +974,7 @@ export default function HomeOrchestrator() {
               if (rawSubId) {
                 const subId = normalizeSubId(rawSubId);
                 const softBlocklist = ['car_wash', 'car_detailing', 'car_detail'];
-                
+
                 if (!softBlocklist.includes(subId)) {
                   activeSubIds.add(subId);
                   subFreq[subId] = (subFreq[subId] || 0) + 1;
@@ -990,16 +991,16 @@ export default function HomeOrchestrator() {
 
         const serviceCountResult: Record<string, number> = {};
         const serviceRatingsResult: Record<string, number> = {};
-        
+
         Object.keys(serviceFreq).forEach(k => {
-            serviceCountResult[k] = serviceFreq[k].size;
+          serviceCountResult[k] = serviceFreq[k].size;
         });
-        
+
         Object.keys(serviceRatings).forEach(k => {
-            const avg = serviceRatings[k].total / serviceRatings[k].count;
-            // Add a tiny random jitter so it doesn't look like exactly 4.90 everywhere if many have default
-            // But let's keep it clean: if there are no ratings, it'll be 4.9.
-            serviceRatingsResult[k] = avg;
+          const avg = serviceRatings[k].total / serviceRatings[k].count;
+          // Add a tiny random jitter so it doesn't look like exactly 4.90 everywhere if many have default
+          // But let's keep it clean: if there are no ratings, it'll be 4.9.
+          serviceRatingsResult[k] = avg;
         });
 
         setBricolersCountMap(serviceCountResult);
@@ -1290,7 +1291,7 @@ export default function HomeOrchestrator() {
             const neighborhood = data.address?.neighbourhood || data.address?.suburb || '';
             const street = data.address?.road || '';
             const finalAddress = street ? `${street}, ${cityName}` : (cityName || 'Custom Location, Morocco');
-            
+
             handleLocationConfirm({
               pickup: {
                 lat,
@@ -1317,7 +1318,7 @@ export default function HomeOrchestrator() {
     const lowerAddress = address.toLowerCase();
 
     let city = MOROCCAN_CITIES.find((c: string) => lowerAddress.includes(c.toLowerCase())) || 'Casablanca';
-    
+
     const areaList = MOROCCAN_CITIES_AREAS[city] || [];
     let area = '';
 
@@ -1533,9 +1534,9 @@ export default function HomeOrchestrator() {
               }
             });
 
-            const unratedDoneJob = loadedJobs.find(j => 
-              (j.status === 'done' || j.status === 'delivered') && 
-              !j.rated && 
+            const unratedDoneJob = loadedJobs.find(j =>
+              (j.status === 'done' || j.status === 'delivered') &&
+              !j.rated &&
               !sessionDismissedRatings.includes(j.id as string)
             );
             if (unratedDoneJob) {
@@ -1620,59 +1621,59 @@ export default function HomeOrchestrator() {
       for (const order of orders) {
         if (!auth.currentUser || !order.id || !order.date) continue;
 
-          if (['cancelled', 'done', 'delivered', 'programmed', 'broadcast', 'accepted'].includes(order.status || '')) continue;
+        if (['cancelled', 'done', 'delivered', 'programmed', 'broadcast', 'accepted'].includes(order.status || '')) continue;
 
-          try {
-            const datePart = order.date.includes(' at ') ? order.date.split(' at ')[0] : order.date;
-            const timeStr = order.time?.split('-')[0].trim() || "09:00";
+        try {
+          const datePart = order.date.includes(' at ') ? order.date.split(' at ')[0] : order.date;
+          const timeStr = order.time?.split('-')[0].trim() || "09:00";
 
-            let scheduledStart: Date;
-            if (/^\d{4}-\d{2}-\d{2}$/.test(datePart)) {
-              const [y, m, d] = datePart.split('-').map(Number);
-              scheduledStart = new Date(y, m - 1, d);
-            } else {
-              scheduledStart = new Date(datePart);
+          let scheduledStart: Date;
+          if (/^\d{4}-\d{2}-\d{2}$/.test(datePart)) {
+            const [y, m, d] = datePart.split('-').map(Number);
+            scheduledStart = new Date(y, m - 1, d);
+          } else {
+            scheduledStart = new Date(datePart);
+          }
+
+          const [hours, mins] = timeStr.split(':').map(Number);
+          if (!isNaN(hours)) scheduledStart.setHours(hours, mins || 0, 0, 0);
+
+          if (isNaN(scheduledStart.getTime())) continue;
+
+          let scheduledEnd: Date;
+          if (order.expectedEndTime) {
+            scheduledEnd = order.expectedEndTime.toDate ? order.expectedEndTime.toDate() : new Date(order.expectedEndTime);
+          } else {
+            let durationHours = 2;
+            const size = (order.taskSize || 'medium').toLowerCase();
+            const serviceStr = (order.service || '').toLowerCase();
+
+            if (size === 'small') durationHours = 1;
+            else if (size === 'medium') durationHours = 2;
+            else if (size === 'large') {
+              if (serviceStr.includes('painting')) durationHours = 8;
+              else if (serviceStr.includes('moving')) durationHours = 6;
+              else if (serviceStr.includes('cleaning')) durationHours = 5;
+              else if (serviceStr.includes('gardening')) durationHours = 5;
+              else if (serviceStr.includes('electricity') || serviceStr.includes('plumbing')) durationHours = 5;
+              else durationHours = 4;
             }
+            scheduledEnd = new Date(scheduledStart.getTime() + durationHours * 60 * 60 * 1000);
+          }
 
-            const [hours, mins] = timeStr.split(':').map(Number);
-            if (!isNaN(hours)) scheduledStart.setHours(hours, mins || 0, 0, 0);
-
-            if (isNaN(scheduledStart.getTime())) continue;
-
-            let scheduledEnd: Date;
-            if (order.expectedEndTime) {
-                scheduledEnd = order.expectedEndTime.toDate ? order.expectedEndTime.toDate() : new Date(order.expectedEndTime);
-            } else {
-                let durationHours = 2;
-                const size = (order.taskSize || 'medium').toLowerCase();
-                const serviceStr = (order.service || '').toLowerCase();
-
-                if (size === 'small') durationHours = 1;
-                else if (size === 'medium') durationHours = 2;
-                else if (size === 'large') {
-                    if (serviceStr.includes('painting')) durationHours = 8;
-                    else if (serviceStr.includes('moving')) durationHours = 6;
-                    else if (serviceStr.includes('cleaning')) durationHours = 5;
-                    else if (serviceStr.includes('gardening')) durationHours = 5;
-                    else if (serviceStr.includes('electricity') || serviceStr.includes('plumbing')) durationHours = 5;
-                    else durationHours = 4;
-                }
-                scheduledEnd = new Date(scheduledStart.getTime() + durationHours * 60 * 60 * 1000);
+          let newStatus: string | null = null;
+          if (now >= scheduledEnd) {
+            newStatus = 'done';
+          } else if (now >= scheduledStart) {
+            if (['confirmed', 'accepted', 'programmed'].includes(order.status || '')) {
+              newStatus = 'pending';
             }
+          }
 
-            let newStatus: string | null = null;
-            if (now >= scheduledEnd) {
-              newStatus = 'done';
-            } else if (now >= scheduledStart) {
-              if (['confirmed', 'accepted', 'programmed'].includes(order.status || '')) {
-                newStatus = 'pending';
-              }
-            }
-
-            if (newStatus && newStatus !== order.status) {
-              console.log(`[AutoUpdate] Transitioning order ${order.id} from ${order.status} to ${newStatus}`);
-              await updateDoc(doc(db, 'jobs', order.id), { status: newStatus as any });
-            }
+          if (newStatus && newStatus !== order.status) {
+            console.log(`[AutoUpdate] Transitioning order ${order.id} from ${order.status} to ${newStatus}`);
+            await updateDoc(doc(db, 'jobs', order.id), { status: newStatus as any });
+          }
         } catch (e) {
           console.error("Error in auto status update for order", order.id, e);
         }
@@ -2142,11 +2143,11 @@ export default function HomeOrchestrator() {
           const [h, m] = (order.time || "10:00").split(':').map(Number);
           const startDate = new Date(order.date);
           startDate.setHours(h, m, 0, 0);
-          
+
           const serviceConfig = getServiceById(service as string);
           const subConfig = (serviceConfig as any)?.subServices?.find((s: any) => s.id === subService);
           const durationHr = subConfig?.estimatedDurationHr || (serviceConfig as any)?.estimatedDurationHr || 2;
-          
+
           expectedEndTime = new Date(startDate.getTime() + (durationHr * 60 * 60 * 1000) + (30 * 60 * 1000));
         } catch (e) {
           console.error("Error calculating expectedEndTime in handleProgramOrder", e);
@@ -2729,7 +2730,7 @@ export default function HomeOrchestrator() {
                   initialShowHistory={showHistoryInOrders}
                   isHostMode={isHostMode}
                   onAddIntervention={() => setIsScheduling(true)}
-                   onResumeDraft={(draft) => {
+                  onResumeDraft={(draft) => {
                     const normalizedDraft = {
                       serviceType: draft.service || '',
                       serviceName: draft.serviceName || draft.service || '',
@@ -2805,7 +2806,7 @@ export default function HomeOrchestrator() {
                 onBricolerAction={handleProfileBricolerAction}
                 onAdminAction={handleAdminAction}
                 isAdmin={isAdmin}
-                variant={isAdminMode ? 'admin' : (isHostMode ? 'host' : 'client' ) as any}
+                variant={isAdminMode ? 'admin' : (isHostMode ? 'host' : 'client') as any}
                 isHostMode={isHostMode}
                 onToggleHostMode={() => setIsHostMode(!isHostMode)}
                 onOpenLanguage={() => setShowLanguagePopup(true)}
@@ -2884,8 +2885,8 @@ export default function HomeOrchestrator() {
                   setIsScheduling(true);
                 }}
                 onViewMessages={(jobId: string) => {
-                    setMobileNavTab('messages');
-                    setSelectedOrderId(jobId);
+                  setMobileNavTab('messages');
+                  setSelectedOrderId(jobId);
                 }}
               />
             )}
@@ -3053,7 +3054,7 @@ export default function HomeOrchestrator() {
                 onOnboardingComplete={() => {
                   safeStorage.setItem('client_onboarding_shown', 'true');
                   setShowClientOnboarding(false);
-                  
+
                   // Immediately ask for location after onboarding
                   if (!selectedCity) {
                     handleFirstArrivalLocationTrigger();
@@ -3079,7 +3080,7 @@ export default function HomeOrchestrator() {
             ) : (
 
               <>
-                <ServicesHeroSection 
+                <ServicesHeroSection
                   availableServiceIds={availableServices}
                   onSelectService={(serviceId) => {
                     setSelectedDesktopServiceId(serviceId);
@@ -3100,139 +3101,217 @@ export default function HomeOrchestrator() {
 
                 {false && (
                   <>
-                {/* Hero Section */}
-                <DesktopHeroScroll
-                  onOrderClick={(serviceId) => {
-                    setService(serviceId || "");
-                    setSubService(null);
-                    alert("Order flow is under maintenance. Please try again later.");
-                  }}
-                  onBecomeBricolerClick={() => {
-                    if (currentUser && isBricoler) {
-                      safeStorage.removeItem('lbricol_force_client_mode');
-                      window.location.href = '/provider';
-                    } else if (currentUser) {
-                      setShowMobileOnboarding(true);
-                    } else {
-                      setAuthIntent('bricoler');
-                      setShowAuthPopup(true);
-                    }
-                  }}
-                />
-
-                {/* Compact Map Section (Desktop) */}
-                <div className="max-w-[1270px] mx-auto px-6 pb-12 h-[300px]">
-                   <CompactHomeMap 
-                      city={selectedCity}
-                      area={selectedArea}
-                      onAddressUpdate={handleAddressUpdate}
-                      onInteract={() => {
-                        setAutoLocateOnPickerOpen(true);
-                        setShowLocationPicker(true);
+                    {/* Hero Section */}
+                    <DesktopHeroScroll
+                      onOrderClick={(serviceId) => {
+                        setService(serviceId || "");
+                        setSubService(null);
+                        alert("Order flow is under maintenance. Please try again later.");
                       }}
-                   />
-                </div>
+                      onBecomeBricolerClick={() => {
+                        if (currentUser && isBricoler) {
+                          safeStorage.removeItem('lbricol_force_client_mode');
+                          window.location.href = '/provider';
+                        } else if (currentUser) {
+                          setShowMobileOnboarding(true);
+                        } else {
+                          setAuthIntent('bricoler');
+                          setShowAuthPopup(true);
+                        }
+                      }}
+                    />
 
-                {/* Recent Activity Carousel */}
-                {
-                  orders.filter(o => o.status !== 'cancelled').length > 0 && (
-                    <section style={{ padding: '2rem 0 4rem', backgroundColor: c.bg }}>
-                      <div style={{ maxWidth: '1270px', margin: '0 auto', padding: '0 1.5rem' }}>
-                        <OrderHistoryCarousel
-                          orders={orders.filter(o => o.status !== 'cancelled')}
-                          onSelectOrder={(order) => {
-                            setSelectedOrderId(order.id || null);
-                            if (isMobile) {
-                              setMobileNavTab('calendar');
-                            } else {
-                              setIsCalendarExpanded(true);
-                            }
-                          }}
-                        />
-                      </div>
-                    </section>
-                  )
-                }
+                    {/* Compact Map Section (Desktop) */}
+                    <div className="max-w-[1270px] mx-auto px-6 pb-12 h-[300px]">
+                      <CompactHomeMap
+                        city={selectedCity}
+                        area={selectedArea}
+                        onAddressUpdate={handleAddressUpdate}
+                        onInteract={() => {
+                          setAutoLocateOnPickerOpen(true);
+                          setShowLocationPicker(true);
+                        }}
+                      />
+                    </div>
 
-
-                {/* Floating Calendar Widget */}
-                {!isMobile && (
-                  <AnimatePresence>
-                    {showFloatingCalendar && (
-                      <>
-                        {/* Minimized State: Floating Buttons Stack */}
-                        {!isCalendarExpanded && !showMessagesModal && (
-                          <div style={{
-                            position: 'fixed',
-                            bottom: '2.5rem',
-                            right: '2.5rem',
-                            display: 'flex',
-                            flexDirection: 'column',
-                            alignItems: 'center',
-                            gap: '12px',
-                            zIndex: 2000
-                          }}>
-                            {/* Floating Message Button */}
-                            {/* Chat Icon Removed - Using WhatsApp only */}
-
-                            {/* Floating Calendar Button */}
-                            <motion.div
-                              initial={{ opacity: 0, scale: 0.8, y: 20 }}
-                              animate={{ opacity: 1, scale: 1, y: 0 }}
-                              exit={{ opacity: 0, scale: 0.8, y: 20 }}
-                              whileHover={{ scale: 1.05, boxShadow: '0 12px 40px rgba(0,0,0,0.3)' }}
-                              whileTap={{ scale: 0.95 }}
-                              onClick={() => setIsCalendarExpanded(true)}
-                              style={{
-                                width: '72px',
-                                height: '72px',
-                                backgroundColor: '#000',
-                                borderRadius: '24px',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                color: '#fff',
-                                boxShadow: '0 8px 32px rgba(0,0,0,0.2)',
-                                cursor: 'pointer',
-                                position: 'relative'
+                    {/* Recent Activity Carousel */}
+                    {
+                      orders.filter(o => o.status !== 'cancelled').length > 0 && (
+                        <section style={{ padding: '2rem 0 4rem', backgroundColor: c.bg }}>
+                          <div style={{ maxWidth: '1270px', margin: '0 auto', padding: '0 1.5rem' }}>
+                            <OrderHistoryCarousel
+                              orders={orders.filter(o => o.status !== 'cancelled')}
+                              onSelectOrder={(order) => {
+                                setSelectedOrderId(order.id || null);
+                                if (isMobile) {
+                                  setMobileNavTab('calendar');
+                                } else {
+                                  setIsCalendarExpanded(true);
+                                }
                               }}
-                            >
-                              <Calendar size={28} strokeWidth={2.5} />
-                              <div style={{
-                                position: 'absolute',
-                                top: -5,
-                                right: -5,
-                                width: '24px',
-                                height: '24px',
-                                backgroundColor: '#FF3B30',
-                                borderRadius: '50%',
-                                border: '3px solid #FFF',
-                                fontSize: '12px',
-                                fontWeight: 900,
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                boxShadow: '0 2px 8px rgba(255,59,48,0.3)',
-                                color: '#FFF'
-                              }}>
-                                {orders.filter(o => o.status !== 'cancelled').length || 3}
-                              </div>
-                            </motion.div>
+                            />
                           </div>
-                        )}
+                        </section>
+                      )
+                    }
 
-                        {/* Expanded State: Clean Modal */}
-                        {isCalendarExpanded && (
-                          <div
+
+                    {/* Floating Calendar Widget */}
+                    {!isMobile && (
+                      <AnimatePresence>
+                        {showFloatingCalendar && (
+                          <>
+                            {/* Minimized State: Floating Buttons Stack */}
+                            {!isCalendarExpanded && !showMessagesModal && (
+                              <div style={{
+                                position: 'fixed',
+                                bottom: '2.5rem',
+                                right: '2.5rem',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                alignItems: 'center',
+                                gap: '12px',
+                                zIndex: 2000
+                              }}>
+                                {/* Floating Message Button */}
+                                {/* Chat Icon Removed - Using WhatsApp only */}
+
+                                {/* Floating Calendar Button */}
+                                <motion.div
+                                  initial={{ opacity: 0, scale: 0.8, y: 20 }}
+                                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                                  exit={{ opacity: 0, scale: 0.8, y: 20 }}
+                                  whileHover={{ scale: 1.05, boxShadow: '0 12px 40px rgba(0,0,0,0.3)' }}
+                                  whileTap={{ scale: 0.95 }}
+                                  onClick={() => setIsCalendarExpanded(true)}
+                                  style={{
+                                    width: '72px',
+                                    height: '72px',
+                                    backgroundColor: '#000',
+                                    borderRadius: '24px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    color: '#fff',
+                                    boxShadow: '0 8px 32px rgba(0,0,0,0.2)',
+                                    cursor: 'pointer',
+                                    position: 'relative'
+                                  }}
+                                >
+                                  <Calendar size={28} strokeWidth={2.5} />
+                                  <div style={{
+                                    position: 'absolute',
+                                    top: -5,
+                                    right: -5,
+                                    width: '24px',
+                                    height: '24px',
+                                    backgroundColor: '#FF3B30',
+                                    borderRadius: '50%',
+                                    border: '3px solid #FFF',
+                                    fontSize: '12px',
+                                    fontWeight: 900,
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    boxShadow: '0 2px 8px rgba(255,59,48,0.3)',
+                                    color: '#FFF'
+                                  }}>
+                                    {orders.filter(o => o.status !== 'cancelled').length || 3}
+                                  </div>
+                                </motion.div>
+                              </div>
+                            )}
+
+                            {/* Expanded State: Clean Modal */}
+                            {isCalendarExpanded && (
+                              <div
+                                style={{
+                                  position: 'fixed',
+                                  inset: 0,
+                                  zIndex: 3000,
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center'
+                                }}
+                              >
+                                <motion.div
+                                  initial={{ opacity: 0 }}
+                                  animate={{ opacity: 1 }}
+                                  exit={{ opacity: 0 }}
+                                  style={{
+                                    position: 'absolute',
+                                    inset: 0,
+                                    backgroundColor: 'rgba(0,0,0,0.4)',
+                                    backdropFilter: 'blur(8px)',
+                                  }}
+                                  onClick={() => {
+                                    setIsCalendarExpanded(false);
+                                    setSelectedOrderId(null);
+                                  }}
+                                />
+                                <motion.div
+                                  initial={{ opacity: 0, y: 100, scale: 0.9, rotate: -5 }}
+                                  animate={{ opacity: 1, y: 0, scale: 1, rotate: 0 }}
+                                  exit={{ opacity: 0, y: 100, scale: 0.9, rotate: -5 }}
+                                  transition={{ type: "spring", damping: 25, stiffness: 300 }}
+                                  style={{
+                                    position: 'relative',
+                                    width: '100vw',
+                                    maxWidth: '100vw',
+                                    height: '100vh',
+                                    maxHeight: '100vh',
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    overflow: 'hidden'
+                                  }}
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', padding: isMobile ? '0' : '1rem' }} className="no-scrollbar">
+                                    <WeekCalendar
+                                      orders={orders}
+                                      variant="card"
+                                      isLoading={loadingOrders}
+                                      onUpdateOrder={handleUpdateOrder}
+                                      onCancelOrder={handleCancelOrder}
+                                      onNewOrder={() => {
+                                        setIsCalendarExpanded(false);
+                                        handleScrollToSearch();
+                                      }}
+                                      externalSelectedOrderId={selectedOrderId}
+                                      newlyProgrammedOrderId={newlyProgrammedOrderId}
+                                      userType="client"
+                                      autoChat={autoChatOrderId === selectedOrderId}
+                                      onViewProvider={setViewingProviderId}
+                                      activeTab={activeTab}
+                                      onTabChange={setActiveTab}
+                                    />
+                                  </div>
+                                </motion.div>
+                              </div>
+                            )}
+                          </>
+                        )}
+                      </AnimatePresence>
+                    )}
+
+                    {/* Web Messages Modal */}
+                    {!isMobile && (
+                      <AnimatePresence>
+                        {showMessagesModal && (
+                          <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
                             style={{
                               position: 'fixed',
                               inset: 0,
-                              zIndex: 3000,
+                              zIndex: 4000,
                               display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center'
+                              alignItems: 'stretch',
+                              justifyContent: 'flex-end'
                             }}
                           >
+                            {/* Backdrop */}
                             <motion.div
                               initial={{ opacity: 0 }}
                               animate={{ opacity: 1 }}
@@ -3244,167 +3323,89 @@ export default function HomeOrchestrator() {
                                 backdropFilter: 'blur(8px)',
                               }}
                               onClick={() => {
-                                setIsCalendarExpanded(false);
-                                setSelectedOrderId(null);
-                              }}
-                            />
-                            <motion.div
-                              initial={{ opacity: 0, y: 100, scale: 0.9, rotate: -5 }}
-                              animate={{ opacity: 1, y: 0, scale: 1, rotate: 0 }}
-                              exit={{ opacity: 0, y: 100, scale: 0.9, rotate: -5 }}
-                              transition={{ type: "spring", damping: 25, stiffness: 300 }}
-                              style={{
-                                position: 'relative',
-                                width: '100vw',
-                                maxWidth: '100vw',
-                                height: '100vh',
-                                maxHeight: '100vh',
-                                display: 'flex',
-                                flexDirection: 'column',
-                                overflow: 'hidden'
-                              }}
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', padding: isMobile ? '0' : '1rem' }} className="no-scrollbar">
-                                <WeekCalendar
-                                  orders={orders}
-                                  variant="card"
-                                  isLoading={loadingOrders}
-                                  onUpdateOrder={handleUpdateOrder}
-                                  onCancelOrder={handleCancelOrder}
-                                  onNewOrder={() => {
-                                    setIsCalendarExpanded(false);
-                                    handleScrollToSearch();
-                                  }}
-                                  externalSelectedOrderId={selectedOrderId}
-                                  newlyProgrammedOrderId={newlyProgrammedOrderId}
-                                  userType="client"
-                                  autoChat={autoChatOrderId === selectedOrderId}
-                                  onViewProvider={setViewingProviderId}
-                                  activeTab={activeTab}
-                                  onTabChange={setActiveTab}
-                                />
-                              </div>
-                            </motion.div>
-                          </div>
-                        )}
-                      </>
-                    )}
-                  </AnimatePresence>
-                )}
-
-                {/* Web Messages Modal */}
-                {!isMobile && (
-                  <AnimatePresence>
-                    {showMessagesModal && (
-                      <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        style={{
-                          position: 'fixed',
-                          inset: 0,
-                          zIndex: 4000,
-                          display: 'flex',
-                          alignItems: 'stretch',
-                          justifyContent: 'flex-end'
-                        }}
-                      >
-                        {/* Backdrop */}
-                        <motion.div
-                          initial={{ opacity: 0 }}
-                          animate={{ opacity: 1 }}
-                          exit={{ opacity: 0 }}
-                          style={{
-                            position: 'absolute',
-                            inset: 0,
-                            backgroundColor: 'rgba(0,0,0,0.4)',
-                            backdropFilter: 'blur(8px)',
-                          }}
-                          onClick={() => {
-                            setShowMessagesModal(false);
-                            setMessagesModalJobId(null);
-                          }}
-                        />
-
-                        {/* Messages Panel */}
-                        <motion.div
-                          initial={{ x: '100%', opacity: 0 }}
-                          animate={{ x: 0, opacity: 1 }}
-                          exit={{ x: '100%', opacity: 0 }}
-                          transition={{ type: 'spring', damping: 30, stiffness: 280 }}
-                          style={{
-                            position: 'relative',
-                            width: '100%',
-                            maxWidth: '900px',
-                            height: '100vh',
-                            backgroundColor: theme === 'light' ? '#FFFFFF' : '#000000',
-                            display: 'flex',
-                            flexDirection: 'column',
-                            overflow: 'hidden',
-                            boxShadow: '-20px 0 60px rgba(0,0,0,0.15)'
-                          }}
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          {/* Panel Header */}
-                          <div style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'space-between',
-                            padding: '20px 24px',
-                            borderBottom: `1px solid ${theme === 'light' ? '#EBEBEB' : '#2D2D2D'}`,
-                            flexShrink: 0,
-                            backgroundColor: theme === 'light' ? '#FFFFFF' : '#000000'
-                          }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                              <div style={{
-                                width: '40px',
-                                height: '40px',
-                                borderRadius: '14px',
-                                backgroundColor: '#000',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center'
-                              }}>
-                                <MessageSquare size={20} color="#fff" strokeWidth={2.5} />
-                              </div>
-                              <div>
-                                <div style={{ fontSize: '20px', fontWeight: 950, color: theme === 'light' ? '#000' : '#fff', letterSpacing: '-0.02em', fontFamily: 'Uber Move, var(--font-sans)' }}>
-                                  {t({ en: 'Messages', fr: 'Messages' })}
-                                </div>
-                                <div style={{ fontSize: '12px', color: theme === 'light' ? '#717171' : '#B0B0B0', fontWeight: 700 }}>
-                                  {orders.filter(o => o.id && (o.bricolerId || o.clientId)).length} {t({ en: 'conversations', fr: 'conversations' })}
-                                </div>
-                              </div>
-                            </div>
-                            <button
-                              onClick={() => {
                                 setShowMessagesModal(false);
                                 setMessagesModalJobId(null);
                               }}
+                            />
+
+                            {/* Messages Panel */}
+                            <motion.div
+                              initial={{ x: '100%', opacity: 0 }}
+                              animate={{ x: 0, opacity: 1 }}
+                              exit={{ x: '100%', opacity: 0 }}
+                              transition={{ type: 'spring', damping: 30, stiffness: 280 }}
                               style={{
-                                width: '40px',
-                                height: '40px',
-                                borderRadius: '14px',
-                                backgroundColor: theme === 'light' ? '#F5F5F7' : '#1A1A1A',
-                                border: 'none',
-                                cursor: 'pointer',
+                                position: 'relative',
+                                width: '100%',
+                                maxWidth: '900px',
+                                height: '100vh',
+                                backgroundColor: theme === 'light' ? '#FFFFFF' : '#000000',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                overflow: 'hidden',
+                                boxShadow: '-20px 0 60px rgba(0,0,0,0.15)'
+                              }}
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              {/* Panel Header */}
+                              <div style={{
                                 display: 'flex',
                                 alignItems: 'center',
-                                justifyContent: 'center',
-                                color: theme === 'light' ? '#000' : '#fff'
-                              }}
-                            >
-                              <X size={20} />
-                            </button>
-                          </div>
+                                justifyContent: 'space-between',
+                                padding: '20px 24px',
+                                borderBottom: `1px solid ${theme === 'light' ? '#EBEBEB' : '#2D2D2D'}`,
+                                flexShrink: 0,
+                                backgroundColor: theme === 'light' ? '#FFFFFF' : '#000000'
+                              }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                  <div style={{
+                                    width: '40px',
+                                    height: '40px',
+                                    borderRadius: '14px',
+                                    backgroundColor: '#000',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center'
+                                  }}>
+                                    <MessageSquare size={20} color="#fff" strokeWidth={2.5} />
+                                  </div>
+                                  <div>
+                                    <div style={{ fontSize: '20px', fontWeight: 950, color: theme === 'light' ? '#000' : '#fff', letterSpacing: '-0.02em', fontFamily: 'Uber Move, var(--font-sans)' }}>
+                                      {t({ en: 'Messages', fr: 'Messages' })}
+                                    </div>
+                                    <div style={{ fontSize: '12px', color: theme === 'light' ? '#717171' : '#B0B0B0', fontWeight: 700 }}>
+                                      {orders.filter(o => o.id && (o.bricolerId || o.clientId)).length} {t({ en: 'conversations', fr: 'conversations' })}
+                                    </div>
+                                  </div>
+                                </div>
+                                <button
+                                  onClick={() => {
+                                    setShowMessagesModal(false);
+                                    setMessagesModalJobId(null);
+                                  }}
+                                  style={{
+                                    width: '40px',
+                                    height: '40px',
+                                    borderRadius: '14px',
+                                    backgroundColor: theme === 'light' ? '#F5F5F7' : '#1A1A1A',
+                                    border: 'none',
+                                    cursor: 'pointer',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    color: theme === 'light' ? '#000' : '#fff'
+                                  }}
+                                >
+                                  <X size={20} />
+                                </button>
+                              </div>
 
-                          {/* Messages Modal Removed - Using WhatsApp only */}
-                        </motion.div>
-                      </motion.div>
+                              {/* Messages Modal Removed - Using WhatsApp only */}
+                            </motion.div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
                     )}
-                  </AnimatePresence>
-                )}
                   </>
                 )}
 
@@ -3439,14 +3440,14 @@ export default function HomeOrchestrator() {
                   setAuthIntent(null);
                   return;
                 }
- 
+
                 if (authIntent === 'bricoler') {
                   setAuthIntent(null);
                   setShowMobileOnboarding(true);
                   return;
                 }
- 
-                 if (authIntent === 'program_order' || !authIntent) {
+
+                if (authIntent === 'program_order' || !authIntent) {
                   handleProgramOrder(result.user, result.userData?.whatsappNumber);
                   setAuthIntent(null);
                 }
@@ -3711,23 +3712,23 @@ export default function HomeOrchestrator() {
                   <div>
                     <label className="text-[14px] font-bold text-neutral-400 uppercase tracking-widest block mb-3">Propriété</label>
                     <div className="flex flex-col gap-2">
-                        {hostProperties.length > 0 ? (
-                            <select 
-                                value={selectedPropertyId || ''} 
-                                onChange={(e) => setSelectedPropertyId(e.target.value)}
-                                className="w-full p-5 rounded-[24px] bg-neutral-50 border border-neutral-100 font-bold appearance-none outline-none"
-                            >
-                                <option value="" disabled>Sélectionnez une propriété</option>
-                                {hostProperties.map(p => (
-                                    <option key={p.id} value={p.id}>{p.name}</option>
-                                ))}
-                            </select>
-                        ) : (
-                            <div className="p-5 rounded-[24px] bg-neutral-50 border border-neutral-100 flex items-center gap-3 text-neutral-400 font-medium">
-                                <Home size={20} />
-                                <span>Aucune propriété trouvée</span>
-                            </div>
-                        )}
+                      {hostProperties.length > 0 ? (
+                        <select
+                          value={selectedPropertyId || ''}
+                          onChange={(e) => setSelectedPropertyId(e.target.value)}
+                          className="w-full p-5 rounded-[24px] bg-neutral-50 border border-neutral-100 font-bold appearance-none outline-none"
+                        >
+                          <option value="" disabled>Sélectionnez une propriété</option>
+                          {hostProperties.map(p => (
+                            <option key={p.id} value={p.id}>{p.name}</option>
+                          ))}
+                        </select>
+                      ) : (
+                        <div className="p-5 rounded-[24px] bg-neutral-50 border border-neutral-100 flex items-center gap-3 text-neutral-400 font-medium">
+                          <Home size={20} />
+                          <span>Aucune propriété trouvée</span>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -3817,10 +3818,10 @@ export default function HomeOrchestrator() {
         />
       )}
 
-      <SellingPointsBottomSheet 
-        isOpen={showSellingPoints} 
-        onClose={() => setShowSellingPoints(false)} 
-        t={t} 
+      <SellingPointsBottomSheet
+        isOpen={showSellingPoints}
+        onClose={() => setShowSellingPoints(false)}
+        t={t}
       />
     </div>
   );
