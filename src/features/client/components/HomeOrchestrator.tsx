@@ -53,6 +53,9 @@ const OrderHistoryCarousel = dynamic(() => import('@/features/orders/components/
 const FloatingMessengerBubble = dynamic(() => import('@/components/shared/FloatingMessengerBubble').then(mod => ({ default: mod.FloatingMessengerBubble })));
 const ComingSoon = dynamic(() => import('@/components/layout/ComingSoon'));
 const CompactHomeMap = dynamic(() => import('@/components/shared/CompactHomeMap'));
+const HostDashboard = dynamic(() => import('@/features/hosts/components/HostDashboard'));
+const PropertyListView = dynamic(() => import('@/features/hosts/components/PropertyListView'));
+const HostCalendarView = dynamic(() => import('@/features/hosts/components/HostCalendarView'));
 
 import {
   MapPin,
@@ -465,6 +468,18 @@ export default function HomeOrchestrator() {
   const [newlyProgrammedOrderId, setNewlyProgrammedOrderId] = useState<string | null>(null);
   const [heroImageIndex, setHeroImageIndex] = useState(0);
   const [showHistoryInOrders, setShowHistoryInOrders] = useState(false);
+  const [isHostMode, setIsHostMode] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      return safeStorage.getItem('lbricol_is_host_mode') === 'true';
+    }
+    return false;
+  });
+
+  useEffect(() => {
+    if (mounted) {
+      safeStorage.setItem('lbricol_is_host_mode', String(isHostMode));
+    }
+  }, [isHostMode, mounted]);
 
 
   const [isViewingOrderDetails, setIsViewingOrderDetails] = useState(false);
@@ -2522,7 +2537,7 @@ export default function HomeOrchestrator() {
         height: isFullscreenMobileTab ? '100dvh' : 'auto'
       }}>
         {/* Show mobile tab views only on mobile */}
-        {isMobile && mobileNavTab !== 'home' && (
+        {isMobile && (!mounted || !isHostMode) && mobileNavTab !== 'home' && (
           <>
             {mobileNavTab === 'calendar' && (
               isAdminMode ? (
@@ -2623,7 +2638,9 @@ export default function HomeOrchestrator() {
                 onBricolerAction={handleProfileBricolerAction}
                 onAdminAction={handleAdminAction}
                 isAdmin={isAdmin}
-                variant={isAdminMode ? 'admin' : 'client'}
+                variant={isAdminMode ? 'admin' : (isHostMode ? 'host' : 'client' ) as any}
+                isHostMode={isHostMode}
+                onToggleHostMode={() => setIsHostMode(!isHostMode)}
                 onOpenLanguage={() => setShowLanguagePopup(true)}
                 onLogin={() => { setAuthIntent('login_only'); setShowAuthPopup(true); }}
                 onLogout={async () => {
@@ -2687,6 +2704,66 @@ export default function HomeOrchestrator() {
           </>
         )}
 
+        {/* Host Mode Mobile Views */}
+        {isMobile && mounted && isHostMode && (
+          <>
+            {mobileNavTab === 'home' && <HostDashboard />}
+            {mobileNavTab === 'calendar' && <HostCalendarView />}
+            {mobileNavTab === 'services' && <PropertyListView />}
+            {mobileNavTab === 'messages' && (
+              <MessagesView
+                orders={orders}
+                currentUser={currentUser}
+                initialSelectedJobId={selectedOrderId}
+                impersonateBricoler={impersonatedBricoler || undefined}
+                onBackToOrders={() => {
+                  setMobileNavTab('calendar');
+                  setShowHistoryInOrders(false);
+                  setImpersonatedBricoler(null);
+                }}
+              />
+            )}
+            {mobileNavTab === 'profile' && (
+              <ProfileView
+                onToggleOnboarding={setIsProfileOnboardingOpen}
+                userAvatar={userData?.profilePhotoURL || userData?.photoURL || currentUser?.photoURL || undefined}
+                userName={userData?.name || currentUser?.displayName || undefined}
+                userEmail={currentUser?.email || undefined}
+                isBricoler={isBricoler}
+                isAuthenticated={!!currentUser}
+                onNavigate={(path) => {
+                  if (path === '/orders') {
+                    setMobileNavTab('calendar');
+                    setShowHistoryInOrders(false);
+                  } else if (path === '/home') setMobileNavTab('home');
+                  else if (path === '/share') setMobileNavTab('share');
+                  else if (path === '/promocodes') setMobileNavTab('promocodes');
+                }}
+                onBricolerAction={handleProfileBricolerAction}
+                onAdminAction={handleAdminAction}
+                isAdmin={isAdmin}
+                variant={isAdminMode ? 'admin' : (isHostMode ? 'host' : (isBricoler ? 'provider' : 'client'))}
+                isHostMode={isHostMode}
+                onToggleHostMode={() => setIsHostMode(!isHostMode)}
+                onOpenLanguage={() => setShowLanguagePopup(true)}
+                onLogin={() => { setAuthIntent('login_only'); setShowAuthPopup(true); }}
+                onLogout={async () => {
+                  try {
+                    await signOut(auth);
+                    showToast({
+                      title: t({ en: 'Logged out successfully', fr: 'Déconnexion réussie' }),
+                      variant: 'success'
+                    });
+                  } catch (error) {
+                    console.error('Logout error:', error);
+                  }
+                }}
+              />
+            )}
+          </>
+        )}
+
+
         {/* Client Notifications View */}
         <AnimatePresence>
           {showClientNotifications && (
@@ -2726,7 +2803,7 @@ export default function HomeOrchestrator() {
         </AnimatePresence>
 
         {/* Show home content when on home tab (mobile) or always (desktop) */}
-        {(!isMobile || mobileNavTab === 'home') && !showSplash && (
+        {(!isMobile || ((!mounted || !isHostMode) && mobileNavTab === 'home')) && !showSplash && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -2771,7 +2848,6 @@ export default function HomeOrchestrator() {
 
             {isMobile ? (
               <ClientHome
-                // ... same mobile props as before
                 isSearchOpen={isSearchOpen}
                 setIsSearchOpen={setIsSearchOpen}
                 userName={currentUser?.displayName || undefined}
@@ -3466,7 +3542,7 @@ export default function HomeOrchestrator() {
           if (tab === 'calendar') setShowHistoryInOrders(false);
           setMobileNavTab(tab);
         }}
-        variant={isAdminMode ? 'admin' : 'client'}
+        variant={isAdminMode ? 'admin' : (isHostMode ? 'host' : 'client')}
       />}
       {/* Floating Messenger Bubble */}
       {activeBubble && (

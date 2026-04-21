@@ -24,7 +24,7 @@ export interface PromoCodeResult {
  */
 export async function validatePromoCode(
   code: string,
-  userId: string
+  userId?: string
 ): Promise<PromoCodeResult> {
   try {
     const normalised = code.trim().toUpperCase();
@@ -47,7 +47,7 @@ export async function validatePromoCode(
     }
 
     // Check if this specific user already used it
-    if (Array.isArray(data.usedBy) && data.usedBy.includes(userId)) {
+    if (userId && Array.isArray(data.usedBy) && data.usedBy.includes(userId)) {
       return { valid: false, error: 'already_used' };
     }
 

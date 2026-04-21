@@ -36,7 +36,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { calculateOrderPrice } from '@/lib/pricing';
 import { getServiceVector, SERVICES_HIERARCHY } from '@/config/services_config';
 import { getRoadDistance } from '@/lib/calculateDistance';
-import { markPromoCodeUsed } from '@/lib/promoCode';
+import { markPromoCodeUsed, validatePromoCode } from '@/lib/promoCode';
 
 export default function CheckoutPage() {
     const router = useRouter();
@@ -190,6 +190,20 @@ export default function CheckoutPage() {
     const createOrders = async (finalUser: any, finalWhatsApp: string) => {
         setIsSubmitting(true);
         try {
+            // 0. Robust Promo Code re-validation (post-authentication)
+            if (order.promoCode) {
+                const revalidate = await validatePromoCode(order.promoCode, finalUser.uid);
+                if (!revalidate.valid) {
+                    alert(t({ 
+                        en: 'This promo code is no longer valid for your account.', 
+                        fr: 'Ce code promo n\'est plus valide pour votre compte.',
+                        ar: 'هذا الرمز الترويجي لم يعد صالحاً لحسابك.'
+                    }));
+                    setIsSubmitting(false);
+                    return;
+                }
+            }
+
             // 1. Ensure user profile is updated with WhatsApp if new
             if (finalWhatsApp) {
                 safeStorage.setItem('lbricol_user_phone', finalWhatsApp);

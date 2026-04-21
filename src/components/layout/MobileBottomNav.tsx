@@ -1,7 +1,7 @@
 "use client";
 
 import React from 'react';
-import { ShoppingBag, Star, User, Home, Calendar, TrendingUp, MessageSquare, Search } from 'lucide-react';
+import { ShoppingBag, Star, User, Home, Calendar, TrendingUp, MessageSquare, Search, Zap } from 'lucide-react';
 import { useTheme } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { fluidMobilePx, useMobileTier, useViewportWidth } from '@/lib/mobileOnly';
@@ -11,7 +11,7 @@ export type TabType = 'home' | 'search' | 'heroes' | 'orders' | 'profile' | 'job
 interface MobileBottomNavProps {
     activeTab: TabType;
     onTabChange: (tab: TabType) => void;
-    variant?: 'client' | 'provider' | 'admin';
+    variant?: 'client' | 'provider' | 'admin' | 'host';
 }
 
 const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
@@ -54,7 +54,15 @@ const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
         { id: 'profile' as TabType, icon: User, label: t({ en: 'Profile', fr: 'Profil', ar: 'الملف الشخصي' }) },
     ];
 
-    const tabs = variant === 'provider' ? providerTabs : (variant === 'admin' ? adminTabs : clientTabs);
+    const hostTabs = [
+        { id: 'home' as TabType, icon: Home, label: t({ en: 'Today', fr: 'Aujourd\'hui', ar: 'اليوم' }) },
+        { id: 'calendar' as TabType, icon: Calendar, label: t({ en: 'Calendar', fr: 'Calendrier', ar: 'التقويم' }) },
+        { id: 'services' as TabType, icon: ShoppingBag, label: t({ en: 'Listings', fr: 'Annonces', ar: 'الإعلانات' }) },
+        { id: 'messages' as TabType, icon: MessageSquare, label: t({ en: 'Messages', fr: 'Messages', ar: 'الرسائل' }) },
+        { id: 'profile' as TabType, icon: User, label: t({ en: 'Menu', fr: 'Menu', ar: 'القائمة' }) },
+    ];
+
+    const tabs = variant === 'provider' ? providerTabs : (variant === 'admin' ? adminTabs : (variant === 'host' ? hostTabs : clientTabs));
 
     const getEffectiveActiveId = (id: TabType) => {
         if (variant === 'provider') {
@@ -68,6 +76,12 @@ const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
             if (id === 'calendar') return 'calendar';
             if (id === 'services') return 'services';
             if (id === 'reviews') return 'reviews';
+            if (id === 'profile') return 'profile';
+        } else if (variant === 'host') {
+            if (id === 'home') return 'home';
+            if (id === 'calendar') return 'calendar';
+            if (id === 'services') return 'services';
+            if (id === 'messages') return 'messages';
             if (id === 'profile') return 'profile';
         } else {
             if (id === 'home') return 'home';

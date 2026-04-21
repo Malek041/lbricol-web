@@ -352,7 +352,7 @@ const ClientHome: React.FC<ClientHomeProps> = ({
     const visibleServices = React.useMemo(() => {
         // If availableServiceIds is null, we are still loading or detecting.
         // If it's [], it means we explicitly found NO services in this city.
-        if (availableServiceIds === null) return SERVICES_CATALOGUE;
+        if (!availableServiceIds) return SERVICES_CATALOGUE;
 
         let base = SERVICES_CATALOGUE.filter(s => availableServiceIds.includes(s.id));
 
@@ -514,11 +514,11 @@ const ClientHome: React.FC<ClientHomeProps> = ({
 
     return (
         <div className={cn(
-            "fixed inset-0 bg-[#FFC244] overflow-y-auto no-scrollbar h-[100dvh] w-screen font-jakarta",
+            "fixed inset-0 bg-[#FFFFFF] overflow-y-auto no-scrollbar h-[100dvh] w-screen font-jakarta",
             "z-0"
         )}>
             {/* 1. New yellow Hero Section */}
-            <div className="w-full sticky top-0 z-0 bg-[#FFC244] overflow-hidden flex-shrink-0 pt-[env(safe-area-inset-top)] pb-5">
+            <div className="w-full sticky top-0 z-0 bg-[#FFFFFF] overflow-hidden flex-shrink-0 pt-[env(safe-area-inset-top)] pb-5">
                 {/* Location Pill */}
                 <div className="flex justify-center pt-8 mb-6">
                     <motion.button
@@ -546,13 +546,13 @@ const ClientHome: React.FC<ClientHomeProps> = ({
                             initial={{ opacity: 0, y: 15, scale: 0.95 }}
                             animate={{ opacity: 1, y: 0, scale: 1 }}
                             exit={{ opacity: 0, y: -15, scale: 0.95 }}
-                            transition={{ 
+                            transition={{
                                 duration: 0.5,
                                 type: "spring",
                                 stiffness: 260,
                                 damping: 20
                             }}
-                            className="text-[30px] font-black leading-[1.05] tracking-tight text-black max-w-[340px] mx-auto flex flex-col items-center gap-2"
+                            className="text-[30px] font-black leading-[1.05] tracking-tight text-[#2C2C2C] max-w-[340px] mx-auto flex flex-col items-center gap-2"
                             style={{ fontWeight: 700, fontFamily: '"Uber Move", "UberMoveText", var(--font-sans), sans-serif', letterSpacing: '-0.04em' }}
                         >
                             {allHeroTitles[heroIndex].icon && (
@@ -585,7 +585,7 @@ const ClientHome: React.FC<ClientHomeProps> = ({
 
 
                 {/* 1.5 Animated Icons Row */}
-                <div className="flex gap-4 items-center overflow-x-hidden pt-1 mt-4 pointer-events-none">
+                {/* <div className="flex gap-4 items-center overflow-x-hidden pt-1 mt-4 pointer-events-none">
                     <motion.div
                         animate={startTicker ? { x: [0, -1000] } : { x: 0 }}
                         transition={{
@@ -636,7 +636,7 @@ const ClientHome: React.FC<ClientHomeProps> = ({
                             </motion.div>
                         ))}
                     </motion.div>
-                </div>
+                </div>*/}
             </div>
 
             {/* 2. White Bottom Sheet Container with Wave */}
@@ -646,7 +646,7 @@ const ClientHome: React.FC<ClientHomeProps> = ({
                 transition={{ type: "spring", damping: 25, stiffness: 180, delay: 0.4 }}
                 className={cn(
                     "bg-white relative z-10 transition-all duration-500 ease-in-out shrink-0",
-                    "-mt-8 min-h-screen"
+                    "mt-8 min-h-screen"
                 )}
             >
                 {/* Wave Border Overlay */}

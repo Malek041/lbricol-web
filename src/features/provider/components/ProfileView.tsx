@@ -4,7 +4,7 @@ import React, { useState, useMemo } from 'react';
 import {
     X, ChevronRight, User, Mail, Lock, Phone,
     CreditCard, FileText, Megaphone, ShoppingBag, Gift,
-    Tag, Bell, LogOut, ArrowLeft, Globe, Wrench, LogIn, Plus, CircleHelp, Shield, UserPlus, Hash
+    Tag, Bell, LogOut, ArrowLeft, Globe, Wrench, LogIn, Plus, HelpCircle, Shield, UserPlus, Hash
 } from 'lucide-react';
 import { auth, db, storage } from '@/lib/firebase';
 import { doc, getDoc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
@@ -28,13 +28,15 @@ interface ProfileViewProps {
     userAvatar?: string;
     userName?: string;
     userEmail?: string;
-    variant?: 'client' | 'provider' | 'admin';
+    variant?: 'client' | 'provider' | 'admin' | 'host';
     onAdminAction?: (code?: string) => void;
     isAdmin?: boolean;
     userData?: any;
     setUserData?: (data: any) => void;
     initialView?: 'main' | 'info' | 'admin-code' | 'portfolio';
     onToggleOnboarding?: (isOpen: boolean) => void;
+    isHostMode?: boolean;
+    onToggleHostMode?: () => void;
 }
 
 const ProfileView: React.FC<ProfileViewProps> = ({
@@ -55,6 +57,8 @@ const ProfileView: React.FC<ProfileViewProps> = ({
     setUserData,
     initialView = 'main',
     onToggleOnboarding,
+    isHostMode = false,
+    onToggleHostMode,
 }) => {
     const { t } = useLanguage();
     const [view, setView] = useState<'main' | 'info' | 'admin-code' | 'portfolio'>(initialView);
@@ -119,7 +123,7 @@ const ProfileView: React.FC<ProfileViewProps> = ({
                 action: () => onOpenLanguage?.(),
             },
             {
-                icon: CircleHelp,
+                icon: HelpCircle,
                 label: t({ en: 'F.A.Q.', fr: 'F.A.Q.', ar: 'الأسئلة الشائعة' }),
                 action: handleHelp,
             },
@@ -161,7 +165,7 @@ const ProfileView: React.FC<ProfileViewProps> = ({
                 action: () => onNavigate?.('/promocodes'),
             },
             {
-                icon: CircleHelp,
+                icon: HelpCircle,
                 label: t({ en: 'F.A.Q.', fr: 'F.A.Q.', ar: 'الأسئلة الشائعة' }),
                 action: handleHelp,
             },
@@ -169,6 +173,35 @@ const ProfileView: React.FC<ProfileViewProps> = ({
                 icon: Shield,
                 label: t({ en: 'Admins', fr: 'Administration', ar: 'الإدارة' }),
                 action: () => isAdmin ? onAdminAction?.() : setView('admin-code'),
+            },
+        ];
+
+        const hostItems = [
+            {
+                icon: User,
+                label: t({ en: 'Switch to Traveling Mode', fr: 'Passer en Mode Voyageur', ar: 'التحويل إلى وضع المسافر' }),
+                action: () => onToggleHostMode?.(),
+                variant: 'highlight'
+            },
+            {
+                icon: ShoppingBag,
+                label: t({ en: 'Bookings History', fr: 'Historique des réservations', ar: 'سجل الحجوزات' }),
+                action: () => onNavigate?.('/orders-history'),
+            },
+            {
+                icon: User,
+                label: t({ en: 'Personal information', fr: 'Informations personnelles', ar: 'المعلومات الشخصية' }),
+                action: () => setView('info'),
+            },
+            {
+                icon: Globe,
+                label: t({ en: 'Translation', fr: 'Traduction', ar: 'الترجمة' }),
+                action: () => onOpenLanguage?.(),
+            },
+            {
+                icon: HelpCircle,
+                label: t({ en: 'Help Center', fr: 'Centre d\'aide', ar: 'مركز المساعدة' }),
+                action: handleHelp,
             },
         ];
 
@@ -190,7 +223,7 @@ const ProfileView: React.FC<ProfileViewProps> = ({
             },
         ];
 
-        const menuItems = variant === 'admin' ? adminItems : (variant === 'provider' ? providerItems : clientItems);
+        const menuItems = variant === 'admin' ? adminItems : (variant === 'host' ? hostItems : (variant === 'provider' ? providerItems : clientItems));
 
         return (
             <motion.div
@@ -198,63 +231,68 @@ const ProfileView: React.FC<ProfileViewProps> = ({
                 animate={{ opacity: 1, x: 0 }}
                 className="flex flex-col h-full overflow-y-auto no-scrollbar bg-white relative w-full"
             >
-                {/* Blue Header (Glovo Style) - Fixed/Sticky Behind */}
-                <div className="bg-[#FFB700] pt-14 pb-20 px-6 sticky top-0 z-0 flex flex-col items-center overflow-hidden shrink-0 transition-all duration-300">
-                    <div className="w-full flex justify-end mb-4 relative z-10">
-                        {/* Help Button */}
-                        <button
-                            onClick={handleHelp}
-                            className="bg-[#008C74] text-white px-5 py-2.5 rounded-full font-black text-[14px] flex items-center gap-2 active:scale-95 transition-all border border-[#00705d] group"
-                        >
-                            <CircleHelp size={18} className="text-white group-hover:rotate-12 transition-transform" />
-                            {t({ en: 'Help', fr: 'Aide', ar: 'مساعدة' })}
-                        </button>
-                    </div>
-
-                    <div className="flex flex-col items-center gap-5 text-center relative z-10">
-                        <div className="relative group">
-                            <motion.div
-                                initial={{ scale: 0.9, opacity: 0 }}
-                                animate={{ scale: 1, opacity: 1 }}
-                                className="w-28 h-28 rounded-[36px] overflow-hidden bg-white relative border border-neutral-100"
-                            >
+                {/* Airbnb Style Header (White & Clean) */}
+                <div className="bg-white pt-14 pb-6 px-6 flex flex-col shrink-0 transition-all duration-300">
+                    <div className="w-full flex justify-between items-center mb-10">
+                        <h2 className="text-[32px] font-bold text-black tracking-tight leading-none">Menu</h2>
+                        <div className="flex items-center gap-3">
+                            <button onClick={handleHelp} className="w-10 h-10 rounded-full  flex items-center justify-center bg-[#F7F7F7] active:scale-95 transition-all">
+                                <Bell size={20} className="text-neutral-700" />
+                            </button>
+                            <div className="w-10 h-10 rounded-full overflow-hidden border border-neutral-200 shadow-sm">
                                 <img
                                     src={userData?.profilePhotoURL || userData?.avatar || userAvatar || userData?.photoURL || "/Images/Vectors Illu/LbricolFaceOY.webp"}
                                     alt={displayName}
-                                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                                    onError={(e) => {
-                                        (e.target as HTMLImageElement).src = "/Images/Vectors Illu/LbricolFaceOY.webp";
-                                    }}
+                                    className="w-full h-full object-cover"
                                 />
-                            </motion.div>
-                            <div className="absolute -bottom-1 -right-1 w-10 h-10 bg-[#01A083] rounded-2xl border-4 border-white flex items-center justify-center">
-                                <Shield size={16} className="text-white" fill="white" />
                             </div>
                         </div>
-                        <div className="space-y-1">
-                            <h1 className="text-[36px] font-black text-black leading-tight tracking-tight">
-                                {displayName}
-                            </h1>
-                            {isAuthenticated && (
-                                <p className="text-[14px] font-bold text-black/40 uppercase tracking-widest">
-                                    {variant === 'provider'
-                                        ? t({ en: 'Provider account', fr: 'Compte prestataire', ar: 'حساب مقدم خدمة' })
-                                        : variant === 'admin'
-                                            ? t({ en: 'Admin account', fr: 'Compte admin', ar: 'حساب إداري' })
-                                            : t({ en: 'Client account', fr: 'Compte client', ar: 'حساب عميل' })}
-                                </p>
-                            )}
-                        </div>
                     </div>
+
+                    {/* Mode Toggle Highlight Card */}
+                    <AnimatePresence mode="wait">
+                        {!isHostMode ? (
+                            <motion.div
+                                key="client-onboarding-card"
+                                initial={{ opacity: 0, scale: 0.95 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                exit={{ opacity: 0, scale: 0.95 }}
+                                className="bg-[#F2F2F2] rounded-[22px] p-8 flex flex-col items-center text-center  mb-6"
+                            >
+                                <div className="flex gap-2 mb-6">
+                                    <div className="w-25 h-24 rounded-[12px] shadow-md overflow-hidden  rotate-[-10deg] translate-x-2 ">
+                                        <img src="/Images/Hosts/84ab3898-d9e6-474c-b371-fe5e20395dae_lfgezn.avif" className="w-full h-full object-cover" />
+                                    </div>
+                                    <div className="w-25 h-24 rounded-[12px]  shadow-md overflow-hidden  z-10 ">
+                                        <img src="/Images/Hosts/pexels-emris-17086317.jpg" className="w-full h-full object-cover" />
+                                    </div>
+                                    <div className="w-25 h-24 rounded-[12px] shadow-md overflow-hidden  rotate-[10deg] -translate-x-2 ">
+                                        <img src="/Images/Hosts/584b8edd-dd10-47a1-9441-434fb4b05736_tqhtqg.avif" className="w-full h-full object-cover" />
+                                    </div>
+                                </div>
+                                <h3 className="text-[22px] font-bold text-black leading-tight mb-2">
+                                    {t({ en: 'Are you a host/co-host/concierge?', fr: 'Vous êtes hôte/co-hôte/concierge?', ar: 'هل أنت مضيف/مضيف مشارك/كونسيرج؟' })}
+                                </h3>
+                                <p className="text-[15px] text-neutral-500 max-w-[360px] mb-6 leading-snug">
+                                    {t({
+                                        en: 'Save 70% of your time. List properties, set preferences, schedule check-ins—Lbricol Host handles the rest with vetted workers.',
+                                        fr: 'Économisez 70% de votre temps. Listez, configurez, programmez les arrivées/départs—Lbricol Host gère le reste',
+                                        ar: 'وفر 70% من وقتك. قم بإدراج العقارات، وحدد تفضيلاتك، وجدول تسجيل الوصول - يتولى Lbricol Host الباقي مع العمال المعتمدين.'
+                                    })}
+                                </p>
+                                <button
+                                    onClick={onToggleHostMode}
+                                    disabled
+                                    className="w-[360px] bg-[#01A084] opacity-50 cursor-not-allowed py-2 rounded-full text-[18px] font-medium text-white transition-all"
+                                >
+                                    {t({ en: 'Get Started', fr: 'Commencer', ar: 'ابدأ الآن' })}
+                                </button>
+                            </motion.div>
+                        ) : null}
+                    </AnimatePresence>
                 </div>
 
-                <div className="bg-white relative z-10 px-6 pt-10 w-full min-h-screen pb-48">
-                    {/* Wave Border Overlay */}
-                    <div className="absolute top-[-44px] left-0 right-0 h-[45px] z-20 pointer-events-none">
-                        <svg viewBox="0 0 1440 120" preserveAspectRatio="none" className="w-full h-full fill-white text-white">
-                            <path d="M0,64L48,64C96,64,192,64,288,64C384,64,480,64,576,53.3C672,43,768,21,864,16C960,10.7,1056,21.3,1152,42.7C1248,64,1344,96,1392,112L1440,128L1440,120L1392,120C1344,120,1248,120,1152,120C1056,120,960,120,864,120C768,120,672,120,576,120C480,120,384,120,288,120C192,120,96,120,48,120L0,120Z"></path>
-                        </svg>
-                    </div>
+                <div className="bg-white relative z-10 px-6 pt-0 w-full min-h-screen pb-48">
 
 
                     <div className="space-y-1">
@@ -265,11 +303,11 @@ const ProfileView: React.FC<ProfileViewProps> = ({
                                 <button
                                     key={index}
                                     onClick={item.action}
-                                    className="w-full flex items-center justify-between py-3 border-b border-[#F0F0F0] hover:bg-neutral-50 active:bg-neutral-100 transition-colors"
+                                    className="w-full flex items-center justify-between py-4 hover:bg-neutral-50 active:bg-neutral-100 transition-colors"
                                 >
                                     <div className="flex items-center gap-5">
                                         <div className="w-6 flex justify-center">
-                                            <Icon size={20} className="text-[#333333]" strokeWidth={1.5} />
+                                            <Icon size={25} className="text-[#333333]" strokeWidth={1.5} />
                                         </div>
                                         <span className="text-[17px] text-[#1D1D1D] font-light">{item.label}</span>
                                         {badge && (
@@ -290,7 +328,7 @@ const ProfileView: React.FC<ProfileViewProps> = ({
                         {isAuthenticated ? (
                             <button
                                 onClick={onLogout}
-                                className="w-full flex items-center justify-between py-5 border-b border-[#F0F0F0] hover:bg-neutral-50 active:bg-neutral-100 transition-colors"
+                                className="w-full flex items-center justify-between py-5 hover:bg-neutral-50 active:bg-neutral-100 transition-colors"
                             >
                                 <div className="flex items-center gap-5">
                                     <div className="w-6 flex justify-center">
@@ -303,7 +341,7 @@ const ProfileView: React.FC<ProfileViewProps> = ({
                         ) : (
                             <button
                                 onClick={onLogin}
-                                className="w-full flex items-center justify-between py-5 border-b border-[#F0F0F0] hover:bg-neutral-50 active:bg-neutral-100 transition-colors"
+                                className="w-full flex items-center justify-between py-5 hover:bg-neutral-50 active:bg-neutral-100 transition-colors"
                             >
                                 <div className="flex items-center gap-5">
                                     <div className="w-6 flex justify-center">
@@ -455,8 +493,8 @@ const ProfileView: React.FC<ProfileViewProps> = ({
                                                 {item.field === 'phone' ? (
                                                     <div className="flex-1 flex flex-col gap-2">
                                                         <div className="flex items-center gap-3 bg-neutral-50 px-3 py-2 rounded-xl border-2 border-neutral-100">
-                                                            <CountrySelector 
-                                                                selectedCountry={selectedCountry} 
+                                                            <CountrySelector
+                                                                selectedCountry={selectedCountry}
                                                                 onSelect={setSelectedCountry}
                                                             />
                                                             <input

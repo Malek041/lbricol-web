@@ -215,9 +215,8 @@ export default function ServiceSetupPage() {
 
     const handleValidatePromo = async () => {
         if (!promoInput.trim()) return;
-        if (!user) { alert('Please log in to use a promo code.'); return; }
         setPromoStatus('validating');
-        const result = await validatePromoCode(promoInput, user.uid);
+        const result = await validatePromoCode(promoInput, user?.uid);
         setPromoResult(result);
         if (result.valid) {
             setPromoStatus('valid');
