@@ -257,8 +257,9 @@ const getTranslatedName = (s: string, t: (vals: { en: string, fr: string }) => s
 const SellingPointsBottomSheet: React.FC<{
   isOpen: boolean;
   onClose: () => void;
+  onStartHostMode: () => void;
   t: any;
-}> = ({ isOpen, onClose, t }) => {
+}> = ({ isOpen, onClose, onStartHostMode, t }) => {
   const [step, setStep] = useState(0);
 
   useEffect(() => {
@@ -302,14 +303,25 @@ const SellingPointsBottomSheet: React.FC<{
                       exit={{ opacity: 0, x: -20 }}
                       className="flex flex-col items-center"
                     >
-                      <div className="relative w-60 h-60 mb-0">
+                      <motion.div
+                        animate={{
+                          y: [0, -10, 0],
+                          rotate: [0, -2, 2, 0]
+                        }}
+                        transition={{
+                          duration: 4,
+                          repeat: Infinity,
+                          ease: "easeInOut"
+                        }}
+                        className="relative w-60 h-60 mb-0"
+                      >
                         <Image
                           src="/Images/ChatGPT Image Apr 21, 2026, 11_39_28 PM.png"
                           alt="Label"
                           fill
                           style={{ objectFit: 'contain' }}
                         />
-                      </div>
+                      </motion.div>
 
                       <div className="space-y-3 w-full max-w-[320px] mb-10">
                         {[
@@ -350,7 +362,7 @@ const SellingPointsBottomSheet: React.FC<{
                         {t({ en: 'Got it', fr: 'J\'ai compris', ar: 'فهمت' })}
                       </button>
                     </motion.div>
-                  ) : (
+                  ) : step === 1 ? (
                     <motion.div
                       key="step1"
                       initial={{ opacity: 0, x: 20 }}
@@ -358,17 +370,28 @@ const SellingPointsBottomSheet: React.FC<{
                       exit={{ opacity: 0, x: -20 }}
                       className="flex flex-col items-center"
                     >
-                      <div className="relative w-64 h-64 mb-4">
+                      <motion.div
+                        animate={{
+                          y: [0, -8, 0],
+                          scale: [1, 1.02, 1]
+                        }}
+                        transition={{
+                          duration: 5,
+                          repeat: Infinity,
+                          ease: "easeInOut"
+                        }}
+                        className="relative w-64 h-64 mb-4"
+                      >
                         <Image
                           src="/Images/ChatGPT Image Apr 22, 2026, 01_24_00 AM.png"
                           alt="Verified"
                           fill
                           style={{ objectFit: 'contain' }}
                         />
-                      </div>
+                      </motion.div>
 
                       <div className="px-6 text-center mb-10">
-                        <h3 className="text-[22px] font-black text-black mb-4 tracking-tight leading-tight">
+                        <h3 className="text-[32px] font-black text-black mb-4 tracking-tighter leading-tight">
                           {t({ en: 'Verified Professionals', fr: 'Professionnels Vérifiés', ar: 'محترفون معتمدون' })}
                         </h3>
                         <p className="text-[16px] font-medium text-[#4A4A4A] leading-relaxed tracking-tight">
@@ -381,11 +404,95 @@ const SellingPointsBottomSheet: React.FC<{
                       </div>
 
                       <button
-                        onClick={onClose}
+                        onClick={() => setStep(2)}
                         className="w-full bg-[#2C2C2C] text-white py-4 rounded-2xl text-[17px] font-semibold active:scale-[0.98] transition-all"
                       >
-                        {t({ en: 'Start Booking', fr: 'Commencer', ar: 'ابدأ الآن' })}
+                        {t({ en: 'Continue', fr: 'Suivant', ar: 'متابعة' })}
                       </button>
+                    </motion.div>
+                  ) : (
+                    <motion.div
+                      key="step2"
+                      initial={{ opacity: 0, x: 20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: -20 }}
+                      className="flex flex-col items-center"
+                    >
+                      <div className="flex gap-1 mb-8 mt-2 h-32 items-center">
+                        <motion.div
+                          initial={{ opacity: 0, scale: 0.5, x: 30, rotate: 0 }}
+                          animate={{ opacity: 1, scale: 1, x: 10, rotate: -12 }}
+                          transition={{ delay: 0.2, type: "spring", stiffness: 100 }}
+                          className="w-28 h-28 rounded-2xl shadow-xl overflow-hidden relative "
+                        >
+                          <Image
+                            src="/Images/Hosts/84ab3898-d9e6-474c-b371-fe5e20395dae_lfgezn.avif"
+                            alt="Host Property"
+                            fill
+                            className="object-cover"
+                          />
+                        </motion.div>
+
+                        <motion.div
+                          initial={{ opacity: 0, scale: 0.5, y: 20 }}
+                          animate={{ opacity: 1, scale: 1, y: 0 }}
+                          transition={{ delay: 0.1, type: "spring", stiffness: 120 }}
+                          className="w-32 h-32 rounded-2xl shadow-2xl overflow-hidden z-10 relative "
+                        >
+                          <Image
+                            src="/Images/Hosts/pexels-emris-17086317.jpg"
+                            alt="Host"
+                            fill
+                            className="object-cover"
+                          />
+                        </motion.div>
+
+                        <motion.div
+                          initial={{ opacity: 0, scale: 0.5, x: -30, rotate: 0 }}
+                          animate={{ opacity: 1, scale: 1, x: -10, rotate: 12 }}
+                          transition={{ delay: 0.3, type: "spring", stiffness: 100 }}
+                          className="w-28 h-28 rounded-2xl shadow-xl overflow-hidden relative "
+                        >
+                          <Image
+                            src="/Images/Hosts/584b8edd-dd10-47a1-9441-434fb4b05736_tqhtqg.avif"
+                            alt="Host Property"
+                            fill
+                            className="object-cover"
+                          />
+                        </motion.div>
+                      </div>
+
+                      <div className="px-6 text-center mb-10">
+                        <h3 className="text-[32px] font-black text-black mb-4 tracking-tight leading-tight">
+                          {t({ en: 'Are you host?', fr: 'Vous êtes hôte?', ar: 'هل أنت مضيف؟' })}
+                        </h3>
+                        <p className="text-[17px] font-medium text-[#4A4A4A] leading-relaxed tracking-tight max-w-[340px] mx-auto">
+                          {t({
+                            en: 'Or Co-host/concierge? Save 70% of your time. List, configure, schedule arrivals/departures—Lbricol Host handles the rest',
+                            fr: 'Ou bien Co-hôte/concierge? Économisez 70% de votre temps. Listez, configurez, programmez les arrivées/départs—Lbricol Host gère le reste',
+                            ar: 'أو مساعد مضيف/كونسيرج؟ وفر 70٪ من وقتك. أدرج العقار، جهزه، وقم ببرمجة الوصول والمغادرة - لبريكول هوست تتكفل بالباقي.'
+                          })}
+                        </p>
+                      </div>
+
+                      <div className="w-full space-y-3">
+                        <button
+                          onClick={() => {
+                            onStartHostMode();
+                            onClose();
+                          }}
+                          className="w-full bg-[#00A683] text-white py-4 rounded-2xl text-[18px] font-bold active:scale-[0.98] transition-all "
+                        >
+                          {t({ en: 'Use Lbricol Host', fr: 'Utiliser Lbricol Host', ar: 'استخدم Lbricol Host' })}
+                        </button>
+
+                        <button
+                          onClick={onClose}
+                          className="w-full bg-transparent text-[#4A4A4A] py-2 rounded-2xl text-[16px] font-semibold active:scale-[0.98] transition-all"
+                        >
+                          {t({ en: "I'm not a host", fr: "Je ne suis pas hôte", ar: 'لست مضيفاً' })}
+                        </button>
+                      </div>
                     </motion.div>
                   )}
                 </AnimatePresence>
@@ -3876,6 +3983,7 @@ export default function HomeOrchestrator() {
       <SellingPointsBottomSheet
         isOpen={showSellingPoints}
         onClose={() => setShowSellingPoints(false)}
+        onStartHostMode={() => setIsHostMode(true)}
         t={t}
       />
     </div>

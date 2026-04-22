@@ -27,43 +27,55 @@ const PropertyListView = () => {
 
     return (
         <div className="flex flex-col min-h-screen bg-white pb-32">
-            {/* Header */}
-            <div className="px-6 pt-16 pb-6 flex justify-between items-center bg-white sticky top-0 z-20">
-                <h1 className="text-[32px] font-bold text-black leading-none">Annonces</h1>
-                <div className="flex gap-2">
-                    <button className="w-10 h-10 rounded-full flex items-center justify-center bg-[#F7F7F7] active:scale-90 transition-all">
-                        <Search size={18} className="text-neutral-600" />
-                    </button>
-                    <button
-                        onClick={() => setIsWizardOpen(true)}
-                        className="w-10 h-10 rounded-full  flex items-center justify-center bg-[#F7F7F7] active:scale-90 transition-all"
-                    >
-                        <Plus size={20} className="text-neutral-600" />
-                    </button>
-                </div>
+            {/* Header - Ultra Clean Airbnb Style */}
+            <div className="px-6 pt-5 pb-2 flex justify-start items-center bg-white sticky top-0 z-20">
+                <h1 className="text-[34px] font-bold text-black leading-tight tracking-tight">
+                    {t({ en: 'My Properties', fr: 'Mes Biens', ar: 'إعلاناتي' })}
+                </h1>
             </div>
 
-            <div className="px-6">
+            <div className="px-6 flex-1 flex flex-col items-center justify-center -mt-8">
                 {loading ? (
                     <div className="py-20 flex justify-center"><div className="w-8 h-8 border-4 border-black border-t-transparent rounded-full animate-spin" /></div>
                 ) : properties.length === 0 ? (
-                    <div className="py-20 flex flex-col items-center text-center px-10">
-                        <div className="w-24 h-24 rounded-full bg-neutral-50 flex items-center justify-center mb-8 ">
-                            <Building size={78} className="text-black" />
+                    <div className="flex flex-col items-center text-center max-w-[320px] mx-auto">
+                        {/* Hero Image - Smaller as requested */}
+                        <div className="w-[85%] relative mb-8 opacity-100">
+                            <img
+                                src="/Images/Screenshot 2026-04-22 at 18.18.29.png"
+                                alt="Journey"
+                                className="w-full h-auto object-contain"
+                            />
                         </div>
-                        <h3 className="text-[22px] font-bold mb-3 tracking-tight">Créez votre première Listing</h3>
-                        <p className="text-neutral-500 text-[15px] leading-relaxed mb-10 max-w-[280px]">
-                            List your property to start automating your check-ins, check-outs, and cleanings with our Bricoleurs.
+
+                        {/* Heading - Translated */}
+                        <h2 className="text-[22px] font-bold text-black mb-4 px-2 leading-[1.2] tracking-tight">
+                            {t({
+                                en: 'Your Journey of more growth begins now',
+                                fr: 'Votre voyage vers plus de croissance commence maintenant',
+                                ar: 'رحلتك نحو مزيد من النمو تبدأ الآن'
+                            })}
+                        </h2>
+
+                        {/* Body - Translated */}
+                        <p className="text-neutral-500 text-[15px] leading-[1.5] mb-10 px-2">
+                            {t({
+                                en: 'List all your properties here and let Lbricol handle the rest. We automatically dispatch and manage everything from cleaning to restocking. Scale effortlessly while we take care of the operations. Simply plan arrivals and departures in the Calendar view.',
+                                fr: 'Listez tous vos biens ici et laissez Lbricol s\'occuper du reste. L\'application gère automatiquement tout, du nettoyage au réapprovisionnement. Il vous suffit de planifier vos Check-ins/Chekouts dans la vue « Calendrier ».',
+                                ar: 'أدرج جميع عقاراتك هنا واترك لبريكول يتولى الباقي. نحن ندير تلقائياً كل شيء من التنظيف إلى إعادة التموين.'
+                            })}
                         </p>
+
+                        {/* Button - Translated */}
                         <button
                             onClick={() => setIsWizardOpen(true)}
-                            className="w-full bg-[#01A083] text-white py-3 rounded-full font-bold text-[17px]  active:scale-[0.98] transition-all"
+                            className="px-10 py-3.5 bg-[#01A084] text-white rounded-lg font-bold text-[16px] active:scale-[0.96] transition-all shadow-md hover:bg-[#D70466]"
                         >
-                            Débutez maintenant
+                            {t({ en: 'Commencer', fr: 'Commencer', ar: 'ابدأ الآن' })}
                         </button>
                     </div>
                 ) : (
-                    <div className="space-y-6">
+                    <div className="space-y-6 w-full py-6">
                         {properties.map((property) => (
                             <motion.div
                                 key={property.id}
@@ -97,13 +109,6 @@ const PropertyListView = () => {
                 )}
             </div>
 
-            {/* Floating Filter Button (Airbnb Style) */}
-            <div className="fixed bottom-28 left-1/2 -translate-x-1/2 z-30">
-                <button className="bg-black text-white px-6 py-3 rounded-full flex items-center gap-2 shadow-2xl active:scale-95 transition-all text-[14px] font-bold">
-                    <Filter size={16} fill="white" />
-                    Filtres
-                </button>
-            </div>
             <PropertySetupWizard
                 isOpen={isWizardOpen}
                 onClose={() => setIsWizardOpen(false)}

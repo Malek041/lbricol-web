@@ -196,6 +196,7 @@ function CalendarTab({
 }) {
     const { t, language } = useLanguage();
     const [viewMode, setViewMode] = useState<'day' | 'month'>('month');
+    const [showViewSwitcher, setShowViewSwitcher] = useState(false);
     const todayStr = format(new Date(), 'yyyy-MM-dd');
     const dateLocale = language === 'fr' ? 'fr-FR' : language === 'ar' ? 'ar-MA' : 'en-US';
 
@@ -372,9 +373,9 @@ function CalendarTab({
                 <div className="fixed bottom-32 right-6 z-[60]">
                     <button
                         onClick={(e) => { e.stopPropagation(); onAdd?.(); }}
-                        className="w-14 h-14 rounded-full bg-black text-white flex items-center justify-center shadow-2xl active:scale-95 transition-all"
+                        className="w-18 h-18 rounded-full bg-[#000000] text-white flex items-center justify-center shadow-2xl active:scale-90 transition-all border-4 border-white"
                     >
-                        <Plus size={32} />
+                        <Plus size={36} strokeWidth={2.5} />
                     </button>
                 </div>
             )}
@@ -383,38 +384,109 @@ function CalendarTab({
 
     return (
         <div className="flex flex-col bg-white h-full relative overflow-hidden">
-            {/* Header with Jour/Mois Toggle - Tightened */}
-            <div className="bg-white px-6 pt-4 pb-1 flex items-center justify-between sticky top-0 z-[40]">
+            {/* Header with Switcher - Airbnb Style */}
+            <div className="bg-white px-6 pt-6 pb-2 flex items-center justify-between sticky top-0 z-[40]">
                 <div className="flex flex-col">
-                    <span className="text-[26px] font-bold text-black leading-none tracking-tight">
+                    <h1 className="text-[32px] font-bold text-black leading-none tracking-tight">
                         {language === 'ar' ? 'الجدول الزمني' : language === 'fr' ? 'Planning' : 'Schedule'}
-                    </span>
-                    <span className="text-[12px] font-bold text-[#01A083] uppercase tracking-widest mt-1">
-                        {viewMode === 'day' ? weekLabel : monthLabel}
-                    </span>
+                    </h1>
                 </div>
 
-                <div className="flex bg-neutral-100 p-1 rounded-full">
-                    <button
-                        onClick={() => setViewMode('day')}
-                        className={cn(
-                            "px-4 py-1.5 rounded-full text-[13px] font-bold transition-all",
-                            viewMode === 'day' ? "bg-white text-[#000000]" : "text-neutral-400"
-                        )}
-                    >
-                        {t({ en: 'Day', fr: 'Jour', ar: 'يوم' })}
-                    </button>
-                    <button
-                        onClick={() => setViewMode('month')}
-                        className={cn(
-                            "px-4 py-1.5 rounded-full text-[13px] font-bold transition-all",
-                            viewMode === 'month' ? "bg-white text-[#01A083] shadow-sm" : "text-neutral-400"
-                        )}
-                    >
-                        {t({ en: 'Month', fr: 'Mois', ar: 'شهر' })}
-                    </button>
-                </div>
+                <button
+                    onClick={() => setShowViewSwitcher(true)}
+                    className="w-12 h-12 rounded-full bg-neutral-50 flex items-center justify-center border border-neutral-100 active:scale-95 transition-all"
+                >
+                    <CalendarIcon size={22} className="text-black" />
+                </button>
             </div>
+
+            {/* View Switcher Bottom Sheet */}
+            <AnimatePresence>
+                {showViewSwitcher && (
+                    <>
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            onClick={() => setShowViewSwitcher(false)}
+                            className="fixed inset-0 bg-black/40 backdrop-blur-[2px] z-[10000]"
+                        />
+                        <motion.div
+                            initial={{ y: "100%" }}
+                            animate={{ y: 0 }}
+                            exit={{ y: "100%" }}
+                            transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+                            className="fixed bottom-0 left-0 right-0 bg-white rounded-t-[32px] z-[10001] px-6 pt-5 pb-12 shadow-2xl"
+                        >
+                            <div className="w-12 h-1 bg-neutral-200 rounded-full mx-auto mb-6 opacity-40" />
+                            
+                            {/* Header with Title and Close Button */}
+                            <div className="flex items-center justify-between mb-8">
+                                <div className="w-6" /> {/* Spacer to center title */}
+                                <h3 className="text-[17px] font-bold text-black text-center">
+                                    {t({ en: 'Calendar display', fr: 'Affichage du calendrier', ar: 'عرض التقويم' })}
+                                </h3>
+                                <button 
+                                    onClick={() => setShowViewSwitcher(false)}
+                                    className="p-1 rounded-full active:scale-90 transition-all"
+                                >
+                                    <X size={22} className="text-black" />
+                                </button>
+                            </div>
+
+                            <div className="flex flex-col mb-10">
+                                {/* Day View Option */}
+                                <button
+                                    onClick={() => setViewMode('day')}
+                                    className="w-full py-5 flex items-center justify-between transition-all group"
+                                >
+                                    <span className={cn(
+                                        "text-[16px] font-medium transition-all",
+                                        viewMode === 'day' ? "text-black" : "text-neutral-500"
+                                    )}>
+                                        {t({ en: 'Day', fr: 'Jour', ar: 'يوم' })}
+                                    </span>
+                                    <div className={cn(
+                                        "w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all",
+                                        viewMode === 'day' ? "border-black bg-black" : "border-neutral-300"
+                                    )}>
+                                        {viewMode === 'day' && <div className="w-2 h-2 rounded-full bg-white" />}
+                                    </div>
+                                </button>
+
+                                <div className="h-[1px] w-full bg-neutral-100" />
+
+                                {/* Month View Option */}
+                                <button
+                                    onClick={() => setViewMode('month')}
+                                    className="w-full py-5 flex items-center justify-between transition-all group"
+                                >
+                                    <span className={cn(
+                                        "text-[16px] font-medium transition-all",
+                                        viewMode === 'month' ? "text-black" : "text-neutral-500"
+                                    )}>
+                                        {t({ en: 'Month', fr: 'Mois', ar: 'شهر' })}
+                                    </span>
+                                    <div className={cn(
+                                        "w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all",
+                                        viewMode === 'month' ? "border-black bg-black" : "border-neutral-300"
+                                    )}>
+                                        {viewMode === 'month' && <div className="w-2 h-2 rounded-full bg-white" />}
+                                    </div>
+                                </button>
+                            </div>
+
+                            <button
+                                onClick={() => setShowViewSwitcher(false)}
+                                className="w-full py-4 rounded-xl text-[17px] font-bold text-white active:scale-[0.98] transition-all shadow-lg"
+                                style={{ backgroundColor: '#2C2C2C' }}
+                            >
+                                {t({ en: 'Done', fr: 'Terminé', ar: 'تم' })}
+                            </button>
+                        </motion.div>
+                    </>
+                )}
+            </AnimatePresence>
 
             {viewMode === 'month' ? renderMonthView() : (
                 <div className="flex flex-col h-full overflow-hidden">
@@ -840,22 +912,21 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
 
     return (
         <div className="flex flex-col h-full bg-[#FAFAFA] relative">
-            {/* Top Tabs - Tightened */}
-            <div className="px-6 pt-4 pb-2 bg-white border-b border-[#E6E6E6] sticky top-0 z-10">
-                <div className="flex items-center gap-6">
-                    <button
-                        onClick={() => setActiveTab('calendar')}
-                        className={cn(
-                            "pb-3 text-[16px] transition-all relative",
-                            activeTab === 'calendar' ? "font-medium text-[#1D1D1D]" : "font-medium text-[#6B6B6B]"
-                        )}
-                    >
-                        {t({ en: 'Calendar', fr: 'Calendrier', ar: 'التقويم' })}
-                        {activeTab === 'calendar' && (
-                            <motion.div layoutId="client-orders-tab" className="absolute bottom-0 left-0 right-0 h-[3px] bg-[#01A083] rounded-t-full" />
-                        )}
-                    </button>
-                    {!isHostMode && (
+            {!isHostMode && (
+                <div className="px-6 pt-4 pb-2 bg-white border-b border-[#E6E6E6] sticky top-0 z-10">
+                    <div className="flex items-center gap-6">
+                        <button
+                            onClick={() => setActiveTab('calendar')}
+                            className={cn(
+                                "pb-3 text-[16px] transition-all relative",
+                                activeTab === 'calendar' ? "font-medium text-[#1D1D1D]" : "font-medium text-[#6B6B6B]"
+                            )}
+                        >
+                            {t({ en: 'Calendar', fr: 'Calendrier', ar: 'التقويم' })}
+                            {activeTab === 'calendar' && (
+                                <motion.div layoutId="client-orders-tab" className="absolute bottom-0 left-0 right-0 h-[3px] bg-[#01A083] rounded-t-full" />
+                            )}
+                        </button>
                         <button
                             onClick={() => setActiveTab('activity')}
                             className={cn(
@@ -868,9 +939,9 @@ export default function ClientOrdersView({ orders, onViewMessages, initialShowHi
                                 <motion.div layoutId="client-orders-tab" className="absolute bottom-0 left-0 right-0 h-[3px] bg-[#01A083] rounded-t-full" />
                             )}
                         </button>
-                    )}
+                    </div>
                 </div>
-            </div>
+            )}
 
             <div className="flex-1 min-h-0 overflow-y-auto relative w-full">
                 {activeTab === 'calendar' ? (

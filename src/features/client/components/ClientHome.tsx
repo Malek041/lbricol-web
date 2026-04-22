@@ -533,7 +533,7 @@ const ClientHome: React.FC<ClientHomeProps> = ({
 
 
                 {/* 1.5 Animated Icons Row */}
-                {/* <div className="flex gap-4 items-center overflow-x-hidden pt-1 mt-4 pointer-events-none">
+                <div className="flex gap-4 items-center overflow-x-hidden pt-1 mt-1 pointer-events-none">
                     <motion.div
                         animate={startTicker ? { x: [0, -1000] } : { x: 0 }}
                         transition={{
@@ -584,7 +584,7 @@ const ClientHome: React.FC<ClientHomeProps> = ({
                             </motion.div>
                         ))}
                     </motion.div>
-                </div>*/}
+                </div>
             </div>
 
             {/* 2. White Bottom Sheet Container with Wave */}
@@ -594,7 +594,7 @@ const ClientHome: React.FC<ClientHomeProps> = ({
                 transition={{ type: "spring", damping: 25, stiffness: 180, delay: 0.4 }}
                 className={cn(
                     "bg-white relative z-10 transition-all duration-500 ease-in-out shrink-0",
-                    "mt-8 min-h-screen"
+                    "-mt-10 min-h-screen"
                 )}
             >
                 {/* Wave Border Overlay */}
