@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
     X, ChevronLeft, Home, Building, Building2, MapPin, 
@@ -39,9 +40,43 @@ const AMENITIES = [
     { id: 'pool', label: 'Piscine', icon: Pool },
 ];
 
+const INTRO_STEPS = [
+    {
+        num: 1,
+        title: { en: 'Tell us about your property', fr: 'Parlez-nous de votre bien', ar: 'أخبرنا عن عقارك' },
+        desc: {
+            en: 'Tell us where it is, how many rooms it has, and what type of property it is.',
+            fr: 'Dites-nous où il se trouve, combien de chambres il a et quel type de logement.',
+            ar: 'أخبرنا عن موقعه وعدد غرفه ونوع العقار.'
+        },
+        img: '/Images/PropertiesListingView/Screenshot 2026-04-22 at 20.04.17.png'
+    },
+    {
+        num: 2,
+        title: { en: 'Stand out', fr: 'Démarquez-vous', ar: 'تميّز عن الآخرين' },
+        desc: {
+            en: 'Add photos and a short description. We take care of the cleaning and restocking.',
+            fr: 'Ajoutez des photos et une courte description. On s\'occupe du nettoyage et du réapprovisionnement.',
+            ar: 'أضف صوراً ووصفاً مختصراً. نحن نتولى التنظيف وإعادة التموين.'
+        },
+        img: '/Images/PropertiesListingView/Screenshot 2026-04-22 at 20.04.27.png'
+    },
+    {
+        num: 3,
+        title: { en: 'Publish & automate', fr: 'Publiez et automatisez', ar: 'انشر وأتمت' },
+        desc: {
+            en: 'Configure automatic cleaning, stock tracking, and publish your listing.',
+            fr: 'Configurez le nettoyage automatique, le suivi des stocks, et publiez votre annonce.',
+            ar: 'اضبط التنظيف التلقائي ومتابعة المخزون وانشر إعلانك.'
+        },
+        img: '/Images/PropertiesListingView/Screenshot 2026-04-22 at 20.04.41.png'
+    },
+];
+
 const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClose, onComplete }) => {
     const { t } = useLanguage();
     const { showToast } = useToast();
+    const [showIntro, setShowIntro] = useState(true);
     const [stepIndex, setStepIndex] = useState(0);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -62,6 +97,14 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
         if (stepIndex < STEPS.length - 1) setStepIndex(stepIndex + 1);
         else handleSubmit();
     };
+
+    // Reset to intro every time the wizard is freshly opened
+    useEffect(() => {
+        if (isOpen) {
+            setShowIntro(true);
+            setStepIndex(0);
+        }
+    }, [isOpen]);
 
     const handleBack = () => {
         if (stepIndex > 0) setStepIndex(stepIndex - 1);
@@ -105,11 +148,89 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
 
     if (!isOpen) return null;
 
+    // ── Intro screen ────────────────────────────────────────────────────────
+    if (showIntro) {
+        return (
+            <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="fixed inset-0 z-[10000] bg-white flex flex-col"
+            >
+                {/* Back arrow */}
+                <div className="px-5 pt-5 pb-2">
+                    <button
+                        onClick={onClose}
+                        className="p-2 -ml-1 rounded-full hover:bg-neutral-100 active:scale-90 transition-all"
+                    >
+                        <ChevronLeft size={26} className="text-black" />
+                    </button>
+                </div>
+
+                {/* Scrollable content */}
+                <div className="flex-1 overflow-y-auto px-6 pb-6 no-scrollbar">
+                    <h1 className="text-[32px] font-black text-black leading-[1.15] tracking-tight mb-8">
+                        {t({
+                            en: 'Getting started on Lbricol Host is easy',
+                            fr: 'Commencer sur Lbricol Host, c\'est facile',
+                            ar: 'البدء على Lbricol Host أمر سهل'
+                        })}
+                    </h1>
+
+                    <div className="divide-y divide-neutral-100">
+                        {INTRO_STEPS.map((step, i) => (
+                            <motion.div
+                                key={step.num}
+                                initial={{ opacity: 0, y: 16 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: i * 0.1, duration: 0.35 }}
+                                className="flex items-start gap-4 py-7"
+                            >
+                                {/* Text */}
+                                <div className="flex-1">
+                                    <div className="flex items-start gap-3 mb-2">
+                                        <span className="text-[17px] font-black text-black mt-0.5 shrink-0">{step.num}</span>
+                                        <h2 className="text-[17px] font-black text-black leading-snug tracking-tight">
+                                            {t(step.title)}
+                                        </h2>
+                                    </div>
+                                    <p className="text-[14px] text-neutral-500 leading-relaxed pl-7">
+                                        {t(step.desc)}
+                                    </p>
+                                </div>
+
+                                {/* Image */}
+                                <div className="relative w-[88px] h-[88px] shrink-0 rounded-2xl overflow-hidden">
+                                    <Image
+                                        src={step.img}
+                                        alt={t(step.title)}
+                                        fill
+                                        className="object-cover"
+                                        priority
+                                    />
+                                </div>
+                            </motion.div>
+                        ))}
+                    </div>
+                </div>
+
+                {/* Sticky green CTA */}
+                <div className="px-6 pt-4 pb-10 border-t border-neutral-100 bg-white">
+                    <button
+                        onClick={() => { setShowIntro(false); setStepIndex(0); }}
+                        className="w-full bg-[#01A084] text-white py-5 rounded-2xl font-bold text-[17px] active:scale-[0.98] transition-all shadow-md hover:bg-[#018a72]"
+                    >
+                        {t({ en: 'Get started', fr: 'Commencer', ar: 'ابدأ الآن' })}
+                    </button>
+                </div>
+            </motion.div>
+        );
+    }
+
     return (
         <div className="fixed inset-0 z-[10000] bg-white flex flex-col">
             {/* Header */}
             <div className="px-6 py-4 flex justify-between items-center border-b border-neutral-100">
-                <button onClick={handleBack} className="p-2 -ml-2 rounded-full hover:bg-neutral-50 active:scale-90 transition-all">
+                <button onClick={stepIndex === 0 ? () => setShowIntro(true) : handleBack} className="p-2 -ml-2 rounded-full hover:bg-neutral-50 active:scale-90 transition-all">
                     <ChevronLeft size={24} />
                 </button>
                 <div className="flex-1 flex justify-center gap-1">
