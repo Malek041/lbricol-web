@@ -259,6 +259,12 @@ const SellingPointsBottomSheet: React.FC<{
   onClose: () => void;
   t: any;
 }> = ({ isOpen, onClose, t }) => {
+  const [step, setStep] = useState(0);
+
+  useEffect(() => {
+    if (isOpen) setStep(0);
+  }, [isOpen]);
+
   return (
     <AnimatePresence>
       {isOpen && (
@@ -281,59 +287,108 @@ const SellingPointsBottomSheet: React.FC<{
             <div className="relative p-6 flex flex-col items-center pb-10">
               <button
                 onClick={onClose}
-                className="absolute top-4 right-6 w-8 h-8 rounded-full flex items-center justify-center"
+                className="absolute top-4 right-6 w-8 h-8 rounded-full flex items-center justify-center z-20"
               >
                 <X size={25} className="text-black" />
               </button>
 
-              <div className="w-full mt-6 flex flex-col items-center">
-                <div className="relative w-60 h-60 mb-0">
-                  <Image
-                    src="/Images/ChatGPT Image Apr 21, 2026, 11_39_28 PM.png"
-                    alt="Label"
-                    fill
-                    style={{ objectFit: 'contain' }}
-                  />
-                </div>
-
-                <div className="space-y-3 w-full max-w-[320px] mb-10">
-                  {[
-                    {
-                      en: 'Find a pro in 10s',
-                      fr: 'Trouvez un pro en 10s',
-                      ar: 'جد محترفاً في 10 ثوانٍ',
-                      icon: <Zap size={24} className="text-black" strokeWidth={2.5} />
-                    },
-                    {
-                      en: 'Starting from 99 MAD',
-                      fr: 'À partir de 99 MAD',
-                      ar: 'ابتداءً من 99 درهم',
-                      icon: <Tag size={24} className="text-black" strokeWidth={2.5} />
-                    },
-                    {
-                      en: 'Safer than a random number',
-                      fr: 'Plus sûr qu\'un numéro au hasard',
-                      ar: 'أكثر أمانًا من رقم عشوائي',
-                      icon: <ShieldCheck size={24} className="text-black" strokeWidth={2.5} />
-                    }
-                  ].map((item, i) => (
-                    <div key={i} className="flex items-center gap-5">
-                      <div className="w-12 h-12 rounded-2xl  flex items-center justify-center ">
-                        {item.icon}
+              <div className="w-full mt-2">
+                <AnimatePresence mode="wait">
+                  {step === 0 ? (
+                    <motion.div
+                      key="step0"
+                      initial={{ opacity: 0, x: 20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: -20 }}
+                      className="flex flex-col items-center"
+                    >
+                      <div className="relative w-60 h-60 mb-0">
+                        <Image
+                          src="/Images/ChatGPT Image Apr 21, 2026, 11_39_28 PM.png"
+                          alt="Label"
+                          fill
+                          style={{ objectFit: 'contain' }}
+                        />
                       </div>
-                      <span className="text-[17px] font-bold text-[#1A1A1A] tracking-tight leading-tight">
-                        {t(item)}
-                      </span>
-                    </div>
-                  ))}
-                </div>
 
-                <button
-                  onClick={onClose}
-                  className="w-full bg-[#2C2C2C] text-white py-3.5 rounded-2xl text-[17px] font-semibold active:scale-[0.98] transition-all "
-                >
-                  {t({ en: 'Got it', fr: 'J\'ai compris', ar: 'فهمت' })}
-                </button>
+                      <div className="space-y-3 w-full max-w-[320px] mb-10">
+                        {[
+                          {
+                            en: 'Find a pro in 10s',
+                            fr: 'Trouvez un pro en 10s',
+                            ar: 'جد محترفاً في 10 ثوانٍ',
+                            icon: <Zap size={24} className="text-black" strokeWidth={2.5} />
+                          },
+                          {
+                            en: 'Starting from 99 MAD',
+                            fr: 'À partir de 99 MAD',
+                            ar: 'ابتداءً من 99 درهم',
+                            icon: <Tag size={24} className="text-black" strokeWidth={2.5} />
+                          },
+                          {
+                            en: 'Safer than a random number',
+                            fr: 'Plus sûr qu\'un numéro au hasard',
+                            ar: 'أكثر أمانًا من رقم عشوائي',
+                            icon: <ShieldCheck size={24} className="text-black" strokeWidth={2.5} />
+                          }
+                        ].map((item, i) => (
+                          <div key={i} className="flex items-center gap-5">
+                            <div className="w-12 h-12 rounded-2xl flex items-center justify-center ">
+                              {item.icon}
+                            </div>
+                            <span className="text-[17px] font-bold text-[#1A1A1A] tracking-tight leading-tight">
+                              {t(item)}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+
+                      <button
+                        onClick={() => setStep(1)}
+                        className="w-full bg-[#2C2C2C] text-white py-4 rounded-2xl text-[17px] font-semibold active:scale-[0.98] transition-all"
+                      >
+                        {t({ en: 'Got it', fr: 'J\'ai compris', ar: 'فهمت' })}
+                      </button>
+                    </motion.div>
+                  ) : (
+                    <motion.div
+                      key="step1"
+                      initial={{ opacity: 0, x: 20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: -20 }}
+                      className="flex flex-col items-center"
+                    >
+                      <div className="relative w-64 h-64 mb-4">
+                        <Image
+                          src="/Images/ChatGPT Image Apr 22, 2026, 01_13_50 AM.png"
+                          alt="Verified"
+                          fill
+                          style={{ objectFit: 'contain' }}
+                        />
+                      </div>
+
+                      <div className="px-6 text-center mb-10">
+                        <h3 className="text-[22px] font-extrabold text-black mb-4 tracking-tight leading-tight">
+                          {t({ en: 'Verified Professionals', fr: 'Professionnels Vérifiés', ar: 'محترفون معتمدون' })}
+                        </h3>
+                        <p className="text-[16px] font-medium text-[#4A4A4A] leading-relaxed tracking-tight">
+                          {t({
+                            en: 'Bricolers pass a verification process before they work with us. You can trust them and choose based on description, photos, rating, and client reviews.',
+                            fr: 'Les Bricoleurs passent par un processus de vérification avant de travailler avec nous. Vous pouvez leur faire confiance et choisir en fonction de leur description, photos, notes et avis clients.',
+                            ar: 'يمر البريكوليرز بعملية تحقق قبل العمل معنا. يمكنك الوثوق بهم والاختيار بناءً على الوصف والصور والتقييمات ومراجعات العملاء.'
+                          })}
+                        </p>
+                      </div>
+
+                      <button
+                        onClick={onClose}
+                        className="w-full bg-[#2C2C2C] text-white py-4 rounded-2xl text-[17px] font-semibold active:scale-[0.98] transition-all"
+                      >
+                        {t({ en: 'Start Booking', fr: 'Commencer', ar: 'ابدأ الآن' })}
+                      </button>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
             </div>
           </motion.div>
