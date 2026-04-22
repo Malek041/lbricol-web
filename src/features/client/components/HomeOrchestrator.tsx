@@ -286,12 +286,13 @@ const SellingPointsBottomSheet: React.FC<{
             style={{ maxHeight: '85vh' }}
           >
             <div className="relative p-6 flex flex-col items-center pb-10">
-              <button
-                onClick={onClose}
-                className="absolute top-4 right-6 w-8 h-8 rounded-full flex items-center justify-center z-20"
-              >
-                <X size={25} className="text-black" />
-              </button>
+              {/* Hidden preload images — load all step images as soon as the sheet opens */}
+              <div className="sr-only absolute" aria-hidden="true">
+                <Image src="/Images/ChatGPT Image Apr 21, 2026, 11_39_28 PM.png" alt="" fill priority />
+                <Image src="/Images/ChatGPT Image Apr 22, 2026, 01_24_00 AM.png" alt="" fill priority />
+                <Image src="/Images/Hosts/84ab3898-d9e6-474c-b371-fe5e20395dae_lfgezn.avif" alt="" fill priority />
+                <Image src="/Images/Hosts/pexels-emris-17086317.jpg" alt="" fill priority />
+              </div>
 
               <div className="w-full mt-2">
                 <AnimatePresence mode="wait">
@@ -481,7 +482,7 @@ const SellingPointsBottomSheet: React.FC<{
                             onStartHostMode();
                             onClose();
                           }}
-                          className="w-full bg-[#00A683] text-white py-4 rounded-2xl text-[18px] font-bold active:scale-[0.98] transition-all "
+                          className="w-full bg-[#2C2C2C] text-white py-4 rounded-2xl text-[18px] font-bold active:scale-[0.98] transition-all "
                         >
                           {t({ en: 'Use Lbricol Host', fr: 'Utiliser Lbricol Host', ar: 'استخدم Lbricol Host' })}
                         </button>

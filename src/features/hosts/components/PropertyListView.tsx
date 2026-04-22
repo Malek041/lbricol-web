@@ -28,19 +28,21 @@ const PropertyListView = () => {
     return (
         <div className="flex flex-col min-h-screen bg-white pb-32">
             {/* Header - Ultra Clean Airbnb Style */}
-            <div className="px-6 pt-5 pb-2 flex justify-start items-center bg-white sticky top-0 z-20">
-                <h1 className="text-[34px] font-bold text-black leading-tight tracking-tight">
-                    {t({ en: 'My Properties', fr: 'Mes Biens', ar: 'إعلاناتي' })}
-                </h1>
-            </div>
+            {!loading && properties.length > 0 && (
+                <div className="px-6 pt-5 pb-2 flex justify-start items-center bg-white sticky top-0 z-20">
+                    <h1 className="text-[34px] font-bold text-black leading-tight tracking-tight">
+                        {t({ en: 'My Properties', fr: 'Mes Biens', ar: 'إعلاناتي' })}
+                    </h1>
+                </div>
+            )}
 
             <div className="px-6 flex-1 flex flex-col items-center justify-center -mt-8">
                 {loading ? (
                     <div className="py-20 flex justify-center"><div className="w-8 h-8 border-4 border-black border-t-transparent rounded-full animate-spin" /></div>
                 ) : properties.length === 0 ? (
-                    <div className="flex flex-col items-center text-center max-w-[320px] mx-auto">
+                    <div className="flex flex-col items-center text-center max-w-[400px] mx-auto">
                         {/* Hero Image - Smaller as requested */}
-                        <div className="w-[85%] relative mb-8 opacity-100">
+                        <div className="w-[70%] relative mb-8 opacity-100">
                             <img
                                 src="/Images/Screenshot 2026-04-22 at 18.18.29.png"
                                 alt="Journey"
@@ -51,8 +53,8 @@ const PropertyListView = () => {
                         {/* Heading - Translated */}
                         <h2 className="text-[22px] font-bold text-black mb-4 px-2 leading-[1.2] tracking-tight">
                             {t({
-                                en: 'Your Journey of more growth begins now',
-                                fr: 'Votre voyage vers plus de croissance commence maintenant',
+                                en: 'Your growth starts now',
+                                fr: 'Votre croissance commence maintenant',
                                 ar: 'رحلتك نحو مزيد من النمو تبدأ الآن'
                             })}
                         </h2>
@@ -60,8 +62,8 @@ const PropertyListView = () => {
                         {/* Body - Translated */}
                         <p className="text-neutral-500 text-[15px] leading-[1.5] mb-10 px-2">
                             {t({
-                                en: 'List all your properties here and let Lbricol handle the rest. We automatically dispatch and manage everything from cleaning to restocking. Scale effortlessly while we take care of the operations. Simply plan arrivals and departures in the Calendar view.',
-                                fr: 'Listez tous vos biens ici et laissez Lbricol s\'occuper du reste. L\'application gère automatiquement tout, du nettoyage au réapprovisionnement. Il vous suffit de planifier vos Check-ins/Chekouts dans la vue « Calendrier ».',
+                                en: 'List your properties. The app automate cleaning, restocking, and more for you. You focus on scheduling.',
+                                fr: 'Listez vos propriétés. L\'app gère tout. Vous planifiez les arrivées et départs.',
                                 ar: 'أدرج جميع عقاراتك هنا واترك لبريكول يتولى الباقي. نحن ندير تلقائياً كل شيء من التنظيف إلى إعادة التموين.'
                             })}
                         </p>
