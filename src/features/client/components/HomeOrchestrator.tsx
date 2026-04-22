@@ -360,7 +360,7 @@ const SellingPointsBottomSheet: React.FC<{
                     >
                       <div className="relative w-64 h-64 mb-4">
                         <Image
-                          src="/Images/ChatGPT Image Apr 22, 2026, 01_13_50 AM.png"
+                          src="/Images/ChatGPT Image Apr 22, 2026, 01_24_00 AM.png"
                           alt="Verified"
                           fill
                           style={{ objectFit: 'contain' }}
@@ -368,7 +368,7 @@ const SellingPointsBottomSheet: React.FC<{
                       </div>
 
                       <div className="px-6 text-center mb-10">
-                        <h3 className="text-[22px] font-extrabold text-black mb-4 tracking-tight leading-tight">
+                        <h3 className="text-[22px] font-black text-black mb-4 tracking-tight leading-tight">
                           {t({ en: 'Verified Professionals', fr: 'Professionnels Vérifiés', ar: 'محترفون معتمدون' })}
                         </h3>
                         <p className="text-[16px] font-medium text-[#4A4A4A] leading-relaxed tracking-tight">
