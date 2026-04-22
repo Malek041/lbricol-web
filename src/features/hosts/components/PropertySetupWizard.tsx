@@ -3,10 +3,10 @@
 import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-    X, ChevronLeft, Home, Building, Building2, MapPin, 
-    Wifi, Tv, Pocket as Kitchen, Wind as Ac, Waves as Pool, 
-    Check, ChevronRight, Save, ShieldCheck 
+import {
+    X, ChevronLeft, Home, Building, Building2, MapPin,
+    Wifi, Tv, Pocket as Kitchen, Wind as Ac, Waves as Pool,
+    Check, ChevronRight, Save, ShieldCheck
 } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
 import { db, auth } from '@/lib/firebase';
@@ -76,7 +76,7 @@ const INTRO_STEPS = [
 const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClose, onComplete }) => {
     const { t } = useLanguage();
     const { showToast } = useToast();
-    const [showIntro, setShowIntro] = useState(true);
+    const [viewMode, setViewMode] = useState<'intro_overview' | 'step1_detail' | 'form'>('intro_overview');
     const [stepIndex, setStepIndex] = useState(0);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -98,17 +98,35 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
         else handleSubmit();
     };
 
+    // Body scroll lock
+    useEffect(() => {
+        if (isOpen) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = 'unset';
+        }
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
+    }, [isOpen]);
+
     // Reset to intro every time the wizard is freshly opened
     useEffect(() => {
         if (isOpen) {
-            setShowIntro(true);
+            setViewMode('intro_overview');
             setStepIndex(0);
         }
     }, [isOpen]);
 
     const handleBack = () => {
-        if (stepIndex > 0) setStepIndex(stepIndex - 1);
-        else onClose();
+        if (viewMode === 'form') {
+            if (stepIndex > 0) setStepIndex(stepIndex - 1);
+            else setViewMode('step1_detail');
+        } else if (viewMode === 'step1_detail') {
+            setViewMode('intro_overview');
+        } else {
+            onClose();
+        }
     };
 
     const handleSubmit = async () => {
@@ -148,8 +166,8 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
 
     if (!isOpen) return null;
 
-    // ── Intro screen ────────────────────────────────────────────────────────
-    if (showIntro) {
+    // ── Mode: Intro Overview ───────────────────────────────────────────────
+    if (viewMode === 'intro_overview') {
         return (
             <motion.div
                 initial={{ opacity: 0 }}
@@ -167,8 +185,8 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                 </div>
 
                 {/* Scrollable content */}
-                <div className="flex-1 overflow-y-auto px-6 pb-6 no-scrollbar">
-                    <h1 className="text-[32px] font-black text-black leading-[1.15] tracking-tight mb-8">
+                <div className="flex-1 overflow-y-auto px-6 pb-6 overscroll-behavior-contain">
+                    <h1 className="text-[34px] font-black text-black leading-[1.15] tracking-tight mb-8">
                         {t({
                             en: 'Getting started on Lbricol Host is easy',
                             fr: 'Commencer sur Lbricol Host, c\'est facile',
@@ -183,7 +201,7 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                                 initial={{ opacity: 0, y: 16 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{ delay: i * 0.1, duration: 0.35 }}
-                                className="flex items-start gap-4 py-7"
+                                className="flex items-start gap-4 py-5"
                             >
                                 {/* Text */}
                                 <div className="flex-1">
@@ -214,12 +232,108 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                 </div>
 
                 {/* Sticky green CTA */}
-                <div className="px-6 pt-4 pb-10 border-t border-neutral-100 bg-white">
+                <div className="px-6 pt-4 pb-5 border-t border-neutral-100 bg-white">
                     <button
-                        onClick={() => { setShowIntro(false); setStepIndex(0); }}
-                        className="w-full bg-[#01A084] text-white py-5 rounded-2xl font-bold text-[17px] active:scale-[0.98] transition-all shadow-md hover:bg-[#018a72]"
+                        onClick={() => setViewMode('step1_detail')}
+                        className="w-full bg-[#01A084] text-white py-3.5 rounded-2xl font-bold text-[17px] active:scale-[0.98] transition-all "
                     >
                         {t({ en: 'Get started', fr: 'Commencer', ar: 'ابدأ الآن' })}
+                    </button>
+                </div>
+            </motion.div>
+        );
+    }
+
+    // ── Mode: Step 1 Detail ────────────────────────────────────────────────
+    if (viewMode === 'step1_detail') {
+        return (
+            <motion.div
+                initial={{ opacity: 0, x: 50 }}
+                animate={{ opacity: 1, x: 0 }}
+                className="fixed inset-0 z-[10000] bg-white flex flex-col"
+            >
+                {/* Top Buttons Bar */}
+                <div className="px-6 pt-6 pb-2 flex justify-between items-center">
+                    <button
+                        onClick={handleBack}
+                        className="px-4 py-2 rounded-full border border-neutral-200 text-[14px] font-bold hover:bg-neutral-50 active:scale-95 transition-all"
+                    >
+                        {t({ en: 'Back', fr: 'Retour', ar: 'عودة' })}
+                    </button>
+                    <div className="flex gap-2">
+                        <button className="px-4 py-2 rounded-full border border-neutral-200 text-[14px] font-bold hover:bg-neutral-50 active:scale-95 transition-all">
+                            {t({ en: 'Questions?', fr: 'Des questions ?', ar: 'أسئلة؟' })}
+                        </button>
+                    </div>
+                </div>
+
+                <div className="flex-1 overflow-y-auto px-6 pt-8 pb-32 overscroll-behavior-contain">
+                    <div className="relative w-full aspect-square mb-12 flex items-center justify-center">
+                        {[1, 2, 3].map((card, i) => (
+                            <motion.div
+                                key={card}
+                                initial={{ opacity: 0, scale: 0.8, rotate: 0, y: 50 }}
+                                animate={{
+                                    opacity: 1,
+                                    scale: 1,
+                                    rotate: i === 0 ? -8 : i === 2 ? 8 : 0,
+                                    y: 0,
+                                    x: i === 0 ? -20 : i === 2 ? 20 : 0
+                                }}
+                                transition={{
+                                    type: "spring",
+                                    stiffness: 100,
+                                    damping: 15,
+                                    delay: 0.2 + (i * 0.1)
+                                }}
+                                className="absolute w-[85%] h-[85%] rounded-[40px] shadow-2xl overflow-hidden bg-white border border-neutral-100"
+                            >
+                                <Image
+                                    src="/Images/PropertiesListingView/FirstStep/ChatGPT Image Apr 22, 2026, 10_39_44 PM.png"
+                                    alt="Step 1"
+                                    fill
+                                    className="object-cover"
+                                    priority
+                                />
+                            </motion.div>
+                        ))}
+                    </div>
+
+                    <motion.div
+                        initial={{ opacity: 0, y: 30 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.6, duration: 0.5 }}
+                        className="space-y-4"
+                    >
+                        <span className="text-[18px] font-bold text-black">
+                            {t({ en: 'Step 1', fr: 'Étape 1', ar: 'الخطوة 1' })}
+                        </span>
+                        <h2 className="text-[36px] font-black text-black leading-[1.1] tracking-tight">
+                            {t({ en: 'Tell us about your property', fr: 'Parlez-nous de votre logement', ar: 'أخبرنا عن مسكنك' })}
+                        </h2>
+                        <p className="text-[17px] text-neutral-500 leading-relaxed font-medium">
+                            {t({
+                                en: 'In this step, we\'ll ask what type of property you have and basic details like location and capacity. This helps us automate cleaning and restocking perfectly.',
+                                fr: 'Au cours de cette étape, nous allons vous demander quel type de logement vous proposez et des détails de base. Cela nous aide à automatiser parfaitement Les activités dont vous pourriez avoir besoin.',
+                                ar: 'في هذه الخطوة، سنطلب منك نوع المسكن وتفاصيل أساسية. يساعدنا ذلك في أتمتة التنظيف وإعادة التموين بشكل مثالي.'
+                            })}
+                        </p>
+                    </motion.div>
+                </div>
+
+                {/* Footer */}
+                <div className="fixed bottom-0 left-0 right-0 p-6 bg-white border-t border-neutral-100 flex justify-between items-center z-20">
+                    <button
+                        onClick={handleBack}
+                        className="text-[16px] font-bold text-black underline underline-offset-4 active:scale-95 transition-all"
+                    >
+                        {t({ en: 'Back', fr: 'Retour', ar: 'عودة' })}
+                    </button>
+                    <button
+                        onClick={() => setViewMode('form')}
+                        className="bg-[#2C2C2C] text-white px-10 py-4 rounded-2xl text-[17px] font-bold active:scale-[0.98] transition-all shadow-lg"
+                    >
+                        {t({ en: 'Next', fr: 'Suivant', ar: 'التالي' })}
                     </button>
                 </div>
             </motion.div>
@@ -230,7 +344,7 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
         <div className="fixed inset-0 z-[10000] bg-white flex flex-col">
             {/* Header */}
             <div className="px-6 py-4 flex justify-between items-center border-b border-neutral-100">
-                <button onClick={stepIndex === 0 ? () => setShowIntro(true) : handleBack} className="p-2 -ml-2 rounded-full hover:bg-neutral-50 active:scale-90 transition-all">
+                <button onClick={handleBack} className="p-2 -ml-2 rounded-full hover:bg-neutral-50 active:scale-90 transition-all">
                     <ChevronLeft size={24} />
                 </button>
                 <div className="flex-1 flex justify-center gap-1">
@@ -244,7 +358,7 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
             </div>
 
             {/* Content */}
-            <div className="flex-1 overflow-y-auto px-6 py-10 no-scrollbar">
+            <div className="flex-1 overflow-y-auto px-6 py-10 overscroll-behavior-contain">
                 <AnimatePresence mode="wait">
                     <motion.div
                         key={stepIndex}
@@ -275,8 +389,8 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                                 })}
                                 <div className="pt-4">
                                     <label className="text-[14px] font-bold text-neutral-400 uppercase tracking-widest pl-2">Nom de l'annonce</label>
-                                    <input 
-                                        type="text" 
+                                    <input
+                                        type="text"
                                         placeholder="Ex: Villa avec vue sur mer"
                                         value={name}
                                         onChange={(e) => setName(e.target.value)}
@@ -329,8 +443,8 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                                 </div>
                                 <div>
                                     <label className="text-[14px] font-bold text-neutral-400 uppercase tracking-widest pl-2">Adresse de la propriété</label>
-                                    <input 
-                                        type="text" 
+                                    <input
+                                        type="text"
                                         placeholder="Ex: 12 Rue des Oliviers, Casablanca"
                                         value={address}
                                         onChange={(e) => setAddress(e.target.value)}
@@ -363,7 +477,7 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                                             <h4 className="font-bold text-[17px]">Nettoyage automatique</h4>
                                             <p className="text-[14px] text-neutral-500">Recrute un Bricoleur après chaque départ.</p>
                                         </div>
-                                        <button 
+                                        <button
                                             onClick={() => setAutomationSettings(prev => ({ ...prev, autoCleanAfterCheckout: !prev.autoCleanAfterCheckout }))}
                                             className={`w-14 h-8 rounded-full flex items-center px-1 transition-all ${automationSettings.autoCleanAfterCheckout ? 'bg-black' : 'bg-neutral-200'}`}
                                         >
@@ -376,7 +490,7 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                                             <h4 className="font-bold text-[17px]">Suivi des stocks</h4>
                                             <p className="text-[14px] text-neutral-500">Alertes sur les consommables (savon, papier, etc.)</p>
                                         </div>
-                                        <button 
+                                        <button
                                             onClick={() => setAutomationSettings(prev => ({ ...prev, stockTracking: !prev.stockTracking }))}
                                             className={`w-14 h-8 rounded-full flex items-center px-1 transition-all ${automationSettings.stockTracking ? 'bg-black' : 'bg-neutral-200'}`}
                                         >
@@ -396,7 +510,7 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
 
             {/* Footer Actions */}
             <div className="p-6 border-t border-neutral-100 pb-10">
-                <button 
+                <button
                     onClick={handleNext}
                     disabled={isSubmitting}
                     className="w-full bg-black text-white py-5 rounded-2xl font-bold text-[17px] flex items-center justify-center gap-2 shadow-xl active:scale-[0.98] transition-all disabled:opacity-50"

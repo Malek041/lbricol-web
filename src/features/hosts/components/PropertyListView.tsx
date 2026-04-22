@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Home, Building, MoreHorizontal, CheckCircle2, Search, Filter } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
 import PropertySetupWizard from './PropertySetupWizard';
+import Image from 'next/image';
 import { db, auth } from '@/lib/firebase';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
 
@@ -42,11 +43,13 @@ const PropertyListView = () => {
                 ) : properties.length === 0 ? (
                     <div className="flex flex-col items-center text-center max-w-[400px] mx-auto">
                         {/* Hero Image - Smaller as requested */}
-                        <div className="w-[70%] relative mb-8 opacity-100">
-                            <img
+                        <div className="w-[70%] relative mb-8 opacity-100 aspect-square">
+                            <Image
                                 src="/Images/Screenshot 2026-04-22 at 18.18.29.png"
                                 alt="Journey"
-                                className="w-full h-auto object-contain"
+                                fill
+                                className="object-contain"
+                                priority
                             />
                         </div>
 
@@ -119,6 +122,13 @@ const PropertyListView = () => {
                     // Refresh properties logic here
                 }}
             />
+            {/* Preload Wizard Images */}
+            <div className="sr-only" aria-hidden="true">
+                <Image src="/Images/PropertiesListingView/Screenshot 2026-04-22 at 20.04.17.png" alt="" width={1} height={1} priority />
+                <Image src="/Images/PropertiesListingView/Screenshot 2026-04-22 at 20.04.27.png" alt="" width={1} height={1} priority />
+                <Image src="/Images/PropertiesListingView/Screenshot 2026-04-22 at 20.04.41.png" alt="" width={1} height={1} priority />
+                <Image src="/Images/PropertiesListingView/FirstStep/ChatGPT Image Apr 22, 2026, 10_39_44 PM.png" alt="" width={1} height={1} priority />
+            </div>
         </div>
     );
 };
