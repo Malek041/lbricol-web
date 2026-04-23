@@ -54,7 +54,7 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
   const handlePermissionStatusChange = (denied: boolean) => {
     setGpsPermissionDenied(denied);
     onPermissionStatusChange?.(denied);
-    
+
     // If permission was just granted, auto-locate
     if (!denied && gpsPermissionDenied) {
       handleLocate();
@@ -229,7 +229,7 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
       <div
         className={cn(
           "relative bg-neutral-100 overflow-hidden transition-all duration-500 ease-in-out z-0 shrink-0",
-          isInteracting || showSearchInput ? 'h-[65%]' : (radiusView ? 'h-[45%]' : (isBricolerBase && !showSearchInput ? 'h-[55%]' : 'h-[42%]'))
+          isInteracting || showSearchInput ? 'h-[65%]' : (radiusView ? 'h-[45%]' : (isBricolerBase && !showSearchInput ? 'h-[72%]' : 'h-[42%]'))
         )}
       >
         {/* Full-screen under-layer map -> Now dynamically matches flex height */}
@@ -323,159 +323,162 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
 
         <div className="flex-1 bg-white rounded-t-[32px] shadow-[0_-8px_30px_rgba(0,0,0,0.08)] px-5 py-8 pb-12 flex flex-col overflow-y-auto no-scrollbar">
 
-        {sheetLoading ? (
-          <div className="flex flex-col gap-6 animate-pulse">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-neutral-100 rounded-2xl" />
-              <div className="flex-1 space-y-2">
-                <div className="h-4 bg-neutral-100 rounded w-3/4" />
-                <div className="h-3 bg-neutral-100 rounded w-1/2" />
+          {sheetLoading ? (
+            <div className="flex flex-col gap-6 animate-pulse">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-neutral-100 rounded-2xl" />
+                <div className="flex-1 space-y-2">
+                  <div className="h-4 bg-neutral-100 rounded w-3/4" />
+                  <div className="h-3 bg-neutral-100 rounded w-1/2" />
+                </div>
               </div>
+              <div className="h-15 bg-neutral-100 rounded-full w-full" />
+              <div className="h-4 bg-neutral-100 rounded w-1/3 mx-auto" />
             </div>
-            <div className="h-15 bg-neutral-100 rounded-full w-full" />
-            <div className="h-4 bg-neutral-100 rounded w-1/3 mx-auto" />
-          </div>
-        ) : showSearchInput ? (
-          <motion.div
-            key="search-view"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            className="flex flex-col gap-6"
-          >
-            <div className="relative">
-              <button 
-                onClick={() => setShowSearchInput(false)}
-                className="absolute -top-1 -left-2 p-2 text-neutral-400 hover:text-neutral-600 active:scale-90 transition-all"
-              >
-                <ChevronLeft size={20} />
-              </button>
-              <p className="text-center text-[15px] font-medium text-neutral-600">
-                {t({ en: 'Trouble locating your address?', fr: 'Problème pour localiser votre adresse ?', ar: 'هل تواجه مشكلة في تحديد موقعك؟' })}<br />
-                {t({ en: 'Try using search instead', fr: 'Essayez d’utiliser la recherche', ar: 'جرب البحث بدلاً من ذلك' })}
-              </p>
-            </div>
-
-            <div
-              onClick={() => setActiveView('SEARCH')}
-              className="flex items-center gap-3 px-6 py-4 bg-[#F9FAFB] border border-neutral-100 rounded-full cursor-pointer hover:bg-neutral-100 transition-all group"
+          ) : showSearchInput ? (
+            <motion.div
+              key="search-view"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="flex flex-col gap-6"
             >
-              <Search size={22} className="text-neutral-400 group-hover:text-neutral-600 transition-colors" />
-              <span className="text-neutral-400 font-medium text-[16px] group-hover:text-neutral-600 transition-colors">
-                {t({ en: 'Rechercher rue, ville, quartier...', fr: 'Rechercher rue, ville, quartier...', ar: 'ابحث عن الشارع، المدينة، الحي...' })}
-              </span>
-            </div>
-          </motion.div>
-        ) : isBricolerBase ? (
-          <div className="flex flex-col h-full overflow-y-auto scrollbar-hide">
-            <AnimatePresence mode="wait">
-              {radiusView ? (
-                <motion.div
-                  key="radius-view"
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -20 }}
-                  className="space-y-6"
+              <div className="relative">
+                <button
+                  onClick={() => setShowSearchInput(false)}
+                  className="absolute -top-1 -left-2 p-2 text-neutral-400 hover:text-neutral-600 active:scale-90 transition-all"
                 >
-                  <div className="space-y-1">
-                    <h3 className="text-xl font-bold text-neutral-900 tracking-tight">{t({ en: 'Service Radius', fr: 'Rayon de service', ar: 'نطاق الخدمة' })}</h3>
-                    <p className="text-neutral-500 text-[14px] font-medium leading-relaxed">
-                      {t({ en: 'How far are you willing to travel for tasks?', fr: 'Jusqu\'où êtes-vous prêt à vous déplacer ?', ar: 'إلى أي مدى أنت مستعد للتنقل للقيام بالمهام؟' })}
-                    </p>
-                  </div>
+                  <ChevronLeft size={20} />
+                </button>
+                <p className="text-center text-[15px] font-medium text-neutral-600">
+                  {t({ en: 'Trouble locating your address?', fr: 'Problème pour localiser votre adresse ?', ar: 'هل تواجه مشكلة في تحديد موقعك؟' })}<br />
+                  {t({ en: 'Try using search instead', fr: 'Essayez d’utiliser la recherche', ar: 'جرب البحث بدلاً من ذلك' })}
+                </p>
+              </div>
 
-                  <div className="grid grid-cols-5 gap-2">
-                    {[3, 5, 10, 20, 50].map(radius => (
-                      <button
-                        key={radius}
-                        onClick={() => {
-                          setSelectedRadius(radius);
-                          if (currentPoint) {
-                            onConfirm({ pickup: currentPoint });
-                            onConfirmRadius?.(radius);
-                          }
-                        }}
-                        className={cn(
-                          "py-3 rounded-[12px] border-2 text-center transition-all flex flex-col items-center justify-center",
-                          selectedRadius === radius ? 'bg-[#E6F6F2] text-[#01A083] border-[#01A083]' : 'bg-white text-neutral-900 border-neutral-100 hover:border-neutral-200'
-                        )}
-                      >
-                        <span className="text-lg font-black leading-none">{radius}</span>
-                        <span className="text-[10px] font-bold opacity-60 mt-0.5">KM</span>
-                      </button>
-                    ))}
-                  </div>
-                </motion.div>
-              ) : (
-                <motion.div
-                  key="confirm-view"
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                  className="flex flex-col gap-4"
-                >
-                  {/* Address Display Row */}
-                  <div className="flex items-center gap-4 mb-2">
-                     <div className="w-12 h-12 bg-neutral-50 rounded-2xl flex items-center justify-center text-neutral-400">
+              <div
+                onClick={() => setActiveView('SEARCH')}
+                className="flex items-center gap-3 px-6 py-4 bg-[#F9FAFB] border border-neutral-100 rounded-full cursor-pointer hover:bg-neutral-100 transition-all group"
+              >
+                <Search size={22} className="text-neutral-400 group-hover:text-neutral-600 transition-colors" />
+                <span className="text-neutral-400 font-medium text-[16px] group-hover:text-neutral-600 transition-colors">
+                  {t({ en: 'Rechercher rue, ville, quartier...', fr: 'Rechercher rue, ville, quartier...', ar: 'ابحث عن الشارع، المدينة، الحي...' })}
+                </span>
+              </div>
+            </motion.div>
+          ) : isBricolerBase ? (
+            <div className="flex flex-col h-full overflow-y-auto scrollbar-hide">
+              <AnimatePresence mode="wait">
+                {radiusView ? (
+                  <motion.div
+                    key="radius-view"
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -20 }}
+                    className="space-y-6"
+                  >
+                    <div className="space-y-1">
+                      <h3 className="text-xl font-bold text-neutral-900 tracking-tight">{t({ en: 'Service Radius', fr: 'Rayon de service', ar: 'نطاق الخدمة' })}</h3>
+                      <p className="text-neutral-500 text-[14px] font-medium leading-relaxed">
+                        {t({ en: 'How far are you willing to travel for tasks?', fr: 'Jusqu\'où êtes-vous prêt à vous déplacer ?', ar: 'إلى أي مدى أنت مستعد للتنقل للقيام بالمهام؟' })}
+                      </p>
+                    </div>
+
+                    <div className="grid grid-cols-5 gap-2">
+                      {[3, 5, 10, 20, 50].map(radius => (
+                        <button
+                          key={radius}
+                          onClick={() => {
+                            setSelectedRadius(radius);
+                            if (currentPoint) {
+                              onConfirm({ pickup: currentPoint });
+                              onConfirmRadius?.(radius);
+                            }
+                          }}
+                          className={cn(
+                            "py-3 rounded-[12px] border-2 text-center transition-all flex flex-col items-center justify-center",
+                            selectedRadius === radius ? 'bg-[#E6F6F2] text-[#01A083] border-[#01A083]' : 'bg-white text-neutral-900 border-neutral-100 hover:border-neutral-200'
+                          )}
+                        >
+                          <span className="text-lg font-black leading-none">{radius}</span>
+                          <span className="text-[10px] font-bold opacity-60 mt-0.5">KM</span>
+                        </button>
+                      ))}
+                    </div>
+                  </motion.div>
+                ) : (
+                  <motion.div
+                    key="confirm-view"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="flex flex-col gap-6"
+                  >
+                    <h2 className="text-[24px] font-black text-black leading-tight tracking-tight">
+                      {t({ en: 'Where does your Property locate?', fr: 'Où se situe votre bien ?', ar: 'أين يقع عقارك؟' })}
+                    </h2>
+
+                    {/* Address Display Row */}
+                    <div className="flex items-center gap-4 mb-2">
+                      <div className="w-12 h-12 bg-neutral-50 rounded-2xl flex items-center justify-center text-neutral-400">
                         <MapPin size={24} />
-                     </div>
+                      </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-[16px] font-bold text-neutral-900 line-clamp-2 leading-tight">
                           {currentPoint?.address || t({ en: 'Locating...', fr: 'Localisation...', ar: 'جاري تحديد الموقع...' })}
                         </p>
                       </div>
-                      <button 
+                      <button
                         onClick={() => setShowSearchInput(true)}
                         className="w-10 h-10 rounded-full border border-neutral-100 flex items-center justify-center text-neutral-400 active:bg-neutral-50"
                       >
                         <Edit2 size={18} />
                       </button>
-                   </div>
- 
-                   <button
-                     onClick={handleConfirmPoint}
-                     disabled={isGeocoding}
-                     className={cn(
-                       "w-full h-15 text-white rounded-full font-black text-[18px] active:scale-95 transition-all flex items-center justify-center gap-3",
-                       isGeocoding ? 'bg-neutral-300 cursor-not-allowed shadow-none' : 'bg-[#01A083]'
-                     )}
-                   >
-                     {isGeocoding ? (
-                       <>
-                         <Loader2 className="animate-spin" size={20} />
-                         {t({ en: 'Loading...', fr: 'Chargement...', ar: 'جاري التحميل...' })}
-                       </>
-                     ) : (
-                       t({ en: 'Confirm This Location', fr: 'Confirmer ce lieu', ar: 'تأكيد هذا الموقع' })
-                     )}
-                   </button>
-                   <button
-                     onClick={() => setShowSearchInput(true)}
-                     className="w-full mt-2 text-[#01A083] font-bold text-[18px] transition-all"
-                   >
-                     {t({ en: 'Set Another address', fr: 'Définir une autre adresse', ar: 'تحديد عنوان آخر' })}
-                   </button>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
-        ) : (
-          <div className="flex-1 flex flex-col min-h-0">
-            <SavedAddressList
-              addresses={savedAddresses}
-              onSelect={handleSavedSelect}
-              onEdit={handleEditAddress}
-              onAdd={() => setShowSearchInput(true)}
-              title={mode === 'double' && step === 2 
-                ? t({ en: "Where are you moving to?", fr: "Où déménagez-vous ?", ar: "إلى أين ستنتقل؟" })
-                : t({ en: "Where do you need help?", fr: "Où avez-vous besoin d'aide ?", ar: "أيـن تـحـتـاج الـمـسـاعـدة؟" })
-              }
-            />
-          </div>
-        )
-}
+                    </div>
+
+                    <button
+                      onClick={handleConfirmPoint}
+                      disabled={isGeocoding}
+                      className={cn(
+                        "w-full h-15 text-white rounded-[15px] font-black text-[18px] active:scale-95 transition-all flex items-center justify-center gap-3",
+                        isGeocoding ? 'bg-neutral-300 shadow-none' : 'bg-black'
+                      )}
+                    >
+                      {isGeocoding ? (
+                        <>
+                          <Loader2 className="animate-spin" size={20} />
+                          {t({ en: 'Loading...', fr: 'Chargement...', ar: 'جاري التحميل...' })}
+                        </>
+                      ) : (
+                        t({ en: 'Confirm This Location', fr: 'Confirmer ce lieu', ar: 'تأكيد هذا الموقع' })
+                      )}
+                    </button>
+                    <button
+                      onClick={() => setShowSearchInput(true)}
+                      className="w-full mt-2 text-neutral-500 font-bold text-[17px] transition-all"
+                    >
+                      {t({ en: 'Set Another address', fr: 'Définir une autre adresse', ar: 'تحديد عنوان آخر' })}
+                    </button>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          ) : (
+            <div className="flex-1 flex flex-col min-h-0">
+              <SavedAddressList
+                addresses={savedAddresses}
+                onSelect={handleSavedSelect}
+                onEdit={handleEditAddress}
+                onAdd={() => setShowSearchInput(true)}
+                title={mode === 'double' && step === 2
+                  ? t({ en: "Where are you moving to?", fr: "Où déménagez-vous ?", ar: "إلى أين ستنتقل؟" })
+                  : t({ en: "Where do you need help?", fr: "Où avez-vous besoin d'aide ?", ar: "أيـن تـحـتـاج الـمـسـاعـدة؟" })
+                }
+              />
+            </div>
+          )
+          }
+        </div>
       </div>
-    </div>
 
       <style jsx global>{`
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');

@@ -60,89 +60,119 @@ const AddressDetailsForm: React.FC<AddressDetailsFormProps> = ({ initialData, on
           {t({ en: 'Address details', fr: "Détails de l'adresse", ar: "تفاصيل العنوان" })}
         </h2>
       </div>
+      <div className="flex flex-col space-y-8 pb-40">
+        {/* Input Fields (Now at the top) */}
+        <div className="px-5 pt-6">
+          <h3 className="text-[20px] font-black text-black mb-6">
+            {t({ en: 'Confirm address details', fr: "Confirmer les détails de l'adresse", ar: 'تأكيد تفاصيل العنوان' })}
+          </h3>
+          
+          <div className="space-y-4">
+            {/* Building Name */}
+            <div className="relative group">
+              <div className="bg-[#F9FAFB] border border-transparent focus-within:border-black focus-within:bg-white rounded-[12px] h-14 transition-all relative">
+                <input
+                  type="text"
+                  value={formData.buildingName}
+                  onChange={(e) => setFormData({ ...formData, buildingName: e.target.value })}
+                  placeholder="e.g. Jardin des Douars"
+                  className="w-full h-full px-4 pt-5 pb-1 bg-transparent outline-none text-[15px] font-medium placeholder:text-neutral-300"
+                />
+                <label className="absolute left-4 top-1.5 text-[11px] font-bold transition-all pointer-events-none text-[#2C2C2C]">
+                  {t({ en: 'Name of your property', fr: 'Nom de votre propriété', ar: 'اسم مكانك' })}
+                </label>
+              </div>
+            </div>
 
-      <div className="p-5 space-y-6 pb-24">
-        {/* Address Preview */}
-        <div className="flex items-start gap-3">
-          <div className="mt-1 text-[#6B7280]">
-            <Building2 size={20} />
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-[16px] font-light text-[#111827] leading-tight break-words">
-              {initialData.address}
-            </p>
-            <p className="text-[14px] text-[#6B7280] mt-1">
-              {[formData.buildingName].filter(Boolean).join(', ') || t({ en: 'No details yet', fr: 'Aucun détail', ar: 'لا توجد تفاصيل بعد' })}
-            </p>
+            <div className="grid grid-cols-2 gap-4">
+              {/* Floor Number */}
+              <div className="relative group">
+                <div className="bg-[#F9FAFB] border border-transparent focus-within:border-black focus-within:bg-white rounded-[12px] h-14 transition-all relative">
+                  <input
+                    type="text"
+                    value={formData.floorNumber}
+                    onChange={(e) => setFormData({ ...formData, floorNumber: e.target.value })}
+                    placeholder="e.g. 2"
+                    className="w-full h-full px-4 pt-5 pb-1 bg-transparent outline-none text-[15px] font-medium placeholder:text-neutral-300"
+                  />
+                  <label className="absolute left-4 top-1.5 text-[11px] font-bold transition-all pointer-events-none text-[#2C2C2C]">
+                    {t({ en: 'Floor', fr: 'Étage', ar: 'الطابق' })}
+                  </label>
+                </div>
+              </div>
+
+              {/* Door Number */}
+              <div className="relative group">
+                <div className="bg-[#F9FAFB] border border-transparent focus-within:border-black focus-within:bg-white rounded-[12px] h-14 transition-all relative">
+                  <input
+                    type="text"
+                    value={formData.doorNumber}
+                    onChange={(e) => setFormData({ ...formData, doorNumber: e.target.value })}
+                    placeholder="e.g. 14"
+                    className="w-full h-full px-4 pt-5 pb-1 bg-transparent outline-none text-[15px] font-medium placeholder:text-neutral-300"
+                  />
+                  <label className="absolute left-4 top-1.5 text-[11px] font-bold transition-all pointer-events-none text-[#2C2C2C]">
+                    {t({ en: 'Apt / Door', fr: 'N° Porte', ar: 'رقم الباب' })}
+                  </label>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* Input Fields */}
-        <div className="space-y-4">
-          {/* Building Name */}
-          <div className="relative group">
-            <div className="border border-[2px] border-[#D9D9D9] focus-within:border-[#D9D9D9] rounded-xl h-14 transition-all relative">
-              <input
-                type="text"
-                value={formData.buildingName}
-                onChange={(e) => setFormData({ ...formData, buildingName: e.target.value })}
-                placeholder="e.g. Jardin des Douars"
-                className="w-full h-full px-4 pt-5 pb-1 bg-transparent outline-none text-[15px] font-medium placeholder:text-neutral-300"
-              />
-              <label className="absolute left-4 top-1.5 text-[11px] font-bold transition-all pointer-events-none text-[#6B7280]">
-                {t({ en: 'Name of your property', fr: 'Nom de votre propriété', ar: 'اسم مكانك' })}
-              </label>
-              {formData.buildingName && (
-                <button
-                  onClick={() => setFormData({ ...formData, buildingName: '' })}
-                  className="absolute right-3 top-4 text-[#9CA3AF]"
-                >
-                  <X size={18} />
-                </button>
-              )}
-            </div>
-          </div>
-
-        </div>
-
-        {/* Mark Entrance */}
-        <div className="space-y-3">
-          <div className="flex flex-col">
-            <h3 className="text-[17px] font-bold text-[#111827]">{t({ en: 'Mark your entrance', fr: 'Marquez votre entrée', ar: 'حدد المدخل' })}</h3>
-            <div className={`flex items-center gap-1.5 mt-0.5 ${isMarked ? 'text-[#111827]' : 'text-[#111827]'}`}>
-              <CheckCircle2 size={16} fill={isMarked ? "#000000ff" : "none"} className={isMarked ? "text-white" : ""} />
-              <p className="text-[13px] font-medium">
-                {isMarked
-                  ? t({ en: "Done! Thanks for helping the bricoler", fr: "C'est fait ! Merci d'aider le bricoleur", ar: "تم! شكراً لمساعدة العامل" })
-                  : t({ en: "Help the courier find the right spot", fr: "Aidez le livreur à trouver l'endroit exact", ar: "ساعد العامل في العثور على المكان الصحيح" })
-                }
-              </p>
-            </div>
-          </div>
-          <button
-            onClick={() => setIsPickingEntrance(true)}
-            className="w-full h-[160px] rounded-xl overflow-hidden border border-[#F3F4F6] relative active:scale-[0.99] transition-transform text-left"
-          >
-            {/* Minimal Map Preview */}
+        {/* Map Preview (Increased height to 450px) */}
+        <div className="px-5">
+          <div className="relative w-full h-[450px] rounded-[24px] overflow-hidden shadow-[0_4px_20px_rgba(0,0,0,0.08)] border border-neutral-100">
             <MapView
               initialLocation={{
                 lat: formData.entranceLat || initialData.lat,
                 lng: formData.entranceLng || initialData.lng
               }}
-              onLocationChange={() => { }} // Non-interactive thumbnail
+              onLocationChange={() => { }} 
               interactive={false}
-              pinY={50} // Center for snapshot
+              pinY={50}
               zoom={16}
               showCenterPin={true}
             />
-            {/* Overlay to catch clicks and prevent map interaction */}
-            <div className="absolute inset-0 bg-transparent z-30" />
-          </button>
+            
+            {/* Absolute Address Card Overlapping Map */}
+            <div className="absolute top-4 left-4 right-4 z-40">
+              <div className="p-4 bg-white/95 backdrop-blur-md border border-neutral-100 rounded-[20px] shadow-lg flex items-center gap-3">
+                <div className="w-10 h-10 bg-black rounded-xl flex items-center justify-center text-white shrink-0">
+                  <Building2 size={20} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[14px] font-bold text-black line-clamp-1 leading-tight">
+                    {initialData.address}
+                  </p>
+                  <p className="text-[12px] text-neutral-500 mt-0.5 font-medium line-clamp-1">
+                    {formData.buildingName || t({ en: 'Your Property', fr: 'Votre logement', ar: 'عقارك' })}
+                  </p>
+                </div>
+              </div>
+            </div>
+            
+            <button 
+              onClick={() => setIsPickingEntrance(true)}
+              className="absolute inset-0 z-30 active:bg-black/5 transition-colors"
+            />
+          </div>
+        </div>
+
+        {/* Informative Header Text (Moved to bottom) */}
+        <div className="px-5">
+          <p className="text-[14px] text-neutral-500 leading-relaxed font-medium">
+            {t({ 
+              en: 'We will only share your address after the reservation is confirmed. Until then, travelers will see an approximate location.', 
+              fr: "Nous ne communiquerons votre adresse qu'après la réservation. En attendant, les voyageurs verront un emplacement approximatif.", 
+              ar: "لن نشارك عنوانك إلا بعد تأكيد الحجز. حتى ذلك الحين، سيرى المسافرون موقعاً تقريبياً." 
+            })}
+          </p>
         </div>
 
         {/* Add Label */}
         {!isHostWizard && (
-          <div className="space-y-3">
+          <div className="px-5 space-y-4">
             <div>
               <h3 className="text-[17px] font-bold text-[#111827]">{t({ en: 'Add a label', fr: 'Ajouter un libellé', ar: 'أضف تسمية' })}</h3>
               <p className="text-[13px] text-[#6B7280]">{t({ en: 'Identify this address more easily next time', fr: 'Identifiez cette adresse plus facilement la prochaine fois', ar: 'حدد هذا العنوان بسهولة أكبر في المرة القادمة' })}</p>
@@ -199,7 +229,7 @@ const AddressDetailsForm: React.FC<AddressDetailsFormProps> = ({ initialData, on
         <button
           onClick={handleSave}
           disabled={!formData.buildingName || !isMarked}
-          className="w-full h-14 rounded-full bg-[#037B3E] text-white font-bold text-[17px] active:scale-[0.98] transition-all disabled:opacity-50 disabled:scale-100"
+          className="w-full h-14 rounded-[15px] bg-[#2C2C2C] text-white font-bold text-[17px] active:scale-[0.98] transition-all disabled:opacity-50 disabled:scale-100"
         >
           {t({ en: 'Save address', fr: "Enregistrer l'adresse", ar: "حفظ العنوان" })}
         </button>

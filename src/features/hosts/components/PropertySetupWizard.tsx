@@ -32,8 +32,7 @@ const STEPS = [
 ];
 
 const PROPERTY_TYPES = [
-    { id: 'house', label: { en: 'House', fr: 'Maison' }, icon: Home },
-    { id: 'apartment', label: { en: 'Apartment', fr: 'Appartement' }, icon: Building },
+    { id: 'apartment', label: { en: 'Apartment', fr: 'Appartement' }, icon: Home },
     { id: 'guesthouse', label: { en: 'Guesthouse', fr: 'Maison d\'hôtes/Gîte rural' }, icon: Building2 },
     { id: 'hotel', label: { en: 'Hotel', fr: 'Hôtel' }, icon: HotelIcon },
     { id: 'riad', label: { en: 'Riad', fr: 'Riad' }, icon: Landmark },
@@ -86,6 +85,29 @@ const INTRO_STEPS = [
     },
 ];
 
+const CounterRow = ({ label, value, onChange, min = 0 }: { label: string, value: number, onChange: (v: number) => void, min?: number }) => (
+    <div className="flex justify-between items-center py-6">
+        <span className="text-[18px] font-medium text-black">{label}</span>
+        <div className="flex items-center gap-5">
+            <button
+                onClick={() => onChange(Math.max(min, value - 1))}
+                disabled={value <= min}
+                className="w-10 h-10 rounded-full border border-neutral-200 flex items-center justify-center text-[22px] font-medium active:scale-90 transition-all disabled:opacity-30 disabled:scale-100 text-neutral-400"
+            >
+                -
+            </button>
+            <span className="text-[18px] font-medium w-6 text-center text-black">{value}</span>
+            <button 
+                onClick={() => onChange(value + 1)}
+                className="w-10 h-10 rounded-full border border-neutral-200 flex items-center justify-center text-[22px] font-medium active:scale-90 transition-all text-black"
+            >
+                +
+            </button>
+        </div>
+    </div>
+);
+
+
 const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClose, onComplete }) => {
     const { t } = useLanguage();
     const { showToast } = useToast();
@@ -94,13 +116,18 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     // Form State
-    const [type, setType] = useState('house');
+    const [type, setType] = useState('apartment');
     const [name, setName] = useState('');
+    const [guests, setGuests] = useState(4);
     const [bedrooms, setBedrooms] = useState(1);
+    const [beds, setBeds] = useState(1);
+    const [bathrooms, setBathrooms] = useState(1);
     const [selectedAmenities, setSelectedAmenities] = useState<string[]>([]);
     const [address, setAddress] = useState('');
     const [baseLat, setBaseLat] = useState<number | null>(null);
     const [baseLng, setBaseLng] = useState<number | null>(null);
+    const [floor, setFloor] = useState<number>(0);
+    const [apartmentNumber, setApartmentNumber] = useState('');
     const [preferredBricolerId, setPreferredBricolerId] = useState<string | null>(null);
     const [automationSettings, setAutomationSettings] = useState({
         autoCleanAfterCheckout: true,
@@ -154,6 +181,11 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                 type,
                 specs: {
                     bedrooms,
+                    floor,
+                    guests,
+                    beds,
+                    bathrooms,
+                    apartmentNumber,
                     amenities: selectedAmenities,
                     address,
                     lat: baseLat,
@@ -278,9 +310,9 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                         {t({ en: 'Back', fr: 'Retour', ar: 'عودة' })}
                     </button>
                     <div className="flex gap-2">
-                        <button className="px-4 py-2 rounded-full border border-neutral-200 text-[14px] font-bold hover:bg-neutral-50 active:scale-95 transition-all">
+                        <div className="px-4 py-2 rounded-full border border-neutral-200 text-[14px] font-bold text-black cursor-default">
                             {t({ en: 'Questions?', fr: 'Des questions ?', ar: 'أسئلة؟' })}
-                        </button>
+                        </div>
                     </div>
                 </div>
 
@@ -357,9 +389,9 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                     >
                         {t({ en: 'Save & exit', fr: 'Enregistrer et quitter' })}
                     </button>
-                    <button className="px-4 py-2 rounded-full border border-neutral-200 text-[14px] font-bold hover:bg-neutral-50 active:scale-95 transition-all">
+                    <div className="px-4 py-2 rounded-full border border-neutral-200 text-[14px] font-bold text-black cursor-default">
                         {t({ en: 'Questions?', fr: 'Des questions ?' })}
-                    </button>
+                    </div>
                 </div>
             )}
 
@@ -396,7 +428,7 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                                     {PROPERTY_TYPES.map((pt) => {
                                         const Icon = pt.icon;
                                         const isActive = type === pt.id;
-                                        const isMaison = pt.id === 'house';
+                                        const isApartment = pt.id === 'apartment';
 
                                         return (
                                             <button
@@ -405,7 +437,7 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                                                 className={`flex flex-col items-start justify-between p-4 rounded-xl border transition-all h-[120px] ${isActive ? 'border-black ring-1 ring-black bg-neutral-50' : 'border-neutral-200 hover:border-black'}`}
                                             >
                                                 <div className="w-8 h-8 flex items-center justify-center">
-                                                    {isMaison && isActive ? (
+                                                    {isApartment && isActive ? (
                                                         <Lottie
                                                             animationData={homeAnimation}
                                                             loop={false}
@@ -442,6 +474,12 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                                         if (savedAddress?.buildingName) {
                                             setName(savedAddress.buildingName);
                                         }
+                                        if (savedAddress?.floorNumber) {
+                                            setFloor(parseInt(savedAddress.floorNumber) || 0);
+                                        }
+                                        if (savedAddress?.doorNumber) {
+                                            setApartmentNumber(savedAddress.doorNumber);
+                                        }
                                         setStepIndex(s => s + 1);
                                     }}
                                 />
@@ -450,35 +488,55 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
 
                         {stepIndex === 2 && (
                             <div className="space-y-10">
-                                <div>
-                                    <div className="flex justify-between items-center mb-6">
-                                        <span className="text-[18px] font-bold">Chambres</span>
-                                        <div className="flex items-center gap-6">
-                                            <button onClick={() => setBedrooms(Math.max(1, bedrooms - 1))} className="w-10 h-10 rounded-full border border-neutral-200 flex items-center justify-center active:scale-90">-</button>
-                                            <span className="text-[18px] font-bold w-4 text-center">{bedrooms}</span>
-                                            <button onClick={() => setBedrooms(bedrooms + 1)} className="w-10 h-10 rounded-full border border-neutral-200 flex items-center justify-center active:scale-90">+</button>
-                                        </div>
-                                    </div>
+                                <div className="space-y-4">
+                                    <h2 className="text-[32px] font-black text-black leading-[1.1] tracking-tight">
+                                        {t({
+                                            en: 'Give the main information about your accommodation',
+                                            fr: 'Donnez les informations principales concernant votre logement',
+                                            ar: 'قدم المعلومات الأساسية عن مسكنك'
+                                        })}
+                                    </h2>
+                                    <p className="text-[18px] text-neutral-500 font-medium leading-relaxed">
+                                        {t({
+                                            en: 'You can add other information later, like bed types.',
+                                            fr: 'Vous pourrez ajouter d\'autres informations plus tard, comme les types de lit.',
+                                            ar: 'يمكنك إضافة معلومات أخرى لاحقاً، مثل أنواع الأسرّة.'
+                                        })}
+                                    </p>
                                 </div>
 
-                                <div>
-                                    <span className="text-[18px] font-bold mb-6 block">Équipements</span>
-                                    <div className="grid grid-cols-2 gap-4">
-                                        {AMENITIES.map((am) => {
-                                            const Icon = am.icon;
-                                            const isSelected = selectedAmenities.includes(am.id);
-                                            return (
-                                                <button
-                                                    key={am.id}
-                                                    onClick={() => setSelectedAmenities(prev => isSelected ? prev.filter(i => i !== am.id) : [...prev, am.id])}
-                                                    className={`p-6 rounded-[24px] border-2 flex flex-col gap-4 text-left transition-all ${isSelected ? 'border-black bg-neutral-50 shadow-sm' : 'border-neutral-100'}`}
-                                                >
-                                                    <Icon size={24} className={isSelected ? 'text-black' : 'text-neutral-400'} />
-                                                    <span className={`text-[15px] font-bold ${isSelected ? 'text-black' : 'text-neutral-500'}`}>{am.label}</span>
-                                                </button>
-                                            );
-                                        })}
-                                    </div>
+                                <div className="divide-y divide-neutral-100 border-t border-b border-neutral-100 -mx-6 px-6">
+                                    {/* Voyageurs */}
+                                    <CounterRow
+                                        label={t({ en: 'Guests', fr: 'Voyageurs', ar: 'الضيوف' })}
+                                        value={guests}
+                                        onChange={setGuests}
+                                        min={1}
+                                    />
+
+                                    {/* Chambres */}
+                                    <CounterRow
+                                        label={t({ en: 'Bedrooms', fr: 'Chambres', ar: 'غرف النوم' })}
+                                        value={bedrooms}
+                                        onChange={setBedrooms}
+                                        min={1}
+                                    />
+
+                                    {/* Lits */}
+                                    <CounterRow
+                                        label={t({ en: 'Beds', fr: 'Lits', ar: 'الأسرّة' })}
+                                        value={beds}
+                                        onChange={setBeds}
+                                        min={1}
+                                    />
+
+                                    {/* Salles de bain */}
+                                    <CounterRow
+                                        label={t({ en: 'Bathrooms', fr: 'Salles de bain', ar: 'الحمامات' })}
+                                        value={bathrooms}
+                                        onChange={setBathrooms}
+                                        min={1}
+                                    />
                                 </div>
                             </div>
                         )}
