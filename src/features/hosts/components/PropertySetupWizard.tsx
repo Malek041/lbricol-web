@@ -422,16 +422,6 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                                         );
                                     })}
                                 </div>
-                                <div className="pt-4">
-                                    <label className="text-[12px] font-bold text-neutral-400 uppercase tracking-widest pl-1 mb-2 block">Nom de l'annonce</label>
-                                    <input
-                                        type="text"
-                                        placeholder="Ex: Villa avec vue sur mer"
-                                        value={name}
-                                        onChange={(e) => setName(e.target.value)}
-                                        className="w-full bg-white border border-neutral-300 rounded-xl p-4 text-[16px] font-medium outline-none focus:border-black transition-all"
-                                    />
-                                </div>
                             </div>
                         )}
 
@@ -444,10 +434,14 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                                     autoLocate={true}
                                     onClose={() => setStepIndex(0)}
                                     isInline={true}
-                                    onConfirm={({ pickup }) => {
+                                    isHostWizard={true}
+                                    onConfirm={({ pickup, savedAddress }) => {
                                         setBaseLat(pickup.lat);
                                         setBaseLng(pickup.lng);
                                         setAddress(pickup.address);
+                                        if (savedAddress?.buildingName) {
+                                            setName(savedAddress.buildingName);
+                                        }
                                         setStepIndex(s => s + 1);
                                     }}
                                 />

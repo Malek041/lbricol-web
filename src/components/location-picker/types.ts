@@ -44,6 +44,7 @@ export interface LocationPickerProps {
   onConfirmRadius?: (radius: number) => void;
   initialRadius?: number;
   pinImage?: string;
+  isHostWizard?: boolean;
   onPermissionStatusChange?: (denied: boolean) => void;
 }
 

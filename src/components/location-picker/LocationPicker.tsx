@@ -38,6 +38,7 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
   onConfirmRadius,
   initialRadius = 10,
   pinImage,
+  isHostWizard,
   onPermissionStatusChange,
 }) => {
   // Views & State
@@ -111,7 +112,7 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
     if (!currentPoint) return;
     setIsManualSelection(true);
 
-    if (isBricolerBase) {
+    if (isBricolerBase && !isHostWizard) {
       onConfirm({ pickup: currentPoint });
       return;
     }
@@ -209,6 +210,7 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
       initialData={selectedForDetails}
       onBack={() => setActiveView('MAP')}
       onSave={handleSaveDetails}
+      isHostWizard={isHostWizard}
     />;
   }
 

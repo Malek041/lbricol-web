@@ -18,9 +18,10 @@ interface AddressDetailsFormProps {
   initialData: Partial<SavedAddress> & { lat: number, lng: number, address: string };
   onSave: (data: SavedAddress) => void;
   onBack: () => void;
+  isHostWizard?: boolean;
 }
 
-const AddressDetailsForm: React.FC<AddressDetailsFormProps> = ({ initialData, onSave, onBack }) => {
+const AddressDetailsForm: React.FC<AddressDetailsFormProps> = ({ initialData, onSave, onBack, isHostWizard }) => {
   const { t } = useLanguage();
   const [formData, setFormData] = useState({
     buildingName: initialData.buildingName || '',
@@ -140,55 +141,57 @@ const AddressDetailsForm: React.FC<AddressDetailsFormProps> = ({ initialData, on
         </div>
 
         {/* Add Label */}
-        <div className="space-y-3">
-          <div>
-            <h3 className="text-[17px] font-bold text-[#111827]">{t({ en: 'Add a label', fr: 'Ajouter un libellé', ar: 'أضف تسمية' })}</h3>
-            <p className="text-[13px] text-[#6B7280]">{t({ en: 'Identify this address more easily next time', fr: 'Identifiez cette adresse plus facilement la prochaine fois', ar: 'حدد هذا العنوان بسهولة أكبر في المرة القادمة' })}</p>
-          </div>
-          <div className="flex gap-2.5 overflow-x-auto pb-4 no-scrollbar -mx-5 px-5 snap-x snap-mandatory">
-            {labelOptions.map(l => {
-              const displayLabel = t({
-                en: l === 'Office' ? 'Office' : l,
-                fr: l === 'Home' ? 'Maison' : l === 'Flat' ? 'Appartement' : l === 'Garden' ? 'Jardin' : l === 'Office' ? 'Bureau' : l === 'Other' ? 'Autre' : l,
-                ar: l === 'Home' ? 'المنزل' : l === 'Flat' ? 'شقة' : l === 'Garden' ? 'حديقة' : l === 'Office' ? 'مكتب' : l === 'Other' ? 'آخر' : l
-              });
-
-              return (
-                <button
-                  key={l}
-                  onClick={() => setFormData({ ...formData, label: l })}
-                  className={`flex-shrink-0 min-w-[115px] h-14 flex items-center justify-center rounded-[12px] px-4 text-center transition-all border snap-center ${formData.label === l
-                    ? 'bg-[#FFB700] border-[#FFB700] text-[#111827]'
-                    : 'bg-white border-[#E5E7EB] text-[#6B7280]'
-                    }`}
-                >
-                  <span className="font-bold text-[15px]">
-                    {displayLabel}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Custom Label Input when 'Other' is selected */}
-          {formData.label === 'Other' && (
-            <div className="mt-4 animate-in slide-in-from-top-2 duration-200">
-              <div className="border border-[2px] border-[#D9D9D9] focus-within:border-[#D9D9D9] rounded-xl h-14 transition-all relative">
-                <input
-                  type="text"
-                  value={formData.customLabel}
-                  onChange={(e) => setFormData({ ...formData, customLabel: e.target.value })}
-                  placeholder={t({ en: 'e.g. Workshop, Shop...', fr: 'ex: Atelier, Boutique...', ar: 'مثلاً: ورشة، متجر...' })}
-                  className="w-full h-full px-4 pt-5 pb-1 bg-transparent outline-none text-[15px] font-medium placeholder:text-neutral-300"
-                  autoFocus
-                />
-                <label className="absolute left-4 top-1.5 text-[11px] font-bold transition-all pointer-events-none text-[#6B7280]">
-                  {t({ en: 'Define your label', fr: 'Définissez votre libellé', ar: 'حدد تسميتك' })}
-                </label>
-              </div>
+        {!isHostWizard && (
+          <div className="space-y-3">
+            <div>
+              <h3 className="text-[17px] font-bold text-[#111827]">{t({ en: 'Add a label', fr: 'Ajouter un libellé', ar: 'أضف تسمية' })}</h3>
+              <p className="text-[13px] text-[#6B7280]">{t({ en: 'Identify this address more easily next time', fr: 'Identifiez cette adresse plus facilement la prochaine fois', ar: 'حدد هذا العنوان بسهولة أكبر في المرة القادمة' })}</p>
             </div>
-          )}
-        </div>
+            <div className="flex gap-2.5 overflow-x-auto pb-4 no-scrollbar -mx-5 px-5 snap-x snap-mandatory">
+              {labelOptions.map(l => {
+                const displayLabel = t({
+                  en: l === 'Office' ? 'Office' : l,
+                  fr: l === 'Home' ? 'Maison' : l === 'Flat' ? 'Appartement' : l === 'Garden' ? 'Jardin' : l === 'Office' ? 'Bureau' : l === 'Other' ? 'Autre' : l,
+                  ar: l === 'Home' ? 'المنزل' : l === 'Flat' ? 'شقة' : l === 'Garden' ? 'حديقة' : l === 'Office' ? 'مكتب' : l === 'Other' ? 'آخر' : l
+                });
+
+                return (
+                  <button
+                    key={l}
+                    onClick={() => setFormData({ ...formData, label: l })}
+                    className={`flex-shrink-0 min-w-[115px] h-14 flex items-center justify-center rounded-[12px] px-4 text-center transition-all border snap-center ${formData.label === l
+                      ? 'bg-[#FFB700] border-[#FFB700] text-[#111827]'
+                      : 'bg-white border-[#E5E7EB] text-[#6B7280]'
+                      }`}
+                  >
+                    <span className="font-bold text-[15px]">
+                      {displayLabel}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Custom Label Input when 'Other' is selected */}
+            {formData.label === 'Other' && (
+              <div className="mt-4 animate-in slide-in-from-top-2 duration-200">
+                <div className="border border-[2px] border-[#D9D9D9] focus-within:border-[#D9D9D9] rounded-xl h-14 transition-all relative">
+                  <input
+                    type="text"
+                    value={formData.customLabel}
+                    onChange={(e) => setFormData({ ...formData, customLabel: e.target.value })}
+                    placeholder={t({ en: 'e.g. Workshop, Shop...', fr: 'ex: Atelier, Boutique...', ar: 'مثلاً: ورشة، متجر...' })}
+                    className="w-full h-full px-4 pt-5 pb-1 bg-transparent outline-none text-[15px] font-medium placeholder:text-neutral-300"
+                    autoFocus
+                  />
+                  <label className="absolute left-4 top-1.5 text-[11px] font-bold transition-all pointer-events-none text-[#6B7280]">
+                    {t({ en: 'Define your label', fr: 'Définissez votre libellé', ar: 'حدد تسميتك' })}
+                  </label>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Sticky Save Button */}
