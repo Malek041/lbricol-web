@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { collection, onSnapshot, doc, updateDoc, deleteDoc, query, where, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useLanguage } from '@/context/LanguageContext';
-import { MapPin, Search, Shield, User as UserIcon, Star, Phone, Plus, Edit2, EyeOff, Eye, Trash2, Calendar, Save, Check, Tooltip, RefreshCw } from 'lucide-react';
+import { MapPin, Search, Shield, User as UserIcon, Star, Phone, Plus, Edit2, EyeOff, Eye, Trash2, Calendar, Save, Check, RefreshCw } from 'lucide-react';
 import OnboardingPopup from '@/features/onboarding/components/OnboardingPopup';
 import AvailabilityCalendarView from '@/features/calendar/components/AvailabilityCalendarView';
 import { cn } from '@/lib/utils';
