@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import Lottie from 'lottie-react';
 import homeAnimation from '../../../../public/Animated icons/system-regular-41-home-hover-pinch.json';
+import LocationPicker from '@/components/location-picker/LocationPicker';
 import { useLanguage } from '@/context/LanguageContext';
 import { db, auth } from '@/lib/firebase';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
@@ -97,6 +98,8 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
     const [bedrooms, setBedrooms] = useState(1);
     const [selectedAmenities, setSelectedAmenities] = useState<string[]>([]);
     const [address, setAddress] = useState('');
+    const [baseLat, setBaseLat] = useState<number | null>(null);
+    const [baseLng, setBaseLng] = useState<number | null>(null);
     const [preferredBricolerId, setPreferredBricolerId] = useState<string | null>(null);
     const [automationSettings, setAutomationSettings] = useState({
         autoCleanAfterCheckout: true,
@@ -152,6 +155,8 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                     bedrooms,
                     amenities: selectedAmenities,
                     address,
+                    lat: baseLat,
+                    lng: baseLng,
                     preferredBricolerId
                 },
                 automation: automationSettings,
@@ -328,13 +333,13 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                         onClick={handleBack}
                         className="text-[16px] font-bold text-black underline underline-offset-4 active:scale-95 transition-all"
                     >
-                        {t({ en: 'Back', fr: 'Retour', ar: 'عودة' })}
+                        {t({ en: 'Back', fr: 'Retour' })}
                     </button>
                     <button
                         onClick={() => setViewMode('form')}
                         className="bg-[#2C2C2C] text-white px-10 py-4 rounded-[12px] text-[17px] font-bold active:scale-[0.98] transition-all"
                     >
-                        {t({ en: 'Next', fr: 'Suivant', ar: 'التالي' })}
+                        {t({ en: 'Next', fr: 'Suivant' })}
                     </button>
                 </div>
             </motion.div>
@@ -343,28 +348,32 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
 
     return (
         <div className="fixed inset-0 z-[10000] bg-white flex flex-col font-plus-jakarta">
-            {/* Header */}
-            <div className="px-6 py-4 flex justify-between items-center border-b border-neutral-100">
-                <button
-                    onClick={handleBack}
-                    className="px-4 py-2 rounded-full border border-neutral-200 text-[14px] font-bold hover:bg-neutral-50 active:scale-95 transition-all"
-                >
-                    {t({ en: 'Save & exit', fr: 'Enregistrer et quitter' })}
-                </button>
-                <button className="px-4 py-2 rounded-full border border-neutral-200 text-[14px] font-bold hover:bg-neutral-50 active:scale-95 transition-all">
-                    {t({ en: 'Questions?', fr: 'Des questions ?' })}
-                </button>
-            </div>
+            {stepIndex !== 1 && (
+                <div className="px-6 py-4 flex justify-between items-center border-b border-neutral-100 bg-white z-20">
+                    <button 
+                        onClick={handleBack} 
+                        className="px-4 py-2 rounded-full border border-neutral-200 text-[14px] font-bold hover:bg-neutral-50 active:scale-95 transition-all"
+                    >
+                        {t({ en: 'Save & exit', fr: 'Enregistrer et quitter' })}
+                    </button>
+                    <button className="px-4 py-2 rounded-full border border-neutral-200 text-[14px] font-bold hover:bg-neutral-50 active:scale-95 transition-all">
+                        {t({ en: 'Questions?', fr: 'Des questions ?' })}
+                    </button>
+                </div>
+            )}
 
             {/* Content */}
-            <div className="flex-1 overflow-y-auto px-6 py-10 overscroll-behavior-contain">
+            <div className={cn(
+                "flex-1 overflow-y-auto overscroll-behavior-contain",
+                stepIndex === 1 ? "p-0" : "px-6 py-10"
+            )}>
                 <AnimatePresence mode="wait">
                     <motion.div
                         key={stepIndex}
                         initial={{ opacity: 0, x: 20 }}
                         animate={{ opacity: 1, x: 0 }}
                         exit={{ opacity: 0, x: -20 }}
-                        className="space-y-8"
+                        className={cn("space-y-8", stepIndex === 1 && "h-full")}
                     >
                         {stepIndex === 0 && (
                             <div className="space-y-6">
@@ -426,43 +435,21 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                         )}
 
                         {stepIndex === 1 && (
-                            <div className="space-y-8">
-                                <div className="space-y-4">
-                                    <h2 className="text-[32px] font-bold text-black leading-tight tracking-tight">
-                                        {t({
-                                            en: 'Where is your place located?',
-                                            fr: 'Où est situé votre logement ?'
-                                        })}
-                                    </h2>
-                                    <p className="text-[16px] font-medium text-neutral-500 leading-relaxed">
-                                        {t({
-                                            en: 'We will only communicate your address after the reservation. Until then, travelers will see an approximate location.',
-                                            fr: 'Nous ne communiquerons votre adresse qu\'après la réservation. En attendant, les voyageurs verront un emplacement approximatif.'
-                                        })}
-                                    </p>
-                                </div>
-
-                                <div className="relative">
-                                    <div className="absolute left-4 top-1/2 -translate-y-1/2 text-black">
-                                        <Search size={20} />
-                                    </div>
-                                    <input
-                                        type="text"
-                                        placeholder={t({ en: 'Enter an address', fr: 'Saisir une adresse' })}
-                                        value={address}
-                                        onChange={(e) => setAddress(e.target.value)}
-                                        className="w-full bg-white border border-black rounded-full py-4 pl-12 pr-6 text-[16px] font-medium outline-none focus:border-black transition-all "
-                                    />
-                                </div>
-
-                                <button className="flex items-center gap-4 group">
-                                    <div className="w-12 h-12 rounded-xl bg-neutral-100 flex items-center justify-center text-black group-active:scale-90 transition-all">
-                                        <Navigation size={24} />
-                                    </div>
-                                    <span className="text-[17px] font-bold text-black">
-                                        {t({ en: 'Use current location', fr: 'Utiliser ma position actuelle' })}
-                                    </span>
-                                </button>
+                            <div className="absolute inset-0 z-[100] bg-white">
+                                <LocationPicker
+                                    mode="single"
+                                    serviceType="bricoler-base"
+                                    serviceIcon="🏠"
+                                    autoLocate={true}
+                                    onClose={() => setStepIndex(0)}
+                                    isInline={true}
+                                    onConfirm={({ pickup }) => {
+                                        setBaseLat(pickup.lat);
+                                        setBaseLng(pickup.lng);
+                                        setAddress(pickup.address);
+                                        setStepIndex(s => s + 1);
+                                    }}
+                                />
                             </div>
                         )}
 
@@ -556,33 +543,35 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
             </div>
 
             {/* Footer Actions */}
-            <div className="px-6 pt-2 pb-8 border-t border-neutral-100 flex flex-col gap-6">
-                {/* Segmented Progress Bar */}
-                <div className="flex gap-2 h-[4px] mt-2">
-                    {STEPS.map((_, idx) => (
-                        <div
-                            key={idx}
-                            className={`flex-1 rounded-full transition-all duration-500 ${idx <= stepIndex ? 'bg-black' : 'bg-neutral-200'}`}
-                        />
-                    ))}
-                </div>
+            {stepIndex !== 1 && (
+                <div className="px-6 py-6 border-t border-neutral-100 bg-white z-20">
+                    <div className="flex justify-between items-center mb-6">
+                        <button 
+                            onClick={handleBack} 
+                            className="text-[17px] font-bold text-black underline underline-offset-4"
+                        >
+                            {t({ en: 'Back', fr: 'Retour', ar: 'عودة' })}
+                        </button>
+                        <button 
+                            onClick={handleNext}
+                            disabled={isSubmitting}
+                            className="bg-[#2C2C2C] text-white px-10 py-4 rounded-[12px] text-[17px] font-bold active:scale-[0.98] transition-all disabled:opacity-50"
+                        >
+                            {isSubmitting ? 'Publication...' : (stepIndex === STEPS.length - 1 ? 'Publier l\'annonce' : 'Suivant')}
+                        </button>
+                    </div>
 
-                <div className="flex justify-between items-center">
-                    <button
-                        onClick={handleBack}
-                        className="text-[16px] font-bold text-black underline underline-offset-4 active:scale-95 transition-all"
-                    >
-                        {t({ en: 'Back', fr: 'Retour', ar: 'عودة' })}
-                    </button>
-                    <button
-                        onClick={handleNext}
-                        disabled={isSubmitting}
-                        className="bg-[#222222] text-white px-10 py-4 rounded-[12px] text-[16px] font-bold active:scale-[0.98] transition-all disabled:opacity-50"
-                    >
-                        {isSubmitting ? 'Publication...' : (stepIndex === STEPS.length - 1 ? 'Publier l\'annonce' : 'Suivant')}
-                    </button>
+                    {/* Segmented Progress Bar */}
+                    <div className="flex gap-2 h-[4px] mt-2">
+                        {STEPS.map((_, idx) => (
+                            <div
+                                key={idx}
+                                className={`flex-1 rounded-full transition-all duration-500 ${idx <= stepIndex ? 'bg-black' : 'bg-neutral-200'}`}
+                            />
+                        ))}
+                    </div>
                 </div>
-            </div>
+            )}
         </div>
     );
 };
