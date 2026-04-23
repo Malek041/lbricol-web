@@ -397,8 +397,8 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
 
             {/* Content */}
             <div className={cn(
-                "flex-1 overflow-y-auto overscroll-behavior-contain",
-                stepIndex === 1 ? "p-0" : "px-6 py-10"
+                "flex-1 overscroll-behavior-contain relative",
+                stepIndex === 1 ? "overflow-hidden" : "overflow-y-auto px-6 py-10"
             )}>
                 <AnimatePresence mode="wait">
                     <motion.div

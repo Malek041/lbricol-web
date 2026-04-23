@@ -403,7 +403,7 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
                     key="confirm-view"
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="flex flex-col gap-6 pb-10"
+                    className="flex flex-col gap-6 pb-24"
                   >
                     <h2 className="text-[24px] font-black text-black leading-tight tracking-tight hyphens-none">
                       {t({ en: 'Where does your Property locate?', fr: 'Où se situe votre bien ?', ar: 'أين يقع عقارك؟' })}
