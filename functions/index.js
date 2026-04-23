@@ -1,4 +1,4 @@
-const {onDocumentCreated} = require("firebase-functions/v2/firestore");
+const {onDocumentCreated, onDocumentUpdated, onDocumentDeleted} = require("firebase-functions/v2/firestore");
 const admin = require("firebase-admin");
 
 admin.initializeApp();
@@ -122,3 +122,45 @@ exports.onChatMessageCreated = onDocumentCreated("jobs/{jobId}/messages/{message
     }
   );
 });
+
+/**
+ * Audit Log for Bricoler Updates
+ * Tracks every change to a Bricoler profile to allow recovery from accidental overwrites.
+ */
+exports.auditBricolerUpdate = onDocumentUpdated("bricolers/{uid}", async (event) => {
+  const before = event.data.before.data();
+  const after = event.data.after.data();
+
+  // Create a log entry in a dedicated audit collection
+  await admin.firestore().collection("audit_logs").add({
+    targetId: event.params.uid,
+    collection: "bricolers",
+    action: "UPDATE",
+    before: before,
+    after: after,
+    timestamp: admin.firestore.FieldValue.serverTimestamp(),
+    metadata: {
+      timestamp: new Date().toISOString(),
+    }
+  });
+});
+
+/**
+ * Audit Log for Bricoler Deletions
+ * Tracks deletions to allow restoration of deleted profiles.
+ */
+exports.auditBricolerDeletion = onDocumentDeleted("bricolers/{uid}", async (event) => {
+  const deletedData = event.data.data();
+
+  await admin.firestore().collection("audit_logs").add({
+    targetId: event.params.uid,
+    collection: "bricolers",
+    action: "DELETE",
+    data: deletedData,
+    timestamp: admin.firestore.FieldValue.serverTimestamp(),
+    metadata: {
+      timestamp: new Date().toISOString(),
+    }
+  });
+});
+

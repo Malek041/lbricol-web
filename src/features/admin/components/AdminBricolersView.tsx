@@ -2,10 +2,10 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { collection, onSnapshot, doc, updateDoc, deleteDoc, query, where } from 'firebase/firestore';
+import { collection, onSnapshot, doc, updateDoc, deleteDoc, query, where, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useLanguage } from '@/context/LanguageContext';
-import { MapPin, Search, Shield, User as UserIcon, Star, Phone, Plus, Edit2, EyeOff, Eye, Trash2, Calendar, Save, Check } from 'lucide-react';
+import { MapPin, Search, Shield, User as UserIcon, Star, Phone, Plus, Edit2, EyeOff, Eye, Trash2, Calendar, Save, Check, Tooltip, RefreshCw } from 'lucide-react';
 import OnboardingPopup from '@/features/onboarding/components/OnboardingPopup';
 import AvailabilityCalendarView from '@/features/calendar/components/AvailabilityCalendarView';
 import { cn } from '@/lib/utils';
@@ -38,6 +38,54 @@ const AdminBricolersView: React.FC<AdminBricolersViewProps> = ({ t }) => {
   const toggleStatus = async (b: any, e: React.MouseEvent) => {
     e.stopPropagation();
     await updateDoc(doc(db, 'bricolers', b.id), { isActive: !b.isActive });
+  };
+
+  const repairProfile = async (b: any, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!confirm(`Attempt to repair profile for ${b.name}? This will look for backup data in the search index.`)) return;
+
+    try {
+      // 1. Search in city_index
+      const citiesToSearch = ['Marrakech', 'Casablanca', 'Rabat', 'Agadir', 'Tangier', 'Essaouira'];
+      let backupData: any = null;
+
+      for (const city of citiesToSearch) {
+        const indexDoc = await getDoc(doc(db, 'city_index', city, 'providers', b.id));
+        if (indexDoc.exists()) {
+          backupData = indexDoc.data();
+          break;
+        }
+      }
+
+      const repairData: any = {
+        isActive: true,
+        isBricoler: true,
+        lastRepairedAt: new Date().toISOString()
+      };
+
+      if (backupData) {
+        // Restore from city_index
+        repairData.services = Array.isArray(backupData.services) ? backupData.services : [];
+        repairData.rating = backupData.rating || 5.0;
+        repairData.numReviews = backupData.numReviews || 0;
+        repairData.completedJobs = backupData.completedJobs || 0;
+        if (backupData.bio) repairData.bio = backupData.bio;
+        if (backupData.city) repairData.city = backupData.city;
+        if (backupData.whatsapp) repairData.whatsappNumber = backupData.whatsapp;
+
+        await updateDoc(doc(db, 'bricolers', b.id), repairData);
+        alert('Profile repaired successfully from search index! Khadija should now be visible again.');
+      } else {
+        // Fallback repair: at least fix the data type and status
+        repairData.services = [];
+        repairData.rating = b.rating || 5.0;
+        await updateDoc(doc(db, 'bricolers', b.id), repairData);
+        alert('No backup found in search index. Profile status fixed and services reset to empty. Please edit profile manually.');
+      }
+    } catch (error) {
+      console.error('Repair failed:', error);
+      alert('Repair failed: ' + (error as Error).message);
+    }
   };
 
   useEffect(() => {
@@ -181,6 +229,7 @@ const AdminBricolersView: React.FC<AdminBricolersViewProps> = ({ t }) => {
                 setExpandedId={setExpandedId}
                 toggleStatus={toggleStatus}
                 handleDelete={handleDelete}
+                onRepair={repairProfile}
                 onEdit={() => { setEditingBricoler(b); setShowPopup(true); }}
                 onSchedule={() => { setSelectedBricolerForSchedule(b); setIsAvailabilityOpen(true); }}
                 onViewProfile={() => { setSelectedBricolerForProfile(b); setIsProfileOpen(true); }}
@@ -238,10 +287,13 @@ const AdminBricolersView: React.FC<AdminBricolersViewProps> = ({ t }) => {
   );
 };
 
-const BricolerCard = ({ b, t, expandedId, setExpandedId, toggleStatus, handleDelete, onEdit, onSchedule, onViewProfile }: any) => {
+const BricolerCard = ({ b, t, expandedId, setExpandedId, toggleStatus, handleDelete, onRepair, onEdit, onSchedule, onViewProfile }: any) => {
   const isClaimed = !!b.uid;
   const jobs = b.numReviews || b.completedJobs || 0;
   const rating = jobs === 0 ? 0.0 : (typeof b.rating === 'number' ? b.rating : 0.0);
+
+  // Check for corruption: services not an array or missing critical fields
+  const isCorrupted = !Array.isArray(b.services) || (isClaimed && !b.isActive && jobs === 0);
 
   return (
     <motion.div
@@ -276,7 +328,8 @@ const BricolerCard = ({ b, t, expandedId, setExpandedId, toggleStatus, handleDel
               <div className="flex items-center gap-1 text-[11px] text-neutral-500 mt-0.5">
                 <MapPin size={11} />
                 <span>{b.city || 'Unknown'}</span>
-                {!b.isActive && <span className="text-red-500 font-bold ml-2">(Unlisted)</span>}
+                {!b.isActive && !isCorrupted && <span className="text-red-500 font-bold ml-2">(Unlisted)</span>}
+                {isCorrupted && <span className="text-amber-600 font-black ml-2 animate-pulse">(CORRUPTED DATA)</span>}
               </div>
             </div>
             <div className="flex flex-col items-end gap-1">
@@ -329,7 +382,11 @@ const BricolerCard = ({ b, t, expandedId, setExpandedId, toggleStatus, handleDel
               <div className="flex items-center gap-2">
                 <ActionBtn icon={<UserIcon size={16} />} label="Profile" onClick={onViewProfile} />
                 <ActionBtn icon={<Edit2 size={16} />} label="Edit" onClick={onEdit} />
-                <ActionBtn icon={<Calendar size={16} />} label="Dispo" onClick={onSchedule} />
+                {isCorrupted ? (
+                  <ActionBtn icon={<RefreshCw size={16} className="text-amber-500" />} label="Repair" onClick={(e: any) => onRepair(b, e)} />
+                ) : (
+                  <ActionBtn icon={<Calendar size={16} />} label="Dispo" onClick={onSchedule} />
+                )}
                 <ActionBtn icon={b.isActive ? <EyeOff size={16} /> : <Eye size={16} />} label={b.isActive ? 'Unlist' : 'List'} onClick={(e: any) => toggleStatus(b, e)} />
                 <ActionBtn icon={<Trash2 size={16} />} label="Delete" onClick={(e: any) => handleDelete(b.id, e)} danger />
               </div>

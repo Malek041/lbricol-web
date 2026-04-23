@@ -6,8 +6,11 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
     X, ChevronLeft, Home, Building, Building2, MapPin,
     Wifi, Tv, Pocket as Kitchen, Wind as Ac, Waves as Pool,
-    Check, ChevronRight, Save, ShieldCheck
+    Check, ChevronRight, Save, ShieldCheck, Warehouse, Coffee, Ship, Tent, Truck, Castle,
+    Hotel as HotelIcon, Palmtree, Bed, Landmark, Search, Navigation
 } from 'lucide-react';
+import Lottie from 'lottie-react';
+import homeAnimation from '../../../../public/Animated icons/system-regular-41-home-hover-pinch.json';
 import { useLanguage } from '@/context/LanguageContext';
 import { db, auth } from '@/lib/firebase';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
@@ -21,15 +24,23 @@ interface PropertySetupWizardProps {
 
 const STEPS = [
     { id: 'type', title: 'Quel type de logement?' },
-    { id: 'specs', title: 'Quelques précisions' },
     { id: 'location', title: 'Où se situe-t-il?' },
+    { id: 'specs', title: 'Quelques précisions' },
     { id: 'automation', title: 'Paramètres d\'automatisation' }
 ];
 
 const PROPERTY_TYPES = [
-    { id: 'house', label: 'Maison', icon: Home },
-    { id: 'apartment', label: 'Appartement', icon: Building },
-    { id: 'villa', label: 'Villa', icon: Building2 },
+    { id: 'house', label: { en: 'House', fr: 'Maison' }, icon: Home },
+    { id: 'apartment', label: { en: 'Apartment', fr: 'Appartement' }, icon: Building },
+    { id: 'guesthouse', label: { en: 'Guesthouse', fr: 'Maison d\'hôtes/Gîte rural' }, icon: Building2 },
+    { id: 'hotel', label: { en: 'Hotel', fr: 'Hôtel' }, icon: HotelIcon },
+    { id: 'riad', label: { en: 'Riad', fr: 'Riad' }, icon: Landmark },
+    { id: 'barn', label: { en: 'Barn', fr: 'Grange' }, icon: Warehouse },
+    { id: 'bed_breakfast', label: { en: 'Room/B&B', fr: 'Chambre/B&B' }, icon: Bed },
+    { id: 'boat', label: { en: 'Boat', fr: 'Bateau' }, icon: Ship },
+    { id: 'cabin', label: { en: 'Cabin', fr: 'Cabane' }, icon: Tent },
+    { id: 'camper', label: { en: 'Camper', fr: 'Caravane ou camping-car' }, icon: Truck },
+    { id: 'casa_particular', label: { en: 'Casa particular', fr: 'Casa particular' }, icon: Castle },
 ];
 
 const AMENITIES = [
@@ -172,7 +183,7 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
             <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                className="fixed inset-0 z-[10000] bg-white flex flex-col"
+                className="fixed inset-0 z-[10000] bg-white flex flex-col font-plus-jakarta"
             >
                 {/* Back arrow */}
                 <div className="px-5 pt-5 pb-2">
@@ -250,7 +261,7 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
             <motion.div
                 initial={{ opacity: 0, x: 50 }}
                 animate={{ opacity: 1, x: 0 }}
-                className="fixed inset-0 z-[10000] bg-white flex flex-col"
+                className="fixed inset-0 z-[10000] bg-white flex flex-col font-plus-jakarta"
             >
                 {/* Top Buttons Bar */}
                 <div className="px-6 pt-6 pb-2 flex justify-between items-center">
@@ -268,36 +279,26 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                 </div>
 
                 <div className="flex-1 overflow-y-auto px-6 pt-8 pb-32 overscroll-behavior-contain">
-                    <div className="relative w-full aspect-square mb-12 flex items-center justify-center">
-                        {[1, 2, 3].map((card, i) => (
-                            <motion.div
-                                key={card}
-                                initial={{ opacity: 0, scale: 0.8, rotate: 0, y: 50 }}
-                                animate={{
-                                    opacity: 1,
-                                    scale: 1,
-                                    rotate: i === 0 ? -8 : i === 2 ? 8 : 0,
-                                    y: 0,
-                                    x: i === 0 ? -20 : i === 2 ? 20 : 0
-                                }}
-                                transition={{
-                                    type: "spring",
-                                    stiffness: 100,
-                                    damping: 15,
-                                    delay: 0.2 + (i * 0.1)
-                                }}
-                                className="absolute w-[85%] h-[85%] rounded-[40px] shadow-2xl overflow-hidden bg-white border border-neutral-100"
-                            >
-                                <Image
-                                    src="/Images/PropertiesListingView/FirstStep/ChatGPT Image Apr 22, 2026, 10_39_44 PM.png"
-                                    alt="Step 1"
-                                    fill
-                                    className="object-cover"
-                                    priority
-                                />
-                            </motion.div>
-                        ))}
-                    </div>
+                    <motion.div
+                        animate={{
+                            y: [0, -12, 0],
+                        }}
+                        transition={{
+                            duration: 4,
+                            repeat: Infinity,
+                            ease: "easeInOut"
+                        }}
+                        className="w-[80%] aspect-square mb-12 rounded-[32px] overflow-hidden mx-auto"
+                    >
+                        <Image
+                            src="/Images/PropertiesListingView/FirstStep/ChatGPT Image Apr 22, 2026, 10_39_44 PM-Photoroom.png"
+                            alt="Step 1"
+                            width={1000}
+                            height={1000}
+                            className="w-full h-full object-cover"
+                            priority
+                        />
+                    </motion.div>
 
                     <motion.div
                         initial={{ opacity: 0, y: 30 }}
@@ -308,7 +309,7 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                         <span className="text-[18px] font-bold text-black">
                             {t({ en: 'Step 1', fr: 'Étape 1', ar: 'الخطوة 1' })}
                         </span>
-                        <h2 className="text-[36px] font-black text-black leading-[1.1] tracking-tight">
+                        <h2 className="text-[30px] font-black text-black leading-[1.1] tracking-tight">
                             {t({ en: 'Tell us about your property', fr: 'Parlez-nous de votre logement', ar: 'أخبرنا عن مسكنك' })}
                         </h2>
                         <p className="text-[17px] text-neutral-500 leading-relaxed font-medium">
@@ -331,7 +332,7 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                     </button>
                     <button
                         onClick={() => setViewMode('form')}
-                        className="bg-[#2C2C2C] text-white px-10 py-4 rounded-2xl text-[17px] font-bold active:scale-[0.98] transition-all shadow-lg"
+                        className="bg-[#2C2C2C] text-white px-10 py-4 rounded-[12px] text-[17px] font-bold active:scale-[0.98] transition-all"
                     >
                         {t({ en: 'Next', fr: 'Suivant', ar: 'التالي' })}
                     </button>
@@ -341,19 +342,17 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
     }
 
     return (
-        <div className="fixed inset-0 z-[10000] bg-white flex flex-col">
+        <div className="fixed inset-0 z-[10000] bg-white flex flex-col font-plus-jakarta">
             {/* Header */}
             <div className="px-6 py-4 flex justify-between items-center border-b border-neutral-100">
-                <button onClick={handleBack} className="p-2 -ml-2 rounded-full hover:bg-neutral-50 active:scale-90 transition-all">
-                    <ChevronLeft size={24} />
+                <button
+                    onClick={handleBack}
+                    className="px-4 py-2 rounded-full border border-neutral-200 text-[14px] font-bold hover:bg-neutral-50 active:scale-95 transition-all"
+                >
+                    {t({ en: 'Save & exit', fr: 'Enregistrer et quitter' })}
                 </button>
-                <div className="flex-1 flex justify-center gap-1">
-                    {STEPS.map((_, idx) => (
-                        <div key={idx} className={`h-1 rounded-full transition-all duration-300 ${idx === stepIndex ? 'w-8 bg-black' : 'w-2 bg-neutral-200'}`} />
-                    ))}
-                </div>
-                <button onClick={onClose} className="p-2 -mr-2 rounded-full hover:bg-neutral-50 active:scale-90 transition-all">
-                    <X size={24} />
+                <button className="px-4 py-2 rounded-full border border-neutral-200 text-[14px] font-bold hover:bg-neutral-50 active:scale-95 transition-all">
+                    {t({ en: 'Questions?', fr: 'Des questions ?' })}
                 </button>
             </div>
 
@@ -367,40 +366,107 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                         exit={{ opacity: 0, x: -20 }}
                         className="space-y-8"
                     >
-                        <h2 className="text-[28px] font-bold text-black leading-tight">{STEPS[stepIndex].title}</h2>
-
                         {stepIndex === 0 && (
-                            <div className="space-y-4">
-                                {PROPERTY_TYPES.map((pt) => {
-                                    const Icon = pt.icon;
-                                    const isActive = type === pt.id;
-                                    return (
-                                        <button
-                                            key={pt.id}
-                                            onClick={() => setType(pt.id)}
-                                            className={`w-full flex items-center gap-4 p-6 rounded-[24px] border-2 transition-all ${isActive ? 'border-black bg-neutral-50 shadow-md scale-[1.02]' : 'border-neutral-100'}`}
-                                        >
-                                            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${isActive ? 'bg-black text-white' : 'bg-neutral-50 text-neutral-400'}`}>
-                                                <Icon size={24} />
-                                            </div>
-                                            <span className={`text-[18px] font-bold ${isActive ? 'text-black' : 'text-neutral-500'}`}>{pt.label}</span>
-                                        </button>
-                                    );
-                                })}
+                            <div className="space-y-6">
+                                <div className="space-y-2">
+                                    <h2 className="text-[26px] font-bold text-black leading-tight tracking-tight">
+                                        {t({
+                                            en: 'What type of place?',
+                                            fr: 'Quel type de logement?'
+                                        })}
+                                    </h2>
+                                    <p className="text-[15px] font-medium text-neutral-600 leading-snug">
+                                        {t({
+                                            en: 'From the following propositions, which one best describes your accommodation?',
+                                            fr: 'Parmi les propositions suivantes, laquelle décrit le mieux votre logement ?'
+                                        })}
+                                    </p>
+                                </div>
+                                <div className="grid grid-cols-2 gap-3">
+                                    {PROPERTY_TYPES.map((pt) => {
+                                        const Icon = pt.icon;
+                                        const isActive = type === pt.id;
+                                        const isMaison = pt.id === 'house';
+
+                                        return (
+                                            <button
+                                                key={pt.id}
+                                                onClick={() => setType(pt.id)}
+                                                className={`flex flex-col items-start justify-between p-4 rounded-xl border transition-all h-[120px] ${isActive ? 'border-black ring-1 ring-black bg-neutral-50' : 'border-neutral-200 hover:border-black'}`}
+                                            >
+                                                <div className="w-8 h-8 flex items-center justify-center">
+                                                    {isMaison && isActive ? (
+                                                        <Lottie
+                                                            animationData={homeAnimation}
+                                                            loop={false}
+                                                            className="w-12 h-12 -mt-2 -ml-2"
+                                                        />
+                                                    ) : (
+                                                        <Icon size={32} className="text-black" />
+                                                    )}
+                                                </div>
+                                                <span className={`text-[15px] font-bold text-left leading-tight ${isActive ? 'text-black' : 'text-neutral-700'}`}>
+                                                    {t(pt.label)}
+                                                </span>
+                                            </button>
+                                        );
+                                    })}
+                                </div>
                                 <div className="pt-4">
-                                    <label className="text-[14px] font-bold text-neutral-400 uppercase tracking-widest pl-2">Nom de l'annonce</label>
+                                    <label className="text-[12px] font-bold text-neutral-400 uppercase tracking-widest pl-1 mb-2 block">Nom de l'annonce</label>
                                     <input
                                         type="text"
                                         placeholder="Ex: Villa avec vue sur mer"
                                         value={name}
                                         onChange={(e) => setName(e.target.value)}
-                                        className="w-full bg-neutral-50 border-none rounded-2xl p-5 mt-2 text-[16px] font-bold outline-none ring-2 ring-transparent focus:ring-black transition-all"
+                                        className="w-full bg-white border border-neutral-300 rounded-xl p-4 text-[16px] font-medium outline-none focus:border-black transition-all"
                                     />
                                 </div>
                             </div>
                         )}
 
                         {stepIndex === 1 && (
+                            <div className="space-y-8">
+                                <div className="space-y-4">
+                                    <h2 className="text-[32px] font-bold text-black leading-tight tracking-tight">
+                                        {t({
+                                            en: 'Where is your place located?',
+                                            fr: 'Où est situé votre logement ?'
+                                        })}
+                                    </h2>
+                                    <p className="text-[16px] font-medium text-neutral-500 leading-relaxed">
+                                        {t({
+                                            en: 'We will only communicate your address after the reservation. Until then, travelers will see an approximate location.',
+                                            fr: 'Nous ne communiquerons votre adresse qu\'après la réservation. En attendant, les voyageurs verront un emplacement approximatif.'
+                                        })}
+                                    </p>
+                                </div>
+
+                                <div className="relative">
+                                    <div className="absolute left-4 top-1/2 -translate-y-1/2 text-black">
+                                        <Search size={20} />
+                                    </div>
+                                    <input
+                                        type="text"
+                                        placeholder={t({ en: 'Enter an address', fr: 'Saisir une adresse' })}
+                                        value={address}
+                                        onChange={(e) => setAddress(e.target.value)}
+                                        className="w-full bg-white border border-black rounded-full py-4 pl-12 pr-6 text-[16px] font-medium outline-none focus:border-black transition-all "
+                                    />
+                                </div>
+
+                                <button className="flex items-center gap-4 group">
+                                    <div className="w-12 h-12 rounded-xl bg-neutral-100 flex items-center justify-center text-black group-active:scale-90 transition-all">
+                                        <Navigation size={24} />
+                                    </div>
+                                    <span className="text-[17px] font-bold text-black">
+                                        {t({ en: 'Use current location', fr: 'Utiliser ma position actuelle' })}
+                                    </span>
+                                </button>
+                            </div>
+                        )}
+
+                        {stepIndex === 2 && (
                             <div className="space-y-10">
                                 <div>
                                     <div className="flex justify-between items-center mb-6">
@@ -431,25 +497,6 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                                             );
                                         })}
                                     </div>
-                                </div>
-                            </div>
-                        )}
-
-                        {stepIndex === 2 && (
-                            <div className="space-y-6">
-                                <div className="w-full aspect-video bg-neutral-100 rounded-[32px] flex flex-col items-center justify-center p-8 text-center border border-dashed border-neutral-300">
-                                    <MapPin size={48} className="text-neutral-300 mb-4" />
-                                    <p className="text-[14px] text-neutral-500 max-w-[200px]">L'intégration de la carte sera affichée ici.</p>
-                                </div>
-                                <div>
-                                    <label className="text-[14px] font-bold text-neutral-400 uppercase tracking-widest pl-2">Adresse de la propriété</label>
-                                    <input
-                                        type="text"
-                                        placeholder="Ex: 12 Rue des Oliviers, Casablanca"
-                                        value={address}
-                                        onChange={(e) => setAddress(e.target.value)}
-                                        className="w-full bg-neutral-50 border-none rounded-2xl p-5 mt-2 text-[16px] font-bold outline-none ring-2 ring-transparent focus:ring-black transition-all shadow-sm"
-                                    />
                                 </div>
                             </div>
                         )}
@@ -509,15 +556,32 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
             </div>
 
             {/* Footer Actions */}
-            <div className="p-6 border-t border-neutral-100 pb-10">
-                <button
-                    onClick={handleNext}
-                    disabled={isSubmitting}
-                    className="w-full bg-black text-white py-5 rounded-2xl font-bold text-[17px] flex items-center justify-center gap-2 shadow-xl active:scale-[0.98] transition-all disabled:opacity-50"
-                >
-                    {isSubmitting ? 'Publication...' : (stepIndex === STEPS.length - 1 ? 'Publier l\'annonce' : 'Continuer')}
-                    {!isSubmitting && stepIndex < STEPS.length - 1 && <ChevronRight size={20} />}
-                </button>
+            <div className="px-6 pt-2 pb-8 border-t border-neutral-100 flex flex-col gap-6">
+                {/* Segmented Progress Bar */}
+                <div className="flex gap-2 h-[4px] mt-2">
+                    {STEPS.map((_, idx) => (
+                        <div
+                            key={idx}
+                            className={`flex-1 rounded-full transition-all duration-500 ${idx <= stepIndex ? 'bg-black' : 'bg-neutral-200'}`}
+                        />
+                    ))}
+                </div>
+
+                <div className="flex justify-between items-center">
+                    <button
+                        onClick={handleBack}
+                        className="text-[16px] font-bold text-black underline underline-offset-4 active:scale-95 transition-all"
+                    >
+                        {t({ en: 'Back', fr: 'Retour', ar: 'عودة' })}
+                    </button>
+                    <button
+                        onClick={handleNext}
+                        disabled={isSubmitting}
+                        className="bg-[#222222] text-white px-10 py-4 rounded-[12px] text-[16px] font-bold active:scale-[0.98] transition-all disabled:opacity-50"
+                    >
+                        {isSubmitting ? 'Publication...' : (stepIndex === STEPS.length - 1 ? 'Publier l\'annonce' : 'Suivant')}
+                    </button>
+                </div>
             </div>
         </div>
     );
