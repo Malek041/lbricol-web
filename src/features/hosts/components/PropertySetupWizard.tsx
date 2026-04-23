@@ -13,6 +13,7 @@ import Lottie from 'lottie-react';
 import homeAnimation from '../../../../public/Animated icons/system-regular-41-home-hover-pinch.json';
 import LocationPicker from '@/components/location-picker/LocationPicker';
 import { useLanguage } from '@/context/LanguageContext';
+import { cn } from '@/lib/utils';
 import { db, auth } from '@/lib/firebase';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { useToast } from '@/context/ToastContext';
