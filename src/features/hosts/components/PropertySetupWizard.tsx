@@ -351,8 +351,8 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
         <div className="fixed inset-0 z-[10000] bg-white flex flex-col font-plus-jakarta">
             {stepIndex !== 1 && (
                 <div className="px-6 py-4 flex justify-between items-center border-b border-neutral-100 bg-white z-20">
-                    <button 
-                        onClick={handleBack} 
+                    <button
+                        onClick={handleBack}
                         className="px-4 py-2 rounded-full border border-neutral-200 text-[14px] font-bold hover:bg-neutral-50 active:scale-95 transition-all"
                     >
                         {t({ en: 'Save & exit', fr: 'Enregistrer et quitter' })}
@@ -547,13 +547,13 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
             {stepIndex !== 1 && (
                 <div className="px-6 py-6 border-t border-neutral-100 bg-white z-20">
                     <div className="flex justify-between items-center mb-6">
-                        <button 
-                            onClick={handleBack} 
+                        <button
+                            onClick={handleBack}
                             className="text-[17px] font-bold text-black underline underline-offset-4"
                         >
                             {t({ en: 'Back', fr: 'Retour', ar: 'عودة' })}
                         </button>
-                        <button 
+                        <button
                             onClick={handleNext}
                             disabled={isSubmitting}
                             className="bg-[#2C2C2C] text-white px-10 py-4 rounded-[12px] text-[17px] font-bold active:scale-[0.98] transition-all disabled:opacity-50"

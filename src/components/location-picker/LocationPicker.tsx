@@ -227,7 +227,7 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
       <div
         className={cn(
           "relative bg-neutral-100 overflow-hidden transition-all duration-500 ease-in-out z-0 shrink-0",
-          isInteracting || showSearchInput ? 'h-[65%]' : (radiusView ? 'h-[45%]' : (isBricolerBase && !showSearchInput ? 'h-[48%]' : 'h-[42%]'))
+          isInteracting || showSearchInput ? 'h-[65%]' : (radiusView ? 'h-[45%]' : (isBricolerBase && !showSearchInput ? 'h-[55%]' : 'h-[42%]'))
         )}
       >
         {/* Full-screen under-layer map -> Now dynamically matches flex height */}
@@ -434,7 +434,7 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
                      onClick={handleConfirmPoint}
                      disabled={isGeocoding}
                      className={cn(
-                       "w-full h-15 text-white rounded-full font-black text-[18px] active:scale-95 transition-all shadow-lg flex items-center justify-center gap-3",
+                       "w-full h-15 text-white rounded-full font-black text-[18px] active:scale-95 transition-all flex items-center justify-center gap-3",
                        isGeocoding ? 'bg-neutral-300 cursor-not-allowed shadow-none' : 'bg-[#01A083]'
                      )}
                    >
