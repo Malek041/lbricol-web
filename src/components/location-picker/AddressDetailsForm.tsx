@@ -35,7 +35,14 @@ const AddressDetailsForm: React.FC<AddressDetailsFormProps> = ({ initialData, on
   });
 
   const [isPickingEntrance, setIsPickingEntrance] = useState(false);
-  const [isMarked, setIsMarked] = useState(true); // Default to true as per Pic 2 starting state
+  const [isMarked, setIsMarked] = useState(true); 
+  const [canInteractWithMap, setCanInteractWithMap] = useState(false);
+
+  // Prevent click-through from previous screen
+  useEffect(() => {
+    const timer = setTimeout(() => setCanInteractWithMap(true), 500);
+    return () => clearTimeout(timer);
+  }, []);
 
   const handleSave = () => {
     onSave({
@@ -135,27 +142,14 @@ const AddressDetailsForm: React.FC<AddressDetailsFormProps> = ({ initialData, on
               showCenterPin={true}
             />
             
-            {/* Absolute Address Card Overlapping Map */}
-            <div className="absolute top-4 left-4 right-4 z-40">
-              <div className="p-4 bg-white/95 backdrop-blur-md border border-neutral-100 rounded-[20px] shadow-lg flex items-center gap-3">
-                <div className="w-10 h-10 bg-black rounded-xl flex items-center justify-center text-white shrink-0">
-                  <Building2 size={20} />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-[14px] font-bold text-black line-clamp-1 leading-tight">
-                    {initialData.address}
-                  </p>
-                  <p className="text-[12px] text-neutral-500 mt-0.5 font-medium line-clamp-1">
-                    {formData.buildingName || t({ en: 'Your Property', fr: 'Votre logement', ar: 'عقارك' })}
-                  </p>
-                </div>
-              </div>
-            </div>
-            
-            <button 
-              onClick={() => setIsPickingEntrance(true)}
-              className="absolute inset-0 z-30 active:bg-black/5 transition-colors"
-            />
+            {/* Click overlay - only active after transition delay */}
+            {canInteractWithMap && (
+              <button 
+                onClick={() => setIsPickingEntrance(true)}
+                className="absolute inset-0 z-30 active:bg-black/5 transition-colors cursor-pointer"
+                aria-label="Refine entrance location"
+              />
+            )}
           </div>
         </div>
 
@@ -225,7 +219,7 @@ const AddressDetailsForm: React.FC<AddressDetailsFormProps> = ({ initialData, on
       </div>
 
       {/* Sticky Save Button */}
-      <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t border-[#F3F4F6] z-20">
+      <div className="fixed bottom-0 left-0 right-0 p-5 pb-8 bg-white border-t border-[#F3F4F6] z-[10002] shadow-[0_-4px_20px_rgba(0,0,0,0.05)]">
         <button
           onClick={handleSave}
           disabled={!formData.buildingName || !isMarked}

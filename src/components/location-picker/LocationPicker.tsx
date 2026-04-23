@@ -321,7 +321,7 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
           </button>
         )}
 
-        <div className="flex-1 bg-white rounded-t-[32px] shadow-[0_-8px_30px_rgba(0,0,0,0.08)] px-5 py-8 pb-32 flex flex-col overflow-y-auto no-scrollbar">
+        <div className="flex-1 bg-white rounded-t-[32px] shadow-[0_-8px_30px_rgba(0,0,0,0.08)] px-5 py-8 pb-40 flex flex-col overflow-y-auto no-scrollbar">
 
           {sheetLoading ? (
             <div className="flex flex-col gap-6 animate-pulse">
@@ -403,7 +403,7 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
                     key="confirm-view"
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="flex flex-col gap-6 pb-24"
+                    className="flex flex-col gap-6 pb-20"
                   >
                     <h2 className="text-[24px] font-black text-black leading-tight tracking-tight hyphens-none">
                       {t({ en: 'Where does your Property locate?', fr: 'Où se situe votre bien ?', ar: 'أين يقع عقارك؟' })}
@@ -450,6 +450,8 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
                     >
                       {t({ en: 'Set Another address', fr: 'Définir une autre adresse', ar: 'تحديد عنوان آخر' })}
                     </button>
+                    
+                    <div className="h-20 w-full" /> {/* Bottom safe area spacer */}
                   </motion.div>
                 )}
               </AnimatePresence>
