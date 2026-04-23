@@ -321,19 +321,11 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
           </button>
         )}
 
-        <div className="flex-1 bg-white rounded-t-[32px] shadow-[0_-8px_30px_rgba(0,0,0,0.08)] px-5 py-8 pb-12 flex flex-col overflow-y-auto no-scrollbar">
+        <div className="flex-1 bg-white rounded-t-[32px] shadow-[0_-8px_30px_rgba(0,0,0,0.08)] px-5 py-8 pb-32 flex flex-col overflow-y-auto no-scrollbar">
 
           {sheetLoading ? (
             <div className="flex flex-col gap-6 animate-pulse">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-neutral-100 rounded-2xl" />
-                <div className="flex-1 space-y-2">
-                  <div className="h-4 bg-neutral-100 rounded w-3/4" />
-                  <div className="h-3 bg-neutral-100 rounded w-1/2" />
-                </div>
-              </div>
-              <div className="h-15 bg-neutral-100 rounded-full w-full" />
-              <div className="h-4 bg-neutral-100 rounded w-1/3 mx-auto" />
+              <div className="items-center gap-4 hidden"> {/* Hidden original placeholder logic */} </div>
             </div>
           ) : showSearchInput ? (
             <motion.div
@@ -411,9 +403,9 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
                     key="confirm-view"
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="flex flex-col gap-6"
+                    className="flex flex-col gap-6 pb-10"
                   >
-                    <h2 className="text-[24px] font-black text-black leading-tight tracking-tight">
+                    <h2 className="text-[24px] font-black text-black leading-tight tracking-tight hyphens-none">
                       {t({ en: 'Where does your Property locate?', fr: 'Où se situe votre bien ?', ar: 'أين يقع عقارك؟' })}
                     </h2>
 
