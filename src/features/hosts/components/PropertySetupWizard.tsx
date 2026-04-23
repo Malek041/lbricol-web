@@ -411,7 +411,7 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                         {stepIndex === 0 && (
                             <div className="space-y-6">
                                 <div className="space-y-2">
-                                    <h2 className="text-[26px] font-bold text-black leading-tight tracking-tight hyphens-none">
+                                    <h2 className="text-[26px] font-bold text-black leading-tight tracking-tight hyphens-none break-normal">
                                         {t({
                                             en: 'What type of place?',
                                             fr: 'Quel type de logement?'
@@ -489,7 +489,7 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                         {stepIndex === 2 && (
                             <div className="space-y-10">
                                 <div className="space-y-4">
-                                    <h2 className="text-[32px] font-black text-black leading-[1.1] tracking-tight hyphens-none">
+                                    <h2 className="text-[32px] font-black text-black leading-[1.1] tracking-tight hyphens-none break-normal [hyphens:none]">
                                         {t({
                                             en: 'Give the main information about your accommodation',
                                             fr: 'Donnez les informations principales concernant votre logement',
