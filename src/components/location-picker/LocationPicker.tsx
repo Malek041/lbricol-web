@@ -306,7 +306,7 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
       </div>
 
       {/* 2. Bottom Sheet Area */}
-      <div className="flex-1 flex flex-col relative z-10 -mt-8 min-h-0">
+      <div className="flex-1 flex flex-col relative z-10 -mt-30 min-h-0">
         {/* New Locator Button above sheet */}
         {!sheetLoading && (
           <button
@@ -316,12 +316,12 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
             {isLocating ? (
               <Loader2 size={24} className="animate-spin" />
             ) : (
-              <Navigation size={24} className="fill-black" />
+              <Navigation size={24} className="fill-[#2C2C2C]" />
             )}
           </button>
         )}
 
-        <div className="flex-1 bg-white rounded-t-[32px] shadow-[0_-8px_30px_rgba(0,0,0,0.08)] px-5 py-8 pb-12 flex flex-col overflow-y-auto no-scrollbar">
+        <div className="flex-1 bg-white  shadow-[0_-8px_30px_rgba(0,0,0,0.08)] px-5 py-8  flex flex-col overflow-y-auto no-scrollbar">
 
           {sheetLoading ? (
             <div className="flex flex-col gap-6 animate-pulse">
@@ -405,7 +405,7 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
                     animate={{ opacity: 1, y: 0 }}
                     className="flex flex-col gap-6 pb-6"
                   >
-                    <h2 className="text-[24px] font-black text-black leading-tight tracking-tight hyphens-none">
+                    <h2 className="text-[24px] font-black text-black leading-tight tracking-tight">
                       {t({ en: 'Where does your Property locate?', fr: 'Où se situe votre bien ?', ar: 'أين يقع عقارك؟' })}
                     </h2>
 
@@ -432,7 +432,7 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
                       disabled={isGeocoding}
                       className={cn(
                         "w-full h-15 text-white rounded-[15px] font-black text-[18px] active:scale-95 transition-all flex items-center justify-center gap-3",
-                        isGeocoding ? 'bg-neutral-300 shadow-none' : 'bg-black'
+                        isGeocoding ? 'bg-neutral-300 shadow-none' : 'bg-[#2C2C2C]'
                       )}
                     >
                       {isGeocoding ? (
@@ -446,10 +446,11 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
                     </button>
                     <button
                       onClick={() => setShowSearchInput(true)}
-                      className="w-full mt-2 text-neutral-500 font-bold text-[17px] transition-all"
+                      className="w-full mt-1 text-[#2C2C2C] font-bold text-[17px] transition-all"
                     >
                       {t({ en: 'Set Another address', fr: 'Définir une autre adresse', ar: 'تحديد عنوان آخر' })}
                     </button>
+                  </motion.div>
                 )}
               </AnimatePresence>
             </div>

@@ -45,11 +45,14 @@ html[lang="ar"] h6 {
   letter-spacing: 0;
 }
 
-/* Allow normal wrapping first so narrow screens reflow layout instead of splitting words. */
-:where(h1, h2, h3, h4, h5, h6, p, span, a, button, label, li) {
-  overflow-wrap: break-word;
-  word-break: normal;
-  hyphens: auto;
+/* Global rule to prevent automatic word splitting/hyphenation across the app */
+html, body, div, span, h1, h2, h3, h4, h5, h6, p, a, button, label, li, input, textarea {
+  overflow-wrap: normal !important;
+  word-break: normal !important;
+  hyphens: none !important;
+  -webkit-hyphens: none !important;
+  -moz-hyphens: none !important;
+  -ms-hyphens: none !important;
 }
 
 :where(button, input, textarea, select) {

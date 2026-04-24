@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Building2, X, CheckCircle2 } from 'lucide-react';
+import { ArrowLeft, Building2, X, CheckCircle2, MapPin } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import dynamic from 'next/dynamic';
 import { LocationPoint, SavedAddress, AddressLabel } from './types';
 import EntrancePicker from './EntrancePicker';
@@ -35,7 +36,7 @@ const AddressDetailsForm: React.FC<AddressDetailsFormProps> = ({ initialData, on
   });
 
   const [isPickingEntrance, setIsPickingEntrance] = useState(false);
-  const [isMarked, setIsMarked] = useState(true); 
+  const [isMarked, setIsMarked] = useState(true);
   const [canInteractWithMap, setCanInteractWithMap] = useState(false);
 
   // Prevent click-through from previous screen
@@ -73,11 +74,11 @@ const AddressDetailsForm: React.FC<AddressDetailsFormProps> = ({ initialData, on
           <h3 className="text-[20px] font-black text-black mb-6">
             {t({ en: 'Confirm address details', fr: "Confirmer les détails de l'adresse", ar: 'تأكيد تفاصيل العنوان' })}
           </h3>
-          
+
           <div className="space-y-4">
             {/* Building Name */}
             <div className="relative group">
-              <div className="bg-[#F9FAFB] border border-transparent focus-within:border-black focus-within:bg-white rounded-[12px] h-14 transition-all relative">
+              <div className="border border-black focus-within:border-black focus-within:bg-white rounded-[12px] h-16 transition-all relative">
                 <input
                   type="text"
                   value={formData.buildingName}
@@ -85,7 +86,7 @@ const AddressDetailsForm: React.FC<AddressDetailsFormProps> = ({ initialData, on
                   placeholder="e.g. Jardin des Douars"
                   className="w-full h-full px-4 pt-5 pb-1 bg-transparent outline-none text-[15px] font-medium placeholder:text-neutral-300"
                 />
-                <label className="absolute left-4 top-1.5 text-[11px] font-bold transition-all pointer-events-none text-[#2C2C2C]">
+                <label className="absolute left-4 top-1.5 text-[15px] font-medium transition-all pointer-events-none text-[#2C2C2C]">
                   {t({ en: 'Name of your property', fr: 'Nom de votre propriété', ar: 'اسم مكانك' })}
                 </label>
               </div>
@@ -94,7 +95,7 @@ const AddressDetailsForm: React.FC<AddressDetailsFormProps> = ({ initialData, on
             <div className="grid grid-cols-2 gap-4">
               {/* Floor Number */}
               <div className="relative group">
-                <div className="bg-[#F9FAFB] border border-transparent focus-within:border-black focus-within:bg-white rounded-[12px] h-14 transition-all relative">
+                <div className="border border-black focus-within:border-black focus-within:bg-white rounded-[12px] h-16 transition-all relative">
                   <input
                     type="text"
                     value={formData.floorNumber}
@@ -102,7 +103,7 @@ const AddressDetailsForm: React.FC<AddressDetailsFormProps> = ({ initialData, on
                     placeholder="e.g. 2"
                     className="w-full h-full px-4 pt-5 pb-1 bg-transparent outline-none text-[15px] font-medium placeholder:text-neutral-300"
                   />
-                  <label className="absolute left-4 top-1.5 text-[11px] font-bold transition-all pointer-events-none text-[#2C2C2C]">
+                  <label className="absolute left-4 top-1.5 text-[15px] font-medium transition-all pointer-events-none text-[#2C2C2C]">
                     {t({ en: 'Floor', fr: 'Étage', ar: 'الطابق' })}
                   </label>
                 </div>
@@ -110,7 +111,7 @@ const AddressDetailsForm: React.FC<AddressDetailsFormProps> = ({ initialData, on
 
               {/* Door Number */}
               <div className="relative group">
-                <div className="bg-[#F9FAFB] border border-transparent focus-within:border-black focus-within:bg-white rounded-[12px] h-14 transition-all relative">
+                <div className="border border-black focus-within:border-black focus-within:bg-white rounded-[12px] h-16 transition-all relative">
                   <input
                     type="text"
                     value={formData.doorNumber}
@@ -118,7 +119,7 @@ const AddressDetailsForm: React.FC<AddressDetailsFormProps> = ({ initialData, on
                     placeholder="e.g. 14"
                     className="w-full h-full px-4 pt-5 pb-1 bg-transparent outline-none text-[15px] font-medium placeholder:text-neutral-300"
                   />
-                  <label className="absolute left-4 top-1.5 text-[11px] font-bold transition-all pointer-events-none text-[#2C2C2C]">
+                  <label className="absolute left-4 top-1.5 text-[15px] font-medium transition-all pointer-events-none text-[#2C2C2C]">
                     {t({ en: 'Apt / Door', fr: 'N° Porte', ar: 'رقم الباب' })}
                   </label>
                 </div>
@@ -129,22 +130,48 @@ const AddressDetailsForm: React.FC<AddressDetailsFormProps> = ({ initialData, on
 
         {/* Map Preview (Increased height to 450px) */}
         <div className="px-5">
-          <div className="relative w-full h-[450px] rounded-[24px] overflow-hidden shadow-[0_4px_20px_rgba(0,0,0,0.08)] border border-neutral-100">
+          <div className="relative w-full h-[350px] rounded-[20px] overflow-hidden ">
             <MapView
               initialLocation={{
                 lat: formData.entranceLat || initialData.lat,
                 lng: formData.entranceLng || initialData.lng
               }}
-              onLocationChange={() => { }} 
+              onLocationChange={() => { }}
               interactive={false}
               pinY={50}
               zoom={16}
               showCenterPin={true}
             />
-            
+
+            {/* Address Card Overlay */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.8 }}
+              className="absolute bottom-5 left-4 right-4 z-40 bg-white p-4 rounded-[18px] shadow-[0_8px_30px_rgb(0,0,0,0.12)] flex items-center gap-3 border border-neutral-100"
+            >
+              <div className="w-10 h-10 rounded-full bg-neutral-50 flex items-center justify-center shrink-0">
+                <MapPin size={20} className="text-black" />
+              </div>
+              <div className="flex-1 min-w-0 pr-2">
+                <p className="text-[11px] text-neutral-400 font-bold uppercase tracking-wider mb-0.5">
+                  {t({ en: 'Your Address', fr: 'Votre adresse', ar: 'عنوانك' })}
+                </p>
+                <p className="text-[14px] text-black font-bold truncate">
+                  {initialData.address}
+                </p>
+              </div>
+              <button
+                onClick={() => setIsPickingEntrance(true)}
+                className="h-10 px-5 bg-black text-white text-[13px] font-bold rounded-full active:scale-95 transition-all"
+              >
+                {t({ en: 'Refine', fr: 'Préciser', ar: 'تعديل' })}
+              </button>
+            </motion.div>
+
             {/* Click overlay - only active after transition delay */}
             {canInteractWithMap && (
-              <button 
+              <button
                 onClick={() => setIsPickingEntrance(true)}
                 className="absolute inset-0 z-30 active:bg-black/5 transition-colors cursor-pointer"
                 aria-label="Refine entrance location"
@@ -156,10 +183,10 @@ const AddressDetailsForm: React.FC<AddressDetailsFormProps> = ({ initialData, on
         {/* Informative Header Text (Moved to bottom) */}
         <div className="px-5">
           <p className="text-[14px] text-neutral-500 leading-relaxed font-medium">
-            {t({ 
-              en: 'We will only share your address after the reservation is confirmed. Until then, travelers will see an approximate location.', 
-              fr: "Nous ne communiquerons votre adresse qu'après la réservation. En attendant, les voyageurs verront un emplacement approximatif.", 
-              ar: "لن نشارك عنوانك إلا بعد تأكيد الحجز. حتى ذلك الحين، سيرى المسافرون موقعاً تقريبياً." 
+            {t({
+              en: 'We will only share your address after the reservation is confirmed. Until then, travelers will see an approximate location.',
+              fr: "Nous ne communiquerons votre adresse qu'après la réservation. En attendant, les voyageurs verront un emplacement approximatif.",
+              ar: "لن نشارك عنوانك إلا بعد تأكيد الحجز. حتى ذلك الحين، سيرى المسافرون موقعاً تقريبياً."
             })}
           </p>
         </div>
