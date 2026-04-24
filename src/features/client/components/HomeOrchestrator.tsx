@@ -259,7 +259,9 @@ const SellingPointsBottomSheet: React.FC<{
   onClose: () => void;
   onStartHostMode: () => void;
   t: any;
-}> = ({ isOpen, onClose, onStartHostMode, t }) => {
+  isAuthenticated: boolean;
+  onLogin: (intent?: any) => void;
+}> = ({ isOpen, onClose, onStartHostMode, t, isAuthenticated, onLogin }) => {
   const [step, setStep] = useState(0);
 
   useEffect(() => {
@@ -479,8 +481,13 @@ const SellingPointsBottomSheet: React.FC<{
                       <div className="w-full space-y-3">
                         <button
                           onClick={() => {
-                            onStartHostMode();
-                            onClose();
+                            if (isAuthenticated) {
+                              onStartHostMode();
+                              onClose();
+                            } else {
+                              onLogin('host_mode');
+                              onClose();
+                            }
                           }}
                           className="w-full bg-[#2C2C2C] text-white py-4 rounded-2xl text-[18px] font-bold active:scale-[0.98] transition-all "
                         >
@@ -893,7 +900,7 @@ export default function HomeOrchestrator() {
   const [currentUser, setCurrentUser] = useState<FirebaseUser | null>(null);
   const [userData, setUserData] = useState<any>(null);
   const [showAuthPopup, setShowAuthPopup] = useState(false);
-  const [authIntent, setAuthIntent] = useState<'bricoler' | 'program_order' | 'login_only' | null>(null);
+   const [authIntent, setAuthIntent] = useState<'bricoler' | 'program_order' | 'login_only' | 'host_mode' | null>(null);
   const [showClientWhatsAppPopup, setShowClientWhatsAppPopup] = useState(false);
 
   const [popularServiceIds, setPopularServiceIds] = useState<string[]>([]);
@@ -2973,7 +2980,7 @@ export default function HomeOrchestrator() {
                 isHostMode={isHostMode}
                 onToggleHostMode={() => setIsHostMode(!isHostMode)}
                 onOpenLanguage={() => setShowLanguagePopup(true)}
-                onLogin={() => { setAuthIntent('login_only'); setShowAuthPopup(true); }}
+                onLogin={(intent) => { setAuthIntent(intent || 'login_only'); setShowAuthPopup(true); }}
                 onLogout={async () => {
                   try {
                     await signOut(auth);
@@ -3090,7 +3097,7 @@ export default function HomeOrchestrator() {
                 isHostMode={isHostMode}
                 onToggleHostMode={() => setIsHostMode(!isHostMode)}
                 onOpenLanguage={() => setShowLanguagePopup(true)}
-                onLogin={() => { setAuthIntent('login_only'); setShowAuthPopup(true); }}
+                onLogin={(intent) => { setAuthIntent(intent || 'login_only'); setShowAuthPopup(true); }}
                 onLogout={async () => {
                   try {
                     await signOut(auth);
@@ -3610,6 +3617,12 @@ export default function HomeOrchestrator() {
                   return;
                 }
 
+                if (authIntent === 'host_mode') {
+                  setAuthIntent(null);
+                  setIsHostMode(true);
+                  return;
+                }
+
                 if (authIntent === 'program_order' || !authIntent) {
                   handleProgramOrder(result.user, result.userData?.whatsappNumber);
                   setAuthIntent(null);
@@ -3986,6 +3999,8 @@ export default function HomeOrchestrator() {
         onClose={() => setShowSellingPoints(false)}
         onStartHostMode={() => setIsHostMode(true)}
         t={t}
+        isAuthenticated={!!currentUser}
+        onLogin={(intent) => { setAuthIntent(intent || 'login_only'); setShowAuthPopup(true); }}
       />
     </div>
   );

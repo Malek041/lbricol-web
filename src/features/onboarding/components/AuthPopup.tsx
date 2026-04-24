@@ -91,7 +91,7 @@ const AuthPopup = ({ isOpen, onClose, onSuccess }: AuthPopupProps) => {
 
     const handleAuth = async () => {
         if (isLoading) return;
-        
+
         try {
             const provider = new GoogleAuthProvider();
             // Important: Call signInWithPopup as the absolute first async thing in the handler
@@ -202,22 +202,23 @@ const AuthPopup = ({ isOpen, onClose, onSuccess }: AuthPopupProps) => {
                                     style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}
                                 >
                                     {/* Logo */}
-                                    <div style={{ marginBottom: '20px' }}>
+                                    <div style={{ marginBottom: '30px' }}>
                                         <Image
-                                            src="/Images/Logo/LbricolPinLogoYG.png"
+                                            src="/Images/Logo/Screenshot 2026-04-24 at 15.04.11.png"
                                             alt="Lbricol"
-                                            width={160}
-                                            height={160}
+                                            width={100}
+                                            height={100}
                                             style={{ objectFit: 'contain' }}
                                         />
                                     </div>
 
                                     <p style={{
-                                        fontSize: '18px',
-                                        color: '#4B5563',
-                                        fontWeight: 500,
+                                        fontSize: '25px',
+                                        color: '#2C2C2C',
+                                        fontWeight: 600,
                                         textAlign: 'center',
-                                        marginBottom: '48px',
+                                        marginBottom: '30px',
+                                        fontFamily: 'Uber Move',
                                     }}>
                                         {t({
                                             en: 'Log in or Sign up',
@@ -235,10 +236,10 @@ const AuthPopup = ({ isOpen, onClose, onSuccess }: AuthPopupProps) => {
                                             width: '100%',
                                             maxWidth: '320px',
                                             padding: '16px 24px',
-                                            borderRadius: '100px',
+                                            borderRadius: '10px',
                                             border: '1px solid #E5E7EB',
-                                            backgroundColor: '#FFFFFF',
-                                            color: '#111827',
+                                            backgroundColor: '#2C2C2C',
+                                            color: '#FFFFFF',
                                             fontSize: '17px',
                                             fontWeight: 500,
                                             display: 'flex',
@@ -275,9 +276,9 @@ const AuthPopup = ({ isOpen, onClose, onSuccess }: AuthPopupProps) => {
                                         {t({ en: 'Enter your WhatsApp to proceed.', fr: 'Entrez votre WhatsApp pour continuer.', ar: 'أدخل رقم الواتساب للمتابعة.' })}
                                     </p>
 
-                                    <div style={{ 
-                                        display: 'flex', 
-                                        gap: '12px', 
+                                    <div style={{
+                                        display: 'flex',
+                                        gap: '12px',
                                         marginBottom: '24px',
                                         backgroundColor: '#F9FAFB',
                                         borderRadius: '16px',
@@ -287,8 +288,8 @@ const AuthPopup = ({ isOpen, onClose, onSuccess }: AuthPopupProps) => {
                                         alignItems: 'center',
                                         transition: 'all 0.2s ease'
                                     }}>
-                                        <CountrySelector 
-                                            selectedCountry={selectedCountry} 
+                                        <CountrySelector
+                                            selectedCountry={selectedCountry}
                                             onSelect={setSelectedCountry}
                                             fontSize="18px"
                                         />

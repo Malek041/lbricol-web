@@ -19,7 +19,7 @@ import CountrySelector from '@/components/phone/CountrySelector';
 
 interface ProfileViewProps {
     onLogout?: () => void;
-    onLogin?: () => void;
+    onLogin?: (intent?: any) => void;
     onOpenLanguage?: () => void;
     onBricolerAction?: () => void;
     isBricoler?: boolean;
@@ -299,7 +299,13 @@ const ProfileView: React.FC<ProfileViewProps> = ({
                                     })}
                                 </p>
                                 <button
-                                    onClick={onToggleHostMode}
+                                    onClick={() => {
+                                        if (isAuthenticated) {
+                                            onToggleHostMode?.();
+                                        } else {
+                                            onLogin?.('host_mode');
+                                        }
+                                    }}
                                     className="w-[360px] bg-[#01A084] py-2 rounded-full text-[18px] font-medium text-white active:scale-[0.98] transition-all"
                                 >
                                     {t({ en: 'Get Started', fr: 'Commencer', ar: 'ابدأ الآن' })}

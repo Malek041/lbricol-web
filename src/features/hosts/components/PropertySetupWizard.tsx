@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -9,7 +9,9 @@ import {
     Check, ChevronRight, Save, ShieldCheck, Warehouse, Coffee, Ship, Tent, Truck, Castle,
     Hotel as HotelIcon, Palmtree, Bed, Landmark, Search, Navigation,
     WashingMachine, Car, ParkingCircle, Monitor, Bath, Fence, Flame, Utensils, Dices,
-    Music, Dumbbell, Mountain, ShowerHead, SquarePlus, Snowflake
+    Music, Dumbbell, Mountain, ShowerHead, SquarePlus, Snowflake,
+    TreePine, PawPrint, Baby, Camera, Plus, Trash2,
+    Sparkles, Key, Shirt, Wrench, Package, MonitorUp, Droplets, Zap, Paintbrush, Heart, ChefHat, Map, BookOpen, Hammer
 } from 'lucide-react';
 import Lottie from 'lottie-react';
 import homeAnimation from '../../../../public/Animated icons/system-regular-41-home-hover-pinch.json';
@@ -19,6 +21,7 @@ import { cn } from '@/lib/utils';
 import { db, auth } from '@/lib/firebase';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { useToast } from '@/context/ToastContext';
+import { uploadToCloudinary } from '@/lib/upload';
 
 interface PropertySetupWizardProps {
     isOpen: boolean;
@@ -26,34 +29,48 @@ interface PropertySetupWizardProps {
     onComplete: () => void;
 }
 
+import { SERVICES_CATALOGUE } from '@/config/services_catalogue';
+
+const SERVICE_ICONS: Record<string, any> = {
+    home_repairs: Wrench,
+    furniture_assembly: Hammer,
+    mounting: MonitorUp,
+    moving: Truck,
+    cleaning: Sparkles,
+    glass_cleaning: Droplets,
+    gardening: TreePine,
+    plumbing: Wrench,
+    electricity: Zap,
+    painting: Paintbrush,
+    babysitting: Baby,
+    pool_cleaning: Waves,
+    pets_care: PawPrint,
+    errands: Package,
+    elderly_care: Heart,
+    cooking: ChefHat,
+    tour_guide: Map,
+    private_driver: Car,
+    learn_arabic: BookOpen,
+    car_rental: Key,
+};
+
 const STEPS = [
     { id: 'type', title: 'Quel type de logement?' },
     { id: 'location', title: 'Où se situe-t-il?' },
     { id: 'specs', title: 'Quelques précisions' },
     { id: 'amenities', title: 'Équipements' },
+    { id: 'photos', title: 'Photos' },
     { id: 'automation', title: 'Paramètres d\'automatisation' }
 ];
 
 const AMENITY_GROUPS = [
     {
-        id: 'favorite',
-        title: { en: 'What about these favorite amenities?', fr: 'Qu\'en est-il de ces équipements préférés des voyageurs ?' },
-        subtitle: { en: 'You can add amenities once your listing is published.', fr: 'Vous pourrez ajouter des équipements une fois votre annonce publiée.' },
-        items: [
-            { id: 'wifi', label: { en: 'Wifi', fr: 'Wifi' }, icon: Wifi },
-            { id: 'tv', label: { en: 'TV', fr: 'Télévision' }, icon: Tv },
-            { id: 'kitchen', label: { en: 'Kitchen', fr: 'Cuisine' }, icon: Kitchen },
-            { id: 'washer', label: { en: 'Washer', fr: 'Lave-linge' }, icon: WashingMachine },
-            { id: 'free_parking', label: { en: 'Free parking on premises', fr: 'Stationnement gratuit sur place' }, icon: Car },
-            { id: 'paid_parking', label: { en: 'Paid parking on premises', fr: 'Stationnement payant sur place' }, icon: ParkingCircle },
-            { id: 'ac', label: { en: 'Air conditioning', fr: 'Climatisation' }, icon: Snowflake },
-            { id: 'workspace', label: { en: 'Dedicated workspace', fr: 'Espace de travail dédié' }, icon: Monitor },
-        ]
-    },
-    {
         id: 'standout',
         title: { en: 'Do you have any standout amenities?', fr: 'Possédez-vous des équipements hors du commun ?' },
         items: [
+            { id: 'garden', label: { en: 'Garden', fr: 'Jardin' }, icon: TreePine },
+            { id: 'pets_place', label: { en: 'Place for pets', fr: 'Espace pour animaux' }, icon: PawPrint },
+            { id: 'kids_space', label: { en: 'Kids space', fr: 'Espace enfants' }, icon: Baby },
             { id: 'pool', label: { en: 'Pool', fr: 'Piscine' }, icon: Waves },
             { id: 'hottub', label: { en: 'Hot tub', fr: 'Jacuzzi' }, icon: Bath },
             { id: 'patio', label: { en: 'Patio', fr: 'Patio' }, icon: Fence },
@@ -68,6 +85,21 @@ const AMENITY_GROUPS = [
             { id: 'beach_access', label: { en: 'Beach access', fr: 'Accès à la plage' }, icon: Palmtree },
             { id: 'ski_in_out', label: { en: 'Ski-in/ski-out', fr: 'Au pied des pistes' }, icon: Mountain },
             { id: 'outdoor_shower', label: { en: 'Outdoor shower', fr: 'Douche extérieure' }, icon: ShowerHead },
+        ]
+    },
+    {
+        id: 'favorite',
+        title: { en: 'What about these favorite amenities?', fr: 'Qu\'en est-il de ces équipements préférés des voyageurs ?' },
+        subtitle: { en: 'You can add amenities once your listing is published.', fr: 'Vous pourrez ajouter des équipements une fois votre annonce publiée.' },
+        items: [
+            { id: 'wifi', label: { en: 'Wifi', fr: 'Wifi' }, icon: Wifi },
+            { id: 'tv', label: { en: 'TV', fr: 'Télévision' }, icon: Tv },
+            { id: 'kitchen', label: { en: 'Kitchen', fr: 'Cuisine' }, icon: Kitchen },
+            { id: 'washer', label: { en: 'Washer', fr: 'Lave-linge' }, icon: WashingMachine },
+            { id: 'free_parking', label: { en: 'Free parking on premises', fr: 'Stationnement gratuit sur place' }, icon: Car },
+            { id: 'paid_parking', label: { en: 'Paid parking on premises', fr: 'Stationnement payant sur place' }, icon: ParkingCircle },
+            { id: 'ac', label: { en: 'Air conditioning', fr: 'Climatisation' }, icon: Snowflake },
+            { id: 'workspace', label: { en: 'Dedicated workspace', fr: 'Espace de travail dédié' }, icon: Monitor },
         ]
     },
     {
@@ -93,14 +125,6 @@ const PROPERTY_TYPES = [
     { id: 'cabin', label: { en: 'Cabin', fr: 'Cabane' }, icon: Tent },
     { id: 'camper', label: { en: 'Camper', fr: 'Caravane ou camping-car' }, icon: Truck },
     { id: 'casa_particular', label: { en: 'Casa particular', fr: 'Casa particular' }, icon: Castle },
-];
-
-const AMENITIES = [
-    { id: 'wifi', label: 'Wifi', icon: Wifi },
-    { id: 'tv', label: 'Télévision', icon: Tv },
-    { id: 'kitchen', label: 'Cuisine', icon: Kitchen },
-    { id: 'ac', label: 'Climatisation', icon: Ac },
-    { id: 'pool', label: 'Piscine', icon: Pool },
 ];
 
 const INTRO_STEPS = [
@@ -147,7 +171,7 @@ const CounterRow = ({ label, value, onChange, min = 0 }: { label: string; value:
             >
                 <div className="w-3 h-[1.5px] bg-black opacity-60" />
             </button>
-            <span className="text-[17px] font-bold w-6 text-center text-black tabular-nums">{value}</span>
+            <span className="text-[17px] font-light w-6 text-center text-black tabular-nums">{value}</span>
             <button
                 onClick={() => onChange(value + 1)}
                 className="w-8 h-8 rounded-full bg-[#F7F7F7] flex items-center justify-center active:scale-90 transition-all text-black"
@@ -183,20 +207,114 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
     const [baseLng, setBaseLng] = useState<number | null>(null);
     const [floor, setFloor] = useState<number>(0);
     const [apartmentNumber, setApartmentNumber] = useState('');
+    const [photos, setPhotos] = useState<any[]>([]);
+    const [isUploading, setIsUploading] = useState(false);
+    const [showPhotoAdvice, setShowPhotoAdvice] = useState(false);
+    const fileInputRef = useRef<HTMLInputElement>(null);
+    const cameraInputRef = useRef<HTMLInputElement>(null);
+    const dragIndexRef = useRef<number | null>(null);
+    const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
     const [preferredBricolerId, setPreferredBricolerId] = useState<string | null>(null);
     const [automationSettings, setAutomationSettings] = useState({
         autoCleanAfterCheckout: true,
         stockTracking: true,
         keyTransfer: true
     });
+    const [selectedServices, setSelectedServices] = useState<string[]>([]);
+    const [activeServiceCategory, setActiveServiceCategory] = useState<string>(SERVICES_CATALOGUE[0].id);
+
+    const toggleService = (id: string) => {
+        setSelectedServices(prev => 
+            prev.includes(id) ? prev.filter(s => s !== id) : [...prev, id]
+        );
+    };
+
+    const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const files = Array.from(e.target.files || []);
+        if (!files.length) return;
+
+        // Optimistically show photos instantly using local object URLs
+        const tempUrls = files.map(file => URL.createObjectURL(file));
+
+        setPhotos(prev => {
+            const newPhotos = [...prev, ...tempUrls];
+            if (prev.length === 0 && tempUrls.length > 0) {
+                setShowPhotoAdvice(true);
+            }
+            return newPhotos;
+        });
+
+        setIsUploading(true);
+        try {
+            await Promise.all(files.map(async (file, index) => {
+                const tempUrl = tempUrls[index];
+
+                return new Promise<void>((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onloadend = async () => {
+                        try {
+                            const cloudinaryUrl = await uploadToCloudinary(reader.result as string, `lbricol/properties/${auth.currentUser?.uid}`, 'lbricol_portfolio');
+
+                            // Replace temporary local URL with actual Cloudinary URL
+                            setPhotos(currentPhotos =>
+                                currentPhotos.map(photo => photo === tempUrl ? cloudinaryUrl : photo)
+                            );
+
+                            // Cleanup the blob URL
+                            URL.revokeObjectURL(tempUrl);
+                            resolve();
+                        } catch (err) {
+                            reject(err);
+                        }
+                    };
+                    reader.readAsDataURL(file);
+                });
+            }));
+        } catch (error) {
+            console.error('Failed to upload photos:', error);
+        } finally {
+            setIsUploading(false);
+            if (e.target) {
+                e.target.value = '';
+            }
+        }
+    };
+
+    const deletePhoto = (idx: number) => {
+        setPhotos(prev => prev.filter((_, i) => i !== idx));
+    };
+
+    const handleDragStart = (idx: number) => {
+        dragIndexRef.current = idx;
+    };
+
+    const handleDragOver = (e: React.DragEvent, idx: number) => {
+        e.preventDefault();
+        setDragOverIndex(idx);
+    };
+
+    const handleDrop = (idx: number) => {
+        const from = dragIndexRef.current;
+        if (from === null || from === idx) {
+            dragIndexRef.current = null;
+            setDragOverIndex(null);
+            return;
+        }
+        setPhotos(prev => {
+            const updated = [...prev];
+            const [moved] = updated.splice(from, 1);
+            updated.splice(idx, 0, moved);
+            return updated;
+        });
+        dragIndexRef.current = null;
+        setDragOverIndex(null);
+    };
 
     const handleNext = () => {
         if (viewMode === 'form' && stepIndex === 2) {
             setViewMode('step2_detail');
             return;
         }
-        // If finishing amenities, maybe go to Step 3 intro?
-        // For now just continue to automation
         if (stepIndex < STEPS.length - 1) setStepIndex(stepIndex + 1);
         else handleSubmit();
     };
@@ -227,8 +345,12 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                 setViewMode('step2_detail');
                 return;
             }
-            if (stepIndex === 4) { // Back from Automation
+            if (stepIndex === 4) { // Back from Photos
                 setStepIndex(3);
+                return;
+            }
+            if (stepIndex === 5) { // Back from Automation
+                setStepIndex(4);
                 return;
             }
             if (stepIndex > 0) {
@@ -267,7 +389,10 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                     lng: baseLng,
                     preferredBricolerId
                 },
-                automation: automationSettings,
+                automation: {
+                    ...automationSettings,
+                    services: selectedServices
+                },
                 createdAt: serverTimestamp(),
                 status: 'active'
             });
@@ -425,7 +550,7 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                         <h2 className="text-[30px] font-black text-black leading-[1.1] tracking-tight">
                             {t({ en: 'Tell us about your property', fr: 'Parlez-nous de votre logement', ar: 'أخبرنا عن مسكنك' })}
                         </h2>
-                        <p className="text-[17px] text-neutral-500 leading-relaxed font-light">
+                        <p className="text-[17px] text-[#2C2C2C] leading-relaxed font-medium">
                             {t({
                                 en: 'In this step, we\'ll ask what type of property you have and basic details like location and capacity. This helps us automate cleaning and restocking perfectly.',
                                 fr: 'Au cours de cette étape, nous allons vous demander quel type de logement vous proposez et des détails de base. Cela nous aide à automatiser parfaitement Les activités dont vous pourriez avoir besoin.',
@@ -487,7 +612,7 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                             repeat: Infinity,
                             ease: "easeInOut"
                         }}
-                        className="w-[80%] aspect-square mb-12 rounded-[32px] overflow-hidden mx-auto"
+                        className="w-[60%] aspect-square mb-12 rounded-[32px] overflow-hidden mx-auto"
                     >
                         <Image
                             src="/Images/PropertiesListingView/Screenshot 2026-04-22 at 20.04.27.png"
@@ -515,7 +640,7 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                                 ar: 'اجعل إعلانك متميزاً'
                             })}
                         </h2>
-                        <p className="text-[17px] text-neutral-500 leading-relaxed font-light">
+                        <p className="text-[17px] text-neutral-500 leading-relaxed font-medium">
                             {t({
                                 en: 'In this step, you can add some of the amenities offered in your accommodation and at least 5 photos. You can then add a title and a description.',
                                 fr: 'À cette étape, vous pouvez ajouter certains des espaces et équipements proposés dans votre hébergement, ainsi qu\'au moins 5 photos. Vous pouvez ensuite ajouter un titre et une description.',
@@ -549,19 +674,7 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
 
     return (
         <div className="fixed inset-0 z-[10000] bg-white flex flex-col font-plus-jakarta">
-            {stepIndex !== 1 && (
-                <div className="px-6 py-4 flex flex-col items-start gap-2 bg-white z-20">
-                    <button
-                        onClick={handleBack}
-                        className="px-4 py-2 rounded-full border border-neutral-200 text-[14px] font-bold hover:bg-neutral-50 active:scale-95 transition-all text-black"
-                    >
-                        {t({ en: 'Save & exit', fr: 'Enregistrer et quitter' })}
-                    </button>
-                    <button className="px-4 py-2 rounded-full border border-neutral-200 text-[14px] font-bold text-black hover:bg-neutral-50 active:scale-95 transition-all">
-                        {t({ en: 'Questions?', fr: 'Des questions ?' })}
-                    </button>
-                </div>
-            )}
+
 
             {/* Content */}
             <div className={cn(
@@ -657,7 +770,7 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                         {stepIndex === 2 && (
                             <div className="space-y-10">
                                 <div className="space-y-4">
-                                    <h2 className="text-[32px] font-black text-black leading-[1.1] tracking-tight">
+                                    <h2 className="text-[27px] font-black text-black leading-[1.1] tracking-tight">
                                         {t({
                                             en: 'Give the main information about your accommodation',
                                             fr: 'Donnez les informations principales concernant votre logement',
@@ -769,52 +882,218 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                         )}
 
                         {stepIndex === 4 && (
-                            <div className="space-y-6">
-                                {/* Preferred Bricoler Selection */}
-                                <div className="mb-8">
-                                    <h4 className="font-bold text-[18px] mb-4">Bricoleur de confiance (Optionnel)</h4>
-                                    <div className="p-5 rounded-[28px] border-2 border-dashed border-neutral-200 flex items-center justify-between active:scale-[0.98] transition-all">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-10 h-10 rounded-full bg-neutral-100 flex items-center justify-center">
-                                                <ShieldCheck size={20} className="text-neutral-400" />
+                            <div className="space-y-6 relative h-full flex flex-col">
+                                {photos.length === 0 ? (
+                                    <>
+                                        <div className="flex flex-col items-start gap-2 pb-2">
+                                            <button
+                                                onClick={onClose}
+                                                className="px-4 py-2 rounded-full border border-neutral-200 text-[14px] font-bold hover:bg-neutral-50 active:scale-95 transition-all text-black"
+                                            >
+                                                {t({ en: 'Save & exit', fr: 'Enregistrer et quitter' })}
+                                            </button>
+                                            <button className="px-4 py-2 rounded-full border border-neutral-200 text-[14px] font-bold text-black hover:bg-neutral-50 active:scale-95 transition-all">
+                                                {t({ en: 'Questions?', fr: 'Des questions ?' })}
+                                            </button>
+                                        </div>
+                                        <h2 className="text-[28px] font-medium text-black leading-tight tracking-tight">
+                                            {t({
+                                                en: 'Add some photos of your property',
+                                                fr: 'Ajoutez quelques photos de votre appartement',
+                                                ar: 'أضف بعض الصور لعقارك'
+                                            })}
+                                        </h2>
+                                        <p className="text-[17px] text-neutral-500 leading-relaxed">
+                                            {t({
+                                                en: 'To start, you will need 5 photos. You can add more or make changes later.',
+                                                fr: 'Pour commencer, vous aurez besoin de 5 photos. Vous pourrez en ajouter d\'autres ou faire des modifications plus tard.',
+                                                ar: 'للبدء، ستحتاج إلى 5 صور. يمكنك إضافة المزيد أو إجراء تغييرات لاحقاً.'
+                                            })}
+                                        </p>
+
+                                        <div className="space-y-3 pt-4 relative">
+                                            <input
+                                                type="file"
+                                                ref={fileInputRef}
+                                                className="hidden"
+                                                multiple
+                                                accept="image/*"
+                                                onChange={handleFileUpload}
+                                            />
+                                            <input
+                                                type="file"
+                                                ref={cameraInputRef}
+                                                className="hidden"
+                                                accept="image/*"
+                                                capture="environment"
+                                                onChange={handleFileUpload}
+                                            />
+                                            <button
+                                                onClick={() => fileInputRef.current?.click()}
+                                                disabled={isUploading}
+                                                className="w-full p-6 rounded-xl border border-neutral-200 flex items-center justify-start gap-6 active:scale-[0.98] transition-all hover:bg-neutral-50 disabled:opacity-50"
+                                            >
+                                                <Plus className="text-black shrink-0" size={24} strokeWidth={1.5} />
+                                                <span className="text-[16px] font-medium text-black">
+                                                    {isUploading ? 'Chargement...' : t({ en: 'Add photos', fr: 'Ajouter des photos', ar: 'إضافة صور' })}
+                                                </span>
+                                            </button>
+
+                                            <button
+                                                onClick={() => cameraInputRef.current?.click()}
+                                                disabled={isUploading}
+                                                className="w-full p-6 rounded-xl border border-neutral-200 flex items-center justify-start gap-6 active:scale-[0.98] transition-all hover:bg-neutral-50 disabled:opacity-50"
+                                            >
+                                                <Camera className="text-black shrink-0" size={24} strokeWidth={1.5} />
+                                                <span className="text-[16px] font-medium text-black">
+                                                    {isUploading ? 'Chargement...' : t({ en: 'Take new photos', fr: 'Prendre de nouvelles photos', ar: 'التقاط صور جديدة' })}
+                                                </span>
+                                            </button>
+                                        </div>
+                                    </>
+                                ) : (
+                                    <>
+                                        <div className="flex justify-between items-start mb-4">
+                                            <div>
+                                                <h2 className="text-[28px] font-bold text-black leading-tight tracking-tight">Vos photos</h2>
+                                                <p className="text-[17px] text-neutral-500 font-medium mt-1">Faites glisser pour réorganiser</p>
                                             </div>
-                                            <span className="text-[15px] font-medium text-neutral-500">Choisir un Bricoleur préféré</span>
+                                            <button
+                                                onClick={() => fileInputRef.current?.click()}
+                                                className="w-12 h-12 rounded-full border border-neutral-200 flex items-center justify-center active:scale-95 transition-all bg-neutral-50"
+                                            >
+                                                <Plus size={24} className="text-black" />
+                                            </button>
                                         </div>
-                                        <ChevronRight size={20} className="text-neutral-300" />
-                                    </div>
-                                    <p className="text-[12px] text-neutral-400 mt-2 px-2">Ce Bricoleur sera prioritaire pour toutes les missions automatiques.</p>
-                                </div>
 
-                                <div className="p-6 rounded-[32px] bg-neutral-50 border border-neutral-100 flex flex-col gap-6">
-                                    <div className="flex justify-between items-center">
-                                        <div>
-                                            <h4 className="font-bold text-[17px]">Nettoyage automatique</h4>
-                                            <p className="text-[14px] text-neutral-500">Recrute un Bricoleur après chaque départ.</p>
-                                        </div>
-                                        <button
-                                            onClick={() => setAutomationSettings(prev => ({ ...prev, autoCleanAfterCheckout: !prev.autoCleanAfterCheckout }))}
-                                            className={`w-14 h-8 rounded-full flex items-center px-1 transition-all ${automationSettings.autoCleanAfterCheckout ? 'bg-black' : 'bg-neutral-200'}`}
-                                        >
-                                            <motion.div animate={{ x: automationSettings.autoCleanAfterCheckout ? 24 : 0 }} className="w-6 h-6 bg-white rounded-full shadow-md" />
-                                        </button>
-                                    </div>
+                                        <input
+                                            type="file"
+                                            ref={fileInputRef}
+                                            className="hidden"
+                                            multiple
+                                            accept="image/*"
+                                            onChange={handleFileUpload}
+                                        />
 
-                                    <div className="flex justify-between items-center">
-                                        <div>
-                                            <h4 className="font-bold text-[17px]">Suivi des stocks</h4>
-                                            <p className="text-[14px] text-neutral-500">Alertes sur les consommables (savon, papier, etc.)</p>
+                                        <div className="grid grid-cols-2 gap-3 pb-32">
+                                            {photos.map((photo, idx) => (
+                                                <div
+                                                    key={idx}
+                                                    draggable
+                                                    onDragStart={() => handleDragStart(idx)}
+                                                    onDragOver={(e) => handleDragOver(e, idx)}
+                                                    onDrop={() => handleDrop(idx)}
+                                                    onDragEnd={() => setDragOverIndex(null)}
+                                                    className={cn(
+                                                        "relative overflow-hidden bg-neutral-100 border rounded-xl cursor-grab active:cursor-grabbing transition-all",
+                                                        idx === 0 ? "col-span-2 aspect-[4/3]" : "aspect-square",
+                                                        dragOverIndex === idx ? "border-black ring-2 ring-black scale-[0.98] opacity-80" : "border-neutral-200"
+                                                    )}
+                                                >
+                                                    <Image src={photo} alt="Property" fill className="object-cover pointer-events-none" />
+
+                                                    {idx === 0 && (
+                                                        <div className="absolute top-3 left-3 bg-white px-3 py-1.5 rounded-lg text-[13px] font-bold shadow-sm">
+                                                            Couverture
+                                                        </div>
+                                                    )}
+
+                                                    <button
+                                                        onClick={() => deletePhoto(idx)}
+                                                        className="absolute top-3 right-3 w-8 h-8 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-sm active:scale-90 transition-all hover:bg-red-50"
+                                                    >
+                                                        <Trash2 size={15} className="text-neutral-600 hover:text-red-500 transition-colors" />
+                                                    </button>
+                                                </div>
+                                            ))}
+                                            {isUploading && (
+                                                <div className="aspect-square relative overflow-hidden bg-neutral-100 border border-neutral-200 rounded-xl flex items-center justify-center">
+                                                    <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, ease: "linear", duration: 1 }}>
+                                                        <Coffee className="text-neutral-400" size={24} />
+                                                    </motion.div>
+                                                </div>
+                                            )}
                                         </div>
-                                        <button
-                                            onClick={() => setAutomationSettings(prev => ({ ...prev, stockTracking: !prev.stockTracking }))}
-                                            className={`w-14 h-8 rounded-full flex items-center px-1 transition-all ${automationSettings.stockTracking ? 'bg-black' : 'bg-neutral-200'}`}
-                                        >
-                                            <motion.div animate={{ x: automationSettings.stockTracking ? 24 : 0 }} className="w-6 h-6 bg-white rounded-full shadow-md" />
-                                        </button>
-                                    </div>
+
+                                        <AnimatePresence>
+                                            {showPhotoAdvice && (
+                                                <motion.div
+                                                    initial={{ opacity: 0, y: 50 }}
+                                                    animate={{ opacity: 1, y: 0 }}
+                                                    exit={{ opacity: 0, y: 50 }}
+                                                    className="fixed bottom-[130px] left-4 right-4 bg-[#F2F0EC] p-6 rounded-[24px] shadow-[0_10px_40px_rgba(0,0,0,0.15)] z-[10010] border border-neutral-100"
+                                                >
+                                                    <button
+                                                        onClick={() => setShowPhotoAdvice(false)}
+                                                        className="absolute top-5 right-5 w-8 h-8 bg-neutral-100 rounded-full flex items-center justify-center hover:bg-neutral-200 transition-colors"
+                                                    >
+                                                        <X size={18} className="text-black" />
+                                                    </button>
+                                                    <h3 className="text-[20px] font-bold text-black mb-2 max-w-[85%] leading-tight">Commencez avec vos plus belles photos</h3>
+                                                    <p className="text-[15px] text-neutral-500 mb-4 leading-relaxed pr-2">Triez instantanément vos photos pour que les meilleures apparaissent en premier.</p>
+                                                    <button
+                                                        onClick={() => setShowPhotoAdvice(false)}
+                                                        className="text-[16px] font-bold text-black underline underline-offset-4"
+                                                    >
+                                                        Organiser les photos
+                                                    </button>
+                                                </motion.div>
+                                            )}
+                                        </AnimatePresence>
+                                    </>
+                                )}
+                            </div>
+                        )}
+
+                        {stepIndex === 5 && (
+                            <div className="space-y-6 relative h-full flex flex-col">
+                                <div className="flex flex-col items-start gap-2 pb-2">
+                                    <button
+                                        onClick={onClose}
+                                        className="px-4 py-2 rounded-full border border-neutral-200 text-[14px] font-bold hover:bg-neutral-50 active:scale-95 transition-all text-black"
+                                    >
+                                        {t({ en: 'Save & exit', fr: 'Enregistrer et quitter' })}
+                                    </button>
+                                    <button className="px-4 py-2 rounded-full border border-neutral-200 text-[14px] font-bold text-black hover:bg-neutral-50 active:scale-95 transition-all">
+                                        {t({ en: 'Questions?', fr: 'Des questions ?' })}
+                                    </button>
                                 </div>
-                                <div className="bg-yellow-50 p-6 rounded-[28px] flex gap-4 border border-yellow-100">
-                                    <ShieldCheck className="text-yellow-600 shrink-0" size={24} />
-                                    <p className="text-[14px] text-yellow-800 leading-tight">Nos Bricoleurs sont formés aux standards de conciergerie Airbnb.</p>
+                                <h2 className="text-[28px] font-medium text-black leading-tight tracking-tight mt-4">
+                                    {t({
+                                        en: `Let's move on to the services for your property (type: ${t(PROPERTY_TYPES.find(pt => pt.id === type)?.label || { en: 'apartment' })})`,
+                                        fr: `Passons maintenant aux services de votre logement (type : ${t(PROPERTY_TYPES.find(pt => pt.id === type)?.label || { fr: 'appartement' })})`,
+                                        ar: `ننتقل الآن إلى الخدمات الخاصة بمسكنك (النوع: ${t(PROPERTY_TYPES.find(pt => pt.id === type)?.label || { ar: 'شقة' })})`
+                                    })}
+                                </h2>
+                                <p className="text-[17px] text-neutral-500 leading-relaxed mb-6">
+                                    {t({
+                                        en: 'Choose the services you want to automate. They will be useful to manage your property.',
+                                        fr: 'Choisissez les services que vous souhaitez automatiser. Ils seront utiles pour gérer votre logement.',
+                                        ar: 'اختر الخدمات التي تريد أتمتتها. ستكون مفيدة لإدارة مسكنك.'
+                                    })}
+                                </p>
+
+                                <div className="flex flex-wrap gap-3 mt-2">
+                                    {SERVICES_CATALOGUE.filter(c => !c.disabled).map(category => {
+                                        const isSelected = selectedServices.includes(category.id);
+                                        const Icon = SERVICE_ICONS[category.id] || Sparkles;
+                                        return (
+                                            <button
+                                                key={category.id}
+                                                onClick={() => toggleService(category.id)}
+                                                className={`flex items-center gap-3 px-6 py-3.5 rounded-full border transition-all active:scale-95 ${
+                                                    isSelected 
+                                                        ? 'border-black ring-1 ring-black bg-neutral-50 shadow-sm' 
+                                                        : 'border-neutral-200 hover:border-black'
+                                                }`}
+                                            >
+                                                <Icon size={20} className="text-black" />
+                                                <span className="text-[16px] font-medium text-black">
+                                                    {t({ en: category.label, fr: category.labelFr, ar: category.labelAr || category.labelFr })}
+                                                </span>
+                                            </button>
+                                        );
+                                    })}
                                 </div>
                             </div>
                         )}
@@ -847,10 +1126,10 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                         {[0, 1, 2].map((stageIdx) => {
                             let isActive = false;
                             if (stageIdx === 0 && stepIndex <= 2) isActive = true;
-                            if (stageIdx === 1 && stepIndex === 3) isActive = true; // Amenities is stage 2
-                            if (stageIdx === 2 && stepIndex >= 4) isActive = true; // Automation is stage 3
+                            if (stageIdx === 1 && (stepIndex === 3 || stepIndex === 4)) isActive = true; // Amenities and Photos is stage 2
+                            if (stageIdx === 2 && stepIndex >= 5) isActive = true; // Automation is stage 3
 
-                            const isFinished = (stageIdx === 0 && stepIndex > 2) || (stageIdx === 1 && stepIndex > 3);
+                            const isFinished = (stageIdx === 0 && stepIndex > 2) || (stageIdx === 1 && stepIndex > 4);
 
                             return (
                                 <div
