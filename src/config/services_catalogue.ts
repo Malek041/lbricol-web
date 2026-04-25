@@ -114,7 +114,7 @@ export const SERVICES_CATALOGUE: ServiceEntry[] = [
             { id: 'dish_cleaning', en: 'Dish Cleaning', fr: 'Lavage de vaisselle', ar: 'غسل الصحون' }
         ],
         bullets: [
-            { en: 'Clean your home or office; deep-clean appliances and other spaces.', fr: 'Nettoyez votre maison ou votre bureau ; nettoyez en profondeur les appareils ménagers et d\'autres espaces.', ar: 'تنظيف منزلك أو مكتبك؛ تنظيف عميق للأجهزة والمساحات الأخرى.' },
+            { en: 'This is hospitality-level cleaning. bricolers that offer this service go though a rigorous selection process.', fr: 'Un nettoyage de qualité hôtelière. Les bricoleurs qui proposent ce service passent par un processus de sélection rigoureux.', ar: 'تنظيف بمستوى فندقي. يمر مقدمو هذه الخدمة بعملية اختيار صارمة.' },
             { en: 'Now Trending: Eco-friendly products, home cleaning checklists, and cleaning hacks.', fr: 'Tendance actuelle : Produits écologiques, listes de contrôle de nettoyage à domicile et astuces de nettoyage.', ar: 'رائج الآن: منتجات صديقة للبيئة، قوائم فحص التنظيف وحيل التنظيف.' },
         ],
         heroImage: '/Images/Job Cards Images/Cleaning_job_card.webp',
@@ -134,6 +134,22 @@ export const SERVICES_CATALOGUE: ServiceEntry[] = [
             { en: 'Professional equipment for hard-to-reach areas.', fr: 'Équipement professionnel pour les zones difficiles d\'accès.', ar: 'معدات احترافية للمناطق التي يصعب الوصول إليها.' },
         ],
         heroImage: '/Images/Job Cards Images/Cleaning_job_card.webp',
+    },
+    {
+        id: 'guest_receptionist',
+        label: 'Guest Receptionist',
+        labelFr: 'Accueil Voyageurs',
+        labelAr: 'استقبال الضيوف',
+        iconPath: '/Images/Vectors Illu/receptionist.webp',
+        subServices: [
+            { id: 'check_in_hosting', en: 'Check-in & Hosting', fr: 'Accueil & Remise des clés', ar: 'الاستقبال وتسليم المفاتيح' },
+            { id: 'property_guide', en: 'Property Orientation', fr: 'Orientation Logement', ar: 'تعريف بالمسكن' }
+        ],
+        bullets: [
+            { en: 'A bricoler that can host guests upon their check-in to guide them.', fr: 'Un bricoleur pour accueillir vos voyageurs et les guider.', ar: 'بريكولور لاستقبال ضيوفك عند تسجيل الوصول وتوجيههم.' },
+            { en: 'Contribute to a better hosting experience.', fr: 'Contribuez à une meilleure expérience d\'accueil.', ar: 'المساهمة في تجربة استضافة أفضل.' }
+        ],
+        heroImage: '/Images/Job Cards Images/Handyman_job_card.webp',
     },
     {
         id: 'gardening',
