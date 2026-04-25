@@ -1060,9 +1060,9 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                                 </div>
                                 <h2 className="text-[28px] font-medium text-black leading-tight tracking-tight mt-4">
                                     {t({
-                                        en: `Let's move on to the services for your property (type: ${t(PROPERTY_TYPES.find(pt => pt.id === type)?.label || { en: 'apartment' })})`,
-                                        fr: `Passons maintenant aux services de votre logement (type : ${t(PROPERTY_TYPES.find(pt => pt.id === type)?.label || { fr: 'appartement' })})`,
-                                        ar: `ننتقل الآن إلى الخدمات الخاصة بمسكنك (النوع: ${t(PROPERTY_TYPES.find(pt => pt.id === type)?.label || { ar: 'شقة' })})`
+                                        en: `Let's move on to the services for your property (type: ${t(PROPERTY_TYPES.find(pt => pt.id === type)?.label || { en: 'apartment', fr: 'appartement', ar: 'شقة' })})`,
+                                        fr: `Passons maintenant aux services de votre logement (type : ${t(PROPERTY_TYPES.find(pt => pt.id === type)?.label || { en: 'apartment', fr: 'appartement', ar: 'شقة' })})`,
+                                        ar: `ننتقل الآن إلى الخدمات الخاصة بمسكنك (النوع: ${t(PROPERTY_TYPES.find(pt => pt.id === type)?.label || { en: 'apartment', fr: 'appartement', ar: 'شقة' })})`
                                     })}
                                 </h2>
                                 <p className="text-[17px] text-neutral-500 leading-relaxed mb-6">
