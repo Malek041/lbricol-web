@@ -12,7 +12,7 @@ import {
     Music, Dumbbell, Mountain, ShowerHead, SquarePlus, Snowflake,
     TreePine, PawPrint, Baby, Camera, Plus, Trash2, Info,
     Sparkles, Key, Shirt, Wrench, Package, MonitorUp, Droplets, Zap, Paintbrush, Heart, ChefHat, Map, BookOpen, Hammer, Plane, BellRing,
-    Bot, Handshake, Copy, Flower2, LayoutGrid, MessageSquare, Calendar, Bookmark, Menu
+    Bot, Handshake, Copy, Flower2, LayoutGrid, MessageSquare, Calendar, Bookmark, Menu, User
 } from 'lucide-react';
 import Lottie from 'lottie-react';
 import homeAnimation from '../../../../public/Animated icons/system-regular-41-home-hover-pinch.json';
@@ -580,10 +580,6 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
             }
         }
 
-        if (viewMode === 'team_mode_select') {
-            handleSubmit();
-            return;
-        }
 
         if (stepIndex < STEPS.length - 1) setStepIndex(stepIndex + 1);
         else handleSubmit();
@@ -1137,24 +1133,31 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                                 initial={{ y: 20, opacity: 0 }}
                                 animate={{ y: 0, opacity: 1 }}
                                 transition={{ delay: 0.2 }}
-                                className="flex gap-4 p-4 rounded-[28px] bg-white shadow-[0_4px_20px_rgb(0,0,0,0.03)] border border-neutral-100"
+                                className="bg-white border border-neutral-100 rounded-[32px] overflow-hidden shadow-sm"
                             >
-                                <div className="relative w-20 h-20 rounded-2xl overflow-hidden shrink-0">
-                                    <Image
-                                        src={photos[0] || '/Images/placeholder-property.jpg'}
+                                <div className="aspect-[4/3] bg-neutral-100 relative">
+                                    <div className="absolute top-4 left-4 bg-white/90 backdrop-blur px-3 py-1 rounded-full text-[12px] font-bold shadow-sm">
+                                        {type === 'house' ? 'Maison' : type === 'apartment' ? 'Appartement' : 'Villa'}
+                                    </div>
+                                    <Image 
+                                        src={photos[0] || '/Images/placeholder-property.jpg'} 
                                         alt={name}
                                         fill
                                         className="object-cover"
                                     />
-                                    <div className="absolute top-1.5 left-1.5 w-3.5 h-3.5 bg-[#4CAF50] rounded-full border-2 border-white shadow-sm" />
                                 </div>
-                                <div className="flex flex-col justify-center min-w-0">
-                                    <h3 className="font-bold text-[17px] text-black truncate tracking-tight">
-                                        {name || 'Dar Lehbib | Self Check-In | Plage'}
-                                    </h3>
-                                    <p className="text-[13px] text-neutral-400 font-medium truncate mt-0.5">
-                                        {t({ en: 'Property', fr: 'Logement' })} · {address?.split(',')[0] || 'Essaouira'}, Marrakesh-Safi
-                                    </p>
+                                <div className="p-6">
+                                    <div className="flex justify-between items-start mb-2">
+                                        <h3 className="text-[18px] font-bold text-black">{name || 'Ma Propriété'}</h3>
+                                    </div>
+                                    <div className="flex items-center gap-2 text-[14px] text-neutral-500">
+                                        <span>{bedrooms || 0} chambres</span>
+                                        <span>•</span>
+                                        <div className="flex items-center gap-1 text-green-600 font-bold">
+                                            <CheckCircle2 size={14} />
+                                            <span>Prêt</span>
+                                        </div>
+                                    </div>
                                 </div>
                             </motion.div>
                         </div>
@@ -1193,9 +1196,8 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
 
                     {/* Annonces (Active) */}
                     <div className="flex flex-col items-center gap-1">
-                        <div className="w-10 h-10 rounded-full bg-[#FFF9E5] flex items-center justify-center relative">
-                            <Home size={22} strokeWidth={0} fill="#FFB700" className="absolute" />
-                            <Home size={22} strokeWidth={2} className="relative z-10 text-black" />
+                        <div className="w-10 h-10 rounded-full bg-[#FFF9E5] flex items-center justify-center">
+                            <Home size={22} strokeWidth={2} className="text-black" />
                         </div>
                         <span className="text-[11px] font-bold text-black">{t({ en: 'Listings', fr: 'Annonces' })}</span>
                     </div>
@@ -3474,7 +3476,7 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                                 <motion.div
                                     initial={{ opacity: 0, y: 20 }}
                                     animate={{ opacity: 1, y: 0 }}
-                                    className="space-y-8 pt-0 pb-12"
+                                    className="space-y-4 pt-0 pb-12"
                                 >
                                     <div className="space-y-1">
                                         <h3 className="font-semibold text-[22px] text-black tracking-tight">
