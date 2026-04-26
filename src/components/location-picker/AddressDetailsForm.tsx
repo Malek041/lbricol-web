@@ -81,6 +81,7 @@ const AddressDetailsForm: React.FC<AddressDetailsFormProps> = ({ initialData, on
               <div className="border border-black focus-within:border-black focus-within:bg-white rounded-[12px] h-16 transition-all relative">
                 <input
                   type="text"
+                  autoFocus
                   value={formData.buildingName}
                   onChange={(e) => setFormData({ ...formData, buildingName: e.target.value })}
                   placeholder="e.g. Jardin des Douars"
