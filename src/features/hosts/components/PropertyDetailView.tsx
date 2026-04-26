@@ -248,14 +248,6 @@ const PropertyDetailView: React.FC<PropertyDetailViewProps> = ({ property, isOpe
                         </div>
                     </div>
 
-                    {/* Rare Find Badge Overlay (Sticky) */}
-                    <div className="sticky bottom-24 z-[105] mx-4 mb-4 p-4 bg-neutral-50 border border-neutral-200 rounded-xl flex items-center gap-3 shadow-sm">
-                        <Sparkles size={20} />
-                        <p className="text-[14px] font-medium text-black">
-                            Perle rare ! Les réservations pour ce logement sont fréquentes.
-                        </p>
-                    </div>
-
                     {/* Sticky Action Footer */}
                     <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-neutral-100 px-6 py-4 flex justify-between items-center z-[115]">
                         <div className="flex flex-col">
