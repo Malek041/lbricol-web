@@ -1216,7 +1216,6 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                         <span className="text-[11px] font-medium">{t({ en: 'Menu', fr: 'Menu' })}</span>
                     </div>
                 </div>
-                </div>
             </motion.div>
         );
     }
