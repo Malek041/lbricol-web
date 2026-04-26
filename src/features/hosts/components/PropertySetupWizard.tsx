@@ -3503,7 +3503,7 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                                                                         <Bot size={22} strokeWidth={1.5} />}
                                                         </div>
                                                         <div className="flex flex-col">
-                                                            <span className="text-[15px] font-medium text-black">{t(service?.title || { en: serviceId, fr: serviceId })}</span>
+                                                            <span className="text-[15px] font-medium text-black">{t({ en: service?.label || serviceId, fr: service?.labelFr || serviceId })}</span>
                                                             <span className="text-[13px] text-neutral-400 font-mono tracking-wider">{code}</span>
                                                         </div>
                                                     </div>
