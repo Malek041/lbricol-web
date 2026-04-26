@@ -28,20 +28,36 @@ const PropertyListView = () => {
 
     return (
         <div className="flex flex-col min-h-screen bg-white pb-32">
-            {/* Header - Ultra Clean Airbnb Style */}
+            {/* Header - Lbricol Host Style */}
             {!loading && properties.length > 0 && (
-                <div className="px-6 pt-5 pb-2 flex justify-start items-center bg-white sticky top-0 z-20">
-                    <h1 className="text-[34px] font-bold text-black leading-tight tracking-tight">
-                        {t({ en: 'My Properties', fr: 'Mes Biens', ar: 'إعلاناتي' })}
+                <div className="px-6 pt-8 pb-4 flex flex-col bg-white sticky top-0 z-20">
+                    <div className="flex justify-end items-center gap-4 mb-2">
+                        <div className="w-10 h-10 rounded-full bg-neutral-50 flex items-center justify-center border border-neutral-100">
+                            <Search size={20} className="text-black" />
+                        </div>
+                        <div className="w-10 h-10 rounded-full bg-neutral-50 flex items-center justify-center border border-neutral-100">
+                            <LayoutGrid size={20} className="text-black" />
+                        </div>
+                        <button 
+                            onClick={() => setIsWizardOpen(true)}
+                            className="w-10 h-10 rounded-full bg-neutral-50 flex items-center justify-center border border-neutral-100 active:scale-90 transition-all"
+                        >
+                            <Plus size={20} className="text-black" />
+                        </button>
+                    </div>
+                    <h1 className="text-[32px] font-bold text-black tracking-tight">
+                        {t({ en: 'Listings', fr: 'Mon annonce', ar: 'إعلاناتي' })}
                     </h1>
                 </div>
             )}
 
-            <div className="px-6 flex-1 flex flex-col items-center justify-center -mt-8">
+            <div className="px-6 flex-1 flex flex-col">
                 {loading ? (
-                    <div className="py-20 flex justify-center"><div className="w-8 h-8 border-4 border-black border-t-transparent rounded-full animate-spin" /></div>
+                    <div className="flex-1 flex items-center justify-center -mt-20">
+                        <div className="w-8 h-8 border-4 border-black border-t-transparent rounded-full animate-spin" />
+                    </div>
                 ) : properties.length === 0 ? (
-                    <div className="flex flex-col items-center text-center max-w-[400px] mx-auto">
+                    <div className="flex-1 flex flex-col items-center justify-center text-center max-w-[400px] mx-auto -mt-20">
                         {/* Hero Image - Smaller as requested */}
                         <div className="w-[70%] relative mb-8 opacity-100 aspect-square">
                             <Image
@@ -80,36 +96,41 @@ const PropertyListView = () => {
                         </button>
                     </div>
                 ) : (
-                    <div className="space-y-6 w-full py-6">
-                        {properties.map((property) => (
-                            <motion.div
-                                key={property.id}
-                                initial={{ opacity: 0, y: 10 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                className="bg-white border border-neutral-100 rounded-[32px] overflow-hidden shadow-sm"
-                            >
-                                <div className="aspect-[4/3] bg-neutral-100 relative">
-                                    <div className="absolute top-4 left-4 bg-white/90 backdrop-blur px-3 py-1 rounded-full text-[12px] font-bold shadow-sm">
-                                        {property.type === 'house' ? 'Maison' : property.type === 'apartment' ? 'Appartement' : 'Villa'}
-                                    </div>
-                                    <img src={`https://source.unsplash.com/800x600/?${property.type},home`} className="w-full h-full object-cover" />
-                                </div>
-                                <div className="p-6">
-                                    <div className="flex justify-between items-start mb-2">
-                                        <h3 className="text-[18px] font-bold text-black">{property.name}</h3>
-                                        <button className="p-2 -mr-2 rounded-full hover:bg-neutral-50"><MoreHorizontal size={20} /></button>
-                                    </div>
-                                    <div className="flex items-center gap-2 text-[14px] text-neutral-500">
-                                        <span>{property.specs?.bedrooms || 0} chambres</span>
-                                        <span>•</span>
-                                        <div className="flex items-center gap-1 text-green-600 font-bold">
-                                            <CheckCircle2 size={14} />
-                                            <span>Prêt</span>
+                    <div className="space-y-8 w-full py-2">
+                        <div>
+                            <h2 className="text-[14px] font-bold text-neutral-400 uppercase tracking-widest mb-4">
+                                {t({ en: 'Published', fr: 'Publiée', ar: 'منشور' })} ({properties.length})
+                            </h2>
+
+                            <div className="space-y-4">
+                                {properties.map((property) => (
+                                    <motion.div
+                                        key={property.id}
+                                        initial={{ opacity: 0, y: 10 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        className="flex gap-4 p-0 group cursor-pointer"
+                                    >
+                                        <div className="relative w-20 h-20 rounded-2xl overflow-hidden shrink-0 shadow-sm border border-neutral-100">
+                                            <img 
+                                                src={property.photos?.[0] || `https://source.unsplash.com/400x400/?${property.type},home`} 
+                                                className="w-full h-full object-cover" 
+                                            />
+                                            <div className="absolute top-1.5 left-1.5 w-3 h-3 bg-[#4CAF50] rounded-full border-2 border-white shadow-sm" />
                                         </div>
-                                    </div>
-                                </div>
-                            </motion.div>
-                        ))}
+                                        <div className="flex flex-col justify-center min-w-0 border-b border-neutral-50 flex-1 pb-4 group-last:border-0">
+                                            <div className="flex justify-between items-start">
+                                                <h3 className="font-bold text-[17px] text-black truncate tracking-tight pr-4">
+                                                    {property.name || 'Dar Lehbib | Self Check-In | Plage'}
+                                                </h3>
+                                            </div>
+                                            <p className="text-[14px] text-neutral-400 font-medium truncate mt-0.5">
+                                                {t({ en: 'Property', fr: 'Logement' })} · {property.specs?.address?.split(',')[0] || 'Essaouira'}, Marrakesh-Safi
+                                            </p>
+                                        </div>
+                                    </motion.div>
+                                ))}
+                            </div>
+                        </div>
                     </div>
                 )}
             </div>

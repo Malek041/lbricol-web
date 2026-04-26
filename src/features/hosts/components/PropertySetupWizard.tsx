@@ -1133,31 +1133,24 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                                 initial={{ y: 20, opacity: 0 }}
                                 animate={{ y: 0, opacity: 1 }}
                                 transition={{ delay: 0.2 }}
-                                className="bg-white border border-neutral-100 rounded-[32px] overflow-hidden shadow-sm"
+                                className="flex gap-4 p-0"
                             >
-                                <div className="aspect-[4/3] bg-neutral-100 relative">
-                                    <div className="absolute top-4 left-4 bg-white/90 backdrop-blur px-3 py-1 rounded-full text-[12px] font-bold shadow-sm">
-                                        {type === 'house' ? 'Maison' : type === 'apartment' ? 'Appartement' : 'Villa'}
-                                    </div>
-                                    <Image 
-                                        src={photos[0] || '/Images/placeholder-property.jpg'} 
+                                <div className="relative w-20 h-20 rounded-2xl overflow-hidden shrink-0 shadow-sm border border-neutral-100">
+                                    <Image
+                                        src={photos[0] || '/Images/placeholder-property.jpg'}
                                         alt={name}
                                         fill
                                         className="object-cover"
                                     />
+                                    <div className="absolute top-1.5 left-1.5 w-3 h-3 bg-[#4CAF50] rounded-full border-2 border-white shadow-sm" />
                                 </div>
-                                <div className="p-6">
-                                    <div className="flex justify-between items-start mb-2">
-                                        <h3 className="text-[18px] font-bold text-black">{name || 'Ma Propriété'}</h3>
-                                    </div>
-                                    <div className="flex items-center gap-2 text-[14px] text-neutral-500">
-                                        <span>{bedrooms || 0} chambres</span>
-                                        <span>•</span>
-                                        <div className="flex items-center gap-1 text-green-600 font-bold">
-                                            <CheckCircle2 size={14} />
-                                            <span>Prêt</span>
-                                        </div>
-                                    </div>
+                                <div className="flex flex-col justify-center min-w-0 border-b border-neutral-50 flex-1 pb-4">
+                                    <h3 className="font-bold text-[17px] text-black truncate tracking-tight pr-4">
+                                        {name || 'Dar Lehbib | Self Check-In | Plage'}
+                                    </h3>
+                                    <p className="text-[14px] text-neutral-400 font-medium truncate mt-0.5">
+                                        {t({ en: 'Property', fr: 'Logement' })} · {address?.split(',')[0] || 'Essaouira'}, Marrakesh-Safi
+                                    </p>
                                 </div>
                             </motion.div>
                         </div>
