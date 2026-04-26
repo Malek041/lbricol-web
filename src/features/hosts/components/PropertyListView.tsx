@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Home, Building, MoreHorizontal, CheckCircle2, Search, Filter } from 'lucide-react';
+import { Plus, Home, Building, MoreHorizontal, CheckCircle2, Search, Filter, LayoutGrid } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
 import PropertySetupWizard from './PropertySetupWizard';
 import Image from 'next/image';
