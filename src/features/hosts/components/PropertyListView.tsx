@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Home, Building, MoreHorizontal, CheckCircle2, Search, Filter, LayoutGrid } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
 import PropertySetupWizard from './PropertySetupWizard';
+import PropertyDetailView from './PropertyDetailView';
 import Image from 'next/image';
 import { db, auth } from '@/lib/firebase';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
@@ -12,6 +13,7 @@ import { collection, query, where, onSnapshot } from 'firebase/firestore';
 const PropertyListView = () => {
     const { t } = useLanguage();
     const [isWizardOpen, setIsWizardOpen] = useState(false);
+    const [selectedProperty, setSelectedProperty] = useState<any>(null);
     const [properties, setProperties] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
 
@@ -109,6 +111,7 @@ const PropertyListView = () => {
                                         initial={{ opacity: 0, y: 10 }}
                                         animate={{ opacity: 1, y: 0 }}
                                         className="flex gap-4 p-0 group cursor-pointer"
+                                        onClick={() => setSelectedProperty(property)}
                                     >
                                         <div className="relative w-20 h-20 rounded-2xl overflow-hidden shrink-0 shadow-sm border border-neutral-100">
                                             <img 
@@ -140,8 +143,13 @@ const PropertyListView = () => {
                 onClose={() => setIsWizardOpen(false)}
                 onComplete={() => {
                     setIsWizardOpen(false);
-                    // Refresh properties logic here
                 }}
+            />
+
+            <PropertyDetailView
+                property={selectedProperty}
+                isOpen={!!selectedProperty}
+                onClose={() => setSelectedProperty(null)}
             />
             {/* Preload Wizard Images */}
             <div className="sr-only" aria-hidden="true">
