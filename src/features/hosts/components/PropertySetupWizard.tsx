@@ -12,7 +12,7 @@ import {
     Music, Dumbbell, Mountain, ShowerHead, SquarePlus, Snowflake,
     TreePine, PawPrint, Baby, Camera, Plus, Trash2, Info,
     Sparkles, Key, Shirt, Wrench, Package, MonitorUp, Droplets, Zap, Paintbrush, Heart, ChefHat, Map, BookOpen, Hammer, Plane, BellRing,
-    Bot, Handshake, Copy, Flower2, LayoutGrid, MessageSquare, Calendar, Bookmark, Menu, User
+    Bot, Handshake, Copy, Flower2, LayoutGrid, MessageSquare, Calendar, Bookmark, Menu, User, CheckCircle2
 } from 'lucide-react';
 import Lottie from 'lottie-react';
 import homeAnimation from '../../../../public/Animated icons/system-regular-41-home-hover-pinch.json';
