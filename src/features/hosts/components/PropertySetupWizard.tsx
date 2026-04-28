@@ -12,8 +12,10 @@ import {
     Music, Dumbbell, Mountain, ShowerHead, SquarePlus, Snowflake,
     TreePine, PawPrint, Baby, Camera, Plus, Trash2, Info,
     Sparkles, Key, Shirt, Wrench, Package, MonitorUp, Droplets, Zap, Paintbrush, Heart, ChefHat, Map, BookOpen, Hammer, Plane, BellRing,
-    Bot, Handshake, Copy, Flower2, LayoutGrid, MessageSquare, Calendar, Bookmark, Menu, User, CheckCircle2
+    Bot, Handshake, Copy, Flower2, LayoutGrid, MessageSquare, Calendar, Bookmark, Menu, User, CheckCircle2, FireExtinguisher, ShieldAlert
 } from 'lucide-react';
+import { TbGrill, TbCampfire, TbAlarmSmoke } from 'react-icons/tb';
+import { MdOutlineFireplace, MdOutlineCo2 } from 'react-icons/md';
 import Lottie from 'lottie-react';
 import homeAnimation from '../../../../public/Animated icons/system-regular-41-home-hover-pinch.json';
 import LocationPicker from '@/components/location-picker/LocationPicker';
@@ -81,9 +83,9 @@ const AMENITY_GROUPS = [
             { id: 'kids_space', label: { en: 'Kids space', fr: 'Espace enfants' }, icon: Baby },
             { id: 'hottub', label: { en: 'Hot tub', fr: 'Jacuzzi' }, icon: Bath },
             { id: 'patio', label: { en: 'Patio', fr: 'Patio' }, icon: Fence },
-            { id: 'bbq', label: { en: 'BBQ grill', fr: 'Barbecue' }, icon: Flame },
+            { id: 'bbq', label: { en: 'BBQ grill', fr: 'Barbecue' }, icon: TbGrill },
             { id: 'outdoor_dining', label: { en: 'Outdoor dining area', fr: 'Espace repas en plein air' }, icon: Utensils },
-            { id: 'fire_pit', label: { en: 'Fire pit', fr: 'Brasero' }, icon: Flame },
+            { id: 'fire_pit', label: { en: 'Fire pit', fr: 'Brasero' }, icon: TbCampfire },
             { id: 'pool_table', label: { en: 'Pool table', fr: 'Billard' }, icon: Dices },
             { id: 'fireplace', label: { en: 'Indoor fireplace', fr: 'Cheminée' }, icon: Flame },
             { id: 'piano', label: { en: 'Piano', fr: 'Piano' }, icon: Music },
@@ -113,16 +115,17 @@ const AMENITY_GROUPS = [
         id: 'safety',
         title: { en: 'Do you have these safety items?', fr: 'Possédez-vous ces équipements de sécurité ?' },
         items: [
-            { id: 'smoke_alarm', label: { en: 'Smoke alarm', fr: 'Détecteur de fumée' }, icon: Wind },
+            { id: 'smoke_alarm', label: { en: 'Smoke alarm', fr: 'Détecteur de fumée' }, icon: BellRing },
             { id: 'first_aid_kit', label: { en: 'First aid kit', fr: 'Trousse de premiers secours' }, icon: SquarePlus },
-            { id: 'fire_extinguisher', label: { en: 'Fire extinguisher', fr: 'Extincteur' }, icon: Flame },
-            { id: 'carbon_monoxide_alarm', label: { en: 'Carbon monoxide alarm', fr: 'Détecteur de monoxyde de carbone' }, icon: Wind },
+            { id: 'fire_extinguisher', label: { en: 'Fire extinguisher', fr: 'Extincteur' }, icon: FireExtinguisher },
+            { id: 'carbon_monoxide_alarm', label: { en: 'Carbon monoxide alarm', fr: 'Détecteur de monoxyde de carbone' }, icon: ShieldAlert },
         ]
     }
 ];
 
 const PROPERTY_TYPES = [
-    { id: 'apartment', label: { en: 'Apartment', fr: 'Appartement' }, icon: Home },
+    { id: 'apartment', label: { en: 'Apartment', fr: 'Appartement' }, icon: Building },
+    { id: 'villa', label: { en: 'Villa', fr: 'Villa' }, icon: Home },
     { id: 'guesthouse', label: { en: 'Guesthouse', fr: 'Maison d\'hôtes/Gîte rural' }, icon: Building2 },
     { id: 'hotel', label: { en: 'Hotel', fr: 'Hôtel' }, icon: HotelIcon },
     { id: 'riad', label: { en: 'Riad', fr: 'Riad' }, icon: Landmark },
@@ -901,7 +904,22 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                 </div>
 
                 {/* Footer */}
-                <div className="px-6 py-6 border-t border-neutral-100 bg-white">
+                <div className="fixed bottom-0 left-0 right-0 px-6 pt-4 pb-6 bg-white border-t border-neutral-100 z-20">
+                    {/* Segmented Progress Bar */}
+                    <div className="flex gap-2 h-[2px] mb-6">
+                        {[0, 1, 2].map((stageIdx) => {
+                            let progress = 0;
+                            if (stageIdx === 0) progress = 100;
+                            if (stageIdx === 1) progress = 100;
+                            if (stageIdx === 2) progress = 0;
+
+                            return (
+                                <div key={stageIdx} className="flex-1 h-[2px] bg-neutral-200 rounded-full overflow-hidden">
+                                    <div className="h-full bg-black transition-all duration-500 ease-in-out" style={{ width: `${progress}%` }} />
+                                </div>
+                            );
+                        })}
+                    </div>
                     <div className="flex justify-between items-center">
                         <button
                             onClick={handleBack}
@@ -978,7 +996,7 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                         <h2 className="font-medium text-[30px] text-black leading-[1.1] tracking-tight">
                             {t({ en: 'Tell us about your property', fr: 'Parlez-nous de votre logement', ar: 'أخبرنا عن مسكنك' })}
                         </h2>
-                        <p className="text-[17px] text-[#2C2C2C] leading-relaxed font-light">
+                        <p className="text-[17px] text-[#2C2C2C] leading-relaxed font-medium">
                             {t({
                                 en: 'In this step, we\'ll ask what type of property you have and basic details like location and capacity. This helps us automate cleaning and restocking perfectly.',
                                 fr: 'Au cours de cette étape, nous allons vous demander quel type de logement vous proposez et des détails de base. Cela nous aide à automatiser parfaitement Les activités dont vous pourriez avoir besoin.',
@@ -989,19 +1007,36 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                 </div>
 
                 {/* Footer */}
-                <div className="fixed bottom-0 left-0 right-0 p-6 bg-white border-t border-neutral-100 flex justify-between items-center z-20">
-                    <button onClick={handleBack} className="font-light text-[16px] text-black underline underline-offset-4 active:scale-95 transition-all" >
-                        {t({ en: 'Back', fr: 'Retour' })}
-                    </button>
-                    <button
-                        onClick={() => {
-                            setViewMode('form');
-                            setStepIndex(0);
-                        }}
-                        className="bg-[#2C2C2C] text-white px-10 py-4 rounded-[12px] text-[17px] font-medium active:scale-[0.98] transition-all"
-                    >
-                        {t({ en: 'Next', fr: 'Suivant' })}
-                    </button>
+                <div className="fixed bottom-0 left-0 right-0 px-6 pt-4 pb-6 bg-white border-t border-neutral-100 z-20">
+                    {/* Segmented Progress Bar */}
+                    <div className="flex gap-2 h-[2px] mb-6">
+                        {[0, 1, 2].map((stageIdx) => {
+                            let progress = 0;
+                            if (stageIdx === 0) progress = 0;
+                            if (stageIdx === 1) progress = 0;
+                            if (stageIdx === 2) progress = 0;
+
+                            return (
+                                <div key={stageIdx} className="flex-1 h-[2px] bg-neutral-200 rounded-full overflow-hidden">
+                                    <div className="h-full bg-black transition-all duration-500 ease-in-out" style={{ width: `${progress}%` }} />
+                                </div>
+                            );
+                        })}
+                    </div>
+                    <div className="flex justify-between items-center">
+                        <button onClick={handleBack} className="font-light text-[16px] text-black underline underline-offset-4 active:scale-95 transition-all" >
+                            {t({ en: 'Back', fr: 'Retour' })}
+                        </button>
+                        <button
+                            onClick={() => {
+                                setViewMode('form');
+                                setStepIndex(0);
+                            }}
+                            className="bg-[#2C2C2C] text-white px-10 py-4 rounded-[12px] text-[17px] font-medium active:scale-[0.98] transition-all"
+                        >
+                            {t({ en: 'Next', fr: 'Suivant' })}
+                        </button>
+                    </div>
                 </div>
             </motion.div>
         );
@@ -1065,7 +1100,7 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                                 ar: 'اجعل إعلانك متميزاً'
                             })}
                         </h2>
-                        <p className="text-[17px] text-neutral-500 leading-relaxed font-light">
+                        <p className="text-[17px] text-black leading-relaxed font-medium">
                             {t({
                                 en: 'In this step, you can add some of the amenities offered in your accommodation and at least 5 photos. You can then add a title and a description.',
                                 fr: 'À cette étape, vous pouvez ajouter certains des espaces et équipements proposés dans votre hébergement, ainsi qu\'au moins 5 photos. Vous pouvez ensuite ajouter un titre et une description.',
@@ -1076,19 +1111,36 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                 </div>
 
                 {/* Footer */}
-                <div className="fixed bottom-0 left-0 right-0 p-6 bg-white border-t border-neutral-100 flex justify-between items-center z-20">
-                    <button onClick={handleBack} className="font-light text-[16px] text-black underline underline-offset-4 active:scale-95 transition-all" >
-                        {t({ en: 'Back', fr: 'Retour' })}
-                    </button>
-                    <button
-                        onClick={() => {
-                            setViewMode('form');
-                            setStepIndex(3);
-                        }}
-                        className="bg-[#2C2C2C] text-white px-10 py-4 rounded-[12px] text-[17px] font-medium active:scale-[0.98] transition-all"
-                    >
-                        {t({ en: 'Next', fr: 'Suivant' })}
-                    </button>
+                <div className="fixed bottom-0 left-0 right-0 px-6 pt-4 pb-6 bg-white border-t border-neutral-100 z-20">
+                    {/* Segmented Progress Bar */}
+                    <div className="flex gap-2 h-[2px] mb-6">
+                        {[0, 1, 2].map((stageIdx) => {
+                            let progress = 0;
+                            if (stageIdx === 0) progress = 100;
+                            if (stageIdx === 1) progress = 0;
+                            if (stageIdx === 2) progress = 0;
+
+                            return (
+                                <div key={stageIdx} className="flex-1 h-[2px] bg-neutral-200 rounded-full overflow-hidden">
+                                    <div className="h-full bg-black transition-all duration-500 ease-in-out" style={{ width: `${progress}%` }} />
+                                </div>
+                            );
+                        })}
+                    </div>
+                    <div className="flex justify-between items-center">
+                        <button onClick={handleBack} className="font-light text-[16px] text-black underline underline-offset-4 active:scale-95 transition-all" >
+                            {t({ en: 'Back', fr: 'Retour' })}
+                        </button>
+                        <button
+                            onClick={() => {
+                                setViewMode('form');
+                                setStepIndex(3);
+                            }}
+                            className="bg-[#2C2C2C] text-white px-10 py-4 rounded-[12px] text-[17px] font-medium active:scale-[0.98] transition-all"
+                        >
+                            {t({ en: 'Next', fr: 'Suivant' })}
+                        </button>
+                    </div>
                 </div>
             </motion.div>
         );
@@ -1656,13 +1708,13 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                                                         show: { opacity: 1, scale: 1, y: 0, transition: { type: 'spring', stiffness: 300, damping: 24 } }
                                                     }}
                                                     whileTap={{ scale: 0.95 }}
-                                                    className={`flex items-center gap-3 px-6 py-3.5 rounded-full border transition-colors ${isSelected
+                                                    className={`flex items-center gap-2 px-4 py-2 rounded-full border transition-colors ${isSelected
                                                         ? 'border-black border-2 bg-neutral-50'
                                                         : 'border-neutral-200 hover:border-black'
                                                         }`}
                                                 >
-                                                    <Icon size={20} className="text-black" />
-                                                    <span className="text-[16px] font-light text-black">
+                                                    <Icon size={18} className="text-black" />
+                                                    <span className="text-[14px] font-semibold text-black">
                                                         {t({ en: category.label, fr: category.labelFr, ar: category.labelAr || category.labelFr })}
                                                     </span>
                                                 </motion.button>
@@ -1755,13 +1807,13 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                                                         show: { opacity: 1, scale: 1, y: 0, transition: { type: 'spring', stiffness: 300, damping: 24 } }
                                                     }}
                                                     whileTap={{ scale: 0.95 }}
-                                                    className={`flex items-center gap-3 px-6 py-3.5 rounded-full border transition-colors ${isSelected
+                                                    className={`flex items-center gap-2 px-4 py-2 rounded-full border transition-colors ${isSelected
                                                         ? 'border-black border-2 bg-neutral-50'
                                                         : 'border-neutral-200 hover:border-black'
                                                         }`}
                                                 >
-                                                    <Icon size={20} className="text-black" />
-                                                    <span className="text-[16px] font-light text-black">
+                                                    <Icon size={18} className="text-black" />
+                                                    <span className="text-[14px] font-semibold text-black">
                                                         {t({ en: category.label, fr: category.labelFr || category.label, ar: category.labelAr || category.labelFr || category.label })}
                                                     </span>
                                                 </motion.button>
@@ -1837,13 +1889,13 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                                                         show: { opacity: 1, scale: 1, y: 0, transition: { type: 'spring', stiffness: 300, damping: 24 } }
                                                     }}
                                                     whileTap={{ scale: 0.95 }}
-                                                    className={`flex items-center gap-3 px-6 py-3.5 rounded-full border transition-colors ${isSelected
+                                                    className={`flex items-center gap-2 px-4 py-2 rounded-full border transition-colors ${isSelected
                                                         ? 'border-black border-2 bg-neutral-50'
                                                         : 'border-neutral-200 hover:border-black'
                                                         }`}
                                                 >
-                                                    <Icon size={20} className="text-black" />
-                                                    <span className="text-[16px] font-light text-black">
+                                                    <Icon size={18} className="text-black" />
+                                                    <span className="text-[14px] font-semibold text-black">
                                                         {t({ en: category.label, fr: category.labelFr || category.label, ar: category.labelAr || category.labelFr || category.label })}
                                                     </span>
                                                 </motion.button>
@@ -1864,7 +1916,7 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                             className="flex-1 flex flex-col min-h-0"
                         >
                             {currentDetailServiceId === 'cleaning' && (
-                                <div className="flex-1 overflow-y-auto px-6 pt-8 pb-32">
+                                <div className="flex-1 overflow-y-auto  pt-8 pb-32">
                                     <div className="flex flex-col items-start gap-2 pb-6">
                                         <button onClick={onClose} className="font-light px-4 py-2 rounded-full border border-neutral-200 text-[14px] hover:bg-neutral-50 active:scale-95 transition-all text-black" >
                                             {t({ en: 'Save & exit', fr: 'Enregistrer et quitter' })}
@@ -1898,7 +1950,7 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                                                             if (isSubSelected) setCleaningSubServices(prev => prev.filter(s => s !== sub.id));
                                                             else setCleaningSubServices(prev => [...prev, sub.id]);
                                                         }}
-                                                        className={`px-6 py-3 rounded-full border transition-all text-[15px] font-light ${isSubSelected
+                                                        className={`px-4 py-2 rounded-full border transition-all text-[14px] font-semibold ${isSubSelected
                                                             ? 'bg-neutral-50 text-black border-black border-2'
                                                             : 'bg-white text-black border-neutral-200 hover:border-black'
                                                             }`}
@@ -1944,7 +1996,7 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                                                         <button
                                                             key={freq.id}
                                                             onClick={() => setCleaningFrequencies(prev => ({ ...prev, [subId]: freq.id }))}
-                                                            className={`px-5 py-2.5 rounded-full border text-[14px] font-light transition-all ${cleaningFrequencies[subId] === freq.id
+                                                            className={`px-4 py-2 rounded-full border text-[14px] font-semibold transition-all ${cleaningFrequencies[subId] === freq.id
                                                                 ? 'bg-neutral-50 text-black border-black border-2'
                                                                 : 'bg-white text-black border-neutral-200 hover:border-black'
                                                                 }`}
@@ -1968,7 +2020,7 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                                                             <button
                                                                 key={size.id}
                                                                 onClick={() => setStairsSize(size.id as any)}
-                                                                className={`px-5 py-2.5 rounded-full border text-[14px] font-light transition-all ${stairsSize === size.id
+                                                                className={`px-4 py-2 rounded-full border text-[14px] font-semibold transition-all ${stairsSize === size.id
                                                                     ? 'bg-neutral-50 text-black border-black border-2'
                                                                     : 'bg-white text-black border-neutral-200 hover:border-black'
                                                                     }`}
@@ -2137,7 +2189,7 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                                                 <button
                                                     key={size.id}
                                                     onClick={() => setWindowsSize(size.id as any)}
-                                                    className={`px-5 py-3 rounded-full border transition-all text-[15px] font-light ${windowsSize === size.id ? 'border-black border-[1.5px] bg-[#F7F7F7] text-black' : 'border-neutral-200 text-black hover:border-black'
+                                                    className={`px-4 py-2 rounded-full border transition-all text-[14px] font-semibold ${windowsSize === size.id ? 'border-black border-[1.5px] bg-[#F7F7F7] text-black' : 'border-neutral-200 text-black hover:border-black'
                                                         }`}
                                                 >
                                                     {t({ en: size.label, fr: size.labelFr })}
@@ -2160,7 +2212,7 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                                                 <button
                                                     key={cov.id}
                                                     onClick={() => setWindowsCoverage(cov.id as any)}
-                                                    className={`px-5 py-3 rounded-full border transition-all text-[15px] font-light ${windowsCoverage === cov.id ? 'border-black border-[1.5px] bg-[#F7F7F7] text-black' : 'border-neutral-200 text-black hover:border-black'
+                                                    className={`px-4 py-2 rounded-full border transition-all text-[14px] font-semibold ${windowsCoverage === cov.id ? 'border-black border-[1.5px] bg-[#F7F7F7] text-black' : 'border-neutral-200 text-black hover:border-black'
                                                         }`}
                                                 >
                                                     {t({ en: cov.label, fr: cov.labelFr })}
@@ -2182,7 +2234,7 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                                                 <button
                                                     key={acc.id}
                                                     onClick={() => setWindowsAccessibility(acc.id as any)}
-                                                    className={`px-5 py-3 rounded-full border transition-all text-[15px] font-light ${windowsAccessibility === acc.id ? 'border-black border-[1.5px] bg-[#F7F7F7] text-black' : 'border-neutral-200 text-black hover:border-black'
+                                                    className={`px-4 py-2 rounded-full border transition-all text-[14px] font-semibold ${windowsAccessibility === acc.id ? 'border-black border-[1.5px] bg-[#F7F7F7] text-black' : 'border-neutral-200 text-black hover:border-black'
                                                         }`}
                                                 >
                                                     {t({ en: acc.label, fr: acc.labelFr })}
@@ -2268,7 +2320,7 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                                                         <button
                                                             key={size.id}
                                                             onClick={() => setGardenSize(size.id as any)}
-                                                            className={`px-5 py-2.5 rounded-full border text-[15px] font-light transition-all ${gardenSize === size.id
+                                                            className={`px-4 py-2 rounded-full border text-[14px] font-semibold transition-all ${gardenSize === size.id
                                                                 ? 'bg-neutral-50 text-black border-black border-2'
                                                                 : 'border-neutral-200 text-black hover:border-black bg-white'
                                                                 }`}
@@ -2541,7 +2593,7 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                                                             if (isSelected) setPetTypes(prev => prev.filter(p => p !== pet.id));
                                                             else setPetTypes(prev => [...prev, pet.id]);
                                                         }}
-                                                        className={`flex items-center gap-2 px-6 py-3 rounded-full border transition-all text-[15px] font-light ${isSelected
+                                                        className={`flex items-center gap-2 px-4 py-2 rounded-full border transition-all text-[14px] font-semibold ${isSelected
                                                             ? 'bg-neutral-50 text-black border-black border-2'
                                                             : 'bg-white text-black border-neutral-200 hover:border-black'
                                                             }`}
@@ -2720,7 +2772,7 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                                                     <button
                                                         key={type.id}
                                                         onClick={() => setPoolType(type.id as any)}
-                                                        className={`px-5 py-2.5 rounded-full border text-[15px] font-light transition-all ${poolType === type.id
+                                                        className={`px-4 py-2 rounded-full border text-[14px] font-semibold transition-all ${poolType === type.id
                                                             ? 'bg-neutral-50 text-black border-black border-2'
                                                             : 'border-neutral-200 text-black hover:border-black bg-white'
                                                             }`}
@@ -3574,8 +3626,41 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
 
             {/* Footer Actions */}
             {stepIndex !== 1 && (
-                <div className="px-6 py-6 border-t border-neutral-100 bg-white z-20">
-                    <div className="flex justify-between items-center mb-6">
+                <div className="px-6 pt-4 pb-6 border-t border-neutral-100 bg-white z-20">
+                    {/* Segmented Progress Bar */}
+                    <div className="flex gap-2 h-[2px] mb-6">
+                        {[0, 1, 2].map((stageIdx) => {
+                            let progress = 0;
+
+                            // Calculate progress for each stage
+                            if (stageIdx === 0) {
+                                if (stepIndex > 2) progress = 100;
+                                else if (stepIndex === 0) progress = 33;
+                                else if (stepIndex === 1) progress = 66;
+                                else if (stepIndex === 2) progress = 100;
+                            } else if (stageIdx === 1) {
+                                if (stepIndex > 4) progress = 100;
+                                else if (stepIndex === 3) progress = 50;
+                                else if (stepIndex === 4) progress = 100;
+                            } else if (stageIdx === 2) {
+                                if (viewMode === 'published_success') progress = 100;
+                                else if (stepIndex === 5) progress = 33;
+                                else if (stepIndex === 6) progress = 66;
+                                else if (stepIndex >= 7 || viewMode === 'team_mode_select' || viewMode === 'service_detail_form') progress = 100;
+                            }
+
+                            return (
+                                <div key={stageIdx} className="flex-1 h-[2px] bg-neutral-200 rounded-full overflow-hidden">
+                                    <div
+                                        className="h-full bg-black transition-all duration-500 ease-in-out"
+                                        style={{ width: `${progress}%` }}
+                                    />
+                                </div>
+                            );
+                        })}
+                    </div>
+
+                    <div className="flex justify-between items-center">
                         <button onClick={handleBack} className="font-light text-[17px] text-black underline underline-offset-4" >
                             {t({ en: 'Back', fr: 'Retour', ar: 'عودة' })}
                         </button>
@@ -3590,25 +3675,6 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                                 return 'Suivant';
                             })()}
                         </button>
-                    </div>
-
-                    {/* Segmented Progress Bar */}
-                    <div className="flex gap-2 h-[2px] mt-2">
-                        {[0, 1, 2].map((stageIdx) => {
-                            let isActive = false;
-                            if (stageIdx === 0 && stepIndex <= 2) isActive = true;
-                            if (stageIdx === 1 && (stepIndex === 3 || stepIndex === 4)) isActive = true; // Amenities and Photos is stage 2
-                            if (stageIdx === 2 && stepIndex >= 5) isActive = true; // Automation is stage 3
-
-                            const isFinished = (stageIdx === 0 && stepIndex > 2) || (stageIdx === 1 && stepIndex > 4);
-
-                            return (
-                                <div
-                                    key={stageIdx}
-                                    className={`flex-1 rounded-full transition-all duration-500 ${isActive || isFinished ? 'bg-black' : 'bg-neutral-200'}`}
-                                />
-                            );
-                        })}
                     </div>
                 </div>
             )}

@@ -97,7 +97,10 @@ const PropertyDetailView: React.FC<PropertyDetailViewProps> = ({ property, isOpe
                         {/* Quick Stats */}
                         <div className="mt-4 space-y-1">
                             <p className="text-[16px] font-bold text-black">
-                                {t({ en: 'Entire home: apartment', fr: 'Logement entier : appartement' })} - {address.split(',')[0]}, Maroc
+                                {t({ 
+                                    en: `Entire home: ${type === 'apartment' ? 'apartment' : type === 'villa' ? 'villa' : type}`, 
+                                    fr: `Logement entier : ${type === 'apartment' ? 'appartement' : type === 'villa' ? 'villa' : type}` 
+                                })} - {address.split(',')[0]}, Maroc
                             </p>
                             <p className="text-[14px] text-neutral-500 font-medium">
                                 {guests} voyageurs · {bedrooms} chambre · {beds} lit · {bathrooms} salle de bain

@@ -416,4 +416,19 @@ export const SERVICES_CATALOGUE: ServiceEntry[] = [
         ],
         heroImage: '/Images/Cars.png',
     },
+    {
+        id: 'airport_pickup',
+        label: 'Airport pickup',
+        labelFr: 'Transfert Aéroport',
+        labelAr: 'نقل من المطار',
+        iconPath: '/Images/Vectors Illu/plane.webp',
+        subServices: [
+            { id: 'standard_pickup', en: 'Standard Pickup', fr: 'Transfert Standard', ar: 'توصيل عادي' },
+            { id: 'vip_pickup', en: 'VIP Pickup', fr: 'Transfert VIP', ar: 'توصيل VIP' }
+        ],
+        bullets: [
+            { en: 'A professional driver will pick up your guests at the airport.', fr: 'Un chauffeur professionnel accueillera vos voyageurs à l\'aéroport.', ar: 'سائق محترف سيستقبل ضيوفك في المطار.' }
+        ],
+        heroImage: '/Images/Job Cards Images/Handyman_job_card.webp',
+    },
 ];
