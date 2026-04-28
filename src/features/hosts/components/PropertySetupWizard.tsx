@@ -85,15 +85,12 @@ const AMENITY_GROUPS = [
             { id: 'patio', label: { en: 'Patio', fr: 'Patio' }, icon: Fence },
             { id: 'bbq', label: { en: 'BBQ grill', fr: 'Barbecue' }, icon: TbGrill },
             { id: 'outdoor_dining', label: { en: 'Outdoor dining area', fr: 'Espace repas en plein air' }, icon: Utensils },
-            { id: 'fire_pit', label: { en: 'Fire pit', fr: 'Brasero' }, icon: TbCampfire },
-            { id: 'pool_table', label: { en: 'Pool table', fr: 'Billard' }, icon: Dices },
-            { id: 'fireplace', label: { en: 'Indoor fireplace', fr: 'Cheminée' }, icon: Flame },
+            { id: 'pool_table', label: { en: 'Pool table', fr: 'Table de billard' }, icon: Dices },
+            { id: 'fireplace', label: { en: 'Indoor fireplace', fr: 'Cheminée intérieure' }, icon: Flame },
             { id: 'piano', label: { en: 'Piano', fr: 'Piano' }, icon: Music },
-            { id: 'gym', label: { en: 'Exercise equipment', fr: 'Appareils de fitness' }, icon: Dumbbell },
-            { id: 'lake_access', label: { en: 'Lake access', fr: 'Accès au lac' }, icon: Waves },
-            { id: 'beach_access', label: { en: 'Beach access', fr: 'Accès à la plage' }, icon: Palmtree },
-            { id: 'ski_in_out', label: { en: 'Ski-in/ski-out', fr: 'Au pied des pistes' }, icon: Mountain },
+            { id: 'gym', label: { en: 'Exercise equipment', fr: 'Équipement d\'exercice' }, icon: Dumbbell },
             { id: 'outdoor_shower', label: { en: 'Outdoor shower', fr: 'Douche extérieure' }, icon: ShowerHead },
+            { id: 'fire_pit', label: { en: 'Fire pit', fr: 'Brasero' }, icon: TbCampfire },
         ]
     },
     {
@@ -544,9 +541,6 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
     };
 
     const handleNext = () => {
-        // Scroll to top on every navigation
-        scrollContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
-
         if (viewMode === 'form') {
             if (stepIndex === 2) {
                 setViewMode('step2_detail');
@@ -614,13 +608,17 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
     }, [isOpen]);
 
     useEffect(() => {
+        scrollContainerRef.current?.scrollTo({ top: 0, behavior: 'instant' });
+    }, [stepIndex, viewMode, currentDetailServiceId]);
+
+    useEffect(() => {
         setActiveServiceInfo(null);
     }, [stepIndex]);
 
     const handleSaveAndExit = () => {
         showToast({
-            title: t({ 
-                en: 'Progress saved successfully', 
+            title: t({
+                en: 'Progress saved successfully',
                 fr: 'Progrès enregistré avec succès',
                 ar: 'تم حفظ التقدم بنجاح'
             }),
@@ -1289,7 +1287,7 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                 ref={scrollContainerRef}
                 className={cn(
                     "flex-1 overflow-y-auto overscroll-behavior-contain",
-                    (stepIndex === 1 || stepIndex === 3) ? "p-0" : "px-6 py-6"
+                    (stepIndex === 1) ? "p-0" : "px-6 py-6"
                 )}>
                 <AnimatePresence mode="wait">
                     {viewMode === 'form' && (
@@ -1327,7 +1325,7 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                                                 <button
                                                     key={pt.id}
                                                     onClick={() => setType(pt.id)}
-                                                    className={`flex flex-col items-start justify-between p-4 rounded-xl border transition-all h-[120px] ${isActive ? 'border-black ring-1 ring-black bg-neutral-50' : 'border-neutral-200 hover:border-black'}`}
+                                                    className={`flex flex-col items-start justify-between p-4 rounded-[10px] border transition-all h-[120px] ${isActive ? 'border-black border-[1px] bg-neutral-50' : 'border-neutral-200 hover:border-black'}`}
                                                 >
                                                     <div className="w-8 h-8 flex items-center justify-center">
                                                         {isApartment && isActive ? (
@@ -1436,24 +1434,32 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
 
                             {stepIndex === 3 && (
                                 <div className="flex flex-col h-full bg-white">
-                                    <div className="px-6 pt-10 pb-6">
-                                        <h2 className="font-medium text-[26px] text-black leading-[1.15] tracking-tight mb-2">
+                                    <div className="pt-4 pb-6">
+                                        <h2 className="font-medium text-[32px] text-black leading-tight tracking-tight mb-2">
                                             {t({
-                                                en: 'List your property\'s amenities to get tailored service suggestions.',
+                                                en: 'List your inclusions.',
                                                 fr: 'Listez vos inclusions.',
-                                                ar: 'أضف مرافق مكان إقامتك لتلقي اقتراحات خدمات مخصصة.'
+                                                ar: 'أضف مرافق مكان إقامتك.'
                                             })}
                                         </h2>
-
+                                        <p className="text-[17px] text-black font-medium leading-relaxed mt-6">
+                                            {t({
+                                                en: 'Do you have any unique spaces?',
+                                                fr: 'Possédez-vous des espaces uniques ?',
+                                                ar: 'هل لديك مساحات فريدة؟'
+                                            })}
+                                        </p>
                                     </div>
 
-                                    <div className="flex-1 overflow-y-auto px-6 pb-32">
+                                    <div className="flex-1 overflow-y-auto pb-32">
                                         <div className="space-y-12">
                                             {AMENITY_GROUPS.map((group) => (
                                                 <div key={group.id} className="space-y-6">
-                                                    <h3 className="font-medium text-[18px] text-black leading-tight">
-                                                        {t(group.title)}
-                                                    </h3>
+                                                    {group.id !== 'standout' && (
+                                                        <h3 className="font-medium text-[18px] text-black leading-tight">
+                                                            {t(group.title)}
+                                                        </h3>
+                                                    )}
                                                     <div className="grid grid-cols-2 gap-3">
                                                         {group.items.map((amenity) => {
                                                             const Icon = amenity.icon;
@@ -1469,13 +1475,13 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                                                                                 : [...prev, amenity.id]
                                                                         );
                                                                     }}
-                                                                    className={`flex flex-col items-start p-4 rounded-xl border-2 transition-all h-[130px] text-left gap-3 ${isSelected
-                                                                        ? 'border-black bg-neutral-50 ring-1 ring-black'
-                                                                        : 'border-neutral-100 hover:border-neutral-300'
+                                                                    className={`flex flex-col items-start justify-between p-6 rounded-[10px] border transition-all h-[150px] text-left ${isSelected
+                                                                        ? 'border-black border-[2px] bg-neutral-50'
+                                                                        : 'border-neutral-200 hover:border-black bg-white shadow-sm'
                                                                         }`}
                                                                 >
                                                                     <Icon size={32} strokeWidth={1.5} className="text-black" />
-                                                                    <span className="text-[15px] font-medium text-black leading-tight">
+                                                                    <span className="text-[16px] font-medium text-black leading-tight">
                                                                         {t(amenity.label)}
                                                                     </span>
                                                                 </button>
@@ -1582,7 +1588,7 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                                                         onDrop={() => handleDrop(idx)}
                                                         onDragEnd={() => setDragOverIndex(null)}
                                                         className={cn(
-                                                            "relative overflow-hidden bg-neutral-100 border rounded-xl cursor-grab active:cursor-grabbing transition-all",
+                                                            "relative overflow-hidden bg-neutral-100 border rounded-[10px] cursor-grab active:cursor-grabbing transition-all",
                                                             idx === 0 ? "col-span-2 aspect-[4/3]" : "aspect-square",
                                                             dragOverIndex === idx ? "border-black ring-2 ring-black scale-[0.98] opacity-80" : "border-neutral-200"
                                                         )}
@@ -1604,7 +1610,7 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                                                     </div>
                                                 ))}
                                                 {isUploading && (
-                                                    <div className="aspect-square relative overflow-hidden bg-neutral-100 border border-neutral-200 rounded-xl flex items-center justify-center">
+                                                    <div className="aspect-square relative overflow-hidden bg-neutral-100 border border-neutral-200 rounded-[10px] flex items-center justify-center">
                                                         <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, ease: "linear", duration: 1 }}>
                                                             <Coffee className="text-neutral-400" size={24} />
                                                         </motion.div>
@@ -1929,8 +1935,8 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                                                             if (isSubSelected) setCleaningSubServices(prev => prev.filter(s => s !== sub.id));
                                                             else setCleaningSubServices(prev => [...prev, sub.id]);
                                                         }}
-                                                        className={`px-4 py-2 rounded-full border transition-all text-[14px] font-semibold ${isSubSelected
-                                                            ? 'bg-neutral-50 text-black border-black border-2'
+                                                        className={`px-5 py-2.5 rounded-full border transition-all text-[14px] font-semibold ${isSubSelected
+                                                            ? 'bg-neutral-50 text-black border-black border-[2px]'
                                                             : 'bg-white text-black border-neutral-200 hover:border-black'
                                                             }`}
                                                     >
@@ -1947,7 +1953,7 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                                             key={subId}
                                             initial={{ opacity: 0, y: 10 }}
                                             animate={{ opacity: 1, y: 0 }}
-                                            className="space-y-6 mb-12 p-8 rounded-2xl border border-neutral-200 bg-white shadow-sm overflow-hidden"
+                                            className="space-y-6 mb-12 p-8 rounded-[10px] border border-neutral-200 bg-white shadow-sm overflow-hidden"
                                         >
                                             <h4 className="font-medium text-[18px] text-black leading-snug">
                                                 {subId === 'hospitality' && t({ en: 'When should we do the post-checkout cleaning?', fr: 'Quand devrions-nous faire le ménage après chaque départ ?' })}
@@ -1961,7 +1967,7 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                                                         type="time"
                                                         value={cleaningFrequencies[subId] || '11:00'}
                                                         onChange={(e) => setCleaningFrequencies(prev => ({ ...prev, [subId]: e.target.value }))}
-                                                        className="px-5 py-3 rounded-2xl bg-white border border-neutral-200 focus:outline-none focus:ring-2 focus:ring-black text-[17px] font-medium shadow-sm transition-all"
+                                                        className="px-5 py-3 rounded-[10px] bg-[#F7F7F7] border-none focus:outline-none focus:ring-2 focus:ring-black text-[17px] font-medium transition-all"
                                                     />
                                                 </div>
                                             ) : (
@@ -1975,8 +1981,8 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                                                         <button
                                                             key={freq.id}
                                                             onClick={() => setCleaningFrequencies(prev => ({ ...prev, [subId]: freq.id }))}
-                                                            className={`px-4 py-2 rounded-full border text-[14px] font-semibold transition-all ${cleaningFrequencies[subId] === freq.id
-                                                                ? 'bg-neutral-50 text-black border-black border-2'
+                                                            className={`px-5 py-2.5 rounded-full border text-[14px] font-semibold transition-all ${cleaningFrequencies[subId] === freq.id
+                                                                ? 'bg-neutral-50 text-black border-black border-[2px]'
                                                                 : 'bg-white text-black border-neutral-200 hover:border-black'
                                                                 }`}
                                                         >
@@ -1999,8 +2005,8 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                                                             <button
                                                                 key={size.id}
                                                                 onClick={() => setStairsSize(size.id as any)}
-                                                                className={`px-4 py-2 rounded-full border text-[14px] font-semibold transition-all ${stairsSize === size.id
-                                                                    ? 'bg-neutral-50 text-black border-black border-2'
+                                                                className={`px-5 py-2.5 rounded-full border text-[14px] font-semibold transition-all ${stairsSize === size.id
+                                                                    ? 'bg-neutral-50 text-black border-black border-[2px]'
                                                                     : 'bg-white text-black border-neutral-200 hover:border-black'
                                                                     }`}
                                                             >
@@ -2101,7 +2107,7 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                                                 <button
                                                     onClick={() => cleaningPhotoInputRef.current?.click()}
                                                     disabled={isUploadingCleaningPhotos}
-                                                    className="aspect-square rounded-xl border-2 border-dashed border-neutral-200 flex flex-col items-center justify-center gap-2 hover:border-black transition-all group active:scale-95"
+                                                    className="aspect-square rounded-[10px] border-2 border-dashed border-neutral-200 flex flex-col items-center justify-center gap-2 hover:border-black transition-all group active:scale-95"
                                                 >
                                                     {isUploadingCleaningPhotos ? (
                                                         <div className="w-6 h-6 border-2 border-neutral-300 border-t-black rounded-full animate-spin" />
@@ -2163,7 +2169,7 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                                                 <button
                                                     key={size.id}
                                                     onClick={() => setWindowsSize(size.id as any)}
-                                                    className={`px-4 py-2 rounded-full border transition-all text-[14px] font-semibold ${windowsSize === size.id ? 'border-black border-[1.5px] bg-[#F7F7F7] text-black' : 'border-neutral-200 text-black hover:border-black'
+                                                    className={`px-5 py-2.5 rounded-full border transition-all text-[14px] font-semibold ${windowsSize === size.id ? 'border-black border-[2px] bg-neutral-50 text-black' : 'border-neutral-200 text-black hover:border-black'
                                                         }`}
                                                 >
                                                     {t({ en: size.label, fr: size.labelFr })}
@@ -2186,7 +2192,7 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                                                 <button
                                                     key={cov.id}
                                                     onClick={() => setWindowsCoverage(cov.id as any)}
-                                                    className={`px-4 py-2 rounded-full border transition-all text-[14px] font-semibold ${windowsCoverage === cov.id ? 'border-black border-[1.5px] bg-[#F7F7F7] text-black' : 'border-neutral-200 text-black hover:border-black'
+                                                    className={`px-5 py-2.5 rounded-full border transition-all text-[14px] font-semibold ${windowsCoverage === cov.id ? 'border-black border-[2px] bg-neutral-50 text-black' : 'border-neutral-200 text-black hover:border-black'
                                                         }`}
                                                 >
                                                     {t({ en: cov.label, fr: cov.labelFr })}
@@ -2208,7 +2214,7 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                                                 <button
                                                     key={acc.id}
                                                     onClick={() => setWindowsAccessibility(acc.id as any)}
-                                                    className={`px-4 py-2 rounded-full border transition-all text-[14px] font-semibold ${windowsAccessibility === acc.id ? 'border-black border-[1.5px] bg-[#F7F7F7] text-black' : 'border-neutral-200 text-black hover:border-black'
+                                                    className={`px-5 py-2.5 rounded-full border transition-all text-[14px] font-semibold ${windowsAccessibility === acc.id ? 'border-black border-[2px] bg-neutral-50 text-black' : 'border-neutral-200 text-black hover:border-black'
                                                         }`}
                                                 >
                                                     {t({ en: acc.label, fr: acc.labelFr })}
@@ -2252,11 +2258,11 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                                                         }
                                                     }}
                                                     className={`w-full flex items-center justify-between p-5 rounded-[10px] border transition-all ${gardeningSubServices.includes(service.id)
-                                                        ? 'border-black border-2 bg-neutral-50'
+                                                        ? 'border-black border-[3.5px] bg-neutral-50'
                                                         : 'border-neutral-200 hover:border-black bg-white'
                                                         }`}
                                                 >
-                                                    <span className="text-[17px] font-light text-black">{t({ en: service.label, fr: service.labelFr })}</span>
+                                                    <span className="text-[17px] font-medium text-black">{t({ en: service.label, fr: service.labelFr })}</span>
                                                     {gardeningSubServices.includes(service.id) && <Check size={20} className="text-black" strokeWidth={2.5} />}
                                                 </button>
                                             ))}
@@ -2288,8 +2294,8 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                                                         <button
                                                             key={size.id}
                                                             onClick={() => setGardenSize(size.id as any)}
-                                                            className={`px-4 py-2 rounded-full border text-[14px] font-semibold transition-all ${gardenSize === size.id
-                                                                ? 'bg-neutral-50 text-black border-black border-2'
+                                                            className={`px-5 py-2.5 rounded-full border text-[14px] font-semibold transition-all ${gardenSize === size.id
+                                                                ? 'bg-neutral-50 text-black border-black border-[2px]'
                                                                 : 'border-neutral-200 text-black hover:border-black bg-white'
                                                                 }`}
                                                         >
@@ -2338,7 +2344,7 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                                                         <div className="font-medium text-[18px] text-black">{t({ en: 'Average Tree Height', fr: 'Hauteur moyenne' })}</div>
                                                         <div className="text-[14px] text-neutral-500 mt-1">{t({ en: 'Tip: average is 3m', fr: 'Conseil : moyenne est 3m' })}</div>
                                                     </div>
-                                                    <div className="font-medium text-[22px] text-black px-6 py-4 rounded-2xl border border-neutral-300 bg-white min-w-[100px] text-center">
+                                                    <div className="font-medium text-[22px] text-black px-6 py-4 rounded-[10px] border border-neutral-300 bg-white min-w-[100px] text-center">
                                                         {averageTreeHeight}m
                                                     </div>
                                                 </div>
@@ -2365,23 +2371,23 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                                                 </h3>
                                                 <div className="grid grid-cols-1 gap-3">
                                                     {[
-                                                        { id: 'shaping', icon: '✂️', label: 'Shaping & Design', desc: 'For aesthetic looks', fr: 'Forme et Design', descFr: 'Pour l\'esthétique' },
-                                                        { id: 'thinning', icon: '🍃', label: 'Thinning / Health', desc: 'Improve light & air flow', fr: 'Éclaircissage / Santé', descFr: 'Améliore la lumière et l\'air' },
-                                                        { id: 'deadwood', icon: '⚠️', label: 'Deadwood / Safety', desc: 'Remove old/risky branches', fr: 'Bois mort / Sécurité', descFr: 'Retirer les branches risquées' },
-                                                        { id: 'removal', icon: '🪓', label: 'Complete Removal', desc: 'Cutting tree to ground', fr: 'Retrait complet', descFr: 'Coupe au ras du sol' }
+                                                        { id: 'shaping', label: 'Shaping & Design', desc: 'For aesthetic looks', fr: 'Forme et Design', descFr: 'Pour l\'esthétique', icon: '🎨' },
+                                                        { id: 'thinning', label: 'Thinning / Health', desc: 'Improve light & air flow', fr: 'Éclaircissage / Santé', descFr: 'Améliore la lumière et l\'air', icon: '🌿' },
+                                                        { id: 'deadwood', label: 'Deadwood / Safety', desc: 'Remove old/risky branches', fr: 'Bois mort / Sécurité', descFr: 'Retirer les branches risquées', icon: '⚠️' },
+                                                        { id: 'removal', label: 'Complete Removal', desc: 'Cutting tree to ground', fr: 'Retrait complet', descFr: 'Coupe au ras du sol', icon: '🪓' }
                                                     ].map(service => (
                                                         <button
                                                             key={service.id}
                                                             onClick={() => setPreferredTreeService(service.id)}
-                                                            className={`flex items-start gap-4 p-5 rounded-2xl border transition-all text-left ${preferredTreeService === service.id
-                                                                ? 'border-black border-2 bg-neutral-50'
+                                                            className={`flex items-start gap-4 p-5 rounded-[10px] border transition-all text-left ${preferredTreeService === service.id
+                                                                ? 'border-black border-[3.5px] bg-neutral-50'
                                                                 : 'border-neutral-200 bg-white hover:border-black'
                                                                 }`}
                                                         >
-                                                            <div className="font-medium text-[28px] shrink-0">{service.icon}</div>
+                                                            <div className="text-[28px] shrink-0">{service.icon}</div>
                                                             <div>
                                                                 <div className="font-medium text-black text-[16px] mb-0.5">{t({ en: service.label, fr: service.fr })}</div>
-                                                                <div className="text-[14px] text-neutral-500 font-light">{t({ en: service.desc, fr: service.descFr })}</div>
+                                                                <div className="text-[14px] text-neutral-500 font-medium">{t({ en: service.desc, fr: service.descFr })}</div>
                                                             </div>
                                                         </button>
                                                     ))}
@@ -2419,8 +2425,8 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                                                 <button
                                                     key={freq.id}
                                                     onClick={() => setGardeningFrequency(freq.id)}
-                                                    className={`p-5 rounded-2xl border text-center transition-all ${gardeningFrequency === freq.id
-                                                        ? 'border-black border-2 bg-neutral-50'
+                                                    className={`p-5 rounded-[10px] border text-center transition-all ${gardeningFrequency === freq.id
+                                                        ? 'border-black border-[3.5px] bg-neutral-50'
                                                         : 'border-neutral-200 text-black hover:border-black bg-white'
                                                         }`}
                                                 >
@@ -2524,7 +2530,7 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                             )}
 
                             {currentDetailServiceId === 'pets_care' && (
-                                <div className="flex-1 overflow-y-auto px-6 pb-32">
+                                <div className="flex-1 overflow-y-auto pb-32">
 
                                     <h2 className="font-medium text-[32px] text-black leading-tight tracking-tight mb-8">
                                         {t({
@@ -2588,8 +2594,8 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                                                         <button
                                                             key={freq.id}
                                                             onClick={() => setPetFeedingFrequency(freq.id)}
-                                                            className={`p-4 rounded-xl border text-center transition-all ${petFeedingFrequency === freq.id
-                                                                ? 'border-black border-2 bg-neutral-50'
+                                                            className={`p-4 rounded-[10px] border text-center transition-all ${petFeedingFrequency === freq.id
+                                                                ? 'border-black border-[3.5px] bg-neutral-50'
                                                                 : 'border-neutral-200 text-black hover:border-black'
                                                                 }`}
                                                         >
@@ -2642,7 +2648,7 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                                                         value={petInstructions}
                                                         onChange={(e) => setPetInstructions(e.target.value)}
                                                         placeholder={t({ en: 'e.g. Food is in the garage, Friendly but scared of cats, Loves playing catch...', fr: 'ex: La nourriture est dans le garage, Amical mais a peur des chats, Adore jouer...' })}
-                                                        className="w-full p-5 rounded-2xl bg-white border border-neutral-200 focus:ring-2 focus:ring-black focus:border-black text-[16px] min-h-[140px] resize-none transition-all shadow-sm"
+                                                        className="w-full p-5 rounded-[10px] bg-[#F7F7F7] border-none focus:ring-2 focus:ring-black focus:border-black text-[16px] min-h-[140px] resize-none transition-all placeholder:text-neutral-400"
                                                     />
                                                 </div>
 
@@ -2653,7 +2659,7 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                                                         value={petEmergencyContact}
                                                         onChange={(e) => setPetEmergencyContact(e.target.value)}
                                                         placeholder={t({ en: 'Name and phone number...', fr: 'Nom et numéro de téléphone...' })}
-                                                        className="w-full p-5 rounded-2xl bg-white border border-neutral-200 focus:ring-2 focus:ring-black focus:border-black text-[16px] transition-all shadow-sm"
+                                                        className="w-full p-5 rounded-[10px] bg-[#F7F7F7] border-none focus:ring-2 focus:ring-black focus:border-black text-[16px] transition-all placeholder:text-neutral-400"
                                                     />
                                                 </div>
                                             </div>
@@ -2703,7 +2709,7 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                             )}
 
                             {currentDetailServiceId === 'pool_cleaning' && (
-                                <div className="flex-1 overflow-y-auto px-6 pb-32">
+                                <div className="flex-1 overflow-y-auto pb-32">
 
                                     <h2 className="font-medium text-[32px] text-black leading-tight tracking-tight mb-8">
                                         {t({
@@ -2729,8 +2735,8 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                                                     <button
                                                         key={type.id}
                                                         onClick={() => setPoolType(type.id as any)}
-                                                        className={`px-4 py-2 rounded-full border text-[14px] font-semibold transition-all ${poolType === type.id
-                                                            ? 'bg-neutral-50 text-black border-black border-2'
+                                                        className={`px-5 py-2.5 rounded-full border text-[14px] font-semibold transition-all ${poolType === type.id
+                                                            ? 'bg-neutral-50 text-black border-black border-[2px]'
                                                             : 'border-neutral-200 text-black hover:border-black bg-white'
                                                             }`}
                                                     >
@@ -2752,8 +2758,8 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                                                     <button
                                                         key={system.id}
                                                         onClick={() => setPoolWaterType(system.id as any)}
-                                                        className={`flex-1 p-5 rounded-2xl border text-center transition-all ${poolWaterType === system.id
-                                                            ? 'border-black border-2 bg-neutral-50'
+                                                        className={`flex-1 p-5 rounded-[10px] border text-center transition-all ${poolWaterType === system.id
+                                                            ? 'border-black border-[3.5px] bg-neutral-50'
                                                             : 'border-neutral-200 text-black hover:border-black bg-white'
                                                             }`}
                                                     >
@@ -2780,13 +2786,13 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                                                     <button
                                                         key={size.id}
                                                         onClick={() => setPoolSize(size.id as any)}
-                                                        className={`p-5 rounded-2xl border text-left transition-all ${poolSize === size.id
-                                                            ? 'border-black border-2 bg-neutral-50'
+                                                        className={`p-5 rounded-[10px] border text-left transition-all ${poolSize === size.id
+                                                            ? 'border-black border-[3.5px] bg-neutral-50'
                                                             : 'border-neutral-200 text-black hover:border-black bg-white'
                                                             }`}
                                                     >
                                                         <div className="text-[16px] font-medium mb-1">{t({ en: size.label, fr: size.fr })}</div>
-                                                        <div className="text-[13px] text-neutral-500 font-light">{size.desc}</div>
+                                                        <div className="text-[13px] text-neutral-500 font-medium">{size.desc}</div>
                                                     </button>
                                                 ))}
                                             </div>
@@ -2798,7 +2804,7 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                                                     <div className="font-medium text-[18px] text-black">{t({ en: 'Average Depth', fr: 'Profondeur moyenne' })}</div>
                                                     <div className="text-[14px] text-neutral-500 mt-1">{t({ en: 'Tip: average is 1.5m', fr: 'Conseil : moyenne est 1.5m' })}</div>
                                                 </div>
-                                                <div className="font-medium text-[22px] text-black px-6 py-4 rounded-2xl border border-neutral-300 bg-white min-w-[100px] text-center">
+                                                <div className="font-medium text-[22px] text-black px-6 py-4 rounded-[10px] border border-neutral-300 bg-white min-w-[100px] text-center">
                                                     {poolDepth}m
                                                 </div>
                                             </div>
@@ -2841,12 +2847,12 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                                                             setPoolSubServices([...poolSubServices, service.id]);
                                                         }
                                                     }}
-                                                    className={`w-full flex items-center justify-between p-5 rounded-2xl border transition-all ${poolSubServices.includes(service.id)
-                                                        ? 'border-black border-2 bg-neutral-50'
+                                                    className={`w-full flex items-center justify-between p-5 rounded-[10px] border transition-all ${poolSubServices.includes(service.id)
+                                                        ? 'border-black border-[3.5px] bg-neutral-50'
                                                         : 'border-neutral-200 hover:border-black bg-white'
                                                         }`}
                                                 >
-                                                    <span className="text-[17px] font-light text-black">{t({ en: service.label, fr: service.fr })}</span>
+                                                    <span className="text-[17px] font-medium text-black">{t({ en: service.label, fr: service.fr })}</span>
                                                     {poolSubServices.includes(service.id) && <Check size={20} className="text-black" strokeWidth={2.5} />}
                                                 </button>
                                             ))}
@@ -2859,10 +2865,10 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                                             {t({ en: 'Equipment & Access', fr: 'Équipement et Accès' })}
                                         </h3>
 
-                                        <div className="flex items-start justify-between p-6 rounded-2xl border border-neutral-200 bg-white shadow-sm gap-4">
+                                        <div className="flex items-start justify-between p-6 rounded-[10px] border border-neutral-200 bg-white shadow-sm gap-4">
                                             <div className="flex flex-col gap-1 flex-1">
                                                 <span className="text-[17px] font-medium text-black leading-tight">{t({ en: 'Pool Robot?', fr: 'Robot de piscine ?' })}</span>
-                                                <span className="text-[14px] text-neutral-500 leading-snug">{t({ en: 'Is there an automatic cleaner?', fr: 'Y a-t-il un nettoyeur automatique ?' })}</span>
+                                                <span className="text-[14px] text-neutral-500 leading-snug font-medium">{t({ en: 'Is there an automatic cleaner?', fr: 'Y a-t-il un nettoyeur automatique ?' })}</span>
                                             </div>
                                             <button
                                                 onClick={() => setPoolHasRobot(!poolHasRobot)}
@@ -2875,26 +2881,18 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
 
                                         <div className="space-y-6">
                                             <div>
-                                                <label className="text-[16px] font-medium text-black mb-3 block">{t({ en: 'Where is the technical room?', fr: 'Où se trouve le local technique ?' })}</label>
+                                                <label className="text-[16px] font-medium text-black mb-3 block">{t({ en: 'Where is the technical room and Where products are stocked?', fr: 'Où se trouve le local technique et Où sont stockés les produits ?' })}</label>
                                                 <textarea
                                                     value={poolTechnicalRoomLocation}
                                                     onChange={(e) => setPoolTechnicalRoomLocation(e.target.value)}
                                                     placeholder={t({ en: 'e.g. In the garage, Behind the wooden door near the pool...', fr: 'ex: Dans le garage, Derrière la porte en bois près de la piscine...' })}
-                                                    className="w-full p-5 rounded-2xl bg-white border border-neutral-200 focus:ring-2 focus:ring-black focus:border-black text-[16px] min-h-[120px] resize-none transition-all shadow-sm"
+                                                    className="w-full p-5 rounded-[10px] bg-[#F7F7F7] border-none focus:ring-2 focus:ring-black focus:border-black text-[16px] min-h-[120px] resize-none transition-all placeholder:text-neutral-400"
                                                 />
                                             </div>
-                                            <div>
-                                                <label className="text-[16px] font-medium text-black mb-3 block">{t({ en: 'Where are the supplies stored?', fr: 'Où sont stockés les produits ?' })}</label>
-                                                <textarea
-                                                    value={poolSuppliesLocation}
-                                                    onChange={(e) => setPoolSuppliesLocation(e.target.value)}
-                                                    placeholder={t({ en: 'e.g. Technical room, Left shelf...', fr: 'ex: Local technique, Étagère de gauche...' })}
-                                                    className="w-full p-5 rounded-2xl bg-white border border-neutral-200 focus:ring-2 focus:ring-black focus:border-black text-[16px] min-h-[100px] resize-none transition-all shadow-sm"
-                                                />
-                                            </div>
-                                            <div className="p-6 rounded-2xl bg-neutral-50 flex gap-4 items-start border border-neutral-100">
+
+                                            <div className="p-6 rounded-[10px] bg-white flex gap-4 items-start border border-neutral-200 shadow-sm">
                                                 <Info size={20} className="text-black shrink-0 mt-0.5" />
-                                                <p className="text-[15px] text-black leading-relaxed">
+                                                <p className="text-[15px] text-black leading-relaxed font-medium">
                                                     {t({
                                                         en: 'The host must provide all necessary equipment and chemical supplies for pool maintenance.',
                                                         fr: 'L\'hôte doit fournir tout l\'équipement et les produits chimiques nécessaires à l\'entretien de la piscine.'
@@ -2919,7 +2917,7 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                                                 <button
                                                     key={freq.id}
                                                     onClick={() => setPoolFrequency(freq.id)}
-                                                    className={`p-5 rounded-2xl border text-center transition-all ${poolFrequency === freq.id
+                                                    className={`p-5 rounded-[10px] border text-center transition-all ${poolFrequency === freq.id
                                                         ? 'border-black border-2 bg-neutral-50'
                                                         : 'border-neutral-200 text-black hover:border-black bg-white'
                                                         }`}
@@ -3038,7 +3036,7 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                                         <h3 className="font-medium text-[18px] text-black">
                                             {t({ en: 'Checklist for the receptionist', fr: 'Checklist pour le réceptionniste' })}
                                         </h3>
-                                        <p className="text-[15px] text-neutral-500 leading-relaxed mb-6">
+                                        <p className="text-[15px] text-neutral-500 leading-relaxed mb-6 font-medium">
                                             {t({
                                                 en: 'Describe the steps from the moment they meet the guests, to the walk-in, until the end. What should and should not they do?',
                                                 fr: 'Décrivez les étapes du moment où ils rencontrent les voyageurs, jusqu\'à l\'entrée dans les lieux et la fin. Que doivent-ils faire et ne pas faire ?'
@@ -3093,42 +3091,43 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                             {/* Errands & Restocking Details */}
                             {currentDetailServiceId === 'errands' && (
                                 <div className="flex-1 overflow-y-auto pb-32">
-                                    <div className="px-6 pt-8 max-w-3xl mx-auto">
-                                        <h2 className="font-medium text-[28px] text-black leading-tight tracking-tight mb-8">
+                                    <div className="pt-8 max-w-3xl mx-auto">
+                                        <h2 className="font-medium text-[36px] text-black leading-tight tracking-tight mb-8">
                                             {t({ en: 'What needs restocking?', fr: 'Que faut-il réapprovisionner ?' })}
                                         </h2>
 
-                                        <div className="space-y-12">
-                                            {/* Categories */}
+                                        <div className="space-y-8">
                                             <div className="space-y-4">
-                                                <h3 className="font-medium text-[18px] text-black">
-                                                    {t({ en: 'Select Categories', fr: 'Sélectionnez les catégories' })}
+                                                <h3 className="font-medium text-[17px] text-black">
+                                                    {t({ en: 'Select categories', fr: 'Sélectionnez les catégories' })}
                                                 </h3>
                                                 <div className="grid grid-cols-2 gap-3">
                                                     {[
-                                                        { id: 'toiletries', icon: '🧻', label: 'Toiletries', fr: 'Articles de toilette' },
-                                                        { id: 'cleaning_supplies', icon: '🧹', label: 'Cleaning Supplies', fr: 'Produits d\'entretien' },
-                                                        { id: 'pantry', icon: '☕', label: 'Pantry & Breakfast', fr: 'Garde-manger & Petit-déj' },
-                                                        { id: 'linens', icon: '🛏️', label: 'Linens & Towels', fr: 'Linge & Serviettes' }
-                                                    ].map(category => {
+                                                        { id: 'toiletries', label: 'Toiletries', fr: 'Articles de toilette', emoji: '🧻' },
+                                                        { id: 'cleaning', label: 'Cleaning Products', fr: 'Produits d\'entretien', emoji: '🧹' },
+                                                        { id: 'pantry', label: 'Pantry & Breakfast', fr: 'Garde-manger & Petit-déj', emoji: '☕' },
+                                                        { id: 'linens', label: 'Linens & Towels', fr: 'Linge & Serviettes', emoji: '🛏️' }
+                                                    ].map((category) => {
                                                         const isSelected = errandsCategories.includes(category.id);
                                                         return (
                                                             <button
                                                                 key={category.id}
                                                                 onClick={() => {
                                                                     if (isSelected) {
-                                                                        setErrandsCategories(prev => prev.filter(id => id !== category.id));
+                                                                        setErrandsCategories(prev => prev.filter(c => c !== category.id));
                                                                     } else {
                                                                         setErrandsCategories(prev => [...prev, category.id]);
                                                                     }
                                                                 }}
-                                                                className={`flex items-center gap-3 px-5 py-4 rounded-2xl border font-light transition-all text-left ${isSelected
-                                                                    ? 'border-black border-2 bg-neutral-50 text-black'
-                                                                    : 'border-neutral-200 text-black hover:border-black'
+                                                                className={`flex flex-col items-start justify-between p-6 rounded-[10px] border transition-all h-[150px] text-left ${isSelected
+                                                                    ? 'border-black border-[2px] bg-neutral-50'
+                                                                    : 'border-neutral-200 hover:border-black bg-white shadow-sm'
                                                                     }`}
                                                             >
-                                                                <span className="text-[20px]">{category.icon}</span>
-                                                                <span className="text-[15px]">{t({ en: category.label, fr: category.fr })}</span>
+                                                                <span className="text-[32px] shrink-0">{category.emoji}</span>
+                                                                <span className="text-[16px] font-medium leading-tight text-black">
+                                                                    {t({ en: category.label, fr: category.fr })}
+                                                                </span>
                                                             </button>
                                                         );
                                                     })}
@@ -3208,7 +3207,7 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                                                                 </h3>
                                                                 <div className="flex flex-col">
                                                                     {list.map((item, idx) => (
-                                                                        <div key={idx} className="flex flex-col gap-4 py-5 border-b border-neutral-100 group">
+                                                                        <div key={idx} className="border border-neutral-200 p-4 rounded-[15px] flex flex-col gap-4 py-5 border-b border-neutral-100 group">
                                                                             <div className="flex justify-between items-start w-full gap-4">
                                                                                 <div className="flex flex-col gap-3 w-full">
                                                                                     <input
@@ -3283,7 +3282,7 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                                                                                 {/* Frequency Row */}
                                                                                 <div className="flex items-center justify-between w-full">
                                                                                     <span className="text-[15px] font-light text-black">
-                                                                                        {t({ en: 'Frequency', fr: 'Fréquence' })}
+                                                                                        {t({ en: 'Restocking frequency', fr: 'Fréquence de réapprovisionnement' })}
                                                                                     </span>
                                                                                     <div className="relative shrink-0">
                                                                                         <select
@@ -3348,31 +3347,33 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                                                 </div>
                                             )}
 
-                                            {/* Storage Location */}
-                                            <div className="mt-8 py-6 border-t border-neutral-100">
-                                                <div className="flex flex-col gap-1 mb-3">
+                                            <div className="mt-8 space-y-4">
+                                                <div className="flex flex-col gap-1">
                                                     <span className="text-[17px] font-medium text-black">
                                                         {t({ en: 'Where do you store your supplies?', fr: 'Où stockez-vous vos fournitures ?' })}
                                                     </span>
-                                                    <span className="text-[14px] text-neutral-400 font-light">
-                                                        {t({ en: 'Help the Bricoler find and restock items in the right place.', fr: 'Aidez le Bricoleur à trouver et ranger les articles au bon endroit.' })}
+                                                    <span className="text-[14px] text-neutral-400 font-medium">
+                                                        {t({ en: 'Help the Bricoleur find and restock items in the right place.', fr: 'Aidez le Bricoleur à trouver et ranger les articles au bon endroit.' })}
                                                     </span>
                                                 </div>
                                                 <textarea
                                                     value={errandsStorageLocation}
                                                     onChange={(e) => setErrandsStorageLocation(e.target.value)}
-                                                    rows={3}
-                                                    placeholder={t({ en: 'e.g. Toiletries in the bathroom cabinet under the sink. Cleaning products in the kitchen cupboard on the left. Linens in the wardrobe in the hallway…', fr: 'ex. Articles de toilette dans le meuble sous l\'évier. Produits ménagers dans le placard gauche de la cuisine…' })}
-                                                    className="w-full resize-none bg-[#F7F7F7] rounded-2xl px-5 py-4 text-[15px] text-black placeholder:text-neutral-400 font-light focus:outline-none focus:ring-2 focus:ring-black border border-transparent focus:border-transparent transition-all leading-relaxed"
+                                                    rows={4}
+                                                    placeholder={t({
+                                                        en: 'ex. Toiletries in the cabinet under the sink. Cleaning products in the left kitchen cupboard...',
+                                                        fr: 'ex. Articles de toilette dans le meuble sous l\'évier. Produits ménagers dans le placard gauche de la cuisine...'
+                                                    })}
+                                                    className="w-full resize-none bg-[#FFFFFF] rounded-[10px] px-6 py-5 text-[16px] text-black placeholder:text-neutral-400 focus:outline-none focus:ring-1 focus:ring-black border transition-all leading-relaxed"
                                                 />
                                             </div>
 
                                             {/* Billing Disclaimer */}
-                                            <div className="bg-neutral-50 rounded-2xl p-5 border border-neutral-200 mt-8">
-                                                <h4 className="font-medium text-[16px] text-black mb-2">
+                                            <div className="bg-white rounded-[10px] p-6 border border-neutral-100 shadow-sm mt-8 space-y-3">
+                                                <h4 className="font-bold text-[17px] text-black">
                                                     {t({ en: 'Important Information', fr: 'Information Importante' })}
                                                 </h4>
-                                                <p className="text-[14px] text-neutral-600 font-light leading-relaxed">
+                                                <p className="text-[15px] text-neutral-500 leading-relaxed">
                                                     {t({
                                                         en: 'The Errands & Restocking service covers the Bricoler\'s time and delivery effort. The actual cost of purchased items will be billed directly to you via receipt scanning.',
                                                         fr: 'Le service de Courses & Réapprovisionnement couvre le temps et l\'effort de livraison du Bricoleur. Le coût réel des articles achetés vous sera facturé directement via la numérisation des reçus.'
