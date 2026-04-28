@@ -14,7 +14,7 @@ import {
     Sparkles, Key, Shirt, Wrench, Package, MonitorUp, Droplets, Zap, Paintbrush, Heart, ChefHat, Map, BookOpen, Hammer, Plane, BellRing,
     Bot, Handshake, Copy, Flower2, LayoutGrid, MessageSquare, Calendar, Bookmark, Menu, User, CheckCircle2, FireExtinguisher, ShieldAlert
 } from 'lucide-react';
-import { TbGrill, TbCampfire, TbAlarmSmoke } from 'react-icons/tb';
+import { TbGrill, TbCampfire, TbAlarmSmoke, TbBuildingSkyscraper, TbBuildingEstate, TbBuildingCottage, TbBuildingMosque } from 'react-icons/tb';
 import { MdOutlineFireplace, MdOutlineCo2 } from 'react-icons/md';
 import Lottie from 'lottie-react';
 import homeAnimation from '../../../../public/Animated icons/system-regular-41-home-hover-pinch.json';
@@ -75,7 +75,7 @@ const AUTOMATED_SERVICE_IDS = ['cleaning', 'gardening', 'glass_cleaning', 'pool_
 const AMENITY_GROUPS = [
     {
         id: 'standout',
-        title: { en: 'Do you have any standout amenities?', fr: 'Possédez-vous des équipements hors du commun ?' },
+        title: { en: 'Do you have any standout amenities?', fr: 'Possédez-vous des espaces uniques ?' },
         items: [
             { id: 'garden', label: { en: 'Garden', fr: 'Jardin' }, icon: TreePine },
             { id: 'pool', label: { en: 'Pool', fr: 'Piscine' }, icon: Waves },
@@ -124,11 +124,11 @@ const AMENITY_GROUPS = [
 ];
 
 const PROPERTY_TYPES = [
-    { id: 'apartment', label: { en: 'Apartment', fr: 'Appartement' }, icon: Building },
-    { id: 'villa', label: { en: 'Villa', fr: 'Villa' }, icon: Home },
-    { id: 'guesthouse', label: { en: 'Guesthouse', fr: 'Maison d\'hôtes/Gîte rural' }, icon: Building2 },
+    { id: 'apartment', label: { en: 'Apartment', fr: 'Appartement' }, icon: TbBuildingSkyscraper },
+    { id: 'villa', label: { en: 'Villa', fr: 'Villa' }, icon: TbBuildingEstate },
+    { id: 'guesthouse', label: { en: 'Guesthouse', fr: 'Maison d\'hôtes/Gîte rural' }, icon: TbBuildingCottage },
     { id: 'hotel', label: { en: 'Hotel', fr: 'Hôtel' }, icon: HotelIcon },
-    { id: 'riad', label: { en: 'Riad', fr: 'Riad' }, icon: Landmark },
+    { id: 'riad', label: { en: 'Riad', fr: 'Riad' }, icon: TbBuildingMosque },
     { id: 'barn', label: { en: 'Barn', fr: 'Grange' }, icon: Warehouse },
     { id: 'bed_breakfast', label: { en: 'Room/B&B', fr: 'Chambre/B&B' }, icon: Bed },
     { id: 'boat', label: { en: 'Boat', fr: 'Bateau' }, icon: Ship },
@@ -218,6 +218,7 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
     const { t } = useLanguage();
     const { showToast } = useToast();
     const [viewMode, setViewMode] = useState<'intro_overview' | 'dispatch_intro' | 'step1_detail' | 'step2_detail' | 'step3_detail' | 'form' | 'service_detail_form' | 'team_mode_select' | 'published_success'>('intro_overview');
+    const scrollContainerRef = useRef<HTMLDivElement>(null);
     const [stepIndex, setStepIndex] = useState(0);
     const [currentDetailServiceId, setCurrentDetailServiceId] = useState<string | null>(null);
     const [teamMode, setTeamMode] = useState<'lbricol' | 'own_team' | 'both' | null>(null);
@@ -543,6 +544,9 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
     };
 
     const handleNext = () => {
+        // Scroll to top on every navigation
+        scrollContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+
         if (viewMode === 'form') {
             if (stepIndex === 2) {
                 setViewMode('step2_detail');
@@ -612,6 +616,18 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
     useEffect(() => {
         setActiveServiceInfo(null);
     }, [stepIndex]);
+
+    const handleSaveAndExit = () => {
+        showToast({
+            title: t({ 
+                en: 'Progress saved successfully', 
+                fr: 'Progrès enregistré avec succès',
+                ar: 'تم حفظ التقدم بنجاح'
+            }),
+            variant: 'success'
+        });
+        onClose();
+    };
 
     const handleBack = () => {
         if (viewMode === 'form') {
@@ -906,7 +922,7 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                 {/* Footer */}
                 <div className="fixed bottom-0 left-0 right-0 px-6 pt-4 pb-6 bg-white border-t border-neutral-100 z-20">
                     {/* Segmented Progress Bar */}
-                    <div className="flex gap-2 h-[2px] mb-6">
+                    <div className="flex h-[3px] mb-6">
                         {[0, 1, 2].map((stageIdx) => {
                             let progress = 0;
                             if (stageIdx === 0) progress = 100;
@@ -914,7 +930,7 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                             if (stageIdx === 2) progress = 0;
 
                             return (
-                                <div key={stageIdx} className="flex-1 h-[2px] bg-neutral-200 rounded-full overflow-hidden">
+                                <div key={stageIdx} className="flex-1 h-[3px] bg-neutral-200 overflow-hidden">
                                     <div className="h-full bg-black transition-all duration-500 ease-in-out" style={{ width: `${progress}%` }} />
                                 </div>
                             );
@@ -952,14 +968,12 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
             >
                 {/* Top Buttons Bar */}
                 <div className="px-6 pt-6 pb-2 flex justify-between items-center">
-                    <button onClick={handleBack} className="font-light px-4 py-2 rounded-full border border-neutral-200 text-[14px] hover:bg-neutral-50 active:scale-95 transition-all" >
+                    <button onClick={handleBack} className="font-bold px-4 py-2 rounded-full border border-neutral-200 text-[14px] hover:bg-neutral-50 active:scale-95 transition-all" >
                         {t({ en: 'Back', fr: 'Retour', ar: 'عودة' })}
                     </button>
-                    <div className="flex gap-2">
-                        <div className="px-4 py-2 rounded-full border border-neutral-200 text-[14px] font-medium text-black cursor-default">
-                            {t({ en: 'Questions?', fr: 'Des questions ?', ar: 'أسئلة؟' })}
-                        </div>
-                    </div>
+                    <button onClick={handleSaveAndExit} className="font-bold px-4 py-2 rounded-full border border-neutral-200 text-[14px] hover:bg-neutral-50 active:scale-95 transition-all text-black">
+                        {t({ en: 'Save & exit', fr: 'Enregistrer et quitter' })}
+                    </button>
                 </div>
 
                 <div className="flex-1 overflow-y-auto px-6 pt-8 pb-32 overscroll-behavior-contain">
@@ -1009,7 +1023,7 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                 {/* Footer */}
                 <div className="fixed bottom-0 left-0 right-0 px-6 pt-4 pb-6 bg-white border-t border-neutral-100 z-20">
                     {/* Segmented Progress Bar */}
-                    <div className="flex gap-2 h-[2px] mb-6">
+                    <div className="flex h-[3px] mb-6">
                         {[0, 1, 2].map((stageIdx) => {
                             let progress = 0;
                             if (stageIdx === 0) progress = 0;
@@ -1017,7 +1031,7 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                             if (stageIdx === 2) progress = 0;
 
                             return (
-                                <div key={stageIdx} className="flex-1 h-[2px] bg-neutral-200 rounded-full overflow-hidden">
+                                <div key={stageIdx} className="flex-1 h-[3px] bg-neutral-200 overflow-hidden">
                                     <div className="h-full bg-black transition-all duration-500 ease-in-out" style={{ width: `${progress}%` }} />
                                 </div>
                             );
@@ -1052,14 +1066,12 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
             >
                 {/* Top Buttons Bar */}
                 <div className="px-6 pt-6 pb-2 flex justify-between items-center">
-                    <button onClick={handleBack} className="font-light px-4 py-2 rounded-full border border-neutral-200 text-[14px] hover:bg-neutral-50 active:scale-95 transition-all" >
+                    <button onClick={handleBack} className="font-bold px-4 py-2 rounded-full border border-neutral-200 text-[14px] hover:bg-neutral-50 active:scale-95 transition-all" >
                         {t({ en: 'Back', fr: 'Retour', ar: 'عودة' })}
                     </button>
-                    <div className="flex gap-2">
-                        <div className="px-4 py-2 rounded-full border border-neutral-200 text-[14px] font-medium text-black cursor-default">
-                            {t({ en: 'Questions?', fr: 'Des questions ?', ar: 'أسئلة؟' })}
-                        </div>
-                    </div>
+                    <button onClick={handleSaveAndExit} className="font-bold px-4 py-2 rounded-full border border-neutral-200 text-[14px] hover:bg-neutral-50 active:scale-95 transition-all text-black">
+                        {t({ en: 'Save & exit', fr: 'Enregistrer et quitter' })}
+                    </button>
                 </div>
 
                 <div className="flex-1 overflow-y-auto px-6 pt-8 pb-32 overscroll-behavior-contain">
@@ -1113,7 +1125,7 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                 {/* Footer */}
                 <div className="fixed bottom-0 left-0 right-0 px-6 pt-4 pb-6 bg-white border-t border-neutral-100 z-20">
                     {/* Segmented Progress Bar */}
-                    <div className="flex gap-2 h-[2px] mb-6">
+                    <div className="flex h-[3px] mb-6">
                         {[0, 1, 2].map((stageIdx) => {
                             let progress = 0;
                             if (stageIdx === 0) progress = 100;
@@ -1121,7 +1133,7 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                             if (stageIdx === 2) progress = 0;
 
                             return (
-                                <div key={stageIdx} className="flex-1 h-[2px] bg-neutral-200 rounded-full overflow-hidden">
+                                <div key={stageIdx} className="flex-1 h-[3px] bg-neutral-200 overflow-hidden">
                                     <div className="h-full bg-black transition-all duration-500 ease-in-out" style={{ width: `${progress}%` }} />
                                 </div>
                             );
@@ -1209,17 +1221,7 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                     </div>
                 </div>
 
-                {/* Floating Action Button */}
-                <div className="fixed bottom-32 left-1/2 -translate-x-1/2 z-30">
-                    <button className="flex items-center gap-3 bg-white px-8 py-4 rounded-full shadow-[0_10px_40px_rgba(0,0,0,0.12)] border border-neutral-100 active:scale-95 transition-all">
-                        <span className="text-[15px] font-bold text-black">
-                            {t({ en: 'Show advice', fr: 'Afficher les conseils', ar: 'إظهار النصائح' })}
-                        </span>
-                        <div className="w-6 h-6 bg-[#FFB700] text-white rounded-full flex items-center justify-center text-[12px] font-bold shadow-sm">
-                            3
-                        </div>
-                    </button>
-                </div>
+                {/* Floating Action Button removed per design directive */}
 
                 {/* Bottom Navigation (Lbricol Host Style) */}
                 <div className="bg-white border-t border-neutral-100 pt-3 pb-8 px-4 flex justify-around items-center safe-area-bottom">
@@ -1270,19 +1272,33 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
     return (
         <div className="fixed inset-0 z-[10000] bg-white flex flex-col font-plus-jakarta">
 
+            {/* Top Bar: Save & Exit — always visible except during location picker */}
+            {stepIndex !== 1 && (
+                <div className="px-6 pt-5 pb-1 flex justify-end items-center shrink-0">
+                    <button
+                        onClick={handleSaveAndExit}
+                        className="font-bold px-4 py-2 rounded-full border border-neutral-200 text-[14px] hover:bg-neutral-50 active:scale-95 transition-all text-black"
+                    >
+                        {t({ en: 'Save & exit', fr: 'Enregistrer et quitter' })}
+                    </button>
+                </div>
+            )}
 
             {/* Content */}
-            <div className={cn(
-                "flex-1 overflow-y-auto overscroll-behavior-contain",
-                (stepIndex === 1 || stepIndex === 3) ? "p-0" : "px-6 py-10"
-            )}>
+            <div
+                ref={scrollContainerRef}
+                className={cn(
+                    "flex-1 overflow-y-auto overscroll-behavior-contain",
+                    (stepIndex === 1 || stepIndex === 3) ? "p-0" : "px-6 py-6"
+                )}>
                 <AnimatePresence mode="wait">
                     {viewMode === 'form' && (
                         <motion.div
                             key={stepIndex}
-                            initial={{ opacity: 0, x: 20 }}
+                            initial={{ opacity: 0, x: 30 }}
                             animate={{ opacity: 1, x: 0 }}
-                            exit={{ opacity: 0, x: -20 }}
+                            exit={{ opacity: 0, x: -30 }}
+                            transition={{ duration: 0.22, ease: [0.4, 0, 0.2, 1] }}
                             className={cn("space-y-8", stepIndex === 1 && "h-full")}
                         >
                             {stepIndex === 0 && (
@@ -1424,7 +1440,7 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                                         <h2 className="font-medium text-[26px] text-black leading-[1.15] tracking-tight mb-2">
                                             {t({
                                                 en: 'List your property\'s amenities to get tailored service suggestions.',
-                                                fr: 'Indiquez les équipements de votre logement pour recevoir des suggestions de services personnalisées.',
+                                                fr: 'Listez vos inclusions.',
                                                 ar: 'أضف مرافق مكان إقامتك لتلقي اقتراحات خدمات مخصصة.'
                                             })}
                                         </h2>
@@ -1477,14 +1493,6 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                                 <div className="space-y-6 relative h-full flex flex-col">
                                     {photos.length === 0 ? (
                                         <>
-                                            <div className="flex flex-col items-start gap-2 pb-2">
-                                                <button onClick={onClose} className="font-light px-4 py-2 rounded-full border border-neutral-200 text-[14px] hover:bg-neutral-50 active:scale-95 transition-all text-black" >
-                                                    {t({ en: 'Save & exit', fr: 'Enregistrer et quitter' })}
-                                                </button>
-                                                <button className="font-light px-4 py-2 rounded-full border border-neutral-200 text-[14px] text-black hover:bg-neutral-50 active:scale-95 transition-all">
-                                                    {t({ en: 'Questions?', fr: 'Des questions ?' })}
-                                                </button>
-                                            </div>
                                             <h2 className="font-medium text-[28px] text-black leading-tight tracking-tight">
                                                 {t({
                                                     en: 'Add some photos of your property',
@@ -1636,14 +1644,6 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
 
                             {stepIndex === 5 && (
                                 <div className="space-y-6 relative h-full flex flex-col">
-                                    <div className="flex flex-col items-start gap-2 pb-2">
-                                        <button onClick={onClose} className="font-light px-4 py-2 rounded-full border border-neutral-200 text-[14px] hover:bg-neutral-50 active:scale-95 transition-all text-black" >
-                                            {t({ en: 'Save & exit', fr: 'Enregistrer et quitter' })}
-                                        </button>
-                                        <button className="font-light px-4 py-2 rounded-full border border-neutral-200 text-[14px] text-black hover:bg-neutral-50 active:scale-95 transition-all">
-                                            {t({ en: 'Questions?', fr: 'Des questions ?' })}
-                                        </button>
-                                    </div>
                                     <h2 className="font-medium text-[28px] text-black leading-tight tracking-tight mt-4">
                                         {t({
                                             en: `Choose the activities you want to automate`,
@@ -1725,14 +1725,6 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                             )}
                             {stepIndex === 6 && (
                                 <div className="space-y-6 relative h-full flex flex-col">
-                                    <div className="flex flex-col items-start gap-2 pb-2">
-                                        <button onClick={onClose} className="font-light px-4 py-2 rounded-full border border-neutral-200 text-[14px] hover:bg-neutral-50 active:scale-95 transition-all text-black" >
-                                            {t({ en: 'Save & exit', fr: 'Enregistrer et quitter' })}
-                                        </button>
-                                        <button className="font-light px-4 py-2 rounded-full border border-neutral-200 text-[14px] text-black hover:bg-neutral-50 active:scale-95 transition-all">
-                                            {t({ en: 'Questions?', fr: 'Des questions ?' })}
-                                        </button>
-                                    </div>
                                     <h2 className="font-medium text-[28px] text-black leading-tight tracking-tight mt-4">
                                         {t({
                                             en: `What services you may want to offer to your guests?`,
@@ -1824,14 +1816,6 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                             )}
                             {stepIndex === 7 && (
                                 <div className="space-y-6 relative h-full flex flex-col">
-                                    <div className="flex flex-col items-start gap-2 pb-2">
-                                        <button onClick={onClose} className="font-light px-4 py-2 rounded-full border border-neutral-200 text-[14px] hover:bg-neutral-50 active:scale-95 transition-all text-black" >
-                                            {t({ en: 'Save & exit', fr: 'Enregistrer et quitter' })}
-                                        </button>
-                                        <button className="font-light px-4 py-2 rounded-full border border-neutral-200 text-[14px] text-black hover:bg-neutral-50 active:scale-95 transition-all">
-                                            {t({ en: 'Questions?', fr: 'Des questions ?' })}
-                                        </button>
-                                    </div>
                                     <h2 className="font-medium text-[28px] text-black leading-tight tracking-tight mt-4">
                                         {t({
                                             en: `What other services you may need for your property?`,
@@ -1916,12 +1900,7 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                             className="flex-1 flex flex-col min-h-0"
                         >
                             {currentDetailServiceId === 'cleaning' && (
-                                <div className="flex-1 overflow-y-auto  pt-8 pb-32">
-                                    <div className="flex flex-col items-start gap-2 pb-6">
-                                        <button onClick={onClose} className="font-light px-4 py-2 rounded-full border border-neutral-200 text-[14px] hover:bg-neutral-50 active:scale-95 transition-all text-black" >
-                                            {t({ en: 'Save & exit', fr: 'Enregistrer et quitter' })}
-                                        </button>
-                                    </div>
+                                <div className="flex-1 overflow-y-auto  pb-32">
 
                                     <h2 className="font-medium text-[32px] text-black leading-tight tracking-tight mb-8">
                                         {t({
@@ -2150,12 +2129,7 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                             )}
 
                             {currentDetailServiceId === 'glass_cleaning' && (
-                                <div className="flex-1 overflow-y-auto pt-8 pb-32">
-                                    <div className="flex flex-col items-start gap-2 pb-6">
-                                        <button onClick={onClose} className="font-light px-4 py-2 rounded-full border border-neutral-200 text-[14px] hover:bg-neutral-50 active:scale-95 transition-all text-black" >
-                                            {t({ en: 'Save & exit', fr: 'Enregistrer et quitter' })}
-                                        </button>
-                                    </div>
+                                <div className="flex-1 overflow-y-auto pb-32">
 
                                     <h2 className="font-medium text-[28px] text-black leading-tight tracking-tight mb-8">
                                         {t({
@@ -2246,12 +2220,7 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                             )}
 
                             {currentDetailServiceId === 'gardening' && (
-                                <div className="flex-1 overflow-y-auto px-6 pt-8 pb-32">
-                                    <div className="flex flex-col items-start gap-2 pb-6">
-                                        <button onClick={onClose} className="font-light px-4 py-2 rounded-full border border-neutral-200 text-[14px] hover:bg-neutral-50 active:scale-95 transition-all text-black" >
-                                            {t({ en: 'Save & exit', fr: 'Enregistrer et quitter' })}
-                                        </button>
-                                    </div>
+                                <div className="flex-1 overflow-y-auto pb-32">
 
                                     <h2 className="font-medium text-[32px] text-black leading-tight tracking-tight mb-8">
                                         {t({
@@ -2282,7 +2251,7 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                                                             setGardeningSubServices([...gardeningSubServices, service.id]);
                                                         }
                                                     }}
-                                                    className={`w-full flex items-center justify-between p-5 rounded-2xl border transition-all ${gardeningSubServices.includes(service.id)
+                                                    className={`w-full flex items-center justify-between p-5 rounded-[10px] border transition-all ${gardeningSubServices.includes(service.id)
                                                         ? 'border-black border-2 bg-neutral-50'
                                                         : 'border-neutral-200 hover:border-black bg-white'
                                                         }`}
@@ -2301,8 +2270,7 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                                             animate={{ opacity: 1, height: 'auto' }}
                                             className="space-y-8 mb-12 p-8 rounded-2xl border border-neutral-200 bg-white shadow-sm overflow-hidden"
                                         >
-                                            <h4 className="font-medium text-[20px] text-black border-b border-neutral-100 pb-4 mb-4 flex items-center gap-2">
-                                                <div className="w-2.5 h-2.5 rounded-full bg-green-500" />
+                                            <h4 className="font-black text-[25px] text-black border-b border-neutral-200 pb-4 mb-4 flex items-center gap-2">
                                                 {t({ en: 'Lawn Mowing Details', fr: 'Détails de la tonte' })}
                                             </h4>
 
@@ -2353,8 +2321,7 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                                             animate={{ opacity: 1, height: 'auto' }}
                                             className="space-y-8 mb-12 p-8 rounded-2xl border border-neutral-200 bg-white shadow-sm overflow-hidden"
                                         >
-                                            <h4 className="font-medium text-[20px] text-black border-b border-neutral-100 pb-4 mb-4 flex items-center gap-2">
-                                                <div className="w-2.5 h-2.5 rounded-full bg-green-500" />
+                                            <h4 className="font-black text-[25px] text-black border-b border-neutral-100 pb-4 mb-4 flex items-center gap-2">
                                                 {t({ en: 'Branch & Hedge Trimming', fr: 'Taille branches et haies' })}
                                             </h4>
 
@@ -2557,12 +2524,7 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                             )}
 
                             {currentDetailServiceId === 'pets_care' && (
-                                <div className="flex-1 overflow-y-auto px-6 pt-8 pb-32">
-                                    <div className="flex flex-col items-start gap-2 pb-6">
-                                        <button onClick={onClose} className="font-light px-4 py-2 rounded-full border border-neutral-200 text-[14px] hover:bg-neutral-50 active:scale-95 transition-all text-black" >
-                                            {t({ en: 'Save & exit', fr: 'Enregistrer et quitter' })}
-                                        </button>
-                                    </div>
+                                <div className="flex-1 overflow-y-auto px-6 pb-32">
 
                                     <h2 className="font-medium text-[32px] text-black leading-tight tracking-tight mb-8">
                                         {t({
@@ -2741,12 +2703,7 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                             )}
 
                             {currentDetailServiceId === 'pool_cleaning' && (
-                                <div className="flex-1 overflow-y-auto px-6 pt-8 pb-32">
-                                    <div className="flex flex-col items-start gap-2 pb-6">
-                                        <button onClick={onClose} className="font-light px-4 py-2 rounded-full border border-neutral-200 text-[14px] hover:bg-neutral-50 active:scale-95 transition-all text-black" >
-                                            {t({ en: 'Save & exit', fr: 'Enregistrer et quitter' })}
-                                        </button>
-                                    </div>
+                                <div className="flex-1 overflow-y-auto px-6 pb-32">
 
                                     <h2 className="font-medium text-[32px] text-black leading-tight tracking-tight mb-8">
                                         {t({
@@ -3067,12 +3024,7 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                             )}
 
                             {currentDetailServiceId === 'guest_receptionist' && (
-                                <div className="flex-1 overflow-y-auto pt-8 pb-32">
-                                    <div className="flex flex-col items-start gap-2 pb-6">
-                                        <button onClick={onClose} className="font-light px-4 py-2 rounded-full border border-neutral-200 text-[14px] hover:bg-neutral-50 active:scale-95 transition-all text-black" >
-                                            {t({ en: 'Save & exit', fr: 'Enregistrer et quitter' })}
-                                        </button>
-                                    </div>
+                                <div className="flex-1 overflow-y-auto pb-32">
 
                                     <h2 className="font-medium text-[28px] text-black leading-tight tracking-tight mb-8">
                                         {t({
@@ -3628,9 +3580,12 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
             {stepIndex !== 1 && (
                 <div className="px-6 pt-4 pb-6 border-t border-neutral-100 bg-white z-20">
                     {/* Segmented Progress Bar */}
-                    <div className="flex gap-2 h-[2px] mb-6">
+                    <div className="flex h-[3px] mb-6">
                         {[0, 1, 2].map((stageIdx) => {
                             let progress = 0;
+                            const selectedAutomationServices = selectedServices.filter(id => AUTOMATED_SERVICE_IDS.includes(id));
+                            const totalAutomationSubsteps = selectedAutomationServices.length;
+                            const currentAutoIdx = currentDetailServiceId ? selectedAutomationServices.indexOf(currentDetailServiceId) : -1;
 
                             // Calculate progress for each stage
                             if (stageIdx === 0) {
@@ -3644,13 +3599,26 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                                 else if (stepIndex === 4) progress = 100;
                             } else if (stageIdx === 2) {
                                 if ((viewMode as string) === 'published_success') progress = 100;
+                                else if ((viewMode as string) === 'team_mode_select') progress = 100;
+                                else if ((viewMode as string) === 'service_detail_form') {
+                                    // Track exact substep within automation detail forms
+                                    if (totalAutomationSubsteps > 0) {
+                                        // Base: stepIndex 5 = 33%, each substep adds within the 33–99% range
+                                        const substepProgress = totalAutomationSubsteps > 0
+                                            ? Math.round(33 + ((currentAutoIdx + 1) / totalAutomationSubsteps) * 56)
+                                            : 90;
+                                        progress = substepProgress;
+                                    } else {
+                                        progress = 90;
+                                    }
+                                }
                                 else if (stepIndex === 5) progress = 33;
                                 else if (stepIndex === 6) progress = 66;
-                                else if (stepIndex >= 7 || (viewMode as string) === 'team_mode_select' || (viewMode as string) === 'service_detail_form') progress = 100;
+                                else if (stepIndex >= 7) progress = 99;
                             }
 
                             return (
-                                <div key={stageIdx} className="flex-1 h-[2px] bg-neutral-200 rounded-full overflow-hidden">
+                                <div key={stageIdx} className="flex-1 h-[3px] bg-neutral-200 overflow-hidden">
                                     <div
                                         className="h-full bg-black transition-all duration-500 ease-in-out"
                                         style={{ width: `${progress}%` }}
@@ -3661,7 +3629,7 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                     </div>
 
                     <div className="flex justify-between items-center">
-                        <button onClick={handleBack} className="font-light text-[17px] text-black underline underline-offset-4" >
+                        <button onClick={handleBack} className="font-medium text-[17px] text-black underline underline-offset-4" >
                             {t({ en: 'Back', fr: 'Retour', ar: 'عودة' })}
                         </button>
                         <button

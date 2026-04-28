@@ -1,0 +1,2 @@
+[{"AllowMultiple":false,"EndLine":16,"ReplacementContent":"    Bot, Handshake, Copy, Flower2, LayoutGrid, MessageSquare, Calendar, Bookmark, Menu, User, CheckCircle2\n} from 'lucide-react';\nimport { MdVilla, MdOutlineOutdoorGrill, MdPiano, MdBeachAccess }
+<truncated 3281 bytes>
