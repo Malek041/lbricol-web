@@ -2150,7 +2150,7 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                             )}
 
                             {currentDetailServiceId === 'glass_cleaning' && (
-                                <div className="flex-1 overflow-y-auto px-6 pt-8 pb-32">
+                                <div className="flex-1 overflow-y-auto pt-8 pb-32">
                                     <div className="flex flex-col items-start gap-2 pb-6">
                                         <button onClick={onClose} className="font-light px-4 py-2 rounded-full border border-neutral-200 text-[14px] hover:bg-neutral-50 active:scale-95 transition-all text-black" >
                                             {t({ en: 'Save & exit', fr: 'Enregistrer et quitter' })}
@@ -3067,7 +3067,7 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                             )}
 
                             {currentDetailServiceId === 'guest_receptionist' && (
-                                <div className="flex-1 overflow-y-auto px-6 pt-8 pb-32">
+                                <div className="flex-1 overflow-y-auto pt-8 pb-32">
                                     <div className="flex flex-col items-start gap-2 pb-6">
                                         <button onClick={onClose} className="font-light px-4 py-2 rounded-full border border-neutral-200 text-[14px] hover:bg-neutral-50 active:scale-95 transition-all text-black" >
                                             {t({ en: 'Save & exit', fr: 'Enregistrer et quitter' })}
@@ -3454,7 +3454,7 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                             exit={{ opacity: 0, x: -20 }}
                             className="flex-1 flex flex-col min-h-0"
                         >
-                            <div className="flex-1 overflow-y-auto px-6 pt-8 pb-32">
+                            <div className="flex-1 overflow-y-auto  pt-8 pb-32">
                                 <div className="space-y-2 mb-8">
                                     <h2 className="font-medium text-[26px] text-black leading-tight tracking-tight">
                                         {t({
@@ -3462,7 +3462,7 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                                             fr: 'Qui s\'occupera de vos tâches ?'
                                         })}
                                     </h2>
-                                    <p className="text-[15px] font-light text-neutral-600 leading-snug">
+                                    <p className="text-[15px]  text-neutral-600 leading-snug">
                                         {t({
                                             en: 'Choose how you want to manage your property services and staff.',
                                             fr: 'Choisissez comment vous souhaitez gérer les services et le personnel de votre logement.'
@@ -3504,7 +3504,7 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                                                     >
                                                         <div className="flex flex-col gap-1 pr-4">
                                                             <span className="font-semibold text-[18px] text-black tracking-tight">{t(option.title)}</span>
-                                                            <span className="text-[14px] text-neutral-500 font-light leading-snug">{t(option.desc)}</span>
+                                                            <span className="text-[14px] text-neutral-500 font-medium leading-snug">{t(option.desc)}</span>
                                                         </div>
                                                         <div className="shrink-0 ml-4 opacity-80">
                                                             {option.icon}
@@ -3643,10 +3643,10 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                                 else if (stepIndex === 3) progress = 50;
                                 else if (stepIndex === 4) progress = 100;
                             } else if (stageIdx === 2) {
-                                if (viewMode === 'published_success') progress = 100;
+                                if ((viewMode as string) === 'published_success') progress = 100;
                                 else if (stepIndex === 5) progress = 33;
                                 else if (stepIndex === 6) progress = 66;
-                                else if (stepIndex >= 7 || viewMode === 'team_mode_select' || viewMode === 'service_detail_form') progress = 100;
+                                else if (stepIndex >= 7 || (viewMode as string) === 'team_mode_select' || (viewMode as string) === 'service_detail_form') progress = 100;
                             }
 
                             return (
