@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Home, Building, MoreHorizontal, CheckCircle2, Search, Filter, LayoutGrid } from 'lucide-react';
+import { Plus, Home, Building, Rows, CheckCircle2, Search, Filter, LayoutGrid } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
 import PropertySetupWizard from './PropertySetupWizard';
 import PropertyDetailView from './PropertyDetailView';
@@ -16,6 +16,7 @@ const PropertyListView = () => {
     const [selectedProperty, setSelectedProperty] = useState<any>(null);
     const [properties, setProperties] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
 
     useEffect(() => {
         if (!auth.currentUser) return;
@@ -34,13 +35,13 @@ const PropertyListView = () => {
             {!loading && properties.length > 0 && (
                 <div className="px-6 pt-8 pb-4 flex flex-col bg-white sticky top-0 z-20">
                     <div className="flex justify-end items-center gap-4 mb-2">
-                        <div className="w-10 h-10 rounded-full bg-neutral-50 flex items-center justify-center border border-neutral-100">
-                            <Search size={20} className="text-black" />
-                        </div>
-                        <div className="w-10 h-10 rounded-full bg-neutral-50 flex items-center justify-center border border-neutral-100">
-                            <LayoutGrid size={20} className="text-black" />
-                        </div>
-                        <button 
+                        <button
+                            onClick={() => setViewMode(viewMode === 'list' ? 'grid' : 'list')}
+                            className="w-10 h-10 rounded-full bg-neutral-50 flex items-center justify-center border border-neutral-100 active:scale-90 transition-all"
+                        >
+                            {viewMode === 'list' ? <LayoutGrid size={20} /> : <Rows size={20} />}
+                        </button>
+                        <button
                             onClick={() => setIsWizardOpen(true)}
                             className="w-10 h-10 rounded-full bg-neutral-50 flex items-center justify-center border border-neutral-100 active:scale-90 transition-all"
                         >
@@ -48,7 +49,7 @@ const PropertyListView = () => {
                         </button>
                     </div>
                     <h1 className="text-[32px] font-bold text-black tracking-tight">
-                        {t({ en: 'Listings', fr: 'Mon annonce', ar: 'إعلاناتي' })}
+                        {t({ en: 'My Listings', fr: 'Mes annonces', ar: 'إعلاناتي' })}
                     </h1>
                 </div>
             )}
@@ -100,36 +101,69 @@ const PropertyListView = () => {
                 ) : (
                     <div className="space-y-8 w-full py-2">
                         <div>
-                            <h2 className="text-[14px] font-bold text-neutral-400 uppercase tracking-widest mb-4">
-                                {t({ en: 'Published', fr: 'Publiée', ar: 'منشور' })} ({properties.length})
-                            </h2>
+                            {viewMode === 'list' && (
+                                <h2 className="text-[14px] font-bold text-[#2C2C2C] tracking-widest mb-4">
+                                    {t({ en: 'Published', fr: 'Publiée', ar: 'منشور' })} ({properties.length})
+                                </h2>
+                            )}
 
-                            <div className="space-y-4">
+                            <div className={viewMode === 'grid' ? "space-y-10" : "space-y-4"}>
                                 {properties.map((property) => (
                                     <motion.div
                                         key={property.id}
                                         initial={{ opacity: 0, y: 10 }}
                                         animate={{ opacity: 1, y: 0 }}
-                                        className="flex gap-4 p-0 group cursor-pointer"
+                                        className={viewMode === 'grid' ? "flex flex-col gap-4 cursor-pointer" : "flex gap-4 p-0 group cursor-pointer"}
                                         onClick={() => setSelectedProperty(property)}
                                     >
-                                        <div className="relative w-20 h-20 rounded-2xl overflow-hidden shrink-0 shadow-sm border border-neutral-100">
-                                            <img 
-                                                src={property.photos?.[0] || `https://source.unsplash.com/400x400/?${property.type},home`} 
-                                                className="w-full h-full object-cover" 
-                                            />
-                                            <div className="absolute top-1.5 left-1.5 w-3 h-3 bg-[#4CAF50] rounded-full border-2 border-white shadow-sm" />
-                                        </div>
-                                        <div className="flex flex-col justify-center min-w-0 border-b border-neutral-50 flex-1 pb-4 group-last:border-0">
-                                            <div className="flex justify-between items-start">
-                                                <h3 className="font-bold text-[17px] text-black truncate tracking-tight pr-4">
-                                                    {property.name || 'Dar Lehbib | Self Check-In | Plage'}
-                                                </h3>
-                                            </div>
-                                            <p className="text-[14px] text-neutral-400 font-medium truncate mt-0.5">
-                                                {t({ en: 'Property', fr: 'Logement' })} · {property.specs?.address?.split(',')[0] || 'Essaouira'}, Marrakesh-Safi
-                                            </p>
-                                        </div>
+                                        {viewMode === 'grid' ? (
+                                            <>
+                                                <div className="relative aspect-[4/3] rounded-[32px] overflow-hidden bg-neutral-100 shadow-sm">
+                                                    <Image
+                                                        src={(property.photos && property.photos.length > 0) ? property.photos[0] : (property.coverPhoto || '/Images/placeholder-property.jpg')}
+                                                        alt={property.name || 'Property'}
+                                                        fill
+                                                        className="object-cover"
+                                                        unoptimized={true}
+                                                    />
+                                                    <div className="absolute top-4 left-4 flex items-center gap-1.5 px-3 py-1.5 bg-white/90 backdrop-blur rounded-full">
+                                                        <div className="w-2 h-2 bg-[#4CAF50] rounded-full" />
+                                                        <span className="text-[12px] font-bold text-black">Publiée</span>
+                                                    </div>
+                                                </div>
+                                                <div className="px-2">
+                                                    <h3 className="font-bold text-[20px] text-black tracking-tight mb-1">
+                                                        {property.name || (property.type && `${property.type.charAt(0).toUpperCase() + property.type.slice(1)} à ${property.specs?.address?.split(',')[0]}`)}
+                                                    </h3>
+                                                    <p className="text-[15px] text-neutral-400 font-medium">
+                                                        {t({ en: 'Property', fr: 'Logement' })} · {property.specs?.address?.split(',')[0] || 'Essaouira'}, Maroc
+                                                    </p>
+                                                </div>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <div className="relative w-20 h-20 rounded-2xl overflow-hidden shrink-0 bg-neutral-50">
+                                                    <Image
+                                                        src={(property.photos && property.photos.length > 0) ? property.photos[0] : (property.coverPhoto || '/Images/placeholder-property.jpg')}
+                                                        alt={property.name || 'Property'}
+                                                        fill
+                                                        className="object-cover"
+                                                        unoptimized={true}
+                                                    />
+                                                    <div className="absolute top-1.5 left-1.5 w-3 h-3 bg-[#4CAF50] rounded-full border-2 border-white shadow-sm" />
+                                                </div>
+                                                <div className="flex flex-col justify-center min-w-0 border-b border-neutral-50 flex-1 pb-4 group-last:border-0">
+                                                    <div className="flex justify-between items-start">
+                                                        <h3 className="font-bold text-[17px] text-black truncate tracking-tight pr-4">
+                                                            {property.name || (property.type && `${property.type.charAt(0).toUpperCase() + property.type.slice(1)} à ${property.specs?.address?.split(',')[0]}`)}
+                                                        </h3>
+                                                    </div>
+                                                    <p className="text-[14px] text-neutral-400 font-medium truncate mt-0.5">
+                                                        {t({ en: 'Property', fr: 'Logement' })} · {property.specs?.address?.split(',')[0] || 'Essaouira'}
+                                                    </p>
+                                                </div>
+                                            </>
+                                        )}
                                     </motion.div>
                                 ))}
                             </div>

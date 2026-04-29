@@ -55,7 +55,6 @@ const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
     ];
 
     const hostTabs = [
-        { id: 'calendar' as TabType, icon: Calendar, label: t({ en: 'Calendar', fr: 'Calendrier', ar: 'التقويم' }) },
         { id: 'services' as TabType, icon: ShoppingBag, label: t({ en: 'Listings', fr: 'Annonces', ar: 'الإعلانات' }) },
         { id: 'profile' as TabType, icon: User, label: t({ en: 'Menu', fr: 'Menu', ar: 'القائمة' }) },
     ];

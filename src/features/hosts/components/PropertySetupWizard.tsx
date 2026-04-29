@@ -12,7 +12,7 @@ import {
     Music, Dumbbell, Mountain, ShowerHead, SquarePlus, Snowflake,
     TreePine, PawPrint, Baby, Camera, Plus, Trash2, Info,
     Sparkles, Key, Shirt, Wrench, Package, MonitorUp, Droplets, Zap, Paintbrush, Heart, ChefHat, Map, BookOpen, Hammer, Plane, BellRing,
-    Bot, Handshake, Copy, Flower2, LayoutGrid, MessageSquare, Calendar, Bookmark, Menu, User, CheckCircle2, FireExtinguisher, ShieldAlert
+    Bot, Handshake, Copy, Flower2, LayoutGrid, MessageSquare, Calendar, Bookmark, Menu, User, CheckCircle2, FireExtinguisher, ShieldAlert, QrCode
 } from 'lucide-react';
 import { TbGrill, TbCampfire, TbAlarmSmoke, TbBuildingSkyscraper, TbBuildingEstate, TbBuildingCottage, TbBuildingMosque } from 'react-icons/tb';
 import { MdOutlineFireplace, MdOutlineCo2 } from 'react-icons/md';
@@ -121,7 +121,7 @@ const AMENITY_GROUPS = [
 ];
 
 const PROPERTY_TYPES = [
-    { id: 'apartment', label: { en: 'Apartment', fr: 'Appartement' }, icon: TbBuildingSkyscraper },
+    { id: 'apartment', label: { en: 'Apartment', fr: 'Appartement' }, icon: Home },
     { id: 'villa', label: { en: 'Villa', fr: 'Villa' }, icon: TbBuildingEstate },
     { id: 'guesthouse', label: { en: 'Guesthouse', fr: 'Maison d\'hôtes/Gîte rural' }, icon: TbBuildingCottage },
     { id: 'hotel', label: { en: 'Hotel', fr: 'Hôtel' }, icon: HotelIcon },
@@ -220,7 +220,7 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
     const [currentDetailServiceId, setCurrentDetailServiceId] = useState<string | null>(null);
     const [teamMode, setTeamMode] = useState<'lbricol' | 'own_team' | 'both' | null>(null);
     const [teamInvites, setTeamInvites] = useState<string[]>(['']);
-    const [serviceCodes, setServiceCodes] = useState<Record<string, string>>({});
+    const [propertyCode, setPropertyCode] = useState<string | null>(null);
 
     // Cleaning Details State
     const [cleaningSubServices, setCleaningSubServices] = useState<string[]>([]);
@@ -433,6 +433,8 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
     const [selectedServices, setSelectedServices] = useState<string[]>([]);
     const [activeServiceCategory, setActiveServiceCategory] = useState<string>(SERVICES_CATALOGUE[0].id);
 
+    const anyIsUploading = isUploading || isUploadingCleaningPhotos || isUploadingGardeningPhotos || isUploadingPoolPhotos;
+
     const toggleService = (id: string) => {
         setSelectedServices(prev =>
             prev.includes(id) ? prev.filter(s => s !== id) : [...prev, id]
@@ -440,24 +442,13 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
     };
 
     useEffect(() => {
-        if (viewMode === 'team_mode_select') {
-            const selectedAutomationServices = selectedServices.filter(id => AUTOMATED_SERVICE_IDS.includes(id));
-            const newCodes = { ...serviceCodes };
-            let updated = false;
-
-            selectedAutomationServices.forEach(serviceId => {
-                if (!newCodes[serviceId]) {
-                    const code = Math.random().toString(36).substring(2, 8).toUpperCase();
-                    newCodes[serviceId] = code;
-                    updated = true;
-                }
-            });
-
-            if (updated) {
-                setServiceCodes(newCodes);
+        if (viewMode === 'team_mode_select' && (teamMode === 'own_team' || teamMode === 'both')) {
+            if (!propertyCode) {
+                const code = Math.random().toString(36).substring(2, 8).toUpperCase();
+                setPropertyCode(code);
             }
         }
-    }, [viewMode, selectedServices]);
+    }, [viewMode, teamMode]);
 
     const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = Array.from(e.target.files || []);
@@ -677,20 +668,29 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
     };
 
     const handleSubmit = async () => {
-        if (!auth.currentUser) return;
+        if (!auth.currentUser || isSubmitting || anyIsUploading) return;
         setIsSubmitting(true);
         try {
+            // Final safety filter: remove any temporary blob URLs
+            const finalPhotos = photos.filter(p => p && !p.startsWith('blob:'));
+            const finalCleaningPhotos = cleaningPhotos.filter(p => p && !p.startsWith('blob:'));
+            const finalGardeningPhotos = gardeningPhotos.filter(p => p && !p.startsWith('blob:'));
+            const finalPoolPhotos = poolPhotos.filter(p => p && !p.startsWith('blob:'));
+
             await addDoc(collection(db, 'properties'), {
                 hostId: auth.currentUser.uid,
                 name: name || `${type} à ${auth.currentUser.displayName}`,
                 type,
+                coverPhoto: finalPhotos[0] || null,
+                photos: finalPhotos,
+                propertyCode: propertyCode,
                 specs: {
-                    bedrooms,
-                    floor,
-                    guests,
-                    beds,
-                    bathrooms,
-                    apartmentNumber,
+                    bedrooms: Number(bedrooms),
+                    floor: Number(floor),
+                    guests: Number(guests),
+                    beds: Number(beds),
+                    bathrooms: Number(bathrooms),
+                    apartmentNumber: apartmentNumber || "",
                     amenities: selectedAmenities,
                     address,
                     lat: baseLat,
@@ -705,10 +705,10 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                         frequencies: cleaningFrequencies,
                         stairsSize: cleaningSubServices.includes('stairs') ? stairsSize : null,
                         checklist: cleaningChecklist.filter(item => item.trim() !== ''),
-                        referencePhotos: cleaningPhotos
+                        referencePhotos: finalCleaningPhotos
                     } : null,
                     glassCleaningDetails: selectedServices.includes('glass_cleaning') ? {
-                        windowsCount,
+                        windowsCount: Number(windowsCount),
                         windowsSize,
                         windowsCoverage,
                         windowsAccessibility
@@ -716,8 +716,33 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                     receptionDetails: selectedServices.includes('guest_receptionist') ? {
                         checklist: receptionChecklist.filter(item => item.trim() !== '')
                     } : null,
+                    gardeningDetails: selectedServices.includes('gardening') ? {
+                        subServices: gardeningSubServices,
+                        gardenSize,
+                        shouldBringMower,
+                        treeCount,
+                        averageTreeHeight,
+                        preferredTreeService,
+                        isWasteRemovalIncluded,
+                        frequencies: gardeningFrequency,
+                        checklist: gardeningChecklist.filter(item => item.trim() !== ''),
+                        referencePhotos: finalGardeningPhotos
+                    } : null,
+                    poolDetails: selectedServices.includes('pool_cleaning') ? {
+                        poolType,
+                        poolWaterType,
+                        poolSize,
+                        poolDepth,
+                        poolSubServices,
+                        poolTechnicalRoomLocation,
+                        poolSuppliesLocation,
+                        poolHasRobot,
+                        frequencies: poolFrequency,
+                        referencePhotos: finalPoolPhotos
+                    } : null,
                     teamManagement: {
                         mode: teamMode,
+                        code: propertyCode,
                         invites: (teamMode === 'own_team' || teamMode === 'both') ? teamInvites.filter(n => n.trim() !== '') : []
                     }
                 },
@@ -729,7 +754,7 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                 title: t({ en: 'Listing published!', fr: 'Annonce publiée !' }),
                 description: t({ en: 'Your property is now live.', fr: 'Votre propriété est maintenant en ligne.' })
             });
-            setViewMode('published_success');
+            onComplete();
         } catch (err) {
             console.error("Error creating property:", err);
             showToast({
@@ -937,7 +962,7 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                     <div className="flex justify-between items-center">
                         <button
                             onClick={handleBack}
-                            className="text-[17px] font-medium text-black underline underline-offset-4"
+                            className="text-[17px] font-black text-black underline underline-offset-4"
                         >
                             {t({ en: 'Back', fr: 'Retour', ar: 'عودة' })}
                         </button>
@@ -1146,9 +1171,10 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                                 setViewMode('form');
                                 setStepIndex(3);
                             }}
-                            className="bg-[#2C2C2C] text-white px-10 py-4 rounded-[12px] text-[17px] font-medium active:scale-[0.98] transition-all"
+                            disabled={anyIsUploading}
+                            className="bg-[#2C2C2C] disabled:bg-neutral-200 text-white px-10 py-4 rounded-[12px] text-[17px] font-medium active:scale-[0.98] transition-all"
                         >
-                            {t({ en: 'Next', fr: 'Suivant' })}
+                            {anyIsUploading ? t({ en: 'Uploading...', fr: 'Téléchargement...' }) : t({ en: 'Next', fr: 'Suivant' })}
                         </button>
                     </div>
                 </div>
@@ -1182,7 +1208,7 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                 {/* Content */}
                 <div className="flex-1 px-6 pt-2 overflow-y-auto">
                     <h1 className="text-[32px] font-bold text-black tracking-tight mb-8">
-                        {t({ en: 'Listings', fr: 'Annonces', ar: 'الإعلانات' })}
+                        {t({ en: 'Listings', fr: 'Annonces', ar: 'إعلاناتي' })}
                     </h1>
 
                     <div className="space-y-6">
@@ -1328,15 +1354,9 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                                                     className={`flex flex-col items-start justify-between p-4 rounded-[10px] border transition-all h-[120px] ${isActive ? 'border-black border-[1px] bg-neutral-50' : 'border-neutral-200 hover:border-black'}`}
                                                 >
                                                     <div className="w-8 h-8 flex items-center justify-center">
-                                                        {isApartment && isActive ? (
-                                                            <Lottie
-                                                                animationData={homeAnimation}
-                                                                loop={false}
-                                                                className="w-12 h-12 -mt-2 -ml-2"
-                                                            />
-                                                        ) : (
-                                                            <Icon size={32} className="text-black" />
-                                                        )}
+
+                                                        <Icon size={32} className="text-black" />
+
                                                     </div>
                                                     <span className={`text-[15px] font-medium text-left leading-tight ${isActive ? 'text-black' : 'text-neutral-700'}`}>
                                                         {t(pt.label)}
@@ -2759,7 +2779,7 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                                                         key={system.id}
                                                         onClick={() => setPoolWaterType(system.id as any)}
                                                         className={`flex-1 p-5 rounded-[10px] border text-center transition-all ${poolWaterType === system.id
-                                                            ? 'border-black border-[3.5px] bg-neutral-50'
+                                                            ? 'border-black border-[2px] bg-neutral-50'
                                                             : 'border-neutral-200 text-black hover:border-black bg-white'
                                                             }`}
                                                     >
@@ -2787,7 +2807,7 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                                                         key={size.id}
                                                         onClick={() => setPoolSize(size.id as any)}
                                                         className={`p-5 rounded-[10px] border text-left transition-all ${poolSize === size.id
-                                                            ? 'border-black border-[3.5px] bg-neutral-50'
+                                                            ? 'border-black border-[2px] bg-neutral-50'
                                                             : 'border-neutral-200 text-black hover:border-black bg-white'
                                                             }`}
                                                     >
@@ -2848,7 +2868,7 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                                                         }
                                                     }}
                                                     className={`w-full flex items-center justify-between p-5 rounded-[10px] border transition-all ${poolSubServices.includes(service.id)
-                                                        ? 'border-black border-[3.5px] bg-neutral-50'
+                                                        ? 'border-black border-[2px] bg-neutral-50'
                                                         : 'border-neutral-200 hover:border-black bg-white'
                                                         }`}
                                                 >
@@ -3407,7 +3427,7 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                             exit={{ opacity: 0, x: -20 }}
                             className="flex-1 flex flex-col min-h-0"
                         >
-                            <div className="flex-1 overflow-y-auto  pt-8 pb-32">
+                            <div className="flex-1 overflow-y-auto  pt-8 pb-12">
                                 <div className="space-y-2 mb-8">
                                     <h2 className="font-medium text-[26px] text-black leading-tight tracking-tight">
                                         {t({
@@ -3489,39 +3509,33 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                                     </div>
 
                                     <div className="space-y-4">
-                                        {Object.entries(serviceCodes).map(([serviceId, code]) => {
-                                            const service = SERVICES_CATALOGUE.find(s => s.id === serviceId);
-                                            return (
-                                                <div key={serviceId} className="flex items-center justify-between p-5 bg-[#FFFFFF] rounded-[20px] border border-neutral-100 group">
-                                                    <div className="flex items-center gap-4">
-                                                        <div className="w-10 h-10 flex items-center justify-center">
-                                                            {service?.id === 'cleaning' ? <Sparkles size={22} strokeWidth={1.5} /> :
-                                                                service?.id === 'guest_receptionist' ? <Key size={22} strokeWidth={1.5} /> :
-                                                                    service?.id === 'gardening' ? <Flower2 size={22} strokeWidth={1.5} /> :
-                                                                        <Bot size={22} strokeWidth={1.5} />}
-                                                        </div>
-                                                        <div className="flex flex-col">
-                                                            <span className="text-[15px] font-medium text-black">{t({ en: service?.label || serviceId, fr: service?.labelFr || serviceId })}</span>
-                                                            <span className="text-[13px] text-neutral-400 font-mono tracking-wider">{code}</span>
-                                                        </div>
-                                                    </div>
-                                                    <button
-                                                        onClick={() => {
-                                                            navigator.clipboard.writeText(code);
-                                                            showToast({
-                                                                variant: 'success',
-                                                                title: t({ en: 'Copied!', fr: 'Copié !' }),
-                                                                description: t({ en: 'Code copied to clipboard.', fr: 'Code copié dans le presse-papier.' })
-                                                            });
-                                                        }}
-                                                        className="flex items-center gap-2 px-4 py-2 bg-white border border-neutral-200 rounded-full text-[13px] font-medium hover:border-black active:scale-95 transition-all"
-                                                    >
-                                                        <Copy size={14} />
-                                                        {t({ en: 'Copy', fr: 'Copier' })}
-                                                    </button>
+                                        <div className="flex items-center justify-between p-5 bg-[#FFFFFF] rounded-[20px] border border-neutral-100 group">
+                                            <div className="flex items-center gap-4">
+                                                <div className="w-10 h-10 flex items-center justify-center">
+                                                    <QrCode size={22} strokeWidth={1.5} className="text-black" />
                                                 </div>
-                                            );
-                                        })}
+                                                <div className="flex flex-col">
+                                                    <span className="text-[15px] font-medium text-black">{t({ en: 'Property Invite Code', fr: 'Code d\'invitation propriété' })}</span>
+                                                    <span className="text-[13px] text-neutral-400 font-mono tracking-wider">{propertyCode}</span>
+                                                </div>
+                                            </div>
+                                            <button
+                                                onClick={() => {
+                                                    if (propertyCode) {
+                                                        navigator.clipboard.writeText(propertyCode);
+                                                        showToast({
+                                                            variant: 'success',
+                                                            title: t({ en: 'Copied!', fr: 'Copié !' }),
+                                                            description: t({ en: 'Code copied to clipboard.', fr: 'Code copié dans le presse-papier.' })
+                                                        });
+                                                    }
+                                                }}
+                                                className="flex items-center gap-2 px-4 py-2 bg-white border border-neutral-200 rounded-full text-[13px] font-medium hover:border-black active:scale-95 transition-all"
+                                            >
+                                                <Copy size={14} />
+                                                {t({ en: 'Copy', fr: 'Copier' })}
+                                            </button>
+                                        </div>
                                     </div>
 
                                     <div className="pt-4 space-y-4">
@@ -3635,11 +3649,12 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                         </button>
                         <button
                             onClick={handleNext}
-                            disabled={isSubmitting || (viewMode === 'team_mode_select' && !teamMode)}
+                            disabled={isSubmitting || anyIsUploading || (viewMode === 'team_mode_select' && !teamMode)}
                             className="bg-[#2C2C2C] disabled:bg-neutral-200 text-white px-10 py-4 rounded-[12px] text-[17px] font-medium active:scale-[0.98] transition-all"
                         >
                             {(() => {
                                 if (isSubmitting) return 'Publication...';
+                                if (anyIsUploading) return 'Envoi...';
                                 if (viewMode === 'team_mode_select') return 'Publier l\'annonce';
                                 return 'Suivant';
                             })()}
