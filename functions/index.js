@@ -164,3 +164,129 @@ exports.auditBricolerDeletion = onDocumentDeleted("bricolers/{uid}", async (even
   });
 });
 
+/**
+ * Helper to dispatch host jobs based on automation settings
+ */
+async function dispatchHostJob(propertyId, serviceId, eventType, eventDate) {
+  const db = admin.firestore();
+  
+  const propertyDoc = await db.collection("properties").doc(propertyId).get();
+  if (!propertyDoc.exists) return;
+  const property = propertyDoc.data();
+
+  // Skill Mapping based on service categories
+  const skillMap = {
+    'cleaning': 'Cleaning',
+    'glass_cleaning': 'Glass Cleaning',
+    'receptionist': 'Receptionist',
+    'gardening': 'Gardening',
+    'pool_maintenance': 'Pool Maintenance',
+    'pets_care': 'Pets Care',
+    'errands': 'Errands'
+  };
+  
+  const requiredSkill = skillMap[serviceId];
+  let assigneeId = null;
+  let assigneeType = null;
+  let assigneeName = null;
+  
+  // 1. Try to find a team member with the required skill
+  const teamSnap = await db.collection("properties").doc(propertyId).collection("team").get();
+  const skilledMember = teamSnap.docs.find(doc => {
+    const data = doc.data();
+    return data.skills?.includes(serviceId) || data.skills?.includes(requiredSkill);
+  });
+
+  if (skilledMember) {
+    assigneeId = skilledMember.id;
+    assigneeType = 'team';
+    assigneeName = skilledMember.data().name;
+  } else {
+    // 2. Fallback: Try to find a verified Lbricol Pro in the same city
+    const prosSnap = await db.collection("bricolers")
+      .where("city", "==", property.city || "Marrakech")
+      .where("isVerified", "==", true)
+      .where("serviceIds", "array-contains", serviceId)
+      .limit(1)
+      .get();
+      
+    if (!prosSnap.empty) {
+      const pro = prosSnap.docs[0];
+      assigneeId = pro.id;
+      assigneeType = 'managed';
+      assigneeName = pro.data().name || pro.data().displayName;
+    }
+  }
+
+  // 3. Create the job record
+  const jobRef = await db.collection("jobs").add({
+    clientId: property.hostId,
+    propertyId: propertyId,
+    status: assigneeId ? 'assigned' : 'new',
+    service: serviceId,
+    subService: eventType,
+    subServiceDisplayName: eventType,
+    date: eventDate,
+    time: property.automation?.cleaningTime || "11:30",
+    address: property.specs?.address || '',
+    isHostJob: true,
+    isAutomatic: true,
+    bricolerId: assigneeId,
+    executor: assigneeId ? { 
+        id: assigneeId, 
+        type: assigneeType, 
+        isAutoMatch: true,
+        name: assigneeName
+    } : null,
+    createdAt: admin.firestore.FieldValue.serverTimestamp(),
+  });
+
+  // 4. Notify the assignee
+  if (assigneeId) {
+    const userDoc = await db.collection("users").doc(assigneeId).get();
+    const tokens = userDoc.data()?.fcmTokens || [];
+    if (tokens.length > 0) {
+      await sendPushNotification(
+        tokens,
+        "Nouveau job auto-assigné",
+        `Vous avez été assigné à une mission de ${serviceId} pour ${property.name}.`,
+        { jobId: jobRef.id, type: 'auto_assignment' }
+      );
+    }
+  }
+}
+
+/**
+ * Trigger: On Calendar Event Created
+ * Dispatches jobs based on property automation settings
+ */
+exports.onCalendarEventCreated = onDocumentCreated("properties/{propertyId}/calendar/{eventId}", async (event) => {
+  const eventData = event.data.data();
+  const propertyId = event.params.propertyId;
+  const eventType = eventData.type; // e.g. 'Checkout', 'Check-in'
+  
+  const db = admin.firestore();
+  const propertyDoc = await db.collection("properties").doc(propertyId).get();
+  if (!propertyDoc.exists) return;
+  const property = propertyDoc.data();
+  const automation = property.automation || {};
+  
+  if (!automation.enabled) return;
+
+  const servicesToDispatch = [];
+
+  // Mapping Event Types to Services
+  if (eventType === 'Checkout') {
+    if (automation.services?.includes('cleaning')) servicesToDispatch.push('cleaning');
+    if (automation.errandsEnabled) servicesToDispatch.push('errands');
+  } else if (eventType === 'Check-in') {
+    if (automation.services?.includes('receptionist')) servicesToDispatch.push('receptionist');
+  }
+
+  // Dispatch all relevant services
+  const dispatchPromises = servicesToDispatch.map(serviceId => 
+    dispatchHostJob(propertyId, serviceId, eventType, eventData.date)
+  );
+
+  await Promise.all(dispatchPromises);
+});

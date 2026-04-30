@@ -9,6 +9,26 @@ import PropertyDetailView from './PropertyDetailView';
 import Image from 'next/image';
 import { db, auth } from '@/lib/firebase';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
+import { 
+    TbBuildingEstate, TbBuildingCottage, TbBuildingMosque 
+} from 'react-icons/tb';
+import { 
+    Warehouse, Bed, Ship, Tent, Truck, Castle, Hotel as HotelIcon 
+} from 'lucide-react';
+
+const TYPE_MAP: Record<string, { label: { en: string, fr: string, ar?: string }, icon: any }> = {
+    apartment: { label: { en: 'Apartment', fr: 'Appartement', ar: 'شقة' }, icon: Home },
+    villa: { label: { en: 'Villa', fr: 'Villa', ar: 'فيلا' }, icon: TbBuildingEstate },
+    guesthouse: { label: { en: 'Guesthouse', fr: 'Maison d\'hôtes', ar: 'دار ضيافة' }, icon: TbBuildingCottage },
+    hotel: { label: { en: 'Hotel', fr: 'Hôtel', ar: 'فندق' }, icon: HotelIcon },
+    riad: { label: { en: 'Riad', fr: 'Riad', ar: 'رياض' }, icon: TbBuildingMosque },
+    barn: { label: { en: 'Barn', fr: 'Grange', ar: 'حظيرة' }, icon: Warehouse },
+    bed_breakfast: { label: { en: 'B&B', fr: 'Chambre/B&B', ar: 'غرفة / فطور' }, icon: Bed },
+    boat: { label: { en: 'Boat', fr: 'Bateau', ar: 'قارب' }, icon: Ship },
+    cabin: { label: { en: 'Cabin', fr: 'Cabane', ar: 'كوخ' }, icon: Tent },
+    camper: { label: { en: 'Camper', fr: 'Caravane', ar: 'مقطورة' }, icon: Truck },
+    casa_particular: { label: { en: 'Casa particular', fr: 'Casa particular', ar: 'منزل خاص' }, icon: Castle },
+};
 
 const PropertyListView = () => {
     const { t } = useLanguage();
@@ -16,7 +36,7 @@ const PropertyListView = () => {
     const [selectedProperty, setSelectedProperty] = useState<any>(null);
     const [properties, setProperties] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
-    const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
+    const [viewMode, setViewMode] = useState<'list' | 'grid'>('grid');
 
     useEffect(() => {
         if (!auth.currentUser) return;
@@ -135,8 +155,11 @@ const PropertyListView = () => {
                                                     <h3 className="font-bold text-[20px] text-black tracking-tight mb-1">
                                                         {property.name || (property.type && `${property.type.charAt(0).toUpperCase() + property.type.slice(1)} à ${property.specs?.address?.split(',')[0]}`)}
                                                     </h3>
-                                                    <p className="text-[15px] text-neutral-400 font-medium">
-                                                        {t({ en: 'Property', fr: 'Logement' })} · {property.specs?.address?.split(',')[0] || 'Essaouira'}, Maroc
+                                                    <p className="text-[15px] text-neutral-400 font-medium flex items-center gap-1.5">
+                                                        {property.type && TYPE_MAP[property.type]?.icon && React.createElement(TYPE_MAP[property.type].icon, { size: 14, className: "shrink-0" })}
+                                                        <span>
+                                                            {property.type ? t(TYPE_MAP[property.type]?.label || { en: property.type, fr: property.type }) : t({ en: 'Property', fr: 'Logement' })} · {property.specs?.address?.split(',')[0] || 'Essaouira'}, Maroc
+                                                        </span>
                                                     </p>
                                                 </div>
                                             </>
@@ -158,8 +181,11 @@ const PropertyListView = () => {
                                                             {property.name || (property.type && `${property.type.charAt(0).toUpperCase() + property.type.slice(1)} à ${property.specs?.address?.split(',')[0]}`)}
                                                         </h3>
                                                     </div>
-                                                    <p className="text-[14px] text-neutral-400 font-medium truncate mt-0.5">
-                                                        {t({ en: 'Property', fr: 'Logement' })} · {property.specs?.address?.split(',')[0] || 'Essaouira'}
+                                                    <p className="text-[14px] text-neutral-400 font-medium truncate mt-0.5 flex items-center gap-1.5">
+                                                        {property.type && TYPE_MAP[property.type]?.icon && React.createElement(TYPE_MAP[property.type].icon, { size: 13, className: "shrink-0" })}
+                                                        <span>
+                                                            {property.type ? t(TYPE_MAP[property.type]?.label || { en: property.type, fr: property.type }) : t({ en: 'Property', fr: 'Logement' })} · {property.specs?.address?.split(',')[0] || 'Essaouira'}
+                                                        </span>
                                                     </p>
                                                 </div>
                                             </>

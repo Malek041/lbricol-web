@@ -797,7 +797,7 @@ export default function HomeOrchestrator() {
 
   useEffect(() => {
     if (isHostMode && mobileNavTab === 'home') {
-      setMobileNavTab('calendar');
+      setMobileNavTab('services');
     }
   }, [isHostMode, mobileNavTab]);
 

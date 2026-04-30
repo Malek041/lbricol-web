@@ -360,6 +360,9 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
     // Activation code states
     const [hasCode, setHasCode] = useState<boolean | null>(null);
     const [activationCode, setActivationCode] = useState('');
+    const [propertyCode, setPropertyCode] = useState('');
+    const [isVerifyingPropertyCode, setIsVerifyingPropertyCode] = useState(false);
+    const [linkedProperty, setLinkedProperty] = useState<any>(null);
     const [localUserData, setLocalUserData] = useState<any>(userData || null);
 
     // Car rental state
@@ -394,6 +397,7 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
         if (mode === 'onboarding') {
             steps.push({ id: 'language', label: t({ en: 'Language', fr: 'Langue', ar: 'اللغة' }) });
             steps.push({ id: 'activation', label: t({ en: 'Activation', fr: 'Activation', ar: 'تفعيل' }) });
+            steps.push({ id: 'property_linkage', label: t({ en: 'Property', fr: 'Propriété', ar: 'العقار' }) });
         }
 
         steps.push({ id: 'services', label: t({ en: 'Services', fr: 'Services', ar: 'الخدمات' }) });
@@ -620,10 +624,52 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                     description: t({ en: 'Activation code not found.', fr: 'Code d\'activation non trouvé.' })
                 });
             }
-        } catch (err) {
-            console.error("Verification error:", err);
         } finally {
             setIsSubmitting(false);
+        }
+    };
+    const handleVerifyPropertyCode = async () => {
+        if (!propertyCode.trim()) return;
+        setIsVerifyingPropertyCode(true);
+        try {
+            const q = query(
+                collection(db, 'properties'), 
+                where('propertyCode', '==', propertyCode.trim().toUpperCase()), 
+                limit(1)
+            );
+            const s = await getDocs(q);
+            if (!s.empty) {
+                const data = s.docs[0].data();
+                setLinkedProperty({
+                    id: s.docs[0].id,
+                    name: data.name,
+                    address: data.specs?.address,
+                    automation: data.automation
+                });
+                showToast({
+                    variant: 'success',
+                    title: t({ en: 'Property Linked!', fr: 'Logement lié !' }),
+                    description: t({ 
+                        en: `You've been added to the team for "${data.name}".`, 
+                        fr: `Vous avez été ajouté à l'équipe pour "${data.name}".` 
+                    })
+                });
+                // Auto-advance if code is valid
+                setTimeout(goNext, 800);
+            } else {
+                showToast({
+                    variant: 'error',
+                    title: t({ en: 'Invalid code', fr: 'Code invalide' }),
+                    description: t({ 
+                        en: 'We couldn\'t find any property with this code.', 
+                        fr: 'Nous n\'avons trouvé aucun logement avec ce code.' 
+                    })
+                });
+            }
+        } catch (err) {
+            console.error("Property verification error:", err);
+        } finally {
+            setIsVerifyingPropertyCode(false);
         }
     };
 
@@ -875,7 +921,16 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                         isBricoler: true,
                         userType: 'bricoler',
                         createdAt: cSnap.exists() ? cSnap.data().createdAt : serverTimestamp(),
-                    }, { merge: true })
+                    }, { merge: true }),
+                    linkedProperty ? setDoc(doc(db, 'properties', linkedProperty.id, 'team', user.uid), {
+                        uid: user.uid,
+                        name: bricolerData.name,
+                        photoURL: bricolerData.profilePhotoURL || bricolerData.avatar || "",
+                        role: 'member',
+                        joinedAt: serverTimestamp(),
+                        skills: bricolerData.serviceIds || [],
+                        status: 'active'
+                    }) : Promise.resolve()
                 ]),
                 new Promise<any>((_, reject) => setTimeout(() => reject(new Error("FIRESTORE_TIMEOUT")), 25000))
             ]);
@@ -1409,6 +1464,7 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
     const canGoNext = () => {
         if (step === 'language') return true;
         if (step === 'activation') return hasCode === false || (hasCode === true && localUserData !== null);
+        if (step === 'property_linkage') return true; // Optional
         if (step === 'services') return selectedSubServices.length > 0;
         if (step === 'car_selection') return selectedCars.length > 0;
         if (step === 'car_pricing') return selectedCars.length > 0 && selectedCars.every(c => c.quantity > 0 && (c.pricePerDay > 0 || c.price > 0));
@@ -1986,6 +2042,76 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                                                     </button>
                                                 </motion.div>
                                             )}
+                                        </div>
+                                    </motion.div>
+                                )}
+
+                                 {/* ── STEP: Property Linkage ── */}
+                                {step === 'property_linkage' && (
+                                    <motion.div key="property_linkage" custom={direction} variants={slideVariants} initial="enter" animate="center" exit="exit" className="p-6 md:p-10 space-y-8">
+                                        <motion.div variants={itemVariants} initial="hidden" animate="show" className="space-y-3">
+                                            <h2 className="text-2xl md:text-3xl font-bold text-neutral-900 tracking-tight">
+                                                {t({ en: 'Join a property team?', fr: 'Rejoindre une équipe ?', ar: 'الانضمام لفريق عقار؟' })}
+                                            </h2>
+                                            <p className="text-neutral-500 text-[15px] font-medium leading-relaxed">
+                                                {t({ 
+                                                    en: 'If a host gave you a code, enter it here to link your profile to their property.', 
+                                                    fr: 'Si un hôte vous a donné un code, entrez-le ici pour lier votre profil à son logement.', 
+                                                    ar: 'إذا أعطاك المضيف رمزاً، أدخله هنا لربط حسابك بعقاره.' 
+                                                })}
+                                            </p>
+                                        </motion.div>
+
+                                        <div className="space-y-6">
+                                            <div className="relative">
+                                                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-400">
+                                                    <Key size={20} />
+                                                </div>
+                                                <input
+                                                    type="text"
+                                                    value={propertyCode}
+                                                    onChange={(e) => setPropertyCode(e.target.value.toUpperCase())}
+                                                    placeholder="EX: PROP-ABCD"
+                                                    className="w-full bg-white border-2 border-neutral-100 rounded-[20px] pl-12 pr-4 py-4 font-mono font-bold text-lg text-neutral-900 focus:border-[#01A083] outline-none transition-all placeholder:text-neutral-300"
+                                                />
+                                            </div>
+
+                                            {linkedProperty ? (
+                                                <motion.div 
+                                                    initial={{ opacity: 0, scale: 0.95 }}
+                                                    animate={{ opacity: 1, scale: 1 }}
+                                                    className="p-5 rounded-2xl bg-[#E6F6F2] border-2 border-[#01A083] flex items-center gap-4"
+                                                >
+                                                    <div className="w-12 h-12 rounded-full bg-[#01A083] flex items-center justify-center text-white shrink-0">
+                                                        <CheckCircle2 size={24} />
+                                                    </div>
+                                                    <div className="flex-1 min-w-0">
+                                                        <h4 className="font-bold text-neutral-900 truncate">{linkedProperty.name}</h4>
+                                                        <p className="text-sm text-[#01A083] font-medium truncate">{linkedProperty.address}</p>
+                                                    </div>
+                                                </motion.div>
+                                            ) : (
+                                                <button
+                                                    onClick={handleVerifyPropertyCode}
+                                                    disabled={!propertyCode.trim() || isVerifyingPropertyCode}
+                                                    className="w-full h-14 bg-[#01A083] text-white rounded-full font-black text-[15px] uppercase tracking-wider shadow-lg shadow-[#01A083]/20 active:scale-95 transition-all disabled:opacity-50 disabled:scale-100"
+                                                >
+                                                    {isVerifyingPropertyCode ? (
+                                                        <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin mx-auto" />
+                                                    ) : (
+                                                        t({ en: 'Verify Code', fr: 'Vérifier le code', ar: 'التحقق من الرمز' })
+                                                    )}
+                                                </button>
+                                            )}
+
+                                            <div className="pt-4 text-center">
+                                                <button
+                                                    onClick={goNext}
+                                                    className="text-neutral-400 text-sm font-bold uppercase tracking-widest hover:text-neutral-600 transition-colors"
+                                                >
+                                                    {t({ en: 'Skip for now', fr: 'Passer pour l\'instant', ar: 'تخطي الآن' })}
+                                                </button>
+                                            </div>
                                         </div>
                                     </motion.div>
                                 )}

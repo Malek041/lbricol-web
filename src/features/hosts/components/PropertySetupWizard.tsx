@@ -32,6 +32,37 @@ interface PropertySetupWizardProps {
     onComplete: () => void;
 }
 
+const FAQ_SERVICES = [
+    {
+        title: "Nettoyage",
+        content: "L'activité la plus fréquente et critique. Après chaque départ (checkout), l'application dépêche automatiquement un agent de nettoyage à l'heure prévue. L'agent suit une liste de tâches définie par l'hôte (changement des draps, reset de la salle de bain, nettoyage de la cuisine, etc.) et télécharge des photos de preuve pièce par pièce. L'hôte reçoit une notification \"Nettoyage terminé ✓\" avec les photos. Aucune intervention n'est nécessaire sauf si l'agent signale un problème."
+    },
+    {
+        title: "Nettoyage de vitres",
+        content: "Moins fréquent et non lié à chaque checkout. Cette activité suit un calendrier défini par l'hôte (toutes les 2 semaines, mensuel, etc.) ou peut être déclenchée manuellement. L'agent doit connaître le nombre de fenêtres, si c'est intérieur/extérieur, si une échelle est nécessaire et l'étage. L'algorithme trouve un Bricoleur ayant spécifiquement la compétence \"Nettoyage de vitres\"."
+    },
+    {
+        title: "Accueil Voyageurs",
+        content: "Déclenché à chaque arrivée (check-in). Un réceptionniste Bricoleur (ou un membre de votre équipe) se rend à la propriété à l'heure du check-in, accueille les voyageurs, remet les clés, fait un tour rapide du logement et valide la remise des clés dans l'application. L'hôte définit lors de la configuration : emplacement des clés/code du boitier, instructions d'accueil, points spécifiques à expliquer. C'est l'activité la plus sensible au temps : si le Bricoleur est en retard ou indisponible, l'hôte est immédiatement averti."
+    },
+    {
+        title: "Jardinage",
+        content: "Basé sur un calendrier et non sur des événements voyageurs. L'hôte définit la fréquence (hebdomadaire, bimensuelle, mensuelle) et les tâches spécifiques (tonte de pelouse, taille de haies, arrosage, etc.). Un jardinier est dépêché le jour prévu et télécharge des photos avant/après."
+    },
+    {
+        title: "Nettoyage de piscine",
+        content: "Également basé sur un calendrier. L'hôte définit la fréquence, le type de piscine (intérieure/extérieure), le système de traitement (chlore/sel), la taille et l'emplacement du local technique et des fournitures. Le Bricoleur a besoin de tout cela : équilibre chimique, passage de l'aspirateur, vérification du filtre. Photos de la clarté de l'eau et des niveaux chimiques à la fin."
+    },
+    {
+        title: "Soins des animaux",
+        content: "L'activité la plus délicate. Peut être quotidienne ou sur mesure. L'hôte définit : type et nom de l'animal, horaires et quantités de nourriture, besoins de promenade, médicaments éventuels et contact du vétérinaire d'urgence. Le Bricoleur doit avoir la compétence \"Soins des animaux\". L'hôte peut désigner un Bricoleur préféré pour assurer une continuité et une confiance."
+    },
+    {
+        title: "Courses (Restockage)",
+        content: "Le flux le plus complet. L'agent de nettoyage déclenche indirectement le besoin en notant les stocks restants après son passage. L'application compare ces données aux seuils définis par l'hôte et dépêche automatiquement un coursier si nécessaire. L'hôte définit : catégories d'articles, marques préférées, seuils d'alerte, budget maximum et mode d'approbation (auto ou manuel)."
+    }
+];
+
 import { SERVICES_CATALOGUE } from '@/config/services_catalogue';
 
 const SERVICE_ICONS: Record<string, any> = {
@@ -217,6 +248,8 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
     const [viewMode, setViewMode] = useState<'intro_overview' | 'dispatch_intro' | 'step1_detail' | 'step2_detail' | 'step3_detail' | 'form' | 'service_detail_form' | 'team_mode_select' | 'published_success'>('intro_overview');
     const scrollContainerRef = useRef<HTMLDivElement>(null);
     const [stepIndex, setStepIndex] = useState(0);
+    const [isQuestionsOpen, setIsQuestionsOpen] = useState(false);
+    const [expandedFaqIndex, setExpandedFaqIndex] = useState<number | null>(null);
     const [currentDetailServiceId, setCurrentDetailServiceId] = useState<string | null>(null);
     const [teamMode, setTeamMode] = useState<'lbricol' | 'own_team' | 'both' | null>(null);
     const [teamInvites, setTeamInvites] = useState<string[]>(['']);
@@ -239,10 +272,14 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
     const [windowsCount, setWindowsCount] = useState(1);
     const [windowsSize, setWindowsSize] = useState<'small' | 'medium' | 'big'>('medium');
     const [windowsCoverage, setWindowsCoverage] = useState<'interior' | 'exterior' | 'both'>('both');
-    const [windowsAccessibility, setWindowsAccessibility] = useState<'ground' | 'ladder'>('ground');
+    const [windowsAccessibility, setWindowsAccessibility] = useState<'ground' | 'ladder' | 'high'>('ground');
+    const [glassCleaningPhotos, setGlassCleaningPhotos] = useState<string[]>([]);
+    const [isUploadingGlassPhotos, setIsUploadingGlassPhotos] = useState(false);
 
     // Receptionist Details State
     const [receptionChecklist, setReceptionChecklist] = useState<string[]>(['']);
+    const [receptionCheckInMethod, setReceptionCheckInMethod] = useState<string>('in_person');
+    const [receptionPhoneSupport, setReceptionPhoneSupport] = useState<boolean>(true);
 
     // Gardening Details State
     const [gardeningSubServices, setGardeningSubServices] = useState<string[]>([]);
@@ -676,6 +713,7 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
             const finalCleaningPhotos = cleaningPhotos.filter(p => p && !p.startsWith('blob:'));
             const finalGardeningPhotos = gardeningPhotos.filter(p => p && !p.startsWith('blob:'));
             const finalPoolPhotos = poolPhotos.filter(p => p && !p.startsWith('blob:'));
+            const finalGlassCleaningPhotos = glassCleaningPhotos.filter(p => p && !p.startsWith('blob:'));
 
             await addDoc(collection(db, 'properties'), {
                 hostId: auth.currentUser.uid,
@@ -711,9 +749,12 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                         windowsCount: Number(windowsCount),
                         windowsSize,
                         windowsCoverage,
-                        windowsAccessibility
+                        windowsAccessibility,
+                        referencePhotos: finalGlassCleaningPhotos
                     } : null,
                     receptionDetails: selectedServices.includes('guest_receptionist') ? {
+                        checkInMethod: receptionCheckInMethod,
+                        phoneSupport: receptionPhoneSupport,
                         checklist: receptionChecklist.filter(item => item.trim() !== '')
                     } : null,
                     gardeningDetails: selectedServices.includes('gardening') ? {
@@ -739,6 +780,22 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                         poolHasRobot,
                         frequencies: poolFrequency,
                         referencePhotos: finalPoolPhotos
+                    } : null,
+                    petsDetails: selectedServices.includes('pets_care') ? {
+                        petTypes,
+                        feedingFrequency: petFeedingFrequency,
+                        walkingNeeded: petWalkingNeeded,
+                        medicationRequired: petMedicationNeeded,
+                        instructions: petInstructions,
+                        emergencyContact: petEmergencyContact,
+                        checklist: petChecklist.filter(item => item.trim() !== '')
+                    } : null,
+                    errandsDetails: selectedServices.includes('errands') ? {
+                        categories: errandsCategories,
+                        checklists: errandsChecklists,
+                        storageLocation: errandsStorageLocation,
+                        instructions: errandsInstructions,
+                        frequency: errandsFrequency
                     } : null,
                     teamManagement: {
                         mode: teamMode,
@@ -994,9 +1051,14 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                     <button onClick={handleBack} className="font-bold px-4 py-2 rounded-full border border-neutral-200 text-[14px] hover:bg-neutral-50 active:scale-95 transition-all" >
                         {t({ en: 'Back', fr: 'Retour', ar: 'عودة' })}
                     </button>
-                    <button onClick={handleSaveAndExit} className="font-bold px-4 py-2 rounded-full border border-neutral-200 text-[14px] hover:bg-neutral-50 active:scale-95 transition-all text-black">
-                        {t({ en: 'Save & exit', fr: 'Enregistrer et quitter' })}
-                    </button>
+                    <div className="flex items-center gap-2">
+                        <button onClick={() => setIsQuestionsOpen(true)} className="font-bold px-4 py-2 rounded-full border border-neutral-200 text-[14px] hover:bg-neutral-50 active:scale-95 transition-all text-black">
+                            {t({ en: 'Questions?', fr: 'Des questions ?' })}
+                        </button>
+                        <button onClick={handleSaveAndExit} className="font-bold px-4 py-2 rounded-full border border-neutral-200 text-[14px] hover:bg-neutral-50 active:scale-95 transition-all text-black">
+                            {t({ en: 'Save & exit', fr: 'Enregistrer et quitter' })}
+                        </button>
+                    </div>
                 </div>
 
                 <div className="flex-1 overflow-y-auto px-6 pt-8 pb-32 overscroll-behavior-contain">
@@ -1092,9 +1154,14 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                     <button onClick={handleBack} className="font-bold px-4 py-2 rounded-full border border-neutral-200 text-[14px] hover:bg-neutral-50 active:scale-95 transition-all" >
                         {t({ en: 'Back', fr: 'Retour', ar: 'عودة' })}
                     </button>
-                    <button onClick={handleSaveAndExit} className="font-bold px-4 py-2 rounded-full border border-neutral-200 text-[14px] hover:bg-neutral-50 active:scale-95 transition-all text-black">
-                        {t({ en: 'Save & exit', fr: 'Enregistrer et quitter' })}
-                    </button>
+                    <div className="flex items-center gap-2">
+                        <button onClick={() => setIsQuestionsOpen(true)} className="font-bold px-4 py-2 rounded-full border border-neutral-200 text-[14px] hover:bg-neutral-50 active:scale-95 transition-all text-black">
+                            {t({ en: 'Questions?', fr: 'Des questions ?' })}
+                        </button>
+                        <button onClick={handleSaveAndExit} className="font-bold px-4 py-2 rounded-full border border-neutral-200 text-[14px] hover:bg-neutral-50 active:scale-95 transition-all text-black">
+                            {t({ en: 'Save & exit', fr: 'Enregistrer et quitter' })}
+                        </button>
+                    </div>
                 </div>
 
                 <div className="flex-1 overflow-y-auto px-6 pt-8 pb-32 overscroll-behavior-contain">
@@ -1298,7 +1365,13 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
 
             {/* Top Bar: Save & Exit — always visible except during location picker */}
             {stepIndex !== 1 && (
-                <div className="px-6 pt-5 pb-1 flex justify-end items-center shrink-0">
+                <div className="px-6 pt-5 pb-1 flex justify-end items-center shrink-0 gap-2">
+                    <button
+                        onClick={() => setIsQuestionsOpen(true)}
+                        className="font-bold px-4 py-2 rounded-full border border-neutral-200 text-[14px] hover:bg-neutral-50 active:scale-95 transition-all text-black"
+                    >
+                        {t({ en: 'Questions?', fr: 'Des questions ?' })}
+                    </button>
                     <button
                         onClick={handleSaveAndExit}
                         className="font-bold px-4 py-2 rounded-full border border-neutral-200 text-[14px] hover:bg-neutral-50 active:scale-95 transition-all text-black"
@@ -1926,1484 +1999,167 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                             className="flex-1 flex flex-col min-h-0"
                         >
                             {currentDetailServiceId === 'cleaning' && (
-                                <div className="flex-1 overflow-y-auto  pb-32">
-
-                                    <h2 className="font-medium text-[32px] text-black leading-tight tracking-tight mb-8">
-                                        {t({
-                                            en: `Tell us more about your cleaning needs`,
-                                            fr: `Dites-nous en plus sur vos besoins en nettoyage`,
-                                            ar: `أخبرنا المزيد عن احتياجات التنظيف الخاصة بك`
-                                        })}
-                                    </h2>
-
-                                    {/* Sub-services Selection */}
-                                    <div className="space-y-4 mb-12">
-                                        <h3 className="font-medium text-[20px] text-black">
-                                            {t({ en: 'What type of cleaning do you need?', fr: 'Quel type de nettoyage avez-vous besoin ?' })}
-                                        </h3>
-                                        <div className="flex flex-wrap gap-3">
-                                            {[
-                                                { id: 'hospitality', label: 'Post-checkout cleaning', labelFr: 'Nettoyage post-checkout' },
-                                                { id: 'deep', label: 'Deep cleaning', labelFr: 'Nettoyage en profondeur' },
-                                                { id: 'stairs', label: 'Stairs cleaning', labelFr: 'Nettoyage des escaliers' }
-                                            ].map(sub => {
-                                                const isSubSelected = cleaningSubServices.includes(sub.id);
-                                                return (
-                                                    <button
-                                                        key={sub.id}
-                                                        onClick={() => {
-                                                            if (isSubSelected) setCleaningSubServices(prev => prev.filter(s => s !== sub.id));
-                                                            else setCleaningSubServices(prev => [...prev, sub.id]);
-                                                        }}
-                                                        className={`px-5 py-2.5 rounded-full border transition-all text-[14px] font-semibold ${isSubSelected
-                                                            ? 'bg-neutral-50 text-black border-black border-[2px]'
-                                                            : 'bg-white text-black border-neutral-200 hover:border-black'
-                                                            }`}
-                                                    >
-                                                        {t({ en: sub.label, fr: sub.labelFr })}
-                                                    </button>
-                                                );
-                                            })}
-                                        </div>
-                                    </div>
-
-                                    {/* Frequency / Schedule for each selected sub-service */}
-                                    {cleaningSubServices.map(subId => (
-                                        <motion.div
-                                            key={subId}
-                                            initial={{ opacity: 0, y: 10 }}
-                                            animate={{ opacity: 1, y: 0 }}
-                                            className="space-y-6 mb-12 p-8 rounded-[10px] border border-neutral-200 bg-white shadow-sm overflow-hidden"
-                                        >
-                                            <h4 className="font-medium text-[18px] text-black leading-snug">
-                                                {subId === 'hospitality' && t({ en: 'When should we do the post-checkout cleaning?', fr: 'Quand devrions-nous faire le ménage après chaque départ ?' })}
-                                                {subId === 'deep' && t({ en: 'How often do you need a deep cleaning?', fr: 'À quelle fréquence avez-vous besoin d\'un grand ménage ?' })}
-                                                {subId === 'stairs' && t({ en: 'How often do you need stairs cleaning?', fr: 'À quelle fréquence avez-vous besoin du nettoyage des escaliers ?' })}
-                                            </h4>
-
-                                            {subId === 'hospitality' ? (
-                                                <div className="flex items-center gap-4">
-                                                    <input
-                                                        type="time"
-                                                        value={cleaningFrequencies[subId] || '11:00'}
-                                                        onChange={(e) => setCleaningFrequencies(prev => ({ ...prev, [subId]: e.target.value }))}
-                                                        className="px-5 py-3 rounded-[10px] bg-[#F7F7F7] border-none focus:outline-none focus:ring-2 focus:ring-black text-[17px] font-medium transition-all"
-                                                    />
-                                                </div>
-                                            ) : (
-                                                <div className="flex flex-wrap gap-2">
-                                                    {[
-                                                        { id: '2w', en: 'Each two weeks', fr: 'Toutes les deux semaines' },
-                                                        { id: '1m', en: 'Each month', fr: 'Chaque mois' },
-                                                        { id: '2m', en: 'Each two months', fr: 'Tous les deux mois' },
-                                                        { id: '3m', en: 'Each three months', fr: 'Tous les trois mois' }
-                                                    ].map(freq => (
-                                                        <button
-                                                            key={freq.id}
-                                                            onClick={() => setCleaningFrequencies(prev => ({ ...prev, [subId]: freq.id }))}
-                                                            className={`px-5 py-2.5 rounded-full border text-[14px] font-semibold transition-all ${cleaningFrequencies[subId] === freq.id
-                                                                ? 'bg-neutral-50 text-black border-black border-[2px]'
-                                                                : 'bg-white text-black border-neutral-200 hover:border-black'
-                                                                }`}
-                                                        >
-                                                            {t({ en: freq.en, fr: freq.fr })}
-                                                        </button>
-                                                    ))}
-                                                </div>
-                                            )}
-                                            {subId === 'stairs' && (
-                                                <div className="space-y-4 pt-6 border-t border-neutral-100 mt-6">
-                                                    <h5 className="font-medium text-[16px] text-black mb-4">
-                                                        {t({ en: 'What is the size of the stairs?', fr: 'Quelle est la taille des escaliers ?' })}
-                                                    </h5>
-                                                    <div className="flex flex-wrap gap-3">
-                                                        {[
-                                                            { id: 'small', en: 'Small', fr: 'Petits' },
-                                                            { id: 'medium', en: 'Medium', fr: 'Moyens' },
-                                                            { id: 'big', en: 'Big', fr: 'Grands' }
-                                                        ].map(size => (
-                                                            <button
-                                                                key={size.id}
-                                                                onClick={() => setStairsSize(size.id as any)}
-                                                                className={`px-5 py-2.5 rounded-full border text-[14px] font-semibold transition-all ${stairsSize === size.id
-                                                                    ? 'bg-neutral-50 text-black border-black border-[2px]'
-                                                                    : 'bg-white text-black border-neutral-200 hover:border-black'
-                                                                    }`}
-                                                            >
-                                                                {t({ en: size.en, fr: size.fr })}
-                                                            </button>
-                                                        ))}
-                                                    </div>
-                                                </div>
-                                            )}
-                                        </motion.div>
-                                    ))}
-
-                                    {/* Checklist */}
-                                    {cleaningSubServices.length > 0 && (
-                                        <div className="space-y-4 mb-10">
-                                            <h3 className="font-medium text-[18px] text-black">
-                                                {t({ en: 'Specific instructions / Checklist', fr: 'Instructions spécifiques / Checklist' })}
-                                            </h3>
-                                            <p className="text-[15px] text-neutral-500 leading-relaxed mb-4">
-                                                {t({
-                                                    en: 'Write down what you want the bricolers to follow during their service.',
-                                                    fr: 'Notez ce que vous voulez que les bricoleurs suivent pendant leur service.'
-                                                })}
-                                            </p>
-                                            <div className="space-y-4">
-                                                {cleaningChecklist.map((item, idx) => (
-                                                    <div key={idx} className="flex items-start gap-4 group">
-                                                        <div className={`mt-1 w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 transition-all ${item.trim() !== '' ? 'bg-[#00CA52] border-[#00CA52]' : 'border-neutral-300'}`}>
-                                                            {item.trim() !== '' && <Check size={12} className="text-white" strokeWidth={3} />}
-                                                        </div>
-                                                        <div className="flex-1 relative">
-                                                            <input
-                                                                type="text"
-                                                                value={item}
-                                                                autoFocus={idx === cleaningChecklist.length - 1 && idx > 0}
-                                                                onChange={(e) => {
-                                                                    const newChecklist = [...cleaningChecklist];
-                                                                    newChecklist[idx] = e.target.value;
-                                                                    setCleaningChecklist(newChecklist);
-                                                                }}
-                                                                onKeyDown={(e) => {
-                                                                    if (e.key === 'Enter' && item.trim() !== '') {
-                                                                        e.preventDefault();
-                                                                        setCleaningChecklist(prev => [...prev, '']);
-                                                                    } else if (e.key === 'Backspace' && item === '' && cleaningChecklist.length > 1) {
-                                                                        e.preventDefault();
-                                                                        const newChecklist = cleaningChecklist.filter((_, i) => i !== idx);
-                                                                        setCleaningChecklist(newChecklist);
-                                                                        // Focus previous input if possible? 
-                                                                        // For now just removing is fine as React will re-render
-                                                                    }
-                                                                }}
-                                                                placeholder={idx === 0 ? t({ en: 'e.g., Wash the terrace...', fr: 'ex: Laver la terrasse...' }) : ''}
-                                                                className="w-full py-1 bg-transparent border-none focus:outline-none focus:ring-0 text-[18px] text-black placeholder:text-neutral-300"
-                                                            />
-                                                            {cleaningChecklist.length > 1 && (
-                                                                <button
-                                                                    onClick={() => setCleaningChecklist(prev => prev.filter((_, i) => i !== idx))}
-                                                                    className="absolute right-0 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity p-2 text-neutral-400 hover:text-red-500"
-                                                                >
-                                                                    <X size={16} />
-                                                                </button>
-                                                            )}
-                                                        </div>
-                                                    </div>
-                                                ))}
-                                            </div>
-
-                                        </div>
-                                    )}
-
-                                    {/* Reference Photos */}
-                                    {cleaningSubServices.length > 0 && (
-                                        <div className="space-y-4 mb-10">
-                                            <h3 className="font-medium text-[18px] text-black">
-                                                {t({ en: 'Reference photos', fr: 'Photos de référence' })}
-                                            </h3>
-                                            <p className="text-[15px] text-neutral-500 leading-relaxed mb-4">
-                                                {t({
-                                                    en: 'Upload photos showing the standard of cleanliness you expect (e.g., how the bed should be made, how to organize towels).',
-                                                    fr: 'Téléchargez des photos montrant le niveau de propreté attendu (ex: comment faire le lit, comment organiser les serviettes).'
-                                                })}
-                                            </p>
-
-                                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                                                {cleaningPhotos.map((photo, idx) => (
-                                                    <div key={idx} className="relative aspect-square rounded-xl overflow-hidden group">
-                                                        <img src={photo} alt="" className="w-full h-full object-cover" />
-                                                        <button
-                                                            onClick={() => setCleaningPhotos(prev => prev.filter((_, i) => i !== idx))}
-                                                            className="absolute top-2 right-2 p-1.5 bg-white/80 backdrop-blur rounded-full text-black hover:bg-white transition-all shadow-sm"
-                                                        >
-                                                            <X size={14} />
-                                                        </button>
-                                                    </div>
-                                                ))}
-
-                                                <button
-                                                    onClick={() => cleaningPhotoInputRef.current?.click()}
-                                                    disabled={isUploadingCleaningPhotos}
-                                                    className="aspect-square rounded-[10px] border-2 border-dashed border-neutral-200 flex flex-col items-center justify-center gap-2 hover:border-black transition-all group active:scale-95"
-                                                >
-                                                    {isUploadingCleaningPhotos ? (
-                                                        <div className="w-6 h-6 border-2 border-neutral-300 border-t-black rounded-full animate-spin" />
-                                                    ) : (
-                                                        <>
-                                                            <Camera size={24} className="text-neutral-400 group-hover:text-black transition-colors" />
-                                                            <span className="text-[13px] font-medium text-neutral-500 group-hover:text-black transition-colors">
-                                                                {t({ en: 'Add photo', fr: 'Ajouter' })}
-                                                            </span>
-                                                        </>
-                                                    )}
-                                                </button>
-                                            </div>
-                                            <input
-                                                type="file"
-                                                multiple
-                                                accept="image/*"
-                                                className="hidden"
-                                                ref={cleaningPhotoInputRef}
-                                                onChange={handleCleaningPhotoUpload}
-                                            />
-                                        </div>
-                                    )}
-                                </div>
+                                <CleaningDetailForm
+                                    data={{
+                                        subServices: cleaningSubServices,
+                                        frequencies: cleaningFrequencies,
+                                        stairsSize: stairsSize,
+                                        checklist: cleaningChecklist,
+                                        referencePhotos: cleaningPhotos
+                                    }}
+                                    onChange={(updates) => {
+                                        if (updates.subServices !== undefined) setCleaningSubServices(updates.subServices);
+                                        if (updates.frequencies !== undefined) setCleaningFrequencies(updates.frequencies);
+                                        if (updates.stairsSize !== undefined) setStairsSize(updates.stairsSize as any);
+                                        if (updates.checklist !== undefined) setCleaningChecklist(updates.checklist);
+                                        if (updates.referencePhotos !== undefined) setCleaningPhotos(updates.referencePhotos);
+                                    }}
+                                    onUploadingChange={setIsUploadingCleaningPhotos}
+                                />
                             )}
+                            {/* REMOVED INLINE CLEANING FORM */}
 
                             {currentDetailServiceId === 'glass_cleaning' && (
-                                <div className="flex-1 overflow-y-auto pb-32">
-
-                                    <h2 className="font-medium text-[28px] text-black leading-tight tracking-tight mb-8">
-                                        {t({
-                                            en: `Tell us about your windows`,
-                                            fr: `Parlez-nous de vos vitres`,
-                                            ar: `أخبرنا عن نوافذك`
-                                        })}
-                                    </h2>
-
-                                    {/* Windows Count */}
-                                    <div className="space-y-6 mb-10">
-                                        <CounterRow
-                                            label={t({ en: 'How many windows?', fr: 'Combien de fenêtres ?' })}
-                                            value={windowsCount}
-                                            onChange={setWindowsCount}
-                                            min={1}
-                                        />
-                                    </div>
-
-                                    {/* Windows Size */}
-                                    <div className="space-y-4 mb-10">
-                                        <h3 className="font-medium text-[18px] text-black">
-                                            {t({ en: 'The size of majority of windows', fr: 'La taille de la majorité des vitres' })}
-                                        </h3>
-                                        <div className="flex flex-wrap gap-3">
-                                            {[
-                                                { id: 'small', label: 'Small', labelFr: 'Petites' },
-                                                { id: 'medium', label: 'Medium', labelFr: 'Moyennes' },
-                                                { id: 'big', label: 'Big', labelFr: 'Grandes' }
-                                            ].map(size => (
-                                                <button
-                                                    key={size.id}
-                                                    onClick={() => setWindowsSize(size.id as any)}
-                                                    className={`px-5 py-2.5 rounded-full border transition-all text-[14px] font-semibold ${windowsSize === size.id ? 'border-black border-[2px] bg-neutral-50 text-black' : 'border-neutral-200 text-black hover:border-black'
-                                                        }`}
-                                                >
-                                                    {t({ en: size.label, fr: size.labelFr })}
-                                                </button>
-                                            ))}
-                                        </div>
-                                    </div>
-
-                                    {/* Coverage */}
-                                    <div className="space-y-4 mb-10">
-                                        <h3 className="font-medium text-[18px] text-black">
-                                            {t({ en: 'Coverage', fr: 'Couverture' })}
-                                        </h3>
-                                        <div className="flex flex-wrap gap-3">
-                                            {[
-                                                { id: 'interior', label: 'Interior', labelFr: 'Intérieur' },
-                                                { id: 'exterior', label: 'Exterior', labelFr: 'Extérieur' },
-                                                { id: 'both', label: 'Both', labelFr: 'Les deux' }
-                                            ].map(cov => (
-                                                <button
-                                                    key={cov.id}
-                                                    onClick={() => setWindowsCoverage(cov.id as any)}
-                                                    className={`px-5 py-2.5 rounded-full border transition-all text-[14px] font-semibold ${windowsCoverage === cov.id ? 'border-black border-[2px] bg-neutral-50 text-black' : 'border-neutral-200 text-black hover:border-black'
-                                                        }`}
-                                                >
-                                                    {t({ en: cov.label, fr: cov.labelFr })}
-                                                </button>
-                                            ))}
-                                        </div>
-                                    </div>
-
-                                    {/* Accessibility */}
-                                    <div className="space-y-4 mb-10">
-                                        <h3 className="font-medium text-[18px] text-black">
-                                            {t({ en: 'Accessibility?', fr: 'Accessibilité ?' })}
-                                        </h3>
-                                        <div className="flex flex-wrap gap-3">
-                                            {[
-                                                { id: 'ground', label: 'Ground level', labelFr: 'Rez-de-chaussée' },
-                                                { id: 'ladder', label: 'Ladder needed', labelFr: 'Échelle nécessaire' }
-                                            ].map(acc => (
-                                                <button
-                                                    key={acc.id}
-                                                    onClick={() => setWindowsAccessibility(acc.id as any)}
-                                                    className={`px-5 py-2.5 rounded-full border transition-all text-[14px] font-semibold ${windowsAccessibility === acc.id ? 'border-black border-[2px] bg-neutral-50 text-black' : 'border-neutral-200 text-black hover:border-black'
-                                                        }`}
-                                                >
-                                                    {t({ en: acc.label, fr: acc.labelFr })}
-                                                </button>
-                                            ))}
-                                        </div>
-                                    </div>
-                                </div>
+                                <GlassCleaningDetailForm
+                                    data={{
+                                        windowsCount,
+                                        windowsSize,
+                                        windowsCoverage,
+                                        windowsAccessibility,
+                                        referencePhotos: glassCleaningPhotos
+                                    }}
+                                    onChange={(updates) => {
+                                        if (updates.windowsCount !== undefined) setWindowsCount(updates.windowsCount);
+                                        if (updates.windowsSize !== undefined) setWindowsSize(updates.windowsSize as any);
+                                        if (updates.windowsCoverage !== undefined) setWindowsCoverage(updates.windowsCoverage as any);
+                                        if (updates.windowsAccessibility !== undefined) setWindowsAccessibility(updates.windowsAccessibility as any);
+                                        if (updates.referencePhotos !== undefined) setGlassCleaningPhotos(updates.referencePhotos);
+                                    }}
+                                    onUploadingChange={setIsUploadingGlassPhotos}
+                                />
                             )}
 
                             {currentDetailServiceId === 'gardening' && (
-                                <div className="flex-1 overflow-y-auto pb-32">
-
-                                    <h2 className="font-medium text-[32px] text-black leading-tight tracking-tight mb-8">
-                                        {t({
-                                            en: `Tell us about your garden`,
-                                            fr: `Parlez-nous de votre jardin`,
-                                            ar: `أخبرنا عن حديقتك`
-                                        })}
-                                    </h2>
-
-                                    <div className="space-y-4 mb-12">
-                                        <h3 className="font-medium text-[20px] text-black">
-                                            {t({ en: 'What gardening activities do you want?', fr: 'Quelles activités de jardinage souhaitez-vous ?' })}
-                                        </h3>
-                                        <div className="grid grid-cols-1 gap-3">
-                                            {[
-                                                { id: 'lawn_mowing', label: 'Lawn mowing', labelFr: 'Tonte de pelouse' },
-                                                { id: 'trimming', label: 'Branch and hedge trimming', labelFr: 'Taille des branches et haies' },
-                                                { id: 'watering', label: 'Watering', labelFr: 'Arrosage' },
-                                                { id: 'landscaping', label: 'Planting and landscaping', labelFr: 'Plantation et aménagement' },
-                                                { id: 'cleanup', label: 'Garden cleanup', labelFr: 'Nettoyage de jardin' }
-                                            ].map(service => (
-                                                <button
-                                                    key={service.id}
-                                                    onClick={() => {
-                                                        if (gardeningSubServices.includes(service.id)) {
-                                                            setGardeningSubServices(gardeningSubServices.filter(s => s !== service.id));
-                                                        } else {
-                                                            setGardeningSubServices([...gardeningSubServices, service.id]);
-                                                        }
-                                                    }}
-                                                    className={`w-full flex items-center justify-between p-5 rounded-[10px] border transition-all ${gardeningSubServices.includes(service.id)
-                                                        ? 'border-black border-[3.5px] bg-neutral-50'
-                                                        : 'border-neutral-200 hover:border-black bg-white'
-                                                        }`}
-                                                >
-                                                    <span className="text-[17px] font-medium text-black">{t({ en: service.label, fr: service.labelFr })}</span>
-                                                    {gardeningSubServices.includes(service.id) && <Check size={20} className="text-black" strokeWidth={2.5} />}
-                                                </button>
-                                            ))}
-                                        </div>
-                                    </div>
-
-                                    {/* Lawn Mowing Details */}
-                                    {gardeningSubServices.includes('lawn_mowing') && (
-                                        <motion.div
-                                            initial={{ opacity: 0, height: 0 }}
-                                            animate={{ opacity: 1, height: 'auto' }}
-                                            className="space-y-8 mb-12 p-8 rounded-2xl border border-neutral-200 bg-white shadow-sm overflow-hidden"
-                                        >
-                                            <h4 className="font-black text-[25px] text-black border-b border-neutral-200 pb-4 mb-4 flex items-center gap-2">
-                                                {t({ en: 'Lawn Mowing Details', fr: 'Détails de la tonte' })}
-                                            </h4>
-
-                                            <div className="space-y-4">
-                                                <h3 className="font-medium text-[17px] text-black">
-                                                    {t({ en: 'How big is your garden?', fr: 'Quelle est la taille de votre jardin ?' })}
-                                                </h3>
-                                                <div className="flex flex-wrap gap-3">
-                                                    {[
-                                                        { id: 'small', label: 'Small', fr: 'Petit' },
-                                                        { id: 'medium', label: 'Medium', fr: 'Moyen' },
-                                                        { id: 'large', label: 'Large', fr: 'Grand' },
-                                                        { id: 'estate', label: 'Estate', fr: 'Domaine' }
-                                                    ].map(size => (
-                                                        <button
-                                                            key={size.id}
-                                                            onClick={() => setGardenSize(size.id as any)}
-                                                            className={`px-5 py-2.5 rounded-full border text-[14px] font-semibold transition-all ${gardenSize === size.id
-                                                                ? 'bg-neutral-50 text-black border-black border-[2px]'
-                                                                : 'border-neutral-200 text-black hover:border-black bg-white'
-                                                                }`}
-                                                        >
-                                                            {t({ en: size.label, fr: size.fr })}
-                                                        </button>
-                                                    ))}
-                                                </div>
-                                            </div>
-
-                                            <div className="flex items-start justify-between py-6 border-t border-neutral-50 mt-4 gap-4">
-                                                <div className="flex flex-col gap-1 flex-1">
-                                                    <span className="text-[17px] font-medium text-black leading-tight">{t({ en: 'Should the bricoler bring mower?', fr: 'Le bricoleur doit-il apporter sa tondeuse ?' })}</span>
-                                                </div>
-                                                <button
-                                                    onClick={() => setShouldBringMower(!shouldBringMower)}
-                                                    className={`w-14 h-8 rounded-full transition-all flex items-center px-1 shrink-0 ${shouldBringMower ? 'bg-black' : 'bg-neutral-200'
-                                                        }`}
-                                                >
-                                                    <div className={`w-6 h-6 rounded-full bg-white shadow-sm transition-all ${shouldBringMower ? 'translate-x-6' : 'translate-x-0'}`} />
-                                                </button>
-                                            </div>
-                                        </motion.div>
-                                    )}
-
-                                    {/* Trimming Details */}
-                                    {gardeningSubServices.includes('trimming') && (
-                                        <motion.div
-                                            initial={{ opacity: 0, height: 0 }}
-                                            animate={{ opacity: 1, height: 'auto' }}
-                                            className="space-y-8 mb-12 p-8 rounded-2xl border border-neutral-200 bg-white shadow-sm overflow-hidden"
-                                        >
-                                            <h4 className="font-black text-[25px] text-black border-b border-neutral-100 pb-4 mb-4 flex items-center gap-2">
-                                                {t({ en: 'Branch & Hedge Trimming', fr: 'Taille branches et haies' })}
-                                            </h4>
-
-                                            <CounterRow
-                                                label={t({ en: 'How many trees?', fr: 'Combien d\'arbres ?' })}
-                                                value={treeCount}
-                                                onChange={setTreeCount}
-                                                min={0}
-                                            />
-
-                                            <div className="space-y-6 pt-4">
-                                                <div className="flex justify-between items-start mb-8">
-                                                    <div>
-                                                        <div className="font-medium text-[18px] text-black">{t({ en: 'Average Tree Height', fr: 'Hauteur moyenne' })}</div>
-                                                        <div className="text-[14px] text-neutral-500 mt-1">{t({ en: 'Tip: average is 3m', fr: 'Conseil : moyenne est 3m' })}</div>
-                                                    </div>
-                                                    <div className="font-medium text-[22px] text-black px-6 py-4 rounded-[10px] border border-neutral-300 bg-white min-w-[100px] text-center">
-                                                        {averageTreeHeight}m
-                                                    </div>
-                                                </div>
-                                                <div className="relative pt-4 pb-2">
-                                                    <input
-                                                        type="range"
-                                                        min="1"
-                                                        max="10"
-                                                        step="0.5"
-                                                        value={averageTreeHeight}
-                                                        onChange={(e) => setAverageTreeHeight(parseFloat(e.target.value))}
-                                                        className="w-full h-1 bg-neutral-200 rounded-full appearance-none cursor-pointer focus:outline-none [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-8 [&::-webkit-slider-thumb]:h-8 [&::-webkit-slider-thumb]:bg-black [&::-webkit-slider-thumb]:rounded-full [&::-moz-range-thumb]:w-8 [&::-moz-range-thumb]:h-8 [&::-moz-range-thumb]:bg-black [&::-moz-range-thumb]:border-none [&::-moz-range-thumb]:rounded-full"
-                                                    />
-                                                    <div className="flex justify-between mt-4 text-[14px] text-neutral-500 font-light">
-                                                        <span>1m</span>
-                                                        <span>10m</span>
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                            <div className="space-y-4">
-                                                <h3 className="font-medium text-[17px] text-black">
-                                                    {t({ en: 'Preferred Service', fr: 'Service préféré' })}
-                                                </h3>
-                                                <div className="grid grid-cols-1 gap-3">
-                                                    {[
-                                                        { id: 'shaping', label: 'Shaping & Design', desc: 'For aesthetic looks', fr: 'Forme et Design', descFr: 'Pour l\'esthétique', icon: '🎨' },
-                                                        { id: 'thinning', label: 'Thinning / Health', desc: 'Improve light & air flow', fr: 'Éclaircissage / Santé', descFr: 'Améliore la lumière et l\'air', icon: '🌿' },
-                                                        { id: 'deadwood', label: 'Deadwood / Safety', desc: 'Remove old/risky branches', fr: 'Bois mort / Sécurité', descFr: 'Retirer les branches risquées', icon: '⚠️' },
-                                                        { id: 'removal', label: 'Complete Removal', desc: 'Cutting tree to ground', fr: 'Retrait complet', descFr: 'Coupe au ras du sol', icon: '🪓' }
-                                                    ].map(service => (
-                                                        <button
-                                                            key={service.id}
-                                                            onClick={() => setPreferredTreeService(service.id)}
-                                                            className={`flex items-start gap-4 p-5 rounded-[10px] border transition-all text-left ${preferredTreeService === service.id
-                                                                ? 'border-black border-[3.5px] bg-neutral-50'
-                                                                : 'border-neutral-200 bg-white hover:border-black'
-                                                                }`}
-                                                        >
-                                                            <div className="text-[28px] shrink-0">{service.icon}</div>
-                                                            <div>
-                                                                <div className="font-medium text-black text-[16px] mb-0.5">{t({ en: service.label, fr: service.fr })}</div>
-                                                                <div className="text-[14px] text-neutral-500 font-medium">{t({ en: service.desc, fr: service.descFr })}</div>
-                                                            </div>
-                                                        </button>
-                                                    ))}
-                                                </div>
-                                            </div>
-
-                                            <div className="flex items-start justify-between pt-6 border-t border-neutral-50 gap-4">
-                                                <div className="flex-1">
-                                                    <span className="text-[17px] font-medium text-black leading-tight">
-                                                        {t({ en: 'Is Waste Removal included?', fr: 'Évacuation des déchets incluse ?' })}
-                                                    </span>
-                                                </div>
-                                                <button
-                                                    onClick={() => setIsWasteRemovalIncluded(!isWasteRemovalIncluded)}
-                                                    className={`w-14 h-8 rounded-full transition-all flex items-center px-1 shrink-0 ${isWasteRemovalIncluded ? 'bg-black' : 'bg-neutral-200'
-                                                        }`}
-                                                >
-                                                    <div className={`w-6 h-6 rounded-full bg-white shadow-sm transition-all ${isWasteRemovalIncluded ? 'translate-x-6' : 'translate-x-0'}`} />
-                                                </button>
-                                            </div>
-                                        </motion.div>
-                                    )}
-
-                                    <div className="space-y-4 mb-12">
-                                        <h3 className="font-medium text-[20px] text-black">
-                                            {t({ en: 'Maintenance frequency', fr: 'Fréquence de l\'entretien' })}
-                                        </h3>
-                                        <div className="grid grid-cols-2 gap-3">
-                                            {[
-                                                { id: 'week', label: 'Each week', fr: 'Chaque semaine' },
-                                                { id: '2weeks', label: 'Every 2 weeks', fr: 'Toutes les 2 semaines' },
-                                                { id: 'month', label: 'Each month', fr: 'Chaque mois' },
-                                                { id: 'on_call', label: 'On call', fr: 'Sur demande' }
-                                            ].map(freq => (
-                                                <button
-                                                    key={freq.id}
-                                                    onClick={() => setGardeningFrequency(freq.id)}
-                                                    className={`p-5 rounded-[10px] border text-center transition-all ${gardeningFrequency === freq.id
-                                                        ? 'border-black border-[3.5px] bg-neutral-50'
-                                                        : 'border-neutral-200 text-black hover:border-black bg-white'
-                                                        }`}
-                                                >
-                                                    <span className="text-[16px] font-medium">{t({ en: freq.label, fr: freq.fr })}</span>
-                                                </button>
-                                            ))}
-                                        </div>
-                                    </div>
-
-                                    {/* Checklist */}
-                                    <div className="space-y-4 mb-10">
-                                        <h3 className="font-medium text-[18px] text-black">
-                                            {t({ en: 'Add any instructions (checklist)', fr: 'Ajouter des instructions (checklist)' })}
-                                        </h3>
-                                        <div className="space-y-2">
-                                            {gardeningChecklist.map((item, idx) => (
-                                                <div key={idx} className="group flex items-center gap-3">
-                                                    <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 transition-all ${item.trim() !== '' ? 'bg-[#00CA52] border-[#00CA52]' : 'border-neutral-200'}`}>
-                                                        {item.trim() !== '' && <Check size={12} className="text-white" strokeWidth={3} />}
-                                                    </div>
-                                                    <div className="flex-1 relative">
-                                                        <input
-                                                            type="text"
-                                                            value={item}
-                                                            autoFocus={idx === gardeningChecklist.length - 1 && idx > 0}
-                                                            onChange={(e) => {
-                                                                const newChecklist = [...gardeningChecklist];
-                                                                newChecklist[idx] = e.target.value;
-                                                                setGardeningChecklist(newChecklist);
-                                                            }}
-                                                            onKeyDown={(e) => {
-                                                                if (e.key === 'Enter' && item.trim() !== '') {
-                                                                    e.preventDefault();
-                                                                    setGardeningChecklist(prev => [...prev, '']);
-                                                                } else if (e.key === 'Backspace' && item === '' && gardeningChecklist.length > 1) {
-                                                                    e.preventDefault();
-                                                                    const newChecklist = gardeningChecklist.filter((_, i) => i !== idx);
-                                                                    setGardeningChecklist(newChecklist);
-                                                                }
-                                                            }}
-                                                            placeholder={idx === 0 ? t({ en: 'e.g., Clean the pool area...', fr: 'ex: Nettoyer la zone piscine...' }) : ''}
-                                                            className="w-full py-1 bg-transparent border-none focus:outline-none focus:ring-0 text-[18px] text-black placeholder:text-neutral-300"
-                                                        />
-                                                        {gardeningChecklist.length > 1 && (
-                                                            <button
-                                                                onClick={() => setGardeningChecklist(prev => prev.filter((_, i) => i !== idx))}
-                                                                className="absolute right-0 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity p-2 text-neutral-400 hover:text-red-500"
-                                                            >
-                                                                <X size={16} />
-                                                            </button>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-
-                                    {/* Photos */}
-                                    <div className="space-y-4 mb-10">
-                                        <h3 className="font-medium text-[18px] text-black">
-                                            {t({ en: 'Add any photos', fr: 'Ajouter des photos' })}
-                                        </h3>
-                                        <div className="grid grid-cols-3 gap-3">
-                                            {gardeningPhotos.map((p, i) => (
-                                                <div key={i} className="relative aspect-square rounded-2xl overflow-hidden border border-neutral-100 shadow-sm">
-                                                    <Image src={p} alt="Garden" fill className="object-cover" />
-                                                    <button
-                                                        onClick={() => setGardeningPhotos(prev => prev.filter((_, idx) => idx !== i))}
-                                                        className="absolute top-2 right-2 w-7 h-7 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-sm"
-                                                    >
-                                                        <X size={14} className="text-black" />
-                                                    </button>
-                                                </div>
-                                            ))}
-                                            <button
-                                                onClick={() => gardeningPhotoInputRef.current?.click()}
-                                                className="aspect-square rounded-2xl border-2 border-dashed border-neutral-200 flex flex-col items-center justify-center gap-2 hover:border-black hover:bg-neutral-50 transition-all text-neutral-400 hover:text-black"
-                                            >
-                                                {isUploadingGardeningPhotos ? (
-                                                    <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1, ease: "linear" }}>
-                                                        <Plus size={24} />
-                                                    </motion.div>
-                                                ) : (
-                                                    <>
-                                                        <Plus size={24} />
-                                                        <span className="text-[12px] font-medium uppercase tracking-wider">{t({ en: 'Add', fr: 'Ajouter' })}</span>
-                                                    </>
-                                                )}
-                                            </button>
-                                            <input
-                                                type="file"
-                                                multiple
-                                                accept="image/*"
-                                                className="hidden"
-                                                ref={gardeningPhotoInputRef}
-                                                onChange={handleGardeningPhotoUpload}
-                                            />
-                                        </div>
-                                    </div>
-                                </div>
+                                <GardeningDetailForm
+                                    data={{
+                                        subServices: gardeningSubServices,
+                                        gardenSize: gardenSize,
+                                        shouldBringMower: shouldBringMower,
+                                        treeCount: treeCount,
+                                        averageTreeHeight: averageTreeHeight,
+                                        preferredTreeService: preferredTreeService,
+                                        isWasteRemovalIncluded: isWasteRemovalIncluded,
+                                        frequency: gardeningFrequency,
+                                        checklist: gardeningChecklist,
+                                        referencePhotos: gardeningPhotos
+                                    }}
+                                    onChange={(updates) => {
+                                        if (updates.subServices !== undefined) setGardeningSubServices(updates.subServices);
+                                        if (updates.gardenSize !== undefined) setGardenSize(updates.gardenSize as any);
+                                        if (updates.shouldBringMower !== undefined) setShouldBringMower(updates.shouldBringMower);
+                                        if (updates.treeCount !== undefined) setTreeCount(updates.treeCount);
+                                        if (updates.averageTreeHeight !== undefined) setAverageTreeHeight(updates.averageTreeHeight);
+                                        if (updates.preferredTreeService !== undefined) setPreferredTreeService(updates.preferredTreeService);
+                                        if (updates.isWasteRemovalIncluded !== undefined) setIsWasteRemovalIncluded(updates.isWasteRemovalIncluded);
+                                        if (updates.frequency !== undefined) setGardeningFrequency(updates.frequency);
+                                        if (updates.checklist !== undefined) setGardeningChecklist(updates.checklist);
+                                        if (updates.referencePhotos !== undefined) setGardeningPhotos(updates.referencePhotos);
+                                    }}
+                                    onUploadingChange={setIsUploadingGardeningPhotos}
+                                />
                             )}
 
                             {currentDetailServiceId === 'pets_care' && (
-                                <div className="flex-1 overflow-y-auto pb-32">
-
-                                    <h2 className="font-medium text-[32px] text-black leading-tight tracking-tight mb-8">
-                                        {t({
-                                            en: `Tell us more about your pets`,
-                                            fr: `Dites-nous en plus sur vos animaux`,
-                                            ar: `أخبرنا المزيد عن حيواناتك الأليفة`
-                                        })}
-                                    </h2>
-
-                                    {/* Pet Types Selection */}
-                                    <div className="space-y-4 mb-12">
-                                        <h3 className="font-medium text-[20px] text-black">
-                                            {t({ en: 'What type of pets need care?', fr: 'Quel type d\'animaux a besoin de soins ?' })}
-                                        </h3>
-                                        <div className="flex flex-wrap gap-3">
-                                            {[
-                                                { id: 'dog', label: 'Dog', labelFr: 'Chien', icon: '🐶' },
-                                                { id: 'cat', label: 'Cat', labelFr: 'Chat', icon: '🐱' },
-                                                { id: 'guard_dog', label: 'Guard Dog', labelFr: 'Chien de garde', icon: '🐕' },
-                                                { id: 'bird', label: 'Bird', labelFr: 'Oiseau', icon: '🦜' },
-                                                { id: 'other', label: 'Other', labelFr: 'Autre', icon: '🐾' }
-                                            ].map(pet => {
-                                                const isSelected = petTypes.includes(pet.id);
-                                                return (
-                                                    <button
-                                                        key={pet.id}
-                                                        onClick={() => {
-                                                            if (isSelected) setPetTypes(prev => prev.filter(p => p !== pet.id));
-                                                            else setPetTypes(prev => [...prev, pet.id]);
-                                                        }}
-                                                        className={`flex items-center gap-2 px-4 py-2 rounded-full border transition-all text-[14px] font-semibold ${isSelected
-                                                            ? 'bg-neutral-50 text-black border-black border-2'
-                                                            : 'bg-white text-black border-neutral-200 hover:border-black'
-                                                            }`}
-                                                    >
-                                                        <span>{pet.icon}</span>
-                                                        <span>{t({ en: pet.label, fr: pet.labelFr })}</span>
-                                                    </button>
-                                                );
-                                            })}
-                                        </div>
-                                    </div>
-
-                                    {petTypes.length > 0 && (
-                                        <motion.div
-                                            initial={{ opacity: 0, y: 10 }}
-                                            animate={{ opacity: 1, y: 0 }}
-                                            className="space-y-10"
-                                        >
-                                            {/* Feeding Schedule */}
-                                            <div className="p-8 rounded-2xl border border-neutral-200 bg-white shadow-sm space-y-6">
-                                                <h3 className="font-medium text-[20px] text-black">
-                                                    {t({ en: 'Feeding Schedule', fr: 'Planning des repas' })}
-                                                </h3>
-                                                <div className="grid grid-cols-3 gap-3">
-                                                    {[
-                                                        { id: 'once', label: 'Once / Day', labelFr: '1 fois / jour' },
-                                                        { id: 'twice', label: 'Twice / Day', labelFr: '2 fois / jour' },
-                                                        { id: 'three', label: '3 times / Day', labelFr: '3 fois / jour' }
-                                                    ].map(freq => (
-                                                        <button
-                                                            key={freq.id}
-                                                            onClick={() => setPetFeedingFrequency(freq.id)}
-                                                            className={`p-4 rounded-[10px] border text-center transition-all ${petFeedingFrequency === freq.id
-                                                                ? 'border-black border-[3.5px] bg-neutral-50'
-                                                                : 'border-neutral-200 text-black hover:border-black'
-                                                                }`}
-                                                        >
-                                                            <span className="text-[14px] font-medium">{t({ en: freq.label, fr: freq.labelFr })}</span>
-                                                        </button>
-                                                    ))}
-                                                </div>
-                                            </div>
-
-                                            {/* Daily Needs */}
-                                            <div className="p-8 rounded-2xl border border-neutral-200 bg-white shadow-sm space-y-6">
-                                                <h3 className="font-medium text-[20px] text-black">
-                                                    {t({ en: 'Daily Activities & Care', fr: 'Activités et soins quotidiens' })}
-                                                </h3>
-
-                                                <div className="flex items-start justify-between py-4 border-b border-neutral-50 gap-4">
-                                                    <div className="flex flex-col gap-1 flex-1">
-                                                        <span className="text-[17px] font-medium text-black leading-tight">{t({ en: 'Walking needed?', fr: 'Promenades nécessaires ?' })}</span>
-                                                        <span className="text-[14px] text-neutral-500">{t({ en: 'For dogs and active pets', fr: 'Pour les chiens et animaux actifs' })}</span>
-                                                    </div>
-                                                    <button
-                                                        onClick={() => setPetWalkingNeeded(!petWalkingNeeded)}
-                                                        className={`w-14 h-8 rounded-full transition-all flex items-center px-1 shrink-0 ${petWalkingNeeded ? 'bg-black' : 'bg-neutral-200'
-                                                            }`}
-                                                    >
-                                                        <div className={`w-6 h-6 rounded-full bg-white shadow-sm transition-all ${petWalkingNeeded ? 'translate-x-6' : 'translate-x-0'}`} />
-                                                    </button>
-                                                </div>
-
-                                                <div className="flex items-start justify-between py-4 gap-4">
-                                                    <div className="flex flex-col gap-1 flex-1">
-                                                        <span className="text-[17px] font-medium text-black leading-tight">{t({ en: 'Medication required?', fr: 'Médicaments requis ?' })}</span>
-                                                        <span className="text-[14px] text-neutral-500">{t({ en: 'If the animal has a treatment', fr: 'Si l\'animal suit un traitement' })}</span>
-                                                    </div>
-                                                    <button
-                                                        onClick={() => setPetMedicationNeeded(!petMedicationNeeded)}
-                                                        className={`w-14 h-8 rounded-full transition-all flex items-center px-1 shrink-0 ${petMedicationNeeded ? 'bg-black' : 'bg-neutral-200'
-                                                            }`}
-                                                    >
-                                                        <div className={`w-6 h-6 rounded-full bg-white shadow-sm transition-all ${petMedicationNeeded ? 'translate-x-6' : 'translate-x-0'}`} />
-                                                    </button>
-                                                </div>
-                                            </div>
-
-                                            {/* Detailed Instructions */}
-                                            <div className="space-y-6">
-                                                <div>
-                                                    <label className="text-[18px] font-medium text-black mb-3 block">{t({ en: 'Care instructions & personality', fr: 'Instructions et personnalité' })}</label>
-                                                    <textarea
-                                                        value={petInstructions}
-                                                        onChange={(e) => setPetInstructions(e.target.value)}
-                                                        placeholder={t({ en: 'e.g. Food is in the garage, Friendly but scared of cats, Loves playing catch...', fr: 'ex: La nourriture est dans le garage, Amical mais a peur des chats, Adore jouer...' })}
-                                                        className="w-full p-5 rounded-[10px] bg-[#F7F7F7] border-none focus:ring-2 focus:ring-black focus:border-black text-[16px] min-h-[140px] resize-none transition-all placeholder:text-neutral-400"
-                                                    />
-                                                </div>
-
-                                                <div>
-                                                    <label className="text-[18px] font-medium text-black mb-3 block">{t({ en: 'Emergency Contact / Vet', fr: 'Contact d\'urgence / Vétérinaire' })}</label>
-                                                    <input
-                                                        type="text"
-                                                        value={petEmergencyContact}
-                                                        onChange={(e) => setPetEmergencyContact(e.target.value)}
-                                                        placeholder={t({ en: 'Name and phone number...', fr: 'Nom et numéro de téléphone...' })}
-                                                        className="w-full p-5 rounded-[10px] bg-[#F7F7F7] border-none focus:ring-2 focus:ring-black focus:border-black text-[16px] transition-all placeholder:text-neutral-400"
-                                                    />
-                                                </div>
-                                            </div>
-
-                                            {/* Checklist */}
-                                            <div className="space-y-4 pt-4">
-                                                <h3 className="font-medium text-[18px] text-black">
-                                                    {t({ en: 'Daily Checklist', fr: 'Checklist quotidienne' })}
-                                                </h3>
-                                                <div className="space-y-2">
-                                                    {petChecklist.map((item, idx) => (
-                                                        <div key={idx} className="group flex items-center gap-3">
-                                                            <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 transition-all ${item.trim() !== '' ? 'bg-[#00CA52] border-[#00CA52]' : 'border-neutral-200'}`}>
-                                                                {item.trim() !== '' && <Check size={12} className="text-white" strokeWidth={3} />}
-                                                            </div>
-                                                            <div className="flex-1 relative">
-                                                                <input
-                                                                    type="text"
-                                                                    value={item}
-                                                                    autoFocus={idx === petChecklist.length - 1 && idx > 0}
-                                                                    onChange={(e) => {
-                                                                        const newChecklist = [...petChecklist];
-                                                                        newChecklist[idx] = e.target.value;
-                                                                        setPetChecklist(newChecklist);
-                                                                    }}
-                                                                    onKeyDown={(e) => {
-                                                                        if (e.key === 'Enter' && item.trim() !== '') {
-                                                                            e.preventDefault();
-                                                                            setPetChecklist(prev => [...prev, '']);
-                                                                        } else if (e.key === 'Backspace' && item === '' && petChecklist.length > 1) {
-                                                                            e.preventDefault();
-                                                                            const newChecklist = petChecklist.filter((_, i) => i !== idx);
-                                                                            setPetChecklist(newChecklist);
-                                                                        }
-                                                                    }}
-                                                                    placeholder={idx === 0 ? t({ en: 'e.g., Clean the litter box...', fr: 'ex: Nettoyer la litière...' }) : ''}
-                                                                    className="w-full py-1 bg-transparent border-none focus:outline-none focus:ring-0 text-[18px] text-black placeholder:text-neutral-300"
-                                                                />
-                                                            </div>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        </motion.div>
-                                    )}
-                                </div>
+                                <PetsDetailForm
+                                    data={{
+                                        petTypes,
+                                        feedingFrequency: petFeedingFrequency,
+                                        walkingNeeded: petWalkingNeeded,
+                                        medicationRequired: petMedicationNeeded,
+                                        instructions: petInstructions,
+                                        emergencyContact: petEmergencyContact,
+                                        checklist: petChecklist
+                                    }}
+                                    onChange={(updates) => {
+                                        if (updates.petTypes !== undefined) setPetTypes(updates.petTypes);
+                                        if (updates.feedingFrequency !== undefined) setPetFeedingFrequency(updates.feedingFrequency as any);
+                                        if (updates.walkingNeeded !== undefined) setPetWalkingNeeded(updates.walkingNeeded);
+                                        if (updates.medicationRequired !== undefined) setPetMedicationNeeded(updates.medicationRequired);
+                                        if (updates.instructions !== undefined) setPetInstructions(updates.instructions);
+                                        if (updates.emergencyContact !== undefined) setPetEmergencyContact(updates.emergencyContact);
+                                        if (updates.checklist !== undefined) setPetChecklist(updates.checklist);
+                                    }}
+                                />
                             )}
 
+
                             {currentDetailServiceId === 'pool_cleaning' && (
-                                <div className="flex-1 overflow-y-auto pb-32">
-
-                                    <h2 className="font-medium text-[32px] text-black leading-tight tracking-tight mb-8">
-                                        {t({
-                                            en: `Tell us about your pool`,
-                                            fr: `Parlez-nous de votre piscine`,
-                                            ar: `أخبرنا عن حمام السباحة الخاص بك`
-                                        })}
-                                    </h2>
-
-                                    {/* Pool Specifications */}
-                                    <div className="space-y-8 mb-12">
-                                        <div className="space-y-4">
-                                            <h3 className="font-medium text-[20px] text-black">
-                                                {t({ en: 'Pool Type', fr: 'Type de piscine' })}
-                                            </h3>
-                                            <div className="flex flex-wrap gap-3">
-                                                {[
-                                                    { id: 'in_ground', label: 'In-ground', fr: 'Enterrée' },
-                                                    { id: 'above_ground', label: 'Above-ground', fr: 'Hors-sol' },
-                                                    { id: 'infinity', label: 'Infinity', fr: 'À débordement' },
-                                                    { id: 'indoor', label: 'Indoor', fr: 'Intérieure' }
-                                                ].map(type => (
-                                                    <button
-                                                        key={type.id}
-                                                        onClick={() => setPoolType(type.id as any)}
-                                                        className={`px-5 py-2.5 rounded-full border text-[14px] font-semibold transition-all ${poolType === type.id
-                                                            ? 'bg-neutral-50 text-black border-black border-[2px]'
-                                                            : 'border-neutral-200 text-black hover:border-black bg-white'
-                                                            }`}
-                                                    >
-                                                        {t({ en: type.label, fr: type.fr })}
-                                                    </button>
-                                                ))}
-                                            </div>
-                                        </div>
-
-                                        <div className="space-y-4">
-                                            <h3 className="font-medium text-[20px] text-black">
-                                                {t({ en: 'Water System', fr: 'Système d\'eau' })}
-                                            </h3>
-                                            <div className="flex gap-4">
-                                                {[
-                                                    { id: 'chlorine', label: 'Chlorine', fr: 'Chlore' },
-                                                    { id: 'saltwater', label: 'Saltwater', fr: 'Au sel' }
-                                                ].map(system => (
-                                                    <button
-                                                        key={system.id}
-                                                        onClick={() => setPoolWaterType(system.id as any)}
-                                                        className={`flex-1 p-5 rounded-[10px] border text-center transition-all ${poolWaterType === system.id
-                                                            ? 'border-black border-[2px] bg-neutral-50'
-                                                            : 'border-neutral-200 text-black hover:border-black bg-white'
-                                                            }`}
-                                                    >
-                                                        <span className="text-[17px] font-medium">{t({ en: system.label, fr: system.fr })}</span>
-                                                    </button>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* Size & Depth */}
-                                    <div className="space-y-8 mb-12">
-                                        <div className="space-y-4">
-                                            <h3 className="font-medium text-[20px] text-black">
-                                                {t({ en: 'Pool Size', fr: 'Taille de la piscine' })}
-                                            </h3>
-                                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                                                {[
-                                                    { id: 'small', label: 'Small', desc: '< 20m²', fr: 'Petite' },
-                                                    { id: 'medium', label: 'Medium', desc: '20-50m²', fr: 'Moyenne' },
-                                                    { id: 'large', label: 'Large', desc: '50-100m²', fr: 'Grande' },
-                                                    { id: 'estate', label: 'Estate', desc: '> 100m²', fr: 'Domaine' }
-                                                ].map(size => (
-                                                    <button
-                                                        key={size.id}
-                                                        onClick={() => setPoolSize(size.id as any)}
-                                                        className={`p-5 rounded-[10px] border text-left transition-all ${poolSize === size.id
-                                                            ? 'border-black border-[2px] bg-neutral-50'
-                                                            : 'border-neutral-200 text-black hover:border-black bg-white'
-                                                            }`}
-                                                    >
-                                                        <div className="text-[16px] font-medium mb-1">{t({ en: size.label, fr: size.fr })}</div>
-                                                        <div className="text-[13px] text-neutral-500 font-medium">{size.desc}</div>
-                                                    </button>
-                                                ))}
-                                            </div>
-                                        </div>
-
-                                        <div className="space-y-6 pt-4">
-                                            <div className="flex justify-between items-start mb-8">
-                                                <div>
-                                                    <div className="font-medium text-[18px] text-black">{t({ en: 'Average Depth', fr: 'Profondeur moyenne' })}</div>
-                                                    <div className="text-[14px] text-neutral-500 mt-1">{t({ en: 'Tip: average is 1.5m', fr: 'Conseil : moyenne est 1.5m' })}</div>
-                                                </div>
-                                                <div className="font-medium text-[22px] text-black px-6 py-4 rounded-[10px] border border-neutral-300 bg-white min-w-[100px] text-center">
-                                                    {poolDepth}m
-                                                </div>
-                                            </div>
-                                            <div className="relative pt-4 pb-2">
-                                                <input
-                                                    type="range"
-                                                    min="0.5"
-                                                    max="4"
-                                                    step="0.1"
-                                                    value={poolDepth}
-                                                    onChange={(e) => setPoolDepth(parseFloat(e.target.value))}
-                                                    className="w-full h-1 bg-neutral-200 rounded-full appearance-none cursor-pointer focus:outline-none [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-8 [&::-webkit-slider-thumb]:h-8 [&::-webkit-slider-thumb]:bg-black [&::-webkit-slider-thumb]:rounded-full [&::-moz-range-thumb]:w-8 [&::-moz-range-thumb]:h-8 [&::-moz-range-thumb]:bg-black [&::-moz-range-thumb]:border-none [&::-moz-range-thumb]:rounded-full"
-                                                />
-                                                <div className="flex justify-between mt-4 text-[14px] text-neutral-500 font-light">
-                                                    <span>0.5m</span>
-                                                    <span>4m</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div className="space-y-4 mb-12">
-                                        <h3 className="font-medium text-[20px] text-black">
-                                            {t({ en: 'Maintenance Activities', fr: 'Activités d\'entretien' })}
-                                        </h3>
-                                        <div className="grid grid-cols-1 gap-3">
-                                            {[
-                                                { id: 'skimming', label: 'Surface Skimming', fr: 'Nettoyage de surface' },
-                                                { id: 'vacuuming', label: 'Bottom Vacuuming', fr: 'Aspiration du fond' },
-                                                { id: 'brushing', label: 'Tile & Wall Brushing', fr: 'Brossage parois/carrelage' },
-                                                { id: 'chemistry', label: 'Water Testing & Balancing', fr: 'Test et équilibrage de l\'eau' },
-                                                { id: 'filter', label: 'Technical Maintenance (Filter/Pump)', fr: 'Entretien technique (Filtre/Pompe)' }
-                                            ].map(service => (
-                                                <button
-                                                    key={service.id}
-                                                    onClick={() => {
-                                                        if (poolSubServices.includes(service.id)) {
-                                                            setPoolSubServices(poolSubServices.filter(s => s !== service.id));
-                                                        } else {
-                                                            setPoolSubServices([...poolSubServices, service.id]);
-                                                        }
-                                                    }}
-                                                    className={`w-full flex items-center justify-between p-5 rounded-[10px] border transition-all ${poolSubServices.includes(service.id)
-                                                        ? 'border-black border-[2px] bg-neutral-50'
-                                                        : 'border-neutral-200 hover:border-black bg-white'
-                                                        }`}
-                                                >
-                                                    <span className="text-[17px] font-medium text-black">{t({ en: service.label, fr: service.fr })}</span>
-                                                    {poolSubServices.includes(service.id) && <Check size={20} className="text-black" strokeWidth={2.5} />}
-                                                </button>
-                                            ))}
-                                        </div>
-                                    </div>
-
-                                    {/* Equipment & Locations */}
-                                    <div className="space-y-8 mb-12">
-                                        <h3 className="font-medium text-[20px] text-black">
-                                            {t({ en: 'Equipment & Access', fr: 'Équipement et Accès' })}
-                                        </h3>
-
-                                        <div className="flex items-start justify-between p-6 rounded-[10px] border border-neutral-200 bg-white shadow-sm gap-4">
-                                            <div className="flex flex-col gap-1 flex-1">
-                                                <span className="text-[17px] font-medium text-black leading-tight">{t({ en: 'Pool Robot?', fr: 'Robot de piscine ?' })}</span>
-                                                <span className="text-[14px] text-neutral-500 leading-snug font-medium">{t({ en: 'Is there an automatic cleaner?', fr: 'Y a-t-il un nettoyeur automatique ?' })}</span>
-                                            </div>
-                                            <button
-                                                onClick={() => setPoolHasRobot(!poolHasRobot)}
-                                                className={`w-14 h-8 rounded-full transition-all flex items-center px-1 shrink-0 mt-1 ${poolHasRobot ? 'bg-black' : 'bg-neutral-200'
-                                                    }`}
-                                            >
-                                                <div className={`w-6 h-6 rounded-full bg-white shadow-sm transition-all ${poolHasRobot ? 'translate-x-6' : 'translate-x-0'}`} />
-                                            </button>
-                                        </div>
-
-                                        <div className="space-y-6">
-                                            <div>
-                                                <label className="text-[16px] font-medium text-black mb-3 block">{t({ en: 'Where is the technical room and Where products are stocked?', fr: 'Où se trouve le local technique et Où sont stockés les produits ?' })}</label>
-                                                <textarea
-                                                    value={poolTechnicalRoomLocation}
-                                                    onChange={(e) => setPoolTechnicalRoomLocation(e.target.value)}
-                                                    placeholder={t({ en: 'e.g. In the garage, Behind the wooden door near the pool...', fr: 'ex: Dans le garage, Derrière la porte en bois près de la piscine...' })}
-                                                    className="w-full p-5 rounded-[10px] bg-[#F7F7F7] border-none focus:ring-2 focus:ring-black focus:border-black text-[16px] min-h-[120px] resize-none transition-all placeholder:text-neutral-400"
-                                                />
-                                            </div>
-
-                                            <div className="p-6 rounded-[10px] bg-white flex gap-4 items-start border border-neutral-200 shadow-sm">
-                                                <Info size={20} className="text-black shrink-0 mt-0.5" />
-                                                <p className="text-[15px] text-black leading-relaxed font-medium">
-                                                    {t({
-                                                        en: 'The host must provide all necessary equipment and chemical supplies for pool maintenance.',
-                                                        fr: 'L\'hôte doit fournir tout l\'équipement et les produits chimiques nécessaires à l\'entretien de la piscine.'
-                                                    })}
-                                                </p>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* Frequency */}
-                                    <div className="space-y-4 mb-12">
-                                        <h3 className="font-medium text-[20px] text-black">
-                                            {t({ en: 'Maintenance frequency', fr: 'Fréquence de l\'entretien' })}
-                                        </h3>
-                                        <div className="grid grid-cols-2 gap-3">
-                                            {[
-                                                { id: 'week', label: 'Each week', fr: 'Chaque semaine' },
-                                                { id: '2weeks', label: 'Every 2 weeks', fr: 'Toutes les 2 semaines' },
-                                                { id: 'month', label: 'Each month', fr: 'Chaque mois' },
-                                                { id: 'on_call', label: 'On call', fr: 'Sur demande' }
-                                            ].map(freq => (
-                                                <button
-                                                    key={freq.id}
-                                                    onClick={() => setPoolFrequency(freq.id)}
-                                                    className={`p-5 rounded-[10px] border text-center transition-all ${poolFrequency === freq.id
-                                                        ? 'border-black border-2 bg-neutral-50'
-                                                        : 'border-neutral-200 text-black hover:border-black bg-white'
-                                                        }`}
-                                                >
-                                                    <span className="text-[16px] font-medium">{t({ en: freq.label, fr: freq.fr })}</span>
-                                                </button>
-                                            ))}
-                                        </div>
-                                    </div>
-
-                                    {/* Checklist */}
-                                    <div className="space-y-4 mb-10">
-                                        <h3 className="font-medium text-[18px] text-black">
-                                            {t({ en: 'Additional instructions (Checklist)', fr: 'Instructions additionnelles (Checklist)' })}
-                                        </h3>
-                                        <div className="space-y-2">
-                                            {poolChecklist.map((item, idx) => (
-                                                <div key={idx} className="group flex items-center gap-3">
-                                                    <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 transition-all ${item.trim() !== '' ? 'bg-[#00CA52] border-[#00CA52]' : 'border-neutral-200'}`}>
-                                                        {item.trim() !== '' && <Check size={12} className="text-white" strokeWidth={3} />}
-                                                    </div>
-                                                    <div className="flex-1 relative">
-                                                        <input
-                                                            type="text"
-                                                            value={item}
-                                                            autoFocus={idx === poolChecklist.length - 1 && idx > 0}
-                                                            onChange={(e) => {
-                                                                const newChecklist = [...poolChecklist];
-                                                                newChecklist[idx] = e.target.value;
-                                                                setPoolChecklist(newChecklist);
-                                                            }}
-                                                            onKeyDown={(e) => {
-                                                                if (e.key === 'Enter' && item.trim() !== '') {
-                                                                    e.preventDefault();
-                                                                    setPoolChecklist(prev => [...prev, '']);
-                                                                } else if (e.key === 'Backspace' && item === '' && poolChecklist.length > 1) {
-                                                                    e.preventDefault();
-                                                                    const newChecklist = poolChecklist.filter((_, i) => i !== idx);
-                                                                    setPoolChecklist(newChecklist);
-                                                                }
-                                                            }}
-                                                            placeholder={idx === 0 ? t({ en: 'e.g., Close the security cover...', fr: 'ex: Fermer la couverture de sécurité...' }) : ''}
-                                                            className="w-full py-1 bg-transparent border-none focus:outline-none focus:ring-0 text-[18px] text-black placeholder:text-neutral-300"
-                                                        />
-                                                        {poolChecklist.length > 1 && (
-                                                            <button
-                                                                onClick={() => setPoolChecklist(prev => prev.filter((_, i) => i !== idx))}
-                                                                className="absolute right-0 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity p-2 text-neutral-400 hover:text-red-500"
-                                                            >
-                                                                <X size={16} />
-                                                            </button>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-
-                                    {/* Photos */}
-                                    <div className="space-y-4 mb-10">
-                                        <h3 className="font-medium text-[18px] text-black">
-                                            {t({ en: 'Reference photos', fr: 'Photos de référence' })}
-                                        </h3>
-                                        <div className="grid grid-cols-3 gap-3">
-                                            {poolPhotos.map((p, i) => (
-                                                <div key={i} className="relative aspect-square rounded-2xl overflow-hidden border border-neutral-100 shadow-sm">
-                                                    <img src={p} alt="Pool" className="w-full h-full object-cover" />
-                                                    <button
-                                                        onClick={() => setPoolPhotos(prev => prev.filter((_, idx) => idx !== i))}
-                                                        className="absolute top-2 right-2 w-7 h-7 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-sm"
-                                                    >
-                                                        <X size={14} className="text-black" />
-                                                    </button>
-                                                </div>
-                                            ))}
-                                            <button
-                                                onClick={() => poolPhotoInputRef.current?.click()}
-                                                className="aspect-square rounded-2xl border-2 border-dashed border-neutral-200 flex flex-col items-center justify-center gap-2 hover:border-black hover:bg-neutral-50 transition-all text-neutral-400 hover:text-black"
-                                            >
-                                                {isUploadingPoolPhotos ? (
-                                                    <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1, ease: "linear" }}>
-                                                        <Plus size={24} />
-                                                    </motion.div>
-                                                ) : (
-                                                    <>
-                                                        <Plus size={24} />
-                                                        <span className="text-[12px] font-medium uppercase tracking-wider">{t({ en: 'Add', fr: 'Ajouter' })}</span>
-                                                    </>
-                                                )}
-                                            </button>
-                                            <input
-                                                type="file"
-                                                multiple
-                                                accept="image/*"
-                                                className="hidden"
-                                                ref={poolPhotoInputRef}
-                                                onChange={handlePoolPhotoUpload}
-                                            />
-                                        </div>
-                                    </div>
-                                </div>
+                                <PoolDetailForm
+                                    data={{
+                                        poolType,
+                                        poolWaterType,
+                                        poolSize,
+                                        poolDepth,
+                                        subServices: poolSubServices,
+                                        hasRobot: poolHasRobot,
+                                        technicalRoomLocation: poolTechnicalRoomLocation,
+                                        frequency: poolFrequency,
+                                        checklist: poolChecklist,
+                                        referencePhotos: poolPhotos
+                                    }}
+                                    onChange={(updates) => {
+                                        if (updates.poolType !== undefined) setPoolType(updates.poolType as any);
+                                        if (updates.poolWaterType !== undefined) setPoolWaterType(updates.poolWaterType as any);
+                                        if (updates.poolSize !== undefined) setPoolSize(updates.poolSize as any);
+                                        if (updates.poolDepth !== undefined) setPoolDepth(updates.poolDepth);
+                                        if (updates.subServices !== undefined) setPoolSubServices(updates.subServices);
+                                        if (updates.hasRobot !== undefined) setPoolHasRobot(updates.hasRobot);
+                                        if (updates.technicalRoomLocation !== undefined) setPoolTechnicalRoomLocation(updates.technicalRoomLocation);
+                                        if (updates.frequency !== undefined) setPoolFrequency(updates.frequency);
+                                        if (updates.checklist !== undefined) setPoolChecklist(updates.checklist);
+                                        if (updates.referencePhotos !== undefined) setPoolPhotos(updates.referencePhotos);
+                                    }}
+                                    onUploadingChange={setIsUploadingPoolPhotos}
+                                />
                             )}
 
                             {currentDetailServiceId === 'guest_receptionist' && (
-                                <div className="flex-1 overflow-y-auto pb-32">
-
-                                    <h2 className="font-medium text-[28px] text-black leading-tight tracking-tight mb-8">
-                                        {t({
-                                            en: `Guest reception instructions`,
-                                            fr: `Instructions pour l'accueil`,
-                                            ar: `تعليمات استقبال الضيوف`
-                                        })}
-                                    </h2>
-
-                                    <div className="space-y-4">
-                                        <h3 className="font-medium text-[18px] text-black">
-                                            {t({ en: 'Checklist for the receptionist', fr: 'Checklist pour le réceptionniste' })}
-                                        </h3>
-                                        <p className="text-[15px] text-neutral-500 leading-relaxed mb-6 font-medium">
-                                            {t({
-                                                en: 'Describe the steps from the moment they meet the guests, to the walk-in, until the end. What should and should not they do?',
-                                                fr: 'Décrivez les étapes du moment où ils rencontrent les voyageurs, jusqu\'à l\'entrée dans les lieux et la fin. Que doivent-ils faire et ne pas faire ?'
-                                            })}
-                                        </p>
-
-                                        <div className="space-y-4">
-                                            {receptionChecklist.map((item, idx) => (
-                                                <div key={idx} className="flex items-start gap-4 group">
-                                                    <div className={`mt-1 w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 transition-all ${item.trim() !== '' ? 'bg-[#00CA52] border-[#00CA52]' : 'border-neutral-300'}`}>
-                                                        {item.trim() !== '' && <Check size={12} className="text-white" strokeWidth={3} />}
-                                                    </div>
-                                                    <div className="flex-1 relative">
-                                                        <input
-                                                            type="text"
-                                                            value={item}
-                                                            autoFocus={idx === receptionChecklist.length - 1 && idx > 0}
-                                                            onChange={(e) => {
-                                                                const newChecklist = [...receptionChecklist];
-                                                                newChecklist[idx] = e.target.value;
-                                                                setReceptionChecklist(newChecklist);
-                                                            }}
-                                                            onKeyDown={(e) => {
-                                                                if (e.key === 'Enter' && item.trim() !== '') {
-                                                                    e.preventDefault();
-                                                                    setReceptionChecklist(prev => [...prev, '']);
-                                                                } else if (e.key === 'Backspace' && item === '' && receptionChecklist.length > 1) {
-                                                                    e.preventDefault();
-                                                                    const newChecklist = receptionChecklist.filter((_, i) => i !== idx);
-                                                                    setReceptionChecklist(newChecklist);
-                                                                }
-                                                            }}
-                                                            placeholder={idx === 0 ? t({ en: 'e.g., Meet at the main entrance, Show the kitchen...', fr: 'ex: Accueil à l\'entrée principale, Présentation de la cuisine...' }) : ''}
-                                                            className="w-full py-1 bg-transparent border-none focus:outline-none focus:ring-0 text-[18px] text-black placeholder:text-neutral-300"
-                                                        />
-                                                        {receptionChecklist.length > 1 && (
-                                                            <button
-                                                                onClick={() => setReceptionChecklist(prev => prev.filter((_, i) => i !== idx))}
-                                                                className="absolute right-0 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity p-2 text-neutral-400 hover:text-red-500"
-                                                            >
-                                                                <X size={16} />
-                                                            </button>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                </div>
+                                <ReceptionistDetailForm
+                                    data={{
+                                        checkInMethod: receptionCheckInMethod,
+                                        phoneSupport: receptionPhoneSupport,
+                                        checklist: receptionChecklist
+                                    }}
+                                    onChange={(updates) => {
+                                        if (updates.checkInMethod !== undefined) setReceptionCheckInMethod(updates.checkInMethod);
+                                        if (updates.phoneSupport !== undefined) setReceptionPhoneSupport(updates.phoneSupport);
+                                        if (updates.checklist !== undefined) setReceptionChecklist(updates.checklist);
+                                    }}
+                                />
                             )}
+
 
                             {/* Errands & Restocking Details */}
                             {currentDetailServiceId === 'errands' && (
-                                <div className="flex-1 overflow-y-auto pb-32">
-                                    <div className="pt-8 max-w-3xl mx-auto">
-                                        <h2 className="font-medium text-[36px] text-black leading-tight tracking-tight mb-8">
-                                            {t({ en: 'What needs restocking?', fr: 'Que faut-il réapprovisionner ?' })}
-                                        </h2>
-
-                                        <div className="space-y-8">
-                                            <div className="space-y-4">
-                                                <h3 className="font-medium text-[17px] text-black">
-                                                    {t({ en: 'Select categories', fr: 'Sélectionnez les catégories' })}
-                                                </h3>
-                                                <div className="grid grid-cols-2 gap-3">
-                                                    {[
-                                                        { id: 'toiletries', label: 'Toiletries', fr: 'Articles de toilette', emoji: '🧻' },
-                                                        { id: 'cleaning', label: 'Cleaning Products', fr: 'Produits d\'entretien', emoji: '🧹' },
-                                                        { id: 'pantry', label: 'Pantry & Breakfast', fr: 'Garde-manger & Petit-déj', emoji: '☕' },
-                                                        { id: 'linens', label: 'Linens & Towels', fr: 'Linge & Serviettes', emoji: '🛏️' }
-                                                    ].map((category) => {
-                                                        const isSelected = errandsCategories.includes(category.id);
-                                                        return (
-                                                            <button
-                                                                key={category.id}
-                                                                onClick={() => {
-                                                                    if (isSelected) {
-                                                                        setErrandsCategories(prev => prev.filter(c => c !== category.id));
-                                                                    } else {
-                                                                        setErrandsCategories(prev => [...prev, category.id]);
-                                                                    }
-                                                                }}
-                                                                className={`flex flex-col items-start justify-between p-6 rounded-[10px] border transition-all h-[150px] text-left ${isSelected
-                                                                    ? 'border-black border-[2px] bg-neutral-50'
-                                                                    : 'border-neutral-200 hover:border-black bg-white shadow-sm'
-                                                                    }`}
-                                                            >
-                                                                <span className="text-[32px] shrink-0">{category.emoji}</span>
-                                                                <span className="text-[16px] font-medium leading-tight text-black">
-                                                                    {t({ en: category.label, fr: category.fr })}
-                                                                </span>
-                                                            </button>
-                                                        );
-                                                    })}
-                                                </div>
-                                            </div>
-
-                                            {/* Dynamic Checklists for Selected Categories */}
-                                            {errandsCategories.length > 0 && (
-                                                <div className="space-y-8 pt-4">
-                                                    {errandsCategories.map(categoryId => {
-                                                        const categoryMeta = [
-                                                            { id: 'toiletries', icon: '🧻', label: 'Toiletries', fr: 'Articles de toilette' },
-                                                            { id: 'cleaning_supplies', icon: '🧹', label: 'Cleaning Supplies', fr: 'Produits d\'entretien' },
-                                                            { id: 'pantry', icon: '☕', label: 'Pantry & Breakfast', fr: 'Garde-manger & Petit-déj' },
-                                                            { id: 'linens', icon: '🛏️', label: 'Linens & Towels', fr: 'Linge & Serviettes' }
-                                                        ].find(c => c.id === categoryId);
-
-                                                        const list = errandsChecklists[categoryId] || [{ name: '', quantity: 1 }];
-
-                                                        const updateItemName = (index: number, value: string) => {
-                                                            const newList = [...list];
-                                                            newList[index].name = value;
-                                                            setErrandsChecklists(prev => ({ ...prev, [categoryId]: newList }));
-                                                        };
-
-                                                        const updateItemQuantity = (index: number, value: number) => {
-                                                            const newList = [...list];
-                                                            newList[index].quantity = value;
-                                                            setErrandsChecklists(prev => ({ ...prev, [categoryId]: newList }));
-                                                        };
-
-                                                        const addItemBrand = (index: number, value: string) => {
-                                                            const newList = list.map((item, i) => {
-                                                                if (i !== index) return item;
-                                                                const existing = item.brands || [];
-                                                                if (!existing.includes(value)) return { ...item, brands: [...existing, value] };
-                                                                return item;
-                                                            });
-                                                            setErrandsChecklists(prev => ({ ...prev, [categoryId]: newList }));
-                                                        };
-
-                                                        const removeItemBrand = (index: number, brand: string) => {
-                                                            const newList = list.map((item, i) => {
-                                                                if (i !== index) return item;
-                                                                return { ...item, brands: (item.brands || []).filter(b => b !== brand) };
-                                                            });
-                                                            setErrandsChecklists(prev => ({ ...prev, [categoryId]: newList }));
-                                                        };
-
-                                                        const updateItemFrequency = (index: number, value: string) => {
-                                                            const newList = [...list];
-                                                            newList[index].frequency = value;
-                                                            setErrandsChecklists(prev => ({ ...prev, [categoryId]: newList }));
-                                                        };
-
-                                                        const addItem = () => {
-                                                            setErrandsChecklists(prev => ({
-                                                                ...prev,
-                                                                [categoryId]: [...list, { name: '', quantity: 1 }]
-                                                            }));
-                                                            setTimeout(() => {
-                                                                const nextInput = document.getElementById(`errand-input-${categoryId}-${list.length}`);
-                                                                if (nextInput) nextInput.focus();
-                                                            }, 10);
-                                                        };
-
-                                                        const removeItem = (index: number) => {
-                                                            const newList = list.filter((_, i) => i !== index);
-                                                            setErrandsChecklists(prev => ({ ...prev, [categoryId]: newList }));
-                                                        };
-
-                                                        return (
-                                                            <div key={categoryId} className="space-y-4">
-                                                                <h3 className="font-medium text-[18px] text-black flex items-center gap-2">
-                                                                    <span>{categoryMeta?.icon}</span>
-                                                                    {t({ en: `${categoryMeta?.label} Items`, fr: `Articles pour ${categoryMeta?.fr}` })}
-                                                                </h3>
-                                                                <div className="flex flex-col">
-                                                                    {list.map((item, idx) => (
-                                                                        <div key={idx} className="border border-neutral-200 p-4 rounded-[15px] flex flex-col gap-4 py-5 border-b border-neutral-100 group">
-                                                                            <div className="flex justify-between items-start w-full gap-4">
-                                                                                <div className="flex flex-col gap-3 w-full">
-                                                                                    <input
-                                                                                        id={`errand-input-${categoryId}-${idx}`}
-                                                                                        type="text"
-                                                                                        value={item.name}
-                                                                                        onChange={(e) => updateItemName(idx, e.target.value)}
-                                                                                        onKeyDown={(e) => {
-                                                                                            if (e.key === 'Enter') {
-                                                                                                e.preventDefault();
-                                                                                                addItem();
-                                                                                            }
-                                                                                        }}
-                                                                                        placeholder={t({ en: 'Item name (Press Enter to add another)', fr: 'Nom de l\'article (Entrée pour ajouter)' })}
-                                                                                        className="w-full bg-transparent border-none p-0 focus:ring-0 focus:border-transparent focus:outline-none outline-none text-[16px] text-black placeholder:text-neutral-300 font-medium"
-                                                                                    />
-
-                                                                                    {/* Brand pills row */}
-                                                                                    <div className="flex items-center gap-2 flex-wrap">
-                                                                                        {(item.brands || []).map(brand => (
-                                                                                            <span key={brand} className="inline-flex items-center gap-1 px-3 py-1 bg-[#F7F7F7] text-neutral-600 rounded-lg text-[13px] font-medium border border-neutral-200">
-                                                                                                {brand}
-                                                                                                <button onClick={() => removeItemBrand(idx, brand)} className="ml-1 text-neutral-400 hover:text-black">
-                                                                                                    <X size={12} />
-                                                                                                </button>
-                                                                                            </span>
-                                                                                        ))}
-
-                                                                                        {editingBrand?.cat === categoryId && editingBrand?.idx === idx ? (
-                                                                                            <input
-                                                                                                autoFocus
-                                                                                                type="text"
-                                                                                                placeholder={t({ en: 'Preferred brand', fr: 'Marque préférée' })}
-                                                                                                className="px-3 py-1 bg-white border border-black rounded-lg text-[13px] font-medium w-[150px] focus:outline-none focus:ring-0"
-                                                                                                onKeyDown={(e) => {
-                                                                                                    if (e.key === 'Enter') {
-                                                                                                        e.preventDefault();
-                                                                                                        const val = e.currentTarget.value.trim();
-                                                                                                        if (val) addItemBrand(idx, val);
-                                                                                                        setEditingBrand(null);
-                                                                                                    } else if (e.key === 'Escape') {
-                                                                                                        setEditingBrand(null);
-                                                                                                    }
-                                                                                                }}
-                                                                                                onBlur={(e) => {
-                                                                                                    const val = e.target.value.trim();
-                                                                                                    if (val) addItemBrand(idx, val);
-                                                                                                    setEditingBrand(null);
-                                                                                                }}
-                                                                                            />
-                                                                                        ) : (
-                                                                                            <button
-                                                                                                onClick={() => setEditingBrand({ cat: categoryId, idx })}
-                                                                                                className="inline-flex items-center gap-1 px-3 py-1 text-neutral-400 hover:bg-neutral-50 rounded-lg text-[13px] font-medium border border-dashed border-neutral-300 transition-colors shrink-0"
-                                                                                            >
-                                                                                                <Plus size={12} />
-                                                                                                {t({ en: 'Add brand', fr: 'Ajouter marque' })}
-                                                                                            </button>
-                                                                                        )}
-                                                                                    </div>
-                                                                                </div>
-
-                                                                                <button
-                                                                                    onClick={() => removeItem(idx)}
-                                                                                    className={`p-2 -mr-2 transition-opacity text-neutral-300 hover:text-red-500 shrink-0 ${list.length > 1 ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
-                                                                                >
-                                                                                    <X size={20} />
-                                                                                </button>
-                                                                            </div>
-
-                                                                            <div className="flex flex-col gap-4 w-full pt-1">
-                                                                                {/* Frequency Row */}
-                                                                                <div className="flex items-center justify-between w-full">
-                                                                                    <span className="text-[15px] font-light text-black">
-                                                                                        {t({ en: 'Restocking frequency', fr: 'Fréquence de réapprovisionnement' })}
-                                                                                    </span>
-                                                                                    <div className="relative shrink-0">
-                                                                                        <select
-                                                                                            value={item.frequency || 'checkout'}
-                                                                                            onChange={(e) => updateItemFrequency(idx, e.target.value)}
-                                                                                            className="appearance-none pl-3 pr-8 py-1.5 bg-white text-neutral-600 rounded-lg text-[13px] font-medium border border-neutral-200 focus:outline-none focus:ring-1 focus:ring-black cursor-pointer transition-colors"
-                                                                                        >
-                                                                                            <option value="checkout">{t({ en: 'Every checkout', fr: 'Chaque départ' })}</option>
-                                                                                            <option value="weekly">{t({ en: 'Weekly', fr: 'Hebdomadaire' })}</option>
-                                                                                            <option value="monthly">{t({ en: 'Monthly', fr: 'Mensuel' })}</option>
-                                                                                            <option value="on_request">{t({ en: 'On request', fr: 'Sur demande' })}</option>
-                                                                                        </select>
-                                                                                        <div className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none text-neutral-400">
-                                                                                            <ChevronDown size={14} />
-                                                                                        </div>
-                                                                                    </div>
-                                                                                </div>
-
-                                                                                {/* Quantity Row */}
-                                                                                <div className="flex items-center justify-between w-full border-t border-neutral-50 pt-4">
-                                                                                    <span className="text-[15px] font-light text-black">
-                                                                                        {t({ en: 'Quantity', fr: 'Quantité' })}
-                                                                                    </span>
-                                                                                    <div className="flex items-center gap-4">
-                                                                                        <button
-                                                                                            onClick={() => updateItemQuantity(idx, Math.max(1, item.quantity - 1))}
-                                                                                            disabled={item.quantity <= 1}
-                                                                                            className="w-8 h-8 rounded-full bg-[#F7F7F7] flex items-center justify-center active:scale-90 transition-all disabled:opacity-20 text-black"
-                                                                                        >
-                                                                                            <div className="w-3 h-[1.5px] bg-black opacity-60" />
-                                                                                        </button>
-                                                                                        <span className="text-[17px] font-light w-6 text-center text-black tabular-nums">{item.quantity}</span>
-                                                                                        <button
-                                                                                            onClick={() => updateItemQuantity(idx, item.quantity + 1)}
-                                                                                            className="w-8 h-8 rounded-full bg-[#F7F7F7] flex items-center justify-center active:scale-90 transition-all text-black"
-                                                                                        >
-                                                                                            <div className="relative w-3 h-3 flex items-center justify-center">
-                                                                                                <div className="absolute w-3 h-[1.5px] bg-black opacity-80" />
-                                                                                                <div className="absolute w-[1.5px] h-3 bg-black opacity-80" />
-                                                                                            </div>
-                                                                                        </button>
-                                                                                    </div>
-                                                                                </div>
-                                                                            </div>
-                                                                        </div>
-                                                                    ))}
-                                                                </div>
-
-                                                                {/* Add item button */}
-                                                                <button
-                                                                    onClick={addItem}
-                                                                    className="mt-3 inline-flex items-center gap-2 text-[14px] text-neutral-500 hover:text-black font-medium transition-colors group/add"
-                                                                >
-                                                                    <span className="w-6 h-6 rounded-full border border-dashed border-neutral-300 group-hover/add:border-black flex items-center justify-center transition-colors">
-                                                                        <Plus size={12} />
-                                                                    </span>
-                                                                    {t({ en: 'Add item', fr: 'Ajouter un article' })}
-                                                                </button>
-                                                            </div>
-                                                        );
-                                                    })}
-                                                </div>
-                                            )}
-
-                                            <div className="mt-8 space-y-4">
-                                                <div className="flex flex-col gap-1">
-                                                    <span className="text-[17px] font-medium text-black">
-                                                        {t({ en: 'Where do you store your supplies?', fr: 'Où stockez-vous vos fournitures ?' })}
-                                                    </span>
-                                                    <span className="text-[14px] text-neutral-400 font-medium">
-                                                        {t({ en: 'Help the Bricoleur find and restock items in the right place.', fr: 'Aidez le Bricoleur à trouver et ranger les articles au bon endroit.' })}
-                                                    </span>
-                                                </div>
-                                                <textarea
-                                                    value={errandsStorageLocation}
-                                                    onChange={(e) => setErrandsStorageLocation(e.target.value)}
-                                                    rows={4}
-                                                    placeholder={t({
-                                                        en: 'ex. Toiletries in the cabinet under the sink. Cleaning products in the left kitchen cupboard...',
-                                                        fr: 'ex. Articles de toilette dans le meuble sous l\'évier. Produits ménagers dans le placard gauche de la cuisine...'
-                                                    })}
-                                                    className="w-full resize-none bg-[#FFFFFF] rounded-[10px] px-6 py-5 text-[16px] text-black placeholder:text-neutral-400 focus:outline-none focus:ring-1 focus:ring-black border transition-all leading-relaxed"
-                                                />
-                                            </div>
-
-                                            {/* Billing Disclaimer */}
-                                            <div className="bg-white rounded-[10px] p-6 border border-neutral-100 shadow-sm mt-8 space-y-3">
-                                                <h4 className="font-bold text-[17px] text-black">
-                                                    {t({ en: 'Important Information', fr: 'Information Importante' })}
-                                                </h4>
-                                                <p className="text-[15px] text-neutral-500 leading-relaxed">
-                                                    {t({
-                                                        en: 'The Errands & Restocking service covers the Bricoler\'s time and delivery effort. The actual cost of purchased items will be billed directly to you via receipt scanning.',
-                                                        fr: 'Le service de Courses & Réapprovisionnement couvre le temps et l\'effort de livraison du Bricoleur. Le coût réel des articles achetés vous sera facturé directement via la numérisation des reçus.'
-                                                    })}
-                                                </p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
+                                <ErrandsDetailForm
+                                    data={{
+                                        categories: errandsCategories,
+                                        checklists: errandsChecklists,
+                                        storageLocation: errandsStorageLocation,
+                                        frequency: errandsFrequency,
+                                        instructions: errandsInstructions
+                                    }}
+                                    onChange={(updates) => {
+                                        if (updates.categories !== undefined) setErrandsCategories(updates.categories);
+                                        if (updates.checklists !== undefined) setErrandsChecklists(updates.checklists);
+                                        if (updates.storageLocation !== undefined) setErrandsStorageLocation(updates.storageLocation);
+                                        if (updates.frequency !== undefined) setErrandsFrequency(updates.frequency);
+                                        if (updates.instructions !== undefined) setErrandsInstructions(updates.instructions);
+                                    }}
+                                />
                             )}
+
+
 
                             {/* Generic placeholder for other services if needed */}
                             {currentDetailServiceId && !['cleaning', 'glass_cleaning', 'gardening', 'pool_cleaning', 'guest_receptionist', 'pets_care', 'errands'].includes(currentDetailServiceId) && (
@@ -3667,3 +2423,1204 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
 };
 
 export default PropertySetupWizard;
+
+// --- Sub-components for Service Detail Forms ---
+
+const CleaningDetailForm = ({ data, onChange, onUploadingChange }) => {
+    const { t } = useTranslation();
+    const photoInputRef = useRef<HTMLInputElement>(null);
+    const [isUploading, setIsUploading] = useState(false);
+
+    const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const files = Array.from(e.target.files || []);
+        if (files.length === 0) return;
+
+        setIsUploading(true);
+        onUploadingChange?.(true);
+
+        try {
+            const uploadPromises = files.map(async (file) => {
+                return new Promise<string>((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onloadend = async () => {
+                        try {
+                            const url = await uploadToCloudinary(
+                                reader.result as string,
+                                `lbricol/properties/cleaning`,
+                                'lbricol_portfolio'
+                            );
+                            resolve(url);
+                        } catch (err) {
+                            reject(err);
+                        }
+                    };
+                    reader.readAsDataURL(file);
+                });
+            });
+
+            const urls = await Promise.all(uploadPromises);
+            onChange({ referencePhotos: [...(data.referencePhotos || []), ...urls] });
+        } catch (error) {
+            console.error('Error uploading photos:', error);
+        } finally {
+            setIsUploading(false);
+            onUploadingChange?.(false);
+        }
+    };
+
+    const toggleSubService = (id: string) => {
+        const current = data.subServices || [];
+        const next = current.includes(id) ? current.filter(s => s !== id) : [...current, id];
+        onChange({ subServices: next });
+    };
+
+    return (
+        <div className="flex-1 overflow-y-auto pb-32">
+            <h2 className="font-medium text-[32px] text-black leading-tight tracking-tight mb-8">
+                {t({ en: 'Cleaning Details', fr: 'Détails du Ménage' })}
+            </h2>
+
+            <div className="space-y-12">
+                <div className="space-y-4">
+                    <h3 className="font-medium text-[20px] text-black">{t({ en: 'What needs cleaning?', fr: 'Qu\'est-ce qui doit être nettoyé ?' })}</h3>
+                    <div className="grid grid-cols-2 gap-3">
+                        {[
+                            { id: 'full_cleaning', label: 'Full Cleaning', fr: 'Nettoyage complet', emoji: '🏠' },
+                            { id: 'laundry', label: 'Laundry', fr: 'Linge', emoji: '🧺' },
+                            { id: 'windows', label: 'Windows', fr: 'Vitrages', emoji: '🪟' },
+                            { id: 'stairs', label: 'Stairs', fr: 'Escaliers', emoji: '🪜' }
+                        ].map(item => (
+                            <button
+                                key={item.id}
+                                onClick={() => toggleSubService(item.id)}
+                                className={`p-5 rounded-[12px] border transition-all text-left flex flex-col gap-3 ${
+                                    (data.subServices || []).includes(item.id)
+                                        ? 'border-black border-[2px] bg-neutral-50'
+                                        : 'border-neutral-200 hover:border-black bg-white'
+                                }`}
+                            >
+                                <span className="text-2xl">{item.emoji}</span>
+                                <span className="text-[16px] font-semibold text-black">{t({ en: item.label, fr: item.fr })}</span>
+                            </button>
+                        ))}
+                    </div>
+                </div>
+
+                {(data.subServices || []).includes('stairs') && (
+                    <div className="space-y-4 p-6 rounded-[15px] border border-neutral-100 bg-neutral-50/50">
+                        <CounterRow
+                            label={t({ en: 'Number of floors', fr: 'Nombre d\'étages' })}
+                            value={data.stairsSize === 'big' ? 3 : data.stairsSize === 'medium' ? 2 : 1}
+                            onChange={(val) => onChange({ stairsSize: val >= 3 ? 'big' : val === 2 ? 'medium' : 'small' })}
+                            min={1}
+                        />
+                    </div>
+                )}
+
+                {(data.subServices || []).includes('laundry') && (
+                    <div className="space-y-6">
+                        <h3 className="font-medium text-[20px] text-black">{t({ en: 'Laundry & Linens', fr: 'Linge et Draps' })}</h3>
+                        <div className="space-y-4">
+                            <div className="flex items-center justify-between p-5 rounded-[12px] border border-neutral-200 bg-white shadow-sm">
+                                <span className="text-[17px] font-medium">{t({ en: 'Washing machine available', fr: 'Machine à laver disponible' })}</span>
+                                <button
+                                    onClick={() => onChange({ laundryAvailable: !data.laundryAvailable })}
+                                    className={`w-12 h-6 rounded-full transition-colors relative ${data.laundryAvailable ? 'bg-black' : 'bg-neutral-200'}`}
+                                >
+                                    <div className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform ${data.laundryAvailable ? 'translate-x-6' : ''}`} />
+                                </button>
+                            </div>
+                            <div className="flex items-center justify-between p-5 rounded-[12px] border border-neutral-200 bg-white shadow-sm">
+                                <span className="text-[17px] font-medium">{t({ en: 'Change all sheets every time', fr: 'Changer tous les draps à chaque fois' })}</span>
+                                <button
+                                    onClick={() => onChange({ changeSheets: !data.changeSheets })}
+                                    className={`w-12 h-6 rounded-full transition-colors relative ${data.changeSheets ? 'bg-black' : 'bg-neutral-200'}`}
+                                >
+                                    <div className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform ${data.changeSheets ? 'translate-x-6' : ''}`} />
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                <div className="space-y-4">
+                    <h3 className="font-medium text-[20px] text-black">{t({ en: 'Specific Instructions', fr: 'Instructions spécifiques' })}</h3>
+                    <div className="space-y-2">
+                        {(data.checklist || ['']).map((item, idx) => (
+                            <div key={idx} className="group flex items-center gap-3">
+                                <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 transition-all ${item.trim() !== '' ? 'bg-[#00CA52] border-[#00CA52]' : 'border-neutral-200'}`}>
+                                    {item.trim() !== '' && <Check size={12} className="text-white" strokeWidth={3} />}
+                                </div>
+                                <input
+                                    type="text"
+                                    value={item}
+                                    onChange={(e) => {
+                                        const next = [...(data.checklist || [''])];
+                                        next[idx] = e.target.value;
+                                        onChange({ checklist: next });
+                                    }}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter' && item.trim() !== '') {
+                                            onChange({ checklist: [...(data.checklist || []), ''] });
+                                        }
+                                    }}
+                                    placeholder={t({ en: 'Add an instruction...', fr: 'Ajouter une instruction...' })}
+                                    className="flex-1 py-2 bg-transparent border-none focus:ring-0 text-[18px] text-black placeholder:text-neutral-300"
+                                />
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
+                <div className="space-y-4">
+                    <h3 className="font-medium text-[20px] text-black">{t({ en: 'Reference Photos', fr: 'Photos de Référence' })}</h3>
+                    <div className="grid grid-cols-3 gap-4">
+                        {(data.referencePhotos || []).map((url, i) => (
+                            <div key={url} className="relative aspect-square rounded-2xl overflow-hidden border border-neutral-100 shadow-sm">
+                                <img src={url} alt="Reference" className="w-full h-full object-cover" />
+                                <button
+                                    onClick={() => onChange({ referencePhotos: data.referencePhotos.filter((_, idx) => idx !== i) })}
+                                    className="absolute top-2 right-2 w-7 h-7 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-sm"
+                                >
+                                    <X size={14} className="text-black" />
+                                </button>
+                            </div>
+                        ))}
+                        <button
+                            onClick={() => photoInputRef.current?.click()}
+                            className="aspect-square rounded-2xl border-2 border-dashed border-neutral-200 flex flex-col items-center justify-center gap-2 hover:border-black hover:bg-neutral-50 transition-all text-neutral-400 hover:text-black"
+                        >
+                            {isUploading ? (
+                                <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1, ease: "linear" }}>
+                                    <Plus size={24} />
+                                </motion.div>
+                            ) : (
+                                <>
+                                    <Plus size={24} />
+                                    <span className="text-[12px] font-medium uppercase tracking-wider">{t({ en: 'Add', fr: 'Ajouter' })}</span>
+                                </>
+                            )}
+                        </button>
+                    </div>
+                    <input type="file" multiple hidden ref={photoInputRef} onChange={handlePhotoUpload} accept="image/*" />
+                </div>
+            </div>
+        </div>
+    );
+};
+
+const GlassCleaningDetailForm = ({ data, onChange, onUploadingChange }) => {
+    const { t } = useTranslation();
+    const photoInputRef = useRef<HTMLInputElement>(null);
+    const [isUploading, setIsUploading] = useState(false);
+
+    const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const files = Array.from(e.target.files || []);
+        if (files.length === 0) return;
+        setIsUploading(true);
+        onUploadingChange?.(true);
+        try {
+            const uploadPromises = files.map(async (file) => {
+                return new Promise<string>((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onloadend = async () => {
+                        try {
+                            const url = await uploadToCloudinary(
+                                reader.result as string,
+                                `lbricol/properties/glass`,
+                                'lbricol_portfolio'
+                            );
+                            resolve(url);
+                        } catch (err) {
+                            reject(err);
+                        }
+                    };
+                    reader.readAsDataURL(file);
+                });
+            });
+            const urls = await Promise.all(uploadPromises);
+            onChange({ referencePhotos: [...(data.referencePhotos || []), ...urls] });
+        } catch (error) {
+            console.error('Error uploading photos:', error);
+        } finally {
+            setIsUploading(false);
+            onUploadingChange?.(false);
+        }
+    };
+
+    return (
+        <div className="flex-1 overflow-y-auto pb-32">
+            <h2 className="font-medium text-[32px] text-black leading-tight tracking-tight mb-8">
+                {t({ en: 'Glass & Window Cleaning', fr: 'Nettoyage des Vitres' })}
+            </h2>
+
+            <div className="space-y-12">
+                <div className="space-y-4 p-6 rounded-[15px] border border-neutral-100 bg-neutral-50/50">
+                    <CounterRow
+                        label={t({ en: 'Number of windows', fr: 'Nombre de fenêtres' })}
+                        value={data.windowsCount || 1}
+                        onChange={(val) => onChange({ windowsCount: val })}
+                        min={1}
+                    />
+                </div>
+
+                <div className="space-y-4">
+                    <h3 className="font-medium text-[20px] text-black">{t({ en: 'Access & Difficulty', fr: 'Accès et Difficulté' })}</h3>
+                    <div className="grid grid-cols-1 gap-3">
+                        {[
+                            { id: 'ground', label: 'Easy access (Ground floor)', fr: 'Accès facile (RDC)' },
+                            { id: 'ladder', label: 'Requires ladder', fr: 'Nécessite échelle' },
+                            { id: 'high', label: 'High altitude/Hard to reach', fr: 'Grande hauteur/Difficile' }
+                        ].map(item => (
+                            <button
+                                key={item.id}
+                                onClick={() => onChange({ windowsAccessibility: item.id })}
+                                className={`w-full flex items-center justify-between p-5 rounded-[12px] border transition-all ${
+                                    data.windowsAccessibility === item.id
+                                        ? 'border-black border-[2px] bg-neutral-50'
+                                        : 'border-neutral-200 hover:border-black bg-white shadow-sm'
+                                }`}
+                            >
+                                <span className="text-[17px] font-medium text-black">{t({ en: item.label, fr: item.fr })}</span>
+                                {data.windowsAccessibility === item.id && <Check size={20} className="text-black" strokeWidth={2.5} />}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+
+                <div className="space-y-4">
+                    <h3 className="font-medium text-[20px] text-black">{t({ en: 'Coverage', fr: 'Couverture' })}</h3>
+                    <div className="grid grid-cols-3 gap-3">
+                        {[
+                            { id: 'interior', label: 'Inside', fr: 'Intérieur' },
+                            { id: 'exterior', label: 'Outside', fr: 'Extérieur' },
+                            { id: 'both', label: 'Both', fr: 'Les deux' }
+                        ].map(item => (
+                            <button
+                                key={item.id}
+                                onClick={() => onChange({ windowsCoverage: item.id })}
+                                className={`p-4 rounded-[12px] border text-center transition-all ${
+                                    data.windowsCoverage === item.id
+                                        ? 'border-black border-[2px] bg-neutral-50'
+                                        : 'border-neutral-200 hover:border-black bg-white'
+                                }`}
+                            >
+                                <span className="text-[15px] font-semibold">{t({ en: item.label, fr: item.fr })}</span>
+                            </button>
+                        ))}
+                    </div>
+                </div>
+
+                <div className="space-y-4">
+                    <h3 className="font-medium text-[20px] text-black">{t({ en: 'Reference Photos', fr: 'Photos de Référence' })}</h3>
+                    <div className="grid grid-cols-3 gap-4">
+                        {(data.referencePhotos || []).map((url, i) => (
+                            <div key={url} className="relative aspect-square rounded-2xl overflow-hidden border border-neutral-100 shadow-sm">
+                                <img src={url} alt="Reference" className="w-full h-full object-cover" />
+                                <button
+                                    onClick={() => onChange({ referencePhotos: data.referencePhotos.filter((_, idx) => idx !== i) })}
+                                    className="absolute top-2 right-2 w-7 h-7 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-sm"
+                                >
+                                    <X size={14} className="text-black" />
+                                </button>
+                            </div>
+                        ))}
+                        <button
+                            onClick={() => photoInputRef.current?.click()}
+                            className="aspect-square rounded-2xl border-2 border-dashed border-neutral-200 flex flex-col items-center justify-center gap-2 hover:border-black hover:bg-neutral-50 transition-all text-neutral-400 hover:text-black"
+                        >
+                            {isUploading ? (
+                                <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1, ease: "linear" }}>
+                                    <Plus size={24} />
+                                </motion.div>
+                            ) : (
+                                <>
+                                    <Plus size={24} />
+                                    <span className="text-[12px] font-medium uppercase tracking-wider">{t({ en: 'Add', fr: 'Ajouter' })}</span>
+                                </>
+                            )}
+                        </button>
+                    </div>
+                    <input type="file" multiple hidden ref={photoInputRef} onChange={handlePhotoUpload} accept="image/*" />
+                </div>
+            </div>
+        </div>
+    );
+};
+
+
+const GardeningDetailForm = ({ data, onChange, onUploadingChange }) => {
+    const { t } = useTranslation();
+    const photoInputRef = useRef<HTMLInputElement>(null);
+    const [isUploading, setIsUploading] = useState(false);
+
+    const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const files = Array.from(e.target.files || []);
+        if (files.length === 0) return;
+        setIsUploading(true);
+        onUploadingChange?.(true);
+        try {
+            const uploadPromises = files.map(async (file) => {
+                return new Promise<string>((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onloadend = async () => {
+                        try {
+                            const url = await uploadToCloudinary(
+                                reader.result as string,
+                                `lbricol/properties/gardening`,
+                                'lbricol_portfolio'
+                            );
+                            resolve(url);
+                        } catch (err) {
+                            reject(err);
+                        }
+                    };
+                    reader.readAsDataURL(file);
+                });
+            });
+            const urls = await Promise.all(uploadPromises);
+            onChange({ referencePhotos: [...(data.referencePhotos || []), ...urls] });
+        } catch (error) {
+            console.error('Error uploading photos:', error);
+        } finally {
+            setIsUploading(false);
+            onUploadingChange?.(false);
+        }
+    };
+
+    const toggleSubService = (id: string) => {
+        const current = data.subServices || [];
+        const next = current.includes(id) ? current.filter(s => s !== id) : [...current, id];
+        onChange({ subServices: next });
+    };
+
+    return (
+        <div className="flex-1 overflow-y-auto pb-32">
+            <h2 className="font-medium text-[32px] text-black leading-tight tracking-tight mb-8">
+                {t({ en: 'Gardening Details', fr: 'Détails du Jardinage' })}
+            </h2>
+
+            <div className="space-y-12">
+                <div className="space-y-4">
+                    <h3 className="font-medium text-[20px] text-black">{t({ en: 'What needs attention?', fr: 'De quoi s\'occuper ?' })}</h3>
+                    <div className="grid grid-cols-2 gap-3">
+                        {[
+                            { id: 'lawn', label: 'Lawn Mowing', fr: 'Tonte pelouse', emoji: '🌱' },
+                            { id: 'pruning', label: 'Tree Pruning', fr: 'Élagage', emoji: '🌳' },
+                            { id: 'weeding', label: 'Weeding', fr: 'Désherbage', emoji: '🌿' },
+                            { id: 'watering', label: 'Watering', fr: 'Arrosage', emoji: '💧' }
+                        ].map(item => (
+                            <button
+                                key={item.id}
+                                onClick={() => toggleSubService(item.id)}
+                                className={`p-5 rounded-[12px] border transition-all text-left flex flex-col gap-3 ${
+                                    (data.subServices || []).includes(item.id)
+                                        ? 'border-black border-[2px] bg-neutral-50'
+                                        : 'border-neutral-200 hover:border-black bg-white shadow-sm'
+                                }`}
+                            >
+                                <span className="text-2xl">{item.emoji}</span>
+                                <span className="text-[16px] font-semibold text-black">{t({ en: item.label, fr: item.fr })}</span>
+                            </button>
+                        ))}
+                    </div>
+                </div>
+
+                <div className="space-y-6">
+                    <div className="p-6 rounded-[15px] border border-neutral-100 bg-neutral-50/50 space-y-2">
+                        <h3 className="font-medium text-[18px] text-black mb-4">{t({ en: 'Garden Specs', fr: 'Caractéristiques' })}</h3>
+                        <CounterRow
+                            label={t({ en: 'Garden Size (m²)', fr: 'Taille du jardin (m²)' })}
+                            value={data.gardenSize || 100}
+                            onChange={(val) => onChange({ gardenSize: val })}
+                            min={10}
+                        />
+                        <CounterRow
+                            label={t({ en: 'Number of trees', fr: 'Nombre d\'arbres' })}
+                            value={data.treeCount || 0}
+                            onChange={(val) => onChange({ treeCount: val })}
+                            min={0}
+                        />
+                        <CounterRow
+                            label={t({ en: 'Avg. Tree Height (m)', fr: 'Haut. moyenne (m)' })}
+                            value={data.averageTreeHeight || 2}
+                            onChange={(val) => onChange({ averageTreeHeight: val })}
+                            min={1}
+                        />
+                    </div>
+
+                    <div className="p-6 rounded-[15px] border border-neutral-100 bg-white shadow-sm space-y-6">
+                        <div className="flex items-start justify-between gap-4">
+                            <div className="flex flex-col gap-1 flex-1">
+                                <span className="text-[17px] font-medium text-black leading-tight">{t({ en: 'Should bring mower?', fr: 'Doit apporter la tondeuse ?' })}</span>
+                                <span className="text-[14px] text-neutral-500">{t({ en: 'Check if you don\'t have one on-site', fr: 'Cochez si vous n\'en avez pas sur place' })}</span>
+                            </div>
+                            <button
+                                onClick={() => onChange({ shouldBringMower: !data.shouldBringMower })}
+                                className={`w-14 h-8 rounded-full transition-all flex items-center px-1 shrink-0 ${data.shouldBringMower ? 'bg-black' : 'bg-neutral-200'}`}
+                            >
+                                <div className={`w-6 h-6 rounded-full bg-white shadow-sm transition-all ${data.shouldBringMower ? 'translate-x-6' : 'translate-x-0'}`} />
+                            </button>
+                        </div>
+
+                        <div className="flex items-start justify-between gap-4 pt-4 border-t border-neutral-50">
+                            <div className="flex flex-col gap-1 flex-1">
+                                <span className="text-[17px] font-medium text-black leading-tight">{t({ en: 'Waste removal included?', fr: 'Évacuation des déchets ?' })}</span>
+                                <span className="text-[14px] text-neutral-500">{t({ en: 'Remove green waste from the property', fr: 'Évacuer les déchets verts de la propriété' })}</span>
+                            </div>
+                            <button
+                                onClick={() => onChange({ isWasteRemovalIncluded: !data.isWasteRemovalIncluded })}
+                                className={`w-14 h-8 rounded-full transition-all flex items-center px-1 shrink-0 ${data.isWasteRemovalIncluded ? 'bg-black' : 'bg-neutral-200'}`}
+                            >
+                                <div className={`w-6 h-6 rounded-full bg-white shadow-sm transition-all ${data.isWasteRemovalIncluded ? 'translate-x-6' : 'translate-x-0'}`} />
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="space-y-4">
+                    <h3 className="font-medium text-[20px] text-black">{t({ en: 'Frequency', fr: 'Fréquence' })}</h3>
+                    <div className="grid grid-cols-3 gap-3">
+                        {[
+                            { id: 'week', label: 'Weekly', fr: 'Hebdo' },
+                            { id: 'biweek', label: 'Bi-weekly', fr: 'Quinzaine' },
+                            { id: 'month', label: 'Monthly', fr: 'Mensuel' }
+                        ].map(freq => (
+                            <button
+                                key={freq.id}
+                                onClick={() => onChange({ gardeningFrequency: freq.id })}
+                                className={`p-4 rounded-[12px] border text-center transition-all ${
+                                    data.gardeningFrequency === freq.id
+                                        ? 'border-black border-[2px] bg-neutral-50'
+                                        : 'border-neutral-200 hover:border-black bg-white'
+                                }`}
+                            >
+                                <span className="text-[15px] font-semibold">{t({ en: freq.label, fr: freq.fr })}</span>
+                            </button>
+                        ))}
+                    </div>
+                </div>
+
+                <div className="space-y-4">
+                    <h3 className="font-medium text-[20px] text-black">{t({ en: 'Maintenance Checklist', fr: 'Checklist d\'entretien' })}</h3>
+                    <div className="space-y-2">
+                        {(data.checklist || ['']).map((item, idx) => (
+                            <div key={idx} className="group flex items-center gap-3">
+                                <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 transition-all ${item.trim() !== '' ? 'bg-[#00CA52] border-[#00CA52]' : 'border-neutral-200'}`}>
+                                    {item.trim() !== '' && <Check size={12} className="text-white" strokeWidth={3} />}
+                                </div>
+                                <input
+                                    type="text"
+                                    value={item}
+                                    onChange={(e) => {
+                                        const next = [...(data.checklist || [''])];
+                                        next[idx] = e.target.value;
+                                        onChange({ checklist: next });
+                                    }}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter' && item.trim() !== '') {
+                                            onChange({ checklist: [...(data.checklist || []), ''] });
+                                        }
+                                    }}
+                                    placeholder={t({ en: 'e.g., Water the roses...', fr: 'ex: Arroser les roses...' })}
+                                    className="flex-1 py-2 bg-transparent border-none focus:ring-0 text-[18px] text-black placeholder:text-neutral-300"
+                                />
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
+                <div className="space-y-4">
+                    <h3 className="font-medium text-[20px] text-black">{t({ en: 'Reference Photos', fr: 'Photos de Référence' })}</h3>
+                    <div className="grid grid-cols-3 gap-4">
+                        {(data.referencePhotos || []).map((url, i) => (
+                            <div key={url} className="relative aspect-square rounded-2xl overflow-hidden border border-neutral-100 shadow-sm">
+                                <img src={url} alt="Reference" className="w-full h-full object-cover" />
+                                <button
+                                    onClick={() => onChange({ referencePhotos: data.referencePhotos.filter((_, idx) => idx !== i) })}
+                                    className="absolute top-2 right-2 w-7 h-7 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-sm"
+                                >
+                                    <X size={14} className="text-black" />
+                                </button>
+                            </div>
+                        ))}
+                        <button
+                            onClick={() => photoInputRef.current?.click()}
+                            className="aspect-square rounded-2xl border-2 border-dashed border-neutral-200 flex flex-col items-center justify-center gap-2 hover:border-black hover:bg-neutral-50 transition-all text-neutral-400 hover:text-black"
+                        >
+                            {isUploading ? (
+                                <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1, ease: "linear" }}>
+                                    <Plus size={24} />
+                                </motion.div>
+                            ) : (
+                                <>
+                                    <Plus size={24} />
+                                    <span className="text-[12px] font-medium uppercase tracking-wider">{t({ en: 'Add', fr: 'Ajouter' })}</span>
+                                </>
+                            )}
+                        </button>
+                    </div>
+                    <input type="file" multiple hidden ref={photoInputRef} onChange={handlePhotoUpload} accept="image/*" />
+                </div>
+            </div>
+        </div>
+    );
+};
+
+const PoolDetailForm = ({ data, onChange, onUploadingChange }) => {
+    const { t } = useTranslation();
+    const photoInputRef = useRef<HTMLInputElement>(null);
+    const [isUploading, setIsUploading] = useState(false);
+
+    const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const files = Array.from(e.target.files || []);
+        if (files.length === 0) return;
+        setIsUploading(true);
+        onUploadingChange?.(true);
+        try {
+            const uploadPromises = files.map(async (file) => {
+                return new Promise<string>((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onloadend = async () => {
+                        try {
+                            const url = await uploadToCloudinary(
+                                reader.result as string,
+                                `lbricol/properties/pool`,
+                                'lbricol_portfolio'
+                            );
+                            resolve(url);
+                        } catch (err) {
+                            reject(err);
+                        }
+                    };
+                    reader.readAsDataURL(file);
+                });
+            });
+            const urls = await Promise.all(uploadPromises);
+            onChange({ referencePhotos: [...(data.referencePhotos || []), ...urls] });
+        } catch (error) {
+            console.error('Error uploading photos:', error);
+        } finally {
+            setIsUploading(false);
+            onUploadingChange?.(false);
+        }
+    };
+
+    return (
+        <div className="flex-1 overflow-y-auto pb-32">
+            <h2 className="font-medium text-[32px] text-black leading-tight tracking-tight mb-8">
+                {t({ en: 'Pool Details', fr: 'Détails de la Piscine' })}
+            </h2>
+
+            <div className="space-y-12">
+                <div className="space-y-4">
+                    <h3 className="font-medium text-[20px] text-black">{t({ en: 'Water System', fr: 'Système d\'eau' })}</h3>
+                    <div className="grid grid-cols-2 gap-4">
+                        {[
+                            { id: 'chlorine', label: 'Chlorine', fr: 'Chlore' },
+                            { id: 'saltwater', label: 'Saltwater', fr: 'Au sel' }
+                        ].map(system => (
+                            <button
+                                key={system.id}
+                                onClick={() => onChange({ poolWaterType: system.id })}
+                                className={`p-5 rounded-[12px] border text-center transition-all ${
+                                    data.poolWaterType === system.id
+                                        ? 'border-black border-[2px] bg-neutral-50'
+                                        : 'border-neutral-200 hover:border-black bg-white'
+                                }`}
+                            >
+                                <span className="text-[17px] font-medium">{t({ en: system.label, fr: system.fr })}</span>
+                            </button>
+                        ))}
+                    </div>
+                </div>
+
+                <div className="space-y-4 p-6 rounded-[15px] border border-neutral-100 bg-neutral-50/50">
+                    <CounterRow
+                        label={t({ en: 'Average Depth (m)', fr: 'Profondeur moyenne (m)' })}
+                        value={data.poolDepth || 1.5}
+                        onChange={(val) => onChange({ poolDepth: val })}
+                        min={0.5}
+                    />
+                </div>
+
+                <div className="space-y-4">
+                    <h3 className="font-medium text-[20px] text-black">{t({ en: 'Reference Photos', fr: 'Photos de Référence' })}</h3>
+                    <div className="grid grid-cols-3 gap-4">
+                        {(data.referencePhotos || []).map((url, i) => (
+                            <div key={url} className="relative aspect-square rounded-2xl overflow-hidden border border-neutral-100 shadow-sm">
+                                <img src={url} alt="Reference" className="w-full h-full object-cover" />
+                                <button
+                                    onClick={() => onChange({ referencePhotos: data.referencePhotos.filter((_, idx) => idx !== i) })}
+                                    className="absolute top-2 right-2 w-7 h-7 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-sm"
+                                >
+                                    <X size={14} className="text-black" />
+                                </button>
+                            </div>
+                        ))}
+                        <button
+                            onClick={() => photoInputRef.current?.click()}
+                            className="aspect-square rounded-2xl border-2 border-dashed border-neutral-200 flex flex-col items-center justify-center gap-2 hover:border-black hover:bg-neutral-50 transition-all text-neutral-400 hover:text-black"
+                        >
+                            {isUploading ? (
+                                <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1, ease: "linear" }}>
+                                    <Plus size={24} />
+                                </motion.div>
+                            ) : (
+                                <>
+                                    <Plus size={24} />
+                                    <span className="text-[12px] font-medium uppercase tracking-wider">{t({ en: 'Add', fr: 'Ajouter' })}</span>
+                                </>
+                            )}
+                        </button>
+                    </div>
+                    <input type="file" multiple hidden ref={photoInputRef} onChange={handlePhotoUpload} accept="image/*" />
+                </div>
+            </div>
+        </div>
+    );
+};
+
+const ReceptionistDetailForm = ({ data, onChange }) => {
+    const { t } = useTranslation();
+
+    return (
+        <div className="flex-1 overflow-y-auto pb-32">
+            <h2 className="font-medium text-[32px] text-black leading-tight tracking-tight mb-8">
+                {t({ en: 'Guest Receptionist', fr: 'Accueil des Voyageurs' })}
+            </h2>
+
+            <div className="space-y-12">
+                <div className="space-y-4">
+                    <h3 className="font-medium text-[20px] text-black">{t({ en: 'Check-in Method', fr: 'Méthode d\'arrivée' })}</h3>
+                    <div className="grid grid-cols-1 gap-3">
+                        {[
+                            { id: 'in_person', label: 'Meet & Greet (In person)', fr: 'Accueil en personne' },
+                            { id: 'lockbox', label: 'Self Check-in (Lockbox)', fr: 'Arrivée autonome (Boîte à clés)' },
+                            { id: 'smart_lock', label: 'Smart Lock', fr: 'Serrure connectée' }
+                        ].map(item => (
+                            <button
+                                key={item.id}
+                                onClick={() => onChange({ checkInMethod: item.id })}
+                                className={`w-full flex items-center justify-between p-5 rounded-[12px] border transition-all ${
+                                    data.checkInMethod === item.id
+                                        ? 'border-black border-[2px] bg-neutral-50'
+                                        : 'border-neutral-200 hover:border-black bg-white shadow-sm'
+                                }`}
+                            >
+                                <span className="text-[17px] font-medium text-black">{t({ en: item.label, fr: item.fr })}</span>
+                                {data.checkInMethod === item.id && <Check size={20} className="text-black" strokeWidth={2.5} />}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+
+                <div className="space-y-4">
+                    <h3 className="font-medium text-[20px] text-black">{t({ en: 'Welcome Tasks', fr: 'Tâches d\'accueil' })}</h3>
+                    <div className="space-y-2">
+                        {(data.checklist || ['']).map((item, idx) => (
+                            <div key={idx} className="group flex items-center gap-3">
+                                <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 transition-all ${item.trim() !== '' ? 'bg-[#00CA52] border-[#00CA52]' : 'border-neutral-200'}`}>
+                                    {item.trim() !== '' && <Check size={12} className="text-white" strokeWidth={3} />}
+                                </div>
+                                <input
+                                    type="text"
+                                    value={item}
+                                    onChange={(e) => {
+                                        const next = [...(data.checklist || [''])];
+                                        next[idx] = e.target.value;
+                                        onChange({ checklist: next });
+                                    }}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter' && item.trim() !== '') {
+                                            onChange({ checklist: [...(data.checklist || []), ''] });
+                                        }
+                                    }}
+                                    placeholder={t({ en: 'e.g., Show how WiFi works...', fr: 'ex: Expliquer le WiFi...' })}
+                                    className="flex-1 py-2 bg-transparent border-none focus:ring-0 text-[18px] text-black placeholder:text-neutral-300"
+                                />
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
+                <div className="space-y-4">
+                    <h3 className="font-medium text-[20px] text-black">{t({ en: 'Guest Support', fr: 'Support Voyageur' })}</h3>
+                    <div className="space-y-4">
+                        <div className="flex items-center justify-between p-5 rounded-[12px] border border-neutral-200 bg-white shadow-sm">
+                            <span className="text-[17px] font-medium">{t({ en: '24/7 Phone support', fr: 'Support téléphonique 24/7' })}</span>
+                            <button
+                                onClick={() => onChange({ phoneSupport: !data.phoneSupport })}
+                                className={`w-12 h-6 rounded-full transition-colors relative ${data.phoneSupport ? 'bg-black' : 'bg-neutral-200'}`}
+                            >
+                                <div className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform ${data.phoneSupport ? 'translate-x-6' : ''}`} />
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+const PetsDetailForm = ({ data, onChange }) => {
+    const { t } = useTranslation();
+
+    return (
+        <div className="flex-1 overflow-y-auto pb-32">
+            <h2 className="font-medium text-[32px] text-black leading-tight tracking-tight mb-8">
+                {t({ en: 'Pets Care', fr: 'Soins des Animaux' })}
+            </h2>
+
+            <div className="space-y-12">
+                <div className="space-y-4">
+                    <h3 className="font-medium text-[20px] text-black">{t({ en: 'What type of pets need care?', fr: 'Quel type d\'animaux a besoin de soins ?' })}</h3>
+                    <div className="flex flex-wrap gap-3">
+                        {[
+                            { id: 'dog', label: 'Dog', fr: 'Chien', emoji: '🐶' },
+                            { id: 'cat', label: 'Cat', fr: 'Chat', emoji: '🐱' },
+                            { id: 'guard_dog', label: 'Guard Dog', fr: 'Chien de garde', emoji: '🐕' },
+                            { id: 'bird', label: 'Bird', fr: 'Oiseau', emoji: '🦜' },
+                            { id: 'other', label: 'Other', fr: 'Autre', emoji: '🐾' }
+                        ].map(item => (
+                            <button
+                                key={item.id}
+                                onClick={() => {
+                                    const current = data.petTypes || [];
+                                    const next = current.includes(item.id) ? current.filter(id => id !== item.id) : [...current, item.id];
+                                    onChange({ petTypes: next });
+                                }}
+                                className={`flex items-center gap-2 px-4 py-2 rounded-full border transition-all text-[14px] font-semibold ${
+                                    (data.petTypes || []).includes(item.id)
+                                        ? 'bg-neutral-50 text-black border-black border-2'
+                                        : 'bg-white text-black border-neutral-200 hover:border-black'
+                                }`}
+                            >
+                                <span>{item.emoji}</span>
+                                <span>{t({ en: item.label, fr: item.fr })}</span>
+                            </button>
+                        ))}
+                    </div>
+                </div>
+
+                <div className="p-8 rounded-2xl border border-neutral-200 bg-white shadow-sm space-y-6">
+                    <h3 className="font-medium text-[20px] text-black">
+                        {t({ en: 'Feeding Schedule', fr: 'Planning des repas' })}
+                    </h3>
+                    <div className="grid grid-cols-3 gap-3">
+                        {[
+                            { id: 'once', label: 'Once / Day', fr: '1 fois / jour' },
+                            { id: 'twice', label: 'Twice / Day', fr: '2 fois / jour' },
+                            { id: 'three', label: '3 times / Day', fr: '3 fois / jour' }
+                        ].map(freq => (
+                            <button
+                                key={freq.id}
+                                onClick={() => onChange({ feedingFrequency: freq.id })}
+                                className={`p-4 rounded-[10px] border text-center transition-all ${
+                                    data.feedingFrequency === freq.id
+                                        ? 'border-black border-[3.5px] bg-neutral-50'
+                                        : 'border-neutral-200 text-black hover:border-black'
+                                }`}
+                            >
+                                <span className="text-[14px] font-medium">{t({ en: freq.label, fr: freq.fr })}</span>
+                            </button>
+                        ))}
+                    </div>
+                </div>
+
+                <div className="p-8 rounded-2xl border border-neutral-200 bg-white shadow-sm space-y-6">
+                    <h3 className="font-medium text-[20px] text-black">
+                        {t({ en: 'Daily Activities & Care', fr: 'Activités et soins quotidiens' })}
+                    </h3>
+
+                    <div className="flex items-start justify-between py-4 border-b border-neutral-50 gap-4">
+                        <div className="flex flex-col gap-1 flex-1">
+                            <span className="text-[17px] font-medium text-black leading-tight">{t({ en: 'Walking needed?', fr: 'Promenades nécessaires ?' })}</span>
+                            <span className="text-[14px] text-neutral-500">{t({ en: 'For dogs and active pets', fr: 'Pour les chiens et animaux actifs' })}</span>
+                        </div>
+                        <button
+                            onClick={() => onChange({ walkingNeeded: !data.walkingNeeded })}
+                            className={`w-14 h-8 rounded-full transition-all flex items-center px-1 shrink-0 ${data.walkingNeeded ? 'bg-black' : 'bg-neutral-200'}`}
+                        >
+                            <div className={`w-6 h-6 rounded-full bg-white shadow-sm transition-all ${data.walkingNeeded ? 'translate-x-6' : 'translate-x-0'}`} />
+                        </button>
+                    </div>
+
+                    <div className="flex items-start justify-between py-4 gap-4">
+                        <div className="flex flex-col gap-1 flex-1">
+                            <span className="text-[17px] font-medium text-black leading-tight">{t({ en: 'Medication required?', fr: 'Médicaments requis ?' })}</span>
+                            <span className="text-[14px] text-neutral-500">{t({ en: 'If the animal has a treatment', fr: 'Si l\'animal suit un traitement' })}</span>
+                        </div>
+                        <button
+                            onClick={() => onChange({ medicationRequired: !data.medicationRequired })}
+                            className={`w-14 h-8 rounded-full transition-all flex items-center px-1 shrink-0 ${data.medicationRequired ? 'bg-black' : 'bg-neutral-200'}`}
+                        >
+                            <div className={`w-6 h-6 rounded-full bg-white shadow-sm transition-all ${data.medicationRequired ? 'translate-x-6' : 'translate-x-0'}`} />
+                        </button>
+                    </div>
+                </div>
+
+                <div className="space-y-6">
+                    <div>
+                        <label className="text-[18px] font-medium text-black mb-3 block">{t({ en: 'Care instructions & personality', fr: 'Instructions et personnalité' })}</label>
+                        <textarea
+                            value={data.instructions || ''}
+                            onChange={(e) => onChange({ instructions: e.target.value })}
+                            placeholder={t({ en: 'e.g. Food is in the garage, Friendly but scared of cats, Loves playing catch...', fr: 'ex: La nourriture est dans le garage, Amical mais a peur des chats, Adore jouer...' })}
+                            className="w-full p-5 rounded-[10px] bg-[#F7F7F7] border-none focus:ring-2 focus:ring-black focus:border-black text-[16px] min-h-[140px] resize-none transition-all placeholder:text-neutral-400"
+                        />
+                    </div>
+
+                    <div>
+                        <label className="text-[18px] font-medium text-black mb-3 block">{t({ en: 'Emergency Contact / Vet', fr: 'Contact d\'urgence / Vétérinaire' })}</label>
+                        <input
+                            type="text"
+                            value={data.emergencyContact || ''}
+                            onChange={(e) => onChange({ emergencyContact: e.target.value })}
+                            placeholder={t({ en: 'Name and phone number...', fr: 'Nom et numéro de téléphone...' })}
+                            className="w-full p-5 rounded-[10px] bg-[#F7F7F7] border-none focus:ring-2 focus:ring-black focus:border-black text-[16px] transition-all placeholder:text-neutral-400"
+                        />
+                    </div>
+                </div>
+
+                <div className="space-y-4">
+                    <h3 className="font-medium text-[20px] text-black">{t({ en: 'Daily Checklist', fr: 'Checklist quotidienne' })}</h3>
+                    <div className="space-y-2">
+                        {(data.checklist || ['']).map((item, idx) => (
+                            <div key={idx} className="group flex items-center gap-3">
+                                <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 transition-all ${item.trim() !== '' ? 'bg-[#00CA52] border-[#00CA52]' : 'border-neutral-200'}`}>
+                                    {item.trim() !== '' && <Check size={12} className="text-white" strokeWidth={3} />}
+                                </div>
+                                <input
+                                    type="text"
+                                    value={item}
+                                    onChange={(e) => {
+                                        const next = [...(data.checklist || [''])];
+                                        next[idx] = e.target.value;
+                                        onChange({ checklist: next });
+                                    }}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter' && item.trim() !== '') {
+                                            onChange({ checklist: [...(data.checklist || []), ''] });
+                                        }
+                                    }}
+                                    placeholder={t({ en: 'e.g., Clean the litter box...', fr: 'ex: Nettoyer la litière...' })}
+                                    className="flex-1 py-2 bg-transparent border-none focus:ring-0 text-[18px] text-black placeholder:text-neutral-300"
+                                />
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+const ErrandsDetailForm = ({ data, onChange }) => {
+    const { t } = useTranslation();
+    const [editingBrand, setEditingBrand] = useState<{ cat: string, idx: number } | null>(null);
+
+    const categories = [
+        { id: 'toiletries', label: 'Toiletries', fr: 'Articles de toilette', emoji: '🧻' },
+        { id: 'cleaning', label: 'Cleaning Products', fr: 'Produits d\'entretien', emoji: '🧹' },
+        { id: 'pantry', label: 'Pantry & Breakfast', fr: 'Garde-manger & Petit-déj', emoji: '☕' },
+        { id: 'linens', label: 'Linens & Towels', fr: 'Linge & Serviettes', emoji: '🛏️' }
+    ];
+
+    const toggleCategory = (id: string) => {
+        const current = data.categories || [];
+        const next = current.includes(id) ? current.filter(c => c !== id) : [...current, id];
+        onChange({ categories: next });
+    };
+
+    const updateChecklist = (catId: string, newList: any[]) => {
+        const currentChecklists = data.checklists || {};
+        onChange({ checklists: { ...currentChecklists, [catId]: newList } });
+    };
+
+    return (
+        <div className="flex-1 overflow-y-auto pb-32">
+            <h2 className="font-medium text-[36px] text-black leading-tight tracking-tight mb-8">
+                {t({ en: 'What needs restocking?', fr: 'Que faut-il réapprovisionner ?' })}
+            </h2>
+
+            <div className="space-y-12">
+                <div className="space-y-4">
+                    <h3 className="font-medium text-[17px] text-black">
+                        {t({ en: 'Select categories', fr: 'Sélectionnez les catégories' })}
+                    </h3>
+                    <div className="grid grid-cols-2 gap-3">
+                        {categories.map((category) => {
+                            const isSelected = (data.categories || []).includes(category.id);
+                            return (
+                                <button
+                                    key={category.id}
+                                    onClick={() => toggleCategory(category.id)}
+                                    className={`flex flex-col items-start justify-between p-6 rounded-[10px] border transition-all h-[150px] text-left ${
+                                        isSelected
+                                            ? 'border-black border-[2px] bg-neutral-50'
+                                            : 'border-neutral-200 hover:border-black bg-white shadow-sm'
+                                    }`}
+                                >
+                                    <span className="text-[32px] shrink-0">{category.emoji}</span>
+                                    <span className="text-[16px] font-medium leading-tight text-black">
+                                        {t({ en: category.label, fr: category.fr })}
+                                    </span>
+                                </button>
+                            );
+                        })}
+                    </div>
+                </div>
+
+                {(data.categories || []).length > 0 && (
+                    <div className="space-y-10">
+                        {(data.categories || []).map(categoryId => {
+                            const catMeta = categories.find(c => c.id === categoryId);
+                            const list = (data.checklists && data.checklists[categoryId]) || [{ name: '', quantity: 1 }];
+
+                            return (
+                                <div key={categoryId} className="space-y-4">
+                                    <h3 className="font-medium text-[18px] text-black flex items-center gap-2">
+                                        <span>{catMeta?.emoji}</span>
+                                        {t({ en: `${catMeta?.label} Items`, fr: `Articles pour ${catMeta?.fr}` })}
+                                    </h3>
+                                    <div className="flex flex-col gap-4">
+                                        {list.map((item, idx) => (
+                                            <div key={idx} className="border border-neutral-200 p-5 rounded-[15px] bg-white shadow-sm space-y-4">
+                                                <div className="flex justify-between items-start gap-4">
+                                                    <div className="flex flex-col gap-3 flex-1">
+                                                        <input
+                                                            type="text"
+                                                            value={item.name}
+                                                            onChange={(e) => {
+                                                                const newList = [...list];
+                                                                newList[idx].name = e.target.value;
+                                                                updateChecklist(categoryId, newList);
+                                                            }}
+                                                            placeholder={t({ en: 'Item name...', fr: 'Nom de l\'article...' })}
+                                                            className="w-full bg-transparent border-none p-0 focus:ring-0 text-[16px] text-black font-medium placeholder:text-neutral-300"
+                                                        />
+                                                        <div className="flex flex-wrap gap-2">
+                                                            {(item.brands || []).map(brand => (
+                                                                <span key={brand} className="inline-flex items-center gap-1 px-3 py-1 bg-[#F7F7F7] text-neutral-600 rounded-lg text-[13px] font-medium border border-neutral-200">
+                                                                    {brand}
+                                                                    <button 
+                                                                        onClick={() => {
+                                                                            const newList = [...list];
+                                                                            newList[idx].brands = item.brands.filter(b => b !== brand);
+                                                                            updateChecklist(categoryId, newList);
+                                                                        }}
+                                                                        className="ml-1 text-neutral-400 hover:text-black"
+                                                                    >
+                                                                        <X size={12} />
+                                                                    </button>
+                                                                </span>
+                                                            ))}
+                                                            {editingBrand?.cat === categoryId && editingBrand?.idx === idx ? (
+                                                                <input
+                                                                    autoFocus
+                                                                    type="text"
+                                                                    className="px-3 py-1 bg-white border border-black rounded-lg text-[13px] font-medium w-[150px] focus:outline-none focus:ring-0"
+                                                                    onKeyDown={(e) => {
+                                                                        if (e.key === 'Enter') {
+                                                                            const val = e.currentTarget.value.trim();
+                                                                            if (val) {
+                                                                                const newList = [...list];
+                                                                                newList[idx].brands = [...(item.brands || []), val];
+                                                                                updateChecklist(categoryId, newList);
+                                                                            }
+                                                                            setEditingBrand(null);
+                                                                        } else if (e.key === 'Escape') setEditingBrand(null);
+                                                                    }}
+                                                                    onBlur={(e) => {
+                                                                        const val = e.target.value.trim();
+                                                                        if (val) {
+                                                                            const newList = [...list];
+                                                                            newList[idx].brands = [...(item.brands || []), val];
+                                                                            updateChecklist(categoryId, newList);
+                                                                        }
+                                                                        setEditingBrand(null);
+                                                                    }}
+                                                                />
+                                                            ) : (
+                                                                <button
+                                                                    onClick={() => setEditingBrand({ cat: categoryId, idx })}
+                                                                    className="inline-flex items-center gap-1 px-3 py-1 text-neutral-400 hover:bg-neutral-50 rounded-lg text-[13px] font-medium border border-dashed border-neutral-300 transition-colors"
+                                                                >
+                                                                    <Plus size={12} />
+                                                                    {t({ en: 'Add brand', fr: 'Marque préférée' })}
+                                                                </button>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                    <button 
+                                                        onClick={() => updateChecklist(categoryId, list.filter((_, i) => i !== idx))}
+                                                        className="p-2 text-neutral-300 hover:text-red-500 transition-colors"
+                                                    >
+                                                        <X size={20} />
+                                                    </button>
+                                                </div>
+
+                                                <div className="flex items-center justify-between pt-4 border-t border-neutral-50">
+                                                    <span className="text-[15px] font-light text-black">{t({ en: 'Quantity', fr: 'Quantité' })}</span>
+                                                    <div className="flex items-center gap-4">
+                                                        <button
+                                                            onClick={() => {
+                                                                const newList = [...list];
+                                                                newList[idx].quantity = Math.max(1, item.quantity - 1);
+                                                                updateChecklist(categoryId, newList);
+                                                            }}
+                                                            className="w-8 h-8 rounded-full bg-[#F7F7F7] flex items-center justify-center active:scale-90 transition-all text-black disabled:opacity-20"
+                                                            disabled={item.quantity <= 1}
+                                                        >
+                                                            <div className="w-3 h-[1.5px] bg-black opacity-60" />
+                                                        </button>
+                                                        <span className="text-[17px] font-light w-6 text-center tabular-nums">{item.quantity}</span>
+                                                        <button
+                                                            onClick={() => {
+                                                                const newList = [...list];
+                                                                newList[idx].quantity = item.quantity + 1;
+                                                                updateChecklist(categoryId, newList);
+                                                            }}
+                                                            className="w-8 h-8 rounded-full bg-[#F7F7F7] flex items-center justify-center active:scale-90 transition-all text-black"
+                                                        >
+                                                            <Plus size={12} />
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                        <button
+                                            onClick={() => updateChecklist(categoryId, [...list, { name: '', quantity: 1 }])}
+                                            className="mt-2 inline-flex items-center gap-2 text-[14px] text-neutral-500 hover:text-black font-medium transition-colors"
+                                        >
+                                            <span className="w-6 h-6 rounded-full border border-dashed border-neutral-300 flex items-center justify-center">
+                                                <Plus size={12} />
+                                            </span>
+                                            {t({ en: 'Add item', fr: 'Ajouter un article' })}
+                                        </button>
+                                    </div>
+                                </div>
+                            );
+                        })}
+
+                        <div className="space-y-4">
+                            <div className="flex flex-col gap-1">
+                                <span className="text-[17px] font-medium text-black">
+                                    {t({ en: 'Where do you store your supplies?', fr: 'Où stockez-vous vos fournitures ?' })}
+                                </span>
+                                <span className="text-[14px] text-neutral-400 font-medium">
+                                    {t({ en: 'Help the Bricoleur find and restock items in the right place.', fr: 'Aidez le Bricoleur à trouver et ranger les articles au bon endroit.' })}
+                                </span>
+                            </div>
+                            <textarea
+                                value={data.storageLocation || ''}
+                                onChange={(e) => onChange({ storageLocation: e.target.value })}
+                                rows={4}
+                                placeholder={t({
+                                    en: 'ex. Toiletries in the cabinet under the sink...',
+                                    fr: 'ex. Articles de toilette dans le meuble sous l\'évier...'
+                                })}
+                                className="w-full resize-none bg-white rounded-[10px] px-6 py-5 text-[16px] text-black border border-neutral-200 focus:ring-1 focus:ring-black focus:border-black transition-all"
+                            />
+                        </div>
+
+                        <div className="p-6 rounded-[15px] border border-neutral-100 bg-neutral-50/50 flex items-center justify-between">
+                            <div className="flex flex-col gap-1">
+                                <span className="text-[17px] font-medium text-black">{t({ en: 'Restocking Frequency', fr: 'Fréquence' })}</span>
+                                <span className="text-[14px] text-neutral-500">{t({ en: 'When should we restock?', fr: 'Quand devons-nous réapprovisionner ?' })}</span>
+                            </div>
+                            <select
+                                value={data.frequency || 'post_checkout'}
+                                onChange={(e) => onChange({ frequency: e.target.value })}
+                                className="bg-white border border-neutral-200 rounded-lg px-3 py-2 text-[14px] font-medium focus:ring-1 focus:ring-black"
+                            >
+                                <option value="post_checkout">{t({ en: 'After each checkout', fr: 'Après chaque départ' })}</option>
+                                <option value="weekly">{t({ en: 'Weekly', fr: 'Hebdomadaire' })}</option>
+                                <option value="monthly">{t({ en: 'Monthly', fr: 'Mensuel' })}</option>
+                            </select>
+                        </div>
+                    </div>
+                )}
+            </div>
+
+            {/* Questions/FAQ Sheet */}
+            <AnimatePresence>
+                {isQuestionsOpen && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-[20000] bg-black/60 backdrop-blur-sm flex items-end justify-center"
+                        onClick={() => setIsQuestionsOpen(false)}
+                    >
+                        <motion.div
+                            initial={{ y: "100%" }}
+                            animate={{ y: 0 }}
+                            exit={{ y: "100%" }}
+                            transition={{ type: "spring", damping: 25, stiffness: 200 }}
+                            className="bg-white w-full max-w-2xl rounded-t-[32px] overflow-hidden flex flex-col max-h-[90vh]"
+                            onClick={e => e.stopPropagation()}
+                        >
+                            {/* Sheet Header */}
+                            <div className="p-6 border-b border-neutral-100 flex items-center justify-between">
+                                <h2 className="text-2xl font-black text-neutral-900">Questions & réponses</h2>
+                                <button
+                                    onClick={() => setIsQuestionsOpen(false)}
+                                    className="p-2 rounded-full bg-neutral-100 text-neutral-500 hover:bg-neutral-200 transition-colors"
+                                >
+                                    <X size={20} />
+                                </button>
+                            </div>
+
+                            {/* Sheet Content */}
+                            <div className="flex-1 overflow-y-auto p-6 space-y-4 no-scrollbar">
+                                {FAQ_SERVICES.map((faq, index) => {
+                                    const isExpanded = expandedFaqIndex === index;
+                                    return (
+                                        <div key={index} className="border-b border-neutral-100 last:border-0">
+                                            <button
+                                                onClick={() => setExpandedFaqIndex(isExpanded ? null : index)}
+                                                className="w-full py-4 flex items-center justify-between text-left group"
+                                            >
+                                                <span className={cn(
+                                                    "text-[17px] font-bold transition-colors",
+                                                    isExpanded ? "text-[#01A083]" : "text-neutral-900 group-hover:text-black"
+                                                )}>
+                                                    {faq.title}
+                                                </span>
+                                                <div className={cn(
+                                                    "p-1 rounded-full transition-all",
+                                                    isExpanded ? "bg-[#E6F6F2] text-[#01A083] rotate-45" : "bg-neutral-50 text-neutral-400"
+                                                )}>
+                                                    <Plus size={18} />
+                                                </div>
+                                            </button>
+                                            <AnimatePresence>
+                                                {isExpanded && (
+                                                    <motion.div
+                                                        initial={{ height: 0, opacity: 0 }}
+                                                        animate={{ height: "auto", opacity: 1 }}
+                                                        exit={{ height: 0, opacity: 0 }}
+                                                        className="overflow-hidden"
+                                                    >
+                                                        <p className="pb-6 text-neutral-600 text-[15px] leading-relaxed font-medium">
+                                                            {faq.content}
+                                                        </p>
+                                                    </motion.div>
+                                                )}
+                                            </AnimatePresence>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+
+                            {/* Footer shadow fade */}
+                            <div className="h-8 bg-gradient-to-t from-white to-transparent shrink-0" />
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+        </div>
+    );
+};
