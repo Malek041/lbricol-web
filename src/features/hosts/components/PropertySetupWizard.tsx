@@ -474,7 +474,7 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
 
     const toggleService = (id: string) => {
         setSelectedServices(prev =>
-            prev.includes(id) ? prev.filter(s => s !== id) : [...prev, id]
+            prev.includes(id) ? prev.filter((s: any) => s !== id) : [...prev, id]
         );
     };
 
@@ -579,7 +579,7 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                 return;
             }
             if (stepIndex === STEPS.length - 1) {
-                const selectedAutomationServices = selectedServices.filter(id => AUTOMATED_SERVICE_IDS.includes(id));
+                const selectedAutomationServices = selectedServices.filter((id: any) => AUTOMATED_SERVICE_IDS.includes(id));
                 if (selectedAutomationServices.length > 0) {
                     setViewMode('service_detail_form');
                     setCurrentDetailServiceId(selectedAutomationServices[0]);
@@ -597,7 +597,7 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
         }
 
         if (viewMode === 'service_detail_form') {
-            const selectedAutomationServices = selectedServices.filter(id => AUTOMATED_SERVICE_IDS.includes(id));
+            const selectedAutomationServices = selectedServices.filter((id: any) => AUTOMATED_SERVICE_IDS.includes(id));
             const currentIndex = selectedAutomationServices.indexOf(currentDetailServiceId!);
 
             if (currentIndex < selectedAutomationServices.length - 1) {
@@ -671,7 +671,7 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                 setViewMode('step1_detail');
             }
         } else if (viewMode === 'team_mode_select') {
-            const selectedAutomationServices = selectedServices.filter(id => AUTOMATED_SERVICE_IDS.includes(id));
+            const selectedAutomationServices = selectedServices.filter((id: any) => AUTOMATED_SERVICE_IDS.includes(id));
             if (selectedAutomationServices.length > 0) {
                 setCurrentDetailServiceId(selectedAutomationServices[selectedAutomationServices.length - 1]);
                 setViewMode('service_detail_form');
@@ -680,7 +680,7 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                 setStepIndex(STEPS.length - 1);
             }
         } else if (viewMode === 'service_detail_form') {
-            const selectedAutomationServices = selectedServices.filter(id => AUTOMATED_SERVICE_IDS.includes(id));
+            const selectedAutomationServices = selectedServices.filter((id: any) => AUTOMATED_SERVICE_IDS.includes(id));
             const currentIndex = selectedAutomationServices.indexOf(currentDetailServiceId!);
 
             if (currentIndex > 0) {
@@ -709,11 +709,11 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
         setIsSubmitting(true);
         try {
             // Final safety filter: remove any temporary blob URLs
-            const finalPhotos = photos.filter(p => p && !p.startsWith('blob:'));
-            const finalCleaningPhotos = cleaningPhotos.filter(p => p && !p.startsWith('blob:'));
-            const finalGardeningPhotos = gardeningPhotos.filter(p => p && !p.startsWith('blob:'));
-            const finalPoolPhotos = poolPhotos.filter(p => p && !p.startsWith('blob:'));
-            const finalGlassCleaningPhotos = glassCleaningPhotos.filter(p => p && !p.startsWith('blob:'));
+            const finalPhotos = photos.filter((p: any) => p && !p.startsWith('blob:'));
+            const finalCleaningPhotos = cleaningPhotos.filter((p: any) => p && !p.startsWith('blob:'));
+            const finalGardeningPhotos = gardeningPhotos.filter((p: any) => p && !p.startsWith('blob:'));
+            const finalPoolPhotos = poolPhotos.filter((p: any) => p && !p.startsWith('blob:'));
+            const finalGlassCleaningPhotos = glassCleaningPhotos.filter((p: any) => p && !p.startsWith('blob:'));
 
             await addDoc(collection(db, 'properties'), {
                 hostId: auth.currentUser.uid,
@@ -742,7 +742,7 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                         subServices: cleaningSubServices,
                         frequencies: cleaningFrequencies,
                         stairsSize: cleaningSubServices.includes('stairs') ? stairsSize : null,
-                        checklist: cleaningChecklist.filter(item => item.trim() !== ''),
+                        checklist: cleaningChecklist.filter((item: any) => item.trim() !== ''),
                         referencePhotos: finalCleaningPhotos
                     } : null,
                     glassCleaningDetails: selectedServices.includes('glass_cleaning') ? {
@@ -755,7 +755,7 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                     receptionDetails: selectedServices.includes('guest_receptionist') ? {
                         checkInMethod: receptionCheckInMethod,
                         phoneSupport: receptionPhoneSupport,
-                        checklist: receptionChecklist.filter(item => item.trim() !== '')
+                        checklist: receptionChecklist.filter((item: any) => item.trim() !== '')
                     } : null,
                     gardeningDetails: selectedServices.includes('gardening') ? {
                         subServices: gardeningSubServices,
@@ -766,7 +766,7 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                         preferredTreeService,
                         isWasteRemovalIncluded,
                         frequencies: gardeningFrequency,
-                        checklist: gardeningChecklist.filter(item => item.trim() !== ''),
+                        checklist: gardeningChecklist.filter((item: any) => item.trim() !== ''),
                         referencePhotos: finalGardeningPhotos
                     } : null,
                     poolDetails: selectedServices.includes('pool_cleaning') ? {
@@ -788,7 +788,7 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                         medicationRequired: petMedicationNeeded,
                         instructions: petInstructions,
                         emergencyContact: petEmergencyContact,
-                        checklist: petChecklist.filter(item => item.trim() !== '')
+                        checklist: petChecklist.filter((item: any) => item.trim() !== '')
                     } : null,
                     errandsDetails: selectedServices.includes('errands') ? {
                         categories: errandsCategories,
@@ -800,7 +800,7 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                     teamManagement: {
                         mode: teamMode,
                         code: propertyCode,
-                        invites: (teamMode === 'own_team' || teamMode === 'both') ? teamInvites.filter(n => n.trim() !== '') : []
+                        invites: (teamMode === 'own_team' || teamMode === 'both') ? teamInvites.filter((n: any) => n.trim() !== '') : []
                     }
                 },
                 createdAt: serverTimestamp(),
@@ -1564,7 +1564,7 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                                                                     onClick={() => {
                                                                         setSelectedAmenities(prev =>
                                                                             prev.includes(amenity.id)
-                                                                                ? prev.filter(id => id !== amenity.id)
+                                                                                ? prev.filter((id: any) => id !== amenity.id)
                                                                                 : [...prev, amenity.id]
                                                                         );
                                                                     }}
@@ -1780,7 +1780,7 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                                             show: { opacity: 1, transition: { staggerChildren: 0.05 } }
                                         }}
                                     >
-                                        {SERVICES_CATALOGUE.filter(c => !c.disabled && ['cleaning', 'gardening', 'glass_cleaning', 'pool_cleaning', 'errands', 'pets_care', 'guest_receptionist'].includes(c.id)).map(category => {
+                                        {SERVICES_CATALOGUE.filter((c: any) => !c.disabled && ['cleaning', 'gardening', 'glass_cleaning', 'pool_cleaning', 'errands', 'pets_care', 'guest_receptionist'].includes(c.id)).map(category => {
                                             const isSelected = selectedServices.includes(category.id);
                                             const Icon = SERVICE_ICONS[category.id] || Sparkles;
                                             return (
@@ -1857,7 +1857,7 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                                         {[
                                             { id: 'airport_pickup', label: 'Airport pickup', labelFr: 'Transfert Aéroport', labelAr: 'نقل من المطار' },
                                             { id: 'guest_receptionist', label: 'Guest Receptionist', labelFr: 'Accueil Voyageurs', labelAr: 'استقبال الضيوف' },
-                                            ...SERVICES_CATALOGUE.filter(c => !c.disabled && ['cooking', 'tour_guide', 'private_driver', 'car_rental', 'learn_arabic', 'babysitting', 'elderly_care'].includes(c.id))
+                                            ...SERVICES_CATALOGUE.filter((c: any) => !c.disabled && ['cooking', 'tour_guide', 'private_driver', 'car_rental', 'learn_arabic', 'babysitting', 'elderly_care'].includes(c.id))
                                         ].map(category => {
                                             const isSelected = selectedServices.includes(category.id);
                                             const Icon = SERVICE_ICONS[category.id] || Sparkles;
@@ -1945,7 +1945,7 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                                             show: { opacity: 1, transition: { staggerChildren: 0.05 } }
                                         }}
                                     >
-                                        {SERVICES_CATALOGUE.filter(c => !c.disabled && ['home_repairs', 'furniture_assembly', 'mounting', 'moving', 'plumbing', 'electricity', 'painting'].includes(c.id)).map(category => {
+                                        {SERVICES_CATALOGUE.filter((c: any) => !c.disabled && ['home_repairs', 'furniture_assembly', 'mounting', 'moving', 'plumbing', 'electricity', 'painting'].includes(c.id)).map(category => {
                                             const isSelected = selectedServices.includes(category.id);
                                             const Icon = SERVICE_ICONS[category.id] || Sparkles;
                                             return (
@@ -2354,7 +2354,7 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                     <div className="flex h-[3px] mb-6">
                         {[0, 1, 2].map((stageIdx) => {
                             let progress = 0;
-                            const selectedAutomationServices = selectedServices.filter(id => AUTOMATED_SERVICE_IDS.includes(id));
+                            const selectedAutomationServices = selectedServices.filter((id: any) => AUTOMATED_SERVICE_IDS.includes(id));
                             const totalAutomationSubsteps = selectedAutomationServices.length;
                             const currentAutoIdx = currentDetailServiceId ? selectedAutomationServices.indexOf(currentDetailServiceId) : -1;
 
@@ -2470,7 +2470,7 @@ const CleaningDetailForm = ({ data, onChange, onUploadingChange }: any) => {
 
     const toggleSubService = (id: string) => {
         const current = data.subServices || [];
-        const next = current.includes(id) ? current.filter(s => s !== id) : [...current, id];
+        const next = current.includes(id) ? current.filter((s: any) => s !== id) : [...current, id];
         onChange({ subServices: next });
     };
 
@@ -2790,7 +2790,7 @@ const GardeningDetailForm = ({ data, onChange, onUploadingChange }: any) => {
 
     const toggleSubService = (id: string) => {
         const current = data.subServices || [];
-        const next = current.includes(id) ? current.filter(s => s !== id) : [...current, id];
+        const next = current.includes(id) ? current.filter((s: any) => s !== id) : [...current, id];
         onChange({ subServices: next });
     };
 
@@ -3187,7 +3187,7 @@ const PetsDetailForm = ({ data, onChange }: any) => {
                                 key={item.id}
                                 onClick={() => {
                                     const current = data.petTypes || [];
-                                    const next = current.includes(item.id) ? current.filter(id => id !== item.id) : [...current, item.id];
+                                    const next = current.includes(item.id) ? current.filter((id: any) => id !== item.id) : [...current, item.id];
                                     onChange({ petTypes: next });
                                 }}
                                 className={`flex items-center gap-2 px-4 py-2 rounded-full border transition-all text-[14px] font-semibold ${
@@ -3329,7 +3329,7 @@ const ErrandsDetailForm = ({ data, onChange }: any) => {
 
     const toggleCategory = (id: string) => {
         const current = data.categories || [];
-        const next = current.includes(id) ? current.filter(c => c !== id) : [...current, id];
+        const next = current.includes(id) ? current.filter((c: any) => c !== id) : [...current, id];
         onChange({ categories: next });
     };
 
@@ -3407,7 +3407,7 @@ const ErrandsDetailForm = ({ data, onChange }: any) => {
                                                                     <button 
                                                                         onClick={() => {
                                                                             const newList = [...list];
-                                                                            newList[idx].brands = item.brands.filter(b => b !== brand);
+                                                                            newList[idx].brands = item.brands.filter((b: any) => b !== brand);
                                                                             updateChecklist(categoryId, newList);
                                                                         }}
                                                                         className="ml-1 text-neutral-400 hover:text-black"
