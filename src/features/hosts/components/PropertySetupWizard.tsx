@@ -2427,7 +2427,7 @@ export default PropertySetupWizard;
 // --- Sub-components for Service Detail Forms ---
 
 const CleaningDetailForm = ({ data, onChange, onUploadingChange }: any) => {
-    const { t } = useTranslation();
+    const { t } = useLanguage();
     const photoInputRef = useRef<HTMLInputElement>(null);
     const [isUploading, setIsUploading] = useState(false);
 
@@ -2610,7 +2610,7 @@ const CleaningDetailForm = ({ data, onChange, onUploadingChange }: any) => {
 };
 
 const GlassCleaningDetailForm = ({ data, onChange, onUploadingChange }: any) => {
-    const { t } = useTranslation();
+    const { t } = useLanguage();
     const photoInputRef = useRef<HTMLInputElement>(null);
     const [isUploading, setIsUploading] = useState(false);
 
@@ -2750,7 +2750,7 @@ const GlassCleaningDetailForm = ({ data, onChange, onUploadingChange }: any) => 
 
 
 const GardeningDetailForm = ({ data, onChange, onUploadingChange }: any) => {
-    const { t } = useTranslation();
+    const { t } = useLanguage();
     const photoInputRef = useRef<HTMLInputElement>(null);
     const [isUploading, setIsUploading] = useState(false);
 
@@ -2968,7 +2968,7 @@ const GardeningDetailForm = ({ data, onChange, onUploadingChange }: any) => {
 };
 
 const PoolDetailForm = ({ data, onChange, onUploadingChange }: any) => {
-    const { t } = useTranslation();
+    const { t } = useLanguage();
     const photoInputRef = useRef<HTMLInputElement>(null);
     const [isUploading, setIsUploading] = useState(false);
 
@@ -3082,7 +3082,7 @@ const PoolDetailForm = ({ data, onChange, onUploadingChange }: any) => {
 };
 
 const ReceptionistDetailForm = ({ data, onChange }: any) => {
-    const { t } = useTranslation();
+    const { t } = useLanguage();
 
     return (
         <div className="flex-1 overflow-y-auto pb-32">
@@ -3164,7 +3164,7 @@ const ReceptionistDetailForm = ({ data, onChange }: any) => {
 };
 
 const PetsDetailForm = ({ data, onChange }: any) => {
-    const { t } = useTranslation();
+    const { t } = useLanguage();
 
     return (
         <div className="flex-1 overflow-y-auto pb-32">
@@ -3317,7 +3317,7 @@ const PetsDetailForm = ({ data, onChange }: any) => {
 };
 
 const ErrandsDetailForm = ({ data, onChange }: any) => {
-    const { t } = useTranslation();
+    const { t } = useLanguage();
     const [editingBrand, setEditingBrand] = useState<{ cat: string, idx: number } | null>(null);
 
     const categories = [
