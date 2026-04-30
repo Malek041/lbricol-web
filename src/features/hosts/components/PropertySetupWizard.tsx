@@ -2426,7 +2426,7 @@ export default PropertySetupWizard;
 
 // --- Sub-components for Service Detail Forms ---
 
-const CleaningDetailForm = ({ data, onChange, onUploadingChange }) => {
+const CleaningDetailForm = ({ data, onChange, onUploadingChange }: any) => {
     const { t } = useTranslation();
     const photoInputRef = useRef<HTMLInputElement>(null);
     const [isUploading, setIsUploading] = useState(false);
@@ -2609,7 +2609,7 @@ const CleaningDetailForm = ({ data, onChange, onUploadingChange }) => {
     );
 };
 
-const GlassCleaningDetailForm = ({ data, onChange, onUploadingChange }) => {
+const GlassCleaningDetailForm = ({ data, onChange, onUploadingChange }: any) => {
     const { t } = useTranslation();
     const photoInputRef = useRef<HTMLInputElement>(null);
     const [isUploading, setIsUploading] = useState(false);
@@ -2749,7 +2749,7 @@ const GlassCleaningDetailForm = ({ data, onChange, onUploadingChange }) => {
 };
 
 
-const GardeningDetailForm = ({ data, onChange, onUploadingChange }) => {
+const GardeningDetailForm = ({ data, onChange, onUploadingChange }: any) => {
     const { t } = useTranslation();
     const photoInputRef = useRef<HTMLInputElement>(null);
     const [isUploading, setIsUploading] = useState(false);
@@ -2967,7 +2967,7 @@ const GardeningDetailForm = ({ data, onChange, onUploadingChange }) => {
     );
 };
 
-const PoolDetailForm = ({ data, onChange, onUploadingChange }) => {
+const PoolDetailForm = ({ data, onChange, onUploadingChange }: any) => {
     const { t } = useTranslation();
     const photoInputRef = useRef<HTMLInputElement>(null);
     const [isUploading, setIsUploading] = useState(false);
@@ -3081,7 +3081,7 @@ const PoolDetailForm = ({ data, onChange, onUploadingChange }) => {
     );
 };
 
-const ReceptionistDetailForm = ({ data, onChange }) => {
+const ReceptionistDetailForm = ({ data, onChange }: any) => {
     const { t } = useTranslation();
 
     return (
@@ -3163,7 +3163,7 @@ const ReceptionistDetailForm = ({ data, onChange }) => {
     );
 };
 
-const PetsDetailForm = ({ data, onChange }) => {
+const PetsDetailForm = ({ data, onChange }: any) => {
     const { t } = useTranslation();
 
     return (
@@ -3316,7 +3316,7 @@ const PetsDetailForm = ({ data, onChange }) => {
     );
 };
 
-const ErrandsDetailForm = ({ data, onChange }) => {
+const ErrandsDetailForm = ({ data, onChange }: any) => {
     const { t } = useTranslation();
     const [editingBrand, setEditingBrand] = useState<{ cat: string, idx: number } | null>(null);
 
