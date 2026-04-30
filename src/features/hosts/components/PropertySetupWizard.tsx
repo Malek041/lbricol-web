@@ -2007,7 +2007,7 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                                         checklist: cleaningChecklist,
                                         referencePhotos: cleaningPhotos
                                     }}
-                                    onChange={(updates) => {
+                                    onChange={(updates: any) => {
                                         if (updates.subServices !== undefined) setCleaningSubServices(updates.subServices);
                                         if (updates.frequencies !== undefined) setCleaningFrequencies(updates.frequencies);
                                         if (updates.stairsSize !== undefined) setStairsSize(updates.stairsSize as any);
@@ -2028,7 +2028,7 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                                         windowsAccessibility,
                                         referencePhotos: glassCleaningPhotos
                                     }}
-                                    onChange={(updates) => {
+                                    onChange={(updates: any) => {
                                         if (updates.windowsCount !== undefined) setWindowsCount(updates.windowsCount);
                                         if (updates.windowsSize !== undefined) setWindowsSize(updates.windowsSize as any);
                                         if (updates.windowsCoverage !== undefined) setWindowsCoverage(updates.windowsCoverage as any);
@@ -2053,7 +2053,7 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                                         checklist: gardeningChecklist,
                                         referencePhotos: gardeningPhotos
                                     }}
-                                    onChange={(updates) => {
+                                    onChange={(updates: any) => {
                                         if (updates.subServices !== undefined) setGardeningSubServices(updates.subServices);
                                         if (updates.gardenSize !== undefined) setGardenSize(updates.gardenSize as any);
                                         if (updates.shouldBringMower !== undefined) setShouldBringMower(updates.shouldBringMower);
@@ -2080,7 +2080,7 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                                         emergencyContact: petEmergencyContact,
                                         checklist: petChecklist
                                     }}
-                                    onChange={(updates) => {
+                                    onChange={(updates: any) => {
                                         if (updates.petTypes !== undefined) setPetTypes(updates.petTypes);
                                         if (updates.feedingFrequency !== undefined) setPetFeedingFrequency(updates.feedingFrequency as any);
                                         if (updates.walkingNeeded !== undefined) setPetWalkingNeeded(updates.walkingNeeded);
@@ -2107,7 +2107,7 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                                         checklist: poolChecklist,
                                         referencePhotos: poolPhotos
                                     }}
-                                    onChange={(updates) => {
+                                    onChange={(updates: any) => {
                                         if (updates.poolType !== undefined) setPoolType(updates.poolType as any);
                                         if (updates.poolWaterType !== undefined) setPoolWaterType(updates.poolWaterType as any);
                                         if (updates.poolSize !== undefined) setPoolSize(updates.poolSize as any);
@@ -2130,7 +2130,7 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                                         phoneSupport: receptionPhoneSupport,
                                         checklist: receptionChecklist
                                     }}
-                                    onChange={(updates) => {
+                                    onChange={(updates: any) => {
                                         if (updates.checkInMethod !== undefined) setReceptionCheckInMethod(updates.checkInMethod);
                                         if (updates.phoneSupport !== undefined) setReceptionPhoneSupport(updates.phoneSupport);
                                         if (updates.checklist !== undefined) setReceptionChecklist(updates.checklist);
@@ -2149,7 +2149,7 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                                         frequency: errandsFrequency,
                                         instructions: errandsInstructions
                                     }}
-                                    onChange={(updates) => {
+                                    onChange={(updates: any) => {
                                         if (updates.categories !== undefined) setErrandsCategories(updates.categories);
                                         if (updates.checklists !== undefined) setErrandsChecklists(updates.checklists);
                                         if (updates.storageLocation !== undefined) setErrandsStorageLocation(updates.storageLocation);
