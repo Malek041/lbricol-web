@@ -6,7 +6,7 @@ import {
     ChevronLeft, MoreHorizontal, Calendar, 
     Clock, User, Shield, CheckCircle2, 
     Plus, Trash2, Info, MapPin, 
-    Bot, Users, ShoppingCart, Sparkles, Star
+    Bot, Users, ShoppingCart, Sparkles, Star, X
 } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
 import { SERVICES_CATALOGUE } from '@/config/services_catalogue';

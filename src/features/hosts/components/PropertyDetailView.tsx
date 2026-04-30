@@ -69,7 +69,7 @@ const PropertyDetailView: React.FC<PropertyDetailViewProps> = ({ property, isOpe
 
     useEffect(() => {
         if (!property?.id || activeTab !== 'team') return;
-        
+
         setIsLoadingTeam(true);
         const q = collection(db, 'properties', property.id, 'team');
         const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -82,7 +82,7 @@ const PropertyDetailView: React.FC<PropertyDetailViewProps> = ({ property, isOpe
         const fetchManaged = async () => {
             try {
                 const bricolersQ = query(
-                    collection(db, 'bricolers'), 
+                    collection(db, 'bricolers'),
                     where('city', '==', property.city || 'Marrakech'),
                     where('isVerified', '==', true),
                     limit(5)
@@ -239,7 +239,7 @@ const PropertyDetailView: React.FC<PropertyDetailViewProps> = ({ property, isOpe
                     <div className="sticky top-0 left-0 right-0 z-[10110] px-4 py-3 flex items-center bg-white border-b border-neutral-100">
                         <button
                             onClick={onClose}
-                            className="w-10 h-10 rounded-full bg-white border border-black flex items-center justify-center active:scale-90 transition-all mr-3"
+                            className="w-10 h-10 rounded-full bg-[#F7F7F7]  flex items-center justify-center active:scale-90 transition-all mr-3"
                         >
                             <ChevronLeft size={24} />
                         </button>
@@ -256,255 +256,255 @@ const PropertyDetailView: React.FC<PropertyDetailViewProps> = ({ property, isOpe
                                 transition={{ duration: 0.3, ease: "easeOut" }}
                                 className="mt-6"
                             >
-                            {/* Image Gallery */}
-                            <div className="relative mx-6 rounded-2xl overflow-hidden shadow-sm">
-                                <div
-                                    className="flex overflow-x-auto snap-x snap-mandatory no-scrollbar aspect-[4/3] bg-neutral-100"
-                                    onScroll={(e) => {
-                                        const container = e.currentTarget;
-                                        const index = Math.round(container.scrollLeft / container.clientWidth);
-                                        setCurrentImageIndex(index);
-                                    }}
-                                >
-                                    {(photos.length > 0 ? photos : ['https://source.unsplash.com/800x600/?apartment,interior', 'https://source.unsplash.com/800x600/?villa,interior', 'https://source.unsplash.com/800x600/?modern,living']).map((photo: string, idx: number) => (
-                                        <div key={idx} className="min-w-full h-full relative snap-center">
-                                            <Image
-                                                src={photo}
-                                                alt={`${name} ${idx + 1}`}
-                                                fill
-                                                className="object-cover"
-                                            />
-                                        </div>
-                                    ))}
-                                </div>
-
-                                {photos.length > 1 && (
-                                    <div className="absolute bottom-4 right-4 bg-black/60 backdrop-blur px-3 py-1 rounded-full text-white text-[12px] font-bold z-10">
-                                        {currentImageIndex + 1} / {photos.length}
+                                {/* Image Gallery */}
+                                <div className="relative mx-6 rounded-2xl overflow-hidden shadow-sm">
+                                    <div
+                                        className="flex overflow-x-auto snap-x snap-mandatory no-scrollbar aspect-[4/3] bg-neutral-100"
+                                        onScroll={(e) => {
+                                            const container = e.currentTarget;
+                                            const index = Math.round(container.scrollLeft / container.clientWidth);
+                                            setCurrentImageIndex(index);
+                                        }}
+                                    >
+                                        {(photos.length > 0 ? photos : ['https://source.unsplash.com/800x600/?apartment,interior', 'https://source.unsplash.com/800x600/?villa,interior', 'https://source.unsplash.com/800x600/?modern,living']).map((photo: string, idx: number) => (
+                                            <div key={idx} className="min-w-full h-full relative snap-center">
+                                                <Image
+                                                    src={photo}
+                                                    alt={`${name} ${idx + 1}`}
+                                                    fill
+                                                    className="object-cover"
+                                                />
+                                            </div>
+                                        ))}
                                     </div>
-                                )}
-                            </div>
 
-                            <div className="px-6 py-8">
-                                {/* Title Section */}
-                                <div className="flex gap-3 mb-2">
-                                    <TranslateIcon size={24} className="shrink-0 mt-1" />
-                                    <h1 className="text-[26px] font-bold text-black leading-[1.2]">
-                                        {name}
-                                    </h1>
-                                </div>
-
-                                {/* Quick Stats */}
-                                <div className="mt-4 space-y-1">
-                                    <div className="flex items-center gap-2 text-[16px] font-bold text-black">
-                                        {TYPE_MAP[type]?.icon && React.createElement(TYPE_MAP[type].icon, { size: 18, className: "shrink-0" })}
-                                        <span>
-                                            {t({
-                                                en: `Entire home: ${TYPE_MAP[type]?.label.en || type}`,
-                                                fr: `Logement entier : ${TYPE_MAP[type]?.label.fr || type}`
-                                            })} - {address.split(',')[0]}
-                                        </span>
-                                    </div>
-                                    <p className="text-[14px] text-neutral-500 font-medium">
-                                        {guests} voyageurs · {bedrooms} chambre · {beds} lit · {bathrooms} salle de bain
-                                        {specs.floor !== undefined && ` · Étage ${specs.floor}`}
-                                        {specs.apartmentNumber && ` · N° ${specs.apartmentNumber}`}
-                                    </p>
-                                    {/* Description */}
-                                    {property.description && (
-                                        <div className="mt-10">
-                                            <p className="text-[16px] text-neutral-800 leading-relaxed line-clamp-6">
-                                                {property.description}
-                                            </p>
-                                            <button className="mt-4 flex items-center gap-1 font-bold underline text-[16px]">
-                                                Lire la suite <ChevronRight size={16} />
-                                            </button>
+                                    {photos.length > 1 && (
+                                        <div className="absolute bottom-4 right-4 bg-black/60 backdrop-blur px-3 py-1 rounded-full text-white text-[12px] font-bold z-10">
+                                            {currentImageIndex + 1} / {photos.length}
                                         </div>
                                     )}
                                 </div>
 
-                                {/* Where You'll Sleep Section */}
-                                <div className="mt-12">
-                                    <h2 className="text-[22px] font-bold mb-6">Où vous dormirez</h2>
-                                    <div className="flex gap-4 overflow-x-auto pb-4 no-scrollbar">
-                                        <div className="min-w-[200px] flex-shrink-0">
-                                            <div className="aspect-[4/3] rounded-xl overflow-hidden relative mb-3 bg-neutral-100 border border-neutral-100">
-                                                <Image src={photos[0] || '/Images/placeholder-property.jpg'} fill className="object-cover" alt="" />
-                                            </div>
-                                            <h4 className="font-bold text-[16px]">{t({ en: 'Bedroom', fr: 'Chambre' })}</h4>
-                                            <p className="text-[14px] text-neutral-500">{beds} {t({ en: 'beds', fr: 'lits' })}</p>
+                                <div className="px-6 py-8">
+                                    {/* Title Section */}
+                                    <div className="flex gap-3 mb-2">
+                                        <TranslateIcon size={24} className="shrink-0 mt-1" />
+                                        <h1 className="text-[26px] font-bold text-black leading-[1.2]">
+                                            {name}
+                                        </h1>
+                                    </div>
+
+                                    {/* Quick Stats */}
+                                    <div className="mt-4 space-y-1">
+                                        <div className="flex items-center gap-2 text-[16px] font-bold text-black">
+                                            {TYPE_MAP[type]?.icon && React.createElement(TYPE_MAP[type].icon, { size: 18, className: "shrink-0" })}
+                                            <span>
+                                                {t({
+                                                    en: `Entire home: ${TYPE_MAP[type]?.label.en || type}`,
+                                                    fr: `Logement entier : ${TYPE_MAP[type]?.label.fr || type}`
+                                                })} - {address.split(',')[0]}
+                                            </span>
                                         </div>
-                                        {photos.length > 1 && (
+                                        <p className="text-[14px] text-neutral-500 font-medium">
+                                            {guests} voyageurs · {bedrooms} chambre · {beds} lit · {bathrooms} salle de bain
+                                            {specs.floor !== undefined && ` · Étage ${specs.floor}`}
+                                            {specs.apartmentNumber && ` · N° ${specs.apartmentNumber}`}
+                                        </p>
+                                        {/* Description */}
+                                        {property.description && (
+                                            <div className="mt-10">
+                                                <p className="text-[16px] text-neutral-800 leading-relaxed line-clamp-6">
+                                                    {property.description}
+                                                </p>
+                                                <button className="mt-4 flex items-center gap-1 font-bold underline text-[16px]">
+                                                    Lire la suite <ChevronRight size={16} />
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Where You'll Sleep Section */}
+                                    <div className="mt-12">
+                                        <h2 className="text-[22px] font-bold mb-6">Où vous dormirez</h2>
+                                        <div className="flex gap-4 overflow-x-auto pb-4 no-scrollbar">
                                             <div className="min-w-[200px] flex-shrink-0">
                                                 <div className="aspect-[4/3] rounded-xl overflow-hidden relative mb-3 bg-neutral-100 border border-neutral-100">
-                                                    <Image src={photos[1] || '/Images/placeholder-property.jpg'} fill className="object-cover" alt="" />
+                                                    <Image src={photos[0] || '/Images/placeholder-property.jpg'} fill className="object-cover" alt="" />
                                                 </div>
-                                                <h4 className="font-bold text-[16px]">{t({ en: 'Living Room', fr: 'Salon' })}</h4>
+                                                <h4 className="font-bold text-[16px]">{t({ en: 'Bedroom', fr: 'Chambre' })}</h4>
+                                                <p className="text-[14px] text-neutral-500">{beds} {t({ en: 'beds', fr: 'lits' })}</p>
                                             </div>
-                                        )}
-                                    </div>
-                                </div>
-
-                                {/* Inclusions Section */}
-                                <div className="mt-12 pt-12 border-t border-neutral-100">
-                                    <h2 className="text-[22px] font-bold mb-6">{t({ en: 'Equipments of this place', fr: 'Équipements du logement' })}</h2>
-                                    <div className="space-y-4">
-                                        {(showAllInclusions ? (specs.amenities || []) : (specs.amenities || []).slice(0, 6)).map((amenityId: string, idx: number) => {
-                                            const amenity = AMENITY_MAP[amenityId];
-                                            if (!amenity) return null;
-                                            const Icon = amenity.icon;
-                                            return (
-                                                <div key={idx} className="flex items-center gap-4 text-neutral-800">
-                                                    <Icon size={24} strokeWidth={1.5} />
-                                                    <span className="text-[16px]">{t(amenity.label)}</span>
+                                            {photos.length > 1 && (
+                                                <div className="min-w-[200px] flex-shrink-0">
+                                                    <div className="aspect-[4/3] rounded-xl overflow-hidden relative mb-3 bg-neutral-100 border border-neutral-100">
+                                                        <Image src={photos[1] || '/Images/placeholder-property.jpg'} fill className="object-cover" alt="" />
+                                                    </div>
+                                                    <h4 className="font-bold text-[16px]">{t({ en: 'Living Room', fr: 'Salon' })}</h4>
                                                 </div>
-                                            );
-                                        })}
-                                    </div>
-                                    {(specs.amenities || []).length > 6 && !showAllInclusions && (
-                                        <button 
-                                            onClick={() => setShowAllInclusions(true)}
-                                            className="mt-8 w-full py-3.5 border border-black rounded-lg font-bold text-[16px] active:scale-[0.98] transition-all"
-                                        >
-                                            {t({ en: `Show all ${(specs.amenities || []).length} equipments`, fr: `Afficher les ${(specs.amenities || []).length} équipements` })}
-                                        </button>
-                                    )}
-                                </div>
-
-                                {/* Automation Services Section */}
-                                {automationServices.length > 0 && (
-                                    <div className="mt-12 pt-12 border-t border-neutral-100">
-                                        <h2 className="text-[22px] font-bold mb-6">{t({ en: 'Automated Activities', fr: 'Activités automatisées' })}</h2>
-                                        <div className="flex flex-wrap gap-3">
-                                            {automationServices.map((svcId: string, idx: number) => {
-                                                const svc = AUTOMATED_SERVICE_MAP[svcId];
-                                                if (!svc) return null;
-                                                const Icon = svc.icon;
-                                                return (
-                                                    <button 
-                                                        key={idx} 
-                                                        onClick={() => {
-                                                            if (svcId === 'cleaning' || svcId === 'gardening' || svcId === 'glass_cleaning' || svcId === 'guest_receptionist' || svcId === 'pool_cleaning' || svcId === 'pets_care' || svcId === 'errands') {
-                                                                setSelectedAutomationDetail(svcId);
-                                                            }
-                                                        }}
-                                                        className="flex items-center gap-2 px-4 py-2 rounded-full border border-black bg-neutral-50 shadow-sm active:scale-95 transition-all cursor-pointer"
-                                                    >
-                                                        <Icon size={18} className="text-black" />
-                                                        <span className="text-[14px] font-semibold text-black">{t(svc.label)}</span>
-                                                    </button>
-                                                );
-                                            })}
+                                            )}
                                         </div>
                                     </div>
-                                )}
 
-                                {/* Guest Services Section */}
-                                {guestServices.length > 0 && (
+                                    {/* Inclusions Section */}
                                     <div className="mt-12 pt-12 border-t border-neutral-100">
-                                        <h2 className="text-[22px] font-bold mb-6">{t({ en: 'Services for your guests', fr: 'Services pour vos voyageurs' })}</h2>
-                                        <div className="flex flex-wrap gap-3">
-                                            {guestServices.map((svcId: string, idx: number) => {
-                                                const svc = GUEST_SERVICE_MAP[svcId];
-                                                if (!svc) return null;
-                                                const Icon = svc.icon;
+                                        <h2 className="text-[22px] font-bold mb-6">{t({ en: 'Equipments of this place', fr: 'Équipements du logement' })}</h2>
+                                        <div className="space-y-4">
+                                            {(showAllInclusions ? (specs.amenities || []) : (specs.amenities || []).slice(0, 6)).map((amenityId: string, idx: number) => {
+                                                const amenity = AMENITY_MAP[amenityId];
+                                                if (!amenity) return null;
+                                                const Icon = amenity.icon;
                                                 return (
-                                                    <div key={idx} className="flex items-center gap-2 px-4 py-2 rounded-full border border-neutral-200 hover:border-black transition-colors">
-                                                        <Icon size={18} className="text-black" />
-                                                        <span className="text-[14px] font-semibold text-black">{t(svc.label)}</span>
+                                                    <div key={idx} className="flex items-center gap-4 text-neutral-800">
+                                                        <Icon size={24} strokeWidth={1.5} />
+                                                        <span className="text-[16px]">{t(amenity.label)}</span>
                                                     </div>
                                                 );
                                             })}
                                         </div>
-                                    </div>
-                                )}
-
-                                {/* Future Services Section */}
-                                {futureServices.length > 0 && (
-                                    <div className="mt-12 pt-12 border-t border-neutral-100">
-                                        <h2 className="text-[22px] font-bold mb-6">{t({ en: 'Other needs', fr: 'Autres besoins' })}</h2>
-                                        <div className="flex flex-wrap gap-3">
-                                            {futureServices.map((svcId: string, idx: number) => {
-                                                const svc = FUTURE_SERVICE_MAP[svcId];
-                                                if (!svc) return null;
-                                                const Icon = svc.icon;
-                                                return (
-                                                    <div key={idx} className="flex items-center gap-2 px-4 py-2 rounded-full border border-neutral-200 hover:border-black transition-colors">
-                                                        <Icon size={18} className="text-black" />
-                                                        <span className="text-[14px] font-semibold text-black">{t(svc.label)}</span>
-                                                    </div>
-                                                );
-                                            })}
-                                        </div>
-                                    </div>
-                                )}
-
-                                {/* Team & Management Section - NEW */}
-                                {propertyCode && (
-                                    <div className="mt-12 pt-12 border-t border-neutral-100">
-                                        <h2 className="text-[22px] font-bold mb-2">{t({ en: 'Team & Management', fr: 'Équipe et gestion' })}</h2>
-                                        <p className="text-neutral-500 text-[14px] mb-6">
-                                            {t({
-                                                en: 'Share this code with your team members to link them to this property.',
-                                                fr: 'Partagez ce code avec les membres de votre équipe pour les lier à ce logement.'
-                                            })}
-                                        </p>
-                                        <div className="flex items-center justify-between p-5 bg-neutral-50 rounded-2xl border border-neutral-100">
-                                            <div className="flex items-center gap-4">
-                                                <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-sm">
-                                                    <QrCode size={20} />
-                                                </div>
-                                                <div className="flex flex-col">
-                                                    <span className="text-[13px] text-neutral-400 font-medium uppercase tracking-wider">{t({ en: 'Invite Code', fr: 'Code d\'invitation' })}</span>
-                                                    <span className="text-[18px] font-bold text-black font-mono">{propertyCode}</span>
-                                                </div>
-                                            </div>
+                                        {(specs.amenities || []).length > 6 && !showAllInclusions && (
                                             <button
-                                                onClick={() => {
-                                                    navigator.clipboard.writeText(propertyCode);
-                                                }}
-                                                className="p-3 bg-white rounded-full border border-neutral-200 active:scale-90 transition-all shadow-sm"
+                                                onClick={() => setShowAllInclusions(true)}
+                                                className="mt-8 w-full py-3.5 border border-black rounded-lg font-bold text-[16px] active:scale-[0.98] transition-all"
                                             >
-                                                <Copy size={20} />
+                                                {t({ en: `Show all ${(specs.amenities || []).length} equipments`, fr: `Afficher les ${(specs.amenities || []).length} équipements` })}
                                             </button>
-                                        </div>
-
-                                        <div className="mt-6 flex items-center gap-3 p-4 bg-[#01A084]/5 rounded-xl border border-[#01A084]/10">
-                                            <Zap size={20} className="text-[#01A084]" />
-                                            <p className="text-[14px] text-[#01A084] font-medium">
-                                                {teamManagement.mode === 'lbricol' ? t({ en: 'Managed by Lbricol Bricolers', fr: 'Géré par les Bricoleurs Lbricol' }) :
-                                                    teamManagement.mode === 'own_team' ? t({ en: 'Managed by Your Team', fr: 'Géré par Votre Équipe' }) :
-                                                        t({ en: 'Hybrid Management (Team + Bricolers)', fr: 'Gestion Hybride (Équipe + Bricoleurs)' })}
-                                            </p>
-                                        </div>
-                                    </div>
-                                )}
-
-                                {/* Location Section */}
-                                <div className="mt-12 pt-12 border-t border-neutral-100">
-                                    <h2 className="text-[22px] font-bold mb-6">Où se situe le logement</h2>
-                                    <div className="h-[240px] rounded-2xl overflow-hidden relative border border-neutral-100 shadow-sm">
-                                        <MapView
-                                            onLocationChange={() => { }}
-                                            initialLocation={property.location || { lat: 31.5085, lng: -9.7595 }}
-                                            interactive={false}
-                                            zoom={15}
-                                            clientPin={property.location || { lat: 31.5085, lng: -9.7595 }}
-                                        />
-                                    </div>
-                                    <div className="mt-6 space-y-1">
-                                        <h4 className="font-bold text-[16px]">{address}</h4>
-                                        {specs.apartmentNumber && (
-                                            <p className="text-neutral-500 text-[14px]">
-                                                {t({ en: 'Apt / Door:', fr: 'N° Porte :' })} {specs.apartmentNumber}
-                                                {specs.floor !== undefined && ` · ${t({ en: 'Floor:', fr: 'Étage :' })} ${specs.floor}`}
-                                            </p>
                                         )}
                                     </div>
+
+                                    {/* Automation Services Section */}
+                                    {automationServices.length > 0 && (
+                                        <div className="mt-12 pt-12 border-t border-neutral-100">
+                                            <h2 className="text-[22px] font-bold mb-6">{t({ en: 'Automated Activities', fr: 'Activités automatisées' })}</h2>
+                                            <div className="flex flex-wrap gap-3">
+                                                {automationServices.map((svcId: string, idx: number) => {
+                                                    const svc = AUTOMATED_SERVICE_MAP[svcId];
+                                                    if (!svc) return null;
+                                                    const Icon = svc.icon;
+                                                    return (
+                                                        <button
+                                                            key={idx}
+                                                            onClick={() => {
+                                                                if (svcId === 'cleaning' || svcId === 'gardening' || svcId === 'glass_cleaning' || svcId === 'guest_receptionist' || svcId === 'pool_cleaning' || svcId === 'pets_care' || svcId === 'errands') {
+                                                                    setSelectedAutomationDetail(svcId);
+                                                                }
+                                                            }}
+                                                            className="flex items-center gap-2 px-4 py-2 rounded-full border border-black bg-neutral-50 shadow-sm active:scale-95 transition-all cursor-pointer"
+                                                        >
+                                                            <Icon size={18} className="text-black" />
+                                                            <span className="text-[14px] font-semibold text-black">{t(svc.label)}</span>
+                                                        </button>
+                                                    );
+                                                })}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Guest Services Section */}
+                                    {guestServices.length > 0 && (
+                                        <div className="mt-12 pt-12 border-t border-neutral-100">
+                                            <h2 className="text-[22px] font-bold mb-6">{t({ en: 'Services for your guests', fr: 'Services pour vos voyageurs' })}</h2>
+                                            <div className="flex flex-wrap gap-3">
+                                                {guestServices.map((svcId: string, idx: number) => {
+                                                    const svc = GUEST_SERVICE_MAP[svcId];
+                                                    if (!svc) return null;
+                                                    const Icon = svc.icon;
+                                                    return (
+                                                        <div key={idx} className="flex items-center gap-2 px-4 py-2 rounded-full border border-neutral-200 hover:border-black transition-colors">
+                                                            <Icon size={18} className="text-black" />
+                                                            <span className="text-[14px] font-semibold text-black">{t(svc.label)}</span>
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Future Services Section */}
+                                    {futureServices.length > 0 && (
+                                        <div className="mt-12 pt-12 border-t border-neutral-100">
+                                            <h2 className="text-[22px] font-bold mb-6">{t({ en: 'Other needs', fr: 'Autres besoins' })}</h2>
+                                            <div className="flex flex-wrap gap-3">
+                                                {futureServices.map((svcId: string, idx: number) => {
+                                                    const svc = FUTURE_SERVICE_MAP[svcId];
+                                                    if (!svc) return null;
+                                                    const Icon = svc.icon;
+                                                    return (
+                                                        <div key={idx} className="flex items-center gap-2 px-4 py-2 rounded-full border border-neutral-200 hover:border-black transition-colors">
+                                                            <Icon size={18} className="text-black" />
+                                                            <span className="text-[14px] font-semibold text-black">{t(svc.label)}</span>
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Team & Management Section - NEW */}
+                                    {propertyCode && (
+                                        <div className="mt-12 pt-12 border-t border-neutral-100">
+                                            <h2 className="text-[22px] font-bold mb-2">{t({ en: 'Team & Management', fr: 'Équipe et gestion' })}</h2>
+                                            <p className="text-neutral-500 text-[14px] mb-6">
+                                                {t({
+                                                    en: 'Share this code with your team members to link them to this property.',
+                                                    fr: 'Partagez ce code avec les membres de votre équipe pour les lier à ce logement.'
+                                                })}
+                                            </p>
+                                            <div className="flex items-center justify-between p-5 bg-neutral-50 rounded-2xl border border-neutral-100">
+                                                <div className="flex items-center gap-4">
+                                                    <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-sm">
+                                                        <QrCode size={20} />
+                                                    </div>
+                                                    <div className="flex flex-col">
+                                                        <span className="text-[13px] text-neutral-400 font-medium uppercase tracking-wider">{t({ en: 'Invite Code', fr: 'Code d\'invitation' })}</span>
+                                                        <span className="text-[18px] font-bold text-black font-mono">{propertyCode}</span>
+                                                    </div>
+                                                </div>
+                                                <button
+                                                    onClick={() => {
+                                                        navigator.clipboard.writeText(propertyCode);
+                                                    }}
+                                                    className="p-3 bg-white rounded-full border border-neutral-200 active:scale-90 transition-all shadow-sm"
+                                                >
+                                                    <Copy size={20} />
+                                                </button>
+                                            </div>
+
+                                            <div className="mt-6 flex items-center gap-3 p-4 bg-[#01A084]/5 rounded-xl border border-[#01A084]/10">
+                                                <Zap size={20} className="text-[#01A084]" />
+                                                <p className="text-[14px] text-[#01A084] font-medium">
+                                                    {teamManagement.mode === 'lbricol' ? t({ en: 'Managed by Lbricol Bricolers', fr: 'Géré par les Bricoleurs Lbricol' }) :
+                                                        teamManagement.mode === 'own_team' ? t({ en: 'Managed by Your Team', fr: 'Géré par Votre Équipe' }) :
+                                                            t({ en: 'Hybrid Management (Team + Bricolers)', fr: 'Gestion Hybride (Équipe + Bricoleurs)' })}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Location Section */}
+                                    <div className="mt-12 pt-12 border-t border-neutral-100">
+                                        <h2 className="text-[22px] font-bold mb-6">Où se situe le logement</h2>
+                                        <div className="h-[240px] rounded-2xl overflow-hidden relative border border-neutral-100 shadow-sm">
+                                            <MapView
+                                                onLocationChange={() => { }}
+                                                initialLocation={property.location || { lat: 31.5085, lng: -9.7595 }}
+                                                interactive={false}
+                                                zoom={15}
+                                                clientPin={property.location || { lat: 31.5085, lng: -9.7595 }}
+                                            />
+                                        </div>
+                                        <div className="mt-6 space-y-1">
+                                            <h4 className="font-bold text-[16px]">{address}</h4>
+                                            {specs.apartmentNumber && (
+                                                <p className="text-neutral-500 text-[14px]">
+                                                    {t({ en: 'Apt / Door:', fr: 'N° Porte :' })} {specs.apartmentNumber}
+                                                    {specs.floor !== undefined && ` · ${t({ en: 'Floor:', fr: 'Étage :' })} ${specs.floor}`}
+                                                </p>
+                                            )}
+                                        </div>
+                                    </div>
                                 </div>
-                            </div>
-                        </motion.div>
-                    )}
+                            </motion.div>
+                        )}
 
                         {activeTab === 'planning' && (
                             <motion.div
@@ -515,175 +515,175 @@ const PropertyDetailView: React.FC<PropertyDetailViewProps> = ({ property, isOpe
                                 transition={{ duration: 0.3, ease: "easeOut" }}
                                 className="px-2 py-8"
                             >
-                            {/* Removed Planning Header to expand space */}
+                                {/* Removed Planning Header to expand space */}
 
-                            {viewMode === 'month' ? (
-                                <div className="space-y-16">
-                                    {['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'].map((monthName, monthIdx) => {
-                                        const year = 2026;
-                                        const daysInMonth = new Date(year, monthIdx + 1, 0).getDate();
-                                        const firstDay = (new Date(year, monthIdx, 1).getDay() + 6) % 7; // Mon=0, Sun=6
+                                {viewMode === 'month' ? (
+                                    <div className="space-y-16">
+                                        {['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'].map((monthName, monthIdx) => {
+                                            const year = 2026;
+                                            const daysInMonth = new Date(year, monthIdx + 1, 0).getDate();
+                                            const firstDay = (new Date(year, monthIdx, 1).getDay() + 6) % 7; // Mon=0, Sun=6
 
-                                        const prevMonthDays = new Date(year, monthIdx, 0).getDate();
-                                        const trailingDays = Array.from({ length: firstDay }).map((_, i) => prevMonthDays - firstDay + i + 1);
+                                            const prevMonthDays = new Date(year, monthIdx, 0).getDate();
+                                            const trailingDays = Array.from({ length: firstDay }).map((_, i) => prevMonthDays - firstDay + i + 1);
 
-                                        return (
-                                            <div key={monthName} ref={monthIdx === 3 ? currentMonthRef : null}>
-                                                <h2 className={`text-[22px] font-bold mb-6 lowercase first-letter:uppercase ${monthIdx === 3 ? 'text-black' : 'text-neutral-400'}`}>
-                                                    {monthName} 2026
-                                                </h2>
-                                                <div className="grid grid-cols-7 gap-1.5 mb-2">
-                                                    {['L', 'M', 'M', 'J', 'V', 'S', 'D'].map((day, idx) => (
-                                                        <div key={`${day}-${idx}`} className="text-center text-[11px] text-neutral-400 font-medium pb-2">
-                                                            {day}
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                                <div className="grid grid-cols-7 gap-1.5">
-                                                    {/* Trailing days */}
-                                                    {trailingDays.map(day => (
-                                                        <div key={`trailing-${day}`} className="h-[110px] rounded-[10px] border border-neutral-50 bg-[#F7F7F7] flex items-start p-2">
-                                                            <span className="text-[13px] font-bold text-neutral-300">{day}</span>
-                                                        </div>
-                                                    ))}
-                                                    {/* Month days */}
-                                                    {Array.from({ length: daysInMonth }).map((_, i) => {
-                                                        const day = i + 1;
-                                                        const today = new Date();
-                                                        const isToday = monthIdx === today.getMonth() && day === today.getDate() && year === today.getFullYear();
-                                                        const isPast = monthIdx < today.getMonth() || (monthIdx === today.getMonth() && day < today.getDate());
+                                            return (
+                                                <div key={monthName} ref={monthIdx === 3 ? currentMonthRef : null}>
+                                                    <h2 className={`text-[22px] font-bold mb-6 lowercase first-letter:uppercase ${monthIdx === 3 ? 'text-black' : 'text-neutral-400'}`}>
+                                                        {monthName} 2026
+                                                    </h2>
+                                                    <div className="grid grid-cols-7 gap-1.5 mb-2">
+                                                        {['L', 'M', 'M', 'J', 'V', 'S', 'D'].map((day, idx) => (
+                                                            <div key={`${day}-${idx}`} className="text-center text-[11px] text-neutral-400 font-medium pb-2">
+                                                                {day}
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                    <div className="grid grid-cols-7 gap-1.5">
+                                                        {/* Trailing days */}
+                                                        {trailingDays.map(day => (
+                                                            <div key={`trailing-${day}`} className="h-[110px] rounded-[10px] border border-neutral-50 bg-[#F7F7F7] flex items-start p-2">
+                                                                <span className="text-[13px] font-bold text-neutral-300">{day}</span>
+                                                            </div>
+                                                        ))}
+                                                        {/* Month days */}
+                                                        {Array.from({ length: daysInMonth }).map((_, i) => {
+                                                            const day = i + 1;
+                                                            const today = new Date();
+                                                            const isToday = monthIdx === today.getMonth() && day === today.getDate() && year === today.getFullYear();
+                                                            const isPast = monthIdx < today.getMonth() || (monthIdx === today.getMonth() && day < today.getDate());
 
-                                                        const dayDate = `${year}-${monthIdx}-${day}`;
-                                                        const isSelected = selectedDays.includes(dayDate);
+                                                            const dayDate = `${year}-${monthIdx}-${day}`;
+                                                            const isSelected = selectedDays.includes(dayDate);
 
-                                                        const handleInteractionStart = (e: React.PointerEvent) => {
-                                                            pointerStartPos.current = { x: e.clientX, y: e.clientY };
-                                                            longPressOccurred.current = false;
-                                                            const timer = setTimeout(() => {
-                                                                longPressOccurred.current = true;
-                                                                if (selectedDays.includes(dayDate)) {
-                                                                    setSelectedDays(prev => prev.filter(d => d !== dayDate));
-                                                                } else {
-                                                                    setSelectedDays(prev => [...prev, dayDate]);
-                                                                }
-                                                            }, 600);
-                                                            setLongPressTimer(timer);
-                                                        };
-
-                                                        const handleInteractionEnd = (e: React.PointerEvent) => {
-                                                            if (longPressTimer) {
-                                                                clearTimeout(longPressTimer);
-                                                                setLongPressTimer(null);
-
-                                                                if (longPressOccurred.current) return;
-
-                                                                // Check if moved (scrolled)
-                                                                if (pointerStartPos.current) {
-                                                                    const dx = Math.abs(e.clientX - pointerStartPos.current.x);
-                                                                    const dy = Math.abs(e.clientY - pointerStartPos.current.y);
-                                                                    if (dx > 10 || dy > 10) return;
-                                                                }
-
-                                                                if (selectedDays.length > 0) {
+                                                            const handleInteractionStart = (e: React.PointerEvent) => {
+                                                                pointerStartPos.current = { x: e.clientX, y: e.clientY };
+                                                                longPressOccurred.current = false;
+                                                                const timer = setTimeout(() => {
+                                                                    longPressOccurred.current = true;
                                                                     if (selectedDays.includes(dayDate)) {
                                                                         setSelectedDays(prev => prev.filter(d => d !== dayDate));
                                                                     } else {
                                                                         setSelectedDays(prev => [...prev, dayDate]);
                                                                     }
-                                                                } else {
-                                                                    setSelectedDate(new Date(year, monthIdx, day));
-                                                                    setViewMode('day');
+                                                                }, 600);
+                                                                setLongPressTimer(timer);
+                                                            };
+
+                                                            const handleInteractionEnd = (e: React.PointerEvent) => {
+                                                                if (longPressTimer) {
+                                                                    clearTimeout(longPressTimer);
+                                                                    setLongPressTimer(null);
+
+                                                                    if (longPressOccurred.current) return;
+
+                                                                    // Check if moved (scrolled)
+                                                                    if (pointerStartPos.current) {
+                                                                        const dx = Math.abs(e.clientX - pointerStartPos.current.x);
+                                                                        const dy = Math.abs(e.clientY - pointerStartPos.current.y);
+                                                                        if (dx > 10 || dy > 10) return;
+                                                                    }
+
+                                                                    if (selectedDays.length > 0) {
+                                                                        if (selectedDays.includes(dayDate)) {
+                                                                            setSelectedDays(prev => prev.filter(d => d !== dayDate));
+                                                                        } else {
+                                                                            setSelectedDays(prev => [...prev, dayDate]);
+                                                                        }
+                                                                    } else {
+                                                                        setSelectedDate(new Date(year, monthIdx, day));
+                                                                        setViewMode('day');
+                                                                    }
                                                                 }
-                                                            }
-                                                        };
+                                                            };
 
-                                                        return (
-                                                            <div
-                                                                key={day}
-                                                                onPointerDown={handleInteractionStart}
-                                                                onPointerUp={handleInteractionEnd}
-                                                                onPointerCancel={handleInteractionEnd}
-                                                                className={`h-[110px] rounded-[10px] border flex items-start p-2 transition-all cursor-pointer relative ${isSelected ? 'border-[#2C2C2C] border-[1.5px] bg-[#F7F7F7] z-10  scale-[1.01]' :
-                                                                    isToday ? 'border-black border-[1px] bg-white ring-1 ring-black shadow-sm' :
-                                                                        isPast ? 'border-neutral-50 bg-[#F7F7F7]' : 'border-neutral-100 bg-white hover:border-neutral-300'
-                                                                    }`}
-                                                            >
-                                                                <span className={`text-[13px] font-bold ${isPast ? 'text-neutral-300' : 'text-black'
-                                                                    }`}>
-                                                                    {day}
-                                                                </span>
-                                                                {isSelected && (
-                                                                    <div className="absolute top-2 right-2 text-white bg-white rounded-full shadow-sm">
-                                                                        <CheckCircle2 size={16} fill="#2C2C2C" stroke="white" />
-                                                                    </div>
-                                                                )}
-                                                            </div>
-                                                        );
-                                                    })}
-                                                </div>
-                                            </div>
-                                        );
-                                    })}
-                                </div>
-                            ) : (
-                                <div className="py-4 px-8">
-                                    <div className="flex items-center justify-between mb-10">
-                                        <div className="flex flex-col">
-                                            <h2 className="text-[26px] font-bold capitalize">
-                                                {selectedDate?.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}
-                                            </h2>
-                                            <p className="text-neutral-500 font-medium">Aucun événement prévu</p>
-                                        </div>
-                                    </div>
-
-                                    {/* Day View Timeline */}
-                                    <div className="relative pt-2">
-                                        {/* Current Time Line */}
-                                        {(() => {
-                                            const now = new Date();
-                                            const isSelectedDayToday = selectedDate &&
-                                                selectedDate.getDate() === now.getDate() &&
-                                                selectedDate.getMonth() === now.getMonth() &&
-                                                selectedDate.getFullYear() === now.getFullYear();
-
-                                            if (!isSelectedDayToday) return null;
-
-                                            const startHour = 6;
-                                            const endHour = 20;
-                                            const currentHour = now.getHours();
-                                            const currentMinutes = now.getMinutes();
-
-                                            if (currentHour < startHour || currentHour > endHour) return null;
-
-                                            const totalMinutesSinceStart = (currentHour - startHour) * 60 + currentMinutes;
-                                            const hourHeight = 76.5;
-                                            const topOffset = (totalMinutesSinceStart / 60) * hourHeight;
-
-                                            return (
-                                                <div
-                                                    className="absolute left-0 right-0 z-20 flex items-center gap-2 pointer-events-none transition-all duration-1000"
-                                                    style={{ top: `${topOffset + 10}px` }}
-                                                >
-                                                    <div className="bg-[#FF385C] text-white text-[10px] font-bold px-1.5 py-0.5 rounded-md shadow-sm ml-8">
-                                                        {currentHour}:{currentMinutes.toString().padStart(2, '0')}
+                                                            return (
+                                                                <div
+                                                                    key={day}
+                                                                    onPointerDown={handleInteractionStart}
+                                                                    onPointerUp={handleInteractionEnd}
+                                                                    onPointerCancel={handleInteractionEnd}
+                                                                    className={`h-[110px] rounded-[10px] border flex items-start p-2 transition-all cursor-pointer relative ${isSelected ? 'border-[#2C2C2C] border-[1.5px] bg-[#F7F7F7] z-10  scale-[1.01]' :
+                                                                        isToday ? 'border-black border-[1px] bg-white ring-1 ring-black shadow-sm' :
+                                                                            isPast ? 'border-neutral-50 bg-[#F7F7F7]' : 'border-neutral-100 bg-white hover:border-neutral-300'
+                                                                        }`}
+                                                                >
+                                                                    <span className={`text-[13px] font-bold ${isPast ? 'text-neutral-300' : 'text-black'
+                                                                        }`}>
+                                                                        {day}
+                                                                    </span>
+                                                                    {isSelected && (
+                                                                        <div className="absolute top-2 right-2 text-white bg-white rounded-full shadow-sm">
+                                                                            <CheckCircle2 size={16} fill="#2C2C2C" stroke="white" />
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            );
+                                                        })}
                                                     </div>
-                                                    <div className="flex-1 h-[2px] bg-[#FF385C] shadow-[0_0_8px_rgba(255,56,92,0.4)]" />
-                                                    <div className="w-2 h-2 rounded-full bg-[#FF385C] -ml-1 shadow-md" />
                                                 </div>
                                             );
-                                        })()}
+                                        })}
+                                    </div>
+                                ) : (
+                                    <div className="py-4 px-8">
+                                        <div className="flex items-center justify-between mb-10">
+                                            <div className="flex flex-col">
+                                                <h2 className="text-[26px] font-bold capitalize">
+                                                    {selectedDate?.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}
+                                                </h2>
+                                                <p className="text-neutral-500 font-medium">Aucun événement prévu</p>
+                                            </div>
+                                        </div>
 
-                                        <div className="space-y-14">
-                                            {[7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 0, 1, 2, 3, 4, 5, 6].map(hour => (
-                                                <div key={hour} className="flex gap-6 items-start">
-                                                    <span className="text-[13px] font-bold text-neutral-400 w-12 text-right">{hour}:00</span>
-                                                    <div className="flex-1 h-[1px] bg-neutral-100 mt-2.5" />
-                                                </div>
-                                            ))}
+                                        {/* Day View Timeline */}
+                                        <div className="relative pt-2">
+                                            {/* Current Time Line */}
+                                            {(() => {
+                                                const now = new Date();
+                                                const isSelectedDayToday = selectedDate &&
+                                                    selectedDate.getDate() === now.getDate() &&
+                                                    selectedDate.getMonth() === now.getMonth() &&
+                                                    selectedDate.getFullYear() === now.getFullYear();
+
+                                                if (!isSelectedDayToday) return null;
+
+                                                const startHour = 6;
+                                                const endHour = 20;
+                                                const currentHour = now.getHours();
+                                                const currentMinutes = now.getMinutes();
+
+                                                if (currentHour < startHour || currentHour > endHour) return null;
+
+                                                const totalMinutesSinceStart = (currentHour - startHour) * 60 + currentMinutes;
+                                                const hourHeight = 76.5;
+                                                const topOffset = (totalMinutesSinceStart / 60) * hourHeight;
+
+                                                return (
+                                                    <div
+                                                        className="absolute left-0 right-0 z-20 flex items-center gap-2 pointer-events-none transition-all duration-1000"
+                                                        style={{ top: `${topOffset + 10}px` }}
+                                                    >
+                                                        <div className="bg-[#FF385C] text-white text-[10px] font-bold px-1.5 py-0.5 rounded-md shadow-sm ml-8">
+                                                            {currentHour}:{currentMinutes.toString().padStart(2, '0')}
+                                                        </div>
+                                                        <div className="flex-1 h-[2px] bg-[#FF385C] shadow-[0_0_8px_rgba(255,56,92,0.4)]" />
+                                                        <div className="w-2 h-2 rounded-full bg-[#FF385C] -ml-1 shadow-md" />
+                                                    </div>
+                                                );
+                                            })()}
+
+                                            <div className="space-y-14">
+                                                {[7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 0, 1, 2, 3, 4, 5, 6].map(hour => (
+                                                    <div key={hour} className="flex gap-6 items-start">
+                                                        <span className="text-[13px] font-bold text-neutral-400 w-12 text-right">{hour}:00</span>
+                                                        <div className="flex-1 h-[1px] bg-neutral-100 mt-2.5" />
+                                                    </div>
+                                                ))}
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                            )}
+                                )}
                             </motion.div>
                         )}
 
@@ -696,11 +696,9 @@ const PropertyDetailView: React.FC<PropertyDetailViewProps> = ({ property, isOpe
                                 transition={{ duration: 0.3, ease: "easeOut" }}
                                 className="px-6 py-8 space-y-10 pb-32"
                             >
-                                <div className="bg-[#F8F8F8] rounded-[24px] p-6 space-y-4">
+                                <div className="bg-white rounded-[24px] p-6 space-y-4">
                                     <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-sm">
-                                            <Plus size={20} className="text-black" />
-                                        </div>
+
                                         <div>
                                             <h3 className="font-bold text-[16px] text-black">{t({ en: 'Invite a member', fr: 'Inviter un membre' })}</h3>
                                             <p className="text-[13px] text-neutral-500">{t({ en: 'Share this code with your staff', fr: 'Partagez ce code avec votre personnel' })}</p>
@@ -709,7 +707,7 @@ const PropertyDetailView: React.FC<PropertyDetailViewProps> = ({ property, isOpe
                                     <div className="flex items-center gap-2">
                                         <div className="flex-1 bg-white border border-neutral-200 rounded-xl px-4 py-3 font-mono font-bold text-[18px] tracking-wider flex items-center justify-between">
                                             {propertyCode || '---'}
-                                            <button 
+                                            <button
                                                 onClick={() => {
                                                     navigator.clipboard.writeText(propertyCode);
                                                     setIsCopying(true);
@@ -721,25 +719,11 @@ const PropertyDetailView: React.FC<PropertyDetailViewProps> = ({ property, isOpe
                                                 {isCopying ? <Check size={18} className="text-[#00CA52]" /> : <Copy size={18} />}
                                             </button>
                                         </div>
-                                        <button 
-                                            onClick={() => {
-                                                const text = t({ 
-                                                    en: `Join my team on Lbricol.ma! Use my property code: ${propertyCode}`, 
-                                                    fr: `Rejoignez mon équipe sur Lbricol.ma ! Utilisez mon code de propriété : ${propertyCode}` 
-                                                });
-                                                window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
-                                            }}
-                                            className="w-12 h-12 rounded-xl bg-[#25D366] flex items-center justify-center text-white active:scale-95 transition-all"
-                                        >
-                                            <Share size={20} />
-                                        </button>
+
                                     </div>
                                 </div>
                                 <div className="space-y-6">
-                                    <div className="flex items-center justify-between">
-                                        <h3 className="font-black text-[22px] text-black tracking-tight">{t({ en: 'Your Team', fr: 'Votre équipe' })}</h3>
-                                        <span className="text-[13px] font-bold text-neutral-400 uppercase tracking-widest">{teamMembers.length} {t({ en: 'members', fr: 'membres' })}</span>
-                                    </div>
+
                                     {isLoadingTeam ? (
                                         <div className="py-10 flex flex-col items-center gap-4">
                                             <div className="w-8 h-8 border-3 border-neutral-100 border-t-black rounded-full animate-spin" />
@@ -770,7 +754,7 @@ const PropertyDetailView: React.FC<PropertyDetailViewProps> = ({ property, isOpe
                                                             </span>
                                                         </div>
                                                     </div>
-                                                    <button 
+                                                    <button
                                                         onClick={async () => {
                                                             if (confirm(t({ en: 'Remove this member?', fr: 'Retirer ce membre ?' }))) {
                                                                 try {
@@ -789,9 +773,9 @@ const PropertyDetailView: React.FC<PropertyDetailViewProps> = ({ property, isOpe
                                             ))}
                                         </div>
                                     ) : (
-                                        <div className="py-12 px-6 rounded-[24px] border-2 border-dashed border-neutral-100 flex flex-col items-center text-center space-y-4">
+                                        <div className="py-12 px-6 rounded-[10px]  flex flex-col items-center text-center space-y-4">
                                             <div className="w-16 h-16 rounded-full bg-neutral-50 flex items-center justify-center">
-                                                <User size={32} className="text-neutral-200" />
+                                                <User size={50} className="text-[#2C2C2C]" />
                                             </div>
                                             <div className="space-y-1">
                                                 <h4 className="font-bold text-black">{t({ en: 'No team members yet', fr: 'Aucun membre d\'équipe' })}</h4>
@@ -803,14 +787,13 @@ const PropertyDetailView: React.FC<PropertyDetailViewProps> = ({ property, isOpe
                                 <div className="space-y-6">
                                     <div className="flex items-center justify-between">
                                         <div className="flex items-center gap-2">
-                                            <h3 className="font-black text-[22px] text-black tracking-tight">{t({ en: 'Lbricol Staff', fr: 'Bricoleurs Lbricol' })}</h3>
-                                            <span className="px-2 py-0.5 bg-black text-white text-[10px] font-black uppercase rounded tracking-widest">Premium</span>
+                                            <h3 className="font-black text-[22px] text-black tracking-tight">{t({ en: 'Lbricol Bricolers', fr: 'Bricoleurs Lbricol' })}</h3>
                                         </div>
                                     </div>
                                     <p className="text-[14px] text-neutral-500 leading-relaxed">
-                                        {t({ 
-                                            en: 'Qualified professionals in your area available for your automation needs.', 
-                                            fr: 'Des professionnels qualifiés dans votre zone disponibles pour vos besoins d\'automatisation.' 
+                                        {t({
+                                            en: 'Qualified professionals in your area available for your automation needs.',
+                                            fr: 'Des professionnels qualifiés dans votre zone disponibles pour vos besoins d\'automatisation.'
                                         })}
                                     </p>
                                     <div className="space-y-4">
@@ -837,7 +820,7 @@ const PropertyDetailView: React.FC<PropertyDetailViewProps> = ({ property, isOpe
                                                 </button>
                                             </div>
                                         ))}
-                                        <button className="w-full py-4 text-center text-black font-black text-[13px] uppercase tracking-widest border border-neutral-200 rounded-xl hover:bg-neutral-50 transition-all">
+                                        <button className="w-full bg-[#2C2C2C] py-4 text-center text-white font-bold text-[15px]  rounded-xl hover:bg-neutral-50 transition-all">
                                             {t({ en: 'See all local pros', fr: 'Voir tous les pros locaux' })}
                                         </button>
                                     </div>
@@ -963,7 +946,7 @@ const PropertyDetailView: React.FC<PropertyDetailViewProps> = ({ property, isOpe
                     {/* Program Full Page View */}
                     <AnimatePresence>
                         {isProgramSheetOpen && (
-                            <ScheduleInterventionView 
+                            <ScheduleInterventionView
                                 property={property}
                                 onClose={() => setIsProgramSheetOpen(false)}
                                 onConfirm={(jobs) => {
@@ -987,7 +970,7 @@ const PropertyDetailView: React.FC<PropertyDetailViewProps> = ({ property, isOpe
                             >
                                 {/* Header */}
                                 <div className="px-6 pt-5 pb-4 flex items-center justify-end shrink-0">
-                                    <button 
+                                    <button
                                         onClick={() => setSelectedAutomationDetail(null)}
                                         className="font-bold px-4 py-2 rounded-full border border-neutral-200 text-[14px] hover:bg-neutral-50 active:scale-95 transition-all text-black"
                                     >
@@ -1070,7 +1053,7 @@ const PropertyDetailView: React.FC<PropertyDetailViewProps> = ({ property, isOpe
                                                         })}
                                                     </div>
                                                 )}
-                                                
+
                                                 {subId === 'stairs' && automation.cleaningDetails.stairsSize && (
                                                     <div className="space-y-4 pt-6 border-t border-neutral-100 mt-6">
                                                         <h5 className="font-medium text-[16px] text-black mb-4">
@@ -1152,13 +1135,13 @@ const PropertyDetailView: React.FC<PropertyDetailViewProps> = ({ property, isOpe
                                 </div>
                                 <div className="px-6 pt-4 pb-6 border-t border-neutral-100 bg-white z-20 shrink-0">
                                     <div className="flex justify-between items-center">
-                                        <button 
+                                        <button
                                             onClick={() => setSelectedAutomationDetail(null)}
                                             className="font-medium text-[17px] text-black underline underline-offset-4"
                                         >
                                             {t({ en: 'Back', fr: 'Retour', ar: 'عودة' })}
                                         </button>
-                                        <button 
+                                        <button
                                             onClick={() => setSelectedAutomationDetail(null)}
                                             className="bg-[#2C2C2C] text-white px-10 py-4 rounded-[12px] text-[17px] font-medium active:scale-[0.98] transition-all"
                                         >
@@ -1182,7 +1165,7 @@ const PropertyDetailView: React.FC<PropertyDetailViewProps> = ({ property, isOpe
                             >
                                 {/* Header */}
                                 <div className="px-6 pt-5 pb-4 flex items-center justify-end shrink-0">
-                                    <button 
+                                    <button
                                         onClick={() => setSelectedAutomationDetail(null)}
                                         className="font-bold px-4 py-2 rounded-full border border-neutral-200 text-[14px] hover:bg-neutral-50 active:scale-95 transition-all text-black"
                                     >
@@ -1407,13 +1390,13 @@ const PropertyDetailView: React.FC<PropertyDetailViewProps> = ({ property, isOpe
                                 </div>
                                 <div className="px-6 pt-4 pb-6 border-t border-neutral-100 bg-white z-20 shrink-0">
                                     <div className="flex justify-between items-center">
-                                        <button 
+                                        <button
                                             onClick={() => setSelectedAutomationDetail(null)}
                                             className="font-medium text-[17px] text-black underline underline-offset-4"
                                         >
                                             {t({ en: 'Back', fr: 'Retour', ar: 'عودة' })}
                                         </button>
-                                        <button 
+                                        <button
                                             onClick={() => setSelectedAutomationDetail(null)}
                                             className="bg-[#2C2C2C] text-white px-10 py-4 rounded-[12px] text-[17px] font-medium active:scale-[0.98] transition-all"
                                         >
@@ -1437,7 +1420,7 @@ const PropertyDetailView: React.FC<PropertyDetailViewProps> = ({ property, isOpe
                             >
                                 {/* Header */}
                                 <div className="px-6 pt-5 pb-4 flex items-center justify-end shrink-0">
-                                    <button 
+                                    <button
                                         onClick={() => setSelectedAutomationDetail(null)}
                                         className="font-bold px-4 py-2 rounded-full border border-neutral-200 text-[14px] hover:bg-neutral-50 active:scale-95 transition-all text-black"
                                     >
@@ -1450,7 +1433,7 @@ const PropertyDetailView: React.FC<PropertyDetailViewProps> = ({ property, isOpe
                                         {t({ en: 'Tell us about your windows', fr: 'Parlez-nous de vos vitres' })}
                                     </h2>
                                     <div className="space-y-12">
-                                        
+
                                         {/* Windows Count */}
                                         <div className="flex items-center justify-between pb-4 border-b border-neutral-100">
                                             <span className="text-[18px] font-medium text-black">{t({ en: 'How many windows?', fr: 'Combien de fenêtres ?' })}</span>
@@ -1565,13 +1548,13 @@ const PropertyDetailView: React.FC<PropertyDetailViewProps> = ({ property, isOpe
                                 </div>
                                 <div className="px-6 pt-4 pb-6 border-t border-neutral-100 bg-white z-20 shrink-0">
                                     <div className="flex justify-between items-center">
-                                        <button 
+                                        <button
                                             onClick={() => setSelectedAutomationDetail(null)}
                                             className="font-medium text-[17px] text-black underline underline-offset-4"
                                         >
                                             {t({ en: 'Back', fr: 'Retour', ar: 'عودة' })}
                                         </button>
-                                        <button 
+                                        <button
                                             onClick={() => setSelectedAutomationDetail(null)}
                                             className="bg-[#2C2C2C] text-white px-10 py-4 rounded-[12px] text-[17px] font-medium active:scale-[0.98] transition-all"
                                         >
@@ -1595,7 +1578,7 @@ const PropertyDetailView: React.FC<PropertyDetailViewProps> = ({ property, isOpe
                             >
                                 {/* Header */}
                                 <div className="px-6 pt-5 pb-4 flex items-center justify-end shrink-0">
-                                    <button 
+                                    <button
                                         onClick={() => setSelectedAutomationDetail(null)}
                                         className="font-bold px-4 py-2 rounded-full border border-neutral-200 text-[14px] hover:bg-neutral-50 active:scale-95 transition-all text-black"
                                     >
@@ -1608,7 +1591,7 @@ const PropertyDetailView: React.FC<PropertyDetailViewProps> = ({ property, isOpe
                                         {t({ en: 'Instructions for reception', fr: 'Instructions pour l\'accueil' })}
                                     </h2>
                                     <div className="space-y-12">
-                                        
+
                                         {/* Checklist */}
                                         {automation.receptionDetails.checklist && automation.receptionDetails.checklist.length > 0 && (
                                             <div className="space-y-4">
@@ -1640,13 +1623,13 @@ const PropertyDetailView: React.FC<PropertyDetailViewProps> = ({ property, isOpe
                                 </div>
                                 <div className="px-6 pt-4 pb-6 border-t border-neutral-100 bg-white z-20 shrink-0">
                                     <div className="flex justify-between items-center">
-                                        <button 
+                                        <button
                                             onClick={() => setSelectedAutomationDetail(null)}
                                             className="font-medium text-[17px] text-black underline underline-offset-4"
                                         >
                                             {t({ en: 'Back', fr: 'Retour', ar: 'عودة' })}
                                         </button>
-                                        <button 
+                                        <button
                                             onClick={() => setSelectedAutomationDetail(null)}
                                             className="bg-[#2C2C2C] text-white px-10 py-4 rounded-[12px] text-[17px] font-medium active:scale-[0.98] transition-all"
                                         >
@@ -2121,8 +2104,8 @@ const PropertyDetailView: React.FC<PropertyDetailViewProps> = ({ property, isOpe
                                                     ].map((category) => {
                                                         const isSelected = automation.errandsDetails.categories?.includes(category.id);
                                                         return (
-                                                            <div 
-                                                                key={category.id} 
+                                                            <div
+                                                                key={category.id}
                                                                 className={`flex items-center gap-2 px-4 py-2 rounded-full border text-[14px] font-semibold transition-all ${isSelected ? 'bg-neutral-50 text-black border-black border-[2px]' : 'bg-white text-black border-neutral-200 opacity-50'}`}
                                                             >
                                                                 <span>{category.emoji}</span>
@@ -2181,9 +2164,9 @@ const PropertyDetailView: React.FC<PropertyDetailViewProps> = ({ property, isOpe
                                                                             )}
                                                                         </div>
                                                                         <div className="bg-black text-white px-2 py-1 rounded-md text-[11px] font-black uppercase tracking-wider">
-                                                                            {t({ 
-                                                                                en: item.frequency === 'checkout' ? 'Every checkout' : item.frequency, 
-                                                                                fr: item.frequency === 'checkout' ? 'Chaque départ' : item.frequency 
+                                                                            {t({
+                                                                                en: item.frequency === 'checkout' ? 'Every checkout' : item.frequency,
+                                                                                fr: item.frequency === 'checkout' ? 'Chaque départ' : item.frequency
                                                                             })}
                                                                         </div>
                                                                     </div>
@@ -2221,8 +2204,8 @@ const PropertyDetailView: React.FC<PropertyDetailViewProps> = ({ property, isOpe
                                                             <div className="flex flex-col">
                                                                 <span className="text-[18px] font-bold text-black">
                                                                     {automation.errandsDetails.timingRule === 'checkout' ? t({ en: 'Always after checkout', fr: 'Toujours après un départ' }) :
-                                                                     automation.errandsDetails.timingRule === 'fixed' ? t({ en: 'Fixed schedule (Weekly)', fr: 'Planning fixe (Hebdomadaire)' }) :
-                                                                     t({ en: `Only if check-in is within ${automation.errandsDetails.checkinWindow}h`, fr: `Seulement si arrivée dans les ${automation.errandsDetails.checkinWindow}h` })}
+                                                                        automation.errandsDetails.timingRule === 'fixed' ? t({ en: 'Fixed schedule (Weekly)', fr: 'Planning fixe (Hebdomadaire)' }) :
+                                                                            t({ en: `Only if check-in is within ${automation.errandsDetails.checkinWindow}h`, fr: `Seulement si arrivée dans les ${automation.errandsDetails.checkinWindow}h` })}
                                                                 </span>
                                                             </div>
                                                         </div>
@@ -2245,8 +2228,8 @@ const PropertyDetailView: React.FC<PropertyDetailViewProps> = ({ property, isOpe
                                                                 {t({ en: 'Payment Method', fr: 'Méthode de Paiement' })}
                                                             </span>
                                                             <span className="text-[18px] font-bold text-black block">
-                                                                {automation.errandsDetails.paymentMethod === 'advance' ? 
-                                                                    t({ en: 'Courier advances cash', fr: 'Le coursier avance l\'argent' }) : 
+                                                                {automation.errandsDetails.paymentMethod === 'advance' ?
+                                                                    t({ en: 'Courier advances cash', fr: 'Le coursier avance l\'argent' }) :
                                                                     t({ en: 'Use Preloaded Wallet', fr: 'Utiliser Portefeuille Préchargé' })}
                                                             </span>
                                                         </div>

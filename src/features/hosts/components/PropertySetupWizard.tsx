@@ -539,7 +539,7 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
     };
 
     const deletePhoto = (idx: number) => {
-        setPhotos(prev => prev.filter((_, i) => i !== idx));
+        setPhotos(prev => prev.filter((_: any, i: number) => i !== idx));
     };
 
     const handleDragStart = (idx: number) => {
@@ -1672,7 +1672,7 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                                             />
 
                                             <div className="grid grid-cols-2 gap-3 pb-32">
-                                                {photos.map((photo, idx) => (
+                                                {photos.map((photo: any, idx: number) => (
                                                     <div
                                                         key={idx}
                                                         draggable
@@ -1780,7 +1780,7 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                                             show: { opacity: 1, transition: { staggerChildren: 0.05 } }
                                         }}
                                     >
-                                        {SERVICES_CATALOGUE.filter((c: any) => !c.disabled && ['cleaning', 'gardening', 'glass_cleaning', 'pool_cleaning', 'errands', 'pets_care', 'guest_receptionist'].includes(c.id)).map(category => {
+                                        {SERVICES_CATALOGUE.filter((c: any) => !c.disabled && ['cleaning', 'gardening', 'glass_cleaning', 'pool_cleaning', 'errands', 'pets_care', 'guest_receptionist'].includes(c.id)).map((category: any) => {
                                             const isSelected = selectedServices.includes(category.id);
                                             const Icon = SERVICE_ICONS[category.id] || Sparkles;
                                             return (
@@ -1858,7 +1858,7 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                                             { id: 'airport_pickup', label: 'Airport pickup', labelFr: 'Transfert Aéroport', labelAr: 'نقل من المطار' },
                                             { id: 'guest_receptionist', label: 'Guest Receptionist', labelFr: 'Accueil Voyageurs', labelAr: 'استقبال الضيوف' },
                                             ...SERVICES_CATALOGUE.filter((c: any) => !c.disabled && ['cooking', 'tour_guide', 'private_driver', 'car_rental', 'learn_arabic', 'babysitting', 'elderly_care'].includes(c.id))
-                                        ].map(category => {
+                                        ].map((category: any) => {
                                             const isSelected = selectedServices.includes(category.id);
                                             const Icon = SERVICE_ICONS[category.id] || Sparkles;
                                             return (
@@ -1945,7 +1945,7 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                                             show: { opacity: 1, transition: { staggerChildren: 0.05 } }
                                         }}
                                     >
-                                        {SERVICES_CATALOGUE.filter((c: any) => !c.disabled && ['home_repairs', 'furniture_assembly', 'mounting', 'moving', 'plumbing', 'electricity', 'painting'].includes(c.id)).map(category => {
+                                        {SERVICES_CATALOGUE.filter((c: any) => !c.disabled && ['home_repairs', 'furniture_assembly', 'mounting', 'moving', 'plumbing', 'electricity', 'painting'].includes(c.id)).map((category: any) => {
                                             const isSelected = selectedServices.includes(category.id);
                                             const Icon = SERVICE_ICONS[category.id] || Sparkles;
                                             return (
@@ -2304,7 +2304,7 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                                             </p>
                                         </div>
                                         <div className="space-y-3">
-                                            {teamInvites.map((invite, idx) => (
+                                            {teamInvites.map((invite: any, idx: number) => (
                                                 <div key={idx} className="flex items-center gap-3">
                                                     <div className="flex-1 relative">
                                                         <input
@@ -2321,7 +2321,7 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                                                     </div>
                                                     {teamInvites.length > 1 && (
                                                         <button
-                                                            onClick={() => setTeamInvites(teamInvites.filter((_, i) => i !== idx))}
+                                                            onClick={() => setTeamInvites(teamInvites.filter((_: any, i: number) => i !== idx))}
                                                             className="p-2 text-neutral-400 hover:text-black transition-colors"
                                                         >
                                                             <X size={20} />
@@ -2489,7 +2489,7 @@ const CleaningDetailForm = ({ data, onChange, onUploadingChange }: any) => {
                             { id: 'laundry', label: 'Laundry', fr: 'Linge', emoji: '🧺' },
                             { id: 'windows', label: 'Windows', fr: 'Vitrages', emoji: '🪟' },
                             { id: 'stairs', label: 'Stairs', fr: 'Escaliers', emoji: '🪜' }
-                        ].map(item => (
+                        ].map((item: any) => (
                             <button
                                 key={item.id}
                                 onClick={() => toggleSubService(item.id)}
@@ -2546,7 +2546,7 @@ const CleaningDetailForm = ({ data, onChange, onUploadingChange }: any) => {
                 <div className="space-y-4">
                     <h3 className="font-medium text-[20px] text-black">{t({ en: 'Specific Instructions', fr: 'Instructions spécifiques' })}</h3>
                     <div className="space-y-2">
-                        {(data.checklist || ['']).map((item, idx) => (
+                        {(data.checklist || ['']).map((item: any, idx: number) => (
                             <div key={idx} className="group flex items-center gap-3">
                                 <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 transition-all ${item.trim() !== '' ? 'bg-[#00CA52] border-[#00CA52]' : 'border-neutral-200'}`}>
                                     {item.trim() !== '' && <Check size={12} className="text-white" strokeWidth={3} />}
@@ -2575,11 +2575,11 @@ const CleaningDetailForm = ({ data, onChange, onUploadingChange }: any) => {
                 <div className="space-y-4">
                     <h3 className="font-medium text-[20px] text-black">{t({ en: 'Reference Photos', fr: 'Photos de Référence' })}</h3>
                     <div className="grid grid-cols-3 gap-4">
-                        {(data.referencePhotos || []).map((url, i) => (
+                        {(data.referencePhotos || []).map((url: any, i: number) => (
                             <div key={url} className="relative aspect-square rounded-2xl overflow-hidden border border-neutral-100 shadow-sm">
                                 <img src={url} alt="Reference" className="w-full h-full object-cover" />
                                 <button
-                                    onClick={() => onChange({ referencePhotos: data.referencePhotos.filter((_, idx) => idx !== i) })}
+                                    onClick={() => onChange({ referencePhotos: data.referencePhotos.filter((_: any, idx: number) => idx !== i) })}
                                     className="absolute top-2 right-2 w-7 h-7 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-sm"
                                 >
                                     <X size={14} className="text-black" />
@@ -2671,7 +2671,7 @@ const GlassCleaningDetailForm = ({ data, onChange, onUploadingChange }: any) => 
                             { id: 'ground', label: 'Easy access (Ground floor)', fr: 'Accès facile (RDC)' },
                             { id: 'ladder', label: 'Requires ladder', fr: 'Nécessite échelle' },
                             { id: 'high', label: 'High altitude/Hard to reach', fr: 'Grande hauteur/Difficile' }
-                        ].map(item => (
+                        ].map((item: any) => (
                             <button
                                 key={item.id}
                                 onClick={() => onChange({ windowsAccessibility: item.id })}
@@ -2695,7 +2695,7 @@ const GlassCleaningDetailForm = ({ data, onChange, onUploadingChange }: any) => 
                             { id: 'interior', label: 'Inside', fr: 'Intérieur' },
                             { id: 'exterior', label: 'Outside', fr: 'Extérieur' },
                             { id: 'both', label: 'Both', fr: 'Les deux' }
-                        ].map(item => (
+                        ].map((item: any) => (
                             <button
                                 key={item.id}
                                 onClick={() => onChange({ windowsCoverage: item.id })}
@@ -2714,11 +2714,11 @@ const GlassCleaningDetailForm = ({ data, onChange, onUploadingChange }: any) => 
                 <div className="space-y-4">
                     <h3 className="font-medium text-[20px] text-black">{t({ en: 'Reference Photos', fr: 'Photos de Référence' })}</h3>
                     <div className="grid grid-cols-3 gap-4">
-                        {(data.referencePhotos || []).map((url, i) => (
+                        {(data.referencePhotos || []).map((url: any, i: number) => (
                             <div key={url} className="relative aspect-square rounded-2xl overflow-hidden border border-neutral-100 shadow-sm">
                                 <img src={url} alt="Reference" className="w-full h-full object-cover" />
                                 <button
-                                    onClick={() => onChange({ referencePhotos: data.referencePhotos.filter((_, idx) => idx !== i) })}
+                                    onClick={() => onChange({ referencePhotos: data.referencePhotos.filter((_: any, idx: number) => idx !== i) })}
                                     className="absolute top-2 right-2 w-7 h-7 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-sm"
                                 >
                                     <X size={14} className="text-black" />
@@ -2809,7 +2809,7 @@ const GardeningDetailForm = ({ data, onChange, onUploadingChange }: any) => {
                             { id: 'pruning', label: 'Tree Pruning', fr: 'Élagage', emoji: '🌳' },
                             { id: 'weeding', label: 'Weeding', fr: 'Désherbage', emoji: '🌿' },
                             { id: 'watering', label: 'Watering', fr: 'Arrosage', emoji: '💧' }
-                        ].map(item => (
+                        ].map((item: any) => (
                             <button
                                 key={item.id}
                                 onClick={() => toggleSubService(item.id)}
@@ -2885,7 +2885,7 @@ const GardeningDetailForm = ({ data, onChange, onUploadingChange }: any) => {
                             { id: 'week', label: 'Weekly', fr: 'Hebdo' },
                             { id: 'biweek', label: 'Bi-weekly', fr: 'Quinzaine' },
                             { id: 'month', label: 'Monthly', fr: 'Mensuel' }
-                        ].map(freq => (
+                        ].map((freq: any) => (
                             <button
                                 key={freq.id}
                                 onClick={() => onChange({ gardeningFrequency: freq.id })}
@@ -2904,7 +2904,7 @@ const GardeningDetailForm = ({ data, onChange, onUploadingChange }: any) => {
                 <div className="space-y-4">
                     <h3 className="font-medium text-[20px] text-black">{t({ en: 'Maintenance Checklist', fr: 'Checklist d\'entretien' })}</h3>
                     <div className="space-y-2">
-                        {(data.checklist || ['']).map((item, idx) => (
+                        {(data.checklist || ['']).map((item: any, idx: number) => (
                             <div key={idx} className="group flex items-center gap-3">
                                 <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 transition-all ${item.trim() !== '' ? 'bg-[#00CA52] border-[#00CA52]' : 'border-neutral-200'}`}>
                                     {item.trim() !== '' && <Check size={12} className="text-white" strokeWidth={3} />}
@@ -2933,11 +2933,11 @@ const GardeningDetailForm = ({ data, onChange, onUploadingChange }: any) => {
                 <div className="space-y-4">
                     <h3 className="font-medium text-[20px] text-black">{t({ en: 'Reference Photos', fr: 'Photos de Référence' })}</h3>
                     <div className="grid grid-cols-3 gap-4">
-                        {(data.referencePhotos || []).map((url, i) => (
+                        {(data.referencePhotos || []).map((url: any, i: number) => (
                             <div key={url} className="relative aspect-square rounded-2xl overflow-hidden border border-neutral-100 shadow-sm">
                                 <img src={url} alt="Reference" className="w-full h-full object-cover" />
                                 <button
-                                    onClick={() => onChange({ referencePhotos: data.referencePhotos.filter((_, idx) => idx !== i) })}
+                                    onClick={() => onChange({ referencePhotos: data.referencePhotos.filter((_: any, idx: number) => idx !== i) })}
                                     className="absolute top-2 right-2 w-7 h-7 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-sm"
                                 >
                                     <X size={14} className="text-black" />
@@ -3019,7 +3019,7 @@ const PoolDetailForm = ({ data, onChange, onUploadingChange }: any) => {
                         {[
                             { id: 'chlorine', label: 'Chlorine', fr: 'Chlore' },
                             { id: 'saltwater', label: 'Saltwater', fr: 'Au sel' }
-                        ].map(system => (
+                        ].map((system: any) => (
                             <button
                                 key={system.id}
                                 onClick={() => onChange({ poolWaterType: system.id })}
@@ -3047,11 +3047,11 @@ const PoolDetailForm = ({ data, onChange, onUploadingChange }: any) => {
                 <div className="space-y-4">
                     <h3 className="font-medium text-[20px] text-black">{t({ en: 'Reference Photos', fr: 'Photos de Référence' })}</h3>
                     <div className="grid grid-cols-3 gap-4">
-                        {(data.referencePhotos || []).map((url, i) => (
+                        {(data.referencePhotos || []).map((url: any, i: number) => (
                             <div key={url} className="relative aspect-square rounded-2xl overflow-hidden border border-neutral-100 shadow-sm">
                                 <img src={url} alt="Reference" className="w-full h-full object-cover" />
                                 <button
-                                    onClick={() => onChange({ referencePhotos: data.referencePhotos.filter((_, idx) => idx !== i) })}
+                                    onClick={() => onChange({ referencePhotos: data.referencePhotos.filter((_: any, idx: number) => idx !== i) })}
                                     className="absolute top-2 right-2 w-7 h-7 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-sm"
                                 >
                                     <X size={14} className="text-black" />
@@ -3098,7 +3098,7 @@ const ReceptionistDetailForm = ({ data, onChange }: any) => {
                             { id: 'in_person', label: 'Meet & Greet (In person)', fr: 'Accueil en personne' },
                             { id: 'lockbox', label: 'Self Check-in (Lockbox)', fr: 'Arrivée autonome (Boîte à clés)' },
                             { id: 'smart_lock', label: 'Smart Lock', fr: 'Serrure connectée' }
-                        ].map(item => (
+                        ].map((item: any) => (
                             <button
                                 key={item.id}
                                 onClick={() => onChange({ checkInMethod: item.id })}
@@ -3118,7 +3118,7 @@ const ReceptionistDetailForm = ({ data, onChange }: any) => {
                 <div className="space-y-4">
                     <h3 className="font-medium text-[20px] text-black">{t({ en: 'Welcome Tasks', fr: 'Tâches d\'accueil' })}</h3>
                     <div className="space-y-2">
-                        {(data.checklist || ['']).map((item, idx) => (
+                        {(data.checklist || ['']).map((item: any, idx: number) => (
                             <div key={idx} className="group flex items-center gap-3">
                                 <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 transition-all ${item.trim() !== '' ? 'bg-[#00CA52] border-[#00CA52]' : 'border-neutral-200'}`}>
                                     {item.trim() !== '' && <Check size={12} className="text-white" strokeWidth={3} />}
@@ -3182,7 +3182,7 @@ const PetsDetailForm = ({ data, onChange }: any) => {
                             { id: 'guard_dog', label: 'Guard Dog', fr: 'Chien de garde', emoji: '🐕' },
                             { id: 'bird', label: 'Bird', fr: 'Oiseau', emoji: '🦜' },
                             { id: 'other', label: 'Other', fr: 'Autre', emoji: '🐾' }
-                        ].map(item => (
+                        ].map((item: any) => (
                             <button
                                 key={item.id}
                                 onClick={() => {
@@ -3212,7 +3212,7 @@ const PetsDetailForm = ({ data, onChange }: any) => {
                             { id: 'once', label: 'Once / Day', fr: '1 fois / jour' },
                             { id: 'twice', label: 'Twice / Day', fr: '2 fois / jour' },
                             { id: 'three', label: '3 times / Day', fr: '3 fois / jour' }
-                        ].map(freq => (
+                        ].map((freq: any) => (
                             <button
                                 key={freq.id}
                                 onClick={() => onChange({ feedingFrequency: freq.id })}
@@ -3286,7 +3286,7 @@ const PetsDetailForm = ({ data, onChange }: any) => {
                 <div className="space-y-4">
                     <h3 className="font-medium text-[20px] text-black">{t({ en: 'Daily Checklist', fr: 'Checklist quotidienne' })}</h3>
                     <div className="space-y-2">
-                        {(data.checklist || ['']).map((item, idx) => (
+                        {(data.checklist || ['']).map((item: any, idx: number) => (
                             <div key={idx} className="group flex items-center gap-3">
                                 <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 transition-all ${item.trim() !== '' ? 'bg-[#00CA52] border-[#00CA52]' : 'border-neutral-200'}`}>
                                     {item.trim() !== '' && <Check size={12} className="text-white" strokeWidth={3} />}
@@ -3374,7 +3374,7 @@ const ErrandsDetailForm = ({ data, onChange }: any) => {
 
                 {(data.categories || []).length > 0 && (
                     <div className="space-y-10">
-                        {(data.categories || []).map(categoryId => {
+                        {(data.categories || []).map((categoryId: any) => {
                             const catMeta = categories.find(c => c.id === categoryId);
                             const list = (data.checklists && data.checklists[categoryId]) || [{ name: '', quantity: 1 }];
 
@@ -3385,7 +3385,7 @@ const ErrandsDetailForm = ({ data, onChange }: any) => {
                                         {t({ en: `${catMeta?.label} Items`, fr: `Articles pour ${catMeta?.fr}` })}
                                     </h3>
                                     <div className="flex flex-col gap-4">
-                                        {list.map((item, idx) => (
+                                        {list.map((item: any, idx: number) => (
                                             <div key={idx} className="border border-neutral-200 p-5 rounded-[15px] bg-white shadow-sm space-y-4">
                                                 <div className="flex justify-between items-start gap-4">
                                                     <div className="flex flex-col gap-3 flex-1">
@@ -3401,7 +3401,7 @@ const ErrandsDetailForm = ({ data, onChange }: any) => {
                                                             className="w-full bg-transparent border-none p-0 focus:ring-0 text-[16px] text-black font-medium placeholder:text-neutral-300"
                                                         />
                                                         <div className="flex flex-wrap gap-2">
-                                                            {(item.brands || []).map(brand => (
+                                                            {(item.brands || []).map((brand: any) => (
                                                                 <span key={brand} className="inline-flex items-center gap-1 px-3 py-1 bg-[#F7F7F7] text-neutral-600 rounded-lg text-[13px] font-medium border border-neutral-200">
                                                                     {brand}
                                                                     <button 
@@ -3454,7 +3454,7 @@ const ErrandsDetailForm = ({ data, onChange }: any) => {
                                                         </div>
                                                     </div>
                                                     <button 
-                                                        onClick={() => updateChecklist(categoryId, list.filter((_, i) => i !== idx))}
+                                                        onClick={() => updateChecklist(categoryId, list.filter((_: any, i: number) => i !== idx))}
                                                         className="p-2 text-neutral-300 hover:text-red-500 transition-colors"
                                                     >
                                                         <X size={20} />
@@ -3544,83 +3544,7 @@ const ErrandsDetailForm = ({ data, onChange }: any) => {
                 )}
             </div>
 
-            {/* Questions/FAQ Sheet */}
-            <AnimatePresence>
-                {isQuestionsOpen && (
-                    <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        className="fixed inset-0 z-[20000] bg-black/60 backdrop-blur-sm flex items-end justify-center"
-                        onClick={() => setIsQuestionsOpen(false)}
-                    >
-                        <motion.div
-                            initial={{ y: "100%" }}
-                            animate={{ y: 0 }}
-                            exit={{ y: "100%" }}
-                            transition={{ type: "spring", damping: 25, stiffness: 200 }}
-                            className="bg-white w-full max-w-2xl rounded-t-[32px] overflow-hidden flex flex-col max-h-[90vh]"
-                            onClick={e => e.stopPropagation()}
-                        >
-                            {/* Sheet Header */}
-                            <div className="p-6 border-b border-neutral-100 flex items-center justify-between">
-                                <h2 className="text-2xl font-black text-neutral-900">Questions & réponses</h2>
-                                <button
-                                    onClick={() => setIsQuestionsOpen(false)}
-                                    className="p-2 rounded-full bg-neutral-100 text-neutral-500 hover:bg-neutral-200 transition-colors"
-                                >
-                                    <X size={20} />
-                                </button>
-                            </div>
 
-                            {/* Sheet Content */}
-                            <div className="flex-1 overflow-y-auto p-6 space-y-4 no-scrollbar">
-                                {FAQ_SERVICES.map((faq, index) => {
-                                    const isExpanded = expandedFaqIndex === index;
-                                    return (
-                                        <div key={index} className="border-b border-neutral-100 last:border-0">
-                                            <button
-                                                onClick={() => setExpandedFaqIndex(isExpanded ? null : index)}
-                                                className="w-full py-4 flex items-center justify-between text-left group"
-                                            >
-                                                <span className={cn(
-                                                    "text-[17px] font-bold transition-colors",
-                                                    isExpanded ? "text-[#01A083]" : "text-neutral-900 group-hover:text-black"
-                                                )}>
-                                                    {faq.title}
-                                                </span>
-                                                <div className={cn(
-                                                    "p-1 rounded-full transition-all",
-                                                    isExpanded ? "bg-[#E6F6F2] text-[#01A083] rotate-45" : "bg-neutral-50 text-neutral-400"
-                                                )}>
-                                                    <Plus size={18} />
-                                                </div>
-                                            </button>
-                                            <AnimatePresence>
-                                                {isExpanded && (
-                                                    <motion.div
-                                                        initial={{ height: 0, opacity: 0 }}
-                                                        animate={{ height: "auto", opacity: 1 }}
-                                                        exit={{ height: 0, opacity: 0 }}
-                                                        className="overflow-hidden"
-                                                    >
-                                                        <p className="pb-6 text-neutral-600 text-[15px] leading-relaxed font-medium">
-                                                            {faq.content}
-                                                        </p>
-                                                    </motion.div>
-                                                )}
-                                            </AnimatePresence>
-                                        </div>
-                                    );
-                                })}
-                            </div>
-
-                            {/* Footer shadow fade */}
-                            <div className="h-8 bg-gradient-to-t from-white to-transparent shrink-0" />
-                        </motion.div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
         </div>
     );
 };
