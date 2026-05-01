@@ -46,6 +46,7 @@ const PropertyDetailView: React.FC<PropertyDetailViewProps> = ({ property, isOpe
     const longPressOccurred = useRef(false);
     const pointerStartPos = useRef<{ x: number, y: number } | null>(null);
     const currentMonthRef = useRef<HTMLDivElement>(null);
+    const currentDayRef = useRef<HTMLDivElement>(null);
     const [showAllInclusions, setShowAllInclusions] = useState(false);
     const [selectedAutomationDetail, setSelectedAutomationDetail] = useState<string | null>(null);
     const [teamMembers, setTeamMembers] = useState<any[]>([]);
@@ -54,8 +55,12 @@ const PropertyDetailView: React.FC<PropertyDetailViewProps> = ({ property, isOpe
     const [isCopying, setIsCopying] = useState(false);
 
     const scrollToCurrent = () => {
-        if (activeTab === 'planning' && viewMode === 'month' && currentMonthRef.current) {
-            currentMonthRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        if (activeTab === 'planning' && viewMode === 'month') {
+            if (currentDayRef.current) {
+                currentDayRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            } else if (currentMonthRef.current) {
+                currentMonthRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
         }
     };
 
@@ -528,8 +533,8 @@ const PropertyDetailView: React.FC<PropertyDetailViewProps> = ({ property, isOpe
                                             const trailingDays = Array.from({ length: firstDay }).map((_, i) => prevMonthDays - firstDay + i + 1);
 
                                             return (
-                                                <div key={monthName} ref={monthIdx === 3 ? currentMonthRef : null}>
-                                                    <h2 className={`text-[22px] font-bold mb-6 lowercase first-letter:uppercase ${monthIdx === 3 ? 'text-black' : 'text-neutral-400'}`}>
+                                                <div key={monthName} ref={monthIdx === new Date().getMonth() ? currentMonthRef : null}>
+                                                    <h2 className={`text-[22px] font-bold mb-6 lowercase first-letter:uppercase ${monthIdx === new Date().getMonth() ? 'text-black' : 'text-neutral-400'}`}>
                                                         {monthName} 2026
                                                     </h2>
                                                     <div className="grid grid-cols-7 gap-1.5 mb-2">
@@ -600,6 +605,7 @@ const PropertyDetailView: React.FC<PropertyDetailViewProps> = ({ property, isOpe
                                                             return (
                                                                 <div
                                                                     key={day}
+                                                                    ref={isToday ? currentDayRef : null}
                                                                     onPointerDown={handleInteractionStart}
                                                                     onPointerUp={handleInteractionEnd}
                                                                     onPointerCancel={handleInteractionEnd}

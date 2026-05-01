@@ -12,7 +12,8 @@ import {
     Music, Dumbbell, Mountain, ShowerHead, SquarePlus, Snowflake,
     TreePine, PawPrint, Baby, Camera, Plus, Trash2, Info,
     Sparkles, Key, Shirt, Wrench, Package, MonitorUp, Droplets, Zap, Paintbrush, Heart, ChefHat, Map, BookOpen, Hammer, Plane, BellRing,
-    Bot, Handshake, Copy, Flower2, LayoutGrid, MessageSquare, Calendar, Bookmark, Menu, User, CheckCircle2, FireExtinguisher, ShieldAlert, QrCode
+    Bot, Handshake, Copy, Flower2, LayoutGrid, MessageSquare, Calendar, Bookmark, Menu, User, CheckCircle2, FireExtinguisher, ShieldAlert, QrCode,
+    Layers, ArrowUpDown
 } from 'lucide-react';
 import { TbGrill, TbCampfire, TbAlarmSmoke, TbBuildingSkyscraper, TbBuildingEstate, TbBuildingCottage, TbBuildingMosque } from 'react-icons/tb';
 import { MdOutlineFireplace, MdOutlineCo2 } from 'react-icons/md';
@@ -1047,15 +1048,15 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                 className="fixed inset-0 z-[10000] bg-white flex flex-col font-plus-jakarta"
             >
                 {/* Top Buttons Bar */}
-                <div className="px-6 pt-6 pb-2 flex justify-between items-center">
-                    <button onClick={handleBack} className="font-bold px-4 py-2 rounded-full border border-neutral-200 text-[14px] hover:bg-neutral-50 active:scale-95 transition-all" >
+                <div className="px-4 pt-5 pb-2 flex justify-between items-center gap-2 min-w-0">
+                    <button onClick={handleBack} className="font-bold px-3 py-2 rounded-full border border-neutral-200 text-[13px] hover:bg-neutral-50 active:scale-95 transition-all whitespace-nowrap" >
                         {t({ en: 'Back', fr: 'Retour', ar: 'عودة' })}
                     </button>
-                    <div className="flex items-center gap-2">
-                        <button onClick={() => setIsQuestionsOpen(true)} className="font-bold px-4 py-2 rounded-full border border-neutral-200 text-[14px] hover:bg-neutral-50 active:scale-95 transition-all text-black">
+                    <div className="flex items-center gap-1.5 min-w-0">
+                        <button onClick={() => setIsQuestionsOpen(true)} className="font-bold px-3 py-2 rounded-full border border-neutral-200 text-[13px] hover:bg-neutral-50 active:scale-95 transition-all text-black whitespace-nowrap">
                             {t({ en: 'Questions?', fr: 'Des questions ?' })}
                         </button>
-                        <button onClick={handleSaveAndExit} className="font-bold px-4 py-2 rounded-full border border-neutral-200 text-[14px] hover:bg-neutral-50 active:scale-95 transition-all text-black">
+                        <button onClick={handleSaveAndExit} className="font-bold px-3 py-2 rounded-full border border-neutral-200 text-[13px] hover:bg-neutral-50 active:scale-95 transition-all text-black whitespace-nowrap">
                             {t({ en: 'Save & exit', fr: 'Enregistrer et quitter' })}
                         </button>
                     </div>
@@ -1150,15 +1151,15 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                 className="fixed inset-0 z-[10000] bg-white flex flex-col font-plus-jakarta"
             >
                 {/* Top Buttons Bar */}
-                <div className="px-6 pt-6 pb-2 flex justify-between items-center">
-                    <button onClick={handleBack} className="font-bold px-4 py-2 rounded-full border border-neutral-200 text-[14px] hover:bg-neutral-50 active:scale-95 transition-all" >
+                <div className="px-4 pt-5 pb-2 flex justify-between items-center gap-2 min-w-0">
+                    <button onClick={handleBack} className="font-bold px-3 py-2 rounded-full border border-neutral-200 text-[13px] hover:bg-neutral-50 active:scale-95 transition-all whitespace-nowrap" >
                         {t({ en: 'Back', fr: 'Retour', ar: 'عودة' })}
                     </button>
-                    <div className="flex items-center gap-2">
-                        <button onClick={() => setIsQuestionsOpen(true)} className="font-bold px-4 py-2 rounded-full border border-neutral-200 text-[14px] hover:bg-neutral-50 active:scale-95 transition-all text-black">
+                    <div className="flex items-center gap-1.5 min-w-0">
+                        <button onClick={() => setIsQuestionsOpen(true)} className="font-bold px-3 py-2 rounded-full border border-neutral-200 text-[13px] hover:bg-neutral-50 active:scale-95 transition-all text-black whitespace-nowrap">
                             {t({ en: 'Questions?', fr: 'Des questions ?' })}
                         </button>
-                        <button onClick={handleSaveAndExit} className="font-bold px-4 py-2 rounded-full border border-neutral-200 text-[14px] hover:bg-neutral-50 active:scale-95 transition-all text-black">
+                        <button onClick={handleSaveAndExit} className="font-bold px-3 py-2 rounded-full border border-neutral-200 text-[13px] hover:bg-neutral-50 active:scale-95 transition-all text-black whitespace-nowrap">
                             {t({ en: 'Save & exit', fr: 'Enregistrer et quitter' })}
                         </button>
                     </div>
@@ -1365,21 +1366,76 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
 
             {/* Top Bar: Save & Exit — always visible except during location picker */}
             {stepIndex !== 1 && (
-                <div className="px-6 pt-5 pb-1 flex justify-end items-center shrink-0 gap-2">
+                <div className="px-4 pt-4 pb-1 flex justify-end items-center shrink-0 gap-2 min-w-0">
                     <button
                         onClick={() => setIsQuestionsOpen(true)}
-                        className="font-bold px-4 py-2 rounded-full border border-neutral-200 text-[14px] hover:bg-neutral-50 active:scale-95 transition-all text-black"
+                        className="font-bold px-3 py-2 rounded-full border border-neutral-200 text-[13px] hover:bg-neutral-50 active:scale-95 transition-all text-black whitespace-nowrap"
                     >
                         {t({ en: 'Questions?', fr: 'Des questions ?' })}
                     </button>
                     <button
                         onClick={handleSaveAndExit}
-                        className="font-bold px-4 py-2 rounded-full border border-neutral-200 text-[14px] hover:bg-neutral-50 active:scale-95 transition-all text-black"
+                        className="font-bold px-3 py-2 rounded-full border border-neutral-200 text-[13px] hover:bg-neutral-50 active:scale-95 transition-all text-black whitespace-nowrap"
                     >
                         {t({ en: 'Save & exit', fr: 'Enregistrer et quitter' })}
                     </button>
                 </div>
             )}
+
+            {/* FAQ / Questions Modal — shown in all form views */}
+            <AnimatePresence>
+                {isQuestionsOpen && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-[20000] bg-black/40 backdrop-blur-sm flex items-end"
+                        onClick={() => setIsQuestionsOpen(false)}
+                    >
+                        <motion.div
+                            initial={{ y: '100%' }}
+                            animate={{ y: 0 }}
+                            exit={{ y: '100%' }}
+                            transition={{ type: 'spring', damping: 30, stiffness: 300 }}
+                            className="w-full bg-white rounded-t-[28px] overflow-hidden max-h-[85vh] flex flex-col"
+                            onClick={e => e.stopPropagation()}
+                        >
+                            <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-neutral-100">
+                                <h2 className="font-semibold text-[20px] text-black">{t({ en: 'Frequently Asked Questions', fr: 'Questions fréquentes' })}</h2>
+                                <button onClick={() => setIsQuestionsOpen(false)} className="w-9 h-9 rounded-full bg-neutral-100 flex items-center justify-center hover:bg-neutral-200 transition-colors">
+                                    <X size={18} className="text-black" />
+                                </button>
+                            </div>
+                            <div className="overflow-y-auto flex-1 divide-y divide-neutral-100">
+                                {FAQ_SERVICES.map((faq, i) => (
+                                    <div key={i}>
+                                        <button
+                                            className="w-full flex items-center justify-between px-6 py-4 text-left"
+                                            onClick={() => setExpandedFaqIndex(expandedFaqIndex === i ? null : i)}
+                                        >
+                                            <span className="font-semibold text-[16px] text-black">{faq.title}</span>
+                                            <ChevronDown size={18} className={`text-neutral-400 transition-transform ${expandedFaqIndex === i ? 'rotate-180' : ''}`} />
+                                        </button>
+                                        <AnimatePresence>
+                                            {expandedFaqIndex === i && (
+                                                <motion.div
+                                                    initial={{ height: 0, opacity: 0 }}
+                                                    animate={{ height: 'auto', opacity: 1 }}
+                                                    exit={{ height: 0, opacity: 0 }}
+                                                    transition={{ duration: 0.2 }}
+                                                    className="overflow-hidden"
+                                                >
+                                                    <p className="px-6 pb-5 text-[15px] text-neutral-500 leading-relaxed">{faq.content}</p>
+                                                </motion.div>
+                                            )}
+                                        </AnimatePresence>
+                                    </div>
+                                ))}
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
             {/* Content */}
             <div
@@ -1424,7 +1480,7 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                                                 <button
                                                     key={pt.id}
                                                     onClick={() => setType(pt.id)}
-                                                    className={`flex flex-col items-start justify-between p-4 rounded-[10px] border transition-all h-[120px] ${isActive ? 'border-black border-[1px] bg-neutral-50' : 'border-neutral-200 hover:border-black'}`}
+                                                    className={`flex flex-col items-start justify-between p-4 rounded-[10px] border transition-all h-[120px] ${isActive ? 'border-black border-[1px] bg-neutral-50' : 'border-neutral-200 hover:border-black bg-white shadow-sm'}`}
                                                 >
                                                     <div className="w-8 h-8 flex items-center justify-center">
 
@@ -2350,13 +2406,15 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
             {/* Footer Actions */}
             {stepIndex !== 1 && (
                 <div className="px-6 pt-4 pb-6 border-t border-neutral-100 bg-white z-20">
-                    {/* Segmented Progress Bar */}
-                    <div className="flex h-[3px] mb-6">
+                    {/* Segmented Progress Bar — bold, 3 stages with gaps */}
+                    <div className="flex gap-1.5 mb-6">
                         {[0, 1, 2].map((stageIdx) => {
                             let progress = 0;
                             const selectedAutomationServices = selectedServices.filter((id: any) => AUTOMATED_SERVICE_IDS.includes(id));
                             const totalAutomationSubsteps = selectedAutomationServices.length;
                             const currentAutoIdx = currentDetailServiceId ? selectedAutomationServices.indexOf(currentDetailServiceId) : -1;
+
+
 
                             // Calculate progress for each stage
                             if (stageIdx === 0) {
@@ -2372,12 +2430,8 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                                 if ((viewMode as string) === 'published_success') progress = 100;
                                 else if ((viewMode as string) === 'team_mode_select') progress = 100;
                                 else if ((viewMode as string) === 'service_detail_form') {
-                                    // Track exact substep within automation detail forms
                                     if (totalAutomationSubsteps > 0) {
-                                        // Base: stepIndex 5 = 33%, each substep adds within the 33–99% range
-                                        const substepProgress = totalAutomationSubsteps > 0
-                                            ? Math.round(33 + ((currentAutoIdx + 1) / totalAutomationSubsteps) * 56)
-                                            : 90;
+                                        const substepProgress = Math.round(33 + ((currentAutoIdx + 1) / totalAutomationSubsteps) * 56);
                                         progress = substepProgress;
                                     } else {
                                         progress = 90;
@@ -2388,12 +2442,18 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                                 else if (stepIndex >= 7) progress = 99;
                             }
 
+                            const isFilled = progress === 100;
+                            const isActive = progress > 0 && progress < 100;
+
                             return (
-                                <div key={stageIdx} className="flex-1 h-[3px] bg-neutral-200 overflow-hidden">
-                                    <div
-                                        className="h-full bg-black transition-all duration-500 ease-in-out"
-                                        style={{ width: `${progress}%` }}
-                                    />
+                                <div key={stageIdx} className="flex-1 flex flex-col gap-1">
+                                    <div className="h-[4px] rounded-full bg-neutral-200 overflow-hidden">
+                                        <div
+                                            className="h-full rounded-full bg-black transition-all duration-500 ease-in-out"
+                                            style={{ width: `${progress}%` }}
+                                        />
+                                    </div>
+
                                 </div>
                             );
                         })}
@@ -2405,15 +2465,10 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                         </button>
                         <button
                             onClick={handleNext}
-                            disabled={isSubmitting || anyIsUploading || (viewMode === 'team_mode_select' && !teamMode)}
+                            disabled={isSubmitting || (viewMode === 'team_mode_select' && !teamMode)}
                             className="bg-[#2C2C2C] disabled:bg-neutral-200 text-white px-10 py-4 rounded-[12px] text-[17px] font-medium active:scale-[0.98] transition-all"
                         >
-                            {(() => {
-                                if (isSubmitting) return 'Publication...';
-                                if (anyIsUploading) return 'Envoi...';
-                                if (viewMode === 'team_mode_select') return 'Publier l\'annonce';
-                                return 'Suivant';
-                            })()}
+                            {isSubmitting ? 'Publication...' : viewMode === 'team_mode_select' ? 'Publier l\'annonce' : 'Suivant'}
                         </button>
                     </div>
                 </div>
@@ -2476,80 +2531,127 @@ const CleaningDetailForm = ({ data, onChange, onUploadingChange }: any) => {
 
     return (
         <div className="flex-1 overflow-y-auto pb-32">
-            <h2 className="font-medium text-[32px] text-black leading-tight tracking-tight mb-8">
+            <h2 className="font-bold text-[28px] text-[#222222] leading-tight tracking-tight mb-8">
                 {t({ en: 'Cleaning Details', fr: 'Détails du Ménage' })}
             </h2>
 
-            <div className="space-y-12">
-                <div className="space-y-4">
-                    <h3 className="font-medium text-[20px] text-black">{t({ en: 'What needs cleaning?', fr: 'Qu\'est-ce qui doit être nettoyé ?' })}</h3>
+            <div className="space-y-8">
+                <div className="space-y-3">
+                    <h3 className="text-[17px] font-semibold text-[#222222]">
+                        {t({ en: 'What type of cleaning?', fr: 'Quel type de nettoyage ?' })}
+                    </h3>
                     <div className="grid grid-cols-2 gap-3">
                         {[
-                            { id: 'full_cleaning', label: 'Full Cleaning', fr: 'Nettoyage complet', emoji: '🏠' },
-                            { id: 'laundry', label: 'Laundry', fr: 'Linge', emoji: '🧺' },
-                            { id: 'windows', label: 'Windows', fr: 'Vitrages', emoji: '🪟' },
-                            { id: 'stairs', label: 'Stairs', fr: 'Escaliers', emoji: '🪜' }
-                        ].map((item: any) => (
-                            <button
-                                key={item.id}
-                                onClick={() => toggleSubService(item.id)}
-                                className={`p-5 rounded-[12px] border transition-all text-left flex flex-col gap-3 ${
-                                    (data.subServices || []).includes(item.id)
-                                        ? 'border-black border-[2px] bg-neutral-50'
-                                        : 'border-neutral-200 hover:border-black bg-white'
-                                }`}
-                            >
-                                <span className="text-2xl">{item.emoji}</span>
-                                <span className="text-[16px] font-semibold text-black">{t({ en: item.label, fr: item.fr })}</span>
-                            </button>
-                        ))}
+                            { id: 'post_checkout',  label: 'Post-checkout', fr: 'Post-départ',     icon: Wind },
+                            { id: 'deep_cleaning',  label: 'Deep cleaning', fr: 'En profondeur',  icon: Droplets },
+                            { id: 'stairs_cleaning',label: 'Stairs',        fr: 'Escaliers',      icon: ArrowUpDown },
+                        ].map((item: any) => {
+                            const isSelected = (data.subServices || []).includes(item.id);
+                            const Icon = item.icon;
+                            return (
+                                <button
+                                    key={item.id}
+                                    onClick={() => toggleSubService(item.id)}
+                                    className={`flex flex-col items-start justify-end p-4 rounded-[12px] border transition-all min-h-[100px] active:scale-[0.98] ${
+                                        isSelected
+                                            ? 'border-[#222222] border-2 bg-[#F7F7F7]'
+                                            : 'border-[#EBEBEB] bg-white hover:border-[#AAAAAA]'
+                                    }`}
+                                >
+                                    <Icon
+                                        size={28}
+                                        strokeWidth={1.5}
+                                        className={`mb-3 ${isSelected ? 'text-[#222222]' : 'text-[#717171]'}`}
+                                    />
+                                    <span className={`text-[14px] font-semibold leading-snug ${isSelected ? 'text-[#222222]' : 'text-[#222222]'}`}>
+                                        {t({ en: item.label, fr: item.fr })}
+                                    </span>
+                                </button>
+                            );
+                        })}
                     </div>
                 </div>
 
-                {(data.subServices || []).includes('stairs') && (
-                    <div className="space-y-4 p-6 rounded-[15px] border border-neutral-100 bg-neutral-50/50">
-                        <CounterRow
-                            label={t({ en: 'Number of floors', fr: 'Nombre d\'étages' })}
-                            value={data.stairsSize === 'big' ? 3 : data.stairsSize === 'medium' ? 2 : 1}
-                            onChange={(val) => onChange({ stairsSize: val >= 3 ? 'big' : val === 2 ? 'medium' : 'small' })}
-                            min={1}
-                        />
-                    </div>
-                )}
-
-                {(data.subServices || []).includes('laundry') && (
-                    <div className="space-y-6">
-                        <h3 className="font-medium text-[20px] text-black">{t({ en: 'Laundry & Linens', fr: 'Linge et Draps' })}</h3>
-                        <div className="space-y-4">
-                            <div className="flex items-center justify-between p-5 rounded-[12px] border border-neutral-200 bg-white shadow-sm">
-                                <span className="text-[17px] font-medium">{t({ en: 'Washing machine available', fr: 'Machine à laver disponible' })}</span>
-                                <button
-                                    onClick={() => onChange({ laundryAvailable: !data.laundryAvailable })}
-                                    className={`w-12 h-6 rounded-full transition-colors relative ${data.laundryAvailable ? 'bg-black' : 'bg-neutral-200'}`}
-                                >
-                                    <div className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform ${data.laundryAvailable ? 'translate-x-6' : ''}`} />
-                                </button>
-                            </div>
-                            <div className="flex items-center justify-between p-5 rounded-[12px] border border-neutral-200 bg-white shadow-sm">
-                                <span className="text-[17px] font-medium">{t({ en: 'Change all sheets every time', fr: 'Changer tous les draps à chaque fois' })}</span>
-                                <button
-                                    onClick={() => onChange({ changeSheets: !data.changeSheets })}
-                                    className={`w-12 h-6 rounded-full transition-colors relative ${data.changeSheets ? 'bg-black' : 'bg-neutral-200'}`}
-                                >
-                                    <div className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform ${data.changeSheets ? 'translate-x-6' : ''}`} />
-                                </button>
+                {(data.subServices || []).includes('deep_cleaning') && (
+                    <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.2, ease: 'easeOut' }}
+                        className="overflow-hidden"
+                    >
+                        <div className="space-y-3">
+                            <h3 className="text-[17px] font-semibold text-[#222222]">
+                                {t({ en: 'Deep Cleaning Frequency', fr: 'Fréquence du nettoyage en profondeur' })}
+                            </h3>
+                            <div className="flex flex-wrap gap-2">
+                                {[
+                                    { id: 'weekly', label: 'Weekly', fr: 'Hebdomadaire' },
+                                    { id: 'biweekly', label: 'Bi-weekly', fr: 'Bimensuelle' },
+                                    { id: 'monthly', label: 'Monthly', fr: 'Mensuelle' },
+                                    { id: 'quarterly', label: 'Quarterly', fr: 'Trimestrielle' },
+                                ].map((freq: any) => {
+                                    const isActive = (data.frequencies || {}).deep_cleaning === freq.id;
+                                    return (
+                                        <button
+                                            key={freq.id}
+                                            onClick={() => onChange({ frequencies: { ...(data.frequencies || {}), deep_cleaning: freq.id } })}
+                                            className={`px-4 py-2 rounded-full text-[14px] transition-all active:scale-95 ${isActive
+                                                    ? 'border-2 border-[#222222] text-[#222222] font-semibold bg-white'
+                                                    : 'border border-[#EBEBEB] text-[#222222] font-normal bg-white hover:border-[#222222]'
+                                                }`}
+                                        >
+                                            {t({ en: freq.label, fr: freq.fr })}
+                                        </button>
+                                    );
+                                })}
                             </div>
                         </div>
-                    </div>
+                    </motion.div>
                 )}
 
-                <div className="space-y-4">
-                    <h3 className="font-medium text-[20px] text-black">{t({ en: 'Specific Instructions', fr: 'Instructions spécifiques' })}</h3>
-                    <div className="space-y-2">
+                {(data.subServices || []).includes('stairs_cleaning') && (
+                    <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.2, ease: 'easeOut' }}
+                        className="overflow-hidden"
+                    >
+                        <div className="space-y-3">
+                            {/* Header: icon + label + stair cleaning badge */}
+                            <div className="flex items-start gap-2">
+                                <ArrowUpDown size={18} strokeWidth={1.75} className="text-[#717171] mt-0.5 shrink-0" />
+                                <div>
+                                    <h3 className="text-[17px] font-semibold text-[#222222] leading-snug">
+                                        {t({ en: 'How many floors to clean?', fr: 'Combien d\'étages à nettoyer ?' })}
+                                    </h3>
+                                    <span className="text-[12px] text-[#717171] font-normal">
+                                        {t({ en: 'For your staircase cleaning', fr: 'Pour le nettoyage des escaliers' })}
+                                    </span>
+                                </div>
+                            </div>
+                            <div className="rounded-[12px] border border-[#EBEBEB] bg-white px-4 py-1">
+                                <CounterRow
+                                    label={t({ en: 'Floors', fr: 'Étages' })}
+                                    value={data.stairsSize === 'big' ? 3 : data.stairsSize === 'medium' ? 2 : 1}
+                                    onChange={(val) => onChange({ stairsSize: val >= 3 ? 'big' : val === 2 ? 'medium' : 'small' })}
+                                    min={1}
+                                />
+                            </div>
+                        </div>
+                    </motion.div>
+                )}
+
+                <div className="space-y-3">
+                    <h3 className="text-[17px] font-semibold text-[#222222]">
+                        {t({ en: 'Specific Instructions', fr: 'Instructions spécifiques' })}
+                    </h3>
+                    <div className="rounded-[12px] border border-[#EBEBEB] bg-white px-4 divide-y divide-[#EBEBEB]">
                         {(data.checklist || ['']).map((item: any, idx: number) => (
-                            <div key={idx} className="group flex items-center gap-3">
-                                <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 transition-all ${item.trim() !== '' ? 'bg-[#00CA52] border-[#00CA52]' : 'border-neutral-200'}`}>
-                                    {item.trim() !== '' && <Check size={12} className="text-white" strokeWidth={3} />}
+                            <div key={idx} className="flex items-center gap-3 py-3 min-h-[56px]">
+                                <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-all ${item.trim() !== '' ? 'bg-[#00CA52] border-[#00CA52]' : 'border-[#EBEBEB]'}`}>
+                                    {item.trim() !== '' && <Check size={10} className="text-white" strokeWidth={3} />}
                                 </div>
                                 <input
                                     type="text"
@@ -2564,40 +2666,43 @@ const CleaningDetailForm = ({ data, onChange, onUploadingChange }: any) => {
                                             onChange({ checklist: [...(data.checklist || []), ''] });
                                         }
                                     }}
-                                    placeholder={t({ en: 'Add an instruction...', fr: 'Ajouter une instruction...' })}
-                                    className="flex-1 py-2 bg-transparent border-none focus:ring-0 text-[18px] text-black placeholder:text-neutral-300"
+                                    placeholder={t({ en: 'Add an instruction…', fr: 'Ajouter une instruction…' })}
+                                    className="flex-1 py-1 bg-transparent border-none focus:ring-0 text-[15px] text-[#222222] placeholder:text-[#AAAAAA] outline-none"
                                 />
                             </div>
                         ))}
                     </div>
                 </div>
 
-                <div className="space-y-4">
-                    <h3 className="font-medium text-[20px] text-black">{t({ en: 'Reference Photos', fr: 'Photos de Référence' })}</h3>
-                    <div className="grid grid-cols-3 gap-4">
+                {/* ── Reference photos ── */}
+                <div className="space-y-3">
+                    <h3 className="text-[17px] font-semibold text-[#222222]">
+                        {t({ en: 'Reference Photos', fr: 'Photos de Référence' })}
+                    </h3>
+                    <div className="grid grid-cols-3 gap-3">
                         {(data.referencePhotos || []).map((url: any, i: number) => (
-                            <div key={url} className="relative aspect-square rounded-2xl overflow-hidden border border-neutral-100 shadow-sm">
+                            <div key={url} className="relative aspect-square rounded-[12px] overflow-hidden border border-[#EBEBEB]">
                                 <img src={url} alt="Reference" className="w-full h-full object-cover" />
                                 <button
                                     onClick={() => onChange({ referencePhotos: data.referencePhotos.filter((_: any, idx: number) => idx !== i) })}
-                                    className="absolute top-2 right-2 w-7 h-7 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-sm"
+                                    className="absolute top-2 right-2 w-7 h-7 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center border border-[#EBEBEB]"
                                 >
-                                    <X size={14} className="text-black" />
+                                    <X size={13} className="text-[#222222]" />
                                 </button>
                             </div>
                         ))}
                         <button
                             onClick={() => photoInputRef.current?.click()}
-                            className="aspect-square rounded-2xl border-2 border-dashed border-neutral-200 flex flex-col items-center justify-center gap-2 hover:border-black hover:bg-neutral-50 transition-all text-neutral-400 hover:text-black"
+                            className="aspect-square rounded-[12px] border border-dashed border-[#EBEBEB] flex flex-col items-center justify-center gap-1.5 hover:border-[#222222] hover:bg-neutral-50 transition-all text-[#717171] hover:text-[#222222]"
                         >
                             {isUploading ? (
-                                <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1, ease: "linear" }}>
-                                    <Plus size={24} />
+                                <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1, ease: 'linear' }}>
+                                    <Plus size={22} />
                                 </motion.div>
                             ) : (
                                 <>
-                                    <Plus size={24} />
-                                    <span className="text-[12px] font-medium uppercase tracking-wider">{t({ en: 'Add', fr: 'Ajouter' })}</span>
+                                    <Plus size={22} />
+                                    <span className="text-[11px] font-semibold uppercase tracking-wider">{t({ en: 'Add', fr: 'Ajouter' })}</span>
                                 </>
                             )}
                         </button>
@@ -2675,11 +2780,10 @@ const GlassCleaningDetailForm = ({ data, onChange, onUploadingChange }: any) => 
                             <button
                                 key={item.id}
                                 onClick={() => onChange({ windowsAccessibility: item.id })}
-                                className={`w-full flex items-center justify-between p-5 rounded-[12px] border transition-all ${
-                                    data.windowsAccessibility === item.id
-                                        ? 'border-black border-[2px] bg-neutral-50'
-                                        : 'border-neutral-200 hover:border-black bg-white shadow-sm'
-                                }`}
+                                className={`w-full flex items-center justify-between p-5 rounded-[12px] border transition-all ${data.windowsAccessibility === item.id
+                                    ? 'border-black border-[2px] bg-neutral-50'
+                                    : 'border-neutral-200 hover:border-black bg-white shadow-sm'
+                                    }`}
                             >
                                 <span className="text-[17px] font-medium text-black">{t({ en: item.label, fr: item.fr })}</span>
                                 {data.windowsAccessibility === item.id && <Check size={20} className="text-black" strokeWidth={2.5} />}
@@ -2699,11 +2803,10 @@ const GlassCleaningDetailForm = ({ data, onChange, onUploadingChange }: any) => 
                             <button
                                 key={item.id}
                                 onClick={() => onChange({ windowsCoverage: item.id })}
-                                className={`p-4 rounded-[12px] border text-center transition-all ${
-                                    data.windowsCoverage === item.id
-                                        ? 'border-black border-[2px] bg-neutral-50'
-                                        : 'border-neutral-200 hover:border-black bg-white'
-                                }`}
+                                className={`p-4 rounded-[12px] border text-center transition-all ${data.windowsCoverage === item.id
+                                    ? 'border-black border-[2px] bg-neutral-50'
+                                    : 'border-neutral-200 hover:border-black bg-white'
+                                    }`}
                             >
                                 <span className="text-[15px] font-semibold">{t({ en: item.label, fr: item.fr })}</span>
                             </button>
@@ -2813,11 +2916,10 @@ const GardeningDetailForm = ({ data, onChange, onUploadingChange }: any) => {
                             <button
                                 key={item.id}
                                 onClick={() => toggleSubService(item.id)}
-                                className={`p-5 rounded-[12px] border transition-all text-left flex flex-col gap-3 ${
-                                    (data.subServices || []).includes(item.id)
-                                        ? 'border-black border-[2px] bg-neutral-50'
-                                        : 'border-neutral-200 hover:border-black bg-white shadow-sm'
-                                }`}
+                                className={`p-5 rounded-[12px] border transition-all text-left flex flex-col gap-3 ${(data.subServices || []).includes(item.id)
+                                    ? 'border-black border-[2px] bg-neutral-50'
+                                    : 'border-neutral-200 hover:border-black bg-white shadow-sm'
+                                    }`}
                             >
                                 <span className="text-2xl">{item.emoji}</span>
                                 <span className="text-[16px] font-semibold text-black">{t({ en: item.label, fr: item.fr })}</span>
@@ -2889,11 +2991,10 @@ const GardeningDetailForm = ({ data, onChange, onUploadingChange }: any) => {
                             <button
                                 key={freq.id}
                                 onClick={() => onChange({ gardeningFrequency: freq.id })}
-                                className={`p-4 rounded-[12px] border text-center transition-all ${
-                                    data.gardeningFrequency === freq.id
-                                        ? 'border-black border-[2px] bg-neutral-50'
-                                        : 'border-neutral-200 hover:border-black bg-white'
-                                }`}
+                                className={`p-4 rounded-[12px] border text-center transition-all ${data.gardeningFrequency === freq.id
+                                    ? 'border-black border-[2px] bg-neutral-50'
+                                    : 'border-neutral-200 hover:border-black bg-white'
+                                    }`}
                             >
                                 <span className="text-[15px] font-semibold">{t({ en: freq.label, fr: freq.fr })}</span>
                             </button>
@@ -3023,11 +3124,10 @@ const PoolDetailForm = ({ data, onChange, onUploadingChange }: any) => {
                             <button
                                 key={system.id}
                                 onClick={() => onChange({ poolWaterType: system.id })}
-                                className={`p-5 rounded-[12px] border text-center transition-all ${
-                                    data.poolWaterType === system.id
-                                        ? 'border-black border-[2px] bg-neutral-50'
-                                        : 'border-neutral-200 hover:border-black bg-white'
-                                }`}
+                                className={`p-5 rounded-[12px] border text-center transition-all ${data.poolWaterType === system.id
+                                    ? 'border-black border-[2px] bg-neutral-50'
+                                    : 'border-neutral-200 hover:border-black bg-white'
+                                    }`}
                             >
                                 <span className="text-[17px] font-medium">{t({ en: system.label, fr: system.fr })}</span>
                             </button>
@@ -3102,11 +3202,10 @@ const ReceptionistDetailForm = ({ data, onChange }: any) => {
                             <button
                                 key={item.id}
                                 onClick={() => onChange({ checkInMethod: item.id })}
-                                className={`w-full flex items-center justify-between p-5 rounded-[12px] border transition-all ${
-                                    data.checkInMethod === item.id
-                                        ? 'border-black border-[2px] bg-neutral-50'
-                                        : 'border-neutral-200 hover:border-black bg-white shadow-sm'
-                                }`}
+                                className={`w-full flex items-center justify-between p-5 rounded-[12px] border transition-all ${data.checkInMethod === item.id
+                                    ? 'border-black border-[2px] bg-neutral-50'
+                                    : 'border-neutral-200 hover:border-black bg-white shadow-sm'
+                                    }`}
                             >
                                 <span className="text-[17px] font-medium text-black">{t({ en: item.label, fr: item.fr })}</span>
                                 {data.checkInMethod === item.id && <Check size={20} className="text-black" strokeWidth={2.5} />}
@@ -3190,11 +3289,10 @@ const PetsDetailForm = ({ data, onChange }: any) => {
                                     const next = current.includes(item.id) ? current.filter((id: any) => id !== item.id) : [...current, item.id];
                                     onChange({ petTypes: next });
                                 }}
-                                className={`flex items-center gap-2 px-4 py-2 rounded-full border transition-all text-[14px] font-semibold ${
-                                    (data.petTypes || []).includes(item.id)
-                                        ? 'bg-neutral-50 text-black border-black border-2'
-                                        : 'bg-white text-black border-neutral-200 hover:border-black'
-                                }`}
+                                className={`flex items-center gap-2 px-4 py-2 rounded-full border transition-all text-[14px] font-semibold ${(data.petTypes || []).includes(item.id)
+                                    ? 'bg-neutral-50 text-black border-black border-2'
+                                    : 'bg-white text-black border-neutral-200 hover:border-black'
+                                    }`}
                             >
                                 <span>{item.emoji}</span>
                                 <span>{t({ en: item.label, fr: item.fr })}</span>
@@ -3216,11 +3314,10 @@ const PetsDetailForm = ({ data, onChange }: any) => {
                             <button
                                 key={freq.id}
                                 onClick={() => onChange({ feedingFrequency: freq.id })}
-                                className={`p-4 rounded-[10px] border text-center transition-all ${
-                                    data.feedingFrequency === freq.id
-                                        ? 'border-black border-[3.5px] bg-neutral-50'
-                                        : 'border-neutral-200 text-black hover:border-black'
-                                }`}
+                                className={`p-4 rounded-[10px] border text-center transition-all ${data.feedingFrequency === freq.id
+                                    ? 'border-black border-[3.5px] bg-neutral-50'
+                                    : 'border-neutral-200 text-black hover:border-black'
+                                    }`}
                             >
                                 <span className="text-[14px] font-medium">{t({ en: freq.label, fr: freq.fr })}</span>
                             </button>
@@ -3356,11 +3453,10 @@ const ErrandsDetailForm = ({ data, onChange }: any) => {
                                 <button
                                     key={category.id}
                                     onClick={() => toggleCategory(category.id)}
-                                    className={`flex flex-col items-start justify-between p-6 rounded-[10px] border transition-all h-[150px] text-left ${
-                                        isSelected
-                                            ? 'border-black border-[2px] bg-neutral-50'
-                                            : 'border-neutral-200 hover:border-black bg-white shadow-sm'
-                                    }`}
+                                    className={`flex flex-col items-start justify-between p-6 rounded-[10px] border transition-all h-[150px] text-left ${isSelected
+                                        ? 'border-black border-[2px] bg-neutral-50'
+                                        : 'border-neutral-200 hover:border-black bg-white shadow-sm'
+                                        }`}
                                 >
                                     <span className="text-[32px] shrink-0">{category.emoji}</span>
                                     <span className="text-[16px] font-medium leading-tight text-black">
@@ -3404,7 +3500,7 @@ const ErrandsDetailForm = ({ data, onChange }: any) => {
                                                             {(item.brands || []).map((brand: any) => (
                                                                 <span key={brand} className="inline-flex items-center gap-1 px-3 py-1 bg-[#F7F7F7] text-neutral-600 rounded-lg text-[13px] font-medium border border-neutral-200">
                                                                     {brand}
-                                                                    <button 
+                                                                    <button
                                                                         onClick={() => {
                                                                             const newList = [...list];
                                                                             newList[idx].brands = item.brands.filter((b: any) => b !== brand);
@@ -3453,7 +3549,7 @@ const ErrandsDetailForm = ({ data, onChange }: any) => {
                                                             )}
                                                         </div>
                                                     </div>
-                                                    <button 
+                                                    <button
                                                         onClick={() => updateChecklist(categoryId, list.filter((_: any, i: number) => i !== idx))}
                                                         className="p-2 text-neutral-300 hover:text-red-500 transition-colors"
                                                     >

@@ -179,7 +179,7 @@ const ProfileView: React.FC<ProfileViewProps> = ({
         const hostItems = [
             {
                 icon: User,
-                label: t({ en: 'Switch to Traveling Mode', fr: 'Passer en Mode Voyageur', ar: 'التحويل إلى وضع المسافر' }),
+                label: t({ en: 'Switch to Client Mode', fr: 'Passer en Mode Client', ar: 'التحويل إلى وضع المسافر' }),
                 action: () => onToggleHostMode?.(),
                 variant: 'highlight'
             },
