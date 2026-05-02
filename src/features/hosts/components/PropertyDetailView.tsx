@@ -1070,23 +1070,29 @@ const PropertyDetailView: React.FC<PropertyDetailViewProps> = ({ property, isOpe
                                                             {t({ en: 'What is the size of the stairs?', fr: 'Quelle est la taille des escaliers ?' })}
                                                         </h5>
                                                         <div className="flex flex-wrap gap-3">
-                                                            {[
-                                                                { id: 'small', en: 'Small', fr: 'Petits' },
-                                                                { id: 'medium', en: 'Medium', fr: 'Moyens' },
-                                                                { id: 'big', en: 'Big', fr: 'Grands' }
-                                                            ].map(size => {
-                                                                const isSelected = automation.cleaningDetails.stairsSize === size.id;
-                                                                if (!isSelected) return (
-                                                                    <div key={size.id} className="px-5 py-2.5 rounded-full border text-[14px] font-semibold transition-all bg-white text-black border-neutral-200 opacity-60">
-                                                                        {t({ en: size.en, fr: size.fr })}
-                                                                    </div>
-                                                                );
-                                                                return (
-                                                                    <div key={size.id} className="px-5 py-2.5 rounded-full border text-[14px] font-semibold transition-all bg-white text-black border-black border-[2px]">
-                                                                        {t({ en: size.en, fr: size.fr })}
-                                                                    </div>
-                                                                );
-                                                            })}
+                                                            {typeof automation.cleaningDetails.stairsSize === 'number' || !isNaN(Number(automation.cleaningDetails.stairsSize)) ? (
+                                                                <div className="px-5 py-2.5 rounded-full border text-[14px] font-semibold transition-all bg-white text-black border-black border-[2px]">
+                                                                    {automation.cleaningDetails.stairsSize} {t({ en: 'Floors', fr: 'Étages' })}
+                                                                </div>
+                                                            ) : (
+                                                                [
+                                                                    { id: 'small', en: 'Small', fr: 'Petits' },
+                                                                    { id: 'medium', en: 'Medium', fr: 'Moyens' },
+                                                                    { id: 'big', en: 'Big', fr: 'Grands' }
+                                                                ].map(size => {
+                                                                    const isSelected = automation.cleaningDetails.stairsSize === size.id;
+                                                                    return (
+                                                                        <div 
+                                                                            key={size.id} 
+                                                                            className={`px-5 py-2.5 rounded-full border text-[14px] font-semibold transition-all bg-white text-black ${
+                                                                                isSelected ? 'border-black border-[2px]' : 'border-neutral-200 opacity-60'
+                                                                            }`}
+                                                                        >
+                                                                            {t({ en: size.en, fr: size.fr })}
+                                                                        </div>
+                                                                    );
+                                                                })
+                                                            )}
                                                         </div>
                                                     </div>
                                                 )}

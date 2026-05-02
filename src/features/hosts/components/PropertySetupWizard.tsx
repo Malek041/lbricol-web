@@ -199,7 +199,7 @@ const INTRO_STEPS = [
     },
 ];
 
-const CounterRow = ({ label, value, onChange, min = 0, py = "py-3" }: { label: string; value: number; onChange: (val: number) => void; min?: number; py?: string }) => (
+const CounterRow = ({ label, value, onChange, min = 0, max = Infinity, py = "py-3" }: { label: string; value: number; onChange: (val: number) => void; min?: number; max?: number; py?: string }) => (
     <div className={`flex justify-between items-center ${py}`}>
         {label && <span className="font-medium text-[18px] text-black pr-4">{label}</span>}
         <div className="flex items-center gap-4 shrink-0">
@@ -212,8 +212,9 @@ const CounterRow = ({ label, value, onChange, min = 0, py = "py-3" }: { label: s
             </button>
             <span className="text-[17px] font-light w-6 text-center text-black tabular-nums">{value}</span>
             <button
-                onClick={() => onChange(value + 1)}
-                className="w-8 h-8 rounded-full bg-[#F7F7F7] flex items-center justify-center active:scale-90 transition-all text-black"
+                onClick={() => onChange(Math.min(max, value + 1))}
+                disabled={value >= max}
+                className="w-8 h-8 rounded-full bg-[#F7F7F7] flex items-center justify-center active:scale-90 transition-all disabled:opacity-20 text-black"
             >
                 <div className="relative w-3 h-3 flex items-center justify-center">
                     <div className="absolute w-3 h-[1.5px] bg-black opacity-80" />
@@ -262,7 +263,7 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
     const [cleaningChecklist, setCleaningChecklist] = useState<string[]>(['']);
     const [cleaningPhotos, setCleaningPhotos] = useState<string[]>([]);
     const [isUploadingCleaningPhotos, setIsUploadingCleaningPhotos] = useState(false);
-    const [stairsSize, setStairsSize] = useState<'small' | 'medium' | 'big'>('medium');
+    const [stairsSize, setStairsSize] = useState<number>(1);
     const cleaningPhotoInputRef = useRef<HTMLInputElement>(null);
     const [activeServiceInfo, setActiveServiceInfo] = useState<string | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -1126,7 +1127,7 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                         })}
                     </div>
                     <div className="flex justify-between items-center">
-                        <button onClick={handleBack} className="font-light text-[16px] text-black underline underline-offset-4 active:scale-95 transition-all" >
+                        <button onClick={handleBack} className="font-bold text-[16px] text-black underline underline-offset-4 active:scale-95 transition-all" >
                             {t({ en: 'Back', fr: 'Retour' })}
                         </button>
                         <button
@@ -1233,7 +1234,7 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                         })}
                     </div>
                     <div className="flex justify-between items-center">
-                        <button onClick={handleBack} className="font-light text-[16px] text-black underline underline-offset-4 active:scale-95 transition-all" >
+                        <button onClick={handleBack} className="font-bold text-[16px] text-black underline underline-offset-4 active:scale-95 transition-all" >
                             {t({ en: 'Back', fr: 'Retour' })}
                         </button>
                         <button
@@ -2462,7 +2463,7 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                     </div>
 
                     <div className="flex justify-between items-center">
-                        <button onClick={handleBack} className="font-medium text-[17px] text-black underline underline-offset-4" >
+                        <button onClick={handleBack} className="font-bold text-[17px] text-black underline underline-offset-4" >
                             {t({ en: 'Back', fr: 'Retour', ar: 'عودة' })}
                         </button>
                         <button
@@ -2540,16 +2541,16 @@ const CleaningDetailForm = ({ data, onChange, onUploadingChange }: any) => {
         },
         {
             id: 'deep_cleaning',
-            label: 'Nettoyage Post-checkout',
-            fr: 'Nettoyage Post-checkout',
+            label: 'Nettoyage en profondeur',
+            fr: 'Nettoyage en profondeur',
             iconPath: '/Icons/deep clean.svg',
             hasFrequency: true
         },
         {
             id: 'stairs_cleaning',
-            label: 'Nettoyage Post-checkout',
-            fr: 'Nettoyage Post-checkout',
-            iconPath: '/Icons/Stairs cleaning.svg',
+            label: 'Nettoyage des escaliers',
+            fr: 'Nettoyage des escaliers',
+            iconPath: '/Icons/stairs cleaning.svg',
             hasCounter: true
         },
     ];
@@ -2580,8 +2581,8 @@ const CleaningDetailForm = ({ data, onChange, onUploadingChange }: any) => {
                                         onClick={() => toggleSubService(item.id)}
                                         className="w-full flex items-center justify-between px-10 py-12 text-left"
                                     >
-                                        <div className="flex-1 pr-16">
-                                            <span className="text-[26px] font-bold text-[#222222] leading-tight block">
+                                        <div className="flex-1 pr-20">
+                                            <span className="text-[23px] font-bold text-[#222222] leading-tight block">
                                                 {t({ en: item.label, fr: item.fr })}
                                             </span>
                                         </div>
@@ -2619,9 +2620,9 @@ const CleaningDetailForm = ({ data, onChange, onUploadingChange }: any) => {
                                                         <button
                                                             key={freq.id}
                                                             onClick={() => onChange({ frequencies: { ...(data.frequencies || {}), deep_cleaning: freq.id } })}
-                                                            className={`px-6 py-3 rounded-[10px] text-[14px] transition-all active:scale-95 border ${isActive
+                                                            className={`px-6 py-3 rounded-full text-[14px] transition-all active:scale-95 border ${isActive
                                                                 ? 'border-black bg-white text-[#222222] font-bold'
-                                                                : 'border-neutral-200 hover:border-black bg-white'
+                                                                : 'border-neutral-200 hover:border-black bg-white font-bold'
                                                                 }`}
                                                         >
                                                             {t({ en: freq.label, fr: freq.fr })}
@@ -2643,9 +2644,10 @@ const CleaningDetailForm = ({ data, onChange, onUploadingChange }: any) => {
                                                     <CounterRow
                                                         label=""
                                                         py="py-1"
-                                                        value={data.stairsSize === 'big' ? 3 : data.stairsSize === 'medium' ? 2 : 1}
-                                                        onChange={(val) => onChange({ stairsSize: val >= 3 ? 'big' : val === 2 ? 'medium' : 'small' })}
+                                                        value={Number(data.stairsSize || 1)}
+                                                        onChange={(val) => onChange({ stairsSize: val })}
                                                         min={1}
+                                                        max={10}
                                                     />
                                                 </div>
                                             </div>
