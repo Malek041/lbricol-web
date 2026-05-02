@@ -38,6 +38,7 @@ interface MapViewProps {
     name?: string;
     isFilteredOut?: boolean;
     zIndexOffset?: number;
+    activity?: string; // e.g. "Nettoyage post-checkout"
   }>;
   broadcastPins?: Array<{
     id: string;
@@ -596,15 +597,22 @@ const MapView: React.FC<MapViewProps> = ({
                   border: 1px solid ${isFocused ? '#027963' : '#F3F4F6'};
                   box-shadow: 0 4px 12px rgba(0,0,0,0.1);
                   display: flex; align-items: center; gap: 6px;">
-                  <span style="font-size: ${isFocused ? '13px' : '11px'}; font-weight: ${isFocused ? '900' : '700'}; 
-                    color: ${isFocused ? '#027963' : '#374151'}; font-family: sans-serif;
-                    letter-spacing: -0.2px;">
-                    ${(() => {
-                const emojis = ['❤️', '🥰', '🥳', '✨', '💖', '😊', '😇', '😍', '😻', '🧡'];
-                const index = pin.id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) % emojis.length;
-                return emojis[index];
-              })()} ${pin.name || 'Bricoler'}
-                  </span>
+                  <div style="display: flex; flex-direction: column; gap: 0px;">
+                    ${pin.activity ? `
+                      <span style="font-size: 9px; font-weight: 800; color: #6B7280; text-transform: uppercase; letter-spacing: 0.05em; line-height: 1;">
+                        ${pin.activity}
+                      </span>
+                    ` : ''}
+                    <span style="font-size: ${isFocused ? '13px' : '11px'}; font-weight: ${isFocused ? '900' : '700'}; 
+                      color: ${isFocused ? '#027963' : '#374151'}; font-family: sans-serif;
+                      letter-spacing: -0.2px;">
+                      ${(() => {
+                        const emojis = ['❤️', '🥰', '🥳', '✨', '💖', '😊', '😇', '😍', '😻', '🧡'];
+                        const index = String(pin.id).split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) % emojis.length;
+                        return emojis[index];
+                      })()} ${pin.name || 'Bricoleur'}
+                    </span>
+                  </div>
                   <div style="display: flex; align-items: center; gap: 2px; border-left: 1px solid #E5E7EB; padding-left: 6px;">
                     <span style="color: #FFC244; font-size: 11px;">★</span>
                     <span style="font-size: 11px; font-weight: 800; color: #111827;">${pin.rating ? Number(pin.rating).toFixed(1) : '0.0'}</span>
@@ -627,7 +635,7 @@ const MapView: React.FC<MapViewProps> = ({
         iconAnchor: [size / 2, size / 2],
       });
 
-      const marker = L.marker([pin.lat, pin.lng], { 
+      const marker = L.marker([Number(pin.lat), Number(pin.lng)], { 
         icon, 
         zIndexOffset: isFocused ? 2000 : (isFilteredOut ? -1000 : (pin.zIndexOffset || 0)),
         interactive: !isFilteredOut
@@ -651,7 +659,7 @@ const MapView: React.FC<MapViewProps> = ({
 
   // ── Fixed client pin marker for Step 2 (moves with map, always over GPS dot) ──
   useEffect(() => {
-    if (!clientPin || !mapRef.current || !mapReady) return;
+    if (!clientPin || !clientPin.lat || !clientPin.lng || !mapRef.current || !mapReady) return;
     const map = mapRef.current;
 
     const html = `
@@ -709,7 +717,7 @@ const MapView: React.FC<MapViewProps> = ({
 
   // ── Render destination pin marker ───────────────────────────────────
   useEffect(() => {
-    if (!destinationPin || !mapRef.current || !mapReady) return;
+    if (!destinationPin || !destinationPin.lat || !destinationPin.lng || !mapRef.current || !mapReady) return;
     const map = mapRef.current;
 
     const html = `

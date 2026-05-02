@@ -12,8 +12,10 @@ import {
     Monitor, WashingMachine, ShieldAlert, Flower2,
     Bot, Handshake, Zap, Calendar as CalendarIcon, Plus, CheckCircle2,
     Droplets, Package, BellRing, Wrench, Hammer, MonitorUp, Truck,
-    Paintbrush, ChefHat, Map, BookOpen, Plane
+    Paintbrush, ChefHat, Map, BookOpen, Plane,
+    MoreHorizontal
 } from 'lucide-react';
+import { SERVICES_CATALOGUE } from '@/config/services_catalogue';
 import Image from 'next/image';
 import { useLanguage } from '@/context/LanguageContext';
 import MapView from '@/components/location-picker/MapView';
@@ -22,7 +24,10 @@ import { TbBuildingEstate, TbBuildingCottage, TbBuildingMosque } from 'react-ico
 import { Warehouse, Bed, Ship, Tent, Castle, Hotel as HotelIcon } from 'lucide-react';
 import ScheduleInterventionView from './ScheduleInterventionView';
 import { db } from '@/lib/firebase';
-import { collection, onSnapshot, query, where, limit, getDocs, doc, deleteDoc } from 'firebase/firestore';
+import { collection, onSnapshot, query, where, limit, getDocs, doc, deleteDoc, serverTimestamp, addDoc } from 'firebase/firestore';
+import dynamic from 'next/dynamic';
+
+const DiscoveryMapView = dynamic(() => import('@/components/location-picker/MapView'), { ssr: false });
 import { cn } from '@/lib/utils';
 
 interface PropertyDetailViewProps {
@@ -143,6 +148,14 @@ const PropertyDetailView: React.FC<PropertyDetailViewProps> = ({ property, isOpe
     const [viewMode, setViewMode] = useState<'month' | 'day'>('month');
     const [isViewSheetOpen, setIsViewSheetOpen] = useState(false);
     const [selectedDate, setSelectedDate] = useState<Date | null>(new Date());
+    const [currentTime, setCurrentTime] = useState(new Date());
+
+    useEffect(() => {
+        const timer = setInterval(() => {
+            setCurrentTime(new Date());
+        }, 30000);
+        return () => clearInterval(timer);
+    }, []);
     const [selectedDays, setSelectedDays] = useState<string[]>([]);
     const [selectedAction, setSelectedAction] = useState<'checkin' | 'checkout' | 'other' | null>(null);
     const [isProgramSheetOpen, setIsProgramSheetOpen] = useState(false);
@@ -155,8 +168,30 @@ const PropertyDetailView: React.FC<PropertyDetailViewProps> = ({ property, isOpe
     const [selectedAutomationDetail, setSelectedAutomationDetail] = useState<string | null>(null);
     const [teamMembers, setTeamMembers] = useState<any[]>([]);
     const [managedBricolers, setManagedBricolers] = useState<any[]>([]);
+    const [allCityBricolers, setAllCityBricolers] = useState<any[]>([]);
     const [isLoadingTeam, setIsLoadingTeam] = useState(false);
     const [isCopying, setIsCopying] = useState(false);
+    const [propertyJobs, setPropertyJobs] = useState<any[]>([]);
+    const [showBricolerMap, setShowBricolerMap] = useState(false);
+    const [focusedMapBricolerId, setFocusedMapBricolerId] = useState<string | null>(null);
+    const [detectedCity, setDetectedCity] = useState<string | null>(null);
+
+    // Detect user's current city if property location is missing
+    useEffect(() => {
+        if (!property?.city && !property?.specs?.address && "geolocation" in navigator) {
+            navigator.geolocation.getCurrentPosition(async (position) => {
+                try {
+                    const { latitude, longitude } = position.coords;
+                    const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`);
+                    const data = await res.json();
+                    const city = data.address.city || data.address.town || data.address.village || data.address.state;
+                    if (city) setDetectedCity(city);
+                } catch (err) {
+                    console.error("Error detecting city:", err);
+                }
+            });
+        }
+    }, [property]);
 
     const scrollToCurrent = () => {
         if (activeTab === 'planning' && viewMode === 'month') {
@@ -169,12 +204,29 @@ const PropertyDetailView: React.FC<PropertyDetailViewProps> = ({ property, isOpe
     };
 
     useEffect(() => {
-        if (activeTab === 'planning' && viewMode === 'month') {
-            setTimeout(() => {
+        if (isOpen && activeTab === 'planning' && viewMode === 'month') {
+            const timer = setTimeout(() => {
                 scrollToCurrent();
             }, 150);
+            const timer2 = setTimeout(() => {
+                scrollToCurrent();
+            }, 500); // Second attempt to be sure
+            return () => {
+                clearTimeout(timer);
+                clearTimeout(timer2);
+            };
         }
-    }, [activeTab, viewMode]);
+    }, [isOpen, activeTab, viewMode]);
+
+    useEffect(() => {
+        if (!property?.id) return;
+        const q = query(collection(db, 'jobs'), where('propertyId', '==', property.id));
+        const unsubscribe = onSnapshot(q, (snap) => {
+            const jobs = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            setPropertyJobs(jobs);
+        });
+        return () => unsubscribe();
+    }, [property?.id]);
 
     useEffect(() => {
         if (!property?.id || activeTab !== 'team') return;
@@ -187,25 +239,53 @@ const PropertyDetailView: React.FC<PropertyDetailViewProps> = ({ property, isOpe
             setIsLoadingTeam(false);
         });
 
-        // Also fetch suggested managed bricolers (simplified logic for now)
+        // Also fetch suggested managed bricolers
         const fetchManaged = async () => {
             try {
+                // Fetch a broader set of bricolers to filter locally (avoids index issues)
                 const bricolersQ = query(
                     collection(db, 'bricolers'),
-                    where('city', '==', property.city || 'Marrakech'),
-                    where('isVerified', '==', true),
-                    limit(5)
+                    limit(500)
                 );
+
                 const bricolersSnap = await getDocs(bricolersQ);
-                setManagedBricolers(bricolersSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+                const allBricolers = bricolersSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+                // Determine the target city (Property city -> Property address -> GPS detected city)
+                const propertyAddress = (property.specs?.address || '').toLowerCase();
+                const propertyCity = (property.city || '').toLowerCase();
+
+                let targetCity = '';
+                if (propertyCity) targetCity = propertyCity;
+                else if (propertyAddress.includes('essaouira')) targetCity = 'essaouira';
+                else if (propertyAddress.includes('marrakech')) targetCity = 'marrakech';
+                else if (detectedCity) targetCity = detectedCity.toLowerCase();
+
+                // Filter by city similarity
+                let filtered = allBricolers.filter((b: any) => {
+                    const bCity = (b.city || '').toLowerCase();
+                    return targetCity && bCity.includes(targetCity);
+                });
+
+                // Fallback: If no city match, take any bricolers from the same general area or top rated
+                if (filtered.length === 0) {
+                    filtered = allBricolers
+                        .sort((a: any, b: any) => (b.rating || 0) - (a.rating || 0))
+                        .slice(0, 50);
+                }
+
+                setAllCityBricolers(filtered);
+                setManagedBricolers(filtered.slice(0, 6));
             } catch (err) {
                 console.error("Error fetching managed bricolers:", err);
+            } finally {
+                setIsLoadingTeam(false);
             }
         };
         fetchManaged();
 
         return () => unsubscribe();
-    }, [property?.id, activeTab]);
+    }, [property?.id, property?.city, property?.specs?.address, detectedCity, activeTab]);
 
 
     if (!property) return null;
@@ -226,8 +306,8 @@ const PropertyDetailView: React.FC<PropertyDetailViewProps> = ({ property, isOpe
     const teamManagement = automation.teamManagement || {};
     const propertyCode = property.propertyCode || teamManagement.code;
     const automationServices = automation.services || [];
-    const guestServices = (automation.guestServices && automation.guestServices.length > 0) 
-        ? automation.guestServices 
+    const guestServices = (automation.guestServices && automation.guestServices.length > 0)
+        ? automation.guestServices
         : automationServices.filter((id: string) => GUEST_SERVICE_MAP[id]);
     const futureServices = (automation.futureServices && automation.futureServices.length > 0)
         ? automation.futureServices
@@ -267,7 +347,7 @@ const PropertyDetailView: React.FC<PropertyDetailViewProps> = ({ property, isOpe
                                 className="mt-6"
                             >
                                 {/* Image Gallery */}
-                                <div className="relative mx-6 rounded-2xl overflow-hidden shadow-sm">
+                                <div className="relative mx-6 rounded-2xl overflow-hidden">
                                     <div
                                         className="flex overflow-x-auto snap-x snap-mandatory no-scrollbar aspect-[4/3] bg-neutral-100"
                                         onScroll={(e) => {
@@ -398,7 +478,7 @@ const PropertyDetailView: React.FC<PropertyDetailViewProps> = ({ property, isOpe
                                                                     setSelectedAutomationDetail(svcId);
                                                                 }
                                                             }}
-                                                            className="flex items-center gap-2 px-4 py-2 rounded-full border border-black bg-neutral-50 shadow-sm active:scale-95 transition-all cursor-pointer"
+                                                            className="flex items-center gap-2 px-4 py-2 rounded-full border border-black bg-neutral-50 active:scale-95 transition-all cursor-pointer"
                                                         >
                                                             <Icon size={18} className="text-black" />
                                                             <span className="text-[14px] font-semibold text-black">{t(svc.label)}</span>
@@ -461,7 +541,7 @@ const PropertyDetailView: React.FC<PropertyDetailViewProps> = ({ property, isOpe
                                             </p>
                                             <div className="flex items-center justify-between p-5 bg-neutral-50 rounded-2xl border border-neutral-100">
                                                 <div className="flex items-center gap-4">
-                                                    <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-sm">
+                                                    <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center">
                                                         <QrCode size={20} />
                                                     </div>
                                                     <div className="flex flex-col">
@@ -473,7 +553,7 @@ const PropertyDetailView: React.FC<PropertyDetailViewProps> = ({ property, isOpe
                                                     onClick={() => {
                                                         navigator.clipboard.writeText(propertyCode);
                                                     }}
-                                                    className="p-3 bg-white rounded-full border border-neutral-200 active:scale-90 transition-all shadow-sm"
+                                                    className="p-3 bg-white rounded-full border border-neutral-200 active:scale-90 transition-all"
                                                 >
                                                     <Copy size={20} />
                                                 </button>
@@ -493,7 +573,7 @@ const PropertyDetailView: React.FC<PropertyDetailViewProps> = ({ property, isOpe
                                     {/* Location Section */}
                                     <div className="mt-12 pt-12 border-t border-neutral-100">
                                         <h2 className="text-[22px] font-bold mb-6">Où se situe le logement</h2>
-                                        <div className="h-[240px] rounded-2xl overflow-hidden relative border border-neutral-100 shadow-sm">
+                                        <div className="h-[240px] rounded-2xl overflow-hidden relative border border-neutral-100">
                                             <MapView
                                                 onLocationChange={() => { }}
                                                 initialLocation={property.location || { lat: 31.5085, lng: -9.7595 }}
@@ -563,8 +643,9 @@ const PropertyDetailView: React.FC<PropertyDetailViewProps> = ({ property, isOpe
                                                             const isToday = monthIdx === today.getMonth() && day === today.getDate() && year === today.getFullYear();
                                                             const isPast = monthIdx < today.getMonth() || (monthIdx === today.getMonth() && day < today.getDate());
 
-                                                            const dayDate = `${year}-${monthIdx}-${day}`;
+                                                            const dayDate = `${year}-${String(monthIdx + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
                                                             const isSelected = selectedDays.includes(dayDate);
+                                                            const dayJobs = propertyJobs.filter(j => j.date === dayDate);
 
                                                             const handleInteractionStart = (e: React.PointerEvent) => {
                                                                 pointerStartPos.current = { x: e.clientX, y: e.clientY };
@@ -615,7 +696,7 @@ const PropertyDetailView: React.FC<PropertyDetailViewProps> = ({ property, isOpe
                                                                     onPointerUp={handleInteractionEnd}
                                                                     onPointerCancel={handleInteractionEnd}
                                                                     className={`h-[110px] rounded-[10px] border flex items-start p-2 transition-all cursor-pointer relative ${isSelected ? 'border-[#2C2C2C] border-[1.5px] bg-[#F7F7F7] z-10  scale-[1.01]' :
-                                                                        isToday ? 'border-black border-[1px] bg-white ring-1 ring-black shadow-sm' :
+                                                                        isToday ? 'border-black border-[1px] bg-white ring-1 ring-black' :
                                                                             isPast ? 'border-neutral-50 bg-[#F7F7F7]' : 'border-neutral-100 bg-white hover:border-neutral-300'
                                                                         }`}
                                                                 >
@@ -624,10 +705,28 @@ const PropertyDetailView: React.FC<PropertyDetailViewProps> = ({ property, isOpe
                                                                         {day}
                                                                     </span>
                                                                     {isSelected && (
-                                                                        <div className="absolute top-2 right-2 text-white bg-white rounded-full shadow-sm">
-                                                                            <CheckCircle2 size={16} fill="#2C2C2C" stroke="white" />
+                                                                        <div className="absolute top-2 right-2">
+                                                                            <CheckCircle2 size={16} className="text-black" />
                                                                         </div>
                                                                     )}
+
+                                                                    {/* Jobs Indicators */}
+                                                                    <div className="mt-auto flex flex-wrap gap-1">
+                                                                        {dayJobs.map((job, idx) => {
+                                                                            const svc = SERVICES_CATALOGUE.find(s => s.id === job.service);
+                                                                            if (idx > 2) return idx === 3 ? <MoreHorizontal key="more" size={12} className="text-neutral-300" /> : null;
+                                                                            return (
+                                                                                <div key={job.id} className="relative w-5 h-5 rounded-[4px] bg-neutral-50 flex items-center justify-center border border-neutral-100">
+                                                                                    {svc?.iconPath ? (
+                                                                                        <img src={svc.iconPath} className="w-3.5 h-3.5 object-contain" alt="" />
+                                                                                    ) : (
+                                                                                        <Sparkles size={10} />
+                                                                                    )}
+                                                                                    <div className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full bg-green-500 border-white border-[1.5px]" />
+                                                                                </div>
+                                                                            );
+                                                                        })}
+                                                                    </div>
                                                                 </div>
                                                             );
                                                         })}
@@ -651,23 +750,24 @@ const PropertyDetailView: React.FC<PropertyDetailViewProps> = ({ property, isOpe
                                         <div className="relative pt-2">
                                             {/* Current Time Line */}
                                             {(() => {
-                                                const now = new Date();
                                                 const isSelectedDayToday = selectedDate &&
-                                                    selectedDate.getDate() === now.getDate() &&
-                                                    selectedDate.getMonth() === now.getMonth() &&
-                                                    selectedDate.getFullYear() === now.getFullYear();
+                                                    selectedDate.getDate() === currentTime.getDate() &&
+                                                    selectedDate.getMonth() === currentTime.getMonth() &&
+                                                    selectedDate.getFullYear() === currentTime.getFullYear();
 
                                                 if (!isSelectedDayToday) return null;
 
-                                                const startHour = 6;
-                                                const endHour = 20;
-                                                const currentHour = now.getHours();
-                                                const currentMinutes = now.getMinutes();
+                                                const currentHour = currentTime.getHours();
+                                                const currentMinutes = currentTime.getMinutes();
 
-                                                if (currentHour < startHour || currentHour > endHour) return null;
+                                                // The hours list starts at 7:00 AM
+                                                // [7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 0, 1, 2, 3, 4, 5, 6]
+                                                const logicalHour = currentHour >= 7 ? currentHour - 7 : currentHour + 17;
+                                                const totalMinutesSinceStart = logicalHour * 60 + currentMinutes;
 
-                                                const totalMinutesSinceStart = (currentHour - startHour) * 60 + currentMinutes;
-                                                const hourHeight = 76.5;
+                                                // Each hour row is exactly 76.5px high (space-y-14 = 56px + row content approx 20.5px)
+                                                // Each hour row is exactly 80px high
+                                                const hourHeight = 80;
                                                 const topOffset = (totalMinutesSinceStart / 60) * hourHeight;
 
                                                 return (
@@ -675,20 +775,20 @@ const PropertyDetailView: React.FC<PropertyDetailViewProps> = ({ property, isOpe
                                                         className="absolute left-0 right-0 z-20 flex items-center gap-2 pointer-events-none transition-all duration-1000"
                                                         style={{ top: `${topOffset + 10}px` }}
                                                     >
-                                                        <div className="bg-[#FF385C] text-white text-[10px] font-bold px-1.5 py-0.5 rounded-md shadow-sm ml-8">
-                                                            {currentHour}:{currentMinutes.toString().padStart(2, '0')}
+                                                        <div className="bg-[#FF385C] text-white text-[10px] font-bold px-1.5 py-0.5 rounded-md ml-8">
+                                                            {currentTime.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
                                                         </div>
-                                                        <div className="flex-1 h-[2px] bg-[#FF385C] shadow-[0_0_8px_rgba(255,56,92,0.4)]" />
-                                                        <div className="w-2 h-2 rounded-full bg-[#FF385C] -ml-1 shadow-md" />
+                                                        <div className="flex-1 h-[2px] bg-[#FF385C]" />
+                                                        <div className="w-2 h-2 rounded-full bg-[#FF385C] -ml-1" />
                                                     </div>
                                                 );
                                             })()}
 
-                                            <div className="space-y-14">
+                                            <div className="flex flex-col">
                                                 {[7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 0, 1, 2, 3, 4, 5, 6].map(hour => (
-                                                    <div key={hour} className="flex gap-6 items-start">
-                                                        <span className="text-[13px] font-bold text-neutral-400 w-12 text-right">{hour}:00</span>
-                                                        <div className="flex-1 h-[1px] bg-neutral-100 mt-2.5" />
+                                                    <div key={hour} className="flex gap-6 items-start h-[80px]">
+                                                        <span className="text-[13px] font-bold text-neutral-400 w-12 text-right pt-[2px]">{hour}:00</span>
+                                                        <div className="flex-1 h-[1px] bg-neutral-100 mt-[10px]" />
                                                     </div>
                                                 ))}
                                             </div>
@@ -708,11 +808,8 @@ const PropertyDetailView: React.FC<PropertyDetailViewProps> = ({ property, isOpe
                                 className="px-6 py-8 space-y-12 pb-32"
                             >
                                 <div className="space-y-6">
-                                    <div className="space-y-1">
-                                        <h3 className="font-bold text-[20px] text-black tracking-tight">{t({ en: 'Invite a member', fr: 'Inviter un membre' })}</h3>
-                                        <p className="text-[14px] text-neutral-500 font-medium">{t({ en: 'Share this code with your staff to manage the property together.', fr: 'Partagez ce code avec votre personnel pour gérer le logement ensemble.' })}</p>
-                                    </div>
-                                    
+
+
                                     <div className="relative group">
                                         <div className="flex items-center justify-between border-[1.5px] border-neutral-200 focus-within:border-black rounded-[5px] bg-neutral-50/50 p-5 transition-all">
                                             <div className="flex flex-col gap-0.5">
@@ -726,11 +823,14 @@ const PropertyDetailView: React.FC<PropertyDetailViewProps> = ({ property, isOpe
                                                     showToast({ title: t({ en: 'Code copied!', fr: 'Code copié !' }), variant: 'success' });
                                                     setTimeout(() => setIsCopying(false), 2000);
                                                 }}
-                                                className="w-14 h-14 rounded-[5px] flex items-center justify-center bg-white border border-neutral-200 hover:border-black transition-all active:scale-95 shadow-sm"
+                                                className="w-14 h-14 rounded-[5px] flex items-center justify-center bg-white border border-neutral-200 hover:border-black transition-all active:scale-95"
                                             >
                                                 {isCopying ? <Check size={22} className="text-[#01A083]" /> : <Copy size={22} className="text-black" />}
                                             </button>
                                         </div>
+                                    </div>
+                                    <div className="space-y-1">
+                                        <p className="text-[14px] text-neutral-500 font-medium">{t({ en: 'Share this code with your staff to manage the property together.', fr: 'Partagez ce code avec votre personnel pour gérer le logement ensemble.' })}</p>
                                     </div>
                                 </div>
 
@@ -801,44 +901,128 @@ const PropertyDetailView: React.FC<PropertyDetailViewProps> = ({ property, isOpe
                                 </div>
                                 <div className="space-y-6">
                                     <div className="flex items-center justify-between">
-                                        <div className="flex items-center gap-2">
+                                        <div className="space-y-1">
                                             <h3 className="font-black text-[22px] text-black tracking-tight">{t({ en: 'Lbricol Bricolers', fr: 'Bricoleurs Lbricol' })}</h3>
+                                            <p className="text-[14px] text-neutral-500 leading-relaxed font-medium">
+                                                {t({
+                                                    en: 'Qualified professionals in your area.',
+                                                    fr: 'Professionnels qualifiés dans votre zone.'
+                                                })}
+                                            </p>
                                         </div>
-                                    </div>
-                                    <p className="text-[14px] text-neutral-500 leading-relaxed">
-                                        {t({
-                                            en: 'Qualified professionals in your area available for your automation needs.',
-                                            fr: 'Des professionnels qualifiés dans votre zone disponibles pour vos besoins d\'automatisation.'
-                                        })}
-                                    </p>
-                                    <div className="space-y-4">
-                                    <div className="space-y-3">
-                                        {managedBricolers.map((b) => (
-                                            <div key={b.id} className="group flex items-center gap-4 p-4 rounded-[5px] border border-neutral-100 bg-white hover:border-black transition-all cursor-pointer">
-                                                <div className="relative w-12 h-12 rounded-[5px] overflow-hidden bg-neutral-100 shrink-0">
-                                                    <img src={b.photoURL || b.avatar || b.profilePhotoURL} alt="" className="w-full h-full object-cover" />
-                                                </div>
-                                                <div className="flex-1 min-w-0">
-                                                    <div className="flex items-center gap-2">
-                                                        <h4 className="font-bold text-[16px] text-black truncate">{b.name || b.displayName}</h4>
-                                                        <div className="flex items-center gap-1">
-                                                            <Star size={12} className="text-amber-400 fill-amber-400" />
-                                                            <span className="text-[12px] font-bold text-black">{b.rating || '5.0'}</span>
-                                                        </div>
-                                                    </div>
-                                                    <p className="text-[12px] text-neutral-400 font-medium truncate mt-0.5">
-                                                        {b.serviceIds?.map((s: string) => s.charAt(0).toUpperCase() + s.slice(1)).join(', ')}
-                                                    </p>
-                                                </div>
-                                                <button className="px-5 py-2.5 bg-black text-white rounded-full text-[12px] font-bold active:scale-95 transition-all">
-                                                    {t({ en: 'Book', fr: 'Réserver' })}
-                                                </button>
-                                            </div>
-                                        ))}
-                                        <button className="w-full bg-[#2C2C2C] py-4.5 h-14 flex items-center justify-center text-white font-bold text-[15px] rounded-[5px] active:scale-[0.98] transition-all">
-                                            {t({ en: 'See all local pros', fr: 'Voir tous les pros locaux' })}
+                                        <button
+                                            onClick={() => setShowBricolerMap(true)}
+                                            className="text-[14px] font-bold text-[#01A083] hover:underline"
+                                        >
+                                            {t({ en: 'See more', fr: 'Voir plus' })}
                                         </button>
                                     </div>
+
+                                    <div className="relative -mx-6 px-6">
+                                        <div className="flex gap-4 overflow-x-auto no-scrollbar pb-6 snap-x snap-mandatory">
+                                            {managedBricolers.length > 0 ? (
+                                                managedBricolers.map((b) => {
+                                                    const primaryService = b.services?.[0];
+                                                    const activityName = primaryService?.subServiceName || primaryService?.label?.fr || primaryService?.label?.en || 'Bricoler';
+                                                    const rate = primaryService?.hourlyRate || b.minRate || 80;
+
+                                                    return (
+                                                        <div
+                                                            key={b.id}
+                                                            className="flex-shrink-0 w-[320px] snap-center bg-white border border-neutral-100 rounded-[12px] p-4 flex flex-col gap-4"
+                                                        >
+                                                            {/* Top Section: Avatar & Basic Info */}
+                                                            <div className="flex gap-4">
+                                                                <div className="relative w-16 h-16 flex-shrink-0">
+                                                                    <img
+                                                                        src={b.avatarUrl || b.avatar || b.photoURL || '/Images/Vectors Illu/LbricolFaceOY.webp'}
+                                                                        className="w-full h-full object-cover rounded-full"
+                                                                        alt=""
+                                                                    />
+                                                                    {b.isLive && (
+                                                                        <div className="absolute bottom-1 right-1 w-3 h-3 rounded-full bg-[#22c55e] border-2 border-white" />
+                                                                    )}
+                                                                </div>
+
+                                                                <div className="flex-1 min-w-0">
+                                                                    <div className="flex justify-between items-start mb-1">
+                                                                        <h4 className="font-bold text-[17px] text-black truncate">{b.name || b.displayName}</h4>
+                                                                        <div className="text-right">
+                                                                            <span className="text-[16px] font-black text-black">{rate} MAD/hr</span>
+                                                                        </div>
+                                                                    </div>
+
+                                                                    <div className="flex flex-wrap gap-1.5 mb-2">
+                                                                        {b.isVerified && (
+                                                                            <span className="px-1.5 py-0.5 bg-purple-50 text-purple-600 rounded-[3px] text-[9px] font-black uppercase tracking-wider flex items-center gap-1">
+                                                                                🏆 ELITE
+                                                                            </span>
+                                                                        )}
+                                                                        <span className="px-1.5 py-0.5 bg-emerald-50 text-emerald-700 rounded-[3px] text-[9px] font-black uppercase tracking-wider">
+                                                                            2 HOUR MINIMUM
+                                                                        </span>
+                                                                    </div>
+
+                                                                    <div className="flex items-center gap-1.5 text-[13px] text-black font-bold">
+                                                                        <Star size={14} fill="black" stroke="black" />
+                                                                        <span>{Number(b.rating || 5.0).toFixed(1)} ({b.reviewsCount || 0} reviews)</span>
+                                                                    </div>
+
+                                                                    <div className="flex items-center gap-1.5 mt-1 text-[13px] text-neutral-600">
+                                                                        <div className="w-4 h-4 rounded-full border border-neutral-300 flex items-center justify-center">
+                                                                            <Check size={10} strokeWidth={4} />
+                                                                        </div>
+                                                                        <span className="font-medium">{b.taskCount || 0} {activityName} tasks</span>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+
+                                                            {/* Bio Bubble */}
+                                                            <div className="bg-neutral-50 rounded-[8px] p-3 relative">
+                                                                <p className="text-[13px] text-neutral-600 line-clamp-3 leading-relaxed font-medium">
+                                                                    Hello 👋 {b.bio || t({ en: 'I am proficient in a wide range of property management techniques tailored to your needs.', fr: 'Je maîtrise un large éventail de techniques de gestion de propriété adaptées à vos besoins.' })}
+                                                                </p>
+                                                                <button className="text-[13px] font-black text-[#01A083] mt-1 hover:underline">Read More</button>
+                                                            </div>
+
+                                                            {/* Action Buttons */}
+                                                            <div className="flex flex-col gap-2 mt-auto">
+                                                                <button
+                                                                    className="w-full py-2 bg-[#01A083] text-white rounded-full font-medium text-[17px] active:scale-[0.98] transition-all"
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        setFocusedMapBricolerId(b.id);
+                                                                        setShowBricolerMap(true);
+                                                                    }}
+                                                                >
+                                                                    Consultez
+                                                                </button>
+                                                                <button className="w-full py-2 bg-neutral-100 text-black rounded-full font-medium text-[17px] active:scale-[0.98] transition-all border border-neutral-200/50">
+                                                                    Changer
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })
+                                            ) : isLoadingTeam ? (
+                                                Array.from({ length: 3 }).map((_, i) => (
+                                                    <div key={i} className="flex-shrink-0 w-[280px] h-[220px] rounded-[5px] bg-neutral-50" />
+                                                ))
+                                            ) : (
+                                                <div className="flex-1 py-10 rounded-[5px] bg-neutral-50 flex flex-col items-center justify-center text-center px-8 border border-dashed border-neutral-200">
+                                                    <div className="w-12 h-12 rounded-full bg-white flex items-center justify-center mb-3">
+                                                        <MapPin size={20} className="text-neutral-300" />
+                                                    </div>
+                                                    <h5 className="font-bold text-black mb-1">{t({ en: 'No local bricolers found', fr: 'Aucun bricoleur local trouvé' })}</h5>
+                                                    <p className="text-[12px] text-neutral-500 font-medium leading-relaxed">
+                                                        {t({
+                                                            en: 'Try setting your property exact location or activating GPS to discover nearby pros.',
+                                                            fr: 'Essayez de définir l\'emplacement exact ou d\'activer le GPS pour découvrir les pros à proximité.'
+                                                        })}
+                                                    </p>
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
                             </motion.div>
@@ -898,22 +1082,21 @@ const PropertyDetailView: React.FC<PropertyDetailViewProps> = ({ property, isOpe
                                 animate={{ y: 0, opacity: 1 }}
                                 exit={{ y: 100, opacity: 0 }}
                                 transition={{ type: 'spring', damping: 20, stiffness: 100, delay: 0.3 }}
-                                className="fixed bottom-0 left-0 right-0 z-[10110] bg-white border-t border-neutral-100 flex justify-around items-center px-4 py-2 pb-safe shadow-[0_-4px_20px_rgba(0,0,0,0.05)]"
+                                className="fixed bottom-0 left-0 right-0 z-[10110] bg-white border-t border-neutral-100 flex justify-around items-center px-4 py-2 pb-safe"
                             >
                                 {PROPERTY_TABS.map((tab) => (
                                     <button
                                         key={tab.id}
                                         onClick={() => {
                                             if (tab.id === 'planning') {
-                                                if (activeTab === 'planning') {
-                                                    if (viewMode === 'day') {
-                                                        setViewMode('month');
-                                                    } else {
-                                                        scrollToCurrent();
-                                                    }
-                                                } else {
+                                                if (activeTab !== 'planning') {
                                                     setActiveTab('planning');
                                                 }
+                                                setViewMode('month');
+                                                // Immediate scroll attempt plus a slightly delayed one for when switching from other tabs
+                                                scrollToCurrent();
+                                                setTimeout(scrollToCurrent, 100);
+                                                setTimeout(scrollToCurrent, 300);
                                             } else {
                                                 setActiveTab(tab.id as any);
                                             }
@@ -944,7 +1127,7 @@ const PropertyDetailView: React.FC<PropertyDetailViewProps> = ({ property, isOpe
                                 initial={{ y: 100 }}
                                 animate={{ y: 0 }}
                                 exit={{ y: 100 }}
-                                className="fixed bottom-0 left-0 right-0 z-[10110] bg-white border-t border-neutral-100 flex items-center justify-between px-2 py-4 pb-safe shadow-[0_-4px_20px_rgba(0,0,0,0.1)]"
+                                className="fixed bottom-0 left-0 right-0 z-[10110] bg-white border-t border-neutral-100 flex items-center justify-between px-2 py-4 pb-safe"
                             >
                                 <div className="flex flex-1 items-center justify-around gap-1 overflow-x-auto no-scrollbar">
                                     <button
@@ -984,6 +1167,7 @@ const PropertyDetailView: React.FC<PropertyDetailViewProps> = ({ property, isOpe
                         {isProgramSheetOpen && (
                             <ScheduleInterventionView
                                 property={property}
+                                selectedDates={selectedDays}
                                 onClose={() => setIsProgramSheetOpen(false)}
                                 onConfirm={(jobs) => {
                                     setIsProgramSheetOpen(false);
@@ -1052,7 +1236,7 @@ const PropertyDetailView: React.FC<PropertyDetailViewProps> = ({ property, isOpe
                                         {automation.cleaningDetails.subServices?.map((subId: string) => (
                                             <div
                                                 key={subId}
-                                                className="space-y-6 p-8 rounded-[10px] border border-neutral-200 bg-white shadow-sm overflow-hidden"
+                                                className="space-y-6 p-8 rounded-[10px] border border-neutral-200 bg-white overflow-hidden"
                                             >
                                                 <h4 className="font-medium text-[18px] text-black leading-snug">
                                                     {subId === 'hospitality' && t({ en: 'When should we do the post-checkout cleaning?', fr: 'Quand devrions-nous faire le ménage après chaque départ ?' })}
@@ -1108,11 +1292,10 @@ const PropertyDetailView: React.FC<PropertyDetailViewProps> = ({ property, isOpe
                                                                 ].map(size => {
                                                                     const isSelected = automation.cleaningDetails.stairsSize === size.id;
                                                                     return (
-                                                                        <div 
-                                                                            key={size.id} 
-                                                                            className={`px-5 py-2.5 rounded-full border text-[14px] font-semibold transition-all bg-white text-black ${
-                                                                                isSelected ? 'border-black border-[2px]' : 'border-neutral-200 opacity-60'
-                                                                            }`}
+                                                                        <div
+                                                                            key={size.id}
+                                                                            className={`px-5 py-2.5 rounded-full border text-[14px] font-semibold transition-all bg-white text-black ${isSelected ? 'border-black border-[2px]' : 'border-neutral-200 opacity-60'
+                                                                                }`}
                                                                         >
                                                                             {t({ en: size.en, fr: size.fr })}
                                                                         </div>
@@ -1166,7 +1349,7 @@ const PropertyDetailView: React.FC<PropertyDetailViewProps> = ({ property, isOpe
                                                 </p>
                                                 <div className="grid grid-cols-2 gap-3">
                                                     {automation.cleaningDetails.referencePhotos.map((photo: string, idx: number) => (
-                                                        <div key={idx} className="relative aspect-square rounded-[16px] overflow-hidden shadow-sm border border-neutral-100">
+                                                        <div key={idx} className="relative aspect-square rounded-[16px] overflow-hidden border border-neutral-100">
                                                             <img src={photo} alt="" className="w-full h-full object-cover" />
                                                         </div>
                                                     ))}
@@ -1251,7 +1434,7 @@ const PropertyDetailView: React.FC<PropertyDetailViewProps> = ({ property, isOpe
 
                                         {/* Lawn Mowing Details */}
                                         {automation.gardeningDetails.subServices?.includes('lawn_mowing') && (
-                                            <div className="space-y-8 p-8 rounded-2xl border border-neutral-200 bg-white shadow-sm overflow-hidden">
+                                            <div className="space-y-8 p-8 rounded-2xl border border-neutral-200 bg-white overflow-hidden">
                                                 <h4 className="font-black text-[25px] text-black border-b border-neutral-200 pb-4 mb-4 flex items-center gap-2">
                                                     {t({ en: 'Lawn Mowing Details', fr: 'Détails de la tonte' })}
                                                 </h4>
@@ -1287,7 +1470,7 @@ const PropertyDetailView: React.FC<PropertyDetailViewProps> = ({ property, isOpe
                                                         <span className="text-[17px] font-medium text-black leading-tight">{t({ en: 'Should the bricoler bring mower?', fr: 'Le bricoleur doit-il apporter sa tondeuse ?' })}</span>
                                                     </div>
                                                     <div className={`w-14 h-8 rounded-full transition-all flex items-center px-1 shrink-0 ${automation.gardeningDetails.shouldBringMower ? 'bg-black' : 'bg-neutral-200'}`}>
-                                                        <div className={`w-6 h-6 rounded-full bg-white shadow-sm transition-all ${automation.gardeningDetails.shouldBringMower ? 'translate-x-6' : 'translate-x-0'}`} />
+                                                        <div className={`w-6 h-6 rounded-full bg-white transition-all ${automation.gardeningDetails.shouldBringMower ? 'translate-x-6' : 'translate-x-0'}`} />
                                                     </div>
                                                 </div>
                                             </div>
@@ -1295,7 +1478,7 @@ const PropertyDetailView: React.FC<PropertyDetailViewProps> = ({ property, isOpe
 
                                         {/* Trimming Details */}
                                         {automation.gardeningDetails.subServices?.includes('trimming') && (
-                                            <div className="space-y-8 p-8 rounded-2xl border border-neutral-200 bg-white shadow-sm overflow-hidden">
+                                            <div className="space-y-8 p-8 rounded-2xl border border-neutral-200 bg-white overflow-hidden">
                                                 <h4 className="font-black text-[25px] text-black border-b border-neutral-100 pb-4 mb-4 flex items-center gap-2">
                                                     {t({ en: 'Branch & Hedge Trimming', fr: 'Taille branches et haies' })}
                                                 </h4>
@@ -1359,7 +1542,7 @@ const PropertyDetailView: React.FC<PropertyDetailViewProps> = ({ property, isOpe
                                                         </span>
                                                     </div>
                                                     <div className={`w-14 h-8 rounded-full transition-all flex items-center px-1 shrink-0 ${automation.gardeningDetails.isWasteRemovalIncluded ? 'bg-black' : 'bg-neutral-200'}`}>
-                                                        <div className={`w-6 h-6 rounded-full bg-white shadow-sm transition-all ${automation.gardeningDetails.isWasteRemovalIncluded ? 'translate-x-6' : 'translate-x-0'}`} />
+                                                        <div className={`w-6 h-6 rounded-full bg-white transition-all ${automation.gardeningDetails.isWasteRemovalIncluded ? 'translate-x-6' : 'translate-x-0'}`} />
                                                     </div>
                                                 </div>
                                             </div>
@@ -1421,7 +1604,7 @@ const PropertyDetailView: React.FC<PropertyDetailViewProps> = ({ property, isOpe
                                                 </h3>
                                                 <div className="grid grid-cols-2 gap-3">
                                                     {automation.gardeningDetails.referencePhotos.map((photo: string, idx: number) => (
-                                                        <div key={idx} className="relative aspect-square rounded-[16px] overflow-hidden shadow-sm border border-neutral-100">
+                                                        <div key={idx} className="relative aspect-square rounded-[16px] overflow-hidden border border-neutral-100">
                                                             <img src={photo} alt="" className="w-full h-full object-cover" />
                                                         </div>
                                                     ))}
@@ -1822,7 +2005,7 @@ const PropertyDetailView: React.FC<PropertyDetailViewProps> = ({ property, isOpe
                                                     <span className="text-[14px] text-neutral-500 font-medium">{t({ en: 'Is there an automatic cleaner?', fr: 'Y a-t-il un nettoyeur automatique ?' })}</span>
                                                 </div>
                                                 <div className={`w-14 h-8 rounded-full flex items-center px-1 shrink-0 mt-1 ${automation.poolDetails.poolHasRobot ? 'bg-black' : 'bg-neutral-200'}`}>
-                                                    <div className={`w-6 h-6 rounded-full bg-white shadow-sm transition-all ${automation.poolDetails.poolHasRobot ? 'translate-x-6' : 'translate-x-0'}`} />
+                                                    <div className={`w-6 h-6 rounded-full bg-white transition-all ${automation.poolDetails.poolHasRobot ? 'translate-x-6' : 'translate-x-0'}`} />
                                                 </div>
                                             </div>
                                             {automation.poolDetails.poolTechnicalRoomLocation && (
@@ -1886,7 +2069,7 @@ const PropertyDetailView: React.FC<PropertyDetailViewProps> = ({ property, isOpe
                                                 </h3>
                                                 <div className="grid grid-cols-2 gap-3">
                                                     {automation.poolDetails.referencePhotos.map((photo: string, idx: number) => (
-                                                        <div key={idx} className="relative aspect-square rounded-[16px] overflow-hidden shadow-sm border border-neutral-100">
+                                                        <div key={idx} className="relative aspect-square rounded-[16px] overflow-hidden border border-neutral-100">
                                                             <img src={photo} alt="" className="w-full h-full object-cover" />
                                                         </div>
                                                     ))}
@@ -1991,7 +2174,7 @@ const PropertyDetailView: React.FC<PropertyDetailViewProps> = ({ property, isOpe
                                             const details = automation.petsDetails.petDetails?.[petId];
                                             if (!pet || !details) return null;
                                             return (
-                                                <div key={petId} className="p-6 rounded-2xl border border-neutral-200 bg-white shadow-sm space-y-6">
+                                                <div key={petId} className="p-6 rounded-2xl border border-neutral-200 bg-white space-y-6">
                                                     <div className="flex items-center gap-3 border-b border-neutral-100 pb-4">
                                                         <span className="text-[28px]">{pet.icon}</span>
                                                         <h4 className="font-black text-[20px] text-black">
@@ -2025,13 +2208,13 @@ const PropertyDetailView: React.FC<PropertyDetailViewProps> = ({ property, isOpe
                                                         <div className="flex items-center justify-between py-4 border-b border-neutral-50 gap-4">
                                                             <span className="text-[16px] font-medium text-black">{t({ en: 'Walking needed?', fr: 'Promenades nécessaires ?' })}</span>
                                                             <div className={`w-14 h-8 rounded-full flex items-center px-1 shrink-0 ${details.walking ? 'bg-black' : 'bg-neutral-200'}`}>
-                                                                <div className={`w-6 h-6 rounded-full bg-white shadow-sm transition-all ${details.walking ? 'translate-x-6' : 'translate-x-0'}`} />
+                                                                <div className={`w-6 h-6 rounded-full bg-white transition-all ${details.walking ? 'translate-x-6' : 'translate-x-0'}`} />
                                                             </div>
                                                         </div>
                                                         <div className="flex items-center justify-between py-4 gap-4">
                                                             <span className="text-[16px] font-medium text-black">{t({ en: 'Medication required?', fr: 'Médicaments requis ?' })}</span>
                                                             <div className={`w-14 h-8 rounded-full flex items-center px-1 shrink-0 ${details.medication ? 'bg-black' : 'bg-neutral-200'}`}>
-                                                                <div className={`w-6 h-6 rounded-full bg-white shadow-sm transition-all ${details.medication ? 'translate-x-6' : 'translate-x-0'}`} />
+                                                                <div className={`w-6 h-6 rounded-full bg-white transition-all ${details.medication ? 'translate-x-6' : 'translate-x-0'}`} />
                                                             </div>
                                                         </div>
                                                     </div>
@@ -2053,7 +2236,7 @@ const PropertyDetailView: React.FC<PropertyDetailViewProps> = ({ property, isOpe
 
                                         {/* Emergency Contact */}
                                         {automation.petsDetails.emergencyContact && (
-                                            <div className="p-6 rounded-2xl border border-neutral-200 bg-white shadow-sm">
+                                            <div className="p-6 rounded-2xl border border-neutral-200 bg-white">
                                                 <label className="text-[17px] font-medium text-black mb-3 block">
                                                     {t({ en: 'Emergency Contact / Vet', fr: 'Contact d\'urgence / Vétérinaire' })}
                                                 </label>
@@ -2191,7 +2374,7 @@ const PropertyDetailView: React.FC<PropertyDetailViewProps> = ({ property, isOpe
 
                                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                             {list.filter((item: any) => item.name.trim() !== '').map((item: any, idx: number) => (
-                                                                <div key={idx} className="p-5 rounded-2xl border border-neutral-200 bg-white shadow-sm space-y-4">
+                                                                <div key={idx} className="p-5 rounded-2xl border border-neutral-200 bg-white space-y-4">
                                                                     <div className="flex justify-between items-start">
                                                                         <div className="flex flex-col gap-1">
                                                                             <span className="text-[17px] font-black text-black">{item.name}</span>
@@ -2231,7 +2414,7 @@ const PropertyDetailView: React.FC<PropertyDetailViewProps> = ({ property, isOpe
                                             })}
 
                                             {/* Operational Rules */}
-                                            <div className="p-8 rounded-3xl border border-neutral-200 bg-white shadow-sm space-y-10">
+                                            <div className="p-8 rounded-3xl border border-neutral-200 bg-white space-y-10">
                                                 <h3 className="font-black text-[22px] text-black border-b border-neutral-100 pb-4">
                                                     {t({ en: 'Operational Rules', fr: 'Règles Opérationnelles' })}
                                                 </h3>
@@ -2346,21 +2529,21 @@ const PropertyDetailView: React.FC<PropertyDetailViewProps> = ({ property, isOpe
                                     initial={{ y: "100%" }}
                                     animate={{ y: 0 }}
                                     exit={{ y: "100%" }}
-                                    className="relative bg-white w-full max-w-[500px] rounded-t-[32px] p-6 pb-12 shadow-2xl"
+                                    className="relative bg-white w-full max-w-[500px] rounded-t-[32px] p-6 pb-12"
                                 >
                                     <div className="w-12 h-1.5 bg-neutral-200 rounded-full mx-auto mb-8" />
                                     <h3 className="text-[20px] font-bold mb-6">Mode de vue</h3>
                                     <div className="space-y-3">
                                         <button
                                             onClick={() => { setViewMode('month'); setIsViewSheetOpen(false); }}
-                                            className={`w-full p-5 rounded-2xl border-2 flex items-center justify-between transition-all ${viewMode === 'month' ? 'border-black bg-black text-white shadow-md' : 'border-neutral-100 text-black'}`}
+                                            className={`w-full p-5 rounded-2xl border-2 flex items-center justify-between transition-all ${viewMode === 'month' ? 'border-black bg-black text-white' : 'border-neutral-100 text-black'}`}
                                         >
                                             <span className="font-bold">Vue Mensuelle</span>
                                             {viewMode === 'month' && <CheckCircle2 size={20} />}
                                         </button>
                                         <button
                                             onClick={() => { setViewMode('day'); setIsViewSheetOpen(false); }}
-                                            className={`w-full p-5 rounded-2xl border-2 flex items-center justify-between transition-all ${viewMode === 'day' ? 'border-black bg-black text-white shadow-md' : 'border-neutral-100 text-black'}`}
+                                            className={`w-full p-5 rounded-2xl border-2 flex items-center justify-between transition-all ${viewMode === 'day' ? 'border-black bg-black text-white' : 'border-neutral-100 text-black'}`}
                                         >
                                             <span className="font-bold">Vue Journalière</span>
                                             {viewMode === 'day' && <CheckCircle2 size={20} />}
@@ -2368,6 +2551,146 @@ const PropertyDetailView: React.FC<PropertyDetailViewProps> = ({ property, isOpe
                                     </div>
                                 </motion.div>
                             </div>
+                        )}
+                    </AnimatePresence>
+
+                    {/* Discovery Map Modal */}
+                    <AnimatePresence>
+                        {showBricolerMap && (
+                            <motion.div
+                                initial={{ opacity: 0, y: 100 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: 100 }}
+                                className="fixed inset-0 z-[20000] bg-white flex flex-col"
+                            >
+                                {/* Map Header */}
+                                <div className="absolute top-6 left-6 right-6 z-[10] flex justify-between items-center pointer-events-none">
+                                    <button
+                                        onClick={() => setShowBricolerMap(false)}
+                                        className="w-12 h-12 rounded-full bg-white flex items-center justify-center border border-neutral-100 pointer-events-auto active:scale-95 transition-all"
+                                    >
+                                        <ChevronLeft size={24} />
+                                    </button>
+                                    <div className="bg-white/90 backdrop-blur-md border border-neutral-100 px-6 py-3 rounded-full pointer-events-auto">
+                                        <span className="font-bold text-[15px] text-black">{t({ en: 'Available Bricolers', fr: 'Bricoleurs disponibles' })}</span>
+                                    </div>
+                                    <div className="w-12" /> {/* Spacer */}
+                                </div>
+
+                                {/* The Map */}
+                                <div className="flex-1 relative">
+                                    <DiscoveryMapView
+                                        initialLocation={{
+                                            lat: property.location?.lat || 31.5085,
+                                            lng: property.location?.lng || -9.7595
+                                        }}
+                                        interactive={true}
+                                        onLocationChange={() => { }}
+                                        providerPins={allCityBricolers.map(b => {
+                                            const activityName = b.speciality || b.category || b.mainService || 'Bricolage';
+                                            const baseLat = property.location?.lat || 31.7917;
+                                            const baseLng = property.location?.lng || -7.0926;
+
+                                            return {
+                                                id: b.id,
+                                                lat: b.base_lat || b.current_lat || (baseLat + (Math.random() - 0.5) * 0.05),
+                                                lng: b.base_lng || b.current_lng || (baseLng + (Math.random() - 0.5) * 0.05),
+                                                name: b.name || b.displayName,
+                                                rating: b.rating || 5.0,
+                                                avatarUrl: b.avatarUrl || b.avatar || b.photoURL,
+                                                isLive: b.isLive,
+                                                activity: activityName,
+                                                isSelected: b.id === focusedMapBricolerId,
+                                            };
+                                        })}
+                                        focusedProviderId={focusedMapBricolerId}
+                                        onProviderClick={(id) => setFocusedMapBricolerId(id)}
+                                        zoom={14}
+                                        lockCenterOnFocus={false}
+                                        clientPin={property.location?.lat ? {
+                                            lat: property.location.lat,
+                                            lng: property.location.lng
+                                        } : undefined}
+                                        showCenterPin={false}
+                                    />
+                                </div>
+
+                                {/* Focused Bricoler Sheet */}
+                                <AnimatePresence>
+                                    {focusedMapBricolerId && (
+                                        <motion.div
+                                            initial={{ y: "100%" }}
+                                            animate={{ y: 0 }}
+                                            exit={{ y: "100%" }}
+                                            className="absolute bottom-0 left-0 right-0 z-[20] bg-white rounded-t-[32px] border-t border-neutral-100 p-8 pb-12"
+                                        >
+                                            <div className="w-12 h-1.5 bg-neutral-100 rounded-full mx-auto mb-6" />
+                                            {(() => {
+                                                const b = managedBricolers.find(p => p.id === focusedMapBricolerId);
+                                                if (!b) return null;
+                                                const primaryService = b.services?.[0];
+                                                return (
+                                                    <div className="space-y-6">
+                                                        <div className="flex items-center gap-6">
+                                                            <div className="relative w-20 h-20 rounded-[5px] overflow-hidden bg-neutral-50 border border-neutral-100">
+                                                                <img src={b.avatarUrl || b.avatar || b.photoURL || '/Images/Vectors Illu/LbricolFaceOY.webp'} className="w-full h-full object-cover" alt="" />
+                                                            </div>
+                                                            <div className="flex-1">
+                                                                <div className="flex justify-between items-start">
+                                                                    <div>
+                                                                        <h4 className="text-[24px] font-black text-black leading-tight">{b.name || b.displayName}</h4>
+                                                                        <div className="flex items-center gap-2 mt-1">
+                                                                            <div className="flex items-center gap-1">
+                                                                                <Star size={16} fill="#FFC244" stroke="#FFC244" />
+                                                                                <span className="text-[16px] font-black text-black">{Number(b.rating || 5.0).toFixed(1)}</span>
+                                                                            </div>
+                                                                            <div className="w-1 h-1 rounded-full bg-neutral-200" />
+                                                                            <span className="text-[14px] font-bold text-neutral-400 uppercase tracking-widest">
+                                                                                {primaryService?.label?.fr || primaryService?.subServiceName || 'Bricoler'}
+                                                                            </span>
+                                                                        </div>
+                                                                    </div>
+                                                                    <div className="text-right">
+                                                                        <span className="text-[24px] font-black text-[#01A083]">{primaryService?.hourlyRate || b.minRate || 80} MAD</span>
+                                                                        <span className="text-[12px] font-bold text-neutral-400 block uppercase">/heure</span>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+
+                                                        <div className="grid grid-cols-2 gap-4">
+                                                            <div className="p-4 rounded-[5px] bg-neutral-50 space-y-1">
+                                                                <span className="text-[11px] font-black text-neutral-400 uppercase tracking-widest">Expérience</span>
+                                                                <p className="font-bold text-[16px] text-black">{b.experience || '3 ans'}</p>
+                                                            </div>
+                                                            <div className="p-4 rounded-[5px] bg-neutral-50 space-y-1">
+                                                                <span className="text-[11px] font-black text-neutral-400 uppercase tracking-widest">Missions</span>
+                                                                <p className="font-bold text-[16px] text-black">{b.taskCount || 0} terminées</p>
+                                                            </div>
+                                                        </div>
+
+                                                        <p className="text-neutral-500 font-medium leading-relaxed italic text-[15px]">
+                                                            "{b.bio || 'Prêt à assurer la maintenance de votre propriété avec professionnalisme.'}"
+                                                        </p>
+
+                                                        <div className="flex gap-4 pt-4">
+                                                            <button
+                                                                onClick={() => setFocusedMapBricolerId(null)}
+                                                                className="flex-1 py-4.5 rounded-[5px] bg-neutral-100 text-black font-black text-[15px]"
+                                                            >
+                                                                Fermer
+                                                            </button>
+                                                            <button className="flex-[2] py-4.5 rounded-[5px] bg-[#01A083] text-white font-black text-[15px]">
+                                                                Contacter
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })()}
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
+                            </motion.div>
                         )}
                     </AnimatePresence>
                 </motion.div>

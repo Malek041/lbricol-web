@@ -319,6 +319,8 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
     const [petInstructions, setPetInstructions] = useState('');
     const [petEmergencyContact, setPetEmergencyContact] = useState('');
     const [petChecklist, setPetChecklist] = useState<string[]>(['']);
+    const [petPreferredBricoler, setPetPreferredBricoler] = useState('');
+    const [petDetails, setPetDetails] = useState<Record<string, { name: string; feedingFrequency: string; walkingNeeded: boolean; medicationRequired: boolean; checklist: string[] }>>({});
 
     // Errands & Restocking State
     const [errandsCategories, setErrandsCategories] = useState<string[]>([]);
@@ -786,6 +788,7 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                         poolSuppliesLocation,
                         poolHasRobot,
                         frequencies: poolFrequency,
+                        checklist: poolChecklist.filter((item: any) => item.trim() !== ''),
                         referencePhotos: finalPoolPhotos
                     } : null,
                     petsDetails: selectedServices.includes('pets_care') ? {
@@ -795,6 +798,7 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                         medicationRequired: petMedicationNeeded,
                         instructions: petInstructions,
                         emergencyContact: petEmergencyContact,
+                        preferredBricoler: petPreferredBricoler,
                         checklist: petChecklist.filter((item: any) => item.trim() !== '')
                     } : null,
                     errandsDetails: selectedServices.includes('errands') ? {
@@ -830,6 +834,45 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
             setIsSubmitting(false);
         }
     };
+
+    const checkCanProceed = () => {
+        if (viewMode === 'service_detail_form') {
+            if (currentDetailServiceId === 'cleaning') {
+                const needsFrequency = cleaningSubServices.includes('deep_cleaning');
+                return cleaningSubServices.length > 0 && (!needsFrequency || !!cleaningFrequencies.deep_cleaning);
+            }
+            if (currentDetailServiceId === 'gardening') {
+                return gardeningSubServices.length > 0;
+            }
+            if (currentDetailServiceId === 'glass_cleaning') {
+                return windowsCount > 0;
+            }
+            if (currentDetailServiceId === 'pool_cleaning') {
+                return poolTechnicalRoomLocation.trim() !== '';
+            }
+            if (currentDetailServiceId === 'pets_care') {
+                return petTypes.length > 0;
+            }
+            if (currentDetailServiceId === 'errands') {
+                return true;
+            }
+            if (currentDetailServiceId === 'guest_receptionist') {
+                return receptionCheckInMethod !== '';
+            }
+        }
+        if (viewMode === 'form') {
+            if (stepIndex === 0) return type !== '';
+            if (stepIndex === 1) return baseLat !== null && baseLng !== null;
+            if (stepIndex === 2) return guests > 0 && bedrooms > 0 && beds > 0 && bathrooms > 0;
+            if (stepIndex === 3) return true; // Amenities optional
+            if (stepIndex === 4) return photos.length >= 5;
+            // Steps 5, 6, 7 are service selections, which are optional.
+            if (stepIndex >= 5) return true;
+        }
+        return true;
+    };
+
+    const canProceed = checkCanProceed();
 
     if (!isOpen) return null;
 
@@ -1403,7 +1446,7 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                             animate={{ y: 0 }}
                             exit={{ y: '100%' }}
                             transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-                            className="w-full bg-[#F3F2ED] rounded-t-[20px] overflow-hidden max-h-[85vh] flex flex-col"
+                            className="w-full bg-[#F3F2ED] rounded-t-[10px] overflow-hidden max-h-[85vh] flex flex-col"
                             onClick={e => e.stopPropagation()}
                         >
                             <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-neutral-100">
@@ -1713,7 +1756,7 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                                         <>
                                             <div className="flex justify-between items-start mb-4">
                                                 <div>
-                                                    <h2 className="font-medium text-[28px] text-black leading-tight tracking-tight">Vos photos</h2>
+                                                    <h2 className="font-medium text-[28px] text-black leading-tight tracking-tight">Vos photos (min 5 photos)</h2>
                                                     <p className="text-[17px] text-neutral-500 font-light mt-1">Faites glisser pour réorganiser</p>
                                                 </div>
                                                 <button
@@ -2053,190 +2096,189 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                     )}
 
                     {viewMode === 'service_detail_form' && (
-                        <motion.div
-                            key="service-detail-form"
-                            initial={{ opacity: 0, x: 20 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            exit={{ opacity: 0, x: -20 }}
-                            className="flex-1 flex flex-col min-h-0"
-                        >
-                            {currentDetailServiceId === 'cleaning' && (
-                                <CleaningDetailForm
-                                    data={{
-                                        subServices: cleaningSubServices,
-                                        frequencies: cleaningFrequencies,
-                                        stairsSize: stairsSize,
-                                        checklist: cleaningChecklist,
-                                        referencePhotos: cleaningPhotos
-                                    }}
-                                    onChange={(updates: any) => {
-                                        if (updates.subServices !== undefined) setCleaningSubServices(updates.subServices);
-                                        if (updates.frequencies !== undefined) setCleaningFrequencies(updates.frequencies);
-                                        if (updates.stairsSize !== undefined) setStairsSize(updates.stairsSize as any);
-                                        if (updates.checklist !== undefined) setCleaningChecklist(updates.checklist);
-                                        if (updates.referencePhotos !== undefined) setCleaningPhotos(updates.referencePhotos);
-                                    }}
-                                    onUploadingChange={setIsUploadingCleaningPhotos}
-                                />
-                            )}
-                            {/* REMOVED INLINE CLEANING FORM */}
+                        <AnimatePresence mode="wait">
+                            <motion.div
+                                key={currentDetailServiceId}
+                                initial={{ opacity: 0, x: 20 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                exit={{ opacity: 0, x: -20 }}
+                                transition={{ duration: 0.3, ease: "easeInOut" }}
+                                className="flex-1 flex flex-col min-h-0"
+                            >
+                                {currentDetailServiceId === 'cleaning' && (
+                                    <CleaningDetailForm
+                                        data={{
+                                            subServices: cleaningSubServices,
+                                            frequencies: cleaningFrequencies,
+                                            stairsSize: stairsSize,
+                                            checklist: cleaningChecklist,
+                                            referencePhotos: cleaningPhotos
+                                        }}
+                                        onChange={(updates: any) => {
+                                            if (updates.subServices !== undefined) setCleaningSubServices(updates.subServices);
+                                            if (updates.frequencies !== undefined) setCleaningFrequencies(updates.frequencies);
+                                            if (updates.stairsSize !== undefined) setStairsSize(updates.stairsSize as any);
+                                            if (updates.checklist !== undefined) setCleaningChecklist(updates.checklist);
+                                            if (updates.referencePhotos !== undefined) setCleaningPhotos(updates.referencePhotos);
+                                        }}
+                                        onUploadingChange={setIsUploadingCleaningPhotos}
+                                    />
+                                )}
+                                {/* REMOVED INLINE CLEANING FORM */}
 
-                            {currentDetailServiceId === 'glass_cleaning' && (
-                                <GlassCleaningDetailForm
-                                    data={{
-                                        windowsCount,
-                                        windowsSize,
-                                        windowsCoverage,
-                                        windowsAccessibility,
-                                        checklist: glassCleaningChecklist,
-                                        referencePhotos: glassCleaningPhotos
-                                    }}
-                                    onChange={(updates: any) => {
-                                        if (updates.windowsCount !== undefined) setWindowsCount(updates.windowsCount);
-                                        if (updates.windowsSize !== undefined) setWindowsSize(updates.windowsSize as any);
-                                        if (updates.windowsCoverage !== undefined) setWindowsCoverage(updates.windowsCoverage as any);
-                                        if (updates.windowsAccessibility !== undefined) setWindowsAccessibility(updates.windowsAccessibility as any);
-                                        if (updates.checklist !== undefined) setGlassCleaningChecklist(updates.checklist);
-                                        if (updates.referencePhotos !== undefined) setGlassCleaningPhotos(updates.referencePhotos);
-                                    }}
-                                    onUploadingChange={setIsUploadingGlassPhotos}
-                                />
-                            )}
+                                {currentDetailServiceId === 'glass_cleaning' && (
+                                    <GlassCleaningDetailForm
+                                        data={{
+                                            windowsCount,
+                                            windowsSize,
+                                            windowsCoverage,
+                                            windowsAccessibility,
+                                            checklist: glassCleaningChecklist,
+                                            referencePhotos: glassCleaningPhotos
+                                        }}
+                                        onChange={(updates: any) => {
+                                            if (updates.windowsCount !== undefined) setWindowsCount(updates.windowsCount);
+                                            if (updates.windowsSize !== undefined) setWindowsSize(updates.windowsSize as any);
+                                            if (updates.windowsCoverage !== undefined) setWindowsCoverage(updates.windowsCoverage as any);
+                                            if (updates.windowsAccessibility !== undefined) setWindowsAccessibility(updates.windowsAccessibility as any);
+                                            if (updates.checklist !== undefined) setGlassCleaningChecklist(updates.checklist);
+                                            if (updates.referencePhotos !== undefined) setGlassCleaningPhotos(updates.referencePhotos);
+                                        }}
+                                        onUploadingChange={setIsUploadingGlassPhotos}
+                                    />
+                                )}
 
-                            {currentDetailServiceId === 'gardening' && (
-                                <GardeningDetailForm
-                                    data={{
-                                        subServices: gardeningSubServices,
-                                        gardenSize: gardenSize,
-                                        shouldBringMower: shouldBringMower,
-                                        treeCount: treeCount,
-                                        averageTreeHeight: averageTreeHeight,
-                                        preferredTreeService: preferredTreeService,
-                                        isWasteRemovalIncluded: isWasteRemovalIncluded,
-                                        frequency: gardeningFrequency,
-                                        checklist: gardeningChecklist,
-                                        referencePhotos: gardeningPhotos
-                                    }}
-                                    onChange={(updates: any) => {
-                                        if (updates.subServices !== undefined) setGardeningSubServices(updates.subServices);
-                                        if (updates.gardenSize !== undefined) setGardenSize(updates.gardenSize as any);
-                                        if (updates.shouldBringMower !== undefined) setShouldBringMower(updates.shouldBringMower);
-                                        if (updates.treeCount !== undefined) setTreeCount(updates.treeCount);
-                                        if (updates.averageTreeHeight !== undefined) setAverageTreeHeight(updates.averageTreeHeight);
-                                        if (updates.preferredTreeService !== undefined) setPreferredTreeService(updates.preferredTreeService);
-                                        if (updates.isWasteRemovalIncluded !== undefined) setIsWasteRemovalIncluded(updates.isWasteRemovalIncluded);
-                                        if (updates.frequency !== undefined) setGardeningFrequency(updates.frequency);
-                                        if (updates.checklist !== undefined) setGardeningChecklist(updates.checklist);
-                                        if (updates.referencePhotos !== undefined) setGardeningPhotos(updates.referencePhotos);
-                                    }}
-                                    onUploadingChange={setIsUploadingGardeningPhotos}
-                                />
-                            )}
+                                {currentDetailServiceId === 'gardening' && (
+                                    <GardeningDetailForm
+                                        data={{
+                                            subServices: gardeningSubServices,
+                                            gardenSize: gardenSize,
+                                            shouldBringMower: shouldBringMower,
+                                            treeCount: treeCount,
+                                            averageTreeHeight: averageTreeHeight,
+                                            preferredTreeService: preferredTreeService,
+                                            isWasteRemovalIncluded: isWasteRemovalIncluded,
+                                            frequency: gardeningFrequency,
+                                            checklist: gardeningChecklist,
+                                            referencePhotos: gardeningPhotos
+                                        }}
+                                        onChange={(updates: any) => {
+                                            if (updates.subServices !== undefined) setGardeningSubServices(updates.subServices);
+                                            if (updates.gardenSize !== undefined) setGardenSize(updates.gardenSize as any);
+                                            if (updates.shouldBringMower !== undefined) setShouldBringMower(updates.shouldBringMower);
+                                            if (updates.treeCount !== undefined) setTreeCount(updates.treeCount);
+                                            if (updates.averageTreeHeight !== undefined) setAverageTreeHeight(updates.averageTreeHeight);
+                                            if (updates.preferredTreeService !== undefined) setPreferredTreeService(updates.preferredTreeService);
+                                            if (updates.isWasteRemovalIncluded !== undefined) setIsWasteRemovalIncluded(updates.isWasteRemovalIncluded);
+                                            if (updates.frequency !== undefined) setGardeningFrequency(updates.frequency);
+                                            if (updates.checklist !== undefined) setGardeningChecklist(updates.checklist);
+                                            if (updates.referencePhotos !== undefined) setGardeningPhotos(updates.referencePhotos);
+                                        }}
+                                        onUploadingChange={setIsUploadingGardeningPhotos}
+                                    />
+                                )}
 
-                            {currentDetailServiceId === 'pets_care' && (
-                                <PetsDetailForm
-                                    data={{
-                                        petTypes,
-                                        feedingFrequency: petFeedingFrequency,
-                                        walkingNeeded: petWalkingNeeded,
-                                        medicationRequired: petMedicationNeeded,
-                                        instructions: petInstructions,
-                                        emergencyContact: petEmergencyContact,
-                                        checklist: petChecklist
-                                    }}
-                                    onChange={(updates: any) => {
-                                        if (updates.petTypes !== undefined) setPetTypes(updates.petTypes);
-                                        if (updates.feedingFrequency !== undefined) setPetFeedingFrequency(updates.feedingFrequency as any);
-                                        if (updates.walkingNeeded !== undefined) setPetWalkingNeeded(updates.walkingNeeded);
-                                        if (updates.medicationRequired !== undefined) setPetMedicationNeeded(updates.medicationRequired);
-                                        if (updates.instructions !== undefined) setPetInstructions(updates.instructions);
-                                        if (updates.emergencyContact !== undefined) setPetEmergencyContact(updates.emergencyContact);
-                                        if (updates.checklist !== undefined) setPetChecklist(updates.checklist);
-                                    }}
-                                />
-                            )}
+                                {currentDetailServiceId === 'pets_care' && (
+                                    <PetsDetailForm
+                                        data={{
+                                            petTypes,
+                                            petDetails,
+                                            emergencyContact: petEmergencyContact,
+                                            preferredBricoler: petPreferredBricoler,
+                                        }}
+                                        onChange={(updates: any) => {
+                                            if (updates.petTypes !== undefined) setPetTypes(updates.petTypes);
+                                            if (updates.petDetails !== undefined) setPetDetails(updates.petDetails);
+                                            if (updates.emergencyContact !== undefined) setPetEmergencyContact(updates.emergencyContact);
+                                            if (updates.preferredBricoler !== undefined) setPetPreferredBricoler(updates.preferredBricoler);
+                                        }}
+                                    />
+                                )}
 
 
-                            {currentDetailServiceId === 'pool_cleaning' && (
-                                <PoolDetailForm
-                                    data={{
-                                        poolType,
-                                        poolWaterType,
-                                        poolSize,
-                                        poolDepth,
-                                        subServices: poolSubServices,
-                                        hasRobot: poolHasRobot,
-                                        technicalRoomLocation: poolTechnicalRoomLocation,
-                                        frequency: poolFrequency,
-                                        checklist: poolChecklist,
-                                        referencePhotos: poolPhotos
-                                    }}
-                                    onChange={(updates: any) => {
-                                        if (updates.poolType !== undefined) setPoolType(updates.poolType as any);
-                                        if (updates.poolWaterType !== undefined) setPoolWaterType(updates.poolWaterType as any);
-                                        if (updates.poolSize !== undefined) setPoolSize(updates.poolSize as any);
-                                        if (updates.poolDepth !== undefined) setPoolDepth(updates.poolDepth);
-                                        if (updates.subServices !== undefined) setPoolSubServices(updates.subServices);
-                                        if (updates.hasRobot !== undefined) setPoolHasRobot(updates.hasRobot);
-                                        if (updates.technicalRoomLocation !== undefined) setPoolTechnicalRoomLocation(updates.technicalRoomLocation);
-                                        if (updates.frequency !== undefined) setPoolFrequency(updates.frequency);
-                                        if (updates.checklist !== undefined) setPoolChecklist(updates.checklist);
-                                        if (updates.referencePhotos !== undefined) setPoolPhotos(updates.referencePhotos);
-                                    }}
-                                    onUploadingChange={setIsUploadingPoolPhotos}
-                                />
-                            )}
+                                {currentDetailServiceId === 'pool_cleaning' && (
+                                    <PoolDetailForm
+                                        data={{
+                                            poolType,
+                                            poolWaterType,
+                                            poolSize,
+                                            poolDepth,
+                                            subServices: poolSubServices,
+                                            hasRobot: poolHasRobot,
+                                            technicalRoomLocation: poolTechnicalRoomLocation,
+                                            suppliesLocation: poolSuppliesLocation,
+                                            frequency: poolFrequency,
+                                            checklist: poolChecklist,
+                                            referencePhotos: poolPhotos
+                                        }}
+                                        onChange={(updates: any) => {
+                                            if (updates.poolType !== undefined) setPoolType(updates.poolType as any);
+                                            if (updates.poolWaterType !== undefined) setPoolWaterType(updates.poolWaterType as any);
+                                            if (updates.poolSize !== undefined) setPoolSize(updates.poolSize as any);
+                                            if (updates.poolDepth !== undefined) setPoolDepth(updates.poolDepth);
+                                            if (updates.subServices !== undefined) setPoolSubServices(updates.subServices);
+                                            if (updates.hasRobot !== undefined) setPoolHasRobot(updates.hasRobot);
+                                            if (updates.technicalRoomLocation !== undefined) setPoolTechnicalRoomLocation(updates.technicalRoomLocation);
+                                            if (updates.suppliesLocation !== undefined) setPoolSuppliesLocation(updates.suppliesLocation);
+                                            if (updates.frequency !== undefined) setPoolFrequency(updates.frequency);
+                                            if (updates.checklist !== undefined) setPoolChecklist(updates.checklist);
+                                            if (updates.referencePhotos !== undefined) setPoolPhotos(updates.referencePhotos);
+                                        }}
+                                        onUploadingChange={setIsUploadingPoolPhotos}
+                                    />
+                                )}
 
-                            {currentDetailServiceId === 'guest_receptionist' && (
-                                <ReceptionistDetailForm
-                                    data={{
-                                        checkInMethod: receptionCheckInMethod,
-                                        phoneSupport: receptionPhoneSupport,
-                                        checklist: receptionChecklist
-                                    }}
-                                    onChange={(updates: any) => {
-                                        if (updates.checkInMethod !== undefined) setReceptionCheckInMethod(updates.checkInMethod);
-                                        if (updates.phoneSupport !== undefined) setReceptionPhoneSupport(updates.phoneSupport);
-                                        if (updates.checklist !== undefined) setReceptionChecklist(updates.checklist);
-                                    }}
-                                />
-                            )}
+                                {currentDetailServiceId === 'guest_receptionist' && (
+                                    <ReceptionistDetailForm
+                                        data={{
+                                            checkInMethod: receptionCheckInMethod,
+                                            phoneSupport: receptionPhoneSupport,
+                                            checklist: receptionChecklist
+                                        }}
+                                        onChange={(updates: any) => {
+                                            if (updates.checkInMethod !== undefined) setReceptionCheckInMethod(updates.checkInMethod);
+                                            if (updates.phoneSupport !== undefined) setReceptionPhoneSupport(updates.phoneSupport);
+                                            if (updates.checklist !== undefined) setReceptionChecklist(updates.checklist);
+                                        }}
+                                    />
+                                )}
 
 
-                            {/* Errands & Restocking Details */}
-                            {currentDetailServiceId === 'errands' && (
-                                <ErrandsDetailForm
-                                    data={{
-                                        categories: errandsCategories,
-                                        checklists: errandsChecklists,
-                                        storageLocation: errandsStorageLocation,
-                                        frequency: errandsFrequency,
-                                        instructions: errandsInstructions
-                                    }}
-                                    onChange={(updates: any) => {
-                                        if (updates.categories !== undefined) setErrandsCategories(updates.categories);
-                                        if (updates.checklists !== undefined) setErrandsChecklists(updates.checklists);
-                                        if (updates.storageLocation !== undefined) setErrandsStorageLocation(updates.storageLocation);
-                                        if (updates.frequency !== undefined) setErrandsFrequency(updates.frequency);
-                                        if (updates.instructions !== undefined) setErrandsInstructions(updates.instructions);
-                                    }}
-                                />
-                            )}
+                                {/* Errands & Restocking Details */}
+                                {currentDetailServiceId === 'errands' && (
+                                    <ErrandsDetailForm
+                                        data={{
+                                            categories: errandsCategories,
+                                            checklists: errandsChecklists,
+                                            storageLocation: errandsStorageLocation,
+                                            frequency: errandsFrequency,
+                                            instructions: errandsInstructions
+                                        }}
+                                        onChange={(updates: any) => {
+                                            if (updates.categories !== undefined) setErrandsCategories(updates.categories);
+                                            if (updates.checklists !== undefined) setErrandsChecklists(updates.checklists);
+                                            if (updates.storageLocation !== undefined) setErrandsStorageLocation(updates.storageLocation);
+                                            if (updates.frequency !== undefined) setErrandsFrequency(updates.frequency);
+                                            if (updates.instructions !== undefined) setErrandsInstructions(updates.instructions);
+                                        }}
+                                    />
+                                )}
 
 
 
-                            {/* Generic placeholder for other services if needed */}
-                            {currentDetailServiceId && !['cleaning', 'glass_cleaning', 'gardening', 'pool_cleaning', 'guest_receptionist', 'pets_care', 'errands'].includes(currentDetailServiceId) && (
-                                <div className="flex-1 overflow-y-auto px-6 pt-8 pb-32">
-                                    <h2 className="font-medium text-[28px] text-black leading-tight tracking-tight mb-4">
-                                        {t({ en: `Tell us more about ${currentDetailServiceId}`, fr: `Dites-nous en plus sur ${currentDetailServiceId}` })}
-                                    </h2>
-                                    <p className="text-neutral-500">
-                                        {t({ en: 'Further details for this service will be added soon.', fr: 'D\'autres détails pour ce service seront ajoutés bientôt.' })}
-                                    </p>
-                                </div>
-                            )}
-                        </motion.div>
+                                {/* Generic placeholder for other services if needed */}
+                                {currentDetailServiceId && !['cleaning', 'glass_cleaning', 'gardening', 'pool_cleaning', 'guest_receptionist', 'pets_care', 'errands'].includes(currentDetailServiceId) && (
+                                    <div className="flex-1 overflow-y-auto px-6 pt-8 pb-32">
+                                        <h2 className="font-medium text-[28px] text-black leading-tight tracking-tight mb-4">
+                                            {t({ en: `Tell us more about ${currentDetailServiceId}`, fr: `Dites-nous en plus sur ${currentDetailServiceId}` })}
+                                        </h2>
+                                        <p className="text-neutral-500">
+                                            {t({ en: 'Further details for this service will be added soon.', fr: 'D\'autres détails pour ce service seront ajoutés bientôt.' })}
+                                        </p>
+                                    </div>
+                                )}
+                            </motion.div>
+                        </AnimatePresence>
                     )}
 
                     {viewMode === 'team_mode_select' && (
@@ -2469,8 +2511,8 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                             </button>
                             <button
                                 onClick={handleNext}
-                                disabled={isSubmitting || (viewMode === 'team_mode_select' && !teamMode)}
-                                className="bg-[#2C2C2C] disabled:bg-neutral-200 text-white px-10 py-4 rounded-[5px] text-[17px] font-medium active:scale-[0.98] transition-all"
+                                disabled={!canProceed || isSubmitting || (viewMode === 'team_mode_select' && !teamMode)}
+                                className={`bg-[#2C2C2C] disabled:bg-neutral-200 text-white px-10 py-4 rounded-[5px] text-[17px] font-medium active:scale-[0.98] transition-all ${!canProceed && 'opacity-50 cursor-not-allowed'}`}
                             >
                                 {isSubmitting ? 'Publication...' : viewMode === 'team_mode_select' ? 'Publier l\'annonce' : 'Suivant'}
                             </button>
@@ -2565,7 +2607,7 @@ const CleaningDetailForm = ({ data, onChange, onUploadingChange }: any) => {
 
             <div className="space-y-12">
                 <div className="space-y-6">
-                    <h3 className="text-[17px] font-medium text-[#222222]">
+                    <h3 className="text-[17px] font-medium text-[#222222] mb-4">
                         {t({ en: 'What type of cleaning?', fr: 'Quel type de nettoyage ?' })}
                     </h3>
                     <div className="space-y-4">
@@ -2604,57 +2646,69 @@ const CleaningDetailForm = ({ data, onChange, onUploadingChange }: any) => {
                                         )}
                                     </button>
 
-                                    {/* Nested content for Deep Cleaning */}
-                                    {isSelected && item.hasFrequency && (
-                                        <div className="px-10 pb-10 pt-2 border-t border-neutral-50">
-                                            <p className="text-[15px] font-medium text-[#222222] mb-5">
-                                                {t({ en: 'Deep Cleaning Frequency', fr: 'Fréquence du nettoyage en profondeur' })}
-                                            </p>
-                                            <div className="flex flex-wrap gap-3">
-                                                {[
-                                                    { id: 'weekly', label: 'Weekly', fr: 'Hebdomadaire' },
-                                                    { id: 'biweekly', label: 'Bi-weekly', fr: 'Bimensuelle' },
-                                                    { id: 'monthly', label: 'Monthly', fr: 'Mensuelle' },
-                                                    { id: 'quarterly', label: 'Quarterly', fr: 'Trimestrielle' },
-                                                ].map((freq: any) => {
-                                                    const isActive = (data.frequencies || {}).deep_cleaning === freq.id;
-                                                    return (
-                                                        <button
-                                                            key={freq.id}
-                                                            onClick={() => onChange({ frequencies: { ...(data.frequencies || {}), deep_cleaning: freq.id } })}
-                                                            className={`px-6 py-3 rounded-full text-[14px] transition-all active:scale-95 border ${isActive
-                                                                ? 'border-black bg-white text-[#222222] font-bold'
-                                                                : 'border-neutral-200 hover:border-black bg-white font-bold'
-                                                                }`}
-                                                        >
-                                                            {t({ en: freq.label, fr: freq.fr })}
-                                                        </button>
-                                                    );
-                                                })}
-                                            </div>
-                                        </div>
-                                    )}
+                                    <AnimatePresence>
+                                        {isSelected && (item.hasFrequency || item.hasCounter) && (
+                                            <motion.div
+                                                initial={{ height: 0, opacity: 0 }}
+                                                animate={{ height: "auto", opacity: 1 }}
+                                                exit={{ height: 0, opacity: 0 }}
+                                                transition={{ duration: 0.3, ease: [0.23, 1, 0.32, 1] }}
+                                                className="overflow-hidden"
+                                            >
+                                                {/* Nested content for Deep Cleaning */}
+                                                {item.hasFrequency && (
+                                                    <div className="px-10 pb-10 pt-2 border-t border-neutral-50">
+                                                        <p className="text-[15px] font-medium text-[#222222] mb-5">
+                                                            {t({ en: 'Deep Cleaning Frequency', fr: 'Fréquence du nettoyage en profondeur' })}
+                                                        </p>
+                                                        <div className="flex flex-wrap gap-3">
+                                                            {[
+                                                                { id: 'weekly', label: 'Weekly', fr: 'Hebdomadaire' },
+                                                                { id: 'biweekly', label: 'Bi-weekly', fr: 'Bimensuelle' },
+                                                                { id: 'monthly', label: 'Monthly', fr: 'Mensuelle' },
+                                                                { id: 'quarterly', label: 'Quarterly', fr: 'Trimestrielle' },
+                                                            ].map((freq: any) => {
+                                                                const isActive = (data.frequencies || {}).deep_cleaning === freq.id;
+                                                                return (
+                                                                    <button
+                                                                        key={freq.id}
+                                                                        onClick={() => onChange({ frequencies: { ...(data.frequencies || {}), deep_cleaning: freq.id } })}
+                                                                        className={`px-6 py-3 rounded-full text-[14px] transition-all active:scale-95 border ${isActive
+                                                                            ? 'border-black bg-white text-[#222222] font-bold'
+                                                                            : 'border-neutral-200 hover:border-black bg-white font-bold'
+                                                                            }`}
+                                                                    >
+                                                                        {t({ en: freq.label, fr: freq.fr })}
+                                                                    </button>
+                                                                );
+                                                            })}
+                                                        </div>
+                                                    </div>
+                                                )}
 
-                                    {/* Nested content for Stairs */}
-                                    {isSelected && item.hasCounter && (
-                                        <div className="px-10 pb-10 pt-2 border-t border-neutral-50">
-                                            <div className="flex items-center justify-between gap-4">
-                                                <p className="text-[15px] font-medium text-[#222222] flex-1">
-                                                    {t({ en: 'How many floors to clean?', fr: 'Combien d\'étages à nettoyer ?' })}
-                                                </p>
-                                                <div className="bg-[#F7F7F7] rounded-full px-2 shrink-0">
-                                                    <CounterRow
-                                                        label=""
-                                                        py="py-1"
-                                                        value={Number(data.stairsSize || 1)}
-                                                        onChange={(val) => onChange({ stairsSize: val })}
-                                                        min={1}
-                                                        max={10}
-                                                    />
-                                                </div>
-                                            </div>
-                                        </div>
-                                    )}
+                                                {/* Nested content for Stairs */}
+                                                {item.hasCounter && (
+                                                    <div className="px-10 pb-10 pt-2 border-t border-neutral-50">
+                                                        <div className="flex items-center justify-between gap-4">
+                                                            <p className="text-[15px] font-medium text-[#222222] flex-1">
+                                                                {t({ en: 'How many floors to clean?', fr: 'Combien d\'étages à nettoyer ?' })}
+                                                            </p>
+                                                            <div className="bg-[#F7F7F7] rounded-full px-2 shrink-0">
+                                                                <CounterRow
+                                                                    label=""
+                                                                    py="py-1"
+                                                                    value={Number(data.stairsSize || 1)}
+                                                                    onChange={(val) => onChange({ stairsSize: val })}
+                                                                    min={1}
+                                                                    max={10}
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </motion.div>
+                                        )}
+                                    </AnimatePresence>
                                 </div>
                             );
                         })}
@@ -2662,7 +2716,7 @@ const CleaningDetailForm = ({ data, onChange, onUploadingChange }: any) => {
                 </div>
 
                 <div className="space-y-4">
-                    <h3 className="text-[18px] font-bold text-[#222222]">
+                    <h3 className="text-[18px] font-bold text-[#222222] mb-4">
                         {t({ en: 'Specific Instructions', fr: 'Instructions spécifiques' })}
                     </h3>
                     <div className="rounded-[5px] border border-[#EBEBEB] bg-white px-5 divide-y divide-[#EBEBEB]">
@@ -2800,7 +2854,7 @@ const GlassCleaningDetailForm = ({ data, onChange, onUploadingChange }: any) => 
                 </div>
 
                 <div className="space-y-6">
-                    <h3 className="font-bold text-[18px] text-[#222222]">{t({ en: 'Majority Window Size', fr: 'Taille majoritaire des vitres' })}</h3>
+                    <h3 className="font-bold text-[18px] text-[#222222] mb-4">{t({ en: 'Majority Window Size', fr: 'Taille majoritaire des vitres' })}</h3>
                     <div className="grid grid-cols-3 gap-3">
                         {[
                             { id: 'small', label: 'Small', fr: 'Petite' },
@@ -2811,18 +2865,18 @@ const GlassCleaningDetailForm = ({ data, onChange, onUploadingChange }: any) => 
                                 key={item.id}
                                 onClick={() => onChange({ windowsSize: item.id })}
                                 className={`p-4 rounded-[5px] border text-center transition-all ${data.windowsSize === item.id
-                                    ? 'border-black border-[2px] bg-white text-black font-bold'
-                                    : 'border-neutral-200 hover:border-black bg-white text-neutral-500'
+                                    ? 'border-black border-[1px] bg-white text-[16px] font-medium'
+                                    : 'border-neutral-200 hover:border-black bg-white text-[16px] text-neutral-500'
                                     }`}
                             >
-                                <span className="text-[15px] font-bold">{t({ en: item.label, fr: item.fr })}</span>
+                                <span className="text-[15px] font-medium">{t({ en: item.label, fr: item.fr })}</span>
                             </button>
                         ))}
                     </div>
                 </div>
 
                 <div className="space-y-6">
-                    <h3 className="font-bold text-[18px] text-[#222222]">{t({ en: 'Access & Difficulty', fr: 'Accès et Difficulté' })}</h3>
+                    <h3 className="font-bold text-[18px] text-[#222222] mb-4">{t({ en: 'Access & Difficulty', fr: 'Accès et Difficulté' })}</h3>
                     <div className="grid grid-cols-1 gap-3">
                         {[
                             { id: 'ground', label: 'Easy access (Ground floor)', fr: 'Accès facile (RDC)' },
@@ -2848,7 +2902,7 @@ const GlassCleaningDetailForm = ({ data, onChange, onUploadingChange }: any) => 
                 </div>
 
                 <div className="space-y-6">
-                    <h3 className="font-bold text-[18px] text-[#222222]">{t({ en: 'Coverage', fr: 'Couverture' })}</h3>
+                    <h3 className="font-bold text-[18px] text-[#222222] mb-4">{t({ en: 'Coverage', fr: 'Couverture' })}</h3>
                     <div className="grid grid-cols-3 gap-3">
                         {[
                             { id: 'interior', label: 'Inside', fr: 'Intérieur' },
@@ -2859,11 +2913,11 @@ const GlassCleaningDetailForm = ({ data, onChange, onUploadingChange }: any) => 
                                 key={item.id}
                                 onClick={() => onChange({ windowsCoverage: item.id })}
                                 className={`p-4 rounded-[5px] border text-center transition-all ${data.windowsCoverage === item.id
-                                    ? 'border-black border-[1px] bg-white text-black font-bold'
+                                    ? 'border-black border-[1px] bg-white text-black font-medium'
                                     : 'border-neutral-200 hover:border-black bg-white text-neutral-500'
                                     }`}
                             >
-                                <span className="text-[15px] font-bold">{t({ en: item.label, fr: item.fr })}</span>
+                                <span className="text-[15px] font-medium">{t({ en: item.label, fr: item.fr })}</span>
                             </button>
                         ))}
                     </div>
@@ -2871,7 +2925,7 @@ const GlassCleaningDetailForm = ({ data, onChange, onUploadingChange }: any) => 
 
                 {/* Specific Instructions Checklist */}
                 <div className="space-y-6">
-                    <h3 className="text-[18px] font-bold text-[#222222]">
+                    <h3 className="text-[18px] font-bold text-[#222222] mb-4">
                         {t({ en: 'Specific Instructions', fr: 'Instructions spécifiques' })}
                     </h3>
                     <div className="rounded-[5px] border border-[#EBEBEB] bg-white px-5 divide-y divide-[#EBEBEB]">
@@ -2914,7 +2968,7 @@ const GlassCleaningDetailForm = ({ data, onChange, onUploadingChange }: any) => 
                 </div>
 
                 <div className="space-y-6">
-                    <h3 className="font-bold text-[18px] text-[#222222]">{t({ en: 'Reference Photos', fr: 'Photos de Référence' })}</h3>
+                    <h3 className="font-bold text-[18px] text-[#222222] mb-4">{t({ en: 'Reference Photos', fr: 'Photos de Référence' })}</h3>
                     <div className="grid grid-cols-3 gap-4">
                         {(data.referencePhotos || []).map((url: any, i: number) => (
                             <div key={url} className="relative aspect-square rounded-[5px] overflow-hidden border border-neutral-100">
@@ -3029,7 +3083,7 @@ const GardeningDetailForm = ({ data, onChange, onUploadingChange }: any) => {
             <div className="space-y-12">
                 {/* Garden Size Section */}
                 <div className="space-y-6">
-                    <h3 className="text-[17px] font-medium text-[#222222]">{t({ en: 'Garden Size', fr: 'Taille du jardin' })}</h3>
+                    <h3 className="text-[17px] font-medium text-[#222222] mb-4">{t({ en: 'Garden Size', fr: 'Taille du jardin' })}</h3>
                     <div className="grid grid-cols-2 gap-3">
                         {[
                             { id: 'small', label: 'Small', fr: 'Petit', desc: '< 50m²' },
@@ -3054,11 +3108,11 @@ const GardeningDetailForm = ({ data, onChange, onUploadingChange }: any) => {
 
                 {/* The 3 Accordions */}
                 <div className="space-y-6">
-                    <h3 className="text-[17px] font-medium text-[#222222]">{t({ en: 'What needs attention?', fr: 'De quoi s\'occuper ?' })}</h3>
+                    <h3 className="text-[17px] font-medium text-[#222222] mb-4">{t({ en: 'What needs attention?', fr: 'De quoi s\'occuper ?' })}</h3>
                     <div className="space-y-4">
                         {gardeningTypes.map((item) => {
                             const isSelected = (data.subServices || []).includes(item.id) ||
-                                (item.id === 'maintenance' && (data.subServices || []).some(id => ['weeding', 'watering'].includes(id)));
+                                (item.id === 'maintenance' && (data.subServices || []).some((id: string) => ['weeding', 'watering'].includes(id)));
 
                             return (
                                 <div
@@ -3072,9 +3126,9 @@ const GardeningDetailForm = ({ data, onChange, onUploadingChange }: any) => {
                                         onClick={() => {
                                             if (item.id === 'maintenance') {
                                                 const current = data.subServices || [];
-                                                const hasAny = current.some(id => ['weeding', 'watering'].includes(id));
+                                                const hasAny = current.some((id: string) => ['weeding', 'watering'].includes(id));
                                                 if (hasAny) {
-                                                    onChange({ subServices: current.filter(id => id !== 'weeding' && id !== 'watering') });
+                                                    onChange({ subServices: current.filter((id: string) => id !== 'weeding' && id !== 'watering') });
                                                 } else {
                                                     onChange({ subServices: [...current, 'weeding'] });
                                                 }
@@ -3149,30 +3203,40 @@ const GardeningDetailForm = ({ data, onChange, onUploadingChange }: any) => {
                                         </div>
                                     )}
 
-                                    {isSelected && item.hasSubOptions && (
-                                        <div className="px-10 pb-10 pt-2 border-t border-neutral-50">
-                                            <div className="flex flex-wrap gap-3">
-                                                {[
-                                                    { id: 'weeding', label: 'Weeding', fr: 'Désherbage' },
-                                                    { id: 'watering', label: 'Watering', fr: 'Arrosage' }
-                                                ].map((sub) => {
-                                                    const isSubActive = (data.subServices || []).includes(sub.id);
-                                                    return (
-                                                        <button
-                                                            key={sub.id}
-                                                            onClick={() => toggleSubService(sub.id)}
-                                                            className={`px-6 py-3 rounded-full text-[14px] transition-all border ${isSubActive
-                                                                ? 'border-black bg-white text-black font-bold'
-                                                                : 'border-neutral-200 hover:border-black bg-white font-bold'
-                                                                }`}
-                                                        >
-                                                            {t({ en: sub.label, fr: sub.fr })}
-                                                        </button>
-                                                    );
-                                                })}
-                                            </div>
-                                        </div>
-                                    )}
+                                    <AnimatePresence>
+                                        {isSelected && item.hasSubOptions && (
+                                            <motion.div
+                                                initial={{ height: 0, opacity: 0 }}
+                                                animate={{ height: "auto", opacity: 1 }}
+                                                exit={{ height: 0, opacity: 0 }}
+                                                transition={{ duration: 0.3, ease: [0.23, 1, 0.32, 1] }}
+                                                className="overflow-hidden"
+                                            >
+                                                <div className="px-10 pb-10 pt-2 border-t border-neutral-50">
+                                                    <div className="flex flex-wrap gap-3">
+                                                        {[
+                                                            { id: 'weeding', label: 'Weeding', fr: 'Désherbage' },
+                                                            { id: 'watering', label: 'Watering', fr: 'Arrosage' }
+                                                        ].map((sub) => {
+                                                            const isSubActive = (data.subServices || []).includes(sub.id);
+                                                            return (
+                                                                <button
+                                                                    key={sub.id}
+                                                                    onClick={() => toggleSubService(sub.id)}
+                                                                    className={`px-6 py-3 rounded-full text-[14px] transition-all border ${isSubActive
+                                                                        ? 'border-black bg-white text-black font-bold'
+                                                                        : 'border-neutral-200 hover:border-black bg-white font-bold'
+                                                                        }`}
+                                                                >
+                                                                    {t({ en: sub.label, fr: sub.fr })}
+                                                                </button>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                </div>
+                                            </motion.div>
+                                        )}
+                                    </AnimatePresence>
                                 </div>
                             );
                         })}
@@ -3180,7 +3244,7 @@ const GardeningDetailForm = ({ data, onChange, onUploadingChange }: any) => {
                 </div>
 
                 <div className="space-y-4">
-                    <h3 className="font-medium text-[20px] text-black">{t({ en: 'Frequency', fr: 'Fréquence' })}</h3>
+                    <h3 className="font-medium text-[20px] text-black mb-4">{t({ en: 'Frequency', fr: 'Fréquence' })}</h3>
                     <div className="grid grid-cols-3 gap-3">
                         {[
                             { id: 'week', label: 'Weekly', fr: 'Hebdo' },
@@ -3202,7 +3266,7 @@ const GardeningDetailForm = ({ data, onChange, onUploadingChange }: any) => {
                 </div>
 
                 <div className="space-y-4">
-                    <h3 className="font-medium text-[20px] text-black">{t({ en: 'Maintenance Checklist', fr: 'Checklist d\'entretien' })}</h3>
+                    <h3 className="font-medium text-[20px] text-black mb-4">{t({ en: 'Maintenance Checklist', fr: 'Checklist d\'entretien' })}</h3>
                     <div className="space-y-2">
                         {(data.checklist || ['']).map((item: any, idx: number) => (
                             <div key={idx} className="group flex items-center gap-3">
@@ -3295,10 +3359,46 @@ const GardeningDetailForm = ({ data, onChange, onUploadingChange }: any) => {
     );
 };
 
+const PoolSection = ({ id, title, expandedSection, setExpandedSection, children }: any) => {
+    const isOpen = expandedSection === id;
+    return (
+        <div className={`relative rounded-[5px] border transition-all duration-300 ${isOpen ? 'border-black border-[1px] bg-white shadow-sm' : 'border-neutral-200 hover:border-black bg-white'}`}>
+            <button
+                onClick={() => setExpandedSection(isOpen ? null : id)}
+                className="w-full flex items-center justify-between px-10 py-10 text-left"
+            >
+                <span className="text-[23px] font-bold text-[#222222]">{title}</span>
+                <motion.div
+                    animate={{ rotate: isOpen ? 180 : 0 }}
+                    transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                >
+                    <ChevronDown size={24} className="text-neutral-400" />
+                </motion.div>
+            </button>
+            <AnimatePresence>
+                {isOpen && (
+                    <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: "auto", opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.3, ease: [0.23, 1, 0.32, 1] }}
+                        className="overflow-hidden"
+                    >
+                        <div className="px-10 pb-10 pt-2 border-t border-neutral-50 space-y-8">
+                            {children}
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+        </div>
+    );
+};
+
 const PoolDetailForm = ({ data, onChange, onUploadingChange }: any) => {
     const { t } = useLanguage();
     const photoInputRef = useRef<HTMLInputElement>(null);
     const [isUploading, setIsUploading] = useState(false);
+    const [expandedSection, setExpandedSection] = useState<string | null>('specs');
 
     const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = Array.from(e.target.files || []);
@@ -3335,74 +3435,226 @@ const PoolDetailForm = ({ data, onChange, onUploadingChange }: any) => {
     };
 
     return (
-        <div className="flex-1 overflow-y-auto pb-32">
-            <h2 className="font-medium text-[32px] text-black leading-tight tracking-tight mb-8">
-                {t({ en: 'Pool Details', fr: 'Détails de la Piscine' })}
+        <div className="flex-1 overflow-y-auto pb-32 no-scrollbar">
+            <h2 className="font-bold text-[32px] text-[#222222] leading-tight tracking-tight mb-8">
+                {t({ en: 'Pool Cleaning', fr: 'Entretien Piscine' })}
             </h2>
 
-            <div className="space-y-12">
-                <div className="space-y-4">
-                    <h3 className="font-medium text-[20px] text-black">{t({ en: 'Water System', fr: 'Système d\'eau' })}</h3>
-                    <div className="grid grid-cols-2 gap-4">
-                        {[
-                            { id: 'chlorine', label: 'Chlorine', fr: 'Chlore' },
-                            { id: 'saltwater', label: 'Saltwater', fr: 'Au sel' }
-                        ].map((system: any) => (
-                            <button
-                                key={system.id}
-                                onClick={() => onChange({ poolWaterType: system.id })}
-                                className={`p-5 rounded-full border text-center transition-all ${data.poolWaterType === system.id
-                                    ? 'border-black border-[2px] bg-neutral-50'
-                                    : 'border-neutral-200 hover:border-black bg-white'
-                                    }`}
-                            >
-                                <span className="text-[17px] font-medium">{t({ en: system.label, fr: system.fr })}</span>
-                            </button>
-                        ))}
-                    </div>
-                </div>
-
-                <div className="space-y-4 p-6 rounded-[5px] border border-neutral-100 bg-neutral-50/50">
-                    <CounterRow
-                        label={t({ en: 'Average Depth (m)', fr: 'Profondeur moyenne (m)' })}
-                        value={data.poolDepth || 1.5}
-                        onChange={(val) => onChange({ poolDepth: val })}
-                        min={0.5}
-                    />
-                </div>
-
-                <div className="space-y-4">
-                    <h3 className="font-medium text-[20px] text-black">{t({ en: 'Reference Photos', fr: 'Photos de Référence' })}</h3>
-                    <div className="grid grid-cols-3 gap-4">
-                        {(data.referencePhotos || []).map((url: any, i: number) => (
-                            <div key={url} className="relative aspect-square rounded-[5px] overflow-hidden border border-neutral-100">
-                                <img src={url} alt="Reference" className="w-full h-full object-cover" />
+            <div className="space-y-4">
+                <PoolSection id="specs" title={t({ en: 'Pool Specifications', fr: 'Caractéristiques de la piscine' })} expandedSection={expandedSection} setExpandedSection={setExpandedSection}>
+                    <div className="space-y-4">
+                        <label className="text-[17px] font-medium text-[#222222] mb-4 block">{t({ en: 'Pool Type', fr: 'Type de piscine' })}</label>
+                        <div className="grid grid-cols-2 gap-3">
+                            {[
+                                { id: 'outdoor', label: 'Outdoor', fr: 'Extérieure' },
+                                { id: 'indoor', label: 'Indoor', fr: 'Intérieure' }
+                            ].map((type: any) => (
                                 <button
-                                    onClick={() => onChange({ referencePhotos: data.referencePhotos.filter((_: any, idx: number) => idx !== i) })}
-                                    className="absolute top-2 right-2 w-7 h-7 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center border border-neutral-100"
+                                    key={type.id}
+                                    onClick={() => onChange({ poolType: type.id })}
+                                    className={`p-4 rounded-full border text-center transition-all ${data.poolType === type.id
+                                        ? 'border-black border-[1px] bg-neutral-50'
+                                        : 'border-neutral-200 hover:border-black bg-white'
+                                        }`}
                                 >
-                                    <X size={14} className="text-black" />
+                                    <span className="text-[14px] font-semibold text-[#222222]">{t({ en: type.label, fr: type.fr })}</span>
                                 </button>
-                            </div>
-                        ))}
-                        <button
-                            onClick={() => photoInputRef.current?.click()}
-                            className="aspect-square rounded-[5px] border-2 border-dashed border-neutral-200 flex flex-col items-center justify-center gap-2 hover:border-black hover:bg-neutral-50 transition-all text-neutral-400 hover:text-black"
-                        >
-                            {isUploading ? (
-                                <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1, ease: "linear" }}>
-                                    <Plus size={24} />
-                                </motion.div>
-                            ) : (
-                                <>
-                                    <Plus size={24} />
-                                    <span className="text-[12px] font-medium uppercase tracking-wider">{t({ en: 'Add', fr: 'Ajouter' })}</span>
-                                </>
-                            )}
-                        </button>
+                            ))}
+                        </div>
                     </div>
-                    <input type="file" multiple hidden ref={photoInputRef} onChange={handlePhotoUpload} accept="image/*" />
-                </div>
+
+                    <div className="space-y-4">
+                        <label className="text-[17px] font-medium text-[#222222] mb-4 block">{t({ en: 'Pool Size', fr: 'Taille de la piscine' })}</label>
+                        <div className="grid grid-cols-2 gap-3">
+                            {[
+                                { id: 'small', label: 'Small', fr: 'Petite', sub: '< 20m²' },
+                                { id: 'medium', label: 'Medium', fr: 'Moyenne', sub: '20-40m²' },
+                                { id: 'large', label: 'Large', fr: 'Grande', sub: '40-80m²' },
+                                { id: 'estate', label: 'Estate', fr: 'Très grande', sub: '> 80m²' }
+                            ].map((size: any) => (
+                                <button
+                                    key={size.id}
+                                    onClick={() => onChange({ poolSize: size.id })}
+                                    className={`p-4 rounded-[5px] border text-left transition-all ${data.poolSize === size.id
+                                        ? 'border-black border-[1px] bg-white'
+                                        : 'border-neutral-200 hover:border-black bg-white'
+                                        }`}
+                                >
+                                    <span className="font-bold text-[16px] text-black block">{t({ en: size.label, fr: size.fr })}</span>
+                                    <span className="text-[14px] text-neutral-500">{size.sub}</span>
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    <div className="space-y-4 p-6 rounded-[5px] border border-neutral-100 bg-neutral-50/50">
+                        <CounterRow
+                            label={t({ en: 'Average Depth (m)', fr: 'Profondeur moyenne (m)' })}
+                            value={data.poolDepth || 1.5}
+                            onChange={(val: number) => onChange({ poolDepth: val })}
+                            min={0.5}
+                        />
+                    </div>
+                </PoolSection>
+
+                <PoolSection id="system" title={t({ en: 'System & Locations', fr: 'Système et Emplacements' })} expandedSection={expandedSection} setExpandedSection={setExpandedSection}>
+                    <div className="space-y-4">
+                        <label className="text-[17px] font-medium text-[#222222] mb-4 block">{t({ en: 'Water System', fr: 'Système de traitement' })}</label>
+                        <div className="grid grid-cols-2 gap-3">
+                            {[
+                                { id: 'chlorine', label: 'Chlorine', fr: 'Chlore' },
+                                { id: 'saltwater', label: 'Saltwater', fr: 'Au sel' }
+                            ].map((system: any) => (
+                                <button
+                                    key={system.id}
+                                    onClick={() => onChange({ poolWaterType: system.id })}
+                                    className={`p-4 rounded-[5px] border text-center transition-all ${data.poolWaterType === system.id
+                                        ? 'border-black border-[1px] bg-neutral-50'
+                                        : 'border-neutral-200 hover:border-black bg-white'
+                                        }`}
+                                >
+                                    <span className="text-[14px] font-medium text-[#222222]">{t({ en: system.label, fr: system.fr })}</span>
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    <div className="space-y-4 pt-4 border-t border-neutral-100">
+                        <div>
+                            <label className="text-[17px] font-medium text-[#222222] mb-4 block">{t({ en: 'Technical Room Location', fr: 'Emplacement du local technique' })}</label>
+                            <input
+                                type="text"
+                                value={data.technicalRoomLocation || ''}
+                                onChange={(e) => onChange({ technicalRoomLocation: e.target.value })}
+                                placeholder={t({ en: 'e.g. Small shed behind the pool, key is...', fr: 'ex: Cabanon derrière la piscine, la clé est...' })}
+                                className="w-full p-5 rounded-[5px] bg-[#F7F7F7] border-none focus:ring-2 focus:ring-black focus:border-black text-[16px] transition-all placeholder:text-neutral-400"
+                            />
+                        </div>
+                        <div>
+                            <label className="text-[17px] font-medium text-[#222222] mb-4 block">{t({ en: 'Supplies Location', fr: 'Emplacement des produits' })}</label>
+                            <input
+                                type="text"
+                                value={data.suppliesLocation || ''}
+                                onChange={(e) => onChange({ suppliesLocation: e.target.value })}
+                                placeholder={t({ en: 'e.g. Inside the technical room on the top shelf', fr: 'ex: Dans le local technique sur l\'étagère du haut' })}
+                                className="w-full p-5 rounded-[5px] bg-[#F7F7F7] border-none focus:ring-2 focus:ring-black focus:border-black text-[16px] transition-all placeholder:text-neutral-400"
+                            />
+                        </div>
+                    </div>
+                </PoolSection>
+
+                <PoolSection id="tasks" title={t({ en: 'Tasks & Reporting', fr: 'Tâches et Rapports' })} expandedSection={expandedSection} setExpandedSection={setExpandedSection}>
+                    <div className="space-y-4">
+                        <label className="text-[17px] font-medium text-[#222222] mb-4 block">{t({ en: 'Cleaning Frequency', fr: 'Fréquence de nettoyage' })}</label>
+                        <div className="grid grid-cols-3 gap-3">
+                            {[
+                                { id: 'week', label: 'Weekly', fr: 'Hebdo' },
+                                { id: 'two_weeks', label: 'Bi-weekly', fr: 'Bi-mensuel' },
+                                { id: 'month', label: 'Monthly', fr: 'Mensuel' }
+                            ].map((freq: any) => (
+                                <button
+                                    key={freq.id}
+                                    onClick={() => onChange({ frequency: freq.id })}
+                                    className={`p-4 rounded-[5px] border text-center transition-all ${data.frequency === freq.id
+                                        ? 'border-black border-[2px] bg-neutral-50'
+                                        : 'border-neutral-200 text-black hover:border-black'
+                                        }`}
+                                >
+                                    <span className="text-[14px] font-medium text-[#222222]">{t({ en: freq.label, fr: freq.fr })}</span>
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    <div className="space-y-4 pt-4 border-t border-neutral-100">
+                        <label className="text-[17px] font-medium text-[#222222] mb-1 block">{t({ en: 'Required Tasks Checklist', fr: 'Checklist des tâches obligatoires' })}</label>
+                        <p className="text-[14px] text-neutral-500 mb-6">
+                            {t({ en: 'Bricoler must verify these steps to complete the job', fr: 'Le Bricoler doit vérifier ces étapes pour terminer' })}
+                        </p>
+                        <div className="space-y-2">
+                            {(data.checklist || ['']).map((item: any, idx: number) => (
+                                <div key={idx} className="group flex items-center gap-3">
+                                    <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 transition-all ${item.trim() !== '' ? 'bg-[#00CA52] border-[#00CA52]' : 'border-neutral-200'}`}>
+                                        {item.trim() !== '' && <Check size={12} className="text-white" strokeWidth={3} />}
+                                    </div>
+                                    <input
+                                        type="text"
+                                        autoFocus={idx > 0 && item === ''}
+                                        value={item}
+                                        onChange={(e) => {
+                                            const next = [...(data.checklist || [''])];
+                                            next[idx] = e.target.value;
+                                            onChange({ checklist: next });
+                                        }}
+                                        onKeyDown={(e) => {
+                                            if (e.key === 'Enter' && item.trim() !== '') {
+                                                onChange({ checklist: [...(data.checklist || []), ''] });
+                                            }
+                                        }}
+                                        placeholder={t({ en: 'e.g., Chemical balancing, vacuuming, filter check...', fr: 'ex: Équilibrage chimique, passage de l\'aspirateur...' })}
+                                        className="flex-1 py-2 bg-transparent border-none focus:ring-0 text-[16px] text-[#222222] placeholder:text-neutral-300 outline-none"
+                                    />
+                                    {((data.checklist || []).length > 1 || item.trim() !== '') && (
+                                        <button
+                                            onClick={() => {
+                                                const next = (data.checklist || []).filter((_: any, i: number) => i !== idx);
+                                                onChange({ checklist: next.length === 0 ? [''] : next });
+                                            }}
+                                            className="opacity-0 group-hover:opacity-100 p-2 text-neutral-400 hover:text-red-500 transition-all"
+                                        >
+                                            <X size={18} />
+                                        </button>
+                                    )}
+                                </div>
+                            ))}
+                            <button
+                                onClick={() => onChange({ checklist: [...(data.checklist || []), ''] })}
+                                className="flex items-center gap-2 text-black/50 hover:text-black transition-all pt-2"
+                            >
+                                <Plus size={18} />
+                                <span className="text-sm font-medium">{t({ en: 'Add task', fr: 'Ajouter une tâche' })}</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="space-y-4 pt-4 border-t border-neutral-100">
+                        <div>
+                            <label className="text-[17px] font-medium text-[#222222]">{t({ en: 'Proof of Completion Photos', fr: 'Photos de preuve de réalisation' })}</label>
+                            <p className="text-[14px] text-neutral-500 mt-1 mb-4">
+                                {t({ en: 'Upload examples of expected water clarity and chemical levels', fr: 'Téléchargez des exemples de la clarté d\'eau attendue' })}
+                            </p>
+                        </div>
+                        <div className="grid grid-cols-3 gap-4">
+                            {(data.referencePhotos || []).map((url: any, i: number) => (
+                                <div key={url} className="relative aspect-square rounded-[5px] overflow-hidden border border-neutral-100 group">
+                                    <img src={url} alt="Reference" className="w-full h-full object-cover" />
+                                    <button
+                                        onClick={() => onChange({ referencePhotos: data.referencePhotos.filter((_: any, idx: number) => idx !== i) })}
+                                        className="absolute top-2 right-2 w-7 h-7 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center border border-neutral-100 opacity-0 group-hover:opacity-100 transition-all hover:bg-white"
+                                    >
+                                        <X size={14} className="text-red-500" />
+                                    </button>
+                                </div>
+                            ))}
+                            <button
+                                onClick={() => photoInputRef.current?.click()}
+                                className="aspect-square rounded-[5px] border-2 border-dashed border-neutral-200 flex flex-col items-center justify-center gap-2 hover:border-black hover:bg-neutral-50 transition-all text-neutral-400 hover:text-black"
+                            >
+                                {isUploading ? (
+                                    <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1, ease: "linear" }}>
+                                        <Plus size={24} />
+                                    </motion.div>
+                                ) : (
+                                    <>
+                                        <Plus size={24} />
+                                        <span className="text-[12px] font-medium uppercase tracking-wider">{t({ en: 'Upload', fr: 'Ajouter' })}</span>
+                                    </>
+                                )}
+                            </button>
+                        </div>
+                        <input type="file" multiple hidden ref={photoInputRef} onChange={handlePhotoUpload} accept="image/*" />
+                    </div>
+                </PoolSection>
             </div>
         </div>
     );
@@ -3421,7 +3673,7 @@ const ReceptionistDetailForm = ({ data, onChange }: any) => {
 
 
                 <div className="space-y-4">
-                    <h3 className="font-medium text-[20px] text-black">{t({ en: 'Welcome Tasks', fr: 'Tâches d\'accueil' })}</h3>
+                    <h3 className="font-medium text-[20px] text-black mb-4">{t({ en: 'Welcome Tasks', fr: 'Tâches d\'accueil' })}</h3>
                     <div className="space-y-2">
                         {(data.checklist || ['']).map((item: any, idx: number) => (
                             <div key={idx} className="group flex items-center gap-3">
@@ -3451,28 +3703,20 @@ const ReceptionistDetailForm = ({ data, onChange }: any) => {
                                             const next = (data.checklist || []).filter((_: any, i: number) => i !== idx);
                                             onChange({ checklist: next.length === 0 ? [''] : next });
                                         }}
-                                        className="p-2 text-neutral-400 hover:text-black hover:bg-neutral-50 rounded-full transition-all"
+                                        className="opacity-0 group-hover:opacity-100 p-2 text-neutral-400 hover:text-red-500 transition-all"
                                     >
                                         <X size={18} />
                                     </button>
                                 )}
                             </div>
                         ))}
-                    </div>
-                </div>
-
-                <div className="space-y-4">
-                    <h3 className="font-medium text-[20px] text-black">{t({ en: 'Guest Support', fr: 'Support Voyageur' })}</h3>
-                    <div className="space-y-4">
-                        <div className="flex items-center justify-between p-5 rounded-[5px] border border-neutral-200 bg-white">
-                            <span className="text-[17px] font-medium">{t({ en: '24/7 Phone support', fr: 'Support téléphonique 24/7' })}</span>
-                            <button
-                                onClick={() => onChange({ phoneSupport: !data.phoneSupport })}
-                                className={`w-12 h-6 rounded-full transition-colors relative ${data.phoneSupport ? 'bg-black' : 'bg-neutral-200'}`}
-                            >
-                                <div className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform ${data.phoneSupport ? 'translate-x-6' : ''}`} />
-                            </button>
-                        </div>
+                        <button
+                            onClick={() => onChange({ checklist: [...(data.checklist || []), ''] })}
+                            className="flex items-center gap-2 text-black/50 hover:text-black transition-all pt-2"
+                        >
+                            <Plus size={18} />
+                            <span className="text-sm font-medium">{t({ en: 'Add item', fr: 'Ajouter un élément' })}</span>
+                        </button>
                     </div>
                 </div>
             </div>
@@ -3483,161 +3727,233 @@ const ReceptionistDetailForm = ({ data, onChange }: any) => {
 const PetsDetailForm = ({ data, onChange }: any) => {
     const { t } = useLanguage();
 
+    const petTypesConfig = [
+        { id: 'dog', label: 'Dog', fr: 'Chien', emoji: '🐶', hasWalking: true, hasMedication: true },
+        { id: 'cat', label: 'Cat', fr: 'Chat', emoji: '🐱', hasWalking: false, hasMedication: true },
+        { id: 'guard_dog', label: 'Guard Dog', fr: 'Chien de garde', emoji: '🐕', hasWalking: true, hasMedication: true },
+        { id: 'bird', label: 'Bird', fr: 'Oiseau', emoji: '🦜', hasWalking: false, hasMedication: true },
+        { id: 'other', label: 'Other', fr: 'Autre', emoji: '🐾', hasWalking: false, hasMedication: true }
+    ];
+
+    const togglePetType = (id: string) => {
+        const current = data.petTypes || [];
+        const next = current.includes(id) ? current.filter((s: any) => s !== id) : [...current, id];
+
+        // Initialize detail state for new pet if it doesn't exist
+        const nextDetails = { ...(data.petDetails || {}) };
+        if (!current.includes(id) && !nextDetails[id]) {
+            nextDetails[id] = {
+                name: '',
+                feedingFrequency: 'twice',
+                walkingNeeded: false,
+                medicationRequired: false,
+                checklist: ['']
+            };
+        }
+
+        onChange({ petTypes: next, petDetails: nextDetails });
+    };
+
+    const updatePetDetail = (id: string, updates: any) => {
+        const nextDetails = { ...(data.petDetails || {}) };
+        nextDetails[id] = { ...(nextDetails[id] || {}), ...updates };
+        onChange({ petDetails: nextDetails });
+    };
+
+    const feedingFrequencies = [
+        { id: 'once', label: 'Once / Day', fr: '1 fois / jour' },
+        { id: 'twice', label: 'Twice / Day', fr: '2 fois / jour' },
+        { id: 'three', label: '3 times / Day', fr: '3 fois / jour' },
+        { id: 'custom', label: 'Custom', fr: 'Sur-mesure' }
+    ];
+
     return (
-        <div className="flex-1 overflow-y-auto pb-32">
-            <h2 className="font-medium text-[32px] text-black leading-tight tracking-tight mb-8">
+        <div className="flex-1 overflow-y-auto pb-32 no-scrollbar">
+            <h2 className="font-bold text-[32px] text-[#222222] leading-tight tracking-tight mb-8">
                 {t({ en: 'Pets Care', fr: 'Soins des Animaux' })}
             </h2>
 
             <div className="space-y-12">
-                <div className="space-y-4">
-                    <h3 className="font-medium text-[20px] text-black">{t({ en: 'What type of pets need care?', fr: 'Quel type d\'animaux a besoin de soins ?' })}</h3>
-                    <div className="flex flex-wrap gap-3">
-                        {[
-                            { id: 'dog', label: 'Dog', fr: 'Chien', emoji: '🐶' },
-                            { id: 'cat', label: 'Cat', fr: 'Chat', emoji: '🐱' },
-                            { id: 'guard_dog', label: 'Guard Dog', fr: 'Chien de garde', emoji: '🐕' },
-                            { id: 'bird', label: 'Bird', fr: 'Oiseau', emoji: '🦜' },
-                            { id: 'other', label: 'Other', fr: 'Autre', emoji: '🐾' }
-                        ].map((item: any) => (
-                            <button
-                                key={item.id}
-                                onClick={() => {
-                                    const current = data.petTypes || [];
-                                    const next = current.includes(item.id) ? current.filter((id: any) => id !== item.id) : [...current, item.id];
-                                    onChange({ petTypes: next });
-                                }}
-                                className={`flex items-center gap-2 px-4 py-2 rounded-full border transition-all text-[14px] font-semibold ${(data.petTypes || []).includes(item.id)
-                                    ? 'bg-neutral-50 text-black border-black border-2'
-                                    : 'bg-white text-black border-neutral-200 hover:border-black'
-                                    }`}
-                            >
-                                <span>{item.emoji}</span>
-                                <span>{t({ en: item.label, fr: item.fr })}</span>
-                            </button>
-                        ))}
-                    </div>
-                </div>
-
-                <div className="p-8 rounded-[5px] border border-neutral-200 bg-white space-y-6">
-                    <h3 className="font-medium text-[20px] text-black">
-                        {t({ en: 'Feeding Schedule', fr: 'Planning des repas' })}
-                    </h3>
-                    <div className="grid grid-cols-3 gap-3">
-                        {[
-                            { id: 'once', label: 'Once / Day', fr: '1 fois / jour' },
-                            { id: 'twice', label: 'Twice / Day', fr: '2 fois / jour' },
-                            { id: 'three', label: '3 times / Day', fr: '3 fois / jour' }
-                        ].map((freq: any) => (
-                            <button
-                                key={freq.id}
-                                onClick={() => onChange({ feedingFrequency: freq.id })}
-                                className={`p-4 rounded-[5px] border text-center transition-all ${data.feedingFrequency === freq.id
-                                    ? 'border-black border-[3.5px] bg-neutral-50'
-                                    : 'border-neutral-200 text-black hover:border-black'
-                                    }`}
-                            >
-                                <span className="text-[14px] font-medium">{t({ en: freq.label, fr: freq.fr })}</span>
-                            </button>
-                        ))}
-                    </div>
-                </div>
-
-                <div className="p-8 rounded-[5px] border border-neutral-200 bg-white space-y-6">
-                    <h3 className="font-medium text-[20px] text-black">
-                        {t({ en: 'Daily Activities & Care', fr: 'Activités et soins quotidiens' })}
-                    </h3>
-
-                    <div className="flex items-start justify-between py-4 border-b border-neutral-50 gap-4">
-                        <div className="flex flex-col gap-1 flex-1">
-                            <span className="text-[17px] font-medium text-black leading-tight">{t({ en: 'Walking needed?', fr: 'Promenades nécessaires ?' })}</span>
-                            <span className="text-[14px] text-neutral-500">{t({ en: 'For dogs and active pets', fr: 'Pour les chiens et animaux actifs' })}</span>
-                        </div>
-                        <button
-                            onClick={() => onChange({ walkingNeeded: !data.walkingNeeded })}
-                            className={`w-14 h-8 rounded-full transition-all flex items-center px-1 shrink-0 ${data.walkingNeeded ? 'bg-black' : 'bg-neutral-200'}`}
-                        >
-                            <div className={`w-6 h-6 rounded-full bg-white transition-all ${data.walkingNeeded ? 'translate-x-6' : 'translate-x-0'}`} />
-                        </button>
-                    </div>
-
-                    <div className="flex items-start justify-between py-4 gap-4">
-                        <div className="flex flex-col gap-1 flex-1">
-                            <span className="text-[17px] font-medium text-black leading-tight">{t({ en: 'Medication required?', fr: 'Médicaments requis ?' })}</span>
-                            <span className="text-[14px] text-neutral-500">{t({ en: 'If the animal has a treatment', fr: 'Si l\'animal suit un traitement' })}</span>
-                        </div>
-                        <button
-                            onClick={() => onChange({ medicationRequired: !data.medicationRequired })}
-                            className={`w-14 h-8 rounded-full transition-all flex items-center px-1 shrink-0 ${data.medicationRequired ? 'bg-black' : 'bg-neutral-200'}`}
-                        >
-                            <div className={`w-6 h-6 rounded-full bg-white transition-all ${data.medicationRequired ? 'translate-x-6' : 'translate-x-0'}`} />
-                        </button>
-                    </div>
-                </div>
-
+                {/* Pets Selection & Details */}
                 <div className="space-y-6">
-                    <div>
-                        <label className="text-[18px] font-medium text-black mb-3 block">{t({ en: 'Care instructions & personality', fr: 'Instructions et personnalité' })}</label>
-                        <textarea
-                            value={data.instructions || ''}
-                            onChange={(e) => onChange({ instructions: e.target.value })}
-                            placeholder={t({ en: 'e.g. Food is in the garage, Friendly but scared of cats, Loves playing catch...', fr: 'ex: La nourriture est dans le garage, Amical mais a peur des chats, Adore jouer...' })}
-                            className="w-full p-5 rounded-[5px] bg-[#F7F7F7] border-none focus:ring-2 focus:ring-black focus:border-black text-[16px] min-h-[140px] resize-none transition-all placeholder:text-neutral-400"
-                        />
-                    </div>
+                    <h3 className="text-[17px] font-medium text-[#222222]">{t({ en: 'What type of pets need care?', fr: 'Quel type d\'animaux a besoin de soins ?' })}</h3>
+                    <div className="space-y-4">
+                        {petTypesConfig.map((item) => {
+                            const isSelected = (data.petTypes || []).includes(item.id);
+                            const details = (data.petDetails || {})[item.id] || { name: '', feedingFrequency: 'twice', checklist: [''] };
 
-                    <div>
-                        <label className="text-[18px] font-medium text-black mb-3 block">{t({ en: 'Emergency Contact / Vet', fr: 'Contact d\'urgence / Vétérinaire' })}</label>
-                        <input
-                            type="text"
-                            value={data.emergencyContact || ''}
-                            onChange={(e) => onChange({ emergencyContact: e.target.value })}
-                            placeholder={t({ en: 'Name and phone number...', fr: 'Nom et numéro de téléphone...' })}
-                            className="w-full p-5 rounded-[5px] bg-[#F7F7F7] border-none focus:ring-2 focus:ring-black focus:border-black text-[16px] transition-all placeholder:text-neutral-400"
-                        />
-                    </div>
-                </div>
-
-                <div className="space-y-4">
-                    <h3 className="font-medium text-[20px] text-black">{t({ en: 'Daily Checklist', fr: 'Checklist quotidienne' })}</h3>
-                    <div className="space-y-2">
-                        {(data.checklist || ['']).map((item: any, idx: number) => (
-                            <div key={idx} className="group flex items-center gap-3">
-                                <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 transition-all ${item.trim() !== '' ? 'bg-[#00CA52] border-[#00CA52]' : 'border-neutral-200'}`}>
-                                    {item.trim() !== '' && <Check size={12} className="text-white" strokeWidth={3} />}
-                                </div>
-                                <input
-                                    type="text"
-                                    autoFocus={idx > 0 && item === ''}
-                                    value={item}
-                                    onChange={(e) => {
-                                        const next = [...(data.checklist || [''])];
-                                        next[idx] = e.target.value;
-                                        onChange({ checklist: next });
-                                    }}
-                                    onKeyDown={(e) => {
-                                        if (e.key === 'Enter' && item.trim() !== '') {
-                                            onChange({ checklist: [...(data.checklist || []), ''] });
-                                        }
-                                    }}
-                                    placeholder={t({ en: 'e.g., Clean the litter box...', fr: 'ex: Nettoyer la litière...' })}
-                                    className="flex-1 py-2 bg-transparent border-none focus:ring-0 text-[18px] text-black placeholder:text-neutral-300 outline-none"
-                                />
-                                {((data.checklist || []).length > 1 || item.trim() !== '') && (
+                            return (
+                                <div
+                                    key={item.id}
+                                    className={`relative rounded-[5px] border transition-all duration-300 ${isSelected
+                                        ? 'border-black border-[1px] bg-white shadow-sm'
+                                        : 'border-neutral-200 hover:border-black bg-white'
+                                        }`}
+                                >
+                                    {isSelected && (
+                                        <div className="absolute top-5 right-5 w-8 h-8 bg-[#222222] rounded-full flex items-center justify-center z-10">
+                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                <path d="M4 12L10 18L20 6" stroke="white" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
+                                            </svg>
+                                        </div>
+                                    )}
                                     <button
-                                        onClick={() => {
-                                            const next = (data.checklist || []).filter((_: any, i: number) => i !== idx);
-                                            onChange({ checklist: next.length === 0 ? [''] : next });
-                                        }}
-                                        className="p-2 text-neutral-400 hover:text-black hover:bg-neutral-50 rounded-full transition-all"
+                                        onClick={() => togglePetType(item.id)}
+                                        className="w-full flex items-center justify-between px-10 py-12 text-left"
                                     >
-                                        <X size={18} />
+                                        <div className="flex-1 pr-20">
+                                            <span className="text-[23px] font-bold text-[#222222] leading-tight block">
+                                                {t({ en: item.label, fr: item.fr })}
+                                            </span>
+                                            {isSelected && details.name && (
+                                                <span className="text-[15px] text-neutral-500 mt-1 block font-medium">
+                                                    {details.name}
+                                                </span>
+                                            )}
+                                        </div>
+                                        <div className="shrink-0 flex items-center gap-4">
+                                            <div className="text-4xl">{item.emoji}</div>
+                                            <motion.div
+                                                animate={{ rotate: isSelected ? 180 : 0 }}
+                                                transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                                            >
+                                                <ChevronDown size={24} className="text-neutral-400" />
+                                            </motion.div>
+                                        </div>
                                     </button>
-                                )}
-                            </div>
-                        ))}
+
+                                    <AnimatePresence>
+                                        {isSelected && (
+                                            <motion.div
+                                                initial={{ height: 0, opacity: 0 }}
+                                                animate={{ height: "auto", opacity: 1 }}
+                                                exit={{ height: 0, opacity: 0 }}
+                                                transition={{ duration: 0.3, ease: [0.23, 1, 0.32, 1] }}
+                                                className="overflow-hidden"
+                                            >
+                                                <div className="px-10 pb-10 pt-2 border-t border-neutral-50 space-y-8">
+                                                    {/* Animal Name */}
+                                                    <div className="space-y-3 mt-4">
+                                                        <label className="text-[17px] font-medium block mb-3 text-[#222222]">{t({ en: 'Animal Name', fr: 'Nom de l\'animal' })}</label>
+                                                        <input
+                                                            type="text"
+                                                            value={details.name || ''}
+                                                            onChange={(e) => updatePetDetail(item.id, { name: e.target.value })}
+                                                            placeholder={t({ en: 'e.g. Max, Luna...', fr: 'ex: Max, Luna...' })}
+                                                            className="w-full p-5 rounded-[5px] bg-[#F7F7F7] border-none focus:ring-2 focus:ring-black focus:border-black text-[16px] transition-all placeholder:text-neutral-400"
+                                                        />
+                                                    </div>
+
+                                                    {/* Feeding Frequency */}
+                                                    <div className="space-y-4">
+                                                        <label className="text-[17px] font-medium block mb-3 text-[#222222]">{t({ en: 'Feeding Frequency', fr: 'Fréquence des repas' })}</label>
+                                                        <div className="grid grid-cols-2 gap-3">
+                                                            {feedingFrequencies.map((freq) => (
+                                                                <button
+                                                                    key={freq.id}
+                                                                    onClick={() => updatePetDetail(item.id, { feedingFrequency: freq.id })}
+                                                                    className={`p-4 rounded-[5px] border text-left transition-all ${details.feedingFrequency === freq.id
+                                                                        ? 'border-black border-[1px] bg-white'
+                                                                        : 'border-neutral-200 hover:border-black bg-white'
+                                                                        }`}
+                                                                >
+                                                                    <span className="font-bold text-[15px] text-black">{t({ en: freq.label, fr: freq.fr })}</span>
+                                                                </button>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Toggles */}
+                                                    <div className="space-y-2">
+                                                        {item.hasWalking && (
+                                                            <div className="flex items-center justify-between gap-4 py-4">
+                                                                <div className="flex flex-col gap-1 flex-1">
+                                                                    <span className="text-[17px] font-medium text-black leading-tight">{t({ en: 'Walking needed?', fr: 'Promenades nécessaires ?' })}</span>
+                                                                    <span className="text-[14px] text-neutral-500">{t({ en: 'For dogs and active pets', fr: 'Pour les chiens et animaux actifs' })}</span>
+                                                                </div>
+                                                                <button
+                                                                    onClick={() => updatePetDetail(item.id, { walkingNeeded: !details.walkingNeeded })}
+                                                                    className={`w-14 h-8 rounded-full transition-all flex items-center px-1 shrink-0 ${details.walkingNeeded ? 'bg-black' : 'bg-neutral-200'}`}
+                                                                >
+                                                                    <div className={`w-6 h-6 rounded-full bg-white transition-all ${details.walkingNeeded ? 'translate-x-6' : 'translate-x-0'}`} />
+                                                                </button>
+                                                            </div>
+                                                        )}
+                                                        {item.hasMedication && (
+                                                            <div className="flex items-center justify-between gap-4 py-4 border-t border-neutral-50">
+                                                                <div className="flex flex-col gap-1 flex-1">
+                                                                    <span className="text-[17px] font-medium text-black leading-tight">{t({ en: 'Medication required?', fr: 'Médicaments requis ?' })}</span>
+                                                                    <span className="text-[14px] text-neutral-500">{t({ en: 'If the animal has a treatment', fr: 'Si l\'animal suit un traitement' })}</span>
+                                                                </div>
+                                                                <button
+                                                                    onClick={() => updatePetDetail(item.id, { medicationRequired: !details.medicationRequired })}
+                                                                    className={`w-14 h-8 rounded-full transition-all flex items-center px-1 shrink-0 ${details.medicationRequired ? 'bg-black' : 'bg-neutral-200'}`}
+                                                                >
+                                                                    <div className={`w-6 h-6 rounded-full bg-white transition-all ${details.medicationRequired ? 'translate-x-6' : 'translate-x-0'}`} />
+                                                                </button>
+                                                            </div>
+                                                        )}
+                                                    </div>
+
+                                                    {/* Per-Animal Checklist */}
+                                                    <div className="space-y-4 pt-4 border-t border-neutral-50">
+                                                        <h4 className="text-[17px] font-medium mb-3 text-[#222222]">{t({ en: 'Instructions Checklist', fr: 'Checklist d\'instructions' })}</h4>
+                                                        <div className="space-y-2">
+                                                            {(details.checklist || ['']).map((itemStr: string, idx: number) => (
+                                                                <div key={idx} className="group flex items-center gap-3">
+                                                                    <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 transition-all ${itemStr.trim() !== '' ? 'bg-[#00CA52] border-[#00CA52]' : 'border-neutral-200'}`}>
+                                                                        {itemStr.trim() !== '' && <Check size={12} className="text-white" strokeWidth={3} />}
+                                                                    </div>
+                                                                    <input
+                                                                        type="text"
+                                                                        autoFocus={idx > 0 && itemStr === ''}
+                                                                        value={itemStr}
+                                                                        onChange={(e) => {
+                                                                            const next = [...(details.checklist || [''])];
+                                                                            next[idx] = e.target.value;
+                                                                            updatePetDetail(item.id, { checklist: next });
+                                                                        }}
+                                                                        onKeyDown={(e) => {
+                                                                            if (e.key === 'Enter' && itemStr.trim() !== '') {
+                                                                                updatePetDetail(item.id, { checklist: [...(details.checklist || []), ''] });
+                                                                            }
+                                                                        }}
+                                                                        placeholder={t({ en: 'e.g., Clean the litter box...', fr: 'ex: Nettoyer la litière...' })}
+                                                                        className="flex-1 py-2 bg-transparent border-none focus:ring-0 text-[18px] text-black placeholder:text-neutral-300 outline-none"
+                                                                    />
+                                                                    {((details.checklist || []).length > 1 || itemStr.trim() !== '') && (
+                                                                        <button
+                                                                            onClick={() => {
+                                                                                const next = (details.checklist || []).filter((_: any, i: number) => i !== idx);
+                                                                                updatePetDetail(item.id, { checklist: next.length === 0 ? [''] : next });
+                                                                            }}
+                                                                            className="opacity-0 group-hover:opacity-100 p-2 text-neutral-400 hover:text-red-500 transition-all"
+                                                                        >
+                                                                            <X size={18} />
+                                                                        </button>
+                                                                    )}
+                                                                </div>
+                                                            ))}
+                                                            <button
+                                                                onClick={() => updatePetDetail(item.id, { checklist: [...(details.checklist || []), ''] })}
+                                                                className="flex items-center gap-2 text-black/50 hover:text-black transition-all pt-2"
+                                                            >
+                                                                <Plus size={18} />
+                                                                <span className="text-sm font-medium">{t({ en: 'Add item', fr: 'Ajouter un élément' })}</span>
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </motion.div>
+                                        )}
+                                    </AnimatePresence>
+                                </div>
+                            );
+                        })}
                     </div>
                 </div>
+
+
             </div>
         </div>
     );
@@ -3654,10 +3970,26 @@ const ErrandsDetailForm = ({ data, onChange }: any) => {
         { id: 'linens', label: 'Linens & Towels', fr: 'Linge & Serviettes', emoji: '🛏️' }
     ];
 
+    const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
+
     const toggleCategory = (id: string) => {
         const current = data.categories || [];
-        const next = current.includes(id) ? current.filter((c: any) => c !== id) : [...current, id];
-        onChange({ categories: next });
+        const isSelected = current.includes(id);
+
+        if (isSelected) {
+            // If already selected, just toggle expansion
+            setExpandedCategory(expandedCategory === id ? null : id);
+        } else {
+            // If not selected, select it and expand it
+            onChange({
+                categories: [...current, id],
+                checklists: {
+                    ...(data.checklists || {}),
+                    [id]: (data.checklists && data.checklists[id]) || [{ name: '', minStock: 1, maxStock: 5, frequency: 'each_time' }]
+                }
+            });
+            setExpandedCategory(id);
+        }
     };
 
     const updateChecklist = (catId: string, newList: any[]) => {
@@ -3671,169 +4003,249 @@ const ErrandsDetailForm = ({ data, onChange }: any) => {
                 {t({ en: 'What needs restocking?', fr: 'Que faut-il réapprovisionner ?' })}
             </h2>
 
-            <div className="space-y-12">
-                <div className="space-y-4">
-                    <h3 className="font-medium text-[17px] text-black">
-                        {t({ en: 'Select categories', fr: 'Sélectionnez les catégories' })}
-                    </h3>
-                    <div className="grid grid-cols-2 gap-3">
-                        {categories.map((category) => {
-                            const isSelected = (data.categories || []).includes(category.id);
-                            return (
-                                <button
-                                    key={category.id}
-                                    onClick={() => toggleCategory(category.id)}
-                                    className={`flex flex-col items-start justify-between p-6 rounded-[5px] border transition-all h-[150px] text-left ${isSelected
-                                        ? 'border-black border-[2px] bg-neutral-50'
-                                        : 'border-neutral-200 hover:border-black bg-white'
-                                        }`}
-                                >
-                                    <span className="text-[32px] shrink-0">{category.emoji}</span>
-                                    <span className="text-[16px] font-medium leading-tight text-black">
+            <div className="space-y-6">
+                {categories.map((category) => {
+                    const isSelected = (data.categories || []).includes(category.id);
+                    const isExpanded = expandedCategory === category.id;
+                    const list = (data.checklists && data.checklists[category.id]) || [{ name: '', minStock: 1, maxStock: 5, frequency: 'each_time' }];
+                    const hasValidItem = list.some((item: any) => item.name && item.name.trim() !== '');
+
+                    return (
+                        <div
+                            key={category.id}
+                            className={`relative rounded-[5px] border transition-all duration-300 ${isExpanded
+                                ? 'border-black border-[1px] bg-white shadow-sm'
+                                : 'border-neutral-200 hover:border-black bg-white'
+                                }`}
+                        >
+                            {isSelected && hasValidItem && (
+                                <div className="absolute top-5 right-5 w-8 h-8 bg-[#222222] rounded-full flex items-center justify-center z-10">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                        <path d="M4 12L10 18L20 6" stroke="white" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
+                                    </svg>
+                                </div>
+                            )}
+
+                            <button
+                                onClick={() => toggleCategory(category.id)}
+                                className="w-full flex items-center justify-between px-10 py-12 text-left"
+                            >
+                                <div className="flex-1 pr-20">
+                                    <span className="text-[23px] font-bold text-[#222222] leading-tight block">
                                         {t({ en: category.label, fr: category.fr })}
                                     </span>
-                                </button>
-                            );
-                        })}
-                    </div>
-                </div>
+                                </div>
+                                <div className="shrink-0 flex items-center gap-4">
+                                    <div className="text-4xl">{category.emoji}</div>
+                                    <motion.div
+                                        animate={{ rotate: isExpanded ? 180 : 0 }}
+                                        transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                                    >
+                                        <ChevronDown size={24} className="text-neutral-400" />
+                                    </motion.div>
+                                </div>
+                            </button>
 
-                {(data.categories || []).length > 0 && (
-                    <div className="space-y-10">
-                        {(data.categories || []).map((categoryId: any) => {
-                            const catMeta = categories.find(c => c.id === categoryId);
-                            const list = (data.checklists && data.checklists[categoryId]) || [{ name: '', quantity: 1 }];
-
-                            return (
-                                <div key={categoryId} className="space-y-4">
-                                    <h3 className="font-medium text-[18px] text-black flex items-center gap-2">
-                                        <span>{catMeta?.emoji}</span>
-                                        {t({ en: `${catMeta?.label} Items`, fr: `Articles pour ${catMeta?.fr}` })}
-                                    </h3>
-                                    <div className="flex flex-col gap-4">
-                                        {list.map((item: any, idx: number) => (
-                                            <div key={idx} className="border border-neutral-200 p-5 rounded-[5px] bg-white space-y-4">
-                                                <div className="flex justify-between items-start gap-4">
-                                                    <div className="flex flex-col gap-3 flex-1">
-                                                        <input
-                                                            type="text"
-                                                            autoFocus={item.name === ''}
-                                                            value={item.name}
-                                                            onChange={(e) => {
-                                                                const newList = [...list];
-                                                                newList[idx].name = e.target.value;
-                                                                updateChecklist(categoryId, newList);
-                                                            }}
-                                                            placeholder={t({ en: 'Item name...', fr: 'Nom de l\'article...' })}
-                                                            className="w-full bg-transparent border-none p-0 focus:ring-0 text-[16px] text-black font-medium placeholder:text-neutral-300"
-                                                        />
-                                                        <div className="flex flex-wrap gap-2">
-                                                            {(item.brands || []).map((brand: any) => (
-                                                                <span key={brand} className="inline-flex items-center gap-1 px-3 py-1 bg-[#F7F7F7] text-neutral-600 rounded-[5px] text-[13px] font-medium border border-neutral-200">
-                                                                    {brand}
-                                                                    <button
-                                                                        onClick={() => {
-                                                                            const newList = [...list];
-                                                                            newList[idx].brands = item.brands.filter((b: any) => b !== brand);
-                                                                            updateChecklist(categoryId, newList);
-                                                                        }}
-                                                                        className="ml-1 text-neutral-400 hover:text-black"
-                                                                    >
-                                                                        <X size={12} />
-                                                                    </button>
-                                                                </span>
-                                                            ))}
-                                                            {editingBrand?.cat === categoryId && editingBrand?.idx === idx ? (
+                            <AnimatePresence>
+                                {isExpanded && (
+                                    <motion.div
+                                        initial={{ height: 0, opacity: 0 }}
+                                        animate={{ height: "auto", opacity: 1 }}
+                                        exit={{ height: 0, opacity: 0 }}
+                                        transition={{ duration: 0.3, ease: [0.23, 1, 0.32, 1] }}
+                                        className="overflow-hidden"
+                                    >
+                                        <div className="px-5 pb-10 pt-2 border-t border-neutral-50 space-y-6">
+                                            <div className="flex flex-col gap-4">
+                                                {list.map((item: any, idx: number) => (
+                                                    <div key={idx} className="border border-neutral-200 p-5 rounded-[5px] bg-white space-y-4">
+                                                        <div className="flex justify-between items-start gap-4">
+                                                            <div className="flex flex-col gap-3 flex-1">
                                                                 <input
-                                                                    autoFocus
                                                                     type="text"
-                                                                    className="px-3 py-1 bg-white border border-black rounded-[5px] text-[13px] font-medium w-[150px] focus:outline-none focus:ring-0"
-                                                                    onKeyDown={(e) => {
-                                                                        if (e.key === 'Enter') {
-                                                                            const val = e.currentTarget.value.trim();
-                                                                            if (val) {
-                                                                                const newList = [...list];
-                                                                                newList[idx].brands = [...(item.brands || []), val];
-                                                                                updateChecklist(categoryId, newList);
-                                                                            }
-                                                                            setEditingBrand(null);
-                                                                        } else if (e.key === 'Escape') setEditingBrand(null);
+                                                                    autoFocus={idx > 0 && item.name === ''}
+                                                                    value={item.name}
+                                                                    onChange={(e) => {
+                                                                        const newList = [...list];
+                                                                        newList[idx].name = e.target.value;
+                                                                        updateChecklist(category.id, newList);
                                                                     }}
-                                                                    onBlur={(e) => {
-                                                                        const val = e.target.value.trim();
-                                                                        if (val) {
-                                                                            const newList = [...list];
-                                                                            newList[idx].brands = [...(item.brands || []), val];
-                                                                            updateChecklist(categoryId, newList);
-                                                                        }
-                                                                        setEditingBrand(null);
-                                                                    }}
+                                                                    placeholder={t({ en: 'Item name...', fr: 'Nom de l\'article...' })}
+                                                                    className="w-full bg-transparent border-none p-0 focus:ring-0 text-[18px] text-black font-medium placeholder:text-neutral-300 outline-none"
                                                                 />
-                                                            ) : (
-                                                                <button
-                                                                    onClick={() => setEditingBrand({ cat: categoryId, idx })}
-                                                                    className="inline-flex items-center gap-1 px-3 py-1 text-neutral-400 hover:bg-neutral-50 rounded-[5px] text-[13px] font-medium border border-dashed border-neutral-300 transition-colors"
-                                                                >
-                                                                    <Plus size={12} />
-                                                                    {t({ en: 'Add brand', fr: 'Marque préférée' })}
-                                                                </button>
-                                                            )}
+                                                                <div className="flex flex-wrap gap-2">
+                                                                    {(item.brands || []).map((brand: any) => (
+                                                                        <span key={brand} className="inline-flex items-center gap-1 px-3 py-1 bg-[#F7F7F7] text-neutral-600 rounded-[5px] text-[13px] font-medium border border-neutral-200">
+                                                                            {brand}
+                                                                            <button
+                                                                                onClick={() => {
+                                                                                    const newList = [...list];
+                                                                                    newList[idx].brands = item.brands.filter((b: any) => b !== brand);
+                                                                                    updateChecklist(category.id, newList);
+                                                                                }}
+                                                                                className="ml-1 text-neutral-400 hover:text-black"
+                                                                            >
+                                                                                <X size={12} />
+                                                                            </button>
+                                                                        </span>
+                                                                    ))}
+                                                                    {editingBrand?.cat === category.id && editingBrand?.idx === idx ? (
+                                                                        <input
+                                                                            autoFocus
+                                                                            type="text"
+                                                                            className="px-3 py-1 bg-white border border-black rounded-[5px] text-[13px] font-medium w-[150px] focus:outline-none focus:ring-0"
+                                                                            onKeyDown={(e) => {
+                                                                                if (e.key === 'Enter') {
+                                                                                    const val = e.currentTarget.value.trim();
+                                                                                    if (val) {
+                                                                                        const newList = [...list];
+                                                                                        newList[idx].brands = [...(item.brands || []), val];
+                                                                                        updateChecklist(category.id, newList);
+                                                                                    }
+                                                                                    setEditingBrand(null);
+                                                                                } else if (e.key === 'Escape') setEditingBrand(null);
+                                                                            }}
+                                                                            onBlur={(e) => {
+                                                                                const val = e.target.value.trim();
+                                                                                if (val) {
+                                                                                    const newList = [...list];
+                                                                                    newList[idx].brands = [...(item.brands || []), val];
+                                                                                    updateChecklist(category.id, newList);
+                                                                                }
+                                                                                setEditingBrand(null);
+                                                                            }}
+                                                                        />
+                                                                    ) : (
+                                                                        <button
+                                                                            onClick={() => setEditingBrand({ cat: category.id, idx })}
+                                                                            className="inline-flex items-center gap-1 px-3 py-1 text-neutral-400 hover:bg-neutral-50 rounded-[5px] text-[13px] font-medium border border-dashed border-neutral-300 transition-colors"
+                                                                        >
+                                                                            <Plus size={12} />
+                                                                            {t({ en: 'Add brand', fr: 'Marque préférée' })}
+                                                                        </button>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                            <button
+                                                                onClick={() => updateChecklist(category.id, list.filter((_: any, i: number) => i !== idx))}
+                                                                className="p-2 text-neutral-400 hover:text-red-500 transition-colors"
+                                                            >
+                                                                <X size={20} />
+                                                            </button>
+                                                        </div>
+
+                                                        <div className="space-y-6 pt-4 border-t border-neutral-50">
+                                                            {/* Frequency Selector */}
+                                                            <div className="space-y-3">
+                                                                <span className="text-[15px] font-medium text-black block">{t({ en: 'Frequency', fr: 'Fréquence' })}</span>
+                                                                <div className="grid grid-cols-1 gap-2 w-full">
+                                                                    {[
+                                                                        { id: 'each_time', en: 'Each checkout', fr: 'Chaque checkout' },
+                                                                        { id: 'weekly', en: 'Weekly', fr: 'Hebdomadaire' },
+                                                                        { id: 'monthly', en: 'Monthly', fr: 'Mensuel' }
+                                                                    ].map((f) => (
+                                                                        <button
+                                                                            key={f.id}
+                                                                            onClick={() => {
+                                                                                const newList = [...list];
+                                                                                newList[idx].frequency = f.id;
+                                                                                updateChecklist(category.id, newList);
+                                                                            }}
+                                                                            className={`w-full px-5 py-3 rounded-[5px] text-[14px] font-bold transition-all text-left border ${item.frequency === f.id
+                                                                                ? 'bg-black text-white border-black shadow-sm'
+                                                                                : 'bg-white text-neutral-500 border-neutral-200 hover:border-black'
+                                                                                }`}
+                                                                        >
+                                                                            {t({ en: f.en, fr: f.fr })}
+                                                                        </button>
+                                                                    ))}
+                                                                </div>
+                                                            </div>
+
+                                                            {/* Min/Max Stock Counters */}
+                                                            <div className="grid grid-cols-1 gap-6">
+                                                                <div className="space-y-3">
+                                                                    <span className="text-[14px] font-medium text-neutral-400 uppercase tracking-wider">{t({ en: 'Min Stock', fr: 'Stock Min' })}</span>
+                                                                    <div className="flex items-center gap-8">
+                                                                        <button
+                                                                            onClick={() => {
+                                                                                const newList = [...list];
+                                                                                newList[idx].minStock = Math.max(0, (item.minStock || 1) - 1);
+                                                                                updateChecklist(category.id, newList);
+                                                                            }}
+                                                                            className="w-10 h-10 rounded-full border border-neutral-200 flex items-center justify-center active:scale-90 transition-all text-black disabled:opacity-20"
+                                                                            disabled={(item.minStock || 0) <= 0}
+                                                                        >
+                                                                            <div className="w-3 h-[1.5px] bg-black" />
+                                                                        </button>
+                                                                        <span className="text-[17px] font-bold tabular-nums w-4 text-center">{item.minStock || 1}</span>
+                                                                        <button
+                                                                            onClick={() => {
+                                                                                const newList = [...list];
+                                                                                newList[idx].minStock = (item.minStock || 0) + 1;
+                                                                                updateChecklist(category.id, newList);
+                                                                            }}
+                                                                            className="w-10 h-10 rounded-full border border-neutral-200 flex items-center justify-center active:scale-90 transition-all text-black"
+                                                                        >
+                                                                            <Plus size={16} />
+                                                                        </button>
+                                                                    </div>
+                                                                </div>
+
+                                                                <div className="space-y-3">
+                                                                    <span className="text-[14px] font-medium text-neutral-400 uppercase tracking-wider">{t({ en: 'Max Stock', fr: 'Stock Max' })}</span>
+                                                                    <div className="flex items-center gap-8">
+                                                                        <button
+                                                                            onClick={() => {
+                                                                                const newList = [...list];
+                                                                                newList[idx].maxStock = Math.max((item.minStock || 0), (item.maxStock || 5) - 1);
+                                                                                updateChecklist(category.id, newList);
+                                                                            }}
+                                                                            className="w-10 h-10 rounded-full border border-neutral-200 flex items-center justify-center active:scale-90 transition-all text-black disabled:opacity-20"
+                                                                            disabled={(item.maxStock || 0) <= (item.minStock || 0)}
+                                                                        >
+                                                                            <div className="w-3 h-[1.5px] bg-black" />
+                                                                        </button>
+                                                                        <span className="text-[17px] font-bold tabular-nums w-4 text-center">{item.maxStock || 5}</span>
+                                                                        <button
+                                                                            onClick={() => {
+                                                                                const newList = [...list];
+                                                                                newList[idx].maxStock = (item.maxStock || 0) + 1;
+                                                                                updateChecklist(category.id, newList);
+                                                                            }}
+                                                                            className="w-10 h-10 rounded-full border border-neutral-200 flex items-center justify-center active:scale-90 transition-all text-black"
+                                                                        >
+                                                                            <Plus size={16} />
+                                                                        </button>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
                                                         </div>
                                                     </div>
-                                                    <button
-                                                        onClick={() => updateChecklist(categoryId, list.filter((_: any, i: number) => i !== idx))}
-                                                        className="p-2 text-neutral-400 hover:text-red-500 transition-colors"
-                                                    >
-                                                        <X size={20} />
-                                                    </button>
-                                                </div>
-
-                                                <div className="flex items-center justify-between pt-4 border-t border-neutral-50">
-                                                    <span className="text-[15px] font-light text-black">{t({ en: 'Quantity', fr: 'Quantité' })}</span>
-                                                    <div className="flex items-center gap-4">
-                                                        <button
-                                                            onClick={() => {
-                                                                const newList = [...list];
-                                                                newList[idx].quantity = Math.max(1, item.quantity - 1);
-                                                                updateChecklist(categoryId, newList);
-                                                            }}
-                                                            className="w-8 h-8 rounded-full bg-[#F7F7F7] flex items-center justify-center active:scale-90 transition-all text-black disabled:opacity-20"
-                                                            disabled={item.quantity <= 1}
-                                                        >
-                                                            <div className="w-3 h-[1.5px] bg-black opacity-60" />
-                                                        </button>
-                                                        <span className="text-[17px] font-light w-6 text-center tabular-nums">{item.quantity}</span>
-                                                        <button
-                                                            onClick={() => {
-                                                                const newList = [...list];
-                                                                newList[idx].quantity = item.quantity + 1;
-                                                                updateChecklist(categoryId, newList);
-                                                            }}
-                                                            className="w-8 h-8 rounded-full bg-[#F7F7F7] flex items-center justify-center active:scale-90 transition-all text-black"
-                                                        >
-                                                            <Plus size={12} />
-                                                        </button>
-                                                    </div>
-                                                </div>
+                                                ))}
+                                                <button
+                                                    onClick={() => updateChecklist(category.id, [...list, { name: '', minStock: 1, maxStock: 5, frequency: 'each_time' }])}
+                                                    className="mt-2 inline-flex items-center gap-3 text-[16px] text-neutral-500 hover:text-black font-medium transition-colors"
+                                                >
+                                                    <span className="w-8 h-8 rounded-full border border-dashed border-neutral-300 flex items-center justify-center">
+                                                        <Plus size={14} />
+                                                    </span>
+                                                    {t({ en: 'Add item', fr: 'Ajouter un article' })}
+                                                </button>
                                             </div>
-                                        ))}
-                                        <button
-                                            onClick={() => updateChecklist(categoryId, [...list, { name: '', quantity: 1 }])}
-                                            className="mt-2 inline-flex items-center gap-2 text-[14px] text-neutral-500 hover:text-black font-medium transition-colors"
-                                        >
-                                            <span className="w-6 h-6 rounded-full border border-dashed border-neutral-300 flex items-center justify-center">
-                                                <Plus size={12} />
-                                            </span>
-                                            {t({ en: 'Add item', fr: 'Ajouter un article' })}
-                                        </button>
-                                    </div>
-                                </div>
-                            );
-                        })}
+                                        </div>
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
+                        </div>
+                    );
+                })}
 
+                {(data.categories || []).length > 0 && (
+                    <div className="pt-10 space-y-12 border-t border-neutral-100">
                         <div className="space-y-4">
                             <div className="flex flex-col gap-1">
-                                <span className="text-[17px] font-medium text-black">
+                                <span className="text-[17px] font-medium text-black mb-2 block">
                                     {t({ en: 'Where do you store your supplies?', fr: 'Où stockez-vous vos fournitures ?' })}
                                 </span>
                                 <span className="text-[14px] text-neutral-400 font-medium">
@@ -3848,24 +4260,29 @@ const ErrandsDetailForm = ({ data, onChange }: any) => {
                                     en: 'ex. Toiletries in the cabinet under the sink...',
                                     fr: 'ex. Articles de toilette dans le meuble sous l\'évier...'
                                 })}
-                                className="w-full resize-none bg-white rounded-[5px] px-6 py-5 text-[16px] text-black border border-neutral-200 focus:ring-1 focus:ring-black focus:border-black transition-all"
+                                className="w-full resize-none bg-[#F7F7F7] rounded-[5px] px-6 py-5 text-[16px] text-black border-none focus:ring-2 focus:ring-black transition-all"
                             />
                         </div>
 
-                        <div className="p-6 rounded-[5px] border border-neutral-100 bg-neutral-50/50 flex items-center justify-between">
+                        <div className="space-y-4">
                             <div className="flex flex-col gap-1">
-                                <span className="text-[17px] font-medium text-black">{t({ en: 'Restocking Frequency', fr: 'Fréquence' })}</span>
-                                <span className="text-[14px] text-neutral-500">{t({ en: 'When should we restock?', fr: 'Quand devons-nous réapprovisionner ?' })}</span>
+                                <span className="text-[17px] font-medium text-black mb-2 block">
+                                    {t({ en: 'General Instructions', fr: 'Instructions générales' })}
+                                </span>
+                                <span className="text-[14px] text-neutral-400 font-medium">
+                                    {t({ en: 'Any specific instructions for shopping or restocking?', fr: 'Des instructions spécifiques pour les courses ou le rangement ?' })}
+                                </span>
                             </div>
-                            <select
-                                value={data.frequency || 'post_checkout'}
-                                onChange={(e) => onChange({ frequency: e.target.value })}
-                                className="bg-white border border-neutral-200 rounded-[5px] px-3 py-2 text-[14px] font-medium focus:ring-1 focus:ring-black"
-                            >
-                                <option value="post_checkout">{t({ en: 'After each checkout', fr: 'Après chaque départ' })}</option>
-                                <option value="weekly">{t({ en: 'Weekly', fr: 'Hebdomadaire' })}</option>
-                                <option value="monthly">{t({ en: 'Monthly', fr: 'Mensuel' })}</option>
-                            </select>
+                            <textarea
+                                value={data.instructions || ''}
+                                onChange={(e) => onChange({ instructions: e.target.value })}
+                                rows={4}
+                                placeholder={t({
+                                    en: 'ex. Only buy organic milk, check for expiration dates...',
+                                    fr: 'ex. Acheter uniquement du lait bio, vérifier les dates de péremption...'
+                                })}
+                                className="w-full resize-none bg-[#F7F7F7] rounded-[5px] px-6 py-5 text-[16px] text-black border-none focus:ring-2 focus:ring-black transition-all"
+                            />
                         </div>
                     </div>
                 )}

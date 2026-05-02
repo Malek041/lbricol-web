@@ -321,21 +321,20 @@ const SellingPointsBottomSheet: React.FC<{
   return (
     <AnimatePresence>
       {isOpen && (
-        <>
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          onClick={onClose}
+          className="fixed inset-0 bg-black/50 z-[9500] flex items-center justify-center p-5"
+        >
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={onClose}
-            className="fixed inset-0 bg-black/40 z-[9500]"
-          />
-          <motion.div
-            initial={{ y: '100%' }}
-            animate={{ y: 0 }}
-            exit={{ y: '100%' }}
-            transition={{ type: "spring", damping: 25, stiffness: 200 }}
-            className="fixed bottom-0 left-0 right-0 z-[9600] bg-[#F2F0EC] rounded-t-[24px] overflow-hidden"
-            style={{ maxHeight: '58vh' }}
+            initial={{ opacity: 0, scale: 0.95, y: 8 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: 8 }}
+            transition={{ type: "spring", damping: 28, stiffness: 300 }}
+            onClick={(e) => e.stopPropagation()}
+            className="relative w-full max-w-[440px] bg-[#F3EFEA] rounded-[7px] overflow-hidden shadow-2xl"
           >
             <div className="relative p-4 flex flex-col items-center pb-5">
               <button
@@ -352,7 +351,7 @@ const SellingPointsBottomSheet: React.FC<{
                 <Image src="/Images/Hosts/pexels-emris-17086317.jpg" alt="" fill priority />
               </div>
 
-              <div className="w-full mt-2">
+              <div className="w-full mt-1">
                 <AnimatePresence mode="wait">
                   {step === 0 ? (
                     <motion.div
@@ -372,13 +371,13 @@ const SellingPointsBottomSheet: React.FC<{
                           repeat: Infinity,
                           ease: "easeInOut"
                         }}
-                        className="relative w-40 h-40 mb-0"
+                        className="relative w-30 h-30 mb-0"
                       >
                         <Image
                           src="/Images/ChatGPT Image Apr 21, 2026, 11_39_28 PM.png"
                           alt="Label"
                           fill
-                          style={{ objectFit: 'contain' }}
+                          style={{ objectFit: 'cover' }}
                         />
                       </motion.div>
 
@@ -490,7 +489,7 @@ const SellingPointsBottomSheet: React.FC<{
                           initial={{ opacity: 0, scale: 0.5, x: 30, rotate: 0 }}
                           animate={{ opacity: 1, scale: 1, x: 10, rotate: -12 }}
                           transition={{ delay: 0.2, type: "spring", stiffness: 100 }}
-                          className="w-28 h-28 rounded-2xl shadow-xl overflow-hidden relative "
+                          className="w-28 h-28 rounded-[5px] border-4 border-white shadow-xl overflow-hidden relative "
                         >
                           <Image
                             src="/Images/Hosts/84ab3898-d9e6-474c-b371-fe5e20395dae_lfgezn.avif"
@@ -504,7 +503,7 @@ const SellingPointsBottomSheet: React.FC<{
                           initial={{ opacity: 0, scale: 0.5, y: 20 }}
                           animate={{ opacity: 1, scale: 1, y: 0 }}
                           transition={{ delay: 0.1, type: "spring", stiffness: 120 }}
-                          className="w-32 h-32 rounded-2xl shadow-2xl overflow-hidden z-10 relative "
+                          className="w-32 h-32 rounded-[5px] border-4 border-white shadow-2xl overflow-hidden z-10 relative "
                         >
                           <Image
                             src="/Images/Hosts/pexels-emris-17086317.jpg"
@@ -518,7 +517,7 @@ const SellingPointsBottomSheet: React.FC<{
                           initial={{ opacity: 0, scale: 0.5, x: -30, rotate: 0 }}
                           animate={{ opacity: 1, scale: 1, x: -10, rotate: 12 }}
                           transition={{ delay: 0.3, type: "spring", stiffness: 100 }}
-                          className="w-24 h-24 rounded-[7px] shadow-xl overflow-hidden relative "
+                          className="w-24 h-24 rounded-[5px] border-4 border-white shadow-2xl  overflow-hidden relative "
                         >
                           <Image
                             src="/Images/Hosts/584b8edd-dd10-47a1-9441-434fb4b05736_tqhtqg.avif"
@@ -572,7 +571,7 @@ const SellingPointsBottomSheet: React.FC<{
               </div>
             </div>
           </motion.div>
-        </>
+        </motion.div>
       )}
     </AnimatePresence>
   );
