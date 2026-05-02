@@ -199,10 +199,10 @@ const INTRO_STEPS = [
     },
 ];
 
-const CounterRow = ({ label, value, onChange, min = 0 }: { label: string; value: number; onChange: (val: number) => void; min?: number }) => (
-    <div className="flex justify-between items-center py-6">
-        <span className="font-medium text-[18px] text-black">{label}</span>
-        <div className="flex items-center gap-4">
+const CounterRow = ({ label, value, onChange, min = 0, py = "py-3" }: { label: string; value: number; onChange: (val: number) => void; min?: number; py?: string }) => (
+    <div className={`flex justify-between items-center ${py}`}>
+        {label && <span className="font-medium text-[18px] text-black pr-4">{label}</span>}
+        <div className="flex items-center gap-4 shrink-0">
             <button
                 onClick={() => onChange(Math.max(min, value - 1))}
                 disabled={value <= min}
@@ -738,7 +738,9 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                 },
                 automation: {
                     ...automationSettings,
-                    services: selectedServices,
+                    services: selectedServices.filter((id: string) => ['cleaning', 'gardening', 'glass_cleaning', 'pool_cleaning', 'errands', 'pets_care', 'guest_receptionist'].includes(id)),
+                    guestServices: selectedServices.filter((id: string) => ['airport_pickup', 'guest_receptionist', 'cooking', 'tour_guide', 'private_driver', 'car_rental', 'learn_arabic', 'babysitting', 'elderly_care'].includes(id)),
+                    futureServices: selectedServices.filter((id: string) => ['home_repairs', 'furniture_assembly', 'mounting', 'moving', 'plumbing', 'electricity', 'painting'].includes(id)),
                     cleaningDetails: selectedServices.includes('cleaning') ? {
                         subServices: cleaningSubServices,
                         frequencies: cleaningFrequencies,
@@ -2529,132 +2531,145 @@ const CleaningDetailForm = ({ data, onChange, onUploadingChange }: any) => {
         onChange({ subServices: next });
     };
 
+    const cleaningTypes = [
+        {
+            id: 'post_checkout',
+            label: 'Nettoyage checkout',
+            fr: 'Nettoyage checkout',
+            iconPath: '/Icons/checkout cleaning.svg'
+        },
+        {
+            id: 'deep_cleaning',
+            label: 'Nettoyage Post-checkout',
+            fr: 'Nettoyage Post-checkout',
+            iconPath: '/Icons/deep clean.svg',
+            hasFrequency: true
+        },
+        {
+            id: 'stairs_cleaning',
+            label: 'Nettoyage Post-checkout',
+            fr: 'Nettoyage Post-checkout',
+            iconPath: '/Icons/Stairs cleaning.svg',
+            hasCounter: true
+        },
+    ];
+
     return (
-        <div className="flex-1 overflow-y-auto pb-32">
-            <h2 className="font-bold text-[28px] text-[#222222] leading-tight tracking-tight mb-8">
+        <div className="flex-1 overflow-y-auto pb-32 no-scrollbar">
+            <h2 className="font-bold text-[32px] text-[#222222] leading-tight tracking-tight mb-8">
                 {t({ en: 'Cleaning Details', fr: 'Détails du Ménage' })}
             </h2>
 
-            <div className="space-y-8">
-                <div className="space-y-3">
-                    <h3 className="text-[17px] font-semibold text-[#222222]">
+            <div className="space-y-12">
+                <div className="space-y-6">
+                    <h3 className="text-[17px] font-medium text-[#222222]">
                         {t({ en: 'What type of cleaning?', fr: 'Quel type de nettoyage ?' })}
                     </h3>
-                    <div className="grid grid-cols-2 gap-3">
-                        {[
-                            { id: 'post_checkout',  label: 'Post-checkout', fr: 'Post-départ',     icon: Wind },
-                            { id: 'deep_cleaning',  label: 'Deep cleaning', fr: 'En profondeur',  icon: Droplets },
-                            { id: 'stairs_cleaning',label: 'Stairs',        fr: 'Escaliers',      icon: ArrowUpDown },
-                        ].map((item: any) => {
+                    <div className="space-y-4">
+                        {cleaningTypes.map((item) => {
                             const isSelected = (data.subServices || []).includes(item.id);
-                            const Icon = item.icon;
                             return (
-                                <button
+                                <div
                                     key={item.id}
-                                    onClick={() => toggleSubService(item.id)}
-                                    className={`flex flex-col items-start justify-end p-4 rounded-[12px] border transition-all min-h-[100px] active:scale-[0.98] ${
-                                        isSelected
-                                            ? 'border-[#222222] border-2 bg-[#F7F7F7]'
-                                            : 'border-[#EBEBEB] bg-white hover:border-[#AAAAAA]'
-                                    }`}
+                                    className={`relative rounded-[10px] border transition-all duration-300 ${isSelected
+                                        ? 'border-black border-[2px] bg-white shadow-sm'
+                                        : 'border-neutral-200 hover:border-black bg-white shadow-sm'
+                                        }`}
                                 >
-                                    <Icon
-                                        size={28}
-                                        strokeWidth={1.5}
-                                        className={`mb-3 ${isSelected ? 'text-[#222222]' : 'text-[#717171]'}`}
-                                    />
-                                    <span className={`text-[14px] font-semibold leading-snug ${isSelected ? 'text-[#222222]' : 'text-[#222222]'}`}>
-                                        {t({ en: item.label, fr: item.fr })}
-                                    </span>
-                                </button>
+                                    <button
+                                        onClick={() => toggleSubService(item.id)}
+                                        className="w-full flex items-center justify-between px-10 py-12 text-left"
+                                    >
+                                        <div className="flex-1 pr-16">
+                                            <span className="text-[26px] font-bold text-[#222222] leading-tight block">
+                                                {t({ en: item.label, fr: item.fr })}
+                                            </span>
+                                        </div>
+                                        <div className="shrink-0">
+                                            <img
+                                                src={item.iconPath}
+                                                alt={item.label}
+                                                className="w-16 h-16 object-contain"
+                                            />
+                                        </div>
+                                        {isSelected && (
+                                            <div className="absolute top-5 right-5 w-8 h-8 bg-[#222222] rounded-full flex items-center justify-center shadow-sm">
+                                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                    <path d="M4 12L10 18L20 6" stroke="white" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
+                                                </svg>
+                                            </div>
+                                        )}
+                                    </button>
+
+                                    {/* Nested content for Deep Cleaning */}
+                                    {isSelected && item.hasFrequency && (
+                                        <div className="px-10 pb-10 pt-2 border-t border-neutral-50">
+                                            <p className="text-[15px] font-medium text-[#222222] mb-5">
+                                                {t({ en: 'Deep Cleaning Frequency', fr: 'Fréquence du nettoyage en profondeur' })}
+                                            </p>
+                                            <div className="flex flex-wrap gap-3">
+                                                {[
+                                                    { id: 'weekly', label: 'Weekly', fr: 'Hebdomadaire' },
+                                                    { id: 'biweekly', label: 'Bi-weekly', fr: 'Bimensuelle' },
+                                                    { id: 'monthly', label: 'Monthly', fr: 'Mensuelle' },
+                                                    { id: 'quarterly', label: 'Quarterly', fr: 'Trimestrielle' },
+                                                ].map((freq: any) => {
+                                                    const isActive = (data.frequencies || {}).deep_cleaning === freq.id;
+                                                    return (
+                                                        <button
+                                                            key={freq.id}
+                                                            onClick={() => onChange({ frequencies: { ...(data.frequencies || {}), deep_cleaning: freq.id } })}
+                                                            className={`px-6 py-3 rounded-[10px] text-[14px] transition-all active:scale-95 border ${isActive
+                                                                ? 'border-black bg-white text-[#222222] font-bold'
+                                                                : 'border-neutral-200 hover:border-black bg-white'
+                                                                }`}
+                                                        >
+                                                            {t({ en: freq.label, fr: freq.fr })}
+                                                        </button>
+                                                    );
+                                                })}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Nested content for Stairs */}
+                                    {isSelected && item.hasCounter && (
+                                        <div className="px-10 pb-10 pt-2 border-t border-neutral-50">
+                                            <div className="flex items-center justify-between gap-4">
+                                                <p className="text-[15px] font-medium text-[#222222] flex-1">
+                                                    {t({ en: 'How many floors to clean?', fr: 'Combien d\'étages à nettoyer ?' })}
+                                                </p>
+                                                <div className="bg-[#F7F7F7] rounded-full px-2 shrink-0">
+                                                    <CounterRow
+                                                        label=""
+                                                        py="py-1"
+                                                        value={data.stairsSize === 'big' ? 3 : data.stairsSize === 'medium' ? 2 : 1}
+                                                        onChange={(val) => onChange({ stairsSize: val >= 3 ? 'big' : val === 2 ? 'medium' : 'small' })}
+                                                        min={1}
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
                             );
                         })}
                     </div>
                 </div>
 
-                {(data.subServices || []).includes('deep_cleaning') && (
-                    <motion.div
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: 'auto', opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
-                        transition={{ duration: 0.2, ease: 'easeOut' }}
-                        className="overflow-hidden"
-                    >
-                        <div className="space-y-3">
-                            <h3 className="text-[17px] font-semibold text-[#222222]">
-                                {t({ en: 'Deep Cleaning Frequency', fr: 'Fréquence du nettoyage en profondeur' })}
-                            </h3>
-                            <div className="flex flex-wrap gap-2">
-                                {[
-                                    { id: 'weekly', label: 'Weekly', fr: 'Hebdomadaire' },
-                                    { id: 'biweekly', label: 'Bi-weekly', fr: 'Bimensuelle' },
-                                    { id: 'monthly', label: 'Monthly', fr: 'Mensuelle' },
-                                    { id: 'quarterly', label: 'Quarterly', fr: 'Trimestrielle' },
-                                ].map((freq: any) => {
-                                    const isActive = (data.frequencies || {}).deep_cleaning === freq.id;
-                                    return (
-                                        <button
-                                            key={freq.id}
-                                            onClick={() => onChange({ frequencies: { ...(data.frequencies || {}), deep_cleaning: freq.id } })}
-                                            className={`px-4 py-2 rounded-full text-[14px] transition-all active:scale-95 ${isActive
-                                                    ? 'border-2 border-[#222222] text-[#222222] font-semibold bg-white'
-                                                    : 'border border-[#EBEBEB] text-[#222222] font-normal bg-white hover:border-[#222222]'
-                                                }`}
-                                        >
-                                            {t({ en: freq.label, fr: freq.fr })}
-                                        </button>
-                                    );
-                                })}
-                            </div>
-                        </div>
-                    </motion.div>
-                )}
-
-                {(data.subServices || []).includes('stairs_cleaning') && (
-                    <motion.div
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: 'auto', opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
-                        transition={{ duration: 0.2, ease: 'easeOut' }}
-                        className="overflow-hidden"
-                    >
-                        <div className="space-y-3">
-                            {/* Header: icon + label + stair cleaning badge */}
-                            <div className="flex items-start gap-2">
-                                <ArrowUpDown size={18} strokeWidth={1.75} className="text-[#717171] mt-0.5 shrink-0" />
-                                <div>
-                                    <h3 className="text-[17px] font-semibold text-[#222222] leading-snug">
-                                        {t({ en: 'How many floors to clean?', fr: 'Combien d\'étages à nettoyer ?' })}
-                                    </h3>
-                                    <span className="text-[12px] text-[#717171] font-normal">
-                                        {t({ en: 'For your staircase cleaning', fr: 'Pour le nettoyage des escaliers' })}
-                                    </span>
-                                </div>
-                            </div>
-                            <div className="rounded-[12px] border border-[#EBEBEB] bg-white px-4 py-1">
-                                <CounterRow
-                                    label={t({ en: 'Floors', fr: 'Étages' })}
-                                    value={data.stairsSize === 'big' ? 3 : data.stairsSize === 'medium' ? 2 : 1}
-                                    onChange={(val) => onChange({ stairsSize: val >= 3 ? 'big' : val === 2 ? 'medium' : 'small' })}
-                                    min={1}
-                                />
-                            </div>
-                        </div>
-                    </motion.div>
-                )}
-
-                <div className="space-y-3">
-                    <h3 className="text-[17px] font-semibold text-[#222222]">
+                <div className="space-y-4">
+                    <h3 className="text-[18px] font-semibold text-[#222222]">
                         {t({ en: 'Specific Instructions', fr: 'Instructions spécifiques' })}
                     </h3>
-                    <div className="rounded-[12px] border border-[#EBEBEB] bg-white px-4 divide-y divide-[#EBEBEB]">
+                    <div className="rounded-[16px] border border-[#EBEBEB] bg-white px-5 divide-y divide-[#EBEBEB] shadow-sm">
                         {(data.checklist || ['']).map((item: any, idx: number) => (
-                            <div key={idx} className="flex items-center gap-3 py-3 min-h-[56px]">
-                                <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-all ${item.trim() !== '' ? 'bg-[#00CA52] border-[#00CA52]' : 'border-[#EBEBEB]'}`}>
-                                    {item.trim() !== '' && <Check size={10} className="text-white" strokeWidth={3} />}
+                            <div key={idx} className="group flex items-center gap-4 py-5 min-h-[64px]">
+                                <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 transition-all ${item.trim() !== '' ? 'bg-[#00CA52] border-[#00CA52]' : 'border-[#EBEBEB]'}`}>
+                                    {item.trim() !== '' && <Check size={12} className="text-white" strokeWidth={4} />}
                                 </div>
                                 <input
                                     type="text"
+                                    autoFocus={idx > 0 && item === ''}
                                     value={item}
                                     onChange={(e) => {
                                         const next = [...(data.checklist || [''])];
@@ -2667,42 +2682,53 @@ const CleaningDetailForm = ({ data, onChange, onUploadingChange }: any) => {
                                         }
                                     }}
                                     placeholder={t({ en: 'Add an instruction…', fr: 'Ajouter une instruction…' })}
-                                    className="flex-1 py-1 bg-transparent border-none focus:ring-0 text-[15px] text-[#222222] placeholder:text-[#AAAAAA] outline-none"
+                                    className="flex-1 py-1 bg-transparent border-none focus:ring-0 text-[16px] text-[#222222] placeholder:text-[#AAAAAA] outline-none"
                                 />
+                                {((data.checklist || []).length > 1 || item.trim() !== '') && (
+                                    <button
+                                        onClick={() => {
+                                            const next = (data.checklist || []).filter((_: any, i: number) => i !== idx);
+                                            onChange({ checklist: next.length === 0 ? [''] : next });
+                                        }}
+                                        className="p-2 text-[#717171] hover:text-[#222222] hover:bg-[#F7F7F7] rounded-full opacity-0 group-hover:opacity-100 transition-all"
+                                    >
+                                        <X size={16} />
+                                    </button>
+                                )}
                             </div>
                         ))}
                     </div>
                 </div>
 
                 {/* ── Reference photos ── */}
-                <div className="space-y-3">
-                    <h3 className="text-[17px] font-semibold text-[#222222]">
+                <div className="space-y-4">
+                    <h3 className="text-[18px] font-semibold text-[#222222]">
                         {t({ en: 'Reference Photos', fr: 'Photos de Référence' })}
                     </h3>
-                    <div className="grid grid-cols-3 gap-3">
+                    <div className="grid grid-cols-3 gap-4">
                         {(data.referencePhotos || []).map((url: any, i: number) => (
-                            <div key={url} className="relative aspect-square rounded-[12px] overflow-hidden border border-[#EBEBEB]">
+                            <div key={url} className="relative aspect-square rounded-[16px] overflow-hidden border border-[#EBEBEB] shadow-sm">
                                 <img src={url} alt="Reference" className="w-full h-full object-cover" />
                                 <button
                                     onClick={() => onChange({ referencePhotos: data.referencePhotos.filter((_: any, idx: number) => idx !== i) })}
-                                    className="absolute top-2 right-2 w-7 h-7 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center border border-[#EBEBEB]"
+                                    className="absolute top-2 right-2 w-8 h-8 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center border border-[#EBEBEB] shadow-sm"
                                 >
-                                    <X size={13} className="text-[#222222]" />
+                                    <X size={14} className="text-[#222222]" />
                                 </button>
                             </div>
                         ))}
                         <button
                             onClick={() => photoInputRef.current?.click()}
-                            className="aspect-square rounded-[12px] border border-dashed border-[#EBEBEB] flex flex-col items-center justify-center gap-1.5 hover:border-[#222222] hover:bg-neutral-50 transition-all text-[#717171] hover:text-[#222222]"
+                            className="aspect-square rounded-[16px] border-2 border-dashed border-[#EBEBEB] flex flex-col items-center justify-center gap-2 hover:border-[#222222] hover:bg-[#F7F7F7] transition-all text-[#717171] hover:text-[#222222] shadow-sm"
                         >
                             {isUploading ? (
                                 <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1, ease: 'linear' }}>
-                                    <Plus size={22} />
+                                    <Plus size={24} />
                                 </motion.div>
                             ) : (
                                 <>
-                                    <Plus size={22} />
-                                    <span className="text-[11px] font-semibold uppercase tracking-wider">{t({ en: 'Add', fr: 'Ajouter' })}</span>
+                                    <Plus size={24} />
+                                    <span className="text-[12px] font-bold uppercase tracking-wider">{t({ en: 'Add', fr: 'Ajouter' })}</span>
                                 </>
                             )}
                         </button>
@@ -3012,6 +3038,7 @@ const GardeningDetailForm = ({ data, onChange, onUploadingChange }: any) => {
                                 </div>
                                 <input
                                     type="text"
+                                    autoFocus={idx > 0 && item === ''}
                                     value={item}
                                     onChange={(e) => {
                                         const next = [...(data.checklist || [''])];
@@ -3224,6 +3251,7 @@ const ReceptionistDetailForm = ({ data, onChange }: any) => {
                                 </div>
                                 <input
                                     type="text"
+                                    autoFocus={idx > 0 && item === ''}
                                     value={item}
                                     onChange={(e) => {
                                         const next = [...(data.checklist || [''])];
@@ -3390,6 +3418,7 @@ const PetsDetailForm = ({ data, onChange }: any) => {
                                 </div>
                                 <input
                                     type="text"
+                                    autoFocus={idx > 0 && item === ''}
                                     value={item}
                                     onChange={(e) => {
                                         const next = [...(data.checklist || [''])];
@@ -3487,6 +3516,7 @@ const ErrandsDetailForm = ({ data, onChange }: any) => {
                                                     <div className="flex flex-col gap-3 flex-1">
                                                         <input
                                                             type="text"
+                                                            autoFocus={item.name === ''}
                                                             value={item.name}
                                                             onChange={(e) => {
                                                                 const newList = [...list];

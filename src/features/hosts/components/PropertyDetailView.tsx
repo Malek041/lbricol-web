@@ -128,8 +128,12 @@ const PropertyDetailView: React.FC<PropertyDetailViewProps> = ({ property, isOpe
     const teamManagement = automation.teamManagement || {};
     const propertyCode = property.propertyCode || teamManagement.code;
     const automationServices = automation.services || [];
-    const guestServices = automation.guestServices || [];
-    const futureServices = automation.futureServices || [];
+    const guestServices = (automation.guestServices && automation.guestServices.length > 0) 
+        ? automation.guestServices 
+        : automationServices.filter((id: string) => GUEST_SERVICE_MAP[id]);
+    const futureServices = (automation.futureServices && automation.futureServices.length > 0)
+        ? automation.futureServices
+        : automationServices.filter((id: string) => FUTURE_SERVICE_MAP[id]);
 
     const AMENITY_MAP: Record<string, any> = {
         wifi: { label: { en: 'Fast Wifi', fr: 'Wifi rapide' }, icon: Wifi },
