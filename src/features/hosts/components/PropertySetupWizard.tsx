@@ -277,6 +277,7 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
     const [windowsCoverage, setWindowsCoverage] = useState<'interior' | 'exterior' | 'both'>('both');
     const [windowsAccessibility, setWindowsAccessibility] = useState<'ground' | 'ladder' | 'high'>('ground');
     const [glassCleaningPhotos, setGlassCleaningPhotos] = useState<string[]>([]);
+    const [glassCleaningChecklist, setGlassCleaningChecklist] = useState<string[]>(['']);
     const [isUploadingGlassPhotos, setIsUploadingGlassPhotos] = useState(false);
 
     // Receptionist Details State
@@ -755,6 +756,7 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                         windowsSize,
                         windowsCoverage,
                         windowsAccessibility,
+                        checklist: glassCleaningChecklist.filter((item: any) => item.trim() !== ''),
                         referencePhotos: finalGlassCleaningPhotos
                     } : null,
                     receptionDetails: selectedServices.includes('guest_receptionist') ? {
@@ -2086,6 +2088,7 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                                         windowsSize,
                                         windowsCoverage,
                                         windowsAccessibility,
+                                        checklist: glassCleaningChecklist,
                                         referencePhotos: glassCleaningPhotos
                                     }}
                                     onChange={(updates: any) => {
@@ -2093,6 +2096,7 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                                         if (updates.windowsSize !== undefined) setWindowsSize(updates.windowsSize as any);
                                         if (updates.windowsCoverage !== undefined) setWindowsCoverage(updates.windowsCoverage as any);
                                         if (updates.windowsAccessibility !== undefined) setWindowsAccessibility(updates.windowsAccessibility as any);
+                                        if (updates.checklist !== undefined) setGlassCleaningChecklist(updates.checklist);
                                         if (updates.referencePhotos !== undefined) setGlassCleaningPhotos(updates.referencePhotos);
                                     }}
                                     onUploadingChange={setIsUploadingGlassPhotos}
@@ -3011,7 +3015,7 @@ const GardeningDetailForm = ({ data, onChange, onUploadingChange }: any) => {
                             <button
                                 key={item.id}
                                 onClick={() => toggleSubService(item.id)}
-                                className={`p-5 rounded-full border transition-all text-left flex flex-col gap-3 ${(data.subServices || []).includes(item.id)
+                                className={`p-5 rounded-[5px] border transition-all text-left flex flex-col gap-3 ${(data.subServices || []).includes(item.id)
                                     ? 'border-black border-[2px] bg-neutral-50'
                                     : 'border-neutral-200 hover:border-black bg-white'
                                     }`}
@@ -3298,28 +3302,7 @@ const ReceptionistDetailForm = ({ data, onChange }: any) => {
             </h2>
 
             <div className="space-y-12">
-                <div className="space-y-4">
-                    <h3 className="font-medium text-[20px] text-black">{t({ en: 'Check-in Method', fr: 'Méthode d\'arrivée' })}</h3>
-                    <div className="grid grid-cols-1 gap-3">
-                        {[
-                            { id: 'in_person', label: 'Meet & Greet (In person)', fr: 'Accueil en personne' },
-                            { id: 'lockbox', label: 'Self Check-in (Lockbox)', fr: 'Arrivée autonome (Boîte à clés)' },
-                            { id: 'smart_lock', label: 'Smart Lock', fr: 'Serrure connectée' }
-                        ].map((item: any) => (
-                            <button
-                                key={item.id}
-                                onClick={() => onChange({ checkInMethod: item.id })}
-                                className={`w-full flex items-center justify-between p-5 rounded-full border transition-all ${data.checkInMethod === item.id
-                                    ? 'border-black border-[2px] bg-neutral-50'
-                                    : 'border-neutral-200 hover:border-black bg-white'
-                                    }`}
-                            >
-                                <span className="text-[17px] font-medium text-black">{t({ en: item.label, fr: item.fr })}</span>
-                                {data.checkInMethod === item.id && <Check size={20} className="text-black" strokeWidth={2.5} />}
-                            </button>
-                        ))}
-                    </div>
-                </div>
+
 
                 <div className="space-y-4">
                     <h3 className="font-medium text-[20px] text-black">{t({ en: 'Welcome Tasks', fr: 'Tâches d\'accueil' })}</h3>
