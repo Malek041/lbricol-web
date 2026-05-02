@@ -633,8 +633,8 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
         setIsVerifyingPropertyCode(true);
         try {
             const q = query(
-                collection(db, 'properties'), 
-                where('propertyCode', '==', propertyCode.trim().toUpperCase()), 
+                collection(db, 'properties'),
+                where('propertyCode', '==', propertyCode.trim().toUpperCase()),
                 limit(1)
             );
             const s = await getDocs(q);
@@ -649,9 +649,9 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                 showToast({
                     variant: 'success',
                     title: t({ en: 'Property Linked!', fr: 'Logement lié !' }),
-                    description: t({ 
-                        en: `You've been added to the team for "${data.name}".`, 
-                        fr: `Vous avez été ajouté à l'équipe pour "${data.name}".` 
+                    description: t({
+                        en: `You've been added to the team for "${data.name}".`,
+                        fr: `Vous avez été ajouté à l'équipe pour "${data.name}".`
                     })
                 });
                 // Auto-advance if code is valid
@@ -660,9 +660,9 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                 showToast({
                     variant: 'error',
                     title: t({ en: 'Invalid code', fr: 'Code invalide' }),
-                    description: t({ 
-                        en: 'We couldn\'t find any property with this code.', 
-                        fr: 'Nous n\'avons trouvé aucun logement avec ce code.' 
+                    description: t({
+                        en: 'We couldn\'t find any property with this code.',
+                        fr: 'Nous n\'avons trouvé aucun logement avec ce code.'
                     })
                 });
             }
@@ -2046,7 +2046,7 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                                     </motion.div>
                                 )}
 
-                                 {/* ── STEP: Property Linkage ── */}
+                                {/* ── STEP: Property Linkage ── */}
                                 {step === 'property_linkage' && (
                                     <motion.div key="property_linkage" custom={direction} variants={slideVariants} initial="enter" animate="center" exit="exit" className="p-6 md:p-10 space-y-8">
                                         <motion.div variants={itemVariants} initial="hidden" animate="show" className="space-y-3">
@@ -2054,10 +2054,10 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                                                 {t({ en: 'Join a property team?', fr: 'Rejoindre une équipe ?', ar: 'الانضمام لفريق عقار؟' })}
                                             </h2>
                                             <p className="text-neutral-500 text-[15px] font-medium leading-relaxed">
-                                                {t({ 
-                                                    en: 'If a host gave you a code, enter it here to link your profile to their property.', 
-                                                    fr: 'Si un hôte vous a donné un code, entrez-le ici pour lier votre profil à son logement.', 
-                                                    ar: 'إذا أعطاك المضيف رمزاً، أدخله هنا لربط حسابك بعقاره.' 
+                                                {t({
+                                                    en: 'If a host gave you a code, enter it here to link your profile to their property.',
+                                                    fr: 'Si un hôte vous a donné un code, entrez-le ici pour lier votre profil à son logement.',
+                                                    ar: 'إذا أعطاك المضيف رمزاً، أدخله هنا لربط حسابك بعقاره.'
                                                 })}
                                             </p>
                                         </motion.div>
@@ -2077,7 +2077,7 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                                             </div>
 
                                             {linkedProperty ? (
-                                                <motion.div 
+                                                <motion.div
                                                     initial={{ opacity: 0, scale: 0.95 }}
                                                     animate={{ opacity: 1, scale: 1 }}
                                                     className="p-5 rounded-2xl bg-[#E6F6F2] border-2 border-[#01A083] flex items-center gap-4"
@@ -3030,9 +3030,9 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                                             </div>
                                             <div className="space-y-2">
                                                 <label className="text-[14px] font-bold text-neutral-900 ml-1">{t({ en: 'WhatsApp Number', fr: 'Numéro WhatsApp', ar: 'رقم الواتساب' })}</label>
-                                                <div style={{ 
-                                                    display: 'flex', 
-                                                    gap: '12px', 
+                                                <div style={{
+                                                    display: 'flex',
+                                                    gap: '12px',
                                                     backgroundColor: '#F9FAFB',
                                                     borderRadius: '16px',
                                                     padding: '0 16px',
@@ -3041,8 +3041,8 @@ const OnboardingPopup = (props: OnboardingPopupProps) => {
                                                     alignItems: 'center',
                                                     transition: 'all 0.2s ease'
                                                 }}>
-                                                    <CountrySelector 
-                                                        selectedCountry={selectedCountry} 
+                                                    <CountrySelector
+                                                        selectedCountry={selectedCountry}
                                                         onSelect={setSelectedCountry}
                                                         fontSize="18px"
                                                     />

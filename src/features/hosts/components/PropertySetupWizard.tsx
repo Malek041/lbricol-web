@@ -26,6 +26,7 @@ import { db, auth } from '@/lib/firebase';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { useToast } from '@/context/ToastContext';
 import { uploadToCloudinary } from '@/lib/upload';
+import WaveTop from '@/components/shared/WaveTop';
 
 interface PropertySetupWizardProps {
     isOpen: boolean;
@@ -878,7 +879,7 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                                 </div>
 
                                 {/* Image */}
-                                <div className="relative w-[88px] h-[88px] shrink-0 rounded-2xl overflow-hidden">
+                                <div className="relative w-[88px] h-[88px] shrink-0 rounded-[5px] overflow-hidden">
                                     <Image
                                         src={step.img}
                                         alt={t(step.title)}
@@ -896,7 +897,7 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                 <div className="px-6 pt-4 pb-5 border-t border-neutral-100 bg-white">
                     <button
                         onClick={() => setViewMode('step1_detail')}
-                        className="w-full bg-[#2C2C2C] text-white py-3.5 rounded-2xl font-medium text-[17px] active:scale-[0.98] transition-all"
+                        className="w-full bg-[#2C2C2C] text-white py-3.5 rounded-[5px] font-medium text-[17px] active:scale-[0.98] transition-all"
                     >
                         {t({ en: 'Get started', fr: 'Commencer', ar: 'ابدأ الآن' })}
                     </button>
@@ -940,7 +941,7 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                                 y: [36, -4, 0, 0, 36],
                             }}
                             transition={{ delay: 0, duration: 3.2, ease: 'easeInOut', repeat: Infinity, repeatDelay: 1.2, times: [0, 0.18, 0.28, 0.78, 1] }}
-                            className="absolute top-[8%] left-[4%] w-[18%] aspect-square rounded-xl overflow-hidden shadow-xl border-2 border-white"
+                            className="absolute top-[8%] left-[4%] w-[18%] aspect-square rounded-[5px] overflow-hidden shadow-xl border-2 border-white"
                         >
                             <Image src="/Images/PropertiesListingView/ThirdStep/ChatGPT Image Apr 25, 2026, 07_06_11 PM-Photoroom.png" alt="Property 1" fill className="object-cover" />
                         </motion.div>
@@ -954,7 +955,7 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                                 y: [36, -4, 0, 0, 36],
                             }}
                             transition={{ delay: 1.2, duration: 3.2, ease: 'easeInOut', repeat: Infinity, repeatDelay: 1.2, times: [0, 0.18, 0.28, 0.78, 1] }}
-                            className="absolute top-[35%] right-[2%] w-[18%] aspect-square rounded-xl overflow-hidden shadow-xl border-2 border-white"
+                            className="absolute top-[35%] right-[2%] w-[18%] aspect-square rounded-[5px] overflow-hidden shadow-xl border-2 border-white"
                         >
                             <Image src="/Images/PropertiesListingView/Screenshot 2026-04-22 at 20.04.27.png" alt="Property 2" fill className="object-cover" />
                         </motion.div>
@@ -968,7 +969,7 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                                 y: [36, -4, 0, 0, 36],
                             }}
                             transition={{ delay: 2.4, duration: 3.2, ease: 'easeInOut', repeat: Infinity, repeatDelay: 1.2, times: [0, 0.18, 0.28, 0.78, 1] }}
-                            className="absolute bottom-[4%] right-[6%] w-[17%] aspect-square rounded-xl overflow-hidden shadow-xl border-2 border-white"
+                            className="absolute bottom-[4%] right-[6%] w-[17%] aspect-square rounded-[5px] overflow-hidden shadow-xl border-2 border-white"
                         >
                             <Image src="/Images/PropertiesListingView/Screenshot 2026-04-22 at 20.04.41.png" alt="Property 3" fill className="object-cover" />
                         </motion.div>
@@ -992,7 +993,7 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: 0.3, duration: 0.6 }}
-                            className="text-[18px] text-black leading-relaxed mb-6 font-light"
+                            className="text-[18px] text-black leading-relaxed mb-6 font-medium"
                         >
                             {t({
                                 en: 'Lbricol Host dispatches tasks automatically to our vetted network of bricolers. We manage everything for you based on your checkout schedules—programmed in just 10 seconds after property listing.',
@@ -1032,7 +1033,7 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                                 setViewMode('form');
                                 setStepIndex(5);
                             }}
-                            className="bg-[#2C2C2C] text-white px-10 py-4 rounded-[12px] text-[17px] font-medium active:scale-[0.98] transition-all"
+                            className="bg-[#2C2C2C] text-white px-10 py-4 rounded-[5px] text-[17px] font-medium active:scale-[0.98] transition-all"
                         >
                             {t({ en: 'Next', fr: 'Suivant', ar: 'التالي' })}
                         </button>
@@ -1075,7 +1076,7 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                             repeat: Infinity,
                             ease: "easeInOut"
                         }}
-                        className="w-[80%] aspect-square mb-12 rounded-[32px] overflow-hidden mx-auto"
+                        className="w-[80%] aspect-square mb-12 rounded-[5px] overflow-hidden mx-auto"
                     >
                         <Image
                             src="/Images/PropertiesListingView/FirstStep/ChatGPT Image Apr 22, 2026, 10_39_44 PM-Photoroom.png"
@@ -1135,7 +1136,7 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                                 setViewMode('form');
                                 setStepIndex(0);
                             }}
-                            className="bg-[#2C2C2C] text-white px-10 py-4 rounded-[12px] text-[17px] font-medium active:scale-[0.98] transition-all"
+                            className="bg-[#2C2C2C] text-white px-10 py-4 rounded-[5px] text-[17px] font-medium active:scale-[0.98] transition-all"
                         >
                             {t({ en: 'Next', fr: 'Suivant' })}
                         </button>
@@ -1178,7 +1179,7 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                             repeat: Infinity,
                             ease: "easeInOut"
                         }}
-                        className="w-[60%] aspect-square mb-12 rounded-[32px] overflow-hidden mx-auto"
+                        className="w-[60%] aspect-square mb-12 rounded-[5px] overflow-hidden mx-auto"
                     >
                         <Image
                             src="/Images/PropertiesListingView/Screenshot 2026-04-22 at 20.04.27.png"
@@ -1243,7 +1244,7 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                                 setStepIndex(3);
                             }}
                             disabled={anyIsUploading}
-                            className="bg-[#2C2C2C] disabled:bg-neutral-200 text-white px-10 py-4 rounded-[12px] text-[17px] font-medium active:scale-[0.98] transition-all"
+                            className="bg-[#2C2C2C] disabled:bg-neutral-200 text-white px-10 py-4 rounded-[5px] text-[17px] font-medium active:scale-[0.98] transition-all"
                         >
                             {anyIsUploading ? t({ en: 'Uploading...', fr: 'Téléchargement...' }) : t({ en: 'Next', fr: 'Suivant' })}
                         </button>
@@ -1294,14 +1295,14 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                                 transition={{ delay: 0.2 }}
                                 className="flex gap-4 p-0"
                             >
-                                <div className="relative w-20 h-20 rounded-2xl overflow-hidden shrink-0 shadow-sm border border-neutral-100">
+                                <div className="relative w-20 h-20 rounded-[5px] overflow-hidden shrink-0 border border-neutral-100">
                                     <Image
                                         src={photos[0] || '/Images/placeholder-property.jpg'}
                                         alt={name}
                                         fill
                                         className="object-cover"
                                     />
-                                    <div className="absolute top-1.5 left-1.5 w-3 h-3 bg-[#4CAF50] rounded-full border-2 border-white shadow-sm" />
+                                    <div className="absolute top-1.5 left-1.5 w-3 h-3 bg-[#4CAF50] rounded-full border-2 border-white" />
                                 </div>
                                 <div className="flex flex-col justify-center min-w-0 border-b border-neutral-50 flex-1 pb-4">
                                     <h3 className="font-bold text-[17px] text-black truncate tracking-tight pr-4">
@@ -1392,7 +1393,7 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        className="fixed inset-0 z-[20000] bg-black/40 backdrop-blur-sm flex items-end"
+                        className="fixed inset-0 z-[20000] bg-black/40  flex items-end"
                         onClick={() => setIsQuestionsOpen(false)}
                     >
                         <motion.div
@@ -1400,7 +1401,7 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                             animate={{ y: 0 }}
                             exit={{ y: '100%' }}
                             transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-                            className="w-full bg-white rounded-t-[28px] overflow-hidden max-h-[85vh] flex flex-col"
+                            className="w-full bg-[#F3F2ED] rounded-t-[20px] overflow-hidden max-h-[85vh] flex flex-col"
                             onClick={e => e.stopPropagation()}
                         >
                             <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-neutral-100">
@@ -1428,7 +1429,7 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                                                     transition={{ duration: 0.2 }}
                                                     className="overflow-hidden"
                                                 >
-                                                    <p className="px-6 pb-5 text-[15px] text-neutral-500 leading-relaxed">{faq.content}</p>
+                                                    <p className="px-6 pb-5 text-[15px] text-black leading-relaxed">{faq.content}</p>
                                                 </motion.div>
                                             )}
                                         </AnimatePresence>
@@ -1483,7 +1484,7 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                                                 <button
                                                     key={pt.id}
                                                     onClick={() => setType(pt.id)}
-                                                    className={`flex flex-col items-start justify-between p-4 rounded-[10px] border transition-all h-[120px] ${isActive ? 'border-black border-[1px] bg-neutral-50' : 'border-neutral-200 hover:border-black bg-white shadow-sm'}`}
+                                                    className={`flex flex-col items-start justify-between p-4 rounded-[5px] border transition-all h-[120px] ${isActive ? 'border-black border-[1px] bg-neutral-50' : 'border-neutral-200 hover:border-black bg-white'}`}
                                                 >
                                                     <div className="w-8 h-8 flex items-center justify-center">
 
@@ -1627,9 +1628,9 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                                                                                 : [...prev, amenity.id]
                                                                         );
                                                                     }}
-                                                                    className={`flex flex-col items-start justify-between p-6 rounded-[10px] border transition-all h-[150px] text-left ${isSelected
+                                                                    className={`flex flex-col items-start justify-between p-6 rounded-[5px] border transition-all h-[150px] text-left ${isSelected
                                                                         ? 'border-black border-[2px] bg-neutral-50'
-                                                                        : 'border-neutral-200 hover:border-black bg-white shadow-sm'
+                                                                        : 'border-neutral-200 hover:border-black bg-white'
                                                                         }`}
                                                                 >
                                                                     <Icon size={32} strokeWidth={1.5} className="text-black" />
@@ -1686,7 +1687,7 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                                                 <button
                                                     onClick={() => fileInputRef.current?.click()}
                                                     disabled={isUploading}
-                                                    className="w-full p-6 rounded-xl border border-neutral-200 flex items-center justify-start gap-6 active:scale-[0.98] transition-all hover:bg-neutral-50 disabled:opacity-50"
+                                                    className="w-full p-6 rounded-[5px] border border-neutral-200 flex items-center justify-start gap-6 active:scale-[0.98] transition-all hover:bg-neutral-50 disabled:opacity-50"
                                                 >
                                                     <Plus className="text-black shrink-0" size={24} strokeWidth={1.5} />
                                                     <span className="text-[16px] font-light text-black">
@@ -1697,7 +1698,7 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                                                 <button
                                                     onClick={() => cameraInputRef.current?.click()}
                                                     disabled={isUploading}
-                                                    className="w-full p-6 rounded-xl border border-neutral-200 flex items-center justify-start gap-6 active:scale-[0.98] transition-all hover:bg-neutral-50 disabled:opacity-50"
+                                                    className="w-full p-6 rounded-[5px] border border-neutral-200 flex items-center justify-start gap-6 active:scale-[0.98] transition-all hover:bg-neutral-50 disabled:opacity-50"
                                                 >
                                                     <Camera className="text-black shrink-0" size={24} strokeWidth={1.5} />
                                                     <span className="text-[16px] font-light text-black">
@@ -1740,7 +1741,7 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                                                         onDrop={() => handleDrop(idx)}
                                                         onDragEnd={() => setDragOverIndex(null)}
                                                         className={cn(
-                                                            "relative overflow-hidden bg-neutral-100 border rounded-[10px] cursor-grab active:cursor-grabbing transition-all",
+                                                            "relative overflow-hidden bg-neutral-100 border rounded-[5px] cursor-grab active:cursor-grabbing transition-all",
                                                             idx === 0 ? "col-span-2 aspect-[4/3]" : "aspect-square",
                                                             dragOverIndex === idx ? "border-black ring-2 ring-black scale-[0.98] opacity-80" : "border-neutral-200"
                                                         )}
@@ -1748,21 +1749,21 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                                                         <Image src={photo} alt="Property" fill className="object-cover pointer-events-none" />
 
                                                         {idx === 0 && (
-                                                            <div className="absolute top-3 left-3 bg-white px-3 py-1.5 rounded-lg text-[13px] font-medium shadow-sm">
+                                                            <div className="absolute top-3 left-3 bg-white px-3 py-1.5 rounded-[5px] text-[13px] font-medium">
                                                                 Couverture
                                                             </div>
                                                         )}
 
                                                         <button
                                                             onClick={() => deletePhoto(idx)}
-                                                            className="absolute top-3 right-3 w-8 h-8 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-sm active:scale-90 transition-all hover:bg-red-50"
+                                                            className="absolute top-3 right-3 w-8 h-8 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center active:scale-90 transition-all hover:bg-red-50"
                                                         >
                                                             <Trash2 size={15} className="text-neutral-600 hover:text-red-500 transition-colors" />
                                                         </button>
                                                     </div>
                                                 ))}
                                                 {isUploading && (
-                                                    <div className="aspect-square relative overflow-hidden bg-neutral-100 border border-neutral-200 rounded-[10px] flex items-center justify-center">
+                                                    <div className="aspect-square relative overflow-hidden bg-neutral-100 border border-neutral-200 rounded-[5px] flex items-center justify-center">
                                                         <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, ease: "linear", duration: 1 }}>
                                                             <Coffee className="text-neutral-400" size={24} />
                                                         </motion.div>
@@ -1776,7 +1777,7 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                                                         initial={{ opacity: 0, y: 50 }}
                                                         animate={{ opacity: 1, y: 0 }}
                                                         exit={{ opacity: 0, y: 50 }}
-                                                        className="fixed bottom-[130px] left-4 right-4 bg-[#F2F0EC] p-6 rounded-[24px] shadow-[0_10px_40px_rgba(0,0,0,0.15)] z-[10010] border border-neutral-100"
+                                                        className="fixed bottom-[130px] left-4 right-4 bg-[#F2F0EC] p-6 rounded-[5px] shadow-[0_10px_40px_rgba(0,0,0,0.15)] z-[10010] border border-neutral-100"
                                                     >
                                                         <button
                                                             onClick={() => setShowPhotoAdvice(false)}
@@ -2288,7 +2289,7 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                                                     <button
                                                         key={option.id}
                                                         onClick={() => setTeamMode(option.id as any)}
-                                                        className={`w-full flex items-center justify-between p-6 rounded-2xl border transition-all text-left ${isActive ? 'border-black border-2 bg-neutral-50 ring-1 ring-black' : 'border-neutral-200 hover:border-black'}`}
+                                                        className={`w-full flex items-center justify-between p-6 rounded-[5px] border transition-all text-left ${isActive ? 'border-black border-2 bg-neutral-50 ring-1 ring-black' : 'border-neutral-200 hover:border-black'}`}
                                                     >
                                                         <div className="flex flex-col gap-1 pr-4">
                                                             <span className="font-semibold text-[18px] text-black tracking-tight">{t(option.title)}</span>
@@ -2324,7 +2325,7 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                                     </div>
 
                                     <div className="space-y-4">
-                                        <div className="flex items-center justify-between p-5 bg-[#FFFFFF] rounded-[20px] border border-neutral-100 group">
+                                        <div className="flex items-center justify-between p-5 bg-[#FFFFFF] rounded-[5px] border border-neutral-100 group">
                                             <div className="flex items-center gap-4">
                                                 <div className="w-10 h-10 flex items-center justify-center">
                                                     <QrCode size={22} strokeWidth={1.5} className="text-black" />
@@ -2375,7 +2376,7 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                                                                 setTeamInvites(newInvites);
                                                             }}
                                                             placeholder="+212 6..."
-                                                            className="w-full bg-[#F7F7F7] rounded-xl px-4 py-3 text-[15px] font-light border border-transparent focus:border-black focus:bg-white transition-all outline-none"
+                                                            className="w-full bg-[#F7F7F7] rounded-[5px] px-4 py-3 text-[15px] font-light border border-transparent focus:border-black focus:bg-white transition-all outline-none"
                                                         />
                                                     </div>
                                                     {teamInvites.length > 1 && (
@@ -2408,71 +2409,68 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
 
             {/* Footer Actions */}
             {stepIndex !== 1 && (
-                <div className="px-6 pt-4 pb-6 border-t border-neutral-100 bg-white z-20">
-                    {/* Segmented Progress Bar — bold, 3 stages with gaps */}
-                    <div className="flex gap-1.5 mb-6">
-                        {[0, 1, 2].map((stageIdx) => {
-                            let progress = 0;
-                            const selectedAutomationServices = selectedServices.filter((id: any) => AUTOMATED_SERVICE_IDS.includes(id));
-                            const totalAutomationSubsteps = selectedAutomationServices.length;
-                            const currentAutoIdx = currentDetailServiceId ? selectedAutomationServices.indexOf(currentDetailServiceId) : -1;
+                <div className="relative bg-white z-20">
+                    <WaveTop fill="white" />
+                    <div className="px-6 pt-4 pb-6 border-t border-neutral-100 flex flex-col gap-4">
+                        {/* Segmented Progress Bar — bold, 3 stages with gaps */}
+                        <div className="flex gap-2 mb-6">
+                            {[0, 1, 2].map((stageIdx) => {
+                                let progress = 0;
+                                const selectedAutomationServices = selectedServices.filter((id: any) => AUTOMATED_SERVICE_IDS.includes(id));
+                                const totalAutomationSubsteps = selectedAutomationServices.length;
+                                const currentAutoIdx = currentDetailServiceId ? selectedAutomationServices.indexOf(currentDetailServiceId) : -1;
 
-
-
-                            // Calculate progress for each stage
-                            if (stageIdx === 0) {
-                                if (stepIndex > 2) progress = 100;
-                                else if (stepIndex === 0) progress = 33;
-                                else if (stepIndex === 1) progress = 66;
-                                else if (stepIndex === 2) progress = 100;
-                            } else if (stageIdx === 1) {
-                                if (stepIndex > 4) progress = 100;
-                                else if (stepIndex === 3) progress = 50;
-                                else if (stepIndex === 4) progress = 100;
-                            } else if (stageIdx === 2) {
-                                if ((viewMode as string) === 'published_success') progress = 100;
-                                else if ((viewMode as string) === 'team_mode_select') progress = 100;
-                                else if ((viewMode as string) === 'service_detail_form') {
-                                    if (totalAutomationSubsteps > 0) {
-                                        const substepProgress = Math.round(33 + ((currentAutoIdx + 1) / totalAutomationSubsteps) * 56);
-                                        progress = substepProgress;
-                                    } else {
-                                        progress = 90;
+                                // Calculate progress for each stage
+                                if (stageIdx === 0) {
+                                    if (stepIndex > 2) progress = 100;
+                                    else if (stepIndex === 0) progress = 33;
+                                    else if (stepIndex === 1) progress = 66;
+                                    else if (stepIndex === 2) progress = 100;
+                                } else if (stageIdx === 1) {
+                                    if (stepIndex > 4) progress = 100;
+                                    else if (stepIndex === 3) progress = 50;
+                                    else if (stepIndex === 4) progress = 100;
+                                } else if (stageIdx === 2) {
+                                    if ((viewMode as string) === 'published_success') progress = 100;
+                                    else if ((viewMode as string) === 'team_mode_select') progress = 100;
+                                    else if ((viewMode as string) === 'service_detail_form') {
+                                        if (totalAutomationSubsteps > 0) {
+                                            const substepProgress = Math.round(33 + ((currentAutoIdx + 1) / totalAutomationSubsteps) * 56);
+                                            progress = substepProgress;
+                                        } else {
+                                            progress = 90;
+                                        }
                                     }
+                                    else if (stepIndex === 5) progress = 33;
+                                    else if (stepIndex === 6) progress = 66;
+                                    else if (stepIndex >= 7) progress = 99;
                                 }
-                                else if (stepIndex === 5) progress = 33;
-                                else if (stepIndex === 6) progress = 66;
-                                else if (stepIndex >= 7) progress = 99;
-                            }
 
-                            const isFilled = progress === 100;
-                            const isActive = progress > 0 && progress < 100;
-
-                            return (
-                                <div key={stageIdx} className="flex-1 flex flex-col gap-1">
-                                    <div className="h-[4px] rounded-full bg-neutral-200 overflow-hidden">
-                                        <div
-                                            className="h-full rounded-full bg-black transition-all duration-500 ease-in-out"
-                                            style={{ width: `${progress}%` }}
-                                        />
+                                return (
+                                    <div key={stageIdx} className="flex-1 flex flex-col gap-1">
+                                        <div className="h-[4px] rounded-full bg-neutral-200 overflow-hidden">
+                                            <div
+                                                className="h-full rounded-full bg-black transition-all duration-500 ease-in-out"
+                                                style={{ width: `${progress}%` }}
+                                            />
+                                        </div>
                                     </div>
+                                );
+                            })}
+                        </div>
 
-                                </div>
-                            );
-                        })}
-                    </div>
-
-                    <div className="flex justify-between items-center">
-                        <button onClick={handleBack} className="font-bold text-[17px] text-black underline underline-offset-4" >
-                            {t({ en: 'Back', fr: 'Retour', ar: 'عودة' })}
-                        </button>
-                        <button
-                            onClick={handleNext}
-                            disabled={isSubmitting || (viewMode === 'team_mode_select' && !teamMode)}
-                            className="bg-[#2C2C2C] disabled:bg-neutral-200 text-white px-10 py-4 rounded-[12px] text-[17px] font-medium active:scale-[0.98] transition-all"
-                        >
-                            {isSubmitting ? 'Publication...' : viewMode === 'team_mode_select' ? 'Publier l\'annonce' : 'Suivant'}
-                        </button>
+                        <div className="flex justify-between items-center">
+                            <button onClick={handleBack} className="font-bold text-[17px] text-black underline underline-offset-4">
+                                {t({ en: 'Back', fr: 'Retour', ar: 'عودة' })}
+                            </button>
+                            <button
+                                onClick={handleNext}
+                                disabled={isSubmitting || (viewMode === 'team_mode_select' && !teamMode)}
+                                className="bg-[#2C2C2C] disabled:bg-neutral-200 text-white px-10 py-4 rounded-[5px] text-[17px] font-medium active:scale-[0.98] transition-all"
+                            >
+                                {isSubmitting ? 'Publication...' : viewMode === 'team_mode_select' ? 'Publier l\'annonce' : 'Suivant'}
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}
@@ -2572,9 +2570,9 @@ const CleaningDetailForm = ({ data, onChange, onUploadingChange }: any) => {
                             return (
                                 <div
                                     key={item.id}
-                                    className={`relative rounded-[10px] border transition-all duration-300 ${isSelected
-                                        ? 'border-black border-[2px] bg-white shadow-sm'
-                                        : 'border-neutral-200 hover:border-black bg-white shadow-sm'
+                                    className={`relative rounded-[5px] border transition-all duration-300 ${isSelected
+                                        ? 'border-black border-[1px] bg-white'
+                                        : 'border-neutral-200 hover:border-black bg-white'
                                         }`}
                                 >
                                     <button
@@ -2594,7 +2592,7 @@ const CleaningDetailForm = ({ data, onChange, onUploadingChange }: any) => {
                                             />
                                         </div>
                                         {isSelected && (
-                                            <div className="absolute top-5 right-5 w-8 h-8 bg-[#222222] rounded-full flex items-center justify-center shadow-sm">
+                                            <div className="absolute top-5 right-5 w-8 h-8 bg-[#222222] rounded-full flex items-center justify-center">
                                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                                                     <path d="M4 12L10 18L20 6" stroke="white" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
                                                 </svg>
@@ -2660,12 +2658,12 @@ const CleaningDetailForm = ({ data, onChange, onUploadingChange }: any) => {
                 </div>
 
                 <div className="space-y-4">
-                    <h3 className="text-[18px] font-semibold text-[#222222]">
+                    <h3 className="text-[18px] font-bold text-[#222222]">
                         {t({ en: 'Specific Instructions', fr: 'Instructions spécifiques' })}
                     </h3>
-                    <div className="rounded-[16px] border border-[#EBEBEB] bg-white px-5 divide-y divide-[#EBEBEB] shadow-sm">
+                    <div className="rounded-[5px] border border-[#EBEBEB] bg-white px-5 divide-y divide-[#EBEBEB]">
                         {(data.checklist || ['']).map((item: any, idx: number) => (
-                            <div key={idx} className="group flex items-center gap-4 py-5 min-h-[64px]">
+                            <div key={idx} className="flex items-center gap-4 py-4 min-h-[64px]">
                                 <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 transition-all ${item.trim() !== '' ? 'bg-[#00CA52] border-[#00CA52]' : 'border-[#EBEBEB]'}`}>
                                     {item.trim() !== '' && <Check size={12} className="text-white" strokeWidth={4} />}
                                 </div>
@@ -2692,7 +2690,7 @@ const CleaningDetailForm = ({ data, onChange, onUploadingChange }: any) => {
                                             const next = (data.checklist || []).filter((_: any, i: number) => i !== idx);
                                             onChange({ checklist: next.length === 0 ? [''] : next });
                                         }}
-                                        className="p-2 text-[#717171] hover:text-[#222222] hover:bg-[#F7F7F7] rounded-full opacity-0 group-hover:opacity-100 transition-all"
+                                        className="p-2 text-[#717171] hover:text-[#222222] hover:bg-[#F7F7F7] rounded-full transition-all"
                                     >
                                         <X size={16} />
                                     </button>
@@ -2704,16 +2702,16 @@ const CleaningDetailForm = ({ data, onChange, onUploadingChange }: any) => {
 
                 {/* ── Reference photos ── */}
                 <div className="space-y-4">
-                    <h3 className="text-[18px] font-semibold text-[#222222]">
+                    <h3 className="text-[18px] font-bold text-[#222222]">
                         {t({ en: 'Reference Photos', fr: 'Photos de Référence' })}
                     </h3>
                     <div className="grid grid-cols-3 gap-4">
                         {(data.referencePhotos || []).map((url: any, i: number) => (
-                            <div key={url} className="relative aspect-square rounded-[16px] overflow-hidden border border-[#EBEBEB] shadow-sm">
+                            <div key={url} className="relative aspect-square rounded-[5px] overflow-hidden border border-[#EBEBEB]">
                                 <img src={url} alt="Reference" className="w-full h-full object-cover" />
                                 <button
                                     onClick={() => onChange({ referencePhotos: data.referencePhotos.filter((_: any, idx: number) => idx !== i) })}
-                                    className="absolute top-2 right-2 w-8 h-8 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center border border-[#EBEBEB] shadow-sm"
+                                    className="absolute top-2 right-2 w-8 h-8 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center border border-[#EBEBEB]"
                                 >
                                     <X size={14} className="text-[#222222]" />
                                 </button>
@@ -2721,7 +2719,7 @@ const CleaningDetailForm = ({ data, onChange, onUploadingChange }: any) => {
                         ))}
                         <button
                             onClick={() => photoInputRef.current?.click()}
-                            className="aspect-square rounded-[16px] border-2 border-dashed border-[#EBEBEB] flex flex-col items-center justify-center gap-2 hover:border-[#222222] hover:bg-[#F7F7F7] transition-all text-[#717171] hover:text-[#222222] shadow-sm"
+                            className="aspect-square rounded-[5px] border-2 border-dashed border-[#EBEBEB] flex flex-col items-center justify-center gap-2 hover:border-[#222222] hover:bg-[#F7F7F7] transition-all text-[#717171] hover:text-[#222222]"
                         >
                             {isUploading ? (
                                 <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1, ease: 'linear' }}>
@@ -2782,13 +2780,13 @@ const GlassCleaningDetailForm = ({ data, onChange, onUploadingChange }: any) => 
     };
 
     return (
-        <div className="flex-1 overflow-y-auto pb-32">
-            <h2 className="font-medium text-[32px] text-black leading-tight tracking-tight mb-8">
+        <div className="flex-1 overflow-y-auto pb-32 no-scrollbar">
+            <h2 className="font-bold text-[32px] text-[#222222] leading-tight tracking-tight mb-8">
                 {t({ en: 'Glass & Window Cleaning', fr: 'Nettoyage des Vitres' })}
             </h2>
 
             <div className="space-y-12">
-                <div className="space-y-4 p-6 rounded-[15px] border border-neutral-100 bg-neutral-50/50">
+                <div className="space-y-4 p-6 rounded-[5px] border border-neutral-100 bg-neutral-50/50">
                     <CounterRow
                         label={t({ en: 'Number of windows', fr: 'Nombre de fenêtres' })}
                         value={data.windowsCount || 1}
@@ -2797,31 +2795,56 @@ const GlassCleaningDetailForm = ({ data, onChange, onUploadingChange }: any) => 
                     />
                 </div>
 
-                <div className="space-y-4">
-                    <h3 className="font-medium text-[20px] text-black">{t({ en: 'Access & Difficulty', fr: 'Accès et Difficulté' })}</h3>
-                    <div className="grid grid-cols-1 gap-3">
+                <div className="space-y-6">
+                    <h3 className="font-bold text-[18px] text-[#222222]">{t({ en: 'Majority Window Size', fr: 'Taille majoritaire des vitres' })}</h3>
+                    <div className="grid grid-cols-3 gap-3">
                         {[
-                            { id: 'ground', label: 'Easy access (Ground floor)', fr: 'Accès facile (RDC)' },
-                            { id: 'ladder', label: 'Requires ladder', fr: 'Nécessite échelle' },
-                            { id: 'high', label: 'High altitude/Hard to reach', fr: 'Grande hauteur/Difficile' }
+                            { id: 'small', label: 'Small', fr: 'Petite' },
+                            { id: 'medium', label: 'Medium', fr: 'Moyenne' },
+                            { id: 'large', label: 'Large', fr: 'Grande' }
                         ].map((item: any) => (
                             <button
                                 key={item.id}
-                                onClick={() => onChange({ windowsAccessibility: item.id })}
-                                className={`w-full flex items-center justify-between p-5 rounded-[12px] border transition-all ${data.windowsAccessibility === item.id
-                                    ? 'border-black border-[2px] bg-neutral-50'
-                                    : 'border-neutral-200 hover:border-black bg-white shadow-sm'
+                                onClick={() => onChange({ windowsSize: item.id })}
+                                className={`p-4 rounded-[5px] border text-center transition-all ${data.windowsSize === item.id
+                                    ? 'border-black border-[2px] bg-white text-black font-bold'
+                                    : 'border-neutral-200 hover:border-black bg-white text-neutral-500'
                                     }`}
                             >
-                                <span className="text-[17px] font-medium text-black">{t({ en: item.label, fr: item.fr })}</span>
-                                {data.windowsAccessibility === item.id && <Check size={20} className="text-black" strokeWidth={2.5} />}
+                                <span className="text-[15px] font-bold">{t({ en: item.label, fr: item.fr })}</span>
                             </button>
                         ))}
                     </div>
                 </div>
 
-                <div className="space-y-4">
-                    <h3 className="font-medium text-[20px] text-black">{t({ en: 'Coverage', fr: 'Couverture' })}</h3>
+                <div className="space-y-6">
+                    <h3 className="font-bold text-[18px] text-[#222222]">{t({ en: 'Access & Difficulty', fr: 'Accès et Difficulté' })}</h3>
+                    <div className="grid grid-cols-1 gap-3">
+                        {[
+                            { id: 'ground', label: 'Easy access (Ground floor)', fr: 'Accès facile (RDC)' },
+                            { id: 'ladder', label: 'Requires ladder', fr: 'Nécessite échelle' },
+                        ].map((item: any) => (
+                            <button
+                                key={item.id}
+                                onClick={() => onChange({ windowsAccessibility: item.id })}
+                                className={`w-full flex items-center justify-between p-6 rounded-[5px] border transition-all ${data.windowsAccessibility === item.id
+                                    ? 'border-black border-[1px] bg-white'
+                                    : 'border-neutral-200 hover:border-black bg-white'
+                                    }`}
+                            >
+                                <span className="text-[17px] font-medium text-black">{t({ en: item.label, fr: item.fr })}</span>
+                                {data.windowsAccessibility === item.id && (
+                                    <div className="w-6 h-6 bg-black rounded-full flex items-center justify-center">
+                                        <Check size={14} className="text-white" strokeWidth={3} />
+                                    </div>
+                                )}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+
+                <div className="space-y-6">
+                    <h3 className="font-bold text-[18px] text-[#222222]">{t({ en: 'Coverage', fr: 'Couverture' })}</h3>
                     <div className="grid grid-cols-3 gap-3">
                         {[
                             { id: 'interior', label: 'Inside', fr: 'Intérieur' },
@@ -2831,26 +2854,70 @@ const GlassCleaningDetailForm = ({ data, onChange, onUploadingChange }: any) => 
                             <button
                                 key={item.id}
                                 onClick={() => onChange({ windowsCoverage: item.id })}
-                                className={`p-4 rounded-[12px] border text-center transition-all ${data.windowsCoverage === item.id
-                                    ? 'border-black border-[2px] bg-neutral-50'
-                                    : 'border-neutral-200 hover:border-black bg-white'
+                                className={`p-4 rounded-[5px] border text-center transition-all ${data.windowsCoverage === item.id
+                                    ? 'border-black border-[1px] bg-white text-black font-bold'
+                                    : 'border-neutral-200 hover:border-black bg-white text-neutral-500'
                                     }`}
                             >
-                                <span className="text-[15px] font-semibold">{t({ en: item.label, fr: item.fr })}</span>
+                                <span className="text-[15px] font-bold">{t({ en: item.label, fr: item.fr })}</span>
                             </button>
                         ))}
                     </div>
                 </div>
 
-                <div className="space-y-4">
-                    <h3 className="font-medium text-[20px] text-black">{t({ en: 'Reference Photos', fr: 'Photos de Référence' })}</h3>
+                {/* Specific Instructions Checklist */}
+                <div className="space-y-6">
+                    <h3 className="text-[18px] font-bold text-[#222222]">
+                        {t({ en: 'Specific Instructions', fr: 'Instructions spécifiques' })}
+                    </h3>
+                    <div className="rounded-[5px] border border-[#EBEBEB] bg-white px-5 divide-y divide-[#EBEBEB]">
+                        {(data.checklist || ['']).map((item: any, idx: number) => (
+                            <div key={idx} className="flex items-center gap-4 py-4 min-h-[64px]">
+                                <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 transition-all ${item.trim() !== '' ? 'bg-[#00CA52] border-[#00CA52]' : 'border-[#EBEBEB]'}`}>
+                                    {item.trim() !== '' && <Check size={12} className="text-white" strokeWidth={4} />}
+                                </div>
+                                <input
+                                    type="text"
+                                    autoFocus={idx > 0 && item === ''}
+                                    value={item}
+                                    onChange={(e) => {
+                                        const next = [...(data.checklist || [''])];
+                                        next[idx] = e.target.value;
+                                        onChange({ checklist: next });
+                                    }}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter' && item.trim() !== '') {
+                                            onChange({ checklist: [...(data.checklist || []), ''] });
+                                        }
+                                    }}
+                                    placeholder={t({ en: 'Add an instruction…', fr: 'Ajouter une instruction…' })}
+                                    className="flex-1 py-1 bg-transparent border-none focus:ring-0 text-[16px] text-[#222222] placeholder:text-[#AAAAAA] outline-none"
+                                />
+                                {((data.checklist || []).length > 1 || item.trim() !== '') && (
+                                    <button
+                                        onClick={() => {
+                                            const next = (data.checklist || []).filter((_: any, i: number) => i !== idx);
+                                            onChange({ checklist: next.length === 0 ? [''] : next });
+                                        }}
+                                        className="p-2 text-[#717171] hover:text-[#222222] hover:bg-[#F7F7F7] rounded-full transition-all"
+                                    >
+                                        <X size={16} />
+                                    </button>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
+                <div className="space-y-6">
+                    <h3 className="font-bold text-[18px] text-[#222222]">{t({ en: 'Reference Photos', fr: 'Photos de Référence' })}</h3>
                     <div className="grid grid-cols-3 gap-4">
                         {(data.referencePhotos || []).map((url: any, i: number) => (
-                            <div key={url} className="relative aspect-square rounded-2xl overflow-hidden border border-neutral-100 shadow-sm">
+                            <div key={url} className="relative aspect-square rounded-[5px] overflow-hidden border border-neutral-100">
                                 <img src={url} alt="Reference" className="w-full h-full object-cover" />
                                 <button
                                     onClick={() => onChange({ referencePhotos: data.referencePhotos.filter((_: any, idx: number) => idx !== i) })}
-                                    className="absolute top-2 right-2 w-7 h-7 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-sm"
+                                    className="absolute top-2 right-2 w-7 h-7 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center border border-neutral-100"
                                 >
                                     <X size={14} className="text-black" />
                                 </button>
@@ -2858,7 +2925,7 @@ const GlassCleaningDetailForm = ({ data, onChange, onUploadingChange }: any) => 
                         ))}
                         <button
                             onClick={() => photoInputRef.current?.click()}
-                            className="aspect-square rounded-2xl border-2 border-dashed border-neutral-200 flex flex-col items-center justify-center gap-2 hover:border-black hover:bg-neutral-50 transition-all text-neutral-400 hover:text-black"
+                            className="aspect-square rounded-[5px] border-2 border-dashed border-neutral-200 flex flex-col items-center justify-center gap-2 hover:border-black hover:bg-neutral-50 transition-all text-neutral-400 hover:text-black"
                         >
                             {isUploading ? (
                                 <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1, ease: "linear" }}>
@@ -2944,9 +3011,9 @@ const GardeningDetailForm = ({ data, onChange, onUploadingChange }: any) => {
                             <button
                                 key={item.id}
                                 onClick={() => toggleSubService(item.id)}
-                                className={`p-5 rounded-[12px] border transition-all text-left flex flex-col gap-3 ${(data.subServices || []).includes(item.id)
+                                className={`p-5 rounded-full border transition-all text-left flex flex-col gap-3 ${(data.subServices || []).includes(item.id)
                                     ? 'border-black border-[2px] bg-neutral-50'
-                                    : 'border-neutral-200 hover:border-black bg-white shadow-sm'
+                                    : 'border-neutral-200 hover:border-black bg-white'
                                     }`}
                             >
                                 <span className="text-2xl">{item.emoji}</span>
@@ -2957,7 +3024,7 @@ const GardeningDetailForm = ({ data, onChange, onUploadingChange }: any) => {
                 </div>
 
                 <div className="space-y-6">
-                    <div className="p-6 rounded-[15px] border border-neutral-100 bg-neutral-50/50 space-y-2">
+                    <div className="p-6 rounded-[5px] border border-neutral-100 bg-neutral-50/50 space-y-2">
                         <h3 className="font-medium text-[18px] text-black mb-4">{t({ en: 'Garden Specs', fr: 'Caractéristiques' })}</h3>
                         <CounterRow
                             label={t({ en: 'Garden Size (m²)', fr: 'Taille du jardin (m²)' })}
@@ -2979,7 +3046,7 @@ const GardeningDetailForm = ({ data, onChange, onUploadingChange }: any) => {
                         />
                     </div>
 
-                    <div className="p-6 rounded-[15px] border border-neutral-100 bg-white shadow-sm space-y-6">
+                    <div className="p-6 rounded-[5px] border border-neutral-100 bg-white space-y-6">
                         <div className="flex items-start justify-between gap-4">
                             <div className="flex flex-col gap-1 flex-1">
                                 <span className="text-[17px] font-medium text-black leading-tight">{t({ en: 'Should bring mower?', fr: 'Doit apporter la tondeuse ?' })}</span>
@@ -2989,7 +3056,7 @@ const GardeningDetailForm = ({ data, onChange, onUploadingChange }: any) => {
                                 onClick={() => onChange({ shouldBringMower: !data.shouldBringMower })}
                                 className={`w-14 h-8 rounded-full transition-all flex items-center px-1 shrink-0 ${data.shouldBringMower ? 'bg-black' : 'bg-neutral-200'}`}
                             >
-                                <div className={`w-6 h-6 rounded-full bg-white shadow-sm transition-all ${data.shouldBringMower ? 'translate-x-6' : 'translate-x-0'}`} />
+                                <div className={`w-6 h-6 rounded-full bg-white transition-all ${data.shouldBringMower ? 'translate-x-6' : 'translate-x-0'}`} />
                             </button>
                         </div>
 
@@ -3002,7 +3069,7 @@ const GardeningDetailForm = ({ data, onChange, onUploadingChange }: any) => {
                                 onClick={() => onChange({ isWasteRemovalIncluded: !data.isWasteRemovalIncluded })}
                                 className={`w-14 h-8 rounded-full transition-all flex items-center px-1 shrink-0 ${data.isWasteRemovalIncluded ? 'bg-black' : 'bg-neutral-200'}`}
                             >
-                                <div className={`w-6 h-6 rounded-full bg-white shadow-sm transition-all ${data.isWasteRemovalIncluded ? 'translate-x-6' : 'translate-x-0'}`} />
+                                <div className={`w-6 h-6 rounded-full bg-white transition-all ${data.isWasteRemovalIncluded ? 'translate-x-6' : 'translate-x-0'}`} />
                             </button>
                         </div>
                     </div>
@@ -3019,7 +3086,7 @@ const GardeningDetailForm = ({ data, onChange, onUploadingChange }: any) => {
                             <button
                                 key={freq.id}
                                 onClick={() => onChange({ gardeningFrequency: freq.id })}
-                                className={`p-4 rounded-[12px] border text-center transition-all ${data.gardeningFrequency === freq.id
+                                className={`p-4 rounded-full border text-center transition-all ${data.gardeningFrequency === freq.id
                                     ? 'border-black border-[2px] bg-neutral-50'
                                     : 'border-neutral-200 hover:border-black bg-white'
                                     }`}
@@ -3053,8 +3120,19 @@ const GardeningDetailForm = ({ data, onChange, onUploadingChange }: any) => {
                                         }
                                     }}
                                     placeholder={t({ en: 'e.g., Water the roses...', fr: 'ex: Arroser les roses...' })}
-                                    className="flex-1 py-2 bg-transparent border-none focus:ring-0 text-[18px] text-black placeholder:text-neutral-300"
+                                    className="flex-1 py-2 bg-transparent border-none focus:ring-0 text-[18px] text-black placeholder:text-neutral-300 outline-none"
                                 />
+                                {((data.checklist || []).length > 1 || item.trim() !== '') && (
+                                    <button
+                                        onClick={() => {
+                                            const next = (data.checklist || []).filter((_: any, i: number) => i !== idx);
+                                            onChange({ checklist: next.length === 0 ? [''] : next });
+                                        }}
+                                        className="p-2 text-neutral-400 hover:text-black hover:bg-neutral-50 rounded-full transition-all"
+                                    >
+                                        <X size={18} />
+                                    </button>
+                                )}
                             </div>
                         ))}
                     </div>
@@ -3064,11 +3142,11 @@ const GardeningDetailForm = ({ data, onChange, onUploadingChange }: any) => {
                     <h3 className="font-medium text-[20px] text-black">{t({ en: 'Reference Photos', fr: 'Photos de Référence' })}</h3>
                     <div className="grid grid-cols-3 gap-4">
                         {(data.referencePhotos || []).map((url: any, i: number) => (
-                            <div key={url} className="relative aspect-square rounded-2xl overflow-hidden border border-neutral-100 shadow-sm">
+                            <div key={url} className="relative aspect-square rounded-[5px] overflow-hidden border border-neutral-100">
                                 <img src={url} alt="Reference" className="w-full h-full object-cover" />
                                 <button
                                     onClick={() => onChange({ referencePhotos: data.referencePhotos.filter((_: any, idx: number) => idx !== i) })}
-                                    className="absolute top-2 right-2 w-7 h-7 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-sm"
+                                    className="absolute top-2 right-2 w-7 h-7 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center border border-neutral-100"
                                 >
                                     <X size={14} className="text-black" />
                                 </button>
@@ -3076,7 +3154,7 @@ const GardeningDetailForm = ({ data, onChange, onUploadingChange }: any) => {
                         ))}
                         <button
                             onClick={() => photoInputRef.current?.click()}
-                            className="aspect-square rounded-2xl border-2 border-dashed border-neutral-200 flex flex-col items-center justify-center gap-2 hover:border-black hover:bg-neutral-50 transition-all text-neutral-400 hover:text-black"
+                            className="aspect-square rounded-[5px] border-2 border-dashed border-neutral-200 flex flex-col items-center justify-center gap-2 hover:border-black hover:bg-neutral-50 transition-all text-neutral-400 hover:text-black"
                         >
                             {isUploading ? (
                                 <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1, ease: "linear" }}>
@@ -3153,7 +3231,7 @@ const PoolDetailForm = ({ data, onChange, onUploadingChange }: any) => {
                             <button
                                 key={system.id}
                                 onClick={() => onChange({ poolWaterType: system.id })}
-                                className={`p-5 rounded-[12px] border text-center transition-all ${data.poolWaterType === system.id
+                                className={`p-5 rounded-full border text-center transition-all ${data.poolWaterType === system.id
                                     ? 'border-black border-[2px] bg-neutral-50'
                                     : 'border-neutral-200 hover:border-black bg-white'
                                     }`}
@@ -3164,7 +3242,7 @@ const PoolDetailForm = ({ data, onChange, onUploadingChange }: any) => {
                     </div>
                 </div>
 
-                <div className="space-y-4 p-6 rounded-[15px] border border-neutral-100 bg-neutral-50/50">
+                <div className="space-y-4 p-6 rounded-[5px] border border-neutral-100 bg-neutral-50/50">
                     <CounterRow
                         label={t({ en: 'Average Depth (m)', fr: 'Profondeur moyenne (m)' })}
                         value={data.poolDepth || 1.5}
@@ -3177,11 +3255,11 @@ const PoolDetailForm = ({ data, onChange, onUploadingChange }: any) => {
                     <h3 className="font-medium text-[20px] text-black">{t({ en: 'Reference Photos', fr: 'Photos de Référence' })}</h3>
                     <div className="grid grid-cols-3 gap-4">
                         {(data.referencePhotos || []).map((url: any, i: number) => (
-                            <div key={url} className="relative aspect-square rounded-2xl overflow-hidden border border-neutral-100 shadow-sm">
+                            <div key={url} className="relative aspect-square rounded-[5px] overflow-hidden border border-neutral-100">
                                 <img src={url} alt="Reference" className="w-full h-full object-cover" />
                                 <button
                                     onClick={() => onChange({ referencePhotos: data.referencePhotos.filter((_: any, idx: number) => idx !== i) })}
-                                    className="absolute top-2 right-2 w-7 h-7 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-sm"
+                                    className="absolute top-2 right-2 w-7 h-7 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center border border-neutral-100"
                                 >
                                     <X size={14} className="text-black" />
                                 </button>
@@ -3189,7 +3267,7 @@ const PoolDetailForm = ({ data, onChange, onUploadingChange }: any) => {
                         ))}
                         <button
                             onClick={() => photoInputRef.current?.click()}
-                            className="aspect-square rounded-2xl border-2 border-dashed border-neutral-200 flex flex-col items-center justify-center gap-2 hover:border-black hover:bg-neutral-50 transition-all text-neutral-400 hover:text-black"
+                            className="aspect-square rounded-[5px] border-2 border-dashed border-neutral-200 flex flex-col items-center justify-center gap-2 hover:border-black hover:bg-neutral-50 transition-all text-neutral-400 hover:text-black"
                         >
                             {isUploading ? (
                                 <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1, ease: "linear" }}>
@@ -3231,9 +3309,9 @@ const ReceptionistDetailForm = ({ data, onChange }: any) => {
                             <button
                                 key={item.id}
                                 onClick={() => onChange({ checkInMethod: item.id })}
-                                className={`w-full flex items-center justify-between p-5 rounded-[12px] border transition-all ${data.checkInMethod === item.id
+                                className={`w-full flex items-center justify-between p-5 rounded-full border transition-all ${data.checkInMethod === item.id
                                     ? 'border-black border-[2px] bg-neutral-50'
-                                    : 'border-neutral-200 hover:border-black bg-white shadow-sm'
+                                    : 'border-neutral-200 hover:border-black bg-white'
                                     }`}
                             >
                                 <span className="text-[17px] font-medium text-black">{t({ en: item.label, fr: item.fr })}</span>
@@ -3266,8 +3344,19 @@ const ReceptionistDetailForm = ({ data, onChange }: any) => {
                                         }
                                     }}
                                     placeholder={t({ en: 'e.g., Show how WiFi works...', fr: 'ex: Expliquer le WiFi...' })}
-                                    className="flex-1 py-2 bg-transparent border-none focus:ring-0 text-[18px] text-black placeholder:text-neutral-300"
+                                    className="flex-1 py-2 bg-transparent border-none focus:ring-0 text-[18px] text-black placeholder:text-neutral-300 outline-none"
                                 />
+                                {((data.checklist || []).length > 1 || item.trim() !== '') && (
+                                    <button
+                                        onClick={() => {
+                                            const next = (data.checklist || []).filter((_: any, i: number) => i !== idx);
+                                            onChange({ checklist: next.length === 0 ? [''] : next });
+                                        }}
+                                        className="p-2 text-neutral-400 hover:text-black hover:bg-neutral-50 rounded-full transition-all"
+                                    >
+                                        <X size={18} />
+                                    </button>
+                                )}
                             </div>
                         ))}
                     </div>
@@ -3276,7 +3365,7 @@ const ReceptionistDetailForm = ({ data, onChange }: any) => {
                 <div className="space-y-4">
                     <h3 className="font-medium text-[20px] text-black">{t({ en: 'Guest Support', fr: 'Support Voyageur' })}</h3>
                     <div className="space-y-4">
-                        <div className="flex items-center justify-between p-5 rounded-[12px] border border-neutral-200 bg-white shadow-sm">
+                        <div className="flex items-center justify-between p-5 rounded-[5px] border border-neutral-200 bg-white">
                             <span className="text-[17px] font-medium">{t({ en: '24/7 Phone support', fr: 'Support téléphonique 24/7' })}</span>
                             <button
                                 onClick={() => onChange({ phoneSupport: !data.phoneSupport })}
@@ -3331,7 +3420,7 @@ const PetsDetailForm = ({ data, onChange }: any) => {
                     </div>
                 </div>
 
-                <div className="p-8 rounded-2xl border border-neutral-200 bg-white shadow-sm space-y-6">
+                <div className="p-8 rounded-[5px] border border-neutral-200 bg-white space-y-6">
                     <h3 className="font-medium text-[20px] text-black">
                         {t({ en: 'Feeding Schedule', fr: 'Planning des repas' })}
                     </h3>
@@ -3344,7 +3433,7 @@ const PetsDetailForm = ({ data, onChange }: any) => {
                             <button
                                 key={freq.id}
                                 onClick={() => onChange({ feedingFrequency: freq.id })}
-                                className={`p-4 rounded-[10px] border text-center transition-all ${data.feedingFrequency === freq.id
+                                className={`p-4 rounded-[5px] border text-center transition-all ${data.feedingFrequency === freq.id
                                     ? 'border-black border-[3.5px] bg-neutral-50'
                                     : 'border-neutral-200 text-black hover:border-black'
                                     }`}
@@ -3355,7 +3444,7 @@ const PetsDetailForm = ({ data, onChange }: any) => {
                     </div>
                 </div>
 
-                <div className="p-8 rounded-2xl border border-neutral-200 bg-white shadow-sm space-y-6">
+                <div className="p-8 rounded-[5px] border border-neutral-200 bg-white space-y-6">
                     <h3 className="font-medium text-[20px] text-black">
                         {t({ en: 'Daily Activities & Care', fr: 'Activités et soins quotidiens' })}
                     </h3>
@@ -3369,7 +3458,7 @@ const PetsDetailForm = ({ data, onChange }: any) => {
                             onClick={() => onChange({ walkingNeeded: !data.walkingNeeded })}
                             className={`w-14 h-8 rounded-full transition-all flex items-center px-1 shrink-0 ${data.walkingNeeded ? 'bg-black' : 'bg-neutral-200'}`}
                         >
-                            <div className={`w-6 h-6 rounded-full bg-white shadow-sm transition-all ${data.walkingNeeded ? 'translate-x-6' : 'translate-x-0'}`} />
+                            <div className={`w-6 h-6 rounded-full bg-white transition-all ${data.walkingNeeded ? 'translate-x-6' : 'translate-x-0'}`} />
                         </button>
                     </div>
 
@@ -3382,7 +3471,7 @@ const PetsDetailForm = ({ data, onChange }: any) => {
                             onClick={() => onChange({ medicationRequired: !data.medicationRequired })}
                             className={`w-14 h-8 rounded-full transition-all flex items-center px-1 shrink-0 ${data.medicationRequired ? 'bg-black' : 'bg-neutral-200'}`}
                         >
-                            <div className={`w-6 h-6 rounded-full bg-white shadow-sm transition-all ${data.medicationRequired ? 'translate-x-6' : 'translate-x-0'}`} />
+                            <div className={`w-6 h-6 rounded-full bg-white transition-all ${data.medicationRequired ? 'translate-x-6' : 'translate-x-0'}`} />
                         </button>
                     </div>
                 </div>
@@ -3394,7 +3483,7 @@ const PetsDetailForm = ({ data, onChange }: any) => {
                             value={data.instructions || ''}
                             onChange={(e) => onChange({ instructions: e.target.value })}
                             placeholder={t({ en: 'e.g. Food is in the garage, Friendly but scared of cats, Loves playing catch...', fr: 'ex: La nourriture est dans le garage, Amical mais a peur des chats, Adore jouer...' })}
-                            className="w-full p-5 rounded-[10px] bg-[#F7F7F7] border-none focus:ring-2 focus:ring-black focus:border-black text-[16px] min-h-[140px] resize-none transition-all placeholder:text-neutral-400"
+                            className="w-full p-5 rounded-[5px] bg-[#F7F7F7] border-none focus:ring-2 focus:ring-black focus:border-black text-[16px] min-h-[140px] resize-none transition-all placeholder:text-neutral-400"
                         />
                     </div>
 
@@ -3405,7 +3494,7 @@ const PetsDetailForm = ({ data, onChange }: any) => {
                             value={data.emergencyContact || ''}
                             onChange={(e) => onChange({ emergencyContact: e.target.value })}
                             placeholder={t({ en: 'Name and phone number...', fr: 'Nom et numéro de téléphone...' })}
-                            className="w-full p-5 rounded-[10px] bg-[#F7F7F7] border-none focus:ring-2 focus:ring-black focus:border-black text-[16px] transition-all placeholder:text-neutral-400"
+                            className="w-full p-5 rounded-[5px] bg-[#F7F7F7] border-none focus:ring-2 focus:ring-black focus:border-black text-[16px] transition-all placeholder:text-neutral-400"
                         />
                     </div>
                 </div>
@@ -3433,8 +3522,19 @@ const PetsDetailForm = ({ data, onChange }: any) => {
                                         }
                                     }}
                                     placeholder={t({ en: 'e.g., Clean the litter box...', fr: 'ex: Nettoyer la litière...' })}
-                                    className="flex-1 py-2 bg-transparent border-none focus:ring-0 text-[18px] text-black placeholder:text-neutral-300"
+                                    className="flex-1 py-2 bg-transparent border-none focus:ring-0 text-[18px] text-black placeholder:text-neutral-300 outline-none"
                                 />
+                                {((data.checklist || []).length > 1 || item.trim() !== '') && (
+                                    <button
+                                        onClick={() => {
+                                            const next = (data.checklist || []).filter((_: any, i: number) => i !== idx);
+                                            onChange({ checklist: next.length === 0 ? [''] : next });
+                                        }}
+                                        className="p-2 text-neutral-400 hover:text-black hover:bg-neutral-50 rounded-full transition-all"
+                                    >
+                                        <X size={18} />
+                                    </button>
+                                )}
                             </div>
                         ))}
                     </div>
@@ -3484,9 +3584,9 @@ const ErrandsDetailForm = ({ data, onChange }: any) => {
                                 <button
                                     key={category.id}
                                     onClick={() => toggleCategory(category.id)}
-                                    className={`flex flex-col items-start justify-between p-6 rounded-[10px] border transition-all h-[150px] text-left ${isSelected
+                                    className={`flex flex-col items-start justify-between p-6 rounded-[5px] border transition-all h-[150px] text-left ${isSelected
                                         ? 'border-black border-[2px] bg-neutral-50'
-                                        : 'border-neutral-200 hover:border-black bg-white shadow-sm'
+                                        : 'border-neutral-200 hover:border-black bg-white'
                                         }`}
                                 >
                                     <span className="text-[32px] shrink-0">{category.emoji}</span>
@@ -3513,7 +3613,7 @@ const ErrandsDetailForm = ({ data, onChange }: any) => {
                                     </h3>
                                     <div className="flex flex-col gap-4">
                                         {list.map((item: any, idx: number) => (
-                                            <div key={idx} className="border border-neutral-200 p-5 rounded-[15px] bg-white shadow-sm space-y-4">
+                                            <div key={idx} className="border border-neutral-200 p-5 rounded-[5px] bg-white space-y-4">
                                                 <div className="flex justify-between items-start gap-4">
                                                     <div className="flex flex-col gap-3 flex-1">
                                                         <input
@@ -3530,7 +3630,7 @@ const ErrandsDetailForm = ({ data, onChange }: any) => {
                                                         />
                                                         <div className="flex flex-wrap gap-2">
                                                             {(item.brands || []).map((brand: any) => (
-                                                                <span key={brand} className="inline-flex items-center gap-1 px-3 py-1 bg-[#F7F7F7] text-neutral-600 rounded-lg text-[13px] font-medium border border-neutral-200">
+                                                                <span key={brand} className="inline-flex items-center gap-1 px-3 py-1 bg-[#F7F7F7] text-neutral-600 rounded-[5px] text-[13px] font-medium border border-neutral-200">
                                                                     {brand}
                                                                     <button
                                                                         onClick={() => {
@@ -3548,7 +3648,7 @@ const ErrandsDetailForm = ({ data, onChange }: any) => {
                                                                 <input
                                                                     autoFocus
                                                                     type="text"
-                                                                    className="px-3 py-1 bg-white border border-black rounded-lg text-[13px] font-medium w-[150px] focus:outline-none focus:ring-0"
+                                                                    className="px-3 py-1 bg-white border border-black rounded-[5px] text-[13px] font-medium w-[150px] focus:outline-none focus:ring-0"
                                                                     onKeyDown={(e) => {
                                                                         if (e.key === 'Enter') {
                                                                             const val = e.currentTarget.value.trim();
@@ -3573,7 +3673,7 @@ const ErrandsDetailForm = ({ data, onChange }: any) => {
                                                             ) : (
                                                                 <button
                                                                     onClick={() => setEditingBrand({ cat: categoryId, idx })}
-                                                                    className="inline-flex items-center gap-1 px-3 py-1 text-neutral-400 hover:bg-neutral-50 rounded-lg text-[13px] font-medium border border-dashed border-neutral-300 transition-colors"
+                                                                    className="inline-flex items-center gap-1 px-3 py-1 text-neutral-400 hover:bg-neutral-50 rounded-[5px] text-[13px] font-medium border border-dashed border-neutral-300 transition-colors"
                                                                 >
                                                                     <Plus size={12} />
                                                                     {t({ en: 'Add brand', fr: 'Marque préférée' })}
@@ -3583,7 +3683,7 @@ const ErrandsDetailForm = ({ data, onChange }: any) => {
                                                     </div>
                                                     <button
                                                         onClick={() => updateChecklist(categoryId, list.filter((_: any, i: number) => i !== idx))}
-                                                        className="p-2 text-neutral-300 hover:text-red-500 transition-colors"
+                                                        className="p-2 text-neutral-400 hover:text-red-500 transition-colors"
                                                     >
                                                         <X size={20} />
                                                     </button>
@@ -3649,11 +3749,11 @@ const ErrandsDetailForm = ({ data, onChange }: any) => {
                                     en: 'ex. Toiletries in the cabinet under the sink...',
                                     fr: 'ex. Articles de toilette dans le meuble sous l\'évier...'
                                 })}
-                                className="w-full resize-none bg-white rounded-[10px] px-6 py-5 text-[16px] text-black border border-neutral-200 focus:ring-1 focus:ring-black focus:border-black transition-all"
+                                className="w-full resize-none bg-white rounded-[5px] px-6 py-5 text-[16px] text-black border border-neutral-200 focus:ring-1 focus:ring-black focus:border-black transition-all"
                             />
                         </div>
 
-                        <div className="p-6 rounded-[15px] border border-neutral-100 bg-neutral-50/50 flex items-center justify-between">
+                        <div className="p-6 rounded-[5px] border border-neutral-100 bg-neutral-50/50 flex items-center justify-between">
                             <div className="flex flex-col gap-1">
                                 <span className="text-[17px] font-medium text-black">{t({ en: 'Restocking Frequency', fr: 'Fréquence' })}</span>
                                 <span className="text-[14px] text-neutral-500">{t({ en: 'When should we restock?', fr: 'Quand devons-nous réapprovisionner ?' })}</span>
@@ -3661,7 +3761,7 @@ const ErrandsDetailForm = ({ data, onChange }: any) => {
                             <select
                                 value={data.frequency || 'post_checkout'}
                                 onChange={(e) => onChange({ frequency: e.target.value })}
-                                className="bg-white border border-neutral-200 rounded-lg px-3 py-2 text-[14px] font-medium focus:ring-1 focus:ring-black"
+                                className="bg-white border border-neutral-200 rounded-[5px] px-3 py-2 text-[14px] font-medium focus:ring-1 focus:ring-black"
                             >
                                 <option value="post_checkout">{t({ en: 'After each checkout', fr: 'Après chaque départ' })}</option>
                                 <option value="weekly">{t({ en: 'Weekly', fr: 'Hebdomadaire' })}</option>

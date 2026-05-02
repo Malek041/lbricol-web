@@ -78,7 +78,7 @@ const AddressDetailsForm: React.FC<AddressDetailsFormProps> = ({ initialData, on
           <div className="space-y-4">
             {/* Building Name */}
             <div className="relative group">
-              <div className="border border-black focus-within:border-black focus-within:bg-white rounded-[12px] h-16 transition-all relative">
+              <div className="border border-black focus-within:border-black focus-within:bg-white rounded-[5px] h-16 transition-all relative">
                 <input
                   type="text"
                   autoFocus
@@ -96,7 +96,7 @@ const AddressDetailsForm: React.FC<AddressDetailsFormProps> = ({ initialData, on
             <div className="grid grid-cols-2 gap-4">
               {/* Floor Number */}
               <div className="relative group">
-                <div className="border border-black focus-within:border-black focus-within:bg-white rounded-[12px] h-16 transition-all relative">
+                <div className="border border-black focus-within:border-black focus-within:bg-white rounded-[5px] h-16 transition-all relative">
                   <input
                     type="text"
                     value={formData.floorNumber}
@@ -112,7 +112,7 @@ const AddressDetailsForm: React.FC<AddressDetailsFormProps> = ({ initialData, on
 
               {/* Door Number */}
               <div className="relative group">
-                <div className="border border-black focus-within:border-black focus-within:bg-white rounded-[12px] h-16 transition-all relative">
+                <div className="border border-black focus-within:border-black focus-within:bg-white rounded-[5px] h-16 transition-all relative">
                   <input
                     type="text"
                     value={formData.doorNumber}
@@ -149,13 +149,13 @@ const AddressDetailsForm: React.FC<AddressDetailsFormProps> = ({ initialData, on
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.8 }}
-              className="absolute bottom-5 left-4 right-4 z-40 bg-white p-4 rounded-[18px] shadow-[0_8px_30px_rgb(0,0,0,0.12)] flex items-center gap-3 border border-neutral-100"
+              className="absolute bottom-5 left-4 right-4 z-40 bg-white p-4 rounded-[5px] shadow-[0_8px_30px_rgb(0,0,0,0.12)] flex items-center gap-3 border border-neutral-100"
             >
               <div className="w-10 h-10 rounded-full bg-neutral-50 flex items-center justify-center shrink-0">
                 <MapPin size={20} className="text-black" />
               </div>
               <div className="flex-1 min-w-0 pr-2">
-                <p className="text-[11px] text-neutral-400 font-bold uppercase tracking-wider mb-0.5">
+                <p className="text-[11px] text-neutral-400 font-bold  tracking-wider mb-0.5">
                   {t({ en: 'Your Address', fr: 'Votre adresse', ar: 'عنوانك' })}
                 </p>
                 <p className="text-[14px] text-black font-bold truncate">
@@ -164,7 +164,7 @@ const AddressDetailsForm: React.FC<AddressDetailsFormProps> = ({ initialData, on
               </div>
               <button
                 onClick={() => setIsPickingEntrance(true)}
-                className="h-10 px-5 bg-black text-white text-[13px] font-bold rounded-full active:scale-95 transition-all"
+                className="h-10 px-5 border border-[#2C2C2C] text-black text-[13px] font-bold rounded-full active:scale-95 transition-all"
               >
                 {t({ en: 'Refine', fr: 'Préciser', ar: 'تعديل' })}
               </button>
@@ -251,7 +251,7 @@ const AddressDetailsForm: React.FC<AddressDetailsFormProps> = ({ initialData, on
         <button
           onClick={handleSave}
           disabled={!formData.buildingName || !isMarked}
-          className="w-full h-14 rounded-[15px] bg-[#2C2C2C] text-white font-bold text-[17px] active:scale-[0.98] transition-all disabled:opacity-50 disabled:scale-100"
+          className="w-full h-14 rounded-[5px] bg-[#2C2C2C] text-white font-bold text-[17px] active:scale-[0.98] transition-all disabled:opacity-50 disabled:scale-100"
         >
           {t({ en: 'Save address', fr: "Enregistrer l'adresse", ar: "حفظ العنوان" })}
         </button>

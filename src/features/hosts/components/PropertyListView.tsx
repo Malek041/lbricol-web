@@ -9,11 +9,11 @@ import PropertyDetailView from './PropertyDetailView';
 import Image from 'next/image';
 import { db, auth } from '@/lib/firebase';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
-import { 
-    TbBuildingEstate, TbBuildingCottage, TbBuildingMosque 
+import {
+    TbBuildingEstate, TbBuildingCottage, TbBuildingMosque
 } from 'react-icons/tb';
-import { 
-    Warehouse, Bed, Ship, Tent, Truck, Castle, Hotel as HotelIcon 
+import {
+    Warehouse, Bed, Ship, Tent, Truck, Castle, Hotel as HotelIcon
 } from 'lucide-react';
 
 const TYPE_MAP: Record<string, { label: { en: string, fr: string, ar?: string }, icon: any }> = {

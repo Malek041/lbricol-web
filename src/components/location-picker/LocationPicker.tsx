@@ -431,7 +431,7 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
                       onClick={handleConfirmPoint}
                       disabled={isGeocoding}
                       className={cn(
-                        "w-full h-15 text-white rounded-[15px] font-black text-[18px] active:scale-95 transition-all flex items-center justify-center gap-3",
+                        "w-full h-15 text-white rounded-[5px] font-black text-[18px] active:scale-95 transition-all flex items-center justify-center gap-3",
                         isGeocoding ? 'bg-neutral-300 shadow-none' : 'bg-[#2C2C2C]'
                       )}
                     >

@@ -31,6 +31,110 @@ interface PropertyDetailViewProps {
     onClose: () => void;
 }
 
+const AMENITY_MAP: Record<string, any> = {
+    wifi: { label: { en: 'Fast Wifi', fr: 'Wifi rapide' }, icon: Wifi },
+    tv: { label: { en: 'TV', fr: 'Télévision' }, icon: Tv },
+    kitchen: { label: { en: 'Kitchen', fr: 'Cuisine' }, icon: Utensils },
+    washer: { label: { en: 'Washer', fr: 'Lave-linge' }, icon: WashingMachine },
+    parking: { label: { en: 'Free parking', fr: 'Parking gratuit' }, icon: Car },
+    ac: { label: { en: 'Air conditioning', fr: 'Climatisation' }, icon: Wind },
+    pool: { label: { en: 'Pool', fr: 'Piscine' }, icon: Waves },
+    gym: { label: { en: 'Gym', fr: 'Salle de sport' }, icon: Trophy },
+    workspace: { label: { en: 'Workspace', fr: 'Espace de travail' }, icon: Monitor },
+    smoke_alarm: { label: { en: 'Smoke alarm', fr: 'Détecteur de fumée' }, icon: ShieldAlert },
+    first_aid: { label: { en: 'First aid kit', fr: 'Kit de secours' }, icon: ShieldAlert },
+    fire_extinguisher: { label: { en: 'Fire extinguisher', fr: 'Extincteur' }, icon: Flame },
+    balcony: { label: { en: 'Balcony', fr: 'Balcon' }, icon: Fence },
+    garden: { label: { en: 'Garden', fr: 'Jardin' }, icon: TreePine },
+    bbq: { label: { en: 'BBQ', fr: 'Barbecue' }, icon: Flame },
+    beach_access: { label: { en: 'Beach access', fr: 'Accès plage' }, icon: Waves },
+    ski_access: { label: { en: 'Ski-in/Ski-out', fr: 'Accès ski' }, icon: Trophy },
+    hot_tub: { label: { en: 'Hot tub', fr: 'Jacuzzi' }, icon: Bath },
+    crib: { label: { en: 'Crib', fr: 'Lit bébé' }, icon: Baby },
+    high_chair: { label: { en: 'High chair', fr: 'Chaise haute' }, icon: Baby },
+    coffee: { label: { en: 'Coffee maker', fr: 'Machine à café' }, icon: Coffee },
+    iron: { label: { en: 'Iron', fr: 'Fer à repasser' }, icon: Check },
+    hair_dryer: { label: { en: 'Hair dryer', fr: 'Sèche-cheveux' }, icon: Wind },
+};
+
+const GUEST_SERVICE_MAP: Record<string, any> = {
+    airport_pickup: { label: { en: 'Airport pickup', fr: 'Transfert Aéroport' }, icon: Plane },
+    guest_receptionist: { label: { en: 'Guest Receptionist', fr: 'Accueil Voyageurs' }, icon: BellRing },
+    cooking: { label: { en: 'Cooking', fr: 'Cuisine' }, icon: ChefHat },
+    tour_guide: { label: { en: 'Tour Guide', fr: 'Guide Touristique' }, icon: Map },
+    private_driver: { label: { en: 'Private Driver', fr: 'Chauffeur Privé' }, icon: Car },
+    car_rental: { label: { en: 'Car Rental', fr: 'Location de Voiture' }, icon: Key },
+    learn_arabic: { label: { en: 'Learn Arabic', fr: 'Apprendre l\'arabe' }, icon: BookOpen },
+    babysitting: { label: { en: 'Babysitting', fr: 'Garde d\'enfants' }, icon: Baby },
+    elderly_care: { label: { en: 'Elderly Care', fr: 'Aide aux seniors' }, icon: Heart },
+};
+
+const FUTURE_SERVICE_MAP: Record<string, any> = {
+    home_repairs: { label: { en: 'Home Repairs', fr: 'Bricolage' }, icon: Wrench },
+    furniture_assembly: { label: { en: 'Furniture Assembly', fr: 'Montage' }, icon: Hammer },
+    mounting: { label: { en: 'Mounting', fr: 'Fixation murale' }, icon: MonitorUp },
+    moving: { label: { en: 'Moving', fr: 'Déménagement' }, icon: Truck },
+    plumbing: { label: { en: 'Plumbing', fr: 'Plomberie' }, icon: Wrench },
+    electricity: { label: { en: 'Electricity', fr: 'Électricité' }, icon: Zap },
+    painting: { label: { en: 'Painting', fr: 'Peinture' }, icon: Paintbrush },
+};
+
+const AUTOMATED_SERVICE_MAP: Record<string, any> = {
+    cleaning: { label: { en: 'Cleaning', fr: 'Nettoyage' }, icon: Sparkles },
+    glass_cleaning: { label: { en: 'Glass Cleaning', fr: 'Nettoyage de vitres' }, icon: Droplets },
+    gardening: { label: { en: 'Gardening', fr: 'Jardinage' }, icon: TreePine },
+    pool_cleaning: { label: { en: 'Pool Cleaning', fr: 'Nettoyage de piscine' }, icon: Waves },
+    errands: { label: { en: 'Errands', fr: 'Courses' }, icon: Package },
+    pets_care: { label: { en: 'Pets Care', fr: 'Soins des animaux' }, icon: PawPrint },
+    guest_receptionist: { label: { en: 'Guest Receptionist', fr: 'Accueil Voyageurs' }, icon: BellRing },
+};
+
+const SERVICE_ICONS: Record<string, any> = {
+    home_repairs: Wrench,
+    furniture_assembly: Hammer,
+    mounting: MonitorUp,
+    moving: Truck,
+    cleaning: Sparkles,
+    glass_cleaning: Droplets,
+    gardening: TreePine,
+    plumbing: Wrench,
+    electricity: Zap,
+    painting: Paintbrush,
+    babysitting: Baby,
+    pool_cleaning: Waves,
+    pets_care: PawPrint,
+    errands: Package,
+    elderly_care: Heart,
+    cooking: ChefHat,
+    tour_guide: Map,
+    private_driver: Car,
+    learn_arabic: BookOpen,
+    car_rental: Key,
+    airport_pickup: Plane,
+    guest_receptionist: BellRing,
+};
+
+const TYPE_MAP: Record<string, { label: { en: string, fr: string }, icon: any }> = {
+    apartment: { label: { en: 'Apartment', fr: 'Appartement' }, icon: Home },
+    villa: { label: { en: 'Villa', fr: 'Villa' }, icon: TbBuildingEstate },
+    guesthouse: { label: { en: 'Guesthouse', fr: 'Maison d\'hôtes' }, icon: TbBuildingCottage },
+    hotel: { label: { en: 'Hotel', fr: 'Hôtel' }, icon: HotelIcon },
+    riad: { label: { en: 'Riad', fr: 'Riad' }, icon: TbBuildingMosque },
+    barn: { label: { en: 'Barn', fr: 'Grange' }, icon: Warehouse },
+    bed_breakfast: { label: { en: 'B&B', fr: 'Chambre/B&B' }, icon: Bed },
+    boat: { label: { en: 'Boat', fr: 'Bateau' }, icon: Ship },
+    cabin: { label: { en: 'Cabin', fr: 'Cabane' }, icon: Tent },
+    camper: { label: { en: 'Camper', fr: 'Caravane' }, icon: Truck },
+    casa_particular: { label: { en: 'Casa particular', fr: 'Casa particular' }, icon: Castle },
+};
+
+const PROPERTY_TABS = [
+    { id: 'planning', label: { en: 'Planning', fr: 'Planning' } },
+    { id: 'team', label: { en: 'Team', fr: 'Équipe' } },
+    { id: 'activity', label: { en: 'Activity', fr: 'Activité' } },
+    { id: 'details', label: { en: 'Details', fr: 'Détails' } }
+] as const;
+
 const PropertyDetailView: React.FC<PropertyDetailViewProps> = ({ property, isOpen, onClose }) => {
     const { t } = useLanguage();
     const { showToast } = useToast();
@@ -103,12 +207,6 @@ const PropertyDetailView: React.FC<PropertyDetailViewProps> = ({ property, isOpe
         return () => unsubscribe();
     }, [property?.id, activeTab]);
 
-    const tabs = [
-        { id: 'planning', label: { en: 'Planning', fr: 'Planning' } },
-        { id: 'team', label: { en: 'Team', fr: 'Équipe' } },
-        { id: 'activity', label: { en: 'Activity', fr: 'Activité' } },
-        { id: 'details', label: { en: 'Details', fr: 'Détails' } }
-    ] as const;
 
     if (!property) return null;
 
@@ -135,103 +233,6 @@ const PropertyDetailView: React.FC<PropertyDetailViewProps> = ({ property, isOpe
         ? automation.futureServices
         : automationServices.filter((id: string) => FUTURE_SERVICE_MAP[id]);
 
-    const AMENITY_MAP: Record<string, any> = {
-        wifi: { label: { en: 'Fast Wifi', fr: 'Wifi rapide' }, icon: Wifi },
-        tv: { label: { en: 'TV', fr: 'Télévision' }, icon: Tv },
-        kitchen: { label: { en: 'Kitchen', fr: 'Cuisine' }, icon: Utensils },
-        washer: { label: { en: 'Washer', fr: 'Lave-linge' }, icon: WashingMachine },
-        parking: { label: { en: 'Free parking', fr: 'Parking gratuit' }, icon: Car },
-        ac: { label: { en: 'Air conditioning', fr: 'Climatisation' }, icon: Wind },
-        pool: { label: { en: 'Pool', fr: 'Piscine' }, icon: Waves },
-        gym: { label: { en: 'Gym', fr: 'Salle de sport' }, icon: Trophy },
-        workspace: { label: { en: 'Workspace', fr: 'Espace de travail' }, icon: Monitor },
-        smoke_alarm: { label: { en: 'Smoke alarm', fr: 'Détecteur de fumée' }, icon: ShieldAlert },
-        first_aid: { label: { en: 'First aid kit', fr: 'Kit de secours' }, icon: ShieldAlert },
-        fire_extinguisher: { label: { en: 'Fire extinguisher', fr: 'Extincteur' }, icon: Flame },
-        balcony: { label: { en: 'Balcony', fr: 'Balcon' }, icon: Fence },
-        garden: { label: { en: 'Garden', fr: 'Jardin' }, icon: TreePine },
-        bbq: { label: { en: 'BBQ', fr: 'Barbecue' }, icon: Flame },
-        beach_access: { label: { en: 'Beach access', fr: 'Accès plage' }, icon: Waves },
-        ski_access: { label: { en: 'Ski-in/Ski-out', fr: 'Accès ski' }, icon: Trophy },
-        hot_tub: { label: { en: 'Hot tub', fr: 'Jacuzzi' }, icon: Bath },
-        crib: { label: { en: 'Crib', fr: 'Lit bébé' }, icon: Baby },
-        high_chair: { label: { en: 'High chair', fr: 'Chaise haute' }, icon: Baby },
-        coffee: { label: { en: 'Coffee maker', fr: 'Machine à café' }, icon: Coffee },
-        iron: { label: { en: 'Iron', fr: 'Fer à repasser' }, icon: Check },
-        hair_dryer: { label: { en: 'Hair dryer', fr: 'Sèche-cheveux' }, icon: Wind },
-    };
-
-    const GUEST_SERVICE_MAP: Record<string, any> = {
-        airport_pickup: { label: { en: 'Airport pickup', fr: 'Transfert Aéroport' }, icon: Plane },
-        guest_receptionist: { label: { en: 'Guest Receptionist', fr: 'Accueil Voyageurs' }, icon: BellRing },
-        cooking: { label: { en: 'Cooking', fr: 'Cuisine' }, icon: ChefHat },
-        tour_guide: { label: { en: 'Tour Guide', fr: 'Guide Touristique' }, icon: Map },
-        private_driver: { label: { en: 'Private Driver', fr: 'Chauffeur Privé' }, icon: Car },
-        car_rental: { label: { en: 'Car Rental', fr: 'Location de Voiture' }, icon: Key },
-        learn_arabic: { label: { en: 'Learn Arabic', fr: 'Apprendre l\'arabe' }, icon: BookOpen },
-        babysitting: { label: { en: 'Babysitting', fr: 'Garde d\'enfants' }, icon: Baby },
-        elderly_care: { label: { en: 'Elderly Care', fr: 'Aide aux seniors' }, icon: Heart },
-    };
-
-    const FUTURE_SERVICE_MAP: Record<string, any> = {
-        home_repairs: { label: { en: 'Home Repairs', fr: 'Bricolage' }, icon: Wrench },
-        furniture_assembly: { label: { en: 'Furniture Assembly', fr: 'Montage' }, icon: Hammer },
-        mounting: { label: { en: 'Mounting', fr: 'Fixation murale' }, icon: MonitorUp },
-        moving: { label: { en: 'Moving', fr: 'Déménagement' }, icon: Truck },
-        plumbing: { label: { en: 'Plumbing', fr: 'Plomberie' }, icon: Wrench },
-        electricity: { label: { en: 'Electricity', fr: 'Électricité' }, icon: Zap },
-        painting: { label: { en: 'Painting', fr: 'Peinture' }, icon: Paintbrush },
-    };
-
-    const AUTOMATED_SERVICE_MAP: Record<string, any> = {
-        cleaning: { label: { en: 'Cleaning', fr: 'Nettoyage' }, icon: Sparkles },
-        glass_cleaning: { label: { en: 'Glass Cleaning', fr: 'Nettoyage de vitres' }, icon: Droplets },
-        gardening: { label: { en: 'Gardening', fr: 'Jardinage' }, icon: TreePine },
-        pool_cleaning: { label: { en: 'Pool Cleaning', fr: 'Nettoyage de piscine' }, icon: Waves },
-        errands: { label: { en: 'Errands', fr: 'Courses' }, icon: Package },
-        pets_care: { label: { en: 'Pets Care', fr: 'Soins des animaux' }, icon: PawPrint },
-        guest_receptionist: { label: { en: 'Guest Receptionist', fr: 'Accueil Voyageurs' }, icon: BellRing },
-    };
-
-    const SERVICE_ICONS: Record<string, any> = {
-        home_repairs: Wrench,
-        furniture_assembly: Hammer,
-        mounting: MonitorUp,
-        moving: Truck,
-        cleaning: Sparkles,
-        glass_cleaning: Droplets,
-        gardening: TreePine,
-        plumbing: Wrench,
-        electricity: Zap,
-        painting: Paintbrush,
-        babysitting: Baby,
-        pool_cleaning: Waves,
-        pets_care: PawPrint,
-        errands: Package,
-        elderly_care: Heart,
-        cooking: ChefHat,
-        tour_guide: Map,
-        private_driver: Car,
-        learn_arabic: BookOpen,
-        car_rental: Key,
-        airport_pickup: Plane,
-        guest_receptionist: BellRing,
-    };
-
-
-    const TYPE_MAP: Record<string, { label: { en: string, fr: string }, icon: any }> = {
-        apartment: { label: { en: 'Apartment', fr: 'Appartement' }, icon: Home },
-        villa: { label: { en: 'Villa', fr: 'Villa' }, icon: TbBuildingEstate },
-        guesthouse: { label: { en: 'Guesthouse', fr: 'Maison d\'hôtes' }, icon: TbBuildingCottage },
-        hotel: { label: { en: 'Hotel', fr: 'Hôtel' }, icon: HotelIcon },
-        riad: { label: { en: 'Riad', fr: 'Riad' }, icon: TbBuildingMosque },
-        barn: { label: { en: 'Barn', fr: 'Grange' }, icon: Warehouse },
-        bed_breakfast: { label: { en: 'B&B', fr: 'Chambre/B&B' }, icon: Bed },
-        boat: { label: { en: 'Boat', fr: 'Bateau' }, icon: Ship },
-        cabin: { label: { en: 'Cabin', fr: 'Cabane' }, icon: Tent },
-        camper: { label: { en: 'Camper', fr: 'Caravane' }, icon: Truck },
-        casa_particular: { label: { en: 'Casa particular', fr: 'Casa particular' }, icon: Castle },
-    };
 
 
     return (
@@ -704,19 +705,20 @@ const PropertyDetailView: React.FC<PropertyDetailViewProps> = ({ property, isOpe
                                 animate={{ opacity: 1, x: 0 }}
                                 exit={{ opacity: 0, x: -10 }}
                                 transition={{ duration: 0.3, ease: "easeOut" }}
-                                className="px-6 py-8 space-y-10 pb-32"
+                                className="px-6 py-8 space-y-12 pb-32"
                             >
-                                <div className="bg-white rounded-[24px] p-6 space-y-4">
-                                    <div className="flex items-center gap-3">
-
-                                        <div>
-                                            <h3 className="font-bold text-[16px] text-black">{t({ en: 'Invite a member', fr: 'Inviter un membre' })}</h3>
-                                            <p className="text-[13px] text-neutral-500">{t({ en: 'Share this code with your staff', fr: 'Partagez ce code avec votre personnel' })}</p>
-                                        </div>
+                                <div className="space-y-6">
+                                    <div className="space-y-1">
+                                        <h3 className="font-bold text-[20px] text-black tracking-tight">{t({ en: 'Invite a member', fr: 'Inviter un membre' })}</h3>
+                                        <p className="text-[14px] text-neutral-500 font-medium">{t({ en: 'Share this code with your staff to manage the property together.', fr: 'Partagez ce code avec votre personnel pour gérer le logement ensemble.' })}</p>
                                     </div>
-                                    <div className="flex items-center gap-2">
-                                        <div className="flex-1 bg-white border border-neutral-200 rounded-xl px-4 py-3 font-mono font-bold text-[18px] tracking-wider flex items-center justify-between">
-                                            {propertyCode || '---'}
+                                    
+                                    <div className="relative group">
+                                        <div className="flex items-center justify-between border-[1.5px] border-neutral-200 focus-within:border-black rounded-[5px] bg-neutral-50/50 p-5 transition-all">
+                                            <div className="flex flex-col gap-0.5">
+                                                <span className="text-[11px] font-bold text-neutral-400 uppercase tracking-widest">{t({ en: 'Invitation Code', fr: 'Code d\'invitation' })}</span>
+                                                <span className="font-mono font-black text-[24px] text-black tracking-[0.2em]">{propertyCode || '---'}</span>
+                                            </div>
                                             <button
                                                 onClick={() => {
                                                     navigator.clipboard.writeText(propertyCode);
@@ -724,16 +726,16 @@ const PropertyDetailView: React.FC<PropertyDetailViewProps> = ({ property, isOpe
                                                     showToast({ title: t({ en: 'Code copied!', fr: 'Code copié !' }), variant: 'success' });
                                                     setTimeout(() => setIsCopying(false), 2000);
                                                 }}
-                                                className="text-neutral-400 hover:text-black transition-colors"
+                                                className="w-14 h-14 rounded-[5px] flex items-center justify-center bg-white border border-neutral-200 hover:border-black transition-all active:scale-95 shadow-sm"
                                             >
-                                                {isCopying ? <Check size={18} className="text-[#00CA52]" /> : <Copy size={18} />}
+                                                {isCopying ? <Check size={22} className="text-[#01A083]" /> : <Copy size={22} className="text-black" />}
                                             </button>
                                         </div>
-
                                     </div>
                                 </div>
-                                <div className="space-y-6">
 
+                                {/* Section 2: Team Members List */}
+                                <div className="space-y-6">
                                     {isLoadingTeam ? (
                                         <div className="py-10 flex flex-col items-center gap-4">
                                             <div className="w-8 h-8 border-3 border-neutral-100 border-t-black rounded-full animate-spin" />
@@ -741,55 +743,58 @@ const PropertyDetailView: React.FC<PropertyDetailViewProps> = ({ property, isOpe
                                         </div>
                                     ) : teamMembers.length > 0 ? (
                                         <div className="space-y-4">
-                                            {teamMembers.map((member) => (
-                                                <div key={member.id} className="flex items-center gap-4 p-4 rounded-2xl border border-neutral-100 hover:border-neutral-200 transition-all bg-white shadow-sm">
-                                                    <div className="relative w-14 h-14 rounded-full overflow-hidden bg-neutral-100 border-2 border-white shrink-0">
-                                                        {member.photoURL ? (
-                                                            <img src={member.photoURL} alt="" className="w-full h-full object-cover" />
-                                                        ) : (
-                                                            <div className="w-full h-full flex items-center justify-center bg-neutral-200 text-neutral-500 font-bold text-xl">
-                                                                {member.name?.[0] || 'B'}
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                    <div className="flex-1 min-w-0">
-                                                        <h4 className="font-bold text-[16px] text-black truncate">{member.name}</h4>
-                                                        <div className="flex items-center gap-2 mt-0.5">
-                                                            <span className="text-[12px] font-bold text-[#00CA52] bg-[#E6F6F2] px-2 py-0.5 rounded-md uppercase tracking-wider">
-                                                                {member.role === 'admin' ? 'Admin' : 'Staff'}
-                                                            </span>
-                                                            <div className="w-1 h-1 rounded-full bg-neutral-300" />
-                                                            <span className="text-[12px] text-neutral-400 font-medium truncate">
-                                                                {member.skills?.map((s: string) => AUTOMATED_SERVICE_MAP[s]?.label.fr || s).join(', ')}
-                                                            </span>
+                                            <h3 className="font-bold text-[18px] text-black tracking-tight">{t({ en: 'Team Members', fr: 'Membres de l\'équipe' })} ({teamMembers.length})</h3>
+                                            <div className="space-y-2">
+                                                {teamMembers.map((member) => (
+                                                    <div key={member.id} className="flex items-center gap-4 p-4 rounded-[5px] border border-neutral-100 hover:border-neutral-200 transition-all bg-white">
+                                                        <div className="relative w-12 h-12 rounded-[5px] overflow-hidden bg-neutral-100 shrink-0">
+                                                            {member.photoURL ? (
+                                                                <img src={member.photoURL} alt="" className="w-full h-full object-cover" />
+                                                            ) : (
+                                                                <div className="w-full h-full flex items-center justify-center bg-neutral-200 text-neutral-500 font-bold text-lg">
+                                                                    {member.name?.[0] || 'B'}
+                                                                </div>
+                                                            )}
                                                         </div>
-                                                    </div>
-                                                    <button
-                                                        onClick={async () => {
-                                                            if (confirm(t({ en: 'Remove this member?', fr: 'Retirer ce membre ?' }))) {
-                                                                try {
-                                                                    await deleteDoc(doc(db, 'properties', property.id, 'team', member.id));
-                                                                    showToast({ title: t({ en: 'Member removed', fr: 'Membre retiré' }), variant: 'success' });
-                                                                } catch (err) {
-                                                                    showToast({ title: 'Error removing member', variant: 'error' });
+                                                        <div className="flex-1 min-w-0">
+                                                            <h4 className="font-bold text-[16px] text-black truncate">{member.name}</h4>
+                                                            <div className="flex items-center gap-2 mt-0.5">
+                                                                <span className="text-[11px] font-bold text-[#01A083] uppercase tracking-wider">
+                                                                    {member.role === 'admin' ? 'Admin' : 'Staff'}
+                                                                </span>
+                                                                <div className="w-1 h-1 rounded-full bg-neutral-300" />
+                                                                <span className="text-[12px] text-neutral-400 font-medium truncate">
+                                                                    {member.skills?.map((s: string) => AUTOMATED_SERVICE_MAP[s]?.label.fr || s).join(', ')}
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                        <button
+                                                            onClick={async () => {
+                                                                if (confirm(t({ en: 'Remove this member?', fr: 'Retirer ce membre ?' }))) {
+                                                                    try {
+                                                                        await deleteDoc(doc(db, 'properties', property.id, 'team', member.id));
+                                                                        showToast({ title: t({ en: 'Member removed', fr: 'Membre retiré' }), variant: 'success' });
+                                                                    } catch (err) {
+                                                                        showToast({ title: 'Error removing member', variant: 'error' });
+                                                                    }
                                                                 }
-                                                            }
-                                                        }}
-                                                        className="w-10 h-10 rounded-full flex items-center justify-center text-neutral-300 hover:text-red-500 hover:bg-red-50 transition-all"
-                                                    >
-                                                        <X size={18} />
-                                                    </button>
-                                                </div>
-                                            ))}
+                                                            }}
+                                                            className="w-10 h-10 rounded-[5px] flex items-center justify-center text-neutral-300 hover:text-red-500 hover:bg-red-50 transition-all"
+                                                        >
+                                                            <X size={18} />
+                                                        </button>
+                                                    </div>
+                                                ))}
+                                            </div>
                                         </div>
                                     ) : (
-                                        <div className="py-12 px-6 rounded-[10px]  flex flex-col items-center text-center space-y-4">
-                                            <div className="w-16 h-16 rounded-full bg-neutral-50 flex items-center justify-center">
-                                                <User size={50} className="text-[#2C2C2C]" />
+                                        <div className="py-12 px-6 rounded-[5px] bg-neutral-50 flex flex-col items-center text-center space-y-4">
+                                            <div className="w-20 h-20 rounded-full bg-white flex items-center justify-center">
+                                                <Users size={32} className="text-neutral-200" />
                                             </div>
                                             <div className="space-y-1">
-                                                <h4 className="font-bold text-black">{t({ en: 'No team members yet', fr: 'Aucun membre d\'équipe' })}</h4>
-                                                <p className="text-sm text-neutral-400 max-w-[200px] mx-auto">{t({ en: 'Invite your staff to manage the property together.', fr: 'Invitez votre personnel pour gérer le logement ensemble.' })}</p>
+                                                <h4 className="font-bold text-black text-[17px]">{t({ en: 'No team members yet', fr: 'Aucun membre d\'équipe' })}</h4>
+                                                <p className="text-[14px] text-neutral-500 max-w-[240px] mx-auto font-medium leading-relaxed">{t({ en: 'Invite your staff using the code above to manage the property together.', fr: 'Invitez votre personnel à l\'aide du code ci-dessus pour gérer le logement ensemble.' })}</p>
                                             </div>
                                         </div>
                                     )}
@@ -807,11 +812,11 @@ const PropertyDetailView: React.FC<PropertyDetailViewProps> = ({ property, isOpe
                                         })}
                                     </p>
                                     <div className="space-y-4">
+                                    <div className="space-y-3">
                                         {managedBricolers.map((b) => (
-                                            <div key={b.id} className="group flex items-center gap-4 p-4 rounded-2xl border border-neutral-100 bg-white hover:border-black transition-all cursor-pointer">
-                                                <div className="relative w-14 h-14 rounded-full overflow-hidden bg-neutral-100 shrink-0">
+                                            <div key={b.id} className="group flex items-center gap-4 p-4 rounded-[5px] border border-neutral-100 bg-white hover:border-black transition-all cursor-pointer">
+                                                <div className="relative w-12 h-12 rounded-[5px] overflow-hidden bg-neutral-100 shrink-0">
                                                     <img src={b.photoURL || b.avatar || b.profilePhotoURL} alt="" className="w-full h-full object-cover" />
-                                                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
                                                 </div>
                                                 <div className="flex-1 min-w-0">
                                                     <div className="flex items-center gap-2">
@@ -825,14 +830,15 @@ const PropertyDetailView: React.FC<PropertyDetailViewProps> = ({ property, isOpe
                                                         {b.serviceIds?.map((s: string) => s.charAt(0).toUpperCase() + s.slice(1)).join(', ')}
                                                     </p>
                                                 </div>
-                                                <button className="px-4 py-2 bg-black text-white rounded-full text-[12px] font-bold active:scale-95 transition-all">
+                                                <button className="px-5 py-2.5 bg-black text-white rounded-full text-[12px] font-bold active:scale-95 transition-all">
                                                     {t({ en: 'Book', fr: 'Réserver' })}
                                                 </button>
                                             </div>
                                         ))}
-                                        <button className="w-full bg-[#2C2C2C] py-4 text-center text-white font-bold text-[15px]  rounded-xl hover:bg-neutral-50 transition-all">
+                                        <button className="w-full bg-[#2C2C2C] py-4.5 h-14 flex items-center justify-center text-white font-bold text-[15px] rounded-[5px] active:scale-[0.98] transition-all">
                                             {t({ en: 'See all local pros', fr: 'Voir tous les pros locaux' })}
                                         </button>
+                                    </div>
                                     </div>
                                 </div>
                             </motion.div>
@@ -894,7 +900,7 @@ const PropertyDetailView: React.FC<PropertyDetailViewProps> = ({ property, isOpe
                                 transition={{ type: 'spring', damping: 20, stiffness: 100, delay: 0.3 }}
                                 className="fixed bottom-0 left-0 right-0 z-[10110] bg-white border-t border-neutral-100 flex justify-around items-center px-4 py-2 pb-safe shadow-[0_-4px_20px_rgba(0,0,0,0.05)]"
                             >
-                                {tabs.map((tab) => (
+                                {PROPERTY_TABS.map((tab) => (
                                     <button
                                         key={tab.id}
                                         onClick={() => {
