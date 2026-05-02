@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     X, Share, Heart, ChevronLeft, ChevronRight, Star,
-    Home, User, Shield, Info, MapPin, Wifi, Car,
+    Home, User, Users, Shield, Info, MapPin, Wifi, Car,
     Coffee, Tv, Wind, Globe, Languages, Sparkles,
     Trophy, Key, Maximize, Languages as TranslateIcon,
     QrCode, Copy, Clock, Check, Flame, Waves, TreePine,
