@@ -3189,8 +3189,8 @@ const GardeningDetailForm = ({ data, onChange, onUploadingChange }: any) => {
                         ].map((freq: any) => (
                             <button
                                 key={freq.id}
-                                onClick={() => onChange({ gardeningFrequency: freq.id })}
-                                className={`p-4 rounded-full border text-center transition-all ${data.gardeningFrequency === freq.id
+                                onClick={() => onChange({ frequency: freq.id })}
+                                className={`p-4 rounded-full border text-center transition-all ${data.frequency === freq.id
                                     ? 'border-black border-[2px] bg-neutral-50'
                                     : 'border-neutral-200 hover:border-black bg-white'
                                     }`}
