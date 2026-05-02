@@ -888,8 +888,8 @@ const PropertyDetailView: React.FC<PropertyDetailViewProps> = ({ property, isOpe
                                             </div>
                                         </div>
                                     ) : (
-                                        <div className="py-12 px-6 rounded-[5px] bg-neutral-50 flex flex-col items-center text-center space-y-4">
-                                            <div className="w-24 h-24 mb-2">
+                                        <div className="py-12 px-6 rounded-[5px] bg-white flex flex-col items-center text-center space-y-4">
+                                            <div className="w-54 h-54 mb-2">
                                                 <img src="/Images/ChatGPT Image May 2, 2026, 07_57_34 PM.png" className="w-full h-full object-contain" alt="" />
                                             </div>
                                             <div className="space-y-1">
