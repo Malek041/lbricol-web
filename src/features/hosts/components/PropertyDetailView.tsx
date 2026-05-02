@@ -904,16 +904,36 @@ const PropertyDetailView: React.FC<PropertyDetailViewProps> = ({ property, isOpe
                                     <button
                                         key={tab.id}
                                         onClick={() => {
-                                            if (tab.id === 'planning' && activeTab === 'planning' && viewMode === 'day') {
-                                                setViewMode('month');
+                                            if (tab.id === 'planning') {
+                                                if (activeTab === 'planning') {
+                                                    if (viewMode === 'day') {
+                                                        setViewMode('month');
+                                                    } else {
+                                                        scrollToCurrent();
+                                                    }
+                                                } else {
+                                                    setActiveTab('planning');
+                                                }
                                             } else {
                                                 setActiveTab(tab.id as any);
                                             }
                                         }}
                                         className="flex flex-col items-center gap-1 py-2 flex-1 transition-all"
                                     >
-                                        <div className={`relative px-6 py-2 rounded-full font-bold text-[13px] ${activeTab === tab.id ? 'bg-[#2C2C2C] text-white' : 'text-neutral-500'}`}>
-                                            {t(tab.label)}
+                                        <div className="relative h-full flex items-center justify-center">
+                                            {activeTab === tab.id && (
+                                                <motion.div
+                                                    layoutId="activeTabPill"
+                                                    className="absolute inset-0 bg-[#2C2C2C] rounded-full"
+                                                    transition={{ type: 'spring', bounce: 0.2, duration: 0.6 }}
+                                                />
+                                            )}
+                                            <span className={cn(
+                                                "relative z-10 px-6 py-2 rounded-full font-bold text-[13px] transition-colors duration-300",
+                                                activeTab === tab.id ? 'text-white' : 'text-neutral-500 hover:text-neutral-800'
+                                            )}>
+                                                {t(tab.label)}
+                                            </span>
                                         </div>
                                     </button>
                                 ))}

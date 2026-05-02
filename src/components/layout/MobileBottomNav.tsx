@@ -1,6 +1,7 @@
 "use client";
 
 import React from 'react';
+import { motion } from 'framer-motion';
 import { ShoppingBag, Star, User, Home, Calendar, TrendingUp, MessageSquare, Search, Zap } from 'lucide-react';
 import { useTheme } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
@@ -144,41 +145,51 @@ const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
                                 width: circleSize,
                                 height: circleSize,
                                 borderRadius: '50%',
-                                backgroundColor: isActive ? softYellowBg : 'transparent',
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',
-                                transition: 'all 0.2s ease',
                                 marginBottom: '2px',
                                 position: 'relative'
                             }}
                         >
-                            {isActive ? (
-                                <>
-                                    {/* Sub-layer for the solid yellow fill */}
-                                    <Icon
-                                        size={iconSize}
-                                        strokeWidth={0}
-                                        fill={brandYellow}
-                                        style={{ position: 'absolute' }}
-                                    />
-                                    {/* Top layer for the black outline and internal details */}
+                            {isActive && (
+                                <motion.div
+                                    layoutId="mobileNavPill"
+                                    style={{
+                                        position: 'absolute',
+                                        inset: 0,
+                                        borderRadius: '50%',
+                                        backgroundColor: softYellowBg,
+                                    }}
+                                    transition={{ type: 'spring', bounce: 0.2, duration: 0.6 }}
+                                />
+                            )}
+                            <div style={{ position: 'relative', zIndex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                {isActive ? (
+                                    <>
+                                        <Icon
+                                            size={iconSize}
+                                            strokeWidth={0}
+                                            fill={brandYellow}
+                                            style={{ position: 'absolute' }}
+                                        />
+                                        <Icon
+                                            size={iconSize}
+                                            strokeWidth={2}
+                                            color="#000000"
+                                            fill="none"
+                                            style={{ position: 'relative', zIndex: 1 }}
+                                        />
+                                    </>
+                                ) : (
                                     <Icon
                                         size={iconSize}
                                         strokeWidth={2}
-                                        color="#000000"
+                                        color={inactiveColor}
                                         fill="none"
-                                        style={{ position: 'relative', zIndex: 1 }}
                                     />
-                                </>
-                            ) : (
-                                <Icon
-                                    size={iconSize}
-                                    strokeWidth={2}
-                                    color={inactiveColor}
-                                    fill="none"
-                                />
-                            )}
+                                )}
+                            </div>
                         </div>
                         <span
                             style={{
