@@ -287,7 +287,7 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
 
     // Gardening Details State
     const [gardeningSubServices, setGardeningSubServices] = useState<string[]>([]);
-    const [gardenSize, setGardenSize] = useState<'small' | 'medium' | 'large' | 'estate'>('medium');
+    const [gardenSize, setGardenSize] = useState<'small' | 'medium' | 'big' | 'bigger'>('medium');
     const [shouldBringMower, setShouldBringMower] = useState<boolean>(false);
     const [treeCount, setTreeCount] = useState(1);
     const [averageTreeHeight, setAverageTreeHeight] = useState<number>(2);
@@ -2996,86 +2996,186 @@ const GardeningDetailForm = ({ data, onChange, onUploadingChange }: any) => {
         onChange({ subServices: next });
     };
 
+    const gardeningTypes = [
+        {
+            id: 'lawn',
+            label: 'Lawn Mowing',
+            fr: 'Tonte pelouse',
+            emoji: '🌱',
+            hasMower: true
+        },
+        {
+            id: 'pruning',
+            label: 'Tree Pruning',
+            fr: 'Élagage',
+            emoji: '🌳',
+            hasTreeSpecs: true
+        },
+        {
+            id: 'maintenance',
+            label: 'General Maintenance',
+            fr: 'Entretien général',
+            emoji: '🌿',
+            hasSubOptions: true
+        }
+    ];
+
     return (
-        <div className="flex-1 overflow-y-auto pb-32">
-            <h2 className="font-medium text-[32px] text-black leading-tight tracking-tight mb-8">
+        <div className="flex-1 overflow-y-auto pb-32 no-scrollbar">
+            <h2 className="font-bold text-[32px] text-[#222222] leading-tight tracking-tight mb-8">
                 {t({ en: 'Gardening Details', fr: 'Détails du Jardinage' })}
             </h2>
 
             <div className="space-y-12">
-                <div className="space-y-4">
-                    <h3 className="font-medium text-[20px] text-black">{t({ en: 'What needs attention?', fr: 'De quoi s\'occuper ?' })}</h3>
+                {/* Garden Size Section */}
+                <div className="space-y-6">
+                    <h3 className="text-[17px] font-medium text-[#222222]">{t({ en: 'Garden Size', fr: 'Taille du jardin' })}</h3>
                     <div className="grid grid-cols-2 gap-3">
                         {[
-                            { id: 'lawn', label: 'Lawn Mowing', fr: 'Tonte pelouse', emoji: '🌱' },
-                            { id: 'pruning', label: 'Tree Pruning', fr: 'Élagage', emoji: '🌳' },
-                            { id: 'weeding', label: 'Weeding', fr: 'Désherbage', emoji: '🌿' },
-                            { id: 'watering', label: 'Watering', fr: 'Arrosage', emoji: '💧' }
-                        ].map((item: any) => (
+                            { id: 'small', label: 'Small', fr: 'Petit', desc: '< 50m²' },
+                            { id: 'medium', label: 'Medium', fr: 'Moyen', desc: '50-150m²' },
+                            { id: 'big', label: 'Big', fr: 'Grand', desc: '150-300m²' },
+                            { id: 'bigger', label: 'Bigger', fr: 'Plus grand', desc: '> 300m²' }
+                        ].map((item) => (
                             <button
                                 key={item.id}
-                                onClick={() => toggleSubService(item.id)}
-                                className={`p-5 rounded-[5px] border transition-all text-left flex flex-col gap-3 ${(data.subServices || []).includes(item.id)
-                                    ? 'border-black border-[2px] bg-neutral-50'
+                                onClick={() => onChange({ gardenSize: item.id })}
+                                className={`p-4 rounded-[5px] border text-left transition-all ${data.gardenSize === item.id
+                                    ? 'border-black border-[2px] bg-white'
                                     : 'border-neutral-200 hover:border-black bg-white'
                                     }`}
                             >
-                                <span className="text-2xl">{item.emoji}</span>
-                                <span className="text-[16px] font-semibold text-black">{t({ en: item.label, fr: item.fr })}</span>
+                                <div className="font-bold text-[16px] text-black">{t({ en: item.label, fr: item.fr })}</div>
+                                <div className="text-[13px] text-neutral-500">{item.desc}</div>
                             </button>
                         ))}
                     </div>
                 </div>
 
+                {/* The 3 Accordions */}
                 <div className="space-y-6">
-                    <div className="p-6 rounded-[5px] border border-neutral-100 bg-neutral-50/50 space-y-2">
-                        <h3 className="font-medium text-[18px] text-black mb-4">{t({ en: 'Garden Specs', fr: 'Caractéristiques' })}</h3>
-                        <CounterRow
-                            label={t({ en: 'Garden Size (m²)', fr: 'Taille du jardin (m²)' })}
-                            value={data.gardenSize || 100}
-                            onChange={(val) => onChange({ gardenSize: val })}
-                            min={10}
-                        />
-                        <CounterRow
-                            label={t({ en: 'Number of trees', fr: 'Nombre d\'arbres' })}
-                            value={data.treeCount || 0}
-                            onChange={(val) => onChange({ treeCount: val })}
-                            min={0}
-                        />
-                        <CounterRow
-                            label={t({ en: 'Avg. Tree Height (m)', fr: 'Haut. moyenne (m)' })}
-                            value={data.averageTreeHeight || 2}
-                            onChange={(val) => onChange({ averageTreeHeight: val })}
-                            min={1}
-                        />
-                    </div>
+                    <h3 className="text-[17px] font-medium text-[#222222]">{t({ en: 'What needs attention?', fr: 'De quoi s\'occuper ?' })}</h3>
+                    <div className="space-y-4">
+                        {gardeningTypes.map((item) => {
+                            const isSelected = (data.subServices || []).includes(item.id) ||
+                                (item.id === 'maintenance' && (data.subServices || []).some(id => ['weeding', 'watering'].includes(id)));
 
-                    <div className="p-6 rounded-[5px] border border-neutral-100 bg-white space-y-6">
-                        <div className="flex items-start justify-between gap-4">
-                            <div className="flex flex-col gap-1 flex-1">
-                                <span className="text-[17px] font-medium text-black leading-tight">{t({ en: 'Should bring mower?', fr: 'Doit apporter la tondeuse ?' })}</span>
-                                <span className="text-[14px] text-neutral-500">{t({ en: 'Check if you don\'t have one on-site', fr: 'Cochez si vous n\'en avez pas sur place' })}</span>
-                            </div>
-                            <button
-                                onClick={() => onChange({ shouldBringMower: !data.shouldBringMower })}
-                                className={`w-14 h-8 rounded-full transition-all flex items-center px-1 shrink-0 ${data.shouldBringMower ? 'bg-black' : 'bg-neutral-200'}`}
-                            >
-                                <div className={`w-6 h-6 rounded-full bg-white transition-all ${data.shouldBringMower ? 'translate-x-6' : 'translate-x-0'}`} />
-                            </button>
-                        </div>
+                            return (
+                                <div
+                                    key={item.id}
+                                    className={`relative rounded-[5px] border transition-all duration-300 ${isSelected
+                                        ? 'border-black border-[1px] bg-white'
+                                        : 'border-neutral-200 hover:border-black bg-white'
+                                        }`}
+                                >
+                                    <button
+                                        onClick={() => {
+                                            if (item.id === 'maintenance') {
+                                                const current = data.subServices || [];
+                                                const hasAny = current.some(id => ['weeding', 'watering'].includes(id));
+                                                if (hasAny) {
+                                                    onChange({ subServices: current.filter(id => id !== 'weeding' && id !== 'watering') });
+                                                } else {
+                                                    onChange({ subServices: [...current, 'weeding'] });
+                                                }
+                                            } else {
+                                                toggleSubService(item.id);
+                                            }
+                                        }}
+                                        className="w-full flex items-center justify-between px-10 py-12 text-left"
+                                    >
+                                        <div className="flex-1 pr-20">
+                                            <span className="text-[23px] font-bold text-[#222222] leading-tight block">
+                                                {t({ en: item.label, fr: item.fr })}
+                                            </span>
+                                        </div>
+                                        <div className="shrink-0 text-4xl">
+                                            {item.emoji}
+                                        </div>
+                                        {isSelected && (
+                                            <div className="absolute top-5 right-5 w-8 h-8 bg-[#222222] rounded-full flex items-center justify-center">
+                                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                    <path d="M4 12L10 18L20 6" stroke="white" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
+                                                </svg>
+                                            </div>
+                                        )}
+                                    </button>
 
-                        <div className="flex items-start justify-between gap-4 pt-4 border-t border-neutral-50">
-                            <div className="flex flex-col gap-1 flex-1">
-                                <span className="text-[17px] font-medium text-black leading-tight">{t({ en: 'Waste removal included?', fr: 'Évacuation des déchets ?' })}</span>
-                                <span className="text-[14px] text-neutral-500">{t({ en: 'Remove green waste from the property', fr: 'Évacuer les déchets verts de la propriété' })}</span>
-                            </div>
-                            <button
-                                onClick={() => onChange({ isWasteRemovalIncluded: !data.isWasteRemovalIncluded })}
-                                className={`w-14 h-8 rounded-full transition-all flex items-center px-1 shrink-0 ${data.isWasteRemovalIncluded ? 'bg-black' : 'bg-neutral-200'}`}
-                            >
-                                <div className={`w-6 h-6 rounded-full bg-white transition-all ${data.isWasteRemovalIncluded ? 'translate-x-6' : 'translate-x-0'}`} />
-                            </button>
-                        </div>
+                                    {isSelected && item.hasMower && (
+                                        <div className="px-10 pb-10 pt-2 border-t border-neutral-50">
+                                            <div className="flex items-center justify-between gap-4">
+                                                <div className="flex flex-col gap-1 flex-1">
+                                                    <span className="text-[17px] font-medium text-black leading-tight">{t({ en: 'Should bring mower?', fr: 'Doit apporter la tondeuse ?' })}</span>
+                                                    <span className="text-[14px] text-neutral-500">{t({ en: 'Check if you don\'t have one on-site', fr: 'Cochez si vous n\'en avez pas sur place' })}</span>
+                                                </div>
+                                                <button
+                                                    onClick={() => onChange({ shouldBringMower: !data.shouldBringMower })}
+                                                    className={`w-14 h-8 rounded-full transition-all flex items-center px-1 shrink-0 ${data.shouldBringMower ? 'bg-black' : 'bg-neutral-200'}`}
+                                                >
+                                                    <div className={`w-6 h-6 rounded-full bg-white transition-all ${data.shouldBringMower ? 'translate-x-6' : 'translate-x-0'}`} />
+                                                </button>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {isSelected && item.hasTreeSpecs && (
+                                        <div className="px-10 pb-10 pt-2 border-t border-neutral-50 space-y-6">
+                                            <div className="p-6 rounded-[5px] border border-neutral-100 bg-neutral-50/50 space-y-4">
+                                                <CounterRow
+                                                    label={t({ en: 'Number of trees', fr: 'Nombre d\'arbres' })}
+                                                    value={data.treeCount || 0}
+                                                    onChange={(val) => onChange({ treeCount: val })}
+                                                    min={0}
+                                                />
+                                                <CounterRow
+                                                    label={t({ en: 'Avg. Tree Height (m)', fr: 'Haut. moyenne (m)' })}
+                                                    value={data.averageTreeHeight || 2}
+                                                    onChange={(val) => onChange({ averageTreeHeight: val })}
+                                                    min={1}
+                                                />
+                                            </div>
+                                            <div className="flex items-center justify-between gap-4">
+                                                <div className="flex flex-col gap-1 flex-1">
+                                                    <span className="text-[17px] font-medium text-black leading-tight">{t({ en: 'Waste removal included?', fr: 'Évacuation des déchets ?' })}</span>
+                                                    <span className="text-[14px] text-neutral-500">{t({ en: 'Remove green waste from the property', fr: 'Évacuer les déchets verts de la propriété' })}</span>
+                                                </div>
+                                                <button
+                                                    onClick={() => onChange({ isWasteRemovalIncluded: !data.isWasteRemovalIncluded })}
+                                                    className={`w-14 h-8 rounded-full transition-all flex items-center px-1 shrink-0 ${data.isWasteRemovalIncluded ? 'bg-black' : 'bg-neutral-200'}`}
+                                                >
+                                                    <div className={`w-6 h-6 rounded-full bg-white transition-all ${data.isWasteRemovalIncluded ? 'translate-x-6' : 'translate-x-0'}`} />
+                                                </button>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {isSelected && item.hasSubOptions && (
+                                        <div className="px-10 pb-10 pt-2 border-t border-neutral-50">
+                                            <div className="flex flex-wrap gap-3">
+                                                {[
+                                                    { id: 'weeding', label: 'Weeding', fr: 'Désherbage' },
+                                                    { id: 'watering', label: 'Watering', fr: 'Arrosage' }
+                                                ].map((sub) => {
+                                                    const isSubActive = (data.subServices || []).includes(sub.id);
+                                                    return (
+                                                        <button
+                                                            key={sub.id}
+                                                            onClick={() => toggleSubService(sub.id)}
+                                                            className={`px-6 py-3 rounded-full text-[14px] transition-all border ${isSubActive
+                                                                ? 'border-black bg-white text-black font-bold'
+                                                                : 'border-neutral-200 hover:border-black bg-white font-bold'
+                                                                }`}
+                                                        >
+                                                            {t({ en: sub.label, fr: sub.fr })}
+                                                        </button>
+                                                    );
+                                                })}
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            );
+                        })}
                     </div>
                 </div>
 
@@ -3132,47 +3232,63 @@ const GardeningDetailForm = ({ data, onChange, onUploadingChange }: any) => {
                                             const next = (data.checklist || []).filter((_: any, i: number) => i !== idx);
                                             onChange({ checklist: next.length === 0 ? [''] : next });
                                         }}
-                                        className="p-2 text-neutral-400 hover:text-black hover:bg-neutral-50 rounded-full transition-all"
+                                        className="opacity-0 group-hover:opacity-100 p-2 text-neutral-400 hover:text-red-500 transition-all"
                                     >
                                         <X size={18} />
                                     </button>
                                 )}
                             </div>
                         ))}
+                        <button
+                            onClick={() => onChange({ checklist: [...(data.checklist || []), ''] })}
+                            className="flex items-center gap-2 text-black/50 hover:text-black transition-all pt-2"
+                        >
+                            <Plus size={18} />
+                            <span className="text-sm font-medium">{t({ en: 'Add item', fr: 'Ajouter un élément' })}</span>
+                        </button>
                     </div>
                 </div>
 
                 <div className="space-y-4">
-                    <h3 className="font-medium text-[20px] text-black">{t({ en: 'Reference Photos', fr: 'Photos de Référence' })}</h3>
-                    <div className="grid grid-cols-3 gap-4">
-                        {(data.referencePhotos || []).map((url: any, i: number) => (
-                            <div key={url} className="relative aspect-square rounded-[5px] overflow-hidden border border-neutral-100">
-                                <img src={url} alt="Reference" className="w-full h-full object-cover" />
+                    <h3 className="font-medium text-[20px] text-black">{t({ en: 'Reference Photos', fr: 'Photos de référence' })}</h3>
+                    <div className="grid grid-cols-3 gap-3">
+                        {(data.referencePhotos || []).map((url: string, idx: number) => (
+                            <div key={idx} className="relative aspect-square rounded-[5px] overflow-hidden bg-neutral-100 group">
+                                <img src={url} alt="Garden spec" className="w-full h-full object-cover" />
                                 <button
-                                    onClick={() => onChange({ referencePhotos: data.referencePhotos.filter((_: any, idx: number) => idx !== i) })}
-                                    className="absolute top-2 right-2 w-7 h-7 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center border border-neutral-100"
+                                    onClick={() => {
+                                        const next = (data.referencePhotos || []).filter((_: any, i: number) => i !== idx);
+                                        onChange({ referencePhotos: next });
+                                    }}
+                                    className="absolute top-2 right-2 w-8 h-8 bg-black/50 hover:bg-black text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all"
                                 >
-                                    <X size={14} className="text-black" />
+                                    <X size={16} />
                                 </button>
                             </div>
                         ))}
                         <button
                             onClick={() => photoInputRef.current?.click()}
-                            className="aspect-square rounded-[5px] border-2 border-dashed border-neutral-200 flex flex-col items-center justify-center gap-2 hover:border-black hover:bg-neutral-50 transition-all text-neutral-400 hover:text-black"
+                            disabled={isUploading}
+                            className="aspect-square rounded-[5px] border-2 border-dashed border-neutral-200 flex flex-col items-center justify-center gap-2 hover:border-black hover:bg-neutral-50 transition-all group"
                         >
                             {isUploading ? (
-                                <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1, ease: "linear" }}>
-                                    <Plus size={24} />
-                                </motion.div>
+                                <div className="w-6 h-6 border-2 border-black border-t-transparent rounded-full animate-spin" />
                             ) : (
                                 <>
-                                    <Plus size={24} />
-                                    <span className="text-[12px] font-medium uppercase tracking-wider">{t({ en: 'Add', fr: 'Ajouter' })}</span>
+                                    <Camera size={24} className="text-neutral-400 group-hover:text-black transition-all" />
+                                    <span className="text-xs font-medium text-neutral-500 group-hover:text-black">{t({ en: 'Add photos', fr: 'Ajouter des photos' })}</span>
                                 </>
                             )}
                         </button>
                     </div>
-                    <input type="file" multiple hidden ref={photoInputRef} onChange={handlePhotoUpload} accept="image/*" />
+                    <input
+                        type="file"
+                        ref={photoInputRef}
+                        onChange={handlePhotoUpload}
+                        className="hidden"
+                        multiple
+                        accept="image/*"
+                    />
                 </div>
             </div>
         </div>
