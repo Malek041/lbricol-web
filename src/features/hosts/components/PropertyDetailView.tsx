@@ -889,8 +889,8 @@ const PropertyDetailView: React.FC<PropertyDetailViewProps> = ({ property, isOpe
                                         </div>
                                     ) : (
                                         <div className="py-12 px-6 rounded-[5px] bg-neutral-50 flex flex-col items-center text-center space-y-4">
-                                            <div className="w-20 h-20 rounded-full bg-white flex items-center justify-center">
-                                                <Users size={32} className="text-neutral-200" />
+                                            <div className="w-24 h-24 mb-2">
+                                                <img src="/Images/ChatGPT Image May 2, 2026, 07_57_34 PM.png" className="w-full h-full object-contain" alt="" />
                                             </div>
                                             <div className="space-y-1">
                                                 <h4 className="font-bold text-black text-[17px]">{t({ en: 'No team members yet', fr: 'Aucun membre d\'équipe' })}</h4>
@@ -2600,6 +2600,8 @@ const PropertyDetailView: React.FC<PropertyDetailViewProps> = ({ property, isOpe
                                                 avatarUrl: b.avatarUrl || b.avatar || b.photoURL,
                                                 isLive: b.isLive,
                                                 activity: activityName,
+                                                rate: b.minRate || b.hourlyRate || 80,
+                                                taskCount: b.taskCount || 0,
                                                 isSelected: b.id === focusedMapBricolerId,
                                             };
                                         })}
