@@ -3,20 +3,26 @@
 import { safeStorage } from '@/lib/safeStorage';
 import React, { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Check, Search, ChevronLeft, Calendar, Info, Wrench, Banknote, Clock, Trash2, Star, MessageCircle, ArrowRight } from 'lucide-react';
+import WaveTop from '@/components/shared/WaveTop';
+import { X, Check, Search, ChevronLeft, Calendar, Info, Wrench, Banknote, Clock, Trash2, Star, MessageCircle, ArrowRight, User, Plus, CheckCircle2, MoreHorizontal } from 'lucide-react';
+import { useIsMobileViewport } from '@/hooks/useIsMobileViewport';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/context/LanguageContext';
+import { 
+    collection,
+    query,
     where,
+    getDocs,
+    doc,
+    getDoc,
     serverTimestamp,
-    addDoc
+    addDoc 
 } from 'firebase/firestore';
 import { ref, uploadBytes as uploadStorageBytes, getDownloadURL as getStorageDownloadURL } from 'firebase/storage';
 import { db, auth, storage } from '@/lib/firebase';
 import { getServiceById, getSubServiceName, SERVICES_HIERARCHY, getServiceVector } from '@/config/services_config';
 import { OrderDetails } from '@/features/orders/components/OrderCard';
-import { cn } from '@/lib/utils';
 import { isImageDataUrl } from '@/lib/imageCompression';
-import { Banknote, Info, Wrench, Upload, Search, Check, Trash2 } from 'lucide-react';
 
 interface HeroesViewProps {
     orders: OrderDetails[];
