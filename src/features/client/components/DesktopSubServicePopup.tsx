@@ -5,6 +5,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, ChevronRight, Info } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
 import { getServiceById, getServiceVector } from '@/config/services_config';
+import { useIsMobileViewport } from '@/lib/mobileOnly';
+import { cn } from '@/lib/utils';
+import WaveTop from '@/components/shared/WaveTop';
 
 interface DesktopSubServicePopupProps {
   isOpen: boolean;
@@ -20,6 +23,7 @@ export const DesktopSubServicePopup: React.FC<DesktopSubServicePopupProps> = ({
   onSelectSubService
 }) => {
   const { t } = useLanguage();
+  const isMobile = useIsMobileViewport(968);
   if (!serviceId) return null;
 
   const config = getServiceById(serviceId);
@@ -30,20 +34,28 @@ export const DesktopSubServicePopup: React.FC<DesktopSubServicePopupProps> = ({
   return (
     <AnimatePresence>
       {isOpen && (
-        <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4">
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          onClick={onClose}
+          className="fixed inset-0 z-[10000] flex items-end md:items-center justify-center bg-black/40 backdrop-blur-sm p-0 md:p-4"
+        >
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={onClose}
-            className="absolute inset-0 bg-black/40 backdrop-blur-sm"
-          />
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            className="relative bg-white w-full max-w-4xl rounded-[32px] overflow-hidden shadow-2xl flex max-h-[85vh]"
+            initial={isMobile ? { y: '100%' } : { opacity: 0, scale: 0.95, y: 20 }}
+            animate={isMobile ? { y: 0 } : { opacity: 1, scale: 1, y: 0 }}
+            exit={isMobile ? { y: '100%' } : { opacity: 0, scale: 0.95, y: 20 }}
+            transition={{ type: 'spring', damping: 28, stiffness: 320 }}
+            className={cn(
+              "relative bg-white w-full max-w-4xl shadow-2xl flex max-h-[90vh]",
+              isMobile ? "rounded-t-[32px] flex-col overflow-hidden pb-10" : "rounded-[32px] overflow-hidden h-[85vh]"
+            )}
+            onClick={e => e.stopPropagation()}
           >
+            {isMobile && <WaveTop />}
+            {isMobile && (
+              <div className="w-12 h-1.5 bg-neutral-200 rounded-full mx-auto mt-4 mb-2 flex-shrink-0" />
+            )}
             {/* Left side: Sub-services list */}
             <div className="flex-1 p-8 overflow-y-auto no-scrollbar">
               <div className="flex justify-between items-start mb-8">
@@ -89,31 +101,35 @@ export const DesktopSubServicePopup: React.FC<DesktopSubServicePopupProps> = ({
               </div>
             </div>
 
-            {/* Right side: Image and details */}
-            <div className="w-[380px] bg-[#F8F9FA] p-8 flex flex-col items-center justify-center text-center border-l border-neutral-100">
-               <div className="w-64 h-64 mb-8">
-                  <img 
-                    src={serviceIcon} 
+            {/* Right side: Image and details - Hidden on Mobile or moved below */}
+            {!isMobile && (
+              <div className="w-[380px] bg-[#F8F9FA] p-8 flex flex-col items-center justify-center text-center border-l border-neutral-100">
+                <div className="w-64 h-64 mb-8">
+                  <img
+                    src={serviceIcon}
                     alt={config.name}
                     className="w-full h-full object-contain"
                   />
-               </div>
-               <h3 className="text-2xl font-black text-black mb-4">
-                 {t({ en: config.name, fr: config.name })}
-               </h3>
-               <p className="text-neutral-500 font-medium leading-relaxed mb-8">
-                 {t({ 
-                   en: 'Trusted professionals available in your city. Program your order in less than a minute.',
-                   fr: 'Professionnels de confiance disponibles dans votre ville. Programmez votre commande en moins d\'une minute.'
-                 })}
-               </p>
-               <div className="mt-auto flex items-center gap-2 text-sm font-bold text-[#01C167] bg-[#E7F9F0] px-4 py-2 rounded-full">
-                  <Info size={16} />
-                  {t({ en: 'Quality Guaranteed', fr: 'Qualité Garantie' })}
-               </div>
-            </div>
+                </div>
+                <h3 className="text-2xl font-black text-black mb-4">
+                  {t({ en: config.name, fr: config.name })}
+                </h3>
+                <p className="text-neutral-500 font-medium leading-relaxed mb-8">
+                  {t({
+                    en: 'Trusted professionals available in your city. Program your order in less than a minute.',
+                    fr: 'Professionnels de confiance disponibles dans votre ville. Programmez votre commande en moins d\'une minute.'
+                  })}
+                </p>
+                <div className="mt-auto flex items-center gap-2 text-sm font-bold text-[#01C167] bg-[#E7F9F0] px-4 py-2 rounded-full">
+                  <span className="flex items-center gap-2">
+                    <Info size={16} />
+                    {t({ en: 'Quality Guaranteed', fr: 'Qualité Garantie' })}
+                  </span>
+                </div>
+              </div>
+            )}
           </motion.div>
-        </div>
+        </motion.div>
       )}
     </AnimatePresence>
   );

@@ -9,8 +9,9 @@ import { db, auth } from '@/lib/firebase';
 import { doc, updateDoc, arrayUnion, increment, getDoc } from 'firebase/firestore';
 import { getServiceVector } from '@/config/services_config';
 import { writeCityIndex } from '@/lib/cityIndex';
-
-const cn = (...classes: (string | undefined | false | null)[]) => classes.filter(Boolean).join(' ');
+import { useIsMobileViewport } from '@/lib/mobileOnly';
+import { cn } from '@/lib/utils';
+import WaveTop from '@/components/shared/WaveTop';
 
 interface RatingPopupProps {
     isOpen: boolean;
@@ -40,6 +41,7 @@ const RatingPopup: React.FC<RatingPopupProps> = ({
     orderTime,
 }) => {
     const { t } = useLanguage();
+    const isMobile = useIsMobileViewport(968);
     const [step, setStep] = useState(1);
     const [direction, setDirection] = useState(1);
     const [rating, setRating] = useState(0);
@@ -189,24 +191,30 @@ const RatingPopup: React.FC<RatingPopupProps> = ({
     return (
         <AnimatePresence>
             {isOpen && (
-                <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4">
-                    {/* Backdrop */}
+                <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="fixed inset-0 z-[10000] flex items-end md:items-center justify-center bg-black/60 backdrop-blur-sm p-0 md:p-4"
+                    onClick={handleClose}
+                >
                     <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        className="absolute inset-0 bg-black/40 backdrop-blur-sm"
-                        onClick={handleClose}
-                    />
-
-                    {/* Bottom Sheet Container */}
-                    <motion.div
-                        initial={{ scale: 0.9, opacity: 0 }}
-                        animate={{ scale: 1, opacity: 1 }}
-                        exit={{ scale: 0.9, opacity: 0 }}
-                        transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-                        className="relative bg-white w-full max-w-[420px] rounded-[32px] overflow-hidden pb-8 shadow-2xl"
+                        initial={isMobile ? { y: '100%' } : { scale: 0.9, opacity: 0 }}
+                        animate={isMobile ? { y: 0 } : { scale: 1, opacity: 1 }}
+                        exit={isMobile ? { y: '100%' } : { scale: 0.9, opacity: 0 }}
+                        transition={{ type: 'spring', damping: 28, stiffness: 320 }}
+                        className={cn(
+                            "relative bg-white w-full max-w-[420px] shadow-2xl flex flex-col",
+                            isMobile ? "rounded-t-[32px] pb-10" : "rounded-[32px] overflow-hidden pb-8"
+                        )}
+                        onClick={e => e.stopPropagation()}
                     >
+                        {isMobile && <WaveTop />}
+                        
+                        {/* Native-feeling Handle for Mobile */}
+                        {isMobile && (
+                            <div className="w-12 h-1.5 bg-neutral-200 rounded-full mx-auto mt-4 mb-2 flex-shrink-0" />
+                        )}
 
 
                         {/* Close button */}

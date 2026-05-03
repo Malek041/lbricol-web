@@ -313,6 +313,7 @@ const SellingPointsBottomSheet: React.FC<{
   onLogin: (intent?: any) => void;
 }> = ({ isOpen, onClose, onStartHostMode, t, isAuthenticated, onLogin }) => {
   const [step, setStep] = useState(0);
+  const isMobile = useIsMobileViewport(968);
 
   useEffect(() => {
     if (isOpen) setStep(0);
@@ -326,24 +327,30 @@ const SellingPointsBottomSheet: React.FC<{
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           onClick={onClose}
-          className="fixed inset-0 bg-black/50 z-[9500] flex items-center justify-center p-5"
+          className={`fixed inset-0 bg-black/50 z-[9500] flex ${isMobile ? 'items-end' : 'items-center'} justify-center ${isMobile ? 'p-0' : 'p-5'}`}
         >
           <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: 8 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: 8 }}
+            initial={isMobile ? { y: "100%" } : { opacity: 0, scale: 0.95, y: 8 }}
+            animate={isMobile ? { y: 0 } : { opacity: 1, scale: 1, y: 0 }}
+            exit={isMobile ? { y: "100%" } : { opacity: 0, scale: 0.95, y: 8 }}
             transition={{ type: "spring", damping: 28, stiffness: 300 }}
             onClick={(e) => e.stopPropagation()}
-            className="relative w-full max-w-[440px] bg-[#F3EFEA] rounded-[7px] overflow-hidden shadow-2xl"
+            className={`relative w-full ${isMobile ? 'max-w-none rounded-t-[32px]' : 'max-w-[440px] rounded-[32px]'} bg-[#F3EFEA] overflow-hidden shadow-2xl`}
           >
-            <div className="relative p-4 flex flex-col items-center pb-5">
+            {/* Mobile Drag Handle */}
+            {isMobile && (
+              <div className="w-12 h-1.5 bg-black/10 rounded-full mx-auto mt-4 mb-2" />
+            )}
+
+            <div className={`relative ${isMobile ? 'p-6 pb-12' : 'p-4 pb-5'} flex flex-col items-center`}>
               <button
                 onClick={onClose}
-                className="absolute top-4 right-4 p-2 rounded-full hover:bg-black/5 transition-colors z-30"
+                className={`absolute ${isMobile ? 'top-6 right-6' : 'top-4 right-4'} p-2 rounded-full hover:bg-black/5 transition-colors z-30`}
               >
                 <X size={20} className="text-black" />
               </button>
-              {/* Hidden preload images — load all step images as soon as the sheet opens */}
+
+              {/* Hidden preload images */}
               <div className="sr-only absolute" aria-hidden="true">
                 <Image src="/Images/ChatGPT Image Apr 21, 2026, 11_39_28 PM.png" alt="" fill priority />
                 <Image src="/Images/ChatGPT Image Apr 22, 2026, 01_24_00 AM.png" alt="" fill priority />
@@ -371,7 +378,7 @@ const SellingPointsBottomSheet: React.FC<{
                           repeat: Infinity,
                           ease: "easeInOut"
                         }}
-                        className="relative w-30 h-30 mb-0"
+                        className={`relative ${isMobile ? 'w-40 h-40' : 'w-30 h-30'} mb-2`}
                       >
                         <Image
                           src="/Images/ChatGPT Image Apr 21, 2026, 11_39_28 PM.png"
@@ -381,25 +388,25 @@ const SellingPointsBottomSheet: React.FC<{
                         />
                       </motion.div>
 
-                      <div className="space-y-1 w-full max-w-[320px] mb-8">
+                      <div className="space-y-2 w-full max-w-[320px] mb-8">
                         {[
                           {
                             en: 'Find a pro in 10s',
                             fr: 'Trouvez un pro en 10s',
                             ar: 'جد محترفاً في 10 ثوانٍ',
-                            icon: <Zap size={24} className="text-black" strokeWidth={2.5} />
+                            icon: <Zap size={isMobile ? 28 : 24} className="text-black" strokeWidth={2.5} />
                           },
                           {
                             en: 'Starting from 99 MAD',
                             fr: 'À partir de 99 MAD',
                             ar: 'ابتداءً من 99 درهم',
-                            icon: <Tag size={20} className="text-black" strokeWidth={2.5} />
+                            icon: <Tag size={isMobile ? 24 : 20} className="text-black" strokeWidth={2.5} />
                           },
                           {
                             en: 'Safer than a random number',
                             fr: 'Plus sûr qu\'un numéro au hasard',
                             ar: 'أكثر أمانًا من رقم عشوائي',
-                            icon: <ShieldCheck size={20} className="text-black" strokeWidth={2.5} />
+                            icon: <ShieldCheck size={isMobile ? 24 : 20} className="text-black" strokeWidth={2.5} />
                           }
                         ].map((item, i) => (
                           <motion.div
@@ -409,12 +416,12 @@ const SellingPointsBottomSheet: React.FC<{
                             transition={{ delay: i * 0.1 }}
                             className="flex items-center gap-4"
                           >
-                            <div className="w-10 h-10 rounded-[7px] flex items-center justify-center">
+                            <div className={`${isMobile ? 'w-12 h-12' : 'w-10 h-10'} rounded-[7px] flex items-center justify-center`}>
                               {item.icon}
                             </div>
                             <WavyText
                               text={t(item)}
-                              className="text-[16px] font-bold text-[#1A1A1A] tracking-tight leading-tight"
+                              className={`${isMobile ? 'text-[18px]' : 'text-[16px]'} font-bold text-[#1A1A1A] tracking-tight leading-tight`}
                             />
                           </motion.div>
                         ))}
@@ -422,7 +429,7 @@ const SellingPointsBottomSheet: React.FC<{
 
                       <button
                         onClick={() => setStep(1)}
-                        className="w-full bg-[#2C2C2C] text-white py-3.5 rounded-[7px] text-[17px] font-semibold active:scale-[0.98] transition-all"
+                        className={`w-full bg-[#2C2C2C] text-white ${isMobile ? 'py-5 rounded-[12px]' : 'py-3.5 rounded-[7px]'} text-[17px] font-semibold active:scale-[0.98] transition-all`}
                       >
                         {t({ en: 'Got it', fr: 'J\'ai compris', ar: 'فهمت' })}
                       </button>
@@ -445,7 +452,7 @@ const SellingPointsBottomSheet: React.FC<{
                           repeat: Infinity,
                           ease: "easeInOut"
                         }}
-                        className="relative w-40 h-40 mb-0"
+                        className={`relative ${isMobile ? 'w-56 h-56' : 'w-40 h-40'} mb-2`}
                       >
                         <Image
                           src="/Images/ChatGPT Image Apr 22, 2026, 01_24_00 AM.png"
@@ -455,12 +462,12 @@ const SellingPointsBottomSheet: React.FC<{
                         />
                       </motion.div>
 
-                      <div className="px-6 text-center mb-6">
+                      <div className={`${isMobile ? 'px-2' : 'px-6'} text-center mb-8`}>
                         <WavyText
                           text={t({ en: 'Verified Professionals', fr: 'Professionnels Vérifiés', ar: 'محترفون معتمدون' })}
-                          className="text-[25px] font-bold text-black mb-2 tracking-tighter leading-tight"
+                          className={`${isMobile ? 'text-[32px]' : 'text-[25px]'} font-bold text-black mb-4 tracking-tighter leading-tight`}
                         />
-                        <p className="text-[17px] font-bold text-[#4A4A4A] leading-relaxed tracking-tight">
+                        <p className={`${isMobile ? 'text-[18px]' : 'text-[17px]'} font-bold text-[#4A4A4A] leading-relaxed tracking-tight`}>
                           {t({
                             en: 'Bricolers pass a verification process before they work with us. You can trust them and choose based on description, photos, rating, and client reviews.',
                             fr: 'Les Bricoleurs passent par un processus de vérification avant de travailler avec nous. Vous pouvez leur faire confiance et choisir en fonction de leur description, photos, notes et avis clients.',
@@ -471,7 +478,7 @@ const SellingPointsBottomSheet: React.FC<{
 
                       <button
                         onClick={() => setStep(2)}
-                        className="w-full bg-[#2C2C2C] text-white py-4 rounded-[7px] text-[17px] font-semibold active:scale-[0.98] transition-all"
+                        className={`w-full bg-[#2C2C2C] text-white ${isMobile ? 'py-5 rounded-[12px]' : 'py-4 rounded-[7px]'} text-[17px] font-semibold active:scale-[0.98] transition-all`}
                       >
                         {t({ en: 'Continue', fr: 'Suivant', ar: 'متابعة' })}
                       </button>
@@ -484,12 +491,12 @@ const SellingPointsBottomSheet: React.FC<{
                       exit={{ opacity: 0, x: -20 }}
                       className="flex flex-col items-center"
                     >
-                      <div className="flex gap-1 mb-8 mt-2 h-32 items-center">
+                      <div className={`flex gap-1 mb-8 mt-2 ${isMobile ? 'h-40' : 'h-32'} items-center`}>
                         <motion.div
                           initial={{ opacity: 0, scale: 0.5, x: 30, rotate: 0 }}
                           animate={{ opacity: 1, scale: 1, x: 10, rotate: -12 }}
                           transition={{ delay: 0.2, type: "spring", stiffness: 100 }}
-                          className="w-28 h-28 rounded-[5px] border-4 border-white shadow-xl overflow-hidden relative "
+                          className={`${isMobile ? 'w-36 h-36' : 'w-28 h-28'} rounded-[5px] border-4 border-white shadow-xl overflow-hidden relative `}
                         >
                           <Image
                             src="/Images/Hosts/84ab3898-d9e6-474c-b371-fe5e20395dae_lfgezn.avif"
@@ -503,7 +510,7 @@ const SellingPointsBottomSheet: React.FC<{
                           initial={{ opacity: 0, scale: 0.5, y: 20 }}
                           animate={{ opacity: 1, scale: 1, y: 0 }}
                           transition={{ delay: 0.1, type: "spring", stiffness: 120 }}
-                          className="w-32 h-32 rounded-[5px] border-4 border-white shadow-2xl overflow-hidden z-10 relative "
+                          className={`${isMobile ? 'w-40 h-40' : 'w-32 h-32'} rounded-[5px] border-4 border-white shadow-2xl overflow-hidden z-10 relative `}
                         >
                           <Image
                             src="/Images/Hosts/pexels-emris-17086317.jpg"
@@ -517,7 +524,7 @@ const SellingPointsBottomSheet: React.FC<{
                           initial={{ opacity: 0, scale: 0.5, x: -30, rotate: 0 }}
                           animate={{ opacity: 1, scale: 1, x: -10, rotate: 12 }}
                           transition={{ delay: 0.3, type: "spring", stiffness: 100 }}
-                          className="w-24 h-24 rounded-[5px] border-4 border-white shadow-2xl  overflow-hidden relative "
+                          className={`${isMobile ? 'w-32 h-32' : 'w-24 h-24'} rounded-[5px] border-4 border-white shadow-2xl  overflow-hidden relative `}
                         >
                           <Image
                             src="/Images/Hosts/584b8edd-dd10-47a1-9441-434fb4b05736_tqhtqg.avif"
@@ -528,12 +535,12 @@ const SellingPointsBottomSheet: React.FC<{
                         </motion.div>
                       </div>
 
-                      <div className="px-4 text-center mb-6">
+                      <div className={`${isMobile ? 'px-2' : 'px-4'} text-center mb-8`}>
                         <WavyText
                           text={t({ en: 'Are you host?', fr: 'Vous êtes hôte?', ar: 'هل أنت مضيف؟' })}
-                          className="text-[26px] font-bold text-black mb-2 tracking-tighter leading-tight"
+                          className={`${isMobile ? 'text-[36px]' : 'text-[26px]'} font-bold text-black mb-4 tracking-tighter leading-tight`}
                         />
-                        <p className="text-[20px] font-bold text-[#4A4A4A] leading-relaxed tracking-tight max-w-[340px] mx-auto">
+                        <p className={`${isMobile ? 'text-[22px]' : 'text-[20px]'} font-bold text-[#4A4A4A] leading-relaxed tracking-tight max-w-[340px] mx-auto`}>
                           {t({
                             en: 'Or Co-host/concierge? Save 70% of your time. List, configure, schedule arrivals/departures—Lbricol Host handles the rest',
                             fr: 'Ou bien Co-hôte/concierge? Économisez 70% de votre temps. Listez, configurez, programmez les arrivées/départs—Lbricol Host gère le reste',
@@ -542,7 +549,7 @@ const SellingPointsBottomSheet: React.FC<{
                         </p>
                       </div>
 
-                      <div className="w-full space-y-3">
+                      <div className="w-full space-y-4">
                         <button
                           onClick={() => {
                             if (isAuthenticated) {
@@ -553,7 +560,7 @@ const SellingPointsBottomSheet: React.FC<{
                               onClose();
                             }
                           }}
-                          className="w-full bg-[#2C2C2C] text-white py-4 rounded-[7px] text-[18px] font-bold active:scale-[0.98] transition-all "
+                          className={`w-full bg-[#2C2C2C] text-white ${isMobile ? 'py-5 rounded-[12px]' : 'py-4 rounded-[7px]'} text-[18px] font-bold active:scale-[0.98] transition-all `}
                         >
                           {t({ en: 'Use Lbricol Host', fr: 'Utiliser Lbricol Host', ar: 'استخدم Lbricol Host' })}
                         </button>
