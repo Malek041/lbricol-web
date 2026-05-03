@@ -73,7 +73,6 @@ const TASK_SIZES = [
     }
 ];
 
-import React, { useState, useMemo, useEffect } from 'react';
 export default function HeroesView({ orders }: HeroesViewProps) {
     const { t } = useLanguage();
     const isMobile = useIsMobileViewport(968);
