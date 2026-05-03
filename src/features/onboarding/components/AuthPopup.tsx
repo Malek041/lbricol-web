@@ -378,7 +378,6 @@ const AuthPopup = ({ isOpen, onClose, onSuccess }: AuthPopupProps) => {
                             to { transform: rotate(360deg); }
                         }
                     `}</style>
-                    </div>
                 </motion.div>
             </motion.div>
             )}
