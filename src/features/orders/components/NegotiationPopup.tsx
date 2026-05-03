@@ -291,8 +291,10 @@ const NegotiationPopup = ({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
                         )}
                     </AnimatePresence>
                 </div>
-            </motion.div>
-        </div>
+                </motion.div>
+                </motion.div>
+            )}
+        </AnimatePresence>
     );
 };
 

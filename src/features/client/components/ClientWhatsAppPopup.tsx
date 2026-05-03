@@ -215,7 +215,6 @@ const ClientWhatsAppPopup = ({ isOpen, onClose, onSuccess }: ClientWhatsAppPopup
                             <ArrowRight size={22} strokeWidth={3} />
                         </motion.button>
                     </div>
-                    </div>
                 </motion.div>
             </motion.div>
             )}

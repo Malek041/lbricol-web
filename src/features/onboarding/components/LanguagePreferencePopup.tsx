@@ -184,7 +184,7 @@ const LanguagePreferencePopup = ({ isOpen, onSelectLanguage, onClose }: Language
                             )}
                         </div>
                     </motion.div>
-                </div>
+                </motion.div>
             )}
         </AnimatePresence>
     );

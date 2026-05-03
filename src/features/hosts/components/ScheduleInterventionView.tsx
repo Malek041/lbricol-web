@@ -642,8 +642,8 @@ const ScheduleInterventionView: React.FC<ScheduleInterventionViewProps> = ({ pro
                                     ))
                                 ) : (
                                     <div className="text-center py-10 space-y-4">
-                                        <div className="w-16 h-16 rounded-full bg-neutral-50 flex items-center justify-center mx-auto">
-                                            <Users size={32} className="text-neutral-200" />
+                                        <div className="w-48 h-48 mx-auto mb-2">
+                                            <img src="/Images/ChatGPT Image May 2, 2026, 07_57_34 PM.png" className="w-full h-full object-contain" alt="" />
                                         </div>
                                         <p className="text-neutral-500 font-medium">{t({ en: 'No team members linked to this property.', fr: 'Aucun membre d\'équipe lié à cette propriété.' })}</p>
                                         <button className="px-6 py-2 rounded-full bg-black text-white font-bold text-[14px]">Inviter mon équipe</button>

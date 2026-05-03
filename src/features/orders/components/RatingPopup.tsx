@@ -343,7 +343,7 @@ const RatingPopup: React.FC<RatingPopupProps> = ({
                             </AnimatePresence>
                         </div>
                     </motion.div>
-                </div>
+                </motion.div>
             )}
         </AnimatePresence>
     );
