@@ -6,8 +6,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useLanguage } from '@/context/LanguageContext';
 import { useTheme } from '@/context/ThemeContext';
 import { useIsMobileViewport } from '@/lib/mobileOnly';
-import { cn } from '@/lib/utils';
-import WaveTop from '@/components/shared/WaveTop';
 
 type State = 'offer' | 'counter' | 'agreed';
 
@@ -33,45 +31,63 @@ const NegotiationPopup = ({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
     if (!isOpen) return null;
 
     return (
-        <AnimatePresence>
-            {isOpen && (
-                <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="fixed inset-0 z-[2000] flex items-end md:items-center justify-center bg-black/70 backdrop-blur-sm p-0 md:p-6"
+        <div style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 2000,
+            display: 'flex',
+            alignItems: isMobile ? 'flex-end' : 'center',
+            justifyContent: 'center',
+            backgroundColor: 'rgba(0,0,0,0.7)',
+            backdropFilter: 'blur(4px)',
+            padding: isMobile ? 0 : '1.5rem'
+        }}>
+            <motion.div
+                initial={isMobile ? { y: '100%' } : { opacity: 0, scale: 0.95, y: 10 }}
+                animate={isMobile ? { y: 0 } : { opacity: 1, scale: 1, y: 0 }}
+                exit={isMobile ? { y: '100%' } : { opacity: 0, scale: 0.95, y: 10 }}
+                transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+                style={{
+                    backgroundColor: c.bg,
+                    width: '100%',
+                    maxWidth: isMobile ? 'none' : '440px',
+                    borderRadius: isMobile ? '32px 32px 0 0' : '32px',
+                    overflow: 'hidden',
+                    position: 'relative',
+                    padding: isMobile ? '1.5rem 2rem 3rem' : '2.5rem',
+                    color: c.text,
+                    maxHeight: isMobile ? '90vh' : 'none',
+                    overflowY: 'auto'
+                }}
+            >
+                {isMobile && (
+                    <div style={{
+                        width: '40px',
+                        height: '4px',
+                        backgroundColor: c.border,
+                        borderRadius: '2px',
+                        margin: '0 auto 1.5rem',
+                        opacity: 0.5
+                    }} />
+                )}
+                {/* Header/Close Button */}
+                <button
                     onClick={onClose}
+                    style={{
+                        position: 'absolute',
+                        top: '1.5rem',
+                        right: '1.5rem',
+                        padding: '8px',
+                        borderRadius: '50%',
+                        backgroundColor: c.surface,
+                        border: 'none',
+                        cursor: 'pointer',
+                        zIndex: 20,
+                        color: c.text
+                    }}
                 >
-                    <motion.div
-                        initial={isMobile ? { y: '100%' } : { opacity: 0, scale: 0.95, y: 10 }}
-                        animate={isMobile ? { y: 0 } : { opacity: 1, scale: 1, y: 0 }}
-                        exit={isMobile ? { y: '100%' } : { opacity: 0, scale: 0.95, y: 10 }}
-                        transition={{ type: 'spring', damping: 28, stiffness: 320 }}
-                        className={cn(
-                            "relative w-full max-w-[440px] shadow-2xl flex flex-col",
-                            isMobile ? "rounded-t-[32px] min-h-0 pb-12 px-6 pt-0" : "rounded-[32px] p-10"
-                        )}
-                        style={{ backgroundColor: c.bg, color: c.text }}
-                        onClick={e => e.stopPropagation()}
-                    >
-                        {isMobile && <WaveTop />}
-
-                        {/* Native Handle for Mobile */}
-                        {isMobile && (
-                            <div className="w-12 h-1.5 bg-neutral-200/50 rounded-full mx-auto mt-4 mb-6 flex-shrink-0" />
-                        )}
-
-                        {/* Close button */}
-                        <button
-                            onClick={onClose}
-                            className={cn(
-                                "absolute z-20 w-10 h-10 rounded-full flex items-center justify-center transition-colors",
-                                isMobile ? "top-4 right-4" : "top-6 right-6"
-                            )}
-                            style={{ backgroundColor: c.surface, color: c.text }}
-                        >
-                            <X size={20} />
-                        </button>
+                    <X size={20} />
+                </button>
 
                 <div style={{ padding: '0.5rem 0' }}>
                     <AnimatePresence mode="wait">
@@ -291,10 +307,8 @@ const NegotiationPopup = ({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
                         )}
                     </AnimatePresence>
                 </div>
-                </motion.div>
-                </motion.div>
-            )}
-        </AnimatePresence>
+            </motion.div>
+        </div>
     );
 };
 

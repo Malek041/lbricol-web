@@ -31,7 +31,7 @@ import WaveTop from '@/components/shared/WaveTop';
 interface PropertySetupWizardProps {
     isOpen: boolean;
     onClose: () => void;
-    onComplete: () => void;
+    onComplete: (property?: any) => void;
 }
 
 const FAQ_SERVICES = [
@@ -329,6 +329,7 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
     const [errandsInstructions, setErrandsInstructions] = useState('');
     const [errandsFrequency, setErrandsFrequency] = useState('post_checkout');
     const [errandsStorageLocation, setErrandsStorageLocation] = useState('');
+    const [errandsPreferredSupplier, setErrandsPreferredSupplier] = useState('');
     const [poolPhotos, setPoolPhotos] = useState<string[]>([]);
     const [isUploadingPoolPhotos, setIsUploadingPoolPhotos] = useState(false);
     const poolPhotoInputRef = useRef<HTMLInputElement>(null);
@@ -721,7 +722,7 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
             const finalPoolPhotos = poolPhotos.filter((p: any) => p && !p.startsWith('blob:'));
             const finalGlassCleaningPhotos = glassCleaningPhotos.filter((p: any) => p && !p.startsWith('blob:'));
 
-            await addDoc(collection(db, 'properties'), {
+            const docRef = await addDoc(collection(db, 'properties'), {
                 hostId: auth.currentUser.uid,
                 name: name || `${type} à ${auth.currentUser.displayName}`,
                 type,
@@ -805,6 +806,7 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                         categories: errandsCategories,
                         checklists: errandsChecklists,
                         storageLocation: errandsStorageLocation,
+                        preferredSupplier: errandsPreferredSupplier,
                         instructions: errandsInstructions,
                         frequency: errandsFrequency
                     } : null,
@@ -817,12 +819,24 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                 createdAt: serverTimestamp(),
                 status: 'active'
             });
+
             showToast({
                 variant: 'success',
                 title: t({ en: 'Listing published!', fr: 'Annonce publiée !' }),
                 description: t({ en: 'Your property is now live.', fr: 'Votre propriété est maintenant en ligne.' })
             });
-            onComplete();
+
+            onComplete({
+                id: docRef.id,
+                hostId: auth.currentUser.uid,
+                name: name || `${type} à ${auth.currentUser.displayName}`,
+                type,
+                coverPhoto: finalPhotos[0] || null,
+                photos: finalPhotos,
+                propertyCode: propertyCode,
+                specs: { address },
+                automation: { services: selectedServices }
+            });
         } catch (err) {
             console.error("Error creating property:", err);
             showToast({
@@ -2251,6 +2265,7 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                                             categories: errandsCategories,
                                             checklists: errandsChecklists,
                                             storageLocation: errandsStorageLocation,
+                                            preferredSupplier: errandsPreferredSupplier,
                                             frequency: errandsFrequency,
                                             instructions: errandsInstructions
                                         }}
@@ -2258,6 +2273,7 @@ const PropertySetupWizard: React.FC<PropertySetupWizardProps> = ({ isOpen, onClo
                                             if (updates.categories !== undefined) setErrandsCategories(updates.categories);
                                             if (updates.checklists !== undefined) setErrandsChecklists(updates.checklists);
                                             if (updates.storageLocation !== undefined) setErrandsStorageLocation(updates.storageLocation);
+                                            if (updates.preferredSupplier !== undefined) setErrandsPreferredSupplier(updates.preferredSupplier);
                                             if (updates.frequency !== undefined) setErrandsFrequency(updates.frequency);
                                             if (updates.instructions !== undefined) setErrandsInstructions(updates.instructions);
                                         }}
@@ -3846,7 +3862,7 @@ const PetsDetailForm = ({ data, onChange }: any) => {
 
                                                     {/* Feeding Frequency */}
                                                     <div className="space-y-4">
-                                                        <label className="text-[17px] font-medium block mb-3 text-[#222222]">{t({ en: 'Feeding Frequency', fr: 'Fréquence des repas' })}</label>
+                                                        <label className="text-[17px] font-medium block mb-3 text-[#222222]">{t({ en: 'Feeding Frequency', fr: 'Fréquence des repas (par jour)' })}</label>
                                                         <div className="grid grid-cols-2 gap-3">
                                                             {feedingFrequencies.map((freq) => (
                                                                 <button
@@ -4135,32 +4151,7 @@ const ErrandsDetailForm = ({ data, onChange }: any) => {
                                                         </div>
 
                                                         <div className="space-y-6 pt-4 border-t border-neutral-50">
-                                                            {/* Frequency Selector */}
-                                                            <div className="space-y-3">
-                                                                <span className="text-[15px] font-medium text-black block">{t({ en: 'Frequency', fr: 'Fréquence' })}</span>
-                                                                <div className="grid grid-cols-1 gap-2 w-full">
-                                                                    {[
-                                                                        { id: 'each_time', en: 'Each checkout', fr: 'Chaque checkout' },
-                                                                        { id: 'weekly', en: 'Weekly', fr: 'Hebdomadaire' },
-                                                                        { id: 'monthly', en: 'Monthly', fr: 'Mensuel' }
-                                                                    ].map((f) => (
-                                                                        <button
-                                                                            key={f.id}
-                                                                            onClick={() => {
-                                                                                const newList = [...list];
-                                                                                newList[idx].frequency = f.id;
-                                                                                updateChecklist(category.id, newList);
-                                                                            }}
-                                                                            className={`w-full px-5 py-3 rounded-[5px] text-[14px] font-bold transition-all text-left border ${item.frequency === f.id
-                                                                                ? 'bg-black text-white border-black shadow-sm'
-                                                                                : 'bg-white text-neutral-500 border-neutral-200 hover:border-black'
-                                                                                }`}
-                                                                        >
-                                                                            {t({ en: f.en, fr: f.fr })}
-                                                                        </button>
-                                                                    ))}
-                                                                </div>
-                                                            </div>
+
 
                                                             {/* Min/Max Stock Counters */}
                                                             <div className="grid grid-cols-1 gap-6">
@@ -4261,6 +4252,27 @@ const ErrandsDetailForm = ({ data, onChange }: any) => {
                                     fr: 'ex. Articles de toilette dans le meuble sous l\'évier...'
                                 })}
                                 className="w-full resize-none bg-[#F7F7F7] rounded-[5px] px-6 py-5 text-[16px] text-black border-none focus:ring-2 focus:ring-black transition-all"
+                            />
+                        </div>
+
+                        <div className="space-y-4">
+                            <div className="flex flex-col gap-1">
+                                <span className="text-[17px] font-medium text-black mb-2 block">
+                                    {t({ en: 'Preferred Supplier / Brand', fr: 'Fournisseur / Marque préféré' })}
+                                </span>
+                                <span className="text-[14px] text-neutral-400 font-medium">
+                                    {t({ en: 'Where should the Bricoleur buy these items?', fr: 'Où le Bricoleur doit-il acheter ces articles ?' })}
+                                </span>
+                            </div>
+                            <input
+                                type="text"
+                                value={data.preferredSupplier || ''}
+                                onChange={(e) => onChange({ preferredSupplier: e.target.value })}
+                                placeholder={t({
+                                    en: 'ex. Marjane, Carrefour, Local Epicerie...',
+                                    fr: 'ex. Marjane, Carrefour, Épicerie locale...'
+                                })}
+                                className="w-full bg-[#F7F7F7] rounded-[5px] px-6 py-5 text-[16px] text-black border-none focus:ring-2 focus:ring-black transition-all"
                             />
                         </div>
 

@@ -6,6 +6,7 @@ import { Plus, Home, Building, Rows, CheckCircle2, Search, Filter, LayoutGrid } 
 import { useLanguage } from '@/context/LanguageContext';
 import PropertySetupWizard from './PropertySetupWizard';
 import PropertyDetailView from './PropertyDetailView';
+import PostSetupPopupSequence from './PostSetupPopupSequence';
 import Image from 'next/image';
 import { db, auth } from '@/lib/firebase';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
@@ -37,6 +38,8 @@ const PropertyListView = () => {
     const [properties, setProperties] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [viewMode, setViewMode] = useState<'list' | 'grid'>('grid');
+    const [newlyCreatedProperty, setNewlyCreatedProperty] = useState<any>(null);
+    const [isPostSetupOpen, setIsPostSetupOpen] = useState(false);
 
     useEffect(() => {
         if (!auth.currentUser) return;
@@ -201,8 +204,21 @@ const PropertyListView = () => {
             <PropertySetupWizard
                 isOpen={isWizardOpen}
                 onClose={() => setIsWizardOpen(false)}
-                onComplete={() => {
+                onComplete={(property) => {
                     setIsWizardOpen(false);
+                    if (property) {
+                        setNewlyCreatedProperty(property);
+                        setIsPostSetupOpen(true);
+                    }
+                }}
+            />
+
+            <PostSetupPopupSequence
+                property={newlyCreatedProperty}
+                isOpen={isPostSetupOpen}
+                onComplete={() => {
+                    setIsPostSetupOpen(false);
+                    setNewlyCreatedProperty(null);
                 }}
             />
 

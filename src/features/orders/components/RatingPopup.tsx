@@ -10,8 +10,8 @@ import { doc, updateDoc, arrayUnion, increment, getDoc } from 'firebase/firestor
 import { getServiceVector } from '@/config/services_config';
 import { writeCityIndex } from '@/lib/cityIndex';
 import { useIsMobileViewport } from '@/lib/mobileOnly';
-import { cn } from '@/lib/utils';
-import WaveTop from '@/components/shared/WaveTop';
+
+const cn = (...classes: (string | undefined | false | null)[]) => classes.filter(Boolean).join(' ');
 
 interface RatingPopupProps {
     isOpen: boolean;
@@ -191,29 +191,31 @@ const RatingPopup: React.FC<RatingPopupProps> = ({
     return (
         <AnimatePresence>
             {isOpen && (
-                <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="fixed inset-0 z-[10000] flex items-end md:items-center justify-center bg-black/60 backdrop-blur-sm p-0 md:p-4"
-                    onClick={handleClose}
-                >
+                <div className={`fixed inset-0 z-[10000] flex ${isMobile ? 'items-end' : 'items-center justify-center p-4'}`}>
+                    {/* Backdrop */}
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+                        onClick={handleClose}
+                    />
+
+                    {/* Popup Card (desktop) / Bottom Sheet (mobile) */}
                     <motion.div
                         initial={isMobile ? { y: '100%' } : { scale: 0.9, opacity: 0 }}
                         animate={isMobile ? { y: 0 } : { scale: 1, opacity: 1 }}
                         exit={isMobile ? { y: '100%' } : { scale: 0.9, opacity: 0 }}
-                        transition={{ type: 'spring', damping: 28, stiffness: 320 }}
-                        className={cn(
-                            "relative bg-white w-full max-w-[420px] shadow-2xl flex flex-col",
-                            isMobile ? "rounded-t-[32px] pb-10" : "rounded-[32px] overflow-hidden pb-8"
-                        )}
-                        onClick={e => e.stopPropagation()}
+                        transition={{ type: 'spring', damping: 28, stiffness: 300 }}
+                        className={`relative bg-white w-full pb-8 shadow-2xl ${
+                            isMobile
+                                ? 'rounded-t-[32px] max-h-[90vh] overflow-y-auto'
+                                : 'max-w-[420px] rounded-[32px] overflow-hidden'
+                        }`}
                     >
-                        {isMobile && <WaveTop />}
-                        
-                        {/* Native-feeling Handle for Mobile */}
+                        {/* Drag handle – mobile only */}
                         {isMobile && (
-                            <div className="w-12 h-1.5 bg-neutral-200 rounded-full mx-auto mt-4 mb-2 flex-shrink-0" />
+                            <div className="w-10 h-1 bg-neutral-200 rounded-full mx-auto mt-4 mb-2 flex-shrink-0" />
                         )}
 
 
@@ -343,7 +345,7 @@ const RatingPopup: React.FC<RatingPopupProps> = ({
                             </AnimatePresence>
                         </div>
                     </motion.div>
-                </motion.div>
+                </div>
             )}
         </AnimatePresence>
     );

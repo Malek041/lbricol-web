@@ -3,26 +3,26 @@
 import { safeStorage } from '@/lib/safeStorage';
 import React, { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import WaveTop from '@/components/shared/WaveTop';
-import { X, Check, Search, ChevronLeft, Calendar, Info, Wrench, Banknote, Clock, Trash2, Star, MessageCircle, ArrowRight, User, Plus, CheckCircle2, MoreHorizontal } from 'lucide-react';
-import { useIsMobileViewport } from '@/hooks/useIsMobileViewport';
-import { cn } from '@/lib/utils';
+import { Star, Clock, Calendar, ChevronLeft, X, CheckCircle2 } from 'lucide-react';
+import { WhatsAppBrandIcon } from '@/components/shared/WhatsAppIcon';
 import { useLanguage } from '@/context/LanguageContext';
-import { 
+import {
     collection,
-    query,
-    where,
-    getDocs,
     doc,
     getDoc,
+    getDocs,
+    query,
+    where,
     serverTimestamp,
-    addDoc 
+    addDoc
 } from 'firebase/firestore';
 import { ref, uploadBytes as uploadStorageBytes, getDownloadURL as getStorageDownloadURL } from 'firebase/storage';
 import { db, auth, storage } from '@/lib/firebase';
 import { getServiceById, getSubServiceName, SERVICES_HIERARCHY, getServiceVector } from '@/config/services_config';
 import { OrderDetails } from '@/features/orders/components/OrderCard';
+import { cn } from '@/lib/utils';
 import { isImageDataUrl } from '@/lib/imageCompression';
+import { Banknote, Info, Wrench, Upload, Search, Check, Trash2 } from 'lucide-react';
 
 interface HeroesViewProps {
     orders: OrderDetails[];
@@ -75,7 +75,6 @@ const TASK_SIZES = [
 
 export default function HeroesView({ orders }: HeroesViewProps) {
     const { t } = useLanguage();
-    const isMobile = useIsMobileViewport(968);
     const [selectedHero, setSelectedHero] = useState<HeroData | null>(null);
     const [bookingStep, setBookingStep] = useState(0); // 0 = none, 1 = date/time, 2 = service/subservice, 3 = size/desc, 4 = confirm
 
@@ -445,28 +444,14 @@ export default function HeroesView({ orders }: HeroesViewProps) {
                         className="fixed inset-0 z-[2000] bg-black/50 backdrop-blur-sm flex items-end justify-center"
                     >
                         <motion.div
-                            initial={isMobile ? { y: "100%" } : { scale: 0.95, opacity: 0 }}
-                            animate={isMobile ? { y: 0 } : { scale: 1, opacity: 1 }}
-                            exit={isMobile ? { y: "100%" } : { scale: 0.95, opacity: 0 }}
-                            transition={{ type: 'spring', damping: 28, stiffness: 320 }}
-                            className={cn(
-                                "relative bg-white w-full shadow-2xl flex flex-col",
-                                isMobile ? "rounded-t-[32px] max-h-[95vh]" : "max-w-2xl rounded-[32px] overflow-hidden max-h-[85vh]"
-                            )}
-                            onClick={e => e.stopPropagation()}
+                            initial={{ y: "100%" }}
+                            animate={{ y: 0 }}
+                            exit={{ y: "100%" }}
+                            transition={{ type: "spring", damping: 28, stiffness: 220 }}
+                            className="bg-white w-full rounded-t-[28px] border-t border-neutral-100 flex flex-col max-h-[90vh] pb-8 overflow-hidden"
                         >
-                            {isMobile && <WaveTop />}
-
-                            {/* Native Handle for Mobile */}
-                            {isMobile && (
-                                <div className="w-12 h-1.5 bg-neutral-200/50 rounded-full mx-auto mt-4 mb-2 flex-shrink-0" />
-                            )}
-
                             {/* Modal Header */}
-                            <div className={cn(
-                                "px-6 pt-6 pb-4 border-b border-neutral-50 flex items-center justify-between sticky top-0 bg-white z-10",
-                                isMobile ? "" : "pt-8"
-                            )}>
+                            <div className="px-6 pt-6 pb-4 border-b border-[#E6E6E6] flex items-center justify-between sticky top-0 bg-white z-10">
                                 <div className="flex items-center gap-3">
                                     {(bookingStep > 1 && bookingStep < 5) ? (
                                         <button onClick={() => setBookingStep(prev => prev - 1)} className="p-2 -ml-2 hover:bg-neutral-100 rounded-full">

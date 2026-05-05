@@ -31,7 +31,6 @@ import { getServiceVector, getSubServiceName } from '@/config/services_config';
 import { SERVICES_CATALOGUE } from '@/config/services_catalogue';
 import { calculateOrderPrice } from '@/lib/pricing';
 import { formatForWhatsApp } from '@/lib/phoneUtils';
-import WaveTop from '@/components/shared/WaveTop';
 
 export interface JobDetails {
     id: string;
@@ -84,7 +83,6 @@ interface JobDetailsPopupProps {
 const JobDetailsPopup: React.FC<JobDetailsPopupProps> = ({ job, onClose, onAccept, onDecline, isAdmin, onChat, mode = 'client' }) => {
     const popupRef = useRef<HTMLDivElement>(null);
     const { t, language } = useLanguage();
-    const isMobile = useIsMobileViewport(968);
 
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
@@ -142,53 +140,32 @@ const JobDetailsPopup: React.FC<JobDetailsPopupProps> = ({ job, onClose, onAccep
 
     return (
         <AnimatePresence>
-            {job && (
-                <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="fixed inset-0 z-[6000] flex items-end md:items-center justify-center bg-black/60 backdrop-blur-sm p-0 md:p-4"
-                    onClick={onClose}
-                >
-                    <motion.div
-                        ref={popupRef}
-                        initial={isMobile ? { y: '100%' } : { scale: 0.95, opacity: 0 }}
-                        animate={isMobile ? { y: 0 } : { scale: 1, opacity: 1 }}
-                        exit={isMobile ? { y: '100%' } : { scale: 0.95, opacity: 0 }}
-                        transition={{ type: 'spring', damping: 28, stiffness: 320 }}
-                        className={cn(
-                            "relative bg-white w-full shadow-2xl flex flex-col",
-                            isMobile ? "rounded-t-[32px] max-h-[95vh]" : "max-w-3xl rounded-[32px] overflow-hidden h-[85vh]"
-                        )}
-                        onClick={e => e.stopPropagation()}
-                    >
-                        {isMobile && <WaveTop />}
-
-                        {/* Native-feeling Handle for Mobile */}
-                        {isMobile && (
-                            <div className="w-12 h-1.5 bg-neutral-200/50 rounded-full mx-auto mt-4 mb-2 flex-shrink-0" />
-                        )}
-
-                        {/* Header */}
-                        <div className={cn(
-                            "flex-shrink-0 flex items-center justify-between px-6 bg-white z-10",
-                            isMobile ? "py-4 border-b border-neutral-50" : "pt-8 pb-4"
-                        )}>
-                            <button
-                                onClick={onClose}
-                                className="w-10 h-10 flex items-center justify-center rounded-2xl bg-[#01A083] active:scale-95 transition-all shadow-lg shadow-[#01A083]/20"
-                            >
-                                <ChevronLeft size={24} className="text-white" />
-                            </button>
-                            <div className="text-right">
-                                <span className="text-[10px] font-black text-neutral-400 uppercase tracking-widest block leading-none mb-1">
-                                    {t({ en: 'Job ID', fr: 'ID Mission', ar: 'رقم المهمة' })}
-                                </span>
-                                <span className="text-[15px] font-black text-black leading-none">
-                                    #{job.id?.slice(-6).toUpperCase()}
-                                </span>
-                            </div>
+            <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                transition={{ type: "spring", damping: 25, stiffness: 200 }}
+                className="fixed inset-0 z-[6000] bg-white flex flex-col h-screen overflow-hidden"
+            >
+                {/* Header */}
+                <div className="flex-shrink-0 pt-[48px] px-6 bg-[#FFFFFF]">
+                    <div className="flex items-center justify-between pb-4">
+                        <button
+                            onClick={onClose}
+                            className="w-12 h-12 flex items-center justify-center rounded-2xl bg-[#01A083] active:scale-95 transition-all"
+                        >
+                            <ChevronLeft size={28} className="text-white" />
+                        </button>
+                        <div className="text-right">
+                            <span className="text-[11px] font-medium text-neutral-400 uppercase tracking-widest block">
+                                {t({ en: 'Job ID', fr: 'ID Mission', ar: 'رقم المهمة' })}
+                            </span>
+                            <span className="text-[17px] font-medium text-black">
+                                #{job.id?.slice(-6).toUpperCase()}
+                            </span>
                         </div>
+                    </div>
+                </div>
 
                 <div className="flex-1 overflow-y-auto no-scrollbar pb-[220px]">
                     {mode === 'provider' ? (
@@ -642,15 +619,12 @@ const JobDetailsPopup: React.FC<JobDetailsPopupProps> = ({ job, onClose, onAccep
                 </div>
 
                 {/* Fixed Bottom Total Footer - Simplified Airbnb Style */}
-                <div className={cn(
-                    "bg-white z-20 px-8 pt-6 border-t border-neutral-100 shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.05)]",
-                    isMobile ? "pb-[calc(24px+env(safe-area-inset-bottom))]" : "pb-8"
-                )}>
-                    <div className="flex items-center justify-between gap-6 max-w-2xl mx-auto">
+                <div className="fixed bottom-0 left-0 right-0 bg-white z-[4005] px-8 pt-6 pb-[calc(24px+env(safe-area-inset-bottom))] border-t border-neutral-100 shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.05)]">
+                    <div className="flex items-center justify-between gap-6">
                         <div className="flex flex-col">
-                            <span className="text-[11px] font-black text-neutral-400 uppercase tracking-widest leading-none mb-1">{t({ en: 'Net Total', fr: 'Total Net', ar: 'الإجمالي الصافي' })}</span>
+                            <span className="text-[13px] font-bold text-neutral-400 uppercase tracking-widest">{t({ en: 'Net Total', fr: 'Total Net', ar: 'الإجمالي الصافي' })}</span>
                             <div className="flex items-baseline gap-1">
-                                <span className="text-[28px] font-black text-black tracking-tight leading-none">
+                                <span className="text-[28px] font-black text-black tracking-tight">
                                     {(mode === 'provider' ? finalEarnings : finalClientPay).toFixed(0)}
                                 </span>
                                 <span className="text-[14px] font-black text-neutral-400">MAD</span>
@@ -663,7 +637,7 @@ const JobDetailsPopup: React.FC<JobDetailsPopupProps> = ({ job, onClose, onAccep
                                 <div className="flex gap-3">
                                     <button
                                         onClick={onClose}
-                                        className="w-[56px] h-[56px] text-neutral-400 bg-neutral-100 rounded-2xl flex items-center justify-center active:scale-95 transition-all"
+                                        className="w-[60px] h-[56px] text-neutral-400 bg-neutral-100 rounded-2xl flex items-center justify-center active:scale-95 transition-all"
                                     >
                                         <XCircle size={24} />
                                     </button>
@@ -691,9 +665,7 @@ const JobDetailsPopup: React.FC<JobDetailsPopupProps> = ({ job, onClose, onAccep
                     </div>
                 </div>
             </motion.div>
-        </motion.div>
-    )}
-</AnimatePresence>
+        </AnimatePresence>
     );
 };
 

@@ -1,21 +1,29 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Plus, Home, X, Clock, CheckCircle2 } from 'lucide-react';
+import { 
+    Calendar as CalendarIcon, ChevronLeft, ChevronRight, Plus, 
+    Home, X, Clock, CheckCircle2, MoreHorizontal, Sparkles,
+    User, LogOut, Coffee
+} from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
 import { db, auth } from '@/lib/firebase';
-import { collection, query, where, onSnapshot, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, addDoc, serverTimestamp, deleteDoc, doc, getDocs } from 'firebase/firestore';
 import { useToast } from '@/context/ToastContext';
+import { cn } from '@/lib/utils';
 
 const HostCalendarView = () => {
     const { t } = useLanguage();
     const { showToast } = useToast();
     const [selectedPropertyId, setSelectedPropertyId] = useState<string | null>(null);
     const [properties, setProperties] = useState<any[]>([]);
+    const [selectedDays, setSelectedDays] = useState<string[]>([]);
     const [isScheduling, setIsScheduling] = useState(false);
-    const [selectedType, setSelectedType] = useState<'Check-in' | 'Check-out' | 'Cleaning'>('Cleaning');
+    const [selectedType, setSelectedType] = useState<'checkin' | 'checkout' | 'other'>('checkout');
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [currentMonth, setCurrentMonth] = useState(new Date());
+    const [jobs, setJobs] = useState<any[]>([]);
 
     useEffect(() => {
         if (!auth.currentUser) return;
@@ -23,60 +31,195 @@ const HostCalendarView = () => {
         const unsubscribe = onSnapshot(q, (snapshot) => {
             const result = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
             setProperties(result);
+            if (result.length > 0 && !selectedPropertyId) {
+                // setSelectedPropertyId(result[0].id);
+            }
         });
         return () => unsubscribe();
     }, [auth.currentUser]);
 
-    const handleCreateIntervention = async () => {
-        if (!auth.currentUser || !selectedPropertyId) return;
+    useEffect(() => {
+        if (!auth.currentUser) return;
+        
+        let unsubJobs = () => {};
+        let unsubPlanning = () => {};
+
+        // Fetch global jobs
+        const qJobs = query(collection(db, 'jobs'), where('clientId', '==', auth.currentUser.uid));
+        unsubJobs = onSnapshot(qJobs, (snapshot) => {
+            const jobsList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data(), source: 'jobs' }));
+            
+            // If property selected, we also fetch its Planning subcollection
+            if (selectedPropertyId) {
+                const qPlanning = query(collection(db, 'properties', selectedPropertyId, 'Planning'));
+                unsubPlanning = onSnapshot(qPlanning, (pSnap) => {
+                    const planningList = pSnap.docs.map(doc => ({ id: doc.id, ...doc.data(), source: 'planning' }));
+                    // Merge and filter
+                    const merged = [...jobsList, ...planningList].filter(item => !selectedPropertyId || item.propertyId === selectedPropertyId);
+                    setJobs(merged);
+                });
+            } else {
+                setJobs(jobsList);
+            }
+        });
+
+        return () => {
+            unsubJobs();
+            unsubPlanning();
+        };
+    }, [auth.currentUser, selectedPropertyId]);
+
+    const handleDateClick = (dateStr: string) => {
+        if (selectedDays.includes(dateStr)) {
+            setSelectedDays(prev => prev.filter(d => d !== dateStr));
+        } else {
+            setSelectedDays(prev => [...prev, dateStr]);
+        }
+    };
+
+    const handleCreateInterventions = async () => {
+        if (!auth.currentUser || !selectedPropertyId || selectedDays.length === 0) return;
         
         setIsSubmitting(true);
         const property = properties.find(p => p.id === selectedPropertyId);
         
         try {
-            await addDoc(collection(db, 'jobs'), {
-                clientId: auth.currentUser.uid,
-                propertyId: selectedPropertyId,
-                status: 'new',
-                service: 'cleaning',
-                subService: selectedType,
-                subServiceDisplayName: selectedType,
-                address: property?.specs?.address || '',
-                date: new Date().toLocaleDateString('default', { month: 'long', day: 'numeric', year: 'numeric' }),
-                time: "10:00",
-                preferredBricolerId: property?.specs?.preferredBricolerId || null,
-                createdAt: serverTimestamp(),
-                isHostJob: true
+            const promises = selectedDays.map(date => {
+                const planningRef = collection(db, 'properties', selectedPropertyId, 'Planning');
+                return addDoc(planningRef, {
+                    hostId: auth.currentUser?.uid,
+                    propertyId: selectedPropertyId,
+                    status: 'scheduled',
+                    type: selectedType === 'other' ? 'cleaning' : selectedType,
+                    title: selectedType === 'checkin' ? 'Check-in' : selectedType === 'checkout' ? 'Check-out' : 'Nettoyage / Autre',
+                    date: date,
+                    time: "11:00",
+                    createdAt: serverTimestamp(),
+                    isAutoGenerated: false // Manual planning entry
+                });
             });
+
+            await Promise.all(promises);
 
             showToast({
                 variant: 'success',
-                title: t({ en: 'Intervention scheduled!', fr: 'Intervention programmée !' })
+                title: t({ 
+                    en: `${selectedDays.length} intervention(s) scheduled!`, 
+                    fr: `${selectedDays.length} intervention(s) programmée(s) !` 
+                })
             });
             setIsScheduling(false);
+            setSelectedDays([]);
         } catch (err) {
-            console.error("Error scheduling intervention:", err);
+            console.error("Error scheduling interventions:", err);
             showToast({
                 variant: 'error',
                 title: 'Erreur',
-                description: 'Impossible de programmer l\'intervention.'
+                description: 'Impossible de programmer les interventions.'
             });
         } finally {
             setIsSubmitting(false);
         }
     };
- 
+
+    const renderCalendar = () => {
+        const year = currentMonth.getFullYear();
+        const month = currentMonth.getMonth();
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
+        const firstDayOfMonth = (new Date(year, month, 1).getDay() + 6) % 7; // Mon=0, Sun=6
+
+        const days = [];
+        // Empty slots for previous month
+        for (let i = 0; i < firstDayOfMonth; i++) {
+            days.push(<div key={`empty-${i}`} className="h-20 border border-neutral-50 bg-neutral-50/50 rounded-xl" />);
+        }
+
+        // Days of current month
+        for (let day = 1; day <= daysInMonth; day++) {
+            const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+            const isSelected = selectedDays.includes(dateStr);
+            const dayJobs = jobs.filter(j => j.date === dateStr && (!selectedPropertyId || j.propertyId === selectedPropertyId));
+            const isToday = new Date().toDateString() === new Date(year, month, day).toDateString();
+
+            days.push(
+                <button
+                    key={day}
+                    onClick={() => handleDateClick(dateStr)}
+                    className={cn(
+                        "h-24 p-2 border transition-all flex flex-col items-start relative rounded-xl",
+                        isSelected ? "border-black bg-neutral-50 ring-1 ring-black z-10" : "border-neutral-100 bg-white hover:border-neutral-300",
+                        isToday && !isSelected && "border-blue-500 ring-1 ring-blue-500"
+                    )}
+                >
+                    <span className={cn(
+                        "text-[13px] font-bold",
+                        isToday ? "text-blue-500" : "text-black"
+                    )}>
+                        {day}
+                    </span>
+
+                    {isSelected && (
+                        <div className="absolute top-2 right-2">
+                            <CheckCircle2 size={14} className="text-black" />
+                        </div>
+                    )}
+
+                    <div className="mt-auto flex flex-wrap gap-1">
+                        {dayJobs.slice(0, 3).map((job, idx) => (
+                            <div 
+                                key={job.id} 
+                                className={cn(
+                                    "w-5 h-5 rounded-md flex items-center justify-center text-white",
+                                    job.subService === 'checkin' ? "bg-orange-500" : 
+                                    job.subService === 'checkout' ? "bg-blue-500" : "bg-neutral-800"
+                                )}
+                            >
+                                {job.subService === 'checkin' ? <User size={10} /> : 
+                                 job.subService === 'checkout' ? <LogOut size={10} /> : <Sparkles size={10} />}
+                            </div>
+                        ))}
+                        {dayJobs.length > 3 && <MoreHorizontal size={10} className="text-neutral-400 mt-1" />}
+                    </div>
+                </button>
+            );
+        }
+
+        return days;
+    };
+
     return (
         <div className="flex flex-col min-h-screen bg-white pb-32">
-            {/* Header / Selector */}
-            <div className="px-6 pt-16 pb-6 bg-white sticky top-0 z-20">
-                <h1 className="text-[32px] font-bold text-black leading-none mb-6">Calendrier</h1>
+            {/* Header */}
+            <div className="px-6 pt-16 pb-6 bg-white sticky top-0 z-30 border-b border-neutral-100">
+                <div className="flex justify-between items-center mb-6">
+                    <h1 className="text-[32px] font-bold text-black tracking-tight">Calendrier</h1>
+                    <div className="flex items-center gap-2">
+                        <button 
+                            onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1))}
+                            className="p-2 rounded-full hover:bg-neutral-100 transition-colors"
+                        >
+                            <ChevronLeft size={24} />
+                        </button>
+                        <span className="font-bold text-[18px] min-w-[120px] text-center capitalize">
+                            {currentMonth.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })}
+                        </span>
+                        <button 
+                            onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1))}
+                            className="p-2 rounded-full hover:bg-neutral-100 transition-colors"
+                        >
+                            <ChevronRight size={24} />
+                        </button>
+                    </div>
+                </div>
                 
                 {/* Property Selector */}
                 <div className="flex items-center gap-3 overflow-x-auto no-scrollbar pb-2">
                     <button 
                         onClick={() => setSelectedPropertyId(null)}
-                        className={`px-5 py-2.5 rounded-full border text-[14px] font-bold whitespace-nowrap transition-all ${!selectedPropertyId ? 'bg-black text-white border-black shadow-md' : 'bg-white text-neutral-500 border-neutral-200'}`}
+                        className={cn(
+                            "px-5 py-2.5 rounded-full border text-[14px] font-bold whitespace-nowrap transition-all",
+                            !selectedPropertyId ? 'bg-black text-white border-black shadow-md' : 'bg-white text-neutral-500 border-neutral-200'
+                        )}
                     >
                         Toutes les propriétés
                     </button>
@@ -84,7 +227,10 @@ const HostCalendarView = () => {
                         <button 
                             key={p.id}
                             onClick={() => setSelectedPropertyId(p.id)}
-                            className={`px-5 py-2.5 rounded-full border text-[14px] font-bold whitespace-nowrap transition-all ${selectedPropertyId === p.id ? 'bg-black text-white border-black shadow-md' : 'bg-white text-neutral-500 border-neutral-200'}`}
+                            className={cn(
+                                "px-5 py-2.5 rounded-full border text-[14px] font-bold whitespace-nowrap transition-all",
+                                selectedPropertyId === p.id ? 'bg-black text-white border-black shadow-md' : 'bg-white text-neutral-500 border-neutral-200'
+                            )}
                         >
                             {p.name}
                         </button>
@@ -92,88 +238,98 @@ const HostCalendarView = () => {
                 </div>
             </div>
 
-            {/* Calendar Placeholder */}
-            <div className="px-6 flex-1 flex flex-col items-center justify-center py-20 text-center">
-                <div className="w-16 h-16 rounded-2xl bg-neutral-50 flex items-center justify-center mb-4 border border-neutral-100">
-                    <CalendarIcon size={32} className="text-neutral-300" />
+            {/* Calendar Grid */}
+            <div className="p-4">
+                <div className="grid grid-cols-7 gap-2 mb-2">
+                    {['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'].map(d => (
+                        <div key={d} className="text-center text-[12px] font-bold text-neutral-400 uppercase tracking-widest py-2">
+                            {d}
+                        </div>
+                    ))}
                 </div>
-                <h3 className="text-[18px] font-bold mb-2">Gérez vos disponibilités</h3>
-                <p className="text-neutral-500 text-[14px] leading-relaxed max-w-[240px]">
-                    Sélectionnez une propriété pour voir son calendrier et programmer des interventions.
-                </p>
+                <div className="grid grid-cols-7 gap-2">
+                    {renderCalendar()}
+                </div>
             </div>
 
-            {/* Floating Action Button */}
-            <div className="fixed bottom-28 right-6 z-30">
-                <button 
-                    onClick={() => {
-                        if (!selectedPropertyId && properties.length > 0) setSelectedPropertyId(properties[0].id);
-                        setIsScheduling(true);
-                    }}
-                    className="w-14 h-14 rounded-full bg-black text-white flex items-center justify-center shadow-2xl active:scale-90 transition-all"
-                >
-                    <Plus size={28} />
-                </button>
-            </div>
-
-            {/* Scheduling Modal */}
+            {/* Selection Floating Bar */}
             <AnimatePresence>
-                {isScheduling && (
+                {selectedDays.length > 0 && (
                     <motion.div 
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        className="fixed inset-0 z-[10000] bg-black/40 backdrop-blur-sm flex items-end justify-center"
-                        onClick={() => setIsScheduling(false)}
+                        initial={{ y: 100, opacity: 0 }}
+                        animate={{ y: 0, opacity: 1 }}
+                        exit={{ y: 100, opacity: 0 }}
+                        className="fixed bottom-28 left-6 right-6 z-[100] bg-white rounded-3xl shadow-2xl border border-neutral-100 p-6 flex flex-col gap-6"
                     >
-                        <motion.div 
-                            initial={{ y: "100%" }}
-                            animate={{ y: 0 }}
-                            exit={{ y: "100%" }}
-                            className="bg-white w-full rounded-t-[42px] p-8 pb-12 shadow-2xl max-w-[500px]"
-                            onClick={e => e.stopPropagation()}
-                        >
-                            <div className="flex justify-between items-center mb-8">
-                                <h3 className="text-[24px] font-bold">Programmer</h3>
-                                <button onClick={() => setIsScheduling(false)} className="p-2 -mr-2 rounded-full bg-neutral-50"><X size={20} /></button>
+                        <div className="flex justify-between items-center">
+                            <div>
+                                <h3 className="font-bold text-[18px]">
+                                    {selectedDays.length} date(s) sélectionnée(s)
+                                </h3>
+                                <p className="text-neutral-500 text-[14px]">Quelle intervention programmer ?</p>
                             </div>
-
-                            <div className="space-y-6 mb-10">
-                                <div>
-                                    <label className="text-[14px] font-bold text-neutral-400 uppercase tracking-widest block mb-3">Type d'intervention</label>
-                                    <div className="grid grid-cols-3 gap-3">
-                                        {(['Check-in', 'Check-out', 'Cleaning'] as const).map((type) => (
-                                            <button 
-                                                key={type}
-                                                onClick={() => setSelectedType(type)}
-                                                className={`py-4 rounded-2xl border-2 font-bold text-[14px] transition-all ${selectedType === type ? 'border-black bg-black text-white shadow-md' : 'border-neutral-100 text-neutral-500'}`}
-                                            >
-                                                {type}
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-
-                                <div>
-                                    <label className="text-[14px] font-bold text-neutral-400 uppercase tracking-widest block mb-3">Propriété</label>
-                                    <div className="p-5 rounded-[24px] bg-neutral-50 border border-neutral-100 flex items-center gap-3">
-                                        <Home size={20} className="text-black" />
-                                        <span className="font-bold">{properties.find(p => p.id === selectedPropertyId)?.name || 'Sélectionnez une propriété'}</span>
-                                    </div>
-                                </div>
-                            </div>
-
                             <button 
-                                onClick={handleCreateIntervention}
-                                disabled={isSubmitting || !selectedPropertyId}
-                                className="w-full bg-black text-white py-5 rounded-2xl font-bold text-[17px] shadow-xl active:scale-[0.98] transition-all disabled:opacity-50"
+                                onClick={() => setSelectedDays([])}
+                                className="p-2 rounded-full bg-neutral-100 text-neutral-500"
                             >
-                                {isSubmitting ? 'Programmation...' : 'Confirmer et Notifier les Bricoleurs'}
+                                <X size={20} />
                             </button>
-                        </motion.div>
+                        </div>
+
+                        <div className="grid grid-cols-3 gap-3">
+                            {[
+                                { id: 'checkout', label: 'Check-out', icon: <LogOut size={18} /> },
+                                { id: 'checkin', label: 'Check-in', icon: <User size={18} /> },
+                                { id: 'other', label: 'Autre', icon: <Sparkles size={18} /> }
+                            ].map((type) => (
+                                <button
+                                    key={type.id}
+                                    onClick={() => setSelectedType(type.id as any)}
+                                    className={cn(
+                                        "flex flex-col items-center gap-2 p-4 rounded-2xl border-2 transition-all",
+                                        selectedType === type.id ? "border-black bg-black text-white" : "border-neutral-100 text-neutral-500"
+                                    )}
+                                >
+                                    {type.icon}
+                                    <span className="font-bold text-[13px]">{type.label}</span>
+                                </button>
+                            ))}
+                        </div>
+
+                        <button 
+                            onClick={handleCreateInterventions}
+                            disabled={isSubmitting || !selectedPropertyId}
+                            className="w-full h-16 bg-black text-white rounded-2xl font-bold text-[17px] shadow-xl active:scale-95 transition-all disabled:opacity-50"
+                        >
+                            {isSubmitting ? 'Programmation...' : `Confirmer pour ${properties.find(p => p.id === selectedPropertyId)?.name || 'Sélectionnez une propriété'}`}
+                        </button>
+                        {!selectedPropertyId && (
+                            <p className="text-red-500 text-[12px] font-bold text-center -mt-4 animate-pulse">
+                                Veuillez sélectionner une propriété pour programmer
+                            </p>
+                        )}
                     </motion.div>
                 )}
             </AnimatePresence>
+
+            {/* Add Button (Legacy) */}
+            {!selectedDays.length && (
+                <div className="fixed bottom-28 right-6 z-30">
+                    <button 
+                        onClick={() => {
+                            if (properties.length > 0) {
+                                if (!selectedPropertyId) setSelectedPropertyId(properties[0].id);
+                                setIsScheduling(true);
+                            } else {
+                                showToast({ title: "Aucune propriété", description: "Veuillez d'abord ajouter une propriété." });
+                            }
+                        }}
+                        className="w-16 h-16 rounded-full bg-black text-white flex items-center justify-center shadow-2xl active:scale-90 transition-all"
+                    >
+                        <Plus size={32} />
+                    </button>
+                </div>
+            )}
         </div>
     );
 };

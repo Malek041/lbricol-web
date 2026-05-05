@@ -2,14 +2,12 @@
 
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MessageSquare, X, ArrowLeft, ArrowRight, ChevronLeft } from 'lucide-react';
+import { MessageSquare, X, ArrowLeft, ArrowRight } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
 import { useTheme } from '@/context/ThemeContext';
 import { fluidMobilePx, useIsMobileViewport, useMobileTier, useViewportWidth } from '@/lib/mobileOnly';
 import { COUNTRY_DATA, formatToE164, validatePhone, CountryConfig } from '@/lib/phoneUtils';
 import CountrySelector from '@/components/phone/CountrySelector';
-import { cn } from '@/lib/utils';
-import WaveTop from '@/components/shared/WaveTop';
 
 interface ClientWhatsAppPopupProps {
     isOpen: boolean;
@@ -49,49 +47,37 @@ const ClientWhatsAppPopup = ({ isOpen, onClose, onSuccess }: ClientWhatsAppPopup
         <AnimatePresence>
             {isOpen && (
                 <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="fixed inset-0 z-[4000] flex items-end md:items-center justify-center bg-black/60 backdrop-blur-sm p-0 md:p-4"
-                    onClick={onClose}
+                    initial={{ x: '100%' }}
+                    animate={{ x: 0 }}
+                    exit={{ x: '100%' }}
+                    transition={{ type: 'spring', damping: 28, stiffness: 300 }}
+                    style={{
+                        position: 'fixed',
+                        inset: 0,
+                        zIndex: 4000,
+                        backgroundColor: '#FFFFFF',
+                        display: 'flex',
+                        flexDirection: 'column',
+                    }}
                 >
-                    <motion.div
-                        initial={isMobile ? { y: '100%' } : { scale: 0.95, opacity: 0 }}
-                        animate={isMobile ? { y: 0 } : { scale: 1, opacity: 1 }}
-                        exit={isMobile ? { y: '100%' } : { scale: 0.95, opacity: 0 }}
-                        transition={{ type: 'spring', damping: 28, stiffness: 320 }}
-                        className={cn(
-                            "relative bg-white w-full shadow-2xl flex flex-col",
-                            isMobile ? "rounded-t-[32px] min-h-0" : "max-w-md rounded-[32px] overflow-hidden"
-                        )}
-                        onClick={e => e.stopPropagation()}
-                    >
-                        {isMobile && <WaveTop />}
-
-                        {/* Native Handle for Mobile */}
-                        {isMobile && (
-                            <div className="w-12 h-1.5 bg-neutral-200/50 rounded-full mx-auto mt-4 mb-2 flex-shrink-0" />
-                        )}
-
-                        {/* Header */}
-                        <div style={{ padding: headerPadding, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                            <button
-                                onClick={onClose}
-                                style={{
-                                    background: '#F5F5F5',
-                                    border: 'none',
-                                    cursor: 'pointer',
-                                    width: '40px',
-                                    height: '40px',
-                                    borderRadius: '12px',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center'
-                                }}
-                            >
-                                <ChevronLeft size={24} color="#1D1D1D" />
-                            </button>
-                        </div>
+                    {/* Header */}
+                    <div style={{ padding: headerPadding, display: 'flex', alignItems: 'center' }}>
+                        <button
+                            onClick={onClose}
+                            style={{
+                                background: 'none',
+                                border: 'none',
+                                cursor: 'pointer',
+                                padding: '8px',
+                                marginLeft: '-8px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center'
+                            }}
+                        >
+                            <ArrowLeft size={isCompactPhone ? 24 : 28} color="#1D1D1D" />
+                        </button>
+                    </div>
 
                     {/* Main Content */}
                     <div style={{ flex: 1, padding: `0 ${contentPaddingX}`, display: 'flex', flexDirection: 'column', paddingTop: contentPaddingTop }}>
@@ -216,7 +202,6 @@ const ClientWhatsAppPopup = ({ isOpen, onClose, onSuccess }: ClientWhatsAppPopup
                         </motion.button>
                     </div>
                 </motion.div>
-            </motion.div>
             )}
         </AnimatePresence>
     );
