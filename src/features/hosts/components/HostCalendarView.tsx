@@ -47,15 +47,15 @@ const HostCalendarView = () => {
         // Fetch global jobs
         const qJobs = query(collection(db, 'jobs'), where('clientId', '==', auth.currentUser.uid));
         unsubJobs = onSnapshot(qJobs, (snapshot) => {
-            const jobsList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data(), source: 'jobs' }));
+            const jobsList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data(), source: 'jobs' } as any));
             
             // If property selected, we also fetch its Planning subcollection
             if (selectedPropertyId) {
                 const qPlanning = query(collection(db, 'properties', selectedPropertyId, 'Planning'));
                 unsubPlanning = onSnapshot(qPlanning, (pSnap) => {
-                    const planningList = pSnap.docs.map(doc => ({ id: doc.id, ...doc.data(), source: 'planning' }));
+                    const planningList = pSnap.docs.map(doc => ({ id: doc.id, ...doc.data(), source: 'planning' } as any));
                     // Merge and filter
-                    const merged = [...jobsList, ...planningList].filter(item => !selectedPropertyId || item.propertyId === selectedPropertyId);
+                    const merged = [...jobsList, ...planningList].filter((item: any) => !selectedPropertyId || item.propertyId === selectedPropertyId);
                     setJobs(merged);
                 });
             } else {
