@@ -2611,7 +2611,8 @@ const CleaningDetailForm = ({ data, onChange, onUploadingChange }: any) => {
             label: 'Nettoyage des escaliers',
             fr: 'Nettoyage des escaliers',
             iconPath: '/Icons/stairs cleaning.svg',
-            hasCounter: true
+            hasCounter: true,
+            hasFrequency: true
         },
     ];
 
@@ -2671,11 +2672,10 @@ const CleaningDetailForm = ({ data, onChange, onUploadingChange }: any) => {
                                                 transition={{ duration: 0.3, ease: [0.23, 1, 0.32, 1] }}
                                                 className="overflow-hidden"
                                             >
-                                                {/* Nested content for Deep Cleaning */}
                                                 {item.hasFrequency && (
                                                     <div className="px-10 pb-10 pt-2 border-t border-neutral-50">
                                                         <p className="text-[15px] font-medium text-[#222222] mb-5">
-                                                            {t({ en: 'Deep Cleaning Frequency', fr: 'Fréquence du nettoyage en profondeur' })}
+                                                            {t({ en: `${item.label} Frequency`, fr: `Fréquence du ${item.fr}` })}
                                                         </p>
                                                         <div className="flex flex-wrap gap-3">
                                                             {[
@@ -2684,11 +2684,11 @@ const CleaningDetailForm = ({ data, onChange, onUploadingChange }: any) => {
                                                                 { id: 'monthly', label: 'Monthly', fr: 'Mensuelle' },
                                                                 { id: 'quarterly', label: 'Quarterly', fr: 'Trimestrielle' },
                                                             ].map((freq: any) => {
-                                                                const isActive = (data.frequencies || {}).deep_cleaning === freq.id;
+                                                                const isActive = (data.frequencies || {})[item.id] === freq.id;
                                                                 return (
                                                                     <button
                                                                         key={freq.id}
-                                                                        onClick={() => onChange({ frequencies: { ...(data.frequencies || {}), deep_cleaning: freq.id } })}
+                                                                        onClick={() => onChange({ frequencies: { ...(data.frequencies || {}), [item.id]: freq.id } })}
                                                                         className={`px-6 py-3 rounded-full text-[14px] transition-all active:scale-95 border ${isActive
                                                                             ? 'border-black bg-white text-[#222222] font-bold'
                                                                             : 'border-neutral-200 hover:border-black bg-white font-bold'
@@ -4105,41 +4105,22 @@ const ErrandsDetailForm = ({ data, onChange }: any) => {
                                                                             </button>
                                                                         </span>
                                                                     ))}
-                                                                    {editingBrand?.cat === category.id && editingBrand?.idx === idx ? (
-                                                                        <input
-                                                                            autoFocus
-                                                                            type="text"
-                                                                            className="px-3 py-1 bg-white border border-black rounded-[5px] text-[13px] font-medium w-[150px] focus:outline-none focus:ring-0"
-                                                                            onKeyDown={(e) => {
-                                                                                if (e.key === 'Enter') {
-                                                                                    const val = e.currentTarget.value.trim();
-                                                                                    if (val) {
-                                                                                        const newList = [...list];
-                                                                                        newList[idx].brands = [...(item.brands || []), val];
-                                                                                        updateChecklist(category.id, newList);
-                                                                                    }
-                                                                                    setEditingBrand(null);
-                                                                                } else if (e.key === 'Escape') setEditingBrand(null);
-                                                                            }}
-                                                                            onBlur={(e) => {
-                                                                                const val = e.target.value.trim();
-                                                                                if (val) {
-                                                                                    const newList = [...list];
-                                                                                    newList[idx].brands = [...(item.brands || []), val];
-                                                                                    updateChecklist(category.id, newList);
-                                                                                }
-                                                                                setEditingBrand(null);
-                                                                            }}
-                                                                        />
-                                                                    ) : (
-                                                                        <button
-                                                                            onClick={() => setEditingBrand({ cat: category.id, idx })}
-                                                                            className="inline-flex items-center gap-1 px-3 py-1 text-neutral-400 hover:bg-neutral-50 rounded-[5px] text-[13px] font-medium border border-dashed border-neutral-300 transition-colors"
-                                                                        >
-                                                                            <Plus size={12} />
-                                                                            {t({ en: 'Add brand', fr: 'Marque préférée' })}
-                                                                        </button>
-                                                                    )}
+                                                                </div>
+                                                                <div className="flex flex-col gap-2 mt-4">
+                                                                    <span className="text-[13px] font-medium text-neutral-400 uppercase tracking-wider">
+                                                                        {t({ en: 'Preferred Supplier', fr: 'Fournisseur préféré' })}
+                                                                    </span>
+                                                                    <input
+                                                                        type="text"
+                                                                        value={item.preferredSupplier || ''}
+                                                                        onChange={(e) => {
+                                                                            const newList = [...list];
+                                                                            newList[idx].preferredSupplier = e.target.value;
+                                                                            updateChecklist(category.id, newList);
+                                                                        }}
+                                                                        placeholder={t({ en: 'e.g. Marjane, Carrefour...', fr: 'ex. Marjane, Carrefour...' })}
+                                                                        className="w-full bg-[#F7F7F7] rounded-[5px] px-4 py-3 text-[15px] text-black border-none focus:ring-1 focus:ring-black transition-all"
+                                                                    />
                                                                 </div>
                                                             </div>
                                                             <button
@@ -4255,26 +4236,6 @@ const ErrandsDetailForm = ({ data, onChange }: any) => {
                             />
                         </div>
 
-                        <div className="space-y-4">
-                            <div className="flex flex-col gap-1">
-                                <span className="text-[17px] font-medium text-black mb-2 block">
-                                    {t({ en: 'Preferred Supplier / Brand', fr: 'Fournisseur / Marque préféré' })}
-                                </span>
-                                <span className="text-[14px] text-neutral-400 font-medium">
-                                    {t({ en: 'Where should the Bricoleur buy these items?', fr: 'Où le Bricoleur doit-il acheter ces articles ?' })}
-                                </span>
-                            </div>
-                            <input
-                                type="text"
-                                value={data.preferredSupplier || ''}
-                                onChange={(e) => onChange({ preferredSupplier: e.target.value })}
-                                placeholder={t({
-                                    en: 'ex. Marjane, Carrefour, Local Epicerie...',
-                                    fr: 'ex. Marjane, Carrefour, Épicerie locale...'
-                                })}
-                                className="w-full bg-[#F7F7F7] rounded-[5px] px-6 py-5 text-[16px] text-black border-none focus:ring-2 focus:ring-black transition-all"
-                            />
-                        </div>
 
                         <div className="space-y-4">
                             <div className="flex flex-col gap-1">
